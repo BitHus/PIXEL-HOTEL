@@ -11,6 +11,8 @@ import {
   DOOR_WIDTH,
   DOOR_ZONE_H,
   DOOR_ZONE_W,
+  FARM_FLOOR_STYLE,
+  FARM_WALL_STYLE,
   ROOM_GRID,
   SIDE_BORDER,
   START_FLOOR_STYLE,
@@ -20,7 +22,8 @@ import {
 } from './config.ts';
 import type { Point, Rect } from './types.ts';
 
-export type RoomKind = 'hotel' | 'shop';
+/** The hotel room, the shop and (step 9b) the farm. */
+export type RoomKind = 'hotel' | 'shop' | 'farm';
 
 export interface Room {
   /** Room ids are integers. */
@@ -69,7 +72,7 @@ export function shapesFor(kind: RoomKind): RoomShape[] {
 
 /** The plain rectangle every room had before step 7b. */
 export function defaultShape(kind: RoomKind): string {
-  return kind === 'hotel' ? 'square' : 'square_shop';
+  return kind === 'hotel' ? 'square' : kind === 'shop' ? 'square_shop' : 'farm';
 }
 
 function shapeLevel(shape: string, level: RoomLevel): ShapeLevel {
@@ -87,7 +90,7 @@ export function boundsOf(rects: readonly Rect[]): Rect {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
 
-/** A new room of the given kind, level and shape, with the bare styles. */
+/** A new room of the given kind, level and shape, with the bare styles (the farm: grass and hedge). */
 export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId: number, shape = defaultShape(kind)): Room {
   const b = boundsOf(shapeLevel(shape, level).rects);
   return {
@@ -97,8 +100,8 @@ export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId
     shape,
     w: b.x + b.w,
     h: b.y + b.h,
-    floorStyle: START_FLOOR_STYLE,
-    wallStyle: START_WALL_STYLE,
+    floorStyle: kind === 'farm' ? FARM_FLOOR_STYLE : START_FLOOR_STYLE,
+    wallStyle: kind === 'farm' ? FARM_WALL_STYLE : START_WALL_STYLE,
     ownerId,
     private: false,
   };

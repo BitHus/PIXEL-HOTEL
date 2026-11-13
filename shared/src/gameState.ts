@@ -7,6 +7,7 @@ import type { Room } from './room.ts';
 import type { ShopState } from './shop.ts';
 import type { FurnitureItem, LedgerEntry, Player } from './types.ts';
 import type { DungeonRun } from './dungeon/run.ts';
+import type { FarmState } from './farm.ts';
 
 export interface GameState {
   player: Player;
@@ -31,6 +32,8 @@ export interface GameState {
   hintsDone: number;
   /** The dungeon run in progress (step 9), saved so a reload resumes it; null between runs. */
   run: DungeonRun | null;
+  /** The farm's plots (step 9b, farm.ts); the farm room itself is in rooms. */
+  farm: FarmState;
 }
 
 /** One chat message (not saved). */

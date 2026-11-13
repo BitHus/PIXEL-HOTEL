@@ -11,12 +11,14 @@
 //   inventory (with what stands on it).
 // - Shop catch-up: walking customers pay at once, then simulateShop does the maths.
 
-import { CATALOG_PRICE_MULT, OFFLINE_MAX_MS, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
+import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, OFFLINE_MAX_MS, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
+import { growPlots } from './farm.ts';
+import { noPlaceRects } from './farmLayout.ts';
 import { settleCustomers } from './customers.ts';
 import { FURNITURE_TYPES, footprintRect, getFurnitureType, pickUpItem } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
-import { doorZoneRect, rectsTouch, roomAtLevel, type Room } from './room.ts';
+import { doorZoneRect, rectsOverlap, rectsTouch, roomAtLevel, type Room } from './room.ts';
 import { returnOrphanLoot, shopAppeal, simulateShop } from './shop.ts';
 import { findStyle, stylePrice } from './styles.ts';
 import { getGear, type ShopGearId } from './gear.ts';
@@ -68,7 +70,8 @@ export function applyStyle(state: GameState, roomId: number, kind: StyleKind, id
 /** The gold the next upgrade of this room costs, or null at the top level. */
 export function upgradeCost(room: Room): number | null {
   if (room.level >= ROOM_MAX_LEVEL) return null;
-  return ROOM_UPGRADE_COST[(room.level + 1) as 2 | 3];
+  const to = (room.level + 1) as 2 | 3;
+  return room.kind === 'farm' ? FARM_UPGRADE_COST[to] : ROOM_UPGRADE_COST[to];
 }
 
 /**
@@ -86,14 +89,18 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   const level = (room.level + 1) as RoomLevel;
   // The next level of the room's shape: its floor contains the old one, so every item still fits.
   const grown: Room = roomAtLevel(room, level);
+  // The new door zone, and on a farm the new plots, must be free: what stands there goes back.
   const zone = doorZoneRect(grown);
+  const plots = noPlaceRects(grown);
   let items = paid.items;
   for (const i of paid.items) {
     const t = getFurnitureType(i.typeId);
     if (i.roomId !== roomId || i.onItemUid !== null || t.wall || t.noPickup) continue;
-    if (rectsTouch(footprintRect(i, t), zone)) items = pickUpItem(items, i.uid);
+    const fp = footprintRect(i, t);
+    if (rectsTouch(fp, zone) || plots.some((r) => rectsOverlap(fp, r))) items = pickUpItem(items, i.uid);
   }
-  return returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items }, at);
+  const farm = grown.kind === 'farm' && paid.farm.roomId === roomId ? growPlots(paid.farm, level) : paid.farm;
+  return returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items, farm }, at);
 }
 
 export interface CatchUp {

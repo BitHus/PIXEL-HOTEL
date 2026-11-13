@@ -8,7 +8,7 @@
 import { BAG_SLOTS, HOTBAR_SLOTS } from './config.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
 import { furnitureStacks, materialStacks } from './inventory.ts';
-import { MATERIAL_TYPES } from './materials.ts';
+import { MATERIAL_TYPES, isMaterialId, isSeedId } from './materials.ts';
 import type { FurnitureItem, MaterialId } from './types.ts';
 
 export type BagTab = 'furniture' | 'materials';
@@ -35,6 +35,14 @@ export function emptyBag(): BagLayout {
 }
 
 const isFurnitureType = (id: string): boolean => FURNITURE_TYPES.some((t) => t.id === id);
+
+/** What may sit in a slot area: the hotbar takes furniture and seeds (step 9b: planting), the
+ *  Furniture tab furniture, the Materials tab every stackable good (materials, seeds, crops, food). */
+export function fitsArea(area: SlotArea, id: string): boolean {
+  if (area === 'hotbar') return isFurnitureType(id) || isSeedId(id);
+  if (area === 'furniture') return isFurnitureType(id);
+  return isMaterialId(id);
+}
 
 /** Pads to BAG_SLOTS with empty slots, and drops empty slots at the end beyond BAG_SLOTS. */
 function fit(slots: (string | null)[]): (string | null)[] {
@@ -73,15 +81,25 @@ export function arrangeSlots(layout: SlotLayout, furnitureIds: readonly string[]
   const seen = new Set<string>();
   const hotbar = Array.from({ length: HOTBAR_SLOTS }, (_, i) => {
     const id = layout.hotbar[i] ?? null;
-    if (id === null || !isFurnitureType(id) || seen.has(id)) return null;
+    if (id === null || !fitsArea('hotbar', id) || seen.has(id)) return null;
     seen.add(id);
     return id;
   });
+  // A seed type the player gets for the first time goes into a free hotbar slot (to plant it), if
+  // there is one and it is not in the bag already.
+  const inBag = new Set(layout.bag.materials);
+  for (const id of materialIds) {
+    if (!isSeedId(id) || seen.has(id) || inBag.has(id)) continue;
+    const free = hotbar.indexOf(null);
+    if (free < 0) break;
+    hotbar[free] = id;
+    seen.add(id);
+  }
   return {
     hotbar,
     bag: {
       furniture: arrangeTab(layout.bag.furniture, furnitureIds, seen),
-      materials: arrangeTab(layout.bag.materials, materialIds, new Set()),
+      materials: arrangeTab(layout.bag.materials, materialIds, seen),
     },
   };
 }
@@ -107,9 +125,10 @@ function copy(layout: SlotLayout): SlotLayout {
   return { hotbar: [...layout.hotbar], bag: { furniture: [...layout.bag.furniture], materials: [...layout.bag.materials] } };
 }
 
-/** Furniture moves between the hotbar and the Furniture tab; materials stay in their tab. */
+/** Furniture moves between the hotbar and the Furniture tab, seeds between the hotbar and the
+ *  Materials tab; other materials stay in their tab. (moveSlot checks the ids with fitsArea.) */
 export function canMoveBetween(from: SlotArea, to: SlotArea): boolean {
-  return (from === 'materials') === (to === 'materials');
+  return from === to || from === 'hotbar' || to === 'hotbar';
 }
 
 /**
@@ -125,20 +144,24 @@ export function moveSlot(layout: SlotLayout, from: SlotRef, to: SlotRef): SlotLa
   if (from.index < 0 || from.index >= a.length || to.index < 0 || to.index >= b.length) return null;
   const moving = a[from.index] ?? null;
   if (moving === null) return null;
-  a[from.index] = b[to.index] ?? null;
+  const other = b[to.index] ?? null;
+  if (!fitsArea(to.area, moving) || (other !== null && !fitsArea(from.area, other))) return null;
+  a[from.index] = other;
   b[to.index] = moving;
   return next;
 }
 
-/** Moves a hotbar slot's stack to the first free slot of the Furniture tab (the tab grows if full). */
+/** Moves a hotbar slot's stack to the first free slot of its bag tab (Furniture, or Materials for
+ *  seeds; the tab grows if full). */
 export function hotbarToBag(layout: SlotLayout, index: number): SlotLayout | null {
   const id = layout.hotbar[index];
   if (id === undefined || id === null) return null;
   const next = copy(layout);
   next.hotbar[index] = null;
-  const free = next.bag.furniture.indexOf(null);
-  if (free >= 0) next.bag.furniture[free] = id;
-  else next.bag.furniture.push(id);
+  const tab = next.bag[isSeedId(id) ? 'materials' : 'furniture'];
+  const free = tab.indexOf(null);
+  if (free >= 0) tab[free] = id;
+  else tab.push(id);
   return next;
 }
 

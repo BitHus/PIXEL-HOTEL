@@ -13,6 +13,17 @@ import {
   HINTS,
   RECIPES,
   RUN_SAVE_EVERY_MS,
+  FARM_HINT,
+  buySeeds,
+  cook,
+  harvestPlot,
+  plantPlot,
+  roomBlockers,
+  type FarmView,
+  type FoodId,
+  type HarvestResult,
+  type RoomLevel,
+  type SeedId,
   buyGear,
   craft as craftRecipe,
   finishRun,
@@ -488,10 +499,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return run ? { run, paused: this.runPaused } : null;
   }
 
-  async dungeonStart(): Promise<DungeonRun | null> {
+  async dungeonStart(lunch: readonly FoodId[] = []): Promise<DungeonRun | null> {
     if (this.state.run) return null;
     const seed = rngInt(this.rng, 1, 2 ** 31 - 1);
-    const r = startRun(this.state, seed, this.now());
+    const r = startRun(this.state, seed, this.now(), undefined, lunch);
     // The dungeon hint is done once the player goes in.
     this.commit({ ...this.hintDone(r.state, DUNGEON_HINT), run: r.run });
     this.runPaused = false;
@@ -533,6 +544,47 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!next) return false;
     this.commit(next);
     return true;
+  }
+
+  // ---------- The farm and cooking (step 9b) ----------
+
+  async getFarm(): Promise<FarmView> {
+    return this.farmView();
+  }
+
+  async plant(plot: number, seed: SeedId): Promise<FarmView | null> {
+    const next = plantPlot(this.state, plot, seed, this.now());
+    if (!next) return null;
+    // The farm quest: plant your first turnip (any seed counts).
+    this.commit(this.hintDone(next, FARM_HINT));
+    return this.farmView();
+  }
+
+  async harvest(plot: number): Promise<HarvestResult | null> {
+    const r = harvestPlot(this.state, plot, this.now(), this.rng);
+    if (!r) return null;
+    this.commit(r.state);
+    return { farm: this.farmView(), crop: r.harvest.crop, qty: r.harvest.qty };
+  }
+
+  async buySeeds(seed: SeedId, qty: number): Promise<boolean> {
+    const next = buySeeds(this.state, seed, qty, this.now());
+    if (!next) return false;
+    this.commit(next);
+    return true;
+  }
+
+  async cook(food: FoodId): Promise<boolean> {
+    const next = cook(this.state, food, this.now());
+    if (!next) return false;
+    this.commit(next);
+    return true;
+  }
+
+  private farmView(): FarmView {
+    const f = this.state.farm;
+    const room = this.roomById(f.roomId);
+    return structuredClone({ roomId: f.roomId, level: (room?.level ?? 1) as RoomLevel, plots: f.plots, at: this.now() });
   }
 
   /**
@@ -770,7 +822,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   private buildGrid(): NavGrid {
-    return buildNavGrid(this.room(), [...this.debugRects, ...itemBlockers(this.state.items, this.state.currentRoomId)]);
+    // The furniture plus fixed blockers (the farm's cooking pot).
+    return buildNavGrid(this.room(), [...this.debugRects, ...roomBlockers(this.room(), this.state.items)]);
   }
 
   /** The own avatar standing in the door zone of the current room. */

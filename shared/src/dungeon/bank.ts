@@ -2,12 +2,15 @@
 // the player has less than DUNGEON_KEY_COST gold) and takes the potions along; finishRun banks what
 // the run kept (gold, materials and furniture through the ledger, reason 'dungeon_bank'), adds the
 // xp (kept even after death) and gives back the potions not drunk.
+// Step 9b: the lunch box. startRun takes up to LUNCH_BOX_MAX food items out of the bag (ledger
+// 'lunch_box'); finishRun gives back the food not eaten (after death the box is lost: step.ts empties it).
 
-import { DUNGEON_KEY_COST } from '../config.ts';
+import { DUNGEON_KEY_COST, LUNCH_BOX_MAX } from '../config.ts';
+import { isFoodId } from '../materials.ts';
 import type { GameState } from '../gameState.ts';
 import { addXp } from '../levels.ts';
 import { applyChange } from '../ledger.ts';
-import type { MaterialId } from '../types.ts';
+import type { FoodId, MaterialId } from '../types.ts';
 import { newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
 
 /** True if the next run is free (the player has less gold than the key costs). */
@@ -15,11 +18,38 @@ export function runIsFree(state: GameState): boolean {
   return state.player.wallet.gold < DUNGEON_KEY_COST;
 }
 
-export function startRun(state: GameState, seed: number, at: number, round?: DungeonRoundId): { state: GameState; run: DungeonRun } {
+/**
+ * What actually goes in the lunch box: the asked food in order, at most LUNCH_BOX_MAX, only food
+ * the player has (each unit once).
+ */
+export function packLunch(state: GameState, lunch: readonly string[]): FoodId[] {
+  const left = { ...state.player.materials };
+  const out: FoodId[] = [];
+  for (const id of lunch) {
+    if (out.length >= LUNCH_BOX_MAX || !isFoodId(id) || (left[id] ?? 0) <= 0) continue;
+    left[id] = (left[id] ?? 0) - 1;
+    out.push(id);
+  }
+  return out;
+}
+
+export function startRun(
+  state: GameState,
+  seed: number,
+  at: number,
+  round?: DungeonRoundId,
+  lunch: readonly string[] = [],
+): { state: GameState; run: DungeonRun } {
   let s = state;
   if (!runIsFree(s)) s = applyChange(s, { reason: 'dungeon_key', gold: -DUNGEON_KEY_COST, note: 'dungeon key' }, at) ?? s;
+  const food = packLunch(s, lunch);
+  if (food.length > 0) {
+    const used: Partial<Record<MaterialId, number>> = {};
+    for (const id of food) used[id] = (used[id] ?? 0) - 1;
+    s = applyChange(s, { reason: 'lunch_box', materials: used, note: 'lunch box' }, at) ?? s;
+  }
   const p = s.player;
-  const run = newRun({ seed, ...(round ? { round } : {}), xp: p.xp, gear: p.gear, potions: p.potions });
+  const run = newRun({ seed, ...(round ? { round } : {}), xp: p.xp, gear: p.gear, potions: p.potions, food });
   return { state: { ...s, player: { ...p, potions: 0 } }, run };
 }
 
@@ -32,6 +62,8 @@ export function finishRun(state: GameState, run: DungeonRun, at: number): GameSt
     if (s.kind === 'material') materials[s.id] = (materials[s.id] ?? 0) + s.qty;
     else furniture.push(s.typeId);
   }
+  // The food not eaten comes home (empty after death).
+  for (const id of run.player.food) materials[id] = (materials[id] ?? 0) + 1;
   const banked =
     applyChange(
       state,

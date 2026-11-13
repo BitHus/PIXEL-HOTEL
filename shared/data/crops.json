@@ -1,0 +1,7 @@
+[
+  { "id": "turnip", "name": "Turnip", "seed": "turnip_seed", "seedName": "Turnip seeds", "seedPrice": 4, "seedValue": 4, "growMinutes": 5, "baseValue": 10, "color": 28, "seedColor": 3 },
+  { "id": "potato", "name": "Potato", "seed": "potato_seed", "seedName": "Potato seeds", "seedPrice": 6, "seedValue": 6, "growMinutes": 15, "baseValue": 16, "color": 3, "seedColor": 4 },
+  { "id": "carrot", "name": "Carrot", "seed": "carrot_seed", "seedName": "Carrot seeds", "seedPrice": 8, "seedValue": 8, "growMinutes": 30, "baseValue": 22, "color": 9, "seedColor": 1 },
+  { "id": "pumpkin", "name": "Pumpkin", "seed": "pumpkin_seed", "seedName": "Pumpkin seeds", "seedPrice": 15, "seedValue": 15, "growMinutes": 120, "baseValue": 50, "color": 1, "seedColor": 10 },
+  { "id": "glowcap", "name": "Glowcap mushroom", "seed": "glowcap_spore", "seedName": "Glowcap spore", "seedPrice": null, "seedValue": 12, "growMinutes": 60, "baseValue": 40, "color": 18, "seedColor": 17 }
+]

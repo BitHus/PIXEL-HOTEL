@@ -121,7 +121,19 @@ export interface FurnitureItem {
 // Avatar, AvatarLook and AvatarState live in avatar.ts.
 
 // ---------- Economy (section 9) ----------
-export type MaterialId = 'bone' | 'cloth' | 'crystal' | 'wood' | 'throne_piece';
+/** Dungeon materials (section 10). */
+export type BaseMaterialId = 'bone' | 'cloth' | 'crystal' | 'wood' | 'throne_piece';
+/** Farm goods (section 10b, step 9b): seeds (crops.json), crops (crops.json) and food (food.json). */
+export type SeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
+export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
+export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth';
+/**
+ * Every stackable good: the dungeon materials plus the farm's seeds, crops and food (step 9b). They
+ * all live in Player.materials, stack in the bag's Materials tab and go through the ledger.
+ */
+export type MaterialId = BaseMaterialId | SeedId | CropId | FoodId;
+/** What kind of stackable good it is. */
+export type MaterialGroup = 'material' | 'seed' | 'crop' | 'food';
 
 export interface MaterialType {
   id: MaterialId;
@@ -129,10 +141,11 @@ export interface MaterialType {
   baseValue: number;
   /** Placeholder icon color (palette index) until real 32x32 icons exist. */
   color: number;
+  group: MaterialGroup;
 }
 
 /** What a customer can want. */
-export type ShopCategory = 'materials' | 'home_furniture' | 'shop_furniture' | 'crypt_furniture';
+export type ShopCategory = 'materials' | 'home_furniture' | 'shop_furniture' | 'crypt_furniture' | 'food';
 
 /** A thing for sale on a shop slot: one unit of a material, or one furniture item (taken out of
  *  GameState.items while it is on the slot, and put back when taken off). */
@@ -174,6 +187,11 @@ export type LedgerReason =
   | 'craft'
   | 'shelf'
   | 'style'
+  | 'seeds'
+  | 'plant'
+  | 'harvest'
+  | 'cook'
+  | 'lunch_box'
   | 'debug';
 
 export interface LedgerEntry {
@@ -208,6 +226,8 @@ export interface Player {
   unlockedClothing: string[];
   hotelRoomId: number;
   shopRoomId: number;
+  /** The farm (step 9b). */
+  farmRoomId: number;
 }
 
 // ---------- Dungeon (section 10) ----------

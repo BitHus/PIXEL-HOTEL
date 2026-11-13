@@ -2,11 +2,13 @@
 // storage and used for Export / Import. Old versions are migrated step by step with MIGRATIONS;
 // a version without a migration path is refused ('too_old'), and the caller resets with a message.
 
-import { HOTBAR_SLOTS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
+import { HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
 import { addShopStartItems } from './newPlayer.ts';
 import { emptyShop } from './shop.ts';
+import { emptyFarm } from './farm.ts';
+import { createRoom } from './room.ts';
 import type { Player } from './types.ts';
 import type { GameState } from './gameState.ts';
 
@@ -72,6 +74,27 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
   },
   // 5 -> 6 (step 9): no dungeon run in progress.
   5: (state) => (isObject(state) ? { ...state, run: null } : state),
+  // 6 -> 7 (step 9b): a level 1 farm with empty plots (a new room with the next free id), and a run
+  // in progress gets an empty lunch box, no buffs and the normal attack cooldown.
+  6: (state) => {
+    if (!isObject(state) || !isObject(state.player) || !Array.isArray(state.rooms)) return state;
+    if (isObject(state.farm)) return state;
+    const ids = state.rooms.map((r) => (isObject(r) && typeof r.id === 'number' ? r.id : 0));
+    const farmRoomId = Math.max(0, ...ids) + 1;
+    const ownerId = typeof state.player.id === 'number' ? state.player.id : 1;
+    const run = state.run;
+    const nextRun =
+      isObject(run) && isObject(run.player)
+        ? { ...run, player: { food: [], buffs: [], attackCooldownMs: PLAYER_ATTACK_COOLDOWN_MS, ...run.player } }
+        : run;
+    return {
+      ...state,
+      player: { ...state.player, farmRoomId },
+      rooms: [...state.rooms, createRoom(farmRoomId, 'farm', 1, ownerId)],
+      farm: emptyFarm(farmRoomId),
+      run: nextRun,
+    };
+  },
 };
 
 /** The storage key for a save version. */
@@ -120,7 +143,7 @@ export function isGameState(x: unknown): x is GameState {
   const p = x.player;
   if (!isObject(p) || !isInt(p.id) || !isObject(p.wallet) || !isInt(p.wallet.gold) || !isObject(p.materials)) return false;
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
-  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop') && typeof r.shape === 'string')) return false;
+  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
   if (!Array.isArray(p.unlockedClothing) || typeof x.playerCreated !== 'boolean') return false;
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
@@ -131,6 +154,8 @@ export function isGameState(x: unknown): x is GameState {
   if (!isInt(x.currentRoomId) || !x.rooms.some((r) => isObject(r) && r.id === x.currentRoomId)) return false;
   if (!isObject(x.shop) || !Array.isArray(x.shop.slots) || !Array.isArray(x.shop.customers) || !isObject(x.shop.saleHistory)) return false;
   if (typeof x.shop.nextCustomerInMs !== 'number' || typeof x.shop.updatedAt !== 'number' || !isInt(x.hintsDone)) return false;
+  if (!isObject(x.farm) || !isInt(x.farm.roomId) || !Array.isArray(x.farm.plots) || !isInt(p.farmRoomId)) return false;
+  if (!x.farm.plots.every((pl) => isObject(pl) && (pl.crop === null || typeof pl.crop === 'string') && typeof pl.plantedAt === 'number')) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }

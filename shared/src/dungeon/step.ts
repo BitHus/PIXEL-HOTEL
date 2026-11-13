@@ -26,21 +26,22 @@ import {
   ENEMY_WINDUP_MS,
   MIMIC_WAKE_MS,
   MIMIC_XP,
-  PLAYER_ATTACK_COOLDOWN_MS,
   PLAYER_ATTACK_REACH,
   PLAYER_DUNGEON_SPEED,
+  GLOWCAP_SPORE_CHANCE,
   RARE_DROP_CHANCE,
   STAIRS_HEAL,
 } from '../config.ts';
 import { POTION } from '../gear.ts';
+import { getFoodType } from '../materials.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
 import { findPath, lineOfSight, type NavGrid } from '../nav.ts';
 import { rngInt } from '../rng.ts';
-import type { Point, Rng } from '../types.ts';
+import type { FoodId, Point, Rng } from '../types.ts';
 import { generateFloor, makeEnemy } from './generate.ts';
 import { blockAt, dungeonNavGrid, onFloor } from './grid.ts';
 import { getLootTable, rollLoot, type Loot } from './loot.ts';
-import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type RunBag } from './run.ts';
+import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type FoodBuff, type RunBag, type RunPlayer } from './run.ts';
 import { addToBag, bagLoot } from './runBag.ts';
 
 const TICK = DUNGEON_TICK_MS;
@@ -55,7 +56,7 @@ export function distance(a: Point, b: Point): number {
 function cloneRun(run: DungeonRun): DungeonRun {
   return {
     ...run,
-    player: { ...run.player },
+    player: { ...run.player, food: [...run.player.food], buffs: [...run.player.buffs] },
     enemies: run.enemies.map((e) => ({ ...e })),
     chests: run.chests.map((c) => ({ ...c })),
     bag: { ...run.bag },
@@ -130,14 +131,56 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
     p.potions -= 1;
     p.potionReadyAt = now + POTION.cooldownMs;
     r.events.push({ t: 'potion', healed });
+  } else if (input.t === 'eat') {
+    eat(r, now);
   }
+}
+
+/** What eating this food now would do: heal (when hurt and the potion cooldown is ready), or a buff
+ *  not taken yet on this run. Null = it would do nothing now. */
+function foodUse(p: RunPlayer, id: FoodId, now: number): { heal: number; buff: FoodBuff | null } | null {
+  const e = getFoodType(id).effect;
+  if (e.kind === 'heal') return p.hp < p.maxHp && now >= p.potionReadyAt ? { heal: Math.min(e.amount, p.maxHp - p.hp), buff: null } : null;
+  return p.buffs.includes(e.kind) ? null : { heal: 0, buff: e.kind };
+}
+
+/**
+ * Eats the first food in the lunch box that does something now (section 10b): healing food heals
+ * and shares the potions' cooldown; each buff kind works once per run. A food that would do
+ * nothing stays in the box.
+ */
+function eat(r: DungeonRun, now: number): void {
+  const p = r.player;
+  const k = p.food.findIndex((id) => foodUse(p, id, now) !== null);
+  const id = p.food[k];
+  if (id === undefined) return;
+  const use = foodUse(p, id, now)!;
+  p.food.splice(k, 1);
+  if (use.heal > 0) {
+    p.hp += use.heal;
+    p.potionReadyAt = now + POTION.cooldownMs;
+  }
+  if (use.buff) {
+    const e = getFoodType(id).effect;
+    p.buffs.push(use.buff);
+    if (e.kind === 'attack') {
+      p.attackMin += e.amount;
+      p.attackMax += e.amount;
+    } else if (e.kind === 'max_hp') {
+      p.maxHp += e.amount;
+      p.hp += e.amount;
+    } else if (e.kind === 'attack_cooldown') {
+      p.attackCooldownMs = Math.min(p.attackCooldownMs, e.amount);
+    }
+  }
+  r.events.push({ t: 'eat', food: id, healed: use.heal, buff: use.buff });
 }
 
 function hit(r: DungeonRun, e: Enemy, now: number, rng: Rng): void {
   const p = r.player;
   const damage = rngInt(rng, p.attackMin, p.attackMax);
   e.hp -= damage;
-  p.attackReadyAt = now + PLAYER_ATTACK_COOLDOWN_MS;
+  p.attackReadyAt = now + p.attackCooldownMs;
   p.pendingHit = false;
   r.events.push({ t: 'hit', enemyId: e.id, damage });
   if (e.hp <= 0) kill(r, e, rng);
@@ -174,8 +217,9 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
   if (level > p.level) {
     // Level up: new stats and a full heal.
     const bonus = attackBonusAt(level) - attackBonusAt(p.level);
+    // The new level's hp on top of what food added (pumpkin pie).
+    p.maxHp += maxHpAt(level) - maxHpAt(p.level);
     p.level = level;
-    p.maxHp = maxHpAt(level);
     p.hp = p.maxHp;
     p.attackMin += bonus;
     p.attackMax += bonus;
@@ -203,6 +247,10 @@ function die(r: DungeonRun): void {
   r.lost = { ...addToBag(r.lost, bagLoot(lostBag), Infinity).bag, gold: r.lost.gold + lostBag.gold };
   r.banked = { ...r.banked, gold: r.banked.gold + kept };
   r.bag = emptyRunBag();
+  // The lunch box is lost too (step 9b).
+  const food = r.player.food.map((id) => ({ item: id, qty: 1 }));
+  if (food.length > 0) r.lost = addToBag(r.lost, food, Infinity).bag;
+  r.player.food = [];
   r.player.hp = 0;
   r.status = 'dead';
   r.events.push({ t: 'died' });
@@ -280,6 +328,8 @@ function tick(r: DungeonRun, rng: Rng): void {
       c.opened = true;
       r.events.push({ t: 'chest', chestId: c.id });
       addLoot(r, rollLoot(getLootTable(c.kind === 'golden' ? 'golden_chest' : 'wooden_chest'), rng));
+      // Step 9b: sometimes a glowcap spore for the farm.
+      if (rng() < GLOWCAP_SPORE_CHANCE) addLoot(r, [{ item: 'glowcap_spore', qty: 1 }]);
     }
   }
 

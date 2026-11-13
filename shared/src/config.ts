@@ -292,6 +292,47 @@ export const RARE_DROP_CHANCE = 0.1;
 /** Of a rare drop: chance it is a crystal (else a random crypt furniture item). */
 export const RARE_DROP_CRYSTAL_CHANCE = 0.7;
 
+// ---------- Farm and cooking (section 10b, step 9b) ----------
+/** Gold cost to upgrade the farm TO this level (rooms use ROOM_UPGRADE_COST). */
+export const FARM_UPGRADE_COST = {
+  2: 200,
+  3: 600,
+} as const;
+/** The farm's ground and fence (styles.json, not in the catalog; the farm always uses them). */
+export const FARM_FLOOR_STYLE = 'grass';
+export const FARM_WALL_STYLE = 'hedge';
+/** A soil plot is a square of this size, px. */
+export const FARM_PLOT_SIZE = 32;
+/**
+ * Every plot's top-left corner, in order; level n has the first FARM_PLOTS_PER_LEVEL[n - 1]. All of
+ * them lie inside the level 1 farm, in neat rows, so an upgrade only adds plots. 48 px apart.
+ */
+export const FARM_PLOTS: readonly { x: number; y: number }[] = [
+  // Level 1: two rows of three.
+  ...[48, 96, 144].flatMap((x) => [{ x, y: 48 }, { x, y: 96 }]),
+  // Level 2: the rows get three more plots.
+  ...[192, 240, 288].flatMap((x) => [{ x, y: 48 }, { x, y: 96 }]),
+  // Level 3: a third row of eight.
+  ...[48, 96, 144, 192, 240, 288, 336, 384].map((x) => ({ x, y: 144 })),
+];
+export const FARM_PLOTS_PER_LEVEL = [6, 12, 20] as const;
+/** The cooking pot: a fixed spot in the farm (anchor = bottom middle of its footprint), w x d px. */
+export const COOKING_POT = { x: 464, y: 120, w: 32, d: 24 } as const;
+/** One harvest gives this many crops (random, both ends included). */
+export const HARVEST_MIN = 1;
+export const HARVEST_MAX = 2;
+/** The ripe marker above a plot bobs this many px every this many ms (client). */
+export const RIPE_MARKER_BOB_PX = 2;
+export const RIPE_MARKER_BOB_MS = 400;
+/** Seeds are bought in packs of 1 or this many (catalog Seeds tab). */
+export const SEED_PACK = 5;
+/** The lunch box: at most this many food items go into a run (next to the potions). */
+export const LUNCH_BOX_MAX = 3;
+/** The mine (section 10c, step 9c) opens at this player level; until then its travel card is locked. */
+export const MINE_UNLOCK_LEVEL = 3;
+/** Chance that an opened dungeon chest also holds one glowcap spore. */
+export const GLOWCAP_SPORE_CHANCE = 0.05;
+
 // ---------- XP and levels ----------
 // The level thresholds (levels 1 to 8) live in shared/data/levels.json (levels.ts).
 export const HP_PER_LEVEL = 3;
@@ -365,6 +406,7 @@ export const LOCAL_PLAYER_NAME = 'You';
 /** Room ids of a new local player's two rooms. */
 export const START_HOTEL_ROOM_ID = 1;
 export const START_SHOP_ROOM_ID = 2;
+export const START_FARM_ROOM_ID = 3;
 /** The starting avatar look (palette indices; styles are clothing.json ids). */
 export const START_LOOK = { skin: 30, hair: 5, hairStyle: 'short', top: 'long_sleeve', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 } as const;
 /** Colour choices per look slot (palette indices), for character creation and the Avatar panel. */
@@ -386,7 +428,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -416,9 +458,12 @@ export const HINTS = [
   'Place it in your room.',
   'Put an item on the table in your shop and set a price.',
   'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
+  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds) and plant your first turnip.',
 ] as const;
 /** The index of the dungeon hint in HINTS: it only shows while the shop has nothing for sale. */
 export const DUNGEON_HINT = 3;
+/** The index of the farm hint (step 9b): done by planting anything. */
+export const FARM_HINT = 4;
 
 // ---------- New game intro (step 7b) ----------
 /** The counter and stall_table pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */

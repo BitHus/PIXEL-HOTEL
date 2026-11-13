@@ -57,9 +57,43 @@ const FLOORS: Record<string, Paint> = {
     }
     rect(ctx, 0, 0, n, 1, shade(base, 1.08));
   },
+  // The farm's ground (step 9b): soft green with tufts and a few flowers, seamless.
+  grass: (ctx, n) => {
+    const base = PALETTE[13];
+    rect(ctx, 0, 0, n, n, base);
+    const tufts: [number, number][] = [[5, 7], [22, 3], [41, 12], [57, 25], [12, 30], [33, 37], [50, 49], [8, 52], [27, 58], [44, 61]];
+    for (const [x, y] of tufts) {
+      rect(ctx, x, y, 1, 2, shade(base, 1.25));
+      rect(ctx, x + 2, y - 1, 1, 3, shade(base, 1.25));
+      rect(ctx, x + 1, y + 2, 3, 1, shade(base, 0.8));
+    }
+    for (const [x, y] of [[17, 18], [53, 6], [38, 50]] as const) rect(ctx, x, y, 1, 1, PALETTE[11]);
+    rect(ctx, 30, 22, 2, 1, shade(base, 0.85));
+  },
 };
 
 const WALLS: Record<string, Paint> = {
+  // The farm's back band (step 9b): a hedge with a wooden fence in front of it.
+  hedge: (ctx, n) => {
+    const leaf = PALETTE[14];
+    rect(ctx, 0, 0, n, WALL_BAND, shade(PALETTE[15], 1));
+    rect(ctx, 0, 6, n, WALL_BAND - 6, leaf);
+    for (let x = 0; x < n; x += 8) {
+      rect(ctx, x + 1, 4 + ((x / 8) % 2) * 2, 6, 3, leaf);
+      rect(ctx, x + 2, 8 + ((x / 8) % 3) * 9, 3, 2, shade(leaf, 1.3));
+      rect(ctx, x + 5, 14 + ((x / 8) % 2) * 11, 2, 2, shade(leaf, 0.75));
+    }
+    // The fence: two rails and posts every 32 px.
+    const wood = PALETTE[4];
+    rect(ctx, 0, WALL_BAND - 26, n, 3, wood);
+    rect(ctx, 0, WALL_BAND - 17, n, 3, wood);
+    rect(ctx, 0, WALL_BAND - 23, n, 1, shade(wood, 0.65));
+    rect(ctx, 0, WALL_BAND - 14, n, 1, shade(wood, 0.65));
+    for (let x = 4; x < n; x += 32) {
+      rect(ctx, x, WALL_BAND - 32, 4, 26, shade(wood, 1.05));
+      rect(ctx, x + 3, WALL_BAND - 32, 1, 26, shade(wood, 0.65));
+    }
+  },
   plaster: (ctx, n) => {
     const base = shade(PALETTE[2], 0.92);
     rect(ctx, 0, 0, n, WALL_BAND, base);
