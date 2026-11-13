@@ -90,8 +90,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   The hotel room starts completely empty. The shop starts with a counter and one stall_table
   at fixed positions from config, nothing else.
 - The counter (step 7): every shop has exactly one counter with a cash register (till) on top.
-  It is placed at the start (against the back wall, left of center) and can be moved and
-  rotated in build mode, but never picked up or sold (FurnitureType.noPickup).
+  It is placed at the start (near the back wall with room behind it, left of center) and can be
+  moved and rotated in build mode, but never picked up or sold (FurnitureType.noPickup). The
+  spot behind it (where the player serves) must stay reachable from the door: a placement that
+  blocks it is refused (FurnitureType.servedFromBehind, canPlace).
 - Room upgrade (costs gold): level 2 and level 3 use the sizes above. The room grows to the
   right and down. Every item keeps its position. The door moves to the new bottom center,
   and any item standing in the new door zone goes back to the inventory. Costs are in
@@ -190,9 +192,14 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   with stock, decides there (the reaction bubble below), and if buying takes the item (it
   leaves the slot at once), walks to the customer side of the counter, waits in a queue line
   if someone is already paying (queue spots in a row behind the first, each on a different
-  free nav cell), pays (a coin pop and a floating "+12 gold" above the till; a coin sound
-  later; gold goes up only now), then leaves through the door. A customer who refuses just
-  leaves. Offline catch-up skips the walking and only does the maths.
+  free nav cell), and waits at the till until the player serves (owner's change after step 7):
+  a coin marker shows above the till; the player taps the counter in play mode and, like
+  sitting, the avatar walks behind the counter and faces the customers. While the player stands
+  there, the waiting customers pay one by one (coins hop out of the till for CUSTOMER_PAY_MS, then
+  a floating "+12 gold"; a coin sound later; gold goes up only now), then leave through the door.
+  While QUEUE_MAX (5) customers carry something to the till, no new customers come in. A
+  customer who refuses just leaves. Offline catch-up (and a long gap) skips the walking and the
+  serving and only does the maths.
 - Price feedback (this is how the player learns pricing): after each customer decision a
   bubble shows a reaction. Bought at price <= 0.7 * baseValue * tolerance: big smile (too
   cheap). Bought at a higher price: smile (fair). Refused at price <= 1.15 * baseValue *
@@ -631,7 +638,12 @@ Conventions:
     both through applyChange (reason 'shelf'), and taking back reverses it. The ledger's
     materials always add up to the bag. A shelf that leaves the shop (picked up, door zone on an
     upgrade) gives its goods back (returnOrphanLoot, run on every item change).
-  - The customer timer (shop.nextCustomerInMs) only counts down while the shop has stock.
+  - The customer timer (shop.nextCustomerInMs) only counts down while the shop has stock. A
+    customer on the paying spot waits (phase 'pay') until ShopWorld.cashier is true; LocalGameAPI
+    sets it from isServing(): the own avatar reached the spot behind the counter (api.serve,
+    behindPoint = CASHIER_BEHIND_PX behind the back edge) and the counter has not moved since. Any
+    new walk or sit ends serving. The 'paying' event starts the till animation (shopFeedback.ts
+    createTillCoins, which also draws the coin marker while someone waits and nobody serves).
     Customers have negative ids. Gold comes in only when a customer pays at the till (ledger
     reason 'sale'). The queue is numbered 0, 1, 2 (0 = paying spot) every step; spots come from
     queueSpots (each a different free cell reachable from the door).
@@ -644,6 +656,8 @@ Conventions:
   - The shop is simulated wherever the player is; customers are only drawn in the shop room. A
     sale while in the hotel shows a toast.
   - Play mode: a tap on a table, shelf or case in the shop opens the shelf panel (no walking).
+    A tap on the counter walks behind it (it shakes with a toast when there is no way). The shelf
+    panel shows one card per slot: icon, name, sale history, Take, and a price row (− coin +).
     Build mode: as before (item menu); the counter's menu has no Pick up.
 - CATALOG, STYLES, ROOMS (step 7): the Catalog button (book, key C) opens tabs Home, Shop and
   Decor; prices are baseValue * 3. Buying puts furniture in the bag, or unlocks a style
@@ -655,8 +669,9 @@ Conventions:
 - HINTS (step 7): config HINTS, GameState.hintsDone counts the finished ones, shown one at a
   time in the hint box under the room switcher. 1 is done by the first buy (a style as the first
   buy also skips 2), 2 by placing an inventory item, 3 by putting an item on a slot.
-- SAVE_VERSION is 3: MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and
-  stall_table (addShopStartItems).
+- SAVE_VERSION is 4: MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and
+  stall_table (addShopStartItems); MIGRATIONS[3] moves a counter still on the old spot against the
+  back wall (176, 40) to the new start spot (176, 88), so the player fits behind it.
 
 Notes:
 - cameraControl reports long presses as onPoint(start, 'longpress', target at press start).

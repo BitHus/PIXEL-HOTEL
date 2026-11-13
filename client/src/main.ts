@@ -3,6 +3,7 @@ import {
   AVATAR_H,
   INTRO_DEVICE_PX_PER_ART_PX,
   REACTION_BUBBLE_MS,
+  tillPoint,
   PALETTE,
   buildNavGrid,
   cameraAt,
@@ -69,7 +70,7 @@ import { CustomerViews } from './render/customerViews.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
 import { createCatalogPanel } from './ui/catalogPanel.ts';
 import { createRoomPanel } from './ui/roomPanel.ts';
-import { createHintBox, createSaleFloats, showAwaySummary } from './ui/shopFeedback.ts';
+import { createHintBox, createSaleFloats, createTillCoins, showAwaySummary } from './ui/shopFeedback.ts';
 import { pixelIcon } from './ui/pixelIcons.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
@@ -125,6 +126,7 @@ async function start(): Promise<void> {
     if (first && Math.hypot(first.x - avatar.x, first.y - avatar.y) > 8) avatar = { ...avatar, x: first.x, y: first.y };
     path = p.slice(1);
     seating.clear();
+    serving = null;
     avatar = { ...avatar, state: path.length > 0 ? 'walk' : 'idle' };
   };
   /** Walks to a world point (the nearest free spot if it is blocked). False if unreachable. */
@@ -142,6 +144,17 @@ async function start(): Promise<void> {
     follow(r.path);
     goal = null;
     seating.goal = { uid, seat: r.seat, tap };
+    return true;
+  };
+  /** Walking behind the counter ('walking') or standing there taking payments ('there'), with the facing. */
+  let serving: { state: 'walking' | 'there'; facing: Avatar['facing'] } | null = null;
+  /** Walks behind the shop's counter (like sitting: tap it in play mode). False if there is no way. */
+  const serveAt = async (uid: number): Promise<boolean> => {
+    const r = await api.serve(uid);
+    if (!r) return false;
+    follow(r.path);
+    goal = null;
+    serving = { state: 'walking', facing: r.facing };
     return true;
   };
   const stop = (): void => {
@@ -198,6 +211,7 @@ async function start(): Promise<void> {
   const info = createInfoPanel(ui, (kind) => void openRoomKind(kind));
   const hint = createHintBox(info.column);
   const floats = createSaleFloats(ui);
+  const tillCoins = createTillCoins(ui);
   // Play mode (default: taps walk and sit) or build mode (taps open item menus, never walk).
   const build = createBuildMode(ui, {
     onChange: (on) => {
@@ -262,7 +276,7 @@ async function start(): Promise<void> {
     items = next;
     itemViews.sync(items, placer.hiddenUids());
     roomChanged();
-    void refreshInventory().then(refreshShop);
+    void refreshInventory().then(refreshShop).then(refreshHint);
     return true;
   };
   const placer: Placer = new Placer(
@@ -382,10 +396,16 @@ async function start(): Promise<void> {
     const away = await api.takeAwaySummary();
     if (away) showAwaySummary(ui, away);
   };
+  /** The latest customers (to know when someone waits at the till). */
+  let shopCustomers = shop.customers;
   api.onShop((e: ShopEvent) => {
     const here = room.id === shop.roomId;
     switch (e.t) {
+      case 'paying':
+        if (here) tillCoins.add(e.till);
+        break;
       case 'customers':
+        shopCustomers = e.customers;
         customers.sync(here ? e.customers : [], room.id);
         break;
       case 'reaction':
@@ -570,6 +590,8 @@ async function start(): Promise<void> {
     floats.clear();
     shop = await api.getShop();
     customers.clear();
+    shopCustomers = shop.customers;
+    serving = null;
     customers.sync(room.id === shop.roomId ? shop.customers : [], room.id);
     await refreshShop();
     await refreshInventory();
@@ -618,6 +640,15 @@ async function start(): Promise<void> {
       if (kind === 'longpress') return;
       if (panels.open !== null) {
         panels.close();
+        return;
+      }
+      // The counter: walk behind it (like sitting); waiting customers pay while you stand there.
+      if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
+        void serveAt(hit.uid).then((ok) => {
+          if (ok) return;
+          itemViews.shake(hit.uid);
+          toast('There is no way to get behind the counter.');
+        });
         return;
       }
       // A table, shelf or case in the shop: its panel (goods, prices, sale history).
@@ -677,6 +708,15 @@ async function start(): Promise<void> {
     for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, shown));
     bubbles.update(ticker.deltaMS, heads);
     floats.update(ticker.deltaMS, (p) => worldToScreen(p, shown));
+    // Behind the counter: face the customers.
+    if (serving?.state === 'walking' && path.length === 0) {
+      serving = { ...serving, state: 'there' };
+      avatar = { ...avatar, facing: serving.facing };
+    }
+    // Someone waits at the till and nobody serves: a coin marker above the till.
+    const counterItem = room.id === shop.roomId ? items.find((i) => i.roomId === room.id && getFurnitureType(i.typeId).servedFromBehind) : undefined;
+    const waiting = counterItem !== undefined && serving?.state !== 'there' && shopCustomers.some((c) => c.phase === 'pay');
+    tillCoins.update(ticker.deltaMS, (p) => worldToScreen(p, shown), waiting && counterItem ? tillPoint(counterItem) : null);
   });
 
   await openRoom(room.id);

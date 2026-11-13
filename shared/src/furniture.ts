@@ -10,7 +10,7 @@
 // - Functions that need other items' types take a lookup (default: shared/data/furniture.json).
 
 import furnitureData from '../data/furniture.json';
-import { DOOR_ZONE_H, SNAP } from './config.ts';
+import { APPROACH_REACH_PX, CASHIER_BEHIND_PX, DOOR_ZONE_H, SNAP } from './config.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
 import { doorZoneRect, rectInsideFloor, rectsOverlap, rectsTouch, type Room } from './room.ts';
 import type { Facing, FurnitureItem, FurnitureType, Point, Rect } from './types.ts';
@@ -128,7 +128,33 @@ export function canPlace(
   if (!type.blocks) return true;
   const blockers = itemBlockers(items, room.id, types);
   if (blockers.some((b) => rectsOverlap(fp, b))) return false;
-  return doorReachesMiddle(room, [...blockers, fp]);
+  if (!doorReachesMiddle(room, [...blockers, fp])) return false;
+  // The counter: the shopkeeper must be able to get behind it.
+  return !type.servedFromBehind || behindReachable(room, [...blockers, fp], behindPoint({ x, y, facing }, type));
+}
+
+/**
+ * Where the shopkeeper stands to serve at the counter: CASHIER_BEHIND_PX behind its back edge
+ * (the side opposite to where customers stand), in the middle.
+ */
+export function behindPoint(item: Pose, type: FurnitureType): Point {
+  const turns = TURN_ORDER.indexOf(item.facing);
+  const c = footprintCenter(item, type);
+  const off = rotateQuarter({ x: 0, y: -(type.d / 2 + CASHIER_BEHIND_PX) }, turns);
+  return { x: c.x + off.x, y: c.y + off.y };
+}
+
+/** True if a free nav cell close to p (within APPROACH_REACH_PX) can be reached from the door. */
+export function behindReachable(room: Room, blockers: readonly Rect[], p: Point): boolean {
+  const grid = buildNavGrid(room, blockers);
+  const door = cellAt(grid, doorPoint(room));
+  if (!isCellFree(grid, door.c, door.r)) return false;
+  const reach = reachableCells(grid, door.r * grid.cols + door.c);
+  const i = nearestFreeCell(grid, p, (k) => reach[k] === true);
+  if (i === null) return false;
+  const col = i % grid.cols;
+  const cc = { x: (col + 0.5) * grid.cell, y: ((i - col) / grid.cols + 0.5) * grid.cell };
+  return Math.hypot(cc.x - p.x, cc.y - p.y) <= APPROACH_REACH_PX;
 }
 
 export interface SurfaceSpot {

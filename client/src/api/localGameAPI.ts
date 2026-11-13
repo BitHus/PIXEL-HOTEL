@@ -40,6 +40,10 @@ import {
   type StockPick,
   type StyleKind,
   type Rng,
+  type ServeResult,
+  type Facing,
+  APPROACH_REACH_PX,
+  behindPoint,
   SAVE_BACKUP_KEY,
   SAVE_VERSION,
   applyChange,
@@ -128,6 +132,10 @@ interface WalkState {
   at: number;
   /** Sits (or lies) on this seat when the path ends. */
   sitOn: { uid: number; seat: SeatSpot } | null;
+  /** Walking to the spot behind the counter (step 7): the counter's uid and where it stood. */
+  serveAt?: { uid: number; x: number; y: number; facing: Facing } | null;
+  /** Standing behind the counter, taking payments: the counter's uid and where it stood. */
+  serving?: { uid: number; x: number; y: number; facing: Facing } | null;
   /** The item and seat index the avatar is sitting or lying on. */
   seated: { uid: number; index: number } | null;
 }
@@ -250,6 +258,33 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const { path, seat } = plan;
     this.walkState = { avatar: { ...avatar, state: 'walk' }, path: path.slice(1), at: this.now(), sitOn: { uid, seat }, seated: null };
     return { path, seat };
+  }
+
+  async serve(uid: number): Promise<ServeResult | null> {
+    const counter = this.roomItem(uid);
+    if (!counter) return null;
+    const type = getFurnitureType(counter.typeId);
+    if (!type.servedFromBehind) return null;
+    const avatar = this.avatarNow();
+    const spot = behindPoint(counter, type);
+    const path = findPath(this.grid, avatar, spot);
+    const end = path?.[path.length - 1];
+    if (!path || !end || Math.hypot(end.x - spot.x, end.y - spot.y) > APPROACH_REACH_PX) return null;
+    const facing = counter.facing;
+    const at = { uid, x: counter.x, y: counter.y, facing };
+    this.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seated: null, serveAt: at };
+    return { path, facing };
+  }
+
+  /** True while the own avatar stands behind the shop's counter (customers pay then). */
+  isServing(): boolean {
+    if (this.state.currentRoomId !== this.state.shop.roomId) return false;
+    this.avatarNow();
+    const sv = this.walkState.serving;
+    if (!sv) return false;
+    const c = this.roomItem(sv.uid);
+    // The counter was moved or turned: no longer behind it.
+    return !!c && c.x === sv.x && c.y === sv.y && c.facing === sv.facing;
   }
 
   async getItems(): Promise<FurnitureItem[]> {
@@ -544,7 +579,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const room = state.rooms.find((r) => r.id === state.shop.roomId);
     if (!room) throw new Error('shop room missing');
     this.shopGrid ??= buildNavGrid(room, itemBlockers(state.items, room.id));
-    return { room, items: state.items, grid: this.shopGrid };
+    return { room, items: state.items, grid: this.shopGrid, cashier: this.isServing() };
   }
 
   /** Customers pay at once and the gap is done with maths (catchUpShop); keeps the summary. */
@@ -653,6 +688,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (r.path.length === 0 && w.sitOn) {
       const { x, y, facing, pose, index } = w.sitOn.seat;
       next = { ...next, avatar: { ...r.avatar, x, y, facing, state: pose }, sitOn: null, seated: { uid: w.sitOn.uid, index } };
+    }
+    if (r.path.length === 0 && w.serveAt) {
+      // Behind the counter: face it and take payments.
+      next = { ...next, avatar: { ...next.avatar, facing: w.serveAt.facing }, serveAt: null, serving: w.serveAt };
     }
     this.walkState = next;
     return next.avatar;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { SHOP_TICK_MS } from './config.ts';
+import { QUEUE_MAX, SHOP_TICK_MS } from './config.ts';
 import { findCounter, queueSpots, settleCustomers, stepShop, type ShopEvent, type ShopWorld } from './customers.ts';
-import { itemBlockers } from './furniture.ts';
+import { behindPoint, behindReachable, getFurnitureType, itemBlockers } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { buildNavGrid, cellAt, isCellFree } from './nav.ts';
 import { createNewPlayer } from './newPlayer.ts';
@@ -10,9 +10,9 @@ import { putOnShelf } from './shop.ts';
 import { applyChange } from './ledger.ts';
 import { ledgerGold } from './testState.ts';
 
-function world(s: GameState): ShopWorld {
+function world(s: GameState, cashier = true): ShopWorld {
   const room = s.rooms.find((r) => r.id === s.shop.roomId)!;
-  return { room, items: s.items, grid: buildNavGrid(room, itemBlockers(s.items, room.id)) };
+  return { room, items: s.items, grid: buildNavGrid(room, itemBlockers(s.items, room.id)), cashier };
 }
 
 /** A new player with n wood (n <= 3) on the stall_table at price 1 (everyone who wants materials buys). */
@@ -121,4 +121,51 @@ describe('walking customers', () => {
     expect(r.sales.length).toBeGreaterThan(0);
     expect(r.state.player.wallet.gold).toBe(gold + r.sales.reduce((a, x) => a + x.price, 0));
   });
+
+  it('a customer at the till only pays while the player stands behind the counter', () => {
+    let s = stocked(3);
+    const rng = seededRng(5);
+    let t = 0;
+    const step = (cashier: boolean): ShopEvent[] => {
+      t += SHOP_TICK_MS;
+      const r = stepShop(s, world(s, cashier), SHOP_TICK_MS, rng, t);
+      s = r.state;
+      return r.events;
+    };
+    for (let k = 0; k < 2000 && !s.shop.customers.some((c) => c.phase === 'pay'); k++) step(false);
+    expect(s.shop.customers.some((c) => c.phase === 'pay')).toBe(true);
+    const gold = s.player.wallet.gold;
+    for (let k = 0; k < 600; k++) expect(step(false).some((e) => e.t === 'sale')).toBe(false);
+    expect(s.player.wallet.gold).toBe(gold);
+    const events: ShopEvent[] = [];
+    for (let k = 0; k < 20; k++) events.push(...step(true));
+    expect(events.map((e) => e.t)).toContain('paying');
+    expect(events.map((e) => e.t)).toContain('sale');
+    expect(s.player.wallet.gold).toBeGreaterThan(gold);
+  });
+
+  it('no new customers come in while the line at the till is full', () => {
+    let s = stocked(3, 30);
+    const rng = seededRng(2);
+    const shelf = s.items.find((i) => i.typeId === 'stall_table')!;
+    for (let t = 0; t < 600_000; t += SHOP_TICK_MS) {
+      if (s.shop.slots.length < 3) {
+        const free = [0, 1, 2].find((index) => !s.shop.slots.some((x) => x.index === index))!;
+        s = putOnShelf(s, { shelfUid: shelf.uid, index: free }, { kind: 'material', id: 'wood' }, 1, t) ?? s;
+      }
+      s = stepShop(s, world(s, false), SHOP_TICK_MS, rng, t).state;
+      expect(s.shop.customers.filter((c) => c.carrying !== null).length).toBeLessThanOrEqual(QUEUE_MAX);
+    }
+    expect(s.shop.customers.filter((c) => c.carrying !== null).length).toBe(QUEUE_MAX);
+  });
+
+  it('the shop starts with a reachable spot behind the counter', () => {
+    const s = createNewPlayer(undefined, 0);
+    const w = world(s);
+    const counter = findCounter(s.items, s.shop.roomId)!;
+    const spot = behindPoint(counter, getFurnitureType('counter'));
+    expect(spot.y).toBeLessThan(counter.y - 40);
+    expect(behindReachable(w.room, itemBlockers(s.items, w.room.id), spot)).toBe(true);
+  });
 });
+

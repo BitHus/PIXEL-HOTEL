@@ -889,7 +889,8 @@
           "color": 10
         }
       ]
-    }
+    },
+    "servedFromBehind": true
   },
   {
     "id": "stall_table",
