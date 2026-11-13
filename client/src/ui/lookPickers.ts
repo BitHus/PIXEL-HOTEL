@@ -86,7 +86,7 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
       next.setAttribute('aria-label', `Next ${r.label.toLowerCase()}`);
       const stepper = el('div', 'look-stepper');
       // The name plate: "Hair 2", then the style's name.
-      const plate = el('span', 'look-value plate');
+      const plate = el('span', 'look-value plate light');
       plate.append(el('span', 'look-kind', `${r.label} ${at + 1}`), el('span', '', options[at]?.name ?? ''));
       stepper.append(prev, plate, next);
       out.appendChild(stepper);

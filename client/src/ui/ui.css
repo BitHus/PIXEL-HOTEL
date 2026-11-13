@@ -73,6 +73,7 @@
   --corner-tr: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5' shape-rendering='crispEdges'%3E%3Cg fill='%23c28569'%3E%3Crect width='5' height='1'/%3E%3Crect x='2' y='1' width='3' height='1'/%3E%3Crect x='3' y='2' width='2' height='1'/%3E%3Crect x='4' y='3' width='1' height='2'/%3E%3C/g%3E%3C/svg%3E");
   --corner-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5' shape-rendering='crispEdges'%3E%3Cg fill='%23c28569'%3E%3Crect y='4' width='5' height='1'/%3E%3Crect y='3' width='3' height='1'/%3E%3Crect y='2' width='2' height='1'/%3E%3Crect width='1' height='2'/%3E%3C/g%3E%3C/svg%3E");
   --corner-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5' shape-rendering='crispEdges'%3E%3Cg fill='%23c28569'%3E%3Crect y='4' width='5' height='1'/%3E%3Crect x='2' y='3' width='3' height='1'/%3E%3Crect x='3' y='2' width='2' height='1'/%3E%3Crect x='4' width='1' height='2'/%3E%3C/g%3E%3C/svg%3E");
+  --gem: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='7' shape-rendering='crispEdges'%3E%3Cg fill='%23e4a672'%3E%3Crect x='3' y='0' width='1' height='7'/%3E%3Crect x='2' y='1' width='3' height='5'/%3E%3Crect x='1' y='2' width='5' height='3'/%3E%3Crect x='0' y='3' width='7' height='1'/%3E%3C/g%3E%3Crect x='3' y='2' width='1' height='3' fill='%23feae34'/%3E%3Crect x='2' y='3' width='3' height='1' fill='%23feae34'/%3E%3C/svg%3E");
   --diamonds: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='7' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='29' height='7' fill='%23ead4aa'/%3E%3Cg fill='%23733e39'%3E%3Crect x='14' y='0' width='1' height='7'/%3E%3Crect x='13' y='1' width='3' height='5'/%3E%3Crect x='12' y='2' width='5' height='3'/%3E%3Crect x='11' y='3' width='7' height='1'/%3E%3Crect x='5' y='2' width='1' height='3'/%3E%3Crect x='4' y='3' width='3' height='1'/%3E%3Crect x='23' y='2' width='1' height='3'/%3E%3Crect x='22' y='3' width='3' height='1'/%3E%3C/g%3E%3Crect x='14' y='2' width='1' height='3' fill='%23feae34'/%3E%3Crect x='13' y='3' width='3' height='1' fill='%23feae34'/%3E%3C/svg%3E");
 }
 
@@ -244,11 +245,10 @@
   width: var(--slot);
   height: var(--slot);
   box-sizing: border-box;
-  background: var(--slot-bg);
+  background: var(--cream);
   border: 1px solid var(--wood);
   box-shadow:
-    inset 1px 1px 0 var(--wood-mid),
-    inset -1px -1px 0 var(--cream);
+    inset -1px -1px 0 var(--wood-hi);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -261,6 +261,25 @@
 
 .slot.empty {
   cursor: default;
+}
+
+/* A tray of slots: darker than the panel, so the light slots stand out. */
+.tray {
+  background: var(--wood-mid);
+  border: 1px solid var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    inset -1px -1px 0 var(--wood-hi);
+  padding: 3px;
+}
+
+/* A light label plate (picker values); dark plates are for names and titles. */
+.plate.light {
+  background: var(--cream);
+  color: var(--text);
+  box-shadow:
+    inset -1px -1px 0 var(--wood-hi),
+    0 0 0 1px var(--wood);
 }
 
 .slot.selected {
@@ -466,7 +485,7 @@
   display: flex;
   gap: var(--px);
   padding: 3px;
-  background: var(--wood-hi);
+  background: var(--wood-mid);
 }
 
 .hotbar.choosing .slot {
@@ -610,7 +629,7 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  background: var(--wood-mid);
+  background: var(--wood-light);
   box-shadow: none;
 }
 
@@ -684,11 +703,32 @@
   display: grid;
   grid-template-columns: repeat(var(--bag-cols), var(--slot));
   gap: var(--px);
-  align-self: flex-start;
+  align-self: stretch;
+  justify-content: center;
+}
+
+/* The bag's hotbar row: a dark wooden bar with a small diamond at each end. */
+.bag-hotbar-row {
+  align-self: stretch;
+  justify-content: center;
+  background:
+    var(--gem) left 4px center no-repeat,
+    var(--gem) right 4px center no-repeat,
+    var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    inset -1px -1px 0 var(--outline);
+  border-color: var(--outline);
+  padding: 4px 14px;
+}
+
+/* Always 6 slots (HOTBAR_SLOTS), centered in the bar; after the phone rule on purpose. */
+.panel.bag .bag-hotbar-row {
+  grid-template-columns: repeat(6, var(--slot));
 }
 
 .bag-info {
-  max-width: calc(var(--bag-cols) * (var(--slot) + 2px));
+  max-width: calc(var(--bag-cols) * (var(--slot) + 2px) + 28px);
   min-height: 2.4em;
 }
 
@@ -707,7 +747,7 @@
   }
 
   .bag-info {
-    max-width: calc(var(--bag-cols-phone) * (var(--slot) + 2px));
+    max-width: calc(var(--bag-cols-phone) * (var(--slot) + 2px) + 28px);
     min-height: 0;
   }
 }
@@ -1955,7 +1995,7 @@
   align-items: center;
   gap: 6px;
   padding: 3px;
-  background: var(--wood-hi);
+  background: var(--wood-mid);
   max-width: calc(100vw - 2 * var(--edge));
   box-sizing: border-box;
 }
@@ -2386,7 +2426,7 @@
 .look-kind {
   font-size: 12px;
   font-weight: 400;
-  color: var(--wood-hi);
+  color: var(--wood);
 }
 
 .look-stepper .btn.small {
