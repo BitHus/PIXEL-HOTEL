@@ -39,8 +39,12 @@ async function start(): Promise<void> {
     background: PALETTE[25],
     antialias: false,
     roundPixels: true,
-    resolution: 1,
+    // Render at the full device pixel ratio (CSS size stays the window; app.screen is CSS px).
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
   });
+  /** Real screen px per CSS px. Zoom settles where zoom * dpr is whole. */
+  const dpr = (): number => app.renderer.resolution;
   host.appendChild(app.canvas);
 
   // Step 2: a level 1 hotel room, drawn on its own. Later steps load it through GameAPI.
@@ -96,16 +100,16 @@ async function start(): Promise<void> {
 
   /** Camera state (unsnapped, so zooming never drifts). */
   let camera: Camera = { x: 0, y: 0, zoom: 1 };
-  /** What is on screen: the camera snapped to whole screen px. */
+  /** What is on screen: the camera snapped to whole device px. */
   let shown: Camera = camera;
   /** World point marked by the cross (under the mouse, or the last tap). */
   let marked: Point | null = null;
 
   const redraw = (): void => {
-    shown = snapCamera(camera);
+    shown = snapCamera(camera, dpr());
     view.world.scale.set(shown.zoom);
     view.world.position.set(-shown.x * shown.zoom, -shown.y * shown.zoom);
-    let text = `zoom ${shown.zoom.toFixed(2)}x`;
+    let text = `zoom ${shown.zoom.toFixed(2)}x  dpr ${dpr()}`;
     if (marked) {
       const s = worldToScreen(marked, shown);
       cross.position.set(Math.floor(s.x), Math.floor(s.y));
@@ -117,7 +121,7 @@ async function start(): Promise<void> {
 
   const setCamera = (cam: Camera, snap = false): void => {
     camera = clampCamera(cam, app.screen.width, app.screen.height, bounds);
-    if (snap) camera = snapCamera(camera);
+    if (snap) camera = snapCamera(camera, dpr());
     redraw();
   };
 
@@ -133,6 +137,7 @@ async function start(): Promise<void> {
     getCamera: () => camera,
     setCamera,
     getOverviewZoom: () => fitZoom(app.screen.width, app.screen.height, bounds),
+    getDevicePixelRatio: dpr,
     onPoint: (screen, kind) => {
       marked = screenToWorld(screen, shown);
       if (kind === 'tap') walkTo(marked);
@@ -143,6 +148,11 @@ async function start(): Promise<void> {
   });
 
   app.renderer.on('resize', fit);
+  // Browser zoom or moving to another monitor changes the device pixel ratio: render at the new one.
+  window.addEventListener('resize', () => {
+    const next = window.devicePixelRatio || 1;
+    if (next !== app.renderer.resolution) app.renderer.resize(window.innerWidth, window.innerHeight, next);
+  });
   let clockMs = 0;
   app.ticker.add((ticker) => {
     control.update(ticker.deltaMS);

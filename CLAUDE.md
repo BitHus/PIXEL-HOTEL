@@ -47,8 +47,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   position is in world pixels. Zoom is free: any number from 0.5 to 4 (ZOOM_MIN, ZOOM_MAX;
   also 1.005), set by pinch or the mouse wheel, like in most games. Zooming stays smooth
   while the gesture is active. When the gesture ends, the zoom eases over 0.15 s
-  (ZOOM_SETTLE_MS) to the nearest integer zoom, or to the overview zoom if that is closer,
-  and the camera snaps to whole pixels. The default (overview) zoom is the
+  (ZOOM_SETTLE_MS) to the nearest zoom where zoom * window.devicePixelRatio is a whole
+  number (so one art pixel always covers a whole number of real screen pixels: whole zooms
+  on a normal monitor, steps of 1/3 on a phone with ratio 3), or to the overview zoom if
+  that is closer, and the camera snaps to whole device pixels. The canvas renders at the
+  full devicePixelRatio. The default (overview) zoom is the
   largest one where the whole room fits on screen, and at least 0.5. If the room does not
   fit at zoom 0.5, the camera follows the avatar and the player can pan.
 - The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
@@ -349,7 +352,7 @@ Layout:
   zoomAt, panBy, clampCamera, snapCamera, settleZoom, easeZoom), api.ts (GameAPI interface), palette.ts (Endesga
   32 hex list, the only place it lives), index.ts (re-exports).
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
-- client/src/main.ts: Pixi app (resolution 1, nearest scaling), draws a level 1 hotel room,
+- client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling), draws a level 1 hotel room,
   keeps the camera, shows the debug cross and label. Refits the camera on window resize.
   Holds one local avatar (starts in the door zone): a tap calls findPath, the ticker calls
   walkAvatar each frame and updates the sprite and its depth key (feet y, x, avatar id).
@@ -376,7 +379,10 @@ Conventions:
 - The camera state is unsnapped and clamped with clampCamera (screen center stays inside
   roomBoundsRect). Drawing and hit testing use snapCamera(camera) (world offset on whole
   screen px). Keeping the state unsnapped stops zoom drift.
-- Screen coordinates are CSS px (canvas resolution 1).
+- Screen coordinates are CSS px. The canvas renders at the full devicePixelRatio
+  (resolution = dpr, autoDensity), so app.screen stays in CSS px. main.ts re-sizes the
+  renderer when the ratio changes (browser zoom, other monitor). snapCamera(cam, dpr) puts
+  the world offset on whole device px.
 - INPUT RULE (touch and mouse):
   - A press is a TAP only if it moved less than TAP_MAX_MOVE_PX (8 screen px) and was held
     less than TAP_MAX_MS (300 ms). A tap / left click means "walk there". Anything else is a
@@ -388,8 +394,9 @@ Conventions:
     runs every frame).
   - ZOOM SETTLE: a gesture ends when the second finger lifts (pinch) or after
     WHEEL_GESTURE_END_MS (200 ms) without a wheel event. Then the zoom eases (ease-out,
-    ZOOM_SETTLE_MS) to settleZoom(zoom, overview) around the gesture's focus point, and
-    the camera state is snapped with snapCamera (setCamera(cam, snap = true)). A new pinch
+    ZOOM_SETTLE_MS) to settleZoom(zoom, overview, dpr) around the gesture's focus point,
+    and the camera state is snapped with snapCamera (setCamera(cam, snap = true)). The
+    overview zoom stays a settle target even when zoom * dpr is not whole there. A new pinch
     or wheel cancels a running settle; a one-finger pan runs alongside it.
   - Blockers mode (debug, step 3): while it is on, a one-finger / left drag draws a blocking
     rectangle instead of panning (getDragMode() returns 'draw', drags go to onDraw). Two

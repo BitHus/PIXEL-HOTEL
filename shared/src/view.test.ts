@@ -94,6 +94,14 @@ describe('camera helpers', () => {
     }
   });
 
+  it('snapCamera with a devicePixelRatio puts the offset on whole device px', () => {
+    for (const zoom of zooms) {
+      const cam = snapCamera({ x: 12.3456, y: -7.891, zoom }, 3);
+      expect(cam.x * zoom * 3).toBeCloseTo(Math.round(cam.x * zoom * 3), 9);
+      expect(cam.y * zoom * 3).toBeCloseTo(Math.round(cam.y * zoom * 3), 9);
+    }
+  });
+
   it('panBy moves the world with the drag', () => {
     const cam = { x: 0, y: 0, zoom: 2 };
     const p = { x: 10, y: 10 };
@@ -120,6 +128,23 @@ describe('settleZoom', () => {
     expect(settleZoom(1.3, 1.25)).toBe(1.25);
     expect(settleZoom(2.2, 2.33)).toBe(2.33);
     expect(settleZoom(1.9, 2.33)).toBe(2);
+  });
+  it('steps by 1 / devicePixelRatio, so zoom * dpr is whole', () => {
+    expect(settleZoom(1.4, 0.6, 3)).toBeCloseTo(4 / 3, 12);
+    expect(settleZoom(1.55, 0.6, 3)).toBeCloseTo(5 / 3, 12);
+    expect(settleZoom(1.2, 0.6, 2)).toBe(1);
+    expect(settleZoom(1.3, 0.6, 2)).toBe(1.5);
+    expect(settleZoom(0.55, 0.9, 2)).toBe(0.5);
+    expect(settleZoom(1.13, 0.6, 1.5)).toBeCloseTo(4 / 3, 12);
+    for (const dpr of [1, 1.25, 1.5, 2, 2.625, 3]) {
+      for (let zoom = 0.5; zoom <= 4; zoom += 0.07) {
+        const z = settleZoom(zoom, 0.5, dpr);
+        // Whole device px, or the overview zoom (0.5 here) when that is closer.
+        if (z !== 0.5) expect(Math.abs(z * dpr - Math.round(z * dpr))).toBeLessThan(1e-9);
+        expect(z).toBeGreaterThanOrEqual(0.5);
+        expect(z).toBeLessThanOrEqual(4);
+      }
+    }
   });
   it('never goes below ZOOM_MIN', () => {
     expect(settleZoom(0.5, 0.5)).toBe(0.5);
