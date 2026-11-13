@@ -215,3 +215,11 @@ export const ATTACK_PER_EVEN_LEVEL = 1;
 // ---------- Network (section 11) ----------
 export const CHAT_MAX_LENGTH = 120;
 export const RATE_LIMIT_PER_SECOND = 10;
+
+// ---------- Client camera input (step 2) ----------
+/** Wheel delta (in px) that counts as one zoom step. Trackpads send many small deltas. */
+export const WHEEL_ZOOM_STEP_DELTA = 60;
+/** Pinch: finger distance must change by this ratio for one zoom step. */
+export const PINCH_ZOOM_STEP_RATIO = 1.4;
+/** Floor textures are seamless squares of this size, in px. */
+export const FLOOR_TEXTURE_SIZE = 64;
