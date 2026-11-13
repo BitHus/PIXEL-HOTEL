@@ -262,7 +262,7 @@ async function start(): Promise<void> {
     items = next;
     itemViews.sync(items, placer.hiddenUids());
     roomChanged();
-    void refreshInventory().then(refreshShop);
+    void refreshInventory().then(refreshShop).then(refreshHint);
     return true;
   };
   const placer: Placer = new Placer(
