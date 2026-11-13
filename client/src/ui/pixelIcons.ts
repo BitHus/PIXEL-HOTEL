@@ -125,6 +125,23 @@ const ICONS = {
     ],
     colors: { o: O, a: PALETTE[4], b: PALETTE[3], c: PALETTE[2] },
   },
+  hammer: {
+    rows: [
+      '..oooooo....',
+      '.obbbbbbo...',
+      '.oaaaaaaao..',
+      '..oooaoooo..',
+      '....oco.....',
+      '....oco.....',
+      '....oco.....',
+      '....oco.....',
+      '....oco.....',
+      '....oco.....',
+      '....oco.....',
+      '....ooo.....',
+    ],
+    colors: { o: O, a: PALETTE[21], b: PALETTE[20], c: PALETTE[4] },
+  },
   sort: {
     rows: [
       '..o.........',

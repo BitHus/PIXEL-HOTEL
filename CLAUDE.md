@@ -414,16 +414,17 @@ Layout:
   Pixi federated events on the stage.
 - client/src/input/cameraIntro.ts: CameraIntro (the room intro; cancelled by onGestureStart).
 - client/src/ui/debugLabel.ts: HTML label with world x, y and zoom (only while Debug is on).
-- client/src/ui/blockersButton.ts: "Blockers (B)" toggle and "Clear" (left, only while Debug
-  is on), plus the B key.
+- client/src/ui/blockersButton.ts: "Blockers (K)" toggle and "Clear" (left, only while Debug
+  is on), plus the K key (B is Build).
 - client/src/ui (step 5): ui.css (THE frame style and all UI CSS; the pixel font Pixelify Sans,
   SIL OFL, is hosted in client/src/fonts with its license), dom.ts (el, textButton,
   iconButton, typing), pixelIcons.ts (pixel-map SVG icons: bag, avatar, chat, gear, coin,
-  chair, wood, sort, stack), format.ts (shortNumber: 1.2k, tested),
+  chair, wood, sort, stack, hammer), format.ts (shortNumber: 1.2k, tested),
   itemIcon.ts (inventory icons: a small version of the boxes / a material box; fitRects tested),
   press.ts (tap / long press / drag on HTML slots), panels.ts (one side panel open at a time;
   adds the ✗ close button),
-  sideButtons.ts (right-edge column), infoPanel.ts (gold, room name, Hotel / Shop), hotbar.ts,
+  sideButtons.ts (right-edge column), buildMode.ts (play / build mode, Build button, screen-edge
+  border, B and Escape), infoPanel.ts (gold, room name, Hotel / Shop), hotbar.ts,
   bagPanel.ts (the inventory panel of docs/UI-REFERENCE.md: icon tabs, hotbar row, 36-slot
   grid, Sort / Stack, gold strip; picking up and dropping stacks; slotRefOf), avatarPanel.ts,
   chatPanel.ts (log + input),
@@ -431,7 +432,7 @@ Layout:
 - client/src/build/placer.ts: Placer (one placing session + the ghost drawing; startNew takes
   an inventory item of the type (false if none), place() asks hooks.commit (the GameAPI),
   rotate, cancel, drag, screenBounds). client/src/ui/placeBar.ts: floating ✓ ↻ ✗ bar above the ghost (Enter,
-  R, Escape). client/src/ui/itemMenu.ts: item menu (Move, Rotate, Pick up, Sit) + name card.
+  R, Escape). client/src/ui/itemMenu.ts: item menu (build mode: Move, Rotate, Pick up) + name card.
   client/src/ui/anchorAbove.ts: puts a floating element above a screen rect, inside the screen.
 - server/src/index.ts: placeholder only (step 10).
 
@@ -445,7 +446,7 @@ Conventions:
   selected slot has a bright orange border. Places:
   - Top-left: the info panel (gold with a coin icon, room name) with the room switcher under it.
     New player stats (xp, level) go into this panel.
-  - Right edge: one column of square icon buttons (Bag, Avatar, Chat, Settings), tooltips via
+  - Right edge: one column of square icon buttons (Bag, Build, Avatar, Chat, Settings), tooltips via
     title. New screens add an icon button to this column (sideButtons.ts) and a panel.
   - Panels: open to the left of that column, top aligned, never covering the hotbar; one at a
     time (panels.ts), each with a ✗ in its top-right corner. A tap on the room closes the open
@@ -455,7 +456,8 @@ Conventions:
   - Floating bars (✓ ↻ ✗, the item menu) sit above their target (anchorAbove). Toasts appear
     just above the hotbar. Speech bubbles are cream with a dark outline and a small tail.
   - Debug things (x/y/zoom label, Blockers buttons) show on the left only while Settings ->
-    Debug is on (off by default). Keys: I bag, Enter chat, 1-6 hotbar, Escape closes.
+    Debug is on (off by default). Keys: I bag, B build mode, Enter chat, 1-6 hotbar, Escape
+    closes (a panel first, then the placing session, then build mode), K blockers (debug).
 - GAME API (step 5): the client changes nothing itself. Walking, sitting, placing (only
   inventory items: placeItem), moving, rotating, picking up, the hotbar, the look and chat all
   go through GameAPI; item calls return the current room's items + the inventory furniture
@@ -501,8 +503,19 @@ Conventions:
   the world offset on whole device px.
 - INPUT RULE (touch and mouse):
   - A press is a TAP only if it moved less than TAP_MAX_MOVE_PX (8 screen px) and was held
-    less than TAP_MAX_MS (300 ms). A tap / left click means "walk there". Anything else is a
-    DRAG, and a drag never makes the avatar walk.
+    less than TAP_MAX_MS (300 ms). Anything else is a DRAG (or a LONG PRESS), and neither ever
+    makes the avatar walk. What a tap does depends on the mode (client/src/ui/buildMode.ts):
+  - PLAY MODE (the default): a tap on the floor, a rug or any item that is not sittable walks
+    there (the item is ignored; a blocked point walks to the nearest free cell). A tap on a
+    sittable item walks there and sits (the seat shakes if it cannot be reached). A long press
+    does nothing. No item menu.
+  - BUILD MODE: the Build button (hammer, right-edge column, right after Bag) or the B key
+    toggles it; placing from the hotbar or the bag turns it on. Taps never walk. A tap or long
+    press on an item opens its menu (Move, Rotate, Pick up); a tap elsewhere closes it. The
+    Build button is highlighted and a thin warm border (.build-frame) runs around the screen
+    edge. Build again, or Escape (when no panel is open and nothing is being placed), returns
+    to play mode, closes the menu and cancels a placing session.
+  - In both modes a tap on the room with a panel open only closes the panel.
   - Touch: one-finger drag pans. Two fingers pan and pinch-zoom freely (the point between
     the fingers stays fixed).
   - Mouse: left click taps, left-drag and right-drag pan. The wheel zooms freely around the
@@ -514,7 +527,7 @@ Conventions:
     and the camera state is snapped with snapCamera (setCamera(cam, snap = true)). The
     overview zoom stays a settle target even when zoom * dpr is not whole there. A new pinch
     or wheel cancels a running settle; a one-finger pan runs alongside it.
-  - Blockers mode (debug, step 3): while it is on, a one-finger / left drag draws a blocking
+  - Blockers mode (debug, step 3; key K, button "Blockers (K)"): while it is on, a one-finger / left drag draws a blocking
     rectangle instead of panning (getDragMode() returns 'draw', drags go to onDraw). Two
     fingers and right-drag still pan/zoom. Taps still walk.
 - NAVIGATION (shared/nav.ts): a cell is blocked if ANY part of it is outside the floor or
@@ -542,17 +555,16 @@ Conventions:
     reachable from the door point.
   - Nav blockers = debug rects + itemBlockers(items, roomId) (blocking items on the floor).
   - Placing (step 4b): tapping a hotbar or bag slot (the ghost starts in the middle of the
-    screen) or Move in the item menu (the ghost starts where the item is; the item and its
+    screen; build mode turns on) or Move in the item menu (the ghost starts where the item is; the item and its
     riders are hidden until done) starts a placing session. A one-finger / left drag anywhere
     moves the ghost by the drag distance (getDragMode returns 'draw'); two fingers and
     right-drag still pan/zoom. No hover-follow. Taps and long presses do nothing while placing.
     Only ✓ / Enter places (disabled while red); ✗ / Escape cancels (a moved item goes back
     exactly; an inventory item stays in the inventory). After placing the session ends. Shift
     (held) turns the 4 px snap off. Items picked up go to the inventory (roomId null).
-  - Item menu (step 4b): a tap on a placed item opens its menu, except a sittable item, which
-    walks there and sits (if it cannot be reached, the menu opens). A long press (LONG_PRESS_MS, without
-    moving) on any item opens the menu. With the menu open, a tap elsewhere only closes it.
-    Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
+  - Item menu (build mode only, see INPUT RULE): a tap or long press (LONG_PRESS_MS, without
+    moving) on a placed item opens its menu; a tap on another item opens that one's, a tap
+    elsewhere closes it. Sitting is play mode only (no Sit button). Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
     the place bar follow their target every frame.
   - Hit testing: cameraControl passes the Pixi event target to onPoint; item containers are
     eventMode 'static' and ItemViews.uidOf maps a target to an item. The cursor cross, the
@@ -569,8 +581,8 @@ Notes:
 - cameraControl reports long presses as onPoint(start, 'longpress', target at press start).
 - "Give test furniture" (Settings) is a debug button: one of each of the 12 home items, free,
   written to the ledger as reason 'debug'. Remove it in step 7 when the catalog exists.
-- Step 5 removed build mode (the "Build (F)" toggle and the item strip). A tap on a seat sits
-  (if it cannot be reached, its menu opens); a long press opens any item's menu.
+- Build mode came back as a play / build mode switch (a change to step 4b, made after step 5):
+  see INPUT RULE. The old "Build (F)" toggle and item strip of step 4 are gone for good.
 - Debug blockers (step 3) are sent to LocalGameAPI with debugSetBlockers (not saved, cleared
   when the room changes).
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).

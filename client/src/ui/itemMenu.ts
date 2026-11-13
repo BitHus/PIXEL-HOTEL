@@ -1,6 +1,6 @@
-// The item menu (step 4b): tap a placed item (or long-press any item) and a small menu pops up
-// above it: Move, Rotate, Pick up, and Sit for sittable items, with an info card on the side
-// showing the item's name. main.ts closes it when the player taps elsewhere.
+// The item menu (build mode only): tap or long-press a placed item and a small menu pops up
+// above it: Move, Rotate, Pick up, with an info card on the side showing the item's name.
+// main.ts closes it when the player taps elsewhere or leaves build mode.
 
 import type { FurnitureType, Rect } from '@pixel-hotel/shared';
 import { anchorAbove } from './anchorAbove.ts';
@@ -9,7 +9,6 @@ export interface ItemMenuHooks {
   onMove(uid: number): void;
   onRotate(uid: number): void;
   onPickUp(uid: number): void;
-  onSit(uid: number): void;
 }
 
 export interface ItemMenu {
@@ -43,8 +42,7 @@ export function createItemMenu(parent: HTMLElement, hooks: ItemMenuHooks): ItemM
   const act = (f: (uid: number) => void) => () => {
     if (uid !== null) f(uid);
   };
-  const sit = button('Sit', act(hooks.onSit));
-  buttons.append(button('Move', act(hooks.onMove)), button('Rotate', act(hooks.onRotate)), button('Pick up', act(hooks.onPickUp)), sit);
+  buttons.append(button('Move', act(hooks.onMove)), button('Rotate', act(hooks.onRotate)), button('Pick up', act(hooks.onPickUp)));
   menu.append(buttons, card);
   menu.hidden = true;
   parent.appendChild(menu);
@@ -60,7 +58,6 @@ export function createItemMenu(parent: HTMLElement, hooks: ItemMenuHooks): ItemM
     open(next, type) {
       uid = next;
       name.textContent = type.name;
-      sit.hidden = !type.sittable;
       menu.hidden = false;
     },
     close() {

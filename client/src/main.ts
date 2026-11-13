@@ -50,6 +50,7 @@ import { createPlaceBar } from './ui/placeBar.ts';
 import { createItemMenu } from './ui/itemMenu.ts';
 import { createPanels } from './ui/panels.ts';
 import { createSideButtons } from './ui/sideButtons.ts';
+import { createBuildMode } from './ui/buildMode.ts';
 import { createInfoPanel } from './ui/infoPanel.ts';
 import { createHotbar } from './ui/hotbar.ts';
 import { createBagPanel } from './ui/bagPanel.ts';
@@ -184,7 +185,16 @@ async function start(): Promise<void> {
   const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
   const panels = createPanels();
   const info = createInfoPanel(ui, (kind) => void openRoomKind(kind));
-  createSideButtons(ui, panels);
+  // Play mode (default: taps walk and sit) or build mode (taps open item menus, never walk).
+  const build = createBuildMode(ui, {
+    onChange: (on) => {
+      if (on) return;
+      menu.close();
+      placer.cancel();
+    },
+    escapeTaken: () => panels.open !== null || placer.active,
+  });
+  createSideButtons(ui, panels, [build.button]);
 
   /** Camera state (unsnapped, so zooming never drifts). */
   let camera: Camera = { x: 0, y: 0, zoom: 1 };
@@ -276,10 +286,6 @@ async function start(): Promise<void> {
       menu.close();
       void api.pickUpItem(uid).then(applyItems);
     },
-    onSit: (uid) => {
-      menu.close();
-      void sitOn(uid).then((ok) => ok || itemViews.shake(uid));
-    },
   });
   const openMenu = (item: FurnitureItem): void => menu.open(item.uid, getFurnitureType(item.typeId));
 
@@ -290,7 +296,9 @@ async function start(): Promise<void> {
       return false;
     }
     menu.close();
-    return placer.startNew(typeId, viewCenter());
+    if (!placer.startNew(typeId, viewCenter())) return false;
+    build.set(true);
+    return true;
   };
 
   // ---------- Hotbar and Bag ----------
@@ -378,7 +386,7 @@ async function start(): Promise<void> {
     bubbles.add(line);
   });
   window.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' || typing(e) || placer.active || e.repeat) return;
+    if (e.key !== 'Enter' || e.defaultPrevented || typing(e) || placer.active || e.repeat) return;
     e.preventDefault();
     if (panels.open === 'chat') chat.focus();
     else panels.show('chat');
@@ -471,28 +479,26 @@ async function start(): Promise<void> {
       if (kind === 'hover' || placer.active) return;
       // The placed item under the pointer, found by Pixi's hit testing (item views are 'static').
       const hit = roomItem(itemViews.uidOf(target));
-      if (kind === 'longpress') {
+      if (build.on) {
+        // Build mode: taps never walk. A tap or long press on an item opens its menu.
+        if (kind === 'tap' && panels.open !== null) {
+          panels.close();
+          return;
+        }
         if (hit) openMenu(hit);
         else menu.close();
         return;
       }
-      // A tap on the room closes an open panel (and does nothing else).
+      // Play mode: a long press does nothing; a tap on the room first closes an open panel.
+      if (kind === 'longpress') return;
       if (panels.open !== null) {
         panels.close();
         return;
       }
-      // A tap with the menu open only closes it (a tap on the same item keeps it open).
-      if (menu.uid !== null) {
-        if (hit?.uid !== menu.uid) menu.close();
-        return;
-      }
-      if (hit) {
-        // A sittable item: walk there and sit. Anything else (or a seat out of reach): its menu.
-        if (getFurnitureType(hit.typeId).sittable) {
-          void sitOn(hit.uid).then((ok) => ok || openMenu(hit));
-          return;
-        }
-        openMenu(hit);
+      // A sittable item: walk there and sit (it shakes if it cannot be reached). Any other item
+      // is ignored: walk to the point (a blocked point walks to the nearest free cell).
+      if (hit && getFurnitureType(hit.typeId).sittable) {
+        void sitOn(hit.uid).then((ok) => ok || itemViews.shake(hit.uid));
         return;
       }
       const to = marked;

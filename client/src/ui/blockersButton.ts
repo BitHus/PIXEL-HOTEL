@@ -1,4 +1,4 @@
-// Debug buttons for Blockers mode: "Blockers (B)" toggles it (also the B key), "Clear" removes
+// Debug buttons for Blockers mode: "Blockers (K)" toggles it (also the K key; B is Build), "Clear" removes
 // every drawn rectangle (only shown while the mode is on). Shown only while Debug is on
 // (settings panel); turning Debug off also turns Blockers mode off.
 
@@ -22,7 +22,7 @@ export function createBlockersButton(parent: HTMLElement, hooks: BlockersButtonH
     clear.hidden = !on;
     hooks.onToggle(on);
   };
-  const toggle = textButton('Blockers (B)', () => set(!on));
+  const toggle = textButton('Blockers (K)', () => set(!on));
   const clear = textButton('Clear', () => hooks.onClear());
   clear.hidden = true;
   bar.append(toggle, clear);
@@ -31,7 +31,7 @@ export function createBlockersButton(parent: HTMLElement, hooks: BlockersButtonH
 
   window.addEventListener('keydown', (e) => {
     if (bar.hidden || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
-    if (e.key === 'b' || e.key === 'B') set(!on);
+    if (e.key === 'k' || e.key === 'K') set(!on);
   });
   return {
     setVisible(visible) {
