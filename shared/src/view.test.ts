@@ -50,11 +50,12 @@ describe('screen <-> world', () => {
 describe('camera helpers', () => {
   const room = { x: -16, y: -64, w: 608, h: 464 };
 
-  it('fitZoom picks the largest zoom that fits (free, not rounded), at least 1, at most 4', () => {
+  it('fitZoom picks the largest zoom that fits (free, not rounded), at least 0.5, at most 4', () => {
     expect(fitZoom(1920, 1080, room)).toBeCloseTo(1080 / 464, 9);
     expect(fitZoom(1280, 1000, room)).toBeCloseTo(1280 / 608, 9);
     expect(fitZoom(700, 500, room)).toBeCloseTo(500 / 464, 9);
-    expect(fitZoom(390, 844, room)).toBe(1);
+    expect(fitZoom(390, 844, room)).toBeCloseTo(390 / 608, 9);
+    expect(fitZoom(200, 200, room)).toBe(0.5);
     expect(fitZoom(10000, 10000, room)).toBe(4);
   });
 
@@ -77,9 +78,9 @@ describe('camera helpers', () => {
     }
   });
 
-  it('zoomAt clamps to 1..4', () => {
+  it('zoomAt clamps to 0.5..4', () => {
     expect(zoomAt({ x: 0, y: 0, zoom: 4 }, { x: 11, y: 13 }, 9).zoom).toBe(4);
-    expect(zoomAt({ x: 0, y: 0, zoom: 1 }, { x: 0, y: 0 }, 0.2).zoom).toBe(1);
+    expect(zoomAt({ x: 0, y: 0, zoom: 1 }, { x: 0, y: 0 }, 0.2).zoom).toBe(0.5);
   });
 
   it('snapCamera puts the world offset on whole screen px', () => {

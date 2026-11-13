@@ -72,7 +72,7 @@ async function start(): Promise<void> {
     redraw();
   };
 
-  // Default view: the largest zoom where the whole room fits (1 to 4, any value), centered.
+  // Default view: the largest zoom where the whole room fits (ZOOM_MIN to ZOOM_MAX, any value), centered.
   const fit = (): void => {
     const w = app.screen.width;
     const h = app.screen.height;
