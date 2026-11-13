@@ -4,6 +4,9 @@
 
 import { HOTBAR_SLOTS, SAVE_KEY_PREFIX, SAVE_VERSION } from './config.ts';
 import { emptyBag } from './bag.ts';
+import { addShopStartItems } from './newPlayer.ts';
+import { emptyShop } from './shop.ts';
+import type { Player } from './types.ts';
 import type { GameState } from './gameState.ts';
 
 export interface SaveFile {
@@ -25,6 +28,18 @@ export type LoadResult =
 export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
   // 1 -> 2: the bag got a slot layout. It starts empty; arrangeState fills it from the inventory.
   1: (state) => (isObject(state) ? { ...state, bag: emptyBag() } : state),
+  // 2 -> 3 (step 7): the shop (empty, first customer 10 s after it gets stock), the hints, and the
+  // shop's counter and stall_table (an old shop had none).
+  2: (state) => {
+    if (!isObject(state) || !isObject(state.player) || !Array.isArray(state.items) || !Array.isArray(state.rooms)) return state;
+    const player = state.player as unknown as Player;
+    const s = { ...state, shop: emptyShop(player.shopRoomId, 0), hintsDone: 0 } as unknown as GameState;
+    try {
+      return addShopStartItems(s);
+    } catch {
+      return state;
+    }
+  },
 };
 
 /** The storage key for a save version. */
@@ -80,6 +95,8 @@ export function isGameState(x: unknown): x is GameState {
   const bag = x.bag;
   if (!isObject(bag) || !isSlotList(bag.furniture) || !isSlotList(bag.materials)) return false;
   if (!isInt(x.currentRoomId) || !x.rooms.some((r) => isObject(r) && r.id === x.currentRoomId)) return false;
+  if (!isObject(x.shop) || !Array.isArray(x.shop.slots) || !Array.isArray(x.shop.customers) || !isObject(x.shop.saleHistory)) return false;
+  if (typeof x.shop.nextCustomerInMs !== 'number' || typeof x.shop.updatedAt !== 'number' || !isInt(x.hintsDone)) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }
 

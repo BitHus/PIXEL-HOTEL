@@ -275,6 +275,11 @@ export function moveItem(
   return items.map((i) => (i.uid === uid ? moved : (riders.get(i.uid) ?? i)));
 }
 
+/** False for the shop counter (noPickup): it is moved and rotated, never picked up or sold. */
+export function canPickUp(item: FurnitureItem): boolean {
+  return getFurnitureType(item.typeId).noPickup !== true;
+}
+
 /** Picks an item up into the inventory; the items standing on it go back with it. */
 export function pickUpItem(items: readonly FurnitureItem[], uid: number): FurnitureItem[] {
   const back = new Set([uid, ...ridersOf(items, uid).map((r) => r.uid)]);

@@ -24,9 +24,10 @@ function item(typeId: string, x: number, y: number, facing: Facing = 'down', onI
 }
 
 describe('furniture data', () => {
-  it('has the 12 starter types, in the catalog, common, and only the rug does not block', () => {
-    expect(FURNITURE_TYPES).toHaveLength(12);
-    for (const t of FURNITURE_TYPES) {
+  it('has the 12 home types, in the catalog, common, and only the rug does not block', () => {
+    const home = FURNITURE_TYPES.filter((t) => t.category === 'home_furniture');
+    expect(home).toHaveLength(12);
+    for (const t of home) {
       expect(t.inCatalog).toBe(true);
       expect(t.rarity).toBe('common');
       expect(t.blocks).toBe(t.id !== 'rug');
@@ -35,6 +36,18 @@ describe('furniture data', () => {
     expect(T('bed').placeIn).toBe('hotel');
     expect(T('bookshelf').placeIn).toBe('hotel');
     expect(T('chair').placeIn).toBe('both');
+  });
+
+  it('has the step 7 shop types (section 7, 9)', () => {
+    expect(T('shelf')).toMatchObject({ w: 72, d: 24, height: 80, slots: 3, baseValue: 10, blocks: true, inCatalog: true, placeIn: 'shop' });
+    expect(T('display_case')).toMatchObject({ w: 72, d: 32, slots: 4, baseValue: 40, appeal: 6, inCatalog: true, placeIn: 'shop' });
+    expect(T('sign')).toMatchObject({ w: 40, wall: true, appeal: 10, baseValue: 25, inCatalog: true, placeIn: 'shop' });
+    expect(T('banner')).toMatchObject({ w: 32, wall: true, appeal: 6, baseValue: 15, inCatalog: true, placeIn: 'shop' });
+    expect(T('shop_rug')).toMatchObject({ w: 80, d: 56, blocks: false, appeal: 5, baseValue: 12, inCatalog: true, placeIn: 'shop' });
+    expect(T('counter')).toMatchObject({ w: 80, d: 40, appeal: 8, inCatalog: false, noPickup: true });
+    expect(T('stall_table')).toMatchObject({ w: 80, d: 48, slots: 3, baseValue: 10, blocks: true, inCatalog: false });
+    expect(T('lamp')).toMatchObject({ placeIn: 'both', appeal: 4 });
+    expect(T('plant')).toMatchObject({ placeIn: 'both', appeal: 3 });
   });
 });
 

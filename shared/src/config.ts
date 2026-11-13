@@ -42,10 +42,13 @@ export const ROOM_UPGRADE_COST = {
 export const START_FLOOR_STYLE = 'bare';
 export const START_WALL_STYLE = 'bare';
 
-/** Fixed starting furniture in a new shop. Anchor positions (bottom center of footprint). */
+/**
+ * Fixed starting furniture in a new shop (step 7). Anchor positions (bottom center of the
+ * footprint): the counter against the back wall, left of center; the stall_table in the middle.
+ */
 export const SHOP_START_ITEMS = [
-  { typeId: 'counter', x: 288, y: 96, facing: 'down' },
-  { typeId: 'stall_table', x: 288, y: 208, facing: 'down' },
+  { typeId: 'counter', x: 176, y: 40, facing: 'down' },
+  { typeId: 'stall_table', x: 288, y: 184, facing: 'down' },
 ] as const;
 
 // ---------- Movement (section 6) ----------
@@ -85,6 +88,8 @@ export const SLOTS_STALL_TABLE = 3;
 export const SLOTS_SHELF = 3;
 export const SLOTS_DISPLAY_CASE = 4;
 export const SHELF_CATALOG_PRICE = 30;
+/** Prices are whole gold from 1 to this. */
+export const SHOP_PRICE_MAX = 99_999;
 
 export const SHOP_APPEAL_MAX = 100;
 /** Each furniture type counts at most this many times toward shop appeal. */
@@ -110,6 +115,34 @@ export const SALE_HISTORY_LENGTH = 5;
 /** Offline customer simulation is capped at this many hours. */
 export const OFFLINE_MAX_HOURS = 8;
 export const OFFLINE_MAX_MS = OFFLINE_MAX_HOURS * 60 * 60 * 1000;
+
+// ---------- Shop customers (step 7) ----------
+/** The live shop simulation runs in fixed steps of this many ms. */
+export const SHOP_TICK_MS = 100;
+/** A gap longer than this (closed game, tab in the background) is caught up with maths only. */
+export const SHOP_CATCH_UP_GAP_MS = 10_000;
+/** A customer stands at the item this long while the reaction bubble shows. */
+export const CUSTOMER_DECIDE_MS = 1200;
+/** A customer stands at the till this long before the gold comes in. */
+export const CUSTOMER_PAY_MS = 900;
+/** Queue spots behind the paying spot are this far apart, px. */
+export const QUEUE_SPACING_PX = 24;
+/** Customers appear this far below the floor and walk in through the door, px. */
+export const CUSTOMER_OUTSIDE_PX = 24;
+/** Customer ids count down from -1 (players have positive ids). */
+export const CUSTOMER_FIRST_ID = -1;
+/** Customer looks are picked from these palette indices. */
+export const CUSTOMER_LOOKS = {
+  skin: [30, 31, 3, 4, 5],
+  hair: [5, 6, 0, 1, 10, 2, 24],
+  shirt: [13, 7, 16, 27, 0, 14, 9, 22],
+  legs: [23, 5, 24, 15, 6],
+  shoes: [6, 5, 25],
+} as const;
+/** The floating "+12 gold" above the till rises and fades over this many ms. */
+export const SALE_FLOAT_MS = 1400;
+/** A customer's reaction bubble shows this long, ms. */
+export const REACTION_BUBBLE_MS = 1800;
 
 // ---------- Dungeon (section 10) ----------
 /** 1 = small first round, 2 = the full dungeon. */
@@ -292,7 +325,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -308,3 +341,13 @@ export const CHAT_BUBBLE_GAP_PX = 4;
 export const CHAT_LOG_MAX = 100;
 /** Toasts (short messages at the top) stay this long, ms. */
 export const TOAST_MS = 4000;
+
+// ---------- Catalog, rooms and hints (step 7) ----------
+/** The first catalog purchase pops into placing: the ghost grows in over this many ms. */
+export const FIRST_BUY_POP_MS = 220;
+/** First-run hints, shown one at a time (GameState.hintsDone counts the finished ones). */
+export const HINTS = [
+  'Open the Catalog and buy something with your 100 gold.',
+  'Place it in your room.',
+  'Put an item on the table in your shop and set a price.',
+] as const;
