@@ -32,16 +32,14 @@ export function fitZoom(screenW: number, screenH: number, rect: Rect): number {
 }
 
 /**
- * Rounds the camera so that camera * zoom is a whole number of screen px, so the world never
- * sits on half a screen pixel. Used only for drawing: keep the unsnapped camera as the state,
- * so repeated zooming does not drift.
+ * Rounds the camera so that camera * zoom * dpr is a whole number of device px, so the world
+ * never sits on part of a real screen pixel. dpr is the device pixel ratio (real screen px per
+ * CSS px). Used for drawing, and for the state only at the end of a zoom settle, so repeated
+ * zooming does not drift.
  */
-export function snapCamera(cam: Camera): Camera {
-  return {
-    x: Math.round(cam.x * cam.zoom) / cam.zoom,
-    y: Math.round(cam.y * cam.zoom) / cam.zoom,
-    zoom: cam.zoom,
-  };
+export function snapCamera(cam: Camera, dpr = 1): Camera {
+  const s = cam.zoom * dpr;
+  return { x: Math.round(cam.x * s) / s, y: Math.round(cam.y * s) / s, zoom: cam.zoom };
 }
 
 /** A camera that centers the rect on the screen at the given zoom. */
@@ -75,13 +73,17 @@ export function clampCamera(cam: Camera, screenW: number, screenH: number, rect:
 }
 
 /**
- * Where the zoom settles when a zoom gesture ends: the nearest whole zoom (ZOOM_MIN..ZOOM_MAX),
- * or the overview zoom if that is closer. A tie goes to the whole zoom.
+ * Where the zoom settles when a zoom gesture ends: the nearest zoom in ZOOM_MIN..ZOOM_MAX where
+ * zoom * dpr is a whole number (one art pixel covers whole real screen pixels; dpr 1 gives
+ * 1, 2, 3, 4 and dpr 3 gives steps of 1/3), or the overview zoom if that is closer.
+ * A tie goes to the whole-pixel zoom.
  */
-export function settleZoom(zoom: number, overview: number): number {
+export function settleZoom(zoom: number, overview: number, dpr = 1): number {
   let best = clampZoom(overview);
   let bestD = Math.abs(zoom - best);
-  for (let z = Math.ceil(ZOOM_MIN); z <= Math.floor(ZOOM_MAX); z++) {
+  // Tiny slack so k / dpr that should equal ZOOM_MIN or ZOOM_MAX is not lost to rounding.
+  for (let k = Math.ceil(ZOOM_MIN * dpr - 1e-9); k <= Math.floor(ZOOM_MAX * dpr + 1e-9); k++) {
+    const z = k / dpr;
     const d = Math.abs(zoom - z);
     if (d <= bestD) {
       best = z;

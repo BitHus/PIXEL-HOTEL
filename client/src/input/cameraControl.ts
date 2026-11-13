@@ -6,8 +6,9 @@
 //   less than TAP_MAX_MS. Otherwise it is a drag, and a drag never taps (the avatar won't walk).
 // - Zooming stays smooth while a pinch or wheel gesture is active. When it ends (the second
 //   finger lifts, or no wheel event for WHEEL_GESTURE_END_MS), the zoom eases in
-//   ZOOM_SETTLE_MS to settleZoom (nearest whole zoom, or the overview zoom if closer), around
-//   the gesture's focus point, and then the camera snaps to whole pixels.
+//   ZOOM_SETTLE_MS to settleZoom (nearest zoom where zoom * devicePixelRatio is whole, or the
+//   overview zoom if closer), around the gesture's focus point, and then the camera snaps to
+//   whole device pixels.
 // - When getDragMode() returns 'draw' (Blockers mode, later), a one-finger / left drag is
 //   sent to onDraw instead of panning.
 // Uses Pixi's federated pointer and wheel events.
@@ -38,6 +39,8 @@ export interface CameraControlHooks {
   setCamera(cam: Camera, snap?: boolean): void;
   /** The overview zoom (whole room fits), one of the zooms a gesture can settle on. */
   getOverviewZoom(): number;
+  /** Real screen px per CSS px (the renderer resolution). */
+  getDevicePixelRatio(): number;
   /** Mouse/pen moved (hover), or a press ended as a tap. Screen px. */
   onPoint(screen: Point, kind: 'hover' | 'tap'): void;
   /** What a one-finger / left drag does. Default 'pan'. */
@@ -85,7 +88,7 @@ export function attachCameraControl(
     wheel = null;
     wheelIdleMs = null;
     const from = hooks.getCamera().zoom;
-    settle = { from, to: settleZoom(from, hooks.getOverviewZoom()), at, elapsed: 0 };
+    settle = { from, to: settleZoom(from, hooks.getOverviewZoom(), hooks.getDevicePixelRatio()), at, elapsed: 0 };
   };
 
   /** A pinch ended if there was one and fewer than two fingers are left now. */
