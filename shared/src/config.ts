@@ -217,10 +217,10 @@ export const CHAT_MAX_LENGTH = 120;
 export const RATE_LIMIT_PER_SECOND = 10;
 
 // ---------- Client camera input (step 2) ----------
-/** Wheel delta (in px) that counts as one zoom step. Trackpads send many small deltas. */
-export const WHEEL_ZOOM_STEP_DELTA = 60;
-/** Pinch: finger distance must change by this ratio for one zoom step. */
-export const PINCH_ZOOM_STEP_RATIO = 1.4;
+/** Wheel: target zoom is multiplied by exp(-deltaY * WHEEL_ZOOM_SPEED). One notch is ~100 px. */
+export const WHEEL_ZOOM_SPEED = 0.0015;
+/** Wheel zoom glides to its target; time constant in ms (smaller = snappier). */
+export const ZOOM_EASE_MS = 60;
 /** Floor textures are seamless squares of this size, in px. */
 export const FLOOR_TEXTURE_SIZE = 64;
 /** A press is a tap (click/walk) only if it moved less than this many screen px... */

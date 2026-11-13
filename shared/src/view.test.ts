@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { ZOOM_MAX, ZOOM_MIN } from './config.ts';
-import { centerCamera, clampCamera, fitZoom, panBy, screenToWorld, worldToScreen, zoomAt } from './view.ts';
+import {
+  centerCamera,
+  clampCamera,
+  fitZoom,
+  panBy,
+  screenToWorld,
+  snapCamera,
+  worldToScreen,
+  zoomAt,
+} from './view.ts';
 
 const cameras = [
   { x: 0, y: 0 },
@@ -15,8 +24,10 @@ const points = [
   { x: 37.25, y: 211 },
 ];
 
+const zooms = [ZOOM_MIN, 1.005, 1.5, 2, 2.37, 3, 3.999, ZOOM_MAX];
+
 describe('screen <-> world', () => {
-  for (let zoom = ZOOM_MIN; zoom <= ZOOM_MAX; zoom++) {
+  for (const zoom of zooms) {
     it(`screenToWorld(worldToScreen(p)) = p at zoom ${zoom}`, () => {
       for (const c of cameras) {
         const cam = { ...c, zoom };
@@ -39,10 +50,10 @@ describe('screen <-> world', () => {
 describe('camera helpers', () => {
   const room = { x: -16, y: -64, w: 608, h: 464 };
 
-  it('fitZoom picks the largest zoom that fits, at least 1, at most 4', () => {
-    expect(fitZoom(1920, 1080, room)).toBe(2);
-    expect(fitZoom(1280, 1000, room)).toBe(2);
-    expect(fitZoom(700, 500, room)).toBe(1);
+  it('fitZoom picks the largest zoom that fits (free, not rounded), at least 1, at most 4', () => {
+    expect(fitZoom(1920, 1080, room)).toBeCloseTo(1080 / 464, 9);
+    expect(fitZoom(1280, 1000, room)).toBeCloseTo(1280 / 608, 9);
+    expect(fitZoom(700, 500, room)).toBeCloseTo(500 / 464, 9);
     expect(fitZoom(390, 844, room)).toBe(1);
     expect(fitZoom(10000, 10000, room)).toBe(4);
   });
@@ -53,22 +64,31 @@ describe('camera helpers', () => {
     expect(c).toEqual({ x: 960, y: 540 });
   });
 
-  it('zoomAt keeps the point under the cursor fixed', () => {
-    const cam = { x: 3, y: -40, zoom: 1 };
+  it('zoomAt keeps the point under the cursor fixed, at any zoom', () => {
+    let cam = { x: 3, y: -40, zoom: 1 };
     const s = { x: 400, y: 300 };
     const before = screenToWorld(s, cam);
-    for (const z of [2, 3, 4, 1]) {
-      const after = screenToWorld(s, zoomAt(cam, s, z));
-      expect(Math.abs(after.x - before.x)).toBeLessThan(1 / z + 1e-9);
-      expect(Math.abs(after.y - before.y)).toBeLessThan(1 / z + 1e-9);
+    for (const z of [1.005, 2, 2.37, 3.5, 4, 1.2, 1]) {
+      cam = zoomAt(cam, s, z);
+      expect(cam.zoom).toBe(z);
+      const after = screenToWorld(s, cam);
+      expect(after.x).toBeCloseTo(before.x, 9);
+      expect(after.y).toBeCloseTo(before.y, 9);
     }
   });
 
-  it('zoomAt clamps to 1..4 and snaps the camera to whole screen px', () => {
-    const cam = zoomAt({ x: 0.3, y: 0.7, zoom: 4 }, { x: 11, y: 13 }, 9);
-    expect(cam.zoom).toBe(4);
-    expect(Number.isInteger(cam.x * 4)).toBe(true);
-    expect(zoomAt(cam, { x: 0, y: 0 }, 0).zoom).toBe(1);
+  it('zoomAt clamps to 1..4', () => {
+    expect(zoomAt({ x: 0, y: 0, zoom: 4 }, { x: 11, y: 13 }, 9).zoom).toBe(4);
+    expect(zoomAt({ x: 0, y: 0, zoom: 1 }, { x: 0, y: 0 }, 0.2).zoom).toBe(1);
+  });
+
+  it('snapCamera puts the world offset on whole screen px', () => {
+    for (const zoom of zooms) {
+      const cam = snapCamera({ x: 12.3456, y: -7.891, zoom });
+      expect(cam.x * zoom).toBeCloseTo(Math.round(cam.x * zoom), 9);
+      expect(cam.y * zoom).toBeCloseTo(Math.round(cam.y * zoom), 9);
+      expect(Math.abs(cam.x - 12.3456) * zoom).toBeLessThanOrEqual(0.5);
+    }
   });
 
   it('panBy moves the world with the drag', () => {

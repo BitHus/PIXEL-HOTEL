@@ -46,16 +46,20 @@ async function start(): Promise<void> {
   app.stage.addChild(cross);
   const label = createDebugLabel(ui);
 
+  /** Camera state (unsnapped, so zooming never drifts). */
   let camera: Camera = { x: 0, y: 0, zoom: 1 };
+  /** What is on screen: the camera snapped to whole screen px. */
+  let shown: Camera = camera;
   /** World point marked by the cross (under the mouse, or the last tap). */
   let marked: Point | null = null;
 
   const redraw = (): void => {
-    view.world.scale.set(camera.zoom);
-    view.world.position.set(-camera.x * camera.zoom, -camera.y * camera.zoom);
-    let text = `zoom ${camera.zoom}x`;
+    shown = snapCamera(camera);
+    view.world.scale.set(shown.zoom);
+    view.world.position.set(-shown.x * shown.zoom, -shown.y * shown.zoom);
+    let text = `zoom ${shown.zoom.toFixed(2)}x`;
     if (marked) {
-      const s = worldToScreen(marked, camera);
+      const s = worldToScreen(marked, shown);
       cross.position.set(Math.floor(s.x), Math.floor(s.y));
       cross.visible = true;
       text = `x ${Math.floor(marked.x)}  y ${Math.floor(marked.y)}\n${text}`;
@@ -64,11 +68,11 @@ async function start(): Promise<void> {
   };
 
   const setCamera = (cam: Camera): void => {
-    camera = snapCamera(clampCamera(cam, app.screen.width, app.screen.height, bounds));
+    camera = clampCamera(cam, app.screen.width, app.screen.height, bounds);
     redraw();
   };
 
-  // Default view: the largest zoom where the whole room fits (at least 1), centered.
+  // Default view: the largest zoom where the whole room fits (1 to 4, any value), centered.
   const fit = (): void => {
     const w = app.screen.width;
     const h = app.screen.height;
@@ -76,17 +80,20 @@ async function start(): Promise<void> {
   };
 
   app.stage.hitArea = app.screen;
-  attachCameraControl(app.stage, app.canvas, {
+  const control = attachCameraControl(app.stage, app.canvas, {
     getCamera: () => camera,
     setCamera,
     onPoint: (screen) => {
-      marked = screenToWorld(screen, camera);
+      marked = screenToWorld(screen, shown);
       redraw();
     },
   });
 
   app.renderer.on('resize', fit);
-  app.ticker.add(() => view.objects.update());
+  app.ticker.add((ticker) => {
+    control.update(ticker.deltaMS);
+    view.objects.update();
+  });
   fit();
 }
 

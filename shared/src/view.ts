@@ -1,4 +1,5 @@
-// World <-> screen math (brief section 4). Camera position is in world px, zoom is an integer.
+// World <-> screen math (brief section 4). Camera position is in world px. Zoom is free
+// (any number from ZOOM_MIN to ZOOM_MAX, also 1.005).
 
 import { ZOOM_MAX, ZOOM_MIN } from './config.ts';
 import type { Point, Rect } from './types.ts';
@@ -7,7 +8,7 @@ export interface Camera {
   /** World px at the top-left corner of the screen. */
   x: number;
   y: number;
-  /** Integer, ZOOM_MIN..ZOOM_MAX. */
+  /** Any number from ZOOM_MIN to ZOOM_MAX. */
   zoom: number;
 }
 
@@ -22,18 +23,18 @@ export function worldToScreen(p: Point, cam: Camera): Point {
 }
 
 export function clampZoom(zoom: number): number {
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(zoom)));
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
 }
 
-/** The largest integer zoom where the rect fits on a screen of this size, at least ZOOM_MIN. */
+/** The largest zoom where the rect fits on a screen of this size, clamped to ZOOM_MIN..ZOOM_MAX. */
 export function fitZoom(screenW: number, screenH: number, rect: Rect): number {
-  const z = Math.floor(Math.min(screenW / rect.w, screenH / rect.h));
-  return clampZoom(Math.max(ZOOM_MIN, z));
+  return clampZoom(Math.min(screenW / rect.w, screenH / rect.h));
 }
 
 /**
- * Rounds the camera so that camera * zoom is a whole number of screen px. Then every whole
- * world pixel lands on a whole screen pixel and nothing is blurry.
+ * Rounds the camera so that camera * zoom is a whole number of screen px, so the world never
+ * sits on half a screen pixel. Used only for drawing: keep the unsnapped camera as the state,
+ * so repeated zooming does not drift.
  */
 export function snapCamera(cam: Camera): Camera {
   return {
@@ -45,18 +46,18 @@ export function snapCamera(cam: Camera): Camera {
 
 /** A camera that centers the rect on the screen at the given zoom. */
 export function centerCamera(screenW: number, screenH: number, rect: Rect, zoom: number): Camera {
-  return snapCamera({
+  return {
     x: rect.x + rect.w / 2 - screenW / zoom / 2,
     y: rect.y + rect.h / 2 - screenH / zoom / 2,
     zoom,
-  });
+  };
 }
 
 /** Changes the zoom while the world point under the screen point stays fixed. */
 export function zoomAt(cam: Camera, screenPoint: Point, newZoom: number): Camera {
   const zoom = clampZoom(newZoom);
   const world = screenToWorld(screenPoint, cam);
-  return snapCamera({ x: world.x - screenPoint.x / zoom, y: world.y - screenPoint.y / zoom, zoom });
+  return { x: world.x - screenPoint.x / zoom, y: world.y - screenPoint.y / zoom, zoom };
 }
 
 /** Moves the camera so the world follows a drag of (dx, dy) screen px. */

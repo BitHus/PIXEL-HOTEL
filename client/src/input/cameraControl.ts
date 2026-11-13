@@ -1,6 +1,7 @@
 // Camera and pointer input. The rule (also in CLAUDE.md):
-// - Touch: one-finger drag pans; two fingers pan and pinch-zoom in integer steps.
-// - Mouse: left click is a tap; left-drag and right-drag pan; the wheel zooms one step per notch.
+// - Touch: one-finger drag pans; two fingers pan and pinch-zoom freely (follows the fingers).
+// - Mouse: left click is a tap; left-drag and right-drag pan; the wheel zooms freely and
+//   glides to its target (call update(dtMs) every frame).
 // - A press counts as a tap only if it moved less than TAP_MAX_MOVE_PX screen px and was held
 //   less than TAP_MAX_MS. Otherwise it is a drag, and a drag never taps (the avatar won't walk).
 // - When getDragMode() returns 'draw' (Blockers mode, later), a one-finger / left drag is
@@ -9,10 +10,11 @@
 
 import type { Container, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
 import {
-  PINCH_ZOOM_STEP_RATIO,
   TAP_MAX_MOVE_PX,
   TAP_MAX_MS,
-  WHEEL_ZOOM_STEP_DELTA,
+  WHEEL_ZOOM_SPEED,
+  ZOOM_EASE_MS,
+  clampZoom,
   panBy,
   zoomAt,
   type Camera,
@@ -46,13 +48,23 @@ interface Press {
   drag: DragMode | null;
 }
 
-export function attachCameraControl(stage: Container, canvas: HTMLCanvasElement, hooks: CameraControlHooks): void {
+export interface CameraControl {
+  /** Advances the smooth wheel zoom. Call once per frame. */
+  update(dtMs: number): void;
+}
+
+export function attachCameraControl(
+  stage: Container,
+  canvas: HTMLCanvasElement,
+  hooks: CameraControlHooks,
+): CameraControl {
   const touches = new Map<number, Point>();
   /** One-finger touch or left mouse button press. */
   let press: Press | null = null;
   let rightDrag: Point | null = null;
   let pinch: { dist: number; mid: Point } | null = null;
-  let wheelAcc = 0;
+  /** Where the wheel zoom is gliding to, and the screen point that stays fixed. */
+  let wheel: { target: number; at: Point } | null = null;
 
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   stage.eventMode = 'static';
@@ -99,6 +111,7 @@ export function attachCameraControl(stage: Container, canvas: HTMLCanvasElement,
       touches.set(e.pointerId, p);
       if (touches.size === 1) press = newPress();
       else cancelPress();
+      wheel = null;
       pinch = pinchState();
     } else if (e.button === 0) {
       press = newPress();
@@ -115,18 +128,10 @@ export function attachCameraControl(stage: Container, canvas: HTMLCanvasElement,
       if (press?.id === e.pointerId) movePress(p);
       const now = pinchState();
       if (pinch && now) {
-        let cam = panBy(hooks.getCamera(), now.mid.x - pinch.mid.x, now.mid.y - pinch.mid.y);
-        let dist = pinch.dist;
-        const ratio = now.dist / dist;
-        if (ratio >= PINCH_ZOOM_STEP_RATIO) {
-          cam = zoomAt(cam, now.mid, cam.zoom + 1);
-          dist = now.dist;
-        } else if (ratio <= 1 / PINCH_ZOOM_STEP_RATIO) {
-          cam = zoomAt(cam, now.mid, cam.zoom - 1);
-          dist = now.dist;
-        }
-        hooks.setCamera(cam);
-        pinch = { dist, mid: now.mid };
+        const cam = panBy(hooks.getCamera(), now.mid.x - pinch.mid.x, now.mid.y - pinch.mid.y);
+        const ratio = pinch.dist > 0 ? now.dist / pinch.dist : 1;
+        hooks.setCamera(zoomAt(cam, now.mid, cam.zoom * ratio));
+        pinch = now;
       }
       return;
     }
@@ -161,12 +166,20 @@ export function attachCameraControl(stage: Container, canvas: HTMLCanvasElement,
 
   stage.on('wheel', (e: FederatedWheelEvent) => {
     const unit = e.deltaMode === 1 ? WHEEL_LINE_PX : e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
-    wheelAcc += e.deltaY * unit;
-    if (Math.abs(wheelAcc) < WHEEL_ZOOM_STEP_DELTA) return;
-    // One step per notch; the rest is dropped so a big delta never jumps several levels.
-    const dir = wheelAcc < 0 ? 1 : -1;
-    wheelAcc = 0;
-    const cam = hooks.getCamera();
-    hooks.setCamera(zoomAt(cam, { x: e.global.x, y: e.global.y }, cam.zoom + dir));
+    const from = wheel?.target ?? hooks.getCamera().zoom;
+    wheel = { target: clampZoom(from * Math.exp(-e.deltaY * unit * WHEEL_ZOOM_SPEED)), at: { x: e.global.x, y: e.global.y } };
   });
+
+  return {
+    update(dtMs) {
+      if (!wheel) return;
+      const cam = hooks.getCamera();
+      const t = 1 - Math.exp(-dtMs / ZOOM_EASE_MS);
+      let zoom = cam.zoom + (wheel.target - cam.zoom) * t;
+      // Close enough: land exactly on the target and stop.
+      if (Math.abs(wheel.target - zoom) < 0.001) zoom = wheel.target;
+      hooks.setCamera(zoomAt(cam, wheel.at, zoom));
+      if (zoom === wheel.target) wheel = null;
+    },
+  };
 }
