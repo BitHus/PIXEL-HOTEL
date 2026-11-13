@@ -124,8 +124,8 @@ function centerOf(grid: NavGrid, i: number): Point {
   return cellCenter(grid, c, (i - c) / grid.cols);
 }
 
-/** Every cell reachable from cell index start. */
-function reachable(grid: NavGrid, start: number): boolean[] {
+/** Every cell reachable from cell index start (true = reachable). */
+export function reachableCells(grid: NavGrid, start: number): boolean[] {
   const seen = new Array<boolean>(grid.blocked.length).fill(false);
   seen[start] = true;
   const queue = [start];
@@ -181,7 +181,7 @@ function aStar(grid: NavGrid, start: number, goal: number): number[] | null {
 }
 
 /** The free cell (index) whose center is nearest to p, among cells where ok(i) is true. */
-function nearestCell(grid: NavGrid, p: Point, ok: (i: number) => boolean): number | null {
+export function nearestFreeCell(grid: NavGrid, p: Point, ok: (i: number) => boolean = () => true): number | null {
   let best: number | null = null;
   let bestD = Infinity;
   for (let i = 0; i < grid.blocked.length; i++) {
@@ -217,10 +217,10 @@ export function findPath(grid: NavGrid, from: Point, to: Point): Point[] | null 
   let start: number | null = sc.r * grid.cols + sc.c;
   const startMoved = !isCellFree(grid, sc.c, sc.r);
   // Standing on a blocked cell (something was put on the avatar): leave via the nearest free cell.
-  if (startMoved) start = nearestCell(grid, from, () => true);
+  if (startMoved) start = nearestFreeCell(grid, from, () => true);
   if (start === null) return null;
 
-  const reach = reachable(grid, start);
+  const reach = reachableCells(grid, start);
   const tc = cellAt(grid, to);
   let goal: number | null;
   let end: Point;
@@ -229,7 +229,7 @@ export function findPath(grid: NavGrid, from: Point, to: Point): Point[] | null 
     if (!reach[goal]) return null;
     end = { x: to.x, y: to.y };
   } else {
-    goal = nearestCell(grid, to, (i) => reach[i] === true);
+    goal = nearestFreeCell(grid, to, (i) => reach[i] === true);
     if (goal === null) return null;
     end = centerOf(grid, goal);
   }

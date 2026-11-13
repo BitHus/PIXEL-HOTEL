@@ -241,3 +241,9 @@ export const TAP_MAX_MS = 300;
 export const DEBUG_BLOCKER_MIN_PX = 4;
 /** Opacity of the blocked nav cell overlay. */
 export const DEBUG_NAV_OVERLAY_ALPHA = 0.18;
+
+// ---------- Furniture in the client (step 4) ----------
+/** Opacity of the build mode ghost. */
+export const GHOST_ALPHA = 0.75;
+/** A tapped seat is only sat on if the walk ends this close (px) to its stand point. */
+export const SIT_REACH_PX = 24;

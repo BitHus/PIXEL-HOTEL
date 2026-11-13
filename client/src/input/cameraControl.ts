@@ -41,8 +41,11 @@ export interface CameraControlHooks {
   getOverviewZoom(): number;
   /** Real screen px per CSS px (the renderer resolution). */
   getDevicePixelRatio(): number;
-  /** Mouse/pen moved (hover), or a press ended as a tap. Screen px. */
-  onPoint(screen: Point, kind: 'hover' | 'tap'): void;
+  /**
+   * Mouse/pen moved (hover), or a press ended as a tap. Screen px. `target` is what Pixi's
+   * hit testing found under the pointer (the event target), if anything.
+   */
+  onPoint(screen: Point, kind: 'hover' | 'tap', target: Container | null): void;
   /** What a one-finger / left drag does. Default 'pan'. */
   getDragMode?(): DragMode;
   /** Called for drags while the drag mode is 'draw'. */
@@ -102,6 +105,7 @@ export function attachCameraControl(
   stage.eventMode = 'static';
 
   const pt = (e: FederatedPointerEvent): Point => ({ x: e.global.x, y: e.global.y });
+  const targetOf = (e: FederatedPointerEvent): Container | null => (e.target as Container | null) ?? null;
 
   const pinchState = (): { dist: number; mid: Point } | null => {
     const [a, b] = [...touches.values()];
@@ -132,7 +136,7 @@ export function attachCameraControl(
     const p = pt(e);
     movePress(p);
     if (press.drag === 'draw') hooks.onDraw?.('end', p);
-    else if (!press.drag && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap');
+    else if (!press.drag && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap', targetOf(e));
     press = null;
   };
 
@@ -175,7 +179,7 @@ export function attachCameraControl(
       hooks.setCamera(panBy(hooks.getCamera(), p.x - rightDrag.x, p.y - rightDrag.y));
       rightDrag = p;
     }
-    hooks.onPoint(p, 'hover');
+    hooks.onPoint(p, 'hover', null);
   });
 
   const up = (e: FederatedPointerEvent): void => {
