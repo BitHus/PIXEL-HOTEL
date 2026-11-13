@@ -223,3 +223,7 @@ export const WHEEL_ZOOM_STEP_DELTA = 60;
 export const PINCH_ZOOM_STEP_RATIO = 1.4;
 /** Floor textures are seamless squares of this size, in px. */
 export const FLOOR_TEXTURE_SIZE = 64;
+/** A press is a tap (click/walk) only if it moved less than this many screen px... */
+export const TAP_MAX_MOVE_PX = 8;
+/** ...and was held less than this many ms. Otherwise it is a drag (pan). */
+export const TAP_MAX_MS = 300;

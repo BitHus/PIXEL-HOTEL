@@ -348,8 +348,8 @@ Layout:
   and avatars; uses Pixi zIndex sorting, call update() each frame), depthOrder.ts
   (compareDepth, tested), bareStyles.ts (bare floor texture made in code, bare wall colors),
   colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross).
-- client/src/input/cameraControl.ts: right-drag / two-finger pan, wheel / pinch zoom in
-  integer steps around the pointer, touch tap. Uses Pixi federated events on the stage.
+- client/src/input/cameraControl.ts: the input rule below (pan, zoom, tap, draw hook). Uses
+  Pixi federated events on the stage.
 - client/src/ui/debugLabel.ts: HTML label in #ui with world x, y and zoom.
 - server/src/index.ts: placeholder only (step 10).
 
@@ -359,6 +359,16 @@ Conventions:
 - The camera is always passed through snapCamera (camera * zoom is a whole screen px) and
   clampCamera (screen center stays inside roomBoundsRect), so nothing is blurry.
 - Screen coordinates are CSS px (canvas resolution 1). The wheel zooms one step per notch.
+- INPUT RULE (touch and mouse):
+  - A press is a TAP only if it moved less than TAP_MAX_MOVE_PX (8 screen px) and was held
+    less than TAP_MAX_MS (300 ms). A tap / left click means "walk there" (in step 2 it moves
+    the debug cross). Anything else is a DRAG, and a drag never makes the avatar walk.
+  - Touch: one-finger drag pans. Two fingers pan and pinch-zoom (integer steps, the point
+    between the fingers stays fixed).
+  - Mouse: left click taps, left-drag and right-drag pan, the wheel zooms around the cursor.
+  - Blockers mode: while it is on, a one-finger / left drag draws a blocker instead of
+    panning. The hook exists (getDragMode() returns 'draw', drags go to onDraw), but the mode
+    itself is not built yet and is not in the brief; ask which step it belongs to.
 
 Notes:
 - palette.ts was filled from memory because lospec.com is blocked in the cloud environment.
