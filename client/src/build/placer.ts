@@ -1,18 +1,18 @@
-// Placing (step 4b): the ghost of one item that the player drags around (a one-finger / left
-// drag moves it by the drag distance), green if it fits and red if not. Nothing changes in the
-// room until place(); cancel() puts a moved item back exactly where it was. The rules live in
-// shared/placing.ts; this file keeps the session and draws the ghost.
+// Placing (step 4b, inventory in step 5): the ghost of one item that the player drags around (a
+// one-finger / left drag moves it by the drag distance), green if it fits and red if not. Only
+// inventory items can be placed. Nothing changes in the room until place() asks the GameAPI
+// (hooks.commit); cancel() just ends the session (a moved item was never moved, only hidden).
+// The rules live in shared/placing.ts; this file keeps the session and draws the ghost.
 
 import { Container, Graphics } from 'pixi.js';
 import {
   GHOST_ALPHA,
   PALETTE,
-  cancelPlacing,
-  confirmPlacing,
   footprintRect,
   getFurnitureType,
   moveGhost,
   moveItem,
+  nextInventoryUid,
   planGhost,
   ridersOf,
   rotateGhost,
@@ -32,12 +32,11 @@ const OK_COLOR = PALETTE[12];
 const BAD_COLOR = PALETTE[8];
 
 export interface PlacerHooks {
-  room: Room;
-  ownerId: number;
+  getRoom(): Room;
+  /** The current room's items and the inventory furniture. */
   getItems(): readonly FurnitureItem[];
-  /** The items changed (placed, or a moved item put back). */
-  setItems(items: FurnitureItem[]): void;
-  newUid(): number;
+  /** Asks the GameAPI to place (or move) the item; true if it was done. */
+  commit(session: PlacingSession, snap: boolean): Promise<boolean>;
   /** The session started, ended or changed (ghost moved, turned, became valid or invalid). */
   onChange(): void;
 }
@@ -52,6 +51,8 @@ export class Placer {
   private readonly outline = new Graphics();
   private readonly riders = new Container();
   private sprite: FurnitureSprite | null = null;
+  /** True while a place request is on its way. */
+  private busy = false;
 
   constructor(
     private readonly hooks: PlacerHooks,
@@ -87,17 +88,24 @@ export class Placer {
     return { x: b.x, y: b.y, w: b.width, h: b.height };
   }
 
-  /** Starts placing an item from the list: an inventory item of that type, else a new one. */
-  startNew(typeId: string, center: Point): void {
+  /** The furniture type being placed, or null. */
+  get typeId(): string | null {
+    return this.session?.typeId ?? null;
+  }
+
+  /** Starts placing an inventory item of this type. False if there is none. */
+  startNew(typeId: string, center: Point): boolean {
+    const uid = nextInventoryUid(this.hooks.getItems(), typeId);
+    if (uid === null) return false;
     this.end();
-    const inv = this.hooks.getItems().find((i) => i.roomId === null && i.typeId === typeId);
-    this.session = startNewPlacing(typeId, center, inv?.uid ?? null);
+    this.session = startNewPlacing(typeId, center, uid);
     this.changed();
+    return true;
   }
 
   /** Starts moving a placed item: the ghost starts where it stands. */
   startMove(uid: number): void {
-    const item = this.hooks.getItems().find((i) => i.uid === uid && i.roomId === this.hooks.room.id);
+    const item = this.hooks.getItems().find((i) => i.uid === uid && i.roomId === this.hooks.getRoom().id);
     if (!item) return;
     this.end();
     this.session = startMovePlacing(item);
@@ -117,24 +125,21 @@ export class Placer {
   }
 
   /** Places the ghost. Does nothing while it is red. */
-  place(): void {
+  async place(): Promise<void> {
     const s = this.session;
-    if (!s) return;
-    const h = this.hooks;
-    const next = confirmPlacing(h.room, h.getItems(), s, { ownerId: h.ownerId, newUid: () => h.newUid() }, !this.shift);
-    if (!next) return;
+    if (!s || this.busy || !this.valid) return;
+    this.busy = true;
+    const ok = await this.hooks.commit(s, !this.shift).finally(() => (this.busy = false));
+    if (!ok || this.session !== s) return;
     this.session = null;
-    this.update();
-    h.setItems(next);
+    this.changed();
   }
 
-  /** Stops placing: a moved item goes back exactly where it was, a new one back to the list. */
+  /** Stops placing: a moved item stays exactly where it was, an inventory item stays in the inventory. */
   cancel(): void {
-    const s = this.session;
-    if (!s) return;
+    if (!this.session) return;
     this.session = null;
-    this.update();
-    this.hooks.setItems(cancelPlacing(this.hooks.getItems(), s));
+    this.changed();
   }
 
   /** A one-finger / left drag moves the ghost by the drag distance. */
@@ -168,7 +173,7 @@ export class Placer {
       return;
     }
     const items = this.hooks.getItems();
-    this.plan = planGhost(this.hooks.room, items, s, !this.shift);
+    this.plan = planGhost(this.hooks.getRoom(), items, s, !this.shift);
     this.drawGhost(s, this.plan, items);
   }
 
@@ -191,7 +196,7 @@ export class Placer {
     // What stands on a moved item moves with it.
     this.riders.removeChildren().forEach((c) => c.destroy({ children: true }));
     if (s.origin && s.uid !== null && ridersOf(items, s.uid).length > 0) {
-      const to = { x: plan.x, y: plan.y, facing: plan.facing, onItemUid: plan.onItemUid, roomId: this.hooks.room.id };
+      const to = { x: plan.x, y: plan.y, facing: plan.facing, onItemUid: plan.onItemUid, roomId: this.hooks.getRoom().id };
       const top = surfaceHeight(type) + lift;
       for (const r of ridersOf(moveItem(items, s.uid, to), s.uid)) {
         const rs = new FurnitureSprite(getFurnitureType(r.typeId));

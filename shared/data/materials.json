@@ -1,0 +1,6 @@
+[
+  { "id": "wood", "name": "Wood", "baseValue": 3, "color": 4 },
+  { "id": "cloth", "name": "Cloth", "baseValue": 6, "color": 28 },
+  { "id": "bone", "name": "Bone", "baseValue": 4, "color": 2 },
+  { "id": "crystal", "name": "Crystal", "baseValue": 15, "color": 18 }
+]

@@ -1,8 +1,5 @@
 // Endesga 32 by Endesga (lospec.com/palette-list/endesga-32).
 // This is the ONLY place the palette hex list lives. Switching palettes = changing this file.
-//
-// NOTE: lospec.com was not reachable from the build environment in step 1, so this list was
-// filled in from memory and is UNVERIFIED. Replace it with the official list when available.
 
 export const PALETTE_NAME = 'Endesga 32';
 

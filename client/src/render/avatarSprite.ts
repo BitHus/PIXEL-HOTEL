@@ -73,12 +73,25 @@ export class AvatarSprite {
   /** Positioned at the feet, in world px. */
   readonly container = new Container();
   private readonly body = new Container();
-  private readonly views: Record<'down' | 'up' | 'right', Graphics>;
+  private views: Record<'down' | 'up' | 'right', Graphics>;
+  private facing: Facing = 'down';
 
   constructor(look: AvatarLook) {
-    this.views = { down: drawFacing(look, 'down'), up: drawFacing(look, 'up'), right: drawFacing(look, 'right') };
-    this.body.addChild(this.views.down, this.views.up, this.views.right);
+    this.views = this.draw(look);
     this.container.addChild(this.body);
+  }
+
+  /** Redraws the avatar with new colours (the avatar panel). */
+  setLook(look: AvatarLook): void {
+    for (const v of Object.values(this.views)) v.destroy();
+    this.views = this.draw(look);
+    this.setFacing(this.facing);
+  }
+
+  private draw(look: AvatarLook): Record<'down' | 'up' | 'right', Graphics> {
+    const views = { down: drawFacing(look, 'down'), up: drawFacing(look, 'up'), right: drawFacing(look, 'right') };
+    this.body.addChild(views.down, views.up, views.right);
+    return views;
   }
 
   /** Shows the avatar's position, facing and walk bob. timeMs drives the bob. */
@@ -90,6 +103,7 @@ export class AvatarSprite {
   }
 
   private setFacing(facing: Facing): void {
+    this.facing = facing;
     const drawn = facing === 'left' ? 'right' : facing;
     for (const [k, v] of Object.entries(this.views)) v.visible = k === drawn;
     this.body.scale.x = facing === 'left' ? -1 : 1;

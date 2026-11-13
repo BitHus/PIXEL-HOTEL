@@ -1,33 +1,45 @@
 import { Application, TextureSource } from 'pixi.js';
 import {
-  AVATAR_START_FROM_BOTTOM,
+  AVATAR_H,
+  INTRO_DEVICE_PX_PER_ART_PX,
   PALETTE,
-  SIT_REACH_PX,
-  getFurnitureType,
-  itemBlockers,
-  pickUpItem,
-  rotateInPlace,
-  seatFor,
-  standPointFor,
   buildNavGrid,
+  cameraAt,
   centerCamera,
   clampCamera,
-  createRoom,
-  findPath,
+  containCamera,
+  countInInventory,
   fitZoom,
+  fitsRoomKind,
+  furnitureStacks,
+  getFurnitureType,
+  introZoom,
+  itemBlockers,
+  materialStacks,
   roomBoundsRect,
   screenToWorld,
+  seatFor,
   snapCamera,
   walkAvatar,
   worldToScreen,
   type Avatar,
   type Camera,
   type FurnitureItem,
+  type Inventory,
+  type ItemsResult,
   type Point,
+  type Pose,
+  type Rect,
+  type Room,
+  type RoomKind,
 } from '@pixel-hotel/shared';
+import './ui/ui.css';
+import { LocalGameAPI } from './api/localGameAPI.ts';
+import { browserStorage } from './api/saveStorage.ts';
 import { RoomView } from './render/roomView.ts';
 import { createCursorCross } from './render/cursorCross.ts';
 import { attachCameraControl } from './input/cameraControl.ts';
+import { CameraIntro } from './input/cameraIntro.ts';
 import { createDebugLabel } from './ui/debugLabel.ts';
 import { AvatarSprite } from './render/avatarSprite.ts';
 import { BlockersDebug } from './debug/blockers.ts';
@@ -35,9 +47,19 @@ import { createBlockersButton } from './ui/blockersButton.ts';
 import { ItemViews } from './render/itemViews.ts';
 import { avatarDepthKey } from './render/depthOrder.ts';
 import { Placer } from './build/placer.ts';
-import { createBuildPanel } from './ui/buildPanel.ts';
 import { createPlaceBar } from './ui/placeBar.ts';
 import { createItemMenu } from './ui/itemMenu.ts';
+import { createPanels } from './ui/panels.ts';
+import { createSideButtons } from './ui/sideButtons.ts';
+import { createInfoPanel } from './ui/infoPanel.ts';
+import { createHotbar } from './ui/hotbar.ts';
+import { createBagPanel } from './ui/bagPanel.ts';
+import { createAvatarPanel } from './ui/avatarPanel.ts';
+import { createChatPanel } from './ui/chatPanel.ts';
+import { createChatBubbles } from './ui/chatBubbles.ts';
+import { createSettingsPanel } from './ui/settingsPanel.ts';
+import { createToast } from './ui/toast.ts';
+import { typing } from './ui/dom.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
@@ -46,6 +68,9 @@ async function start(): Promise<void> {
   const host = document.getElementById('game');
   const ui = document.getElementById('ui');
   if (!host || !ui) throw new Error('#game or #ui element missing');
+
+  // Step 5: the game runs on LocalGameAPI (shared rules in the browser, saved in localStorage).
+  const { api, notice } = LocalGameAPI.open(browserStorage());
 
   const app = new Application();
   await app.init({
@@ -61,59 +86,51 @@ async function start(): Promise<void> {
   const dpr = (): number => app.renderer.resolution;
   host.appendChild(app.canvas);
 
-  // Step 2: a level 1 hotel room, drawn on its own. Later steps load it through GameAPI.
-  const room = createRoom(1, 'hotel', 1, 1);
-  const bounds = roomBoundsRect(room);
+  // Open the room the player was in last (saved).
+  const first = await api.enterRoom(await api.currentRoomId());
+  let room: Room = first.room;
+  let bounds: Rect = roomBoundsRect(room);
   const view = new RoomView();
-  view.setRoom(room);
   app.stage.addChild(view.world);
 
-  // Step 3: one local avatar. Paths come from the shared nav rules (LocalGameAPI arrives later).
-  let avatar: Avatar = {
-    id: 1,
-    name: 'You',
-    look: { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 },
-    roomId: room.id,
-    x: room.w / 2,
-    y: room.h - AVATAR_START_FROM_BOTTOM,
-    facing: 'up',
-    state: 'idle',
-  };
+  // ---------- The own avatar (paths come from the GameAPI; the client animates them) ----------
+  const me = first.avatars[0];
+  if (!me) throw new Error('no avatar');
+  let avatar: Avatar = me;
   /** Points the avatar still has to walk to, and where it was sent (to re-path when the room changes). */
   let path: Point[] = [];
   let goal: Point | null = null;
   /** The seat the avatar is walking to (sits on arrival), and the one it sits on. */
-  let seatGoal: number | null = null;
+  let seatGoal: { uid: number; pose: Pose } | null = null;
   let seatUid: number | null = null;
   const sprite = new AvatarSprite(avatar.look);
   view.objects.add(sprite.container, avatarDepthKey(avatar));
 
-  // Step 4: furniture. Kept here until LocalGameAPI arrives; the rules are in shared/furniture.ts.
-  let items: FurnitureItem[] = [];
-  let lastUid = 0;
-  const itemViews = new ItemViews(view, room.id);
-  const roomItem = (uid: number | null): FurnitureItem | undefined =>
-    uid === null ? undefined : items.find((i) => i.uid === uid && i.roomId === room.id);
-
-  let grid = buildNavGrid(room, []);
-  /** Walks to a world point (the nearest free spot if it is blocked). False if unreachable. */
-  const walkTo = (to: Point): boolean => {
-    const found = findPath(grid, avatar, to);
-    if (!found) return false;
-    path = found.slice(1);
-    goal = to;
+  /** Starts walking along a path from the API (it starts where the API thinks the avatar is). */
+  const follow = (p: Point[]): void => {
+    const first = p[0];
+    // Only jump when the API's start point is clearly elsewhere (tiny timing differences are walked off).
+    if (first && Math.hypot(first.x - avatar.x, first.y - avatar.y) > 8) avatar = { ...avatar, x: first.x, y: first.y };
+    path = p.slice(1);
     seatUid = null;
     avatar = { ...avatar, state: path.length > 0 ? 'walk' : 'idle' };
+  };
+  /** Walks to a world point (the nearest free spot if it is blocked). False if unreachable. */
+  const walkTo = async (to: Point): Promise<boolean> => {
+    const p = await api.walk(to);
+    if (!p) return false;
+    follow(p);
+    goal = to;
+    seatGoal = null;
     return true;
   };
   /** Walks to the front of a sittable item and sits down on arrival. */
-  const sitOn = (item: FurnitureItem): boolean => {
-    const front = standPointFor(item, getFurnitureType(item.typeId));
-    const found = findPath(grid, avatar, front);
-    const end = found?.[found.length - 1];
-    if (!found || !end || Math.hypot(end.x - front.x, end.y - front.y) > SIT_REACH_PX) return false;
-    walkTo(front);
-    seatGoal = item.uid;
+  const sitOn = async (uid: number): Promise<boolean> => {
+    const r = await api.sit(uid);
+    if (!r) return false;
+    follow(r.path);
+    goal = null;
+    seatGoal = { uid, pose: r.seat };
     return true;
   };
   const stop = (): void => {
@@ -122,11 +139,21 @@ async function start(): Promise<void> {
     if (avatar.state === 'walk') avatar = { ...avatar, state: 'idle' };
   };
 
-  const blockers = new BlockersDebug(room, () => roomChanged());
-  /** Furniture or debug blockers changed: rebuild the nav grid and re-path a walking avatar. */
+  // ---------- Furniture ----------
+  /** The current room's items plus the inventory furniture (the GameAPI's view). */
+  let items: FurnitureItem[] = await api.getItems();
+  let inventory: Inventory = await api.getInventory();
+  const itemViews = new ItemViews(view, room.id);
+  const roomItem = (uid: number | null): FurnitureItem | undefined =>
+    uid === null ? undefined : items.find((i) => i.uid === uid && i.roomId === room.id);
+
+  const blockers = new BlockersDebug(room, () => {
+    api.debugSetBlockers(blockers.rects);
+    roomChanged();
+  });
+  /** Furniture or debug blockers changed: redraw the debug overlay and re-path a walking avatar. */
   const roomChanged = (): void => {
-    grid = buildNavGrid(room, [...blockers.rects, ...itemBlockers(items, room.id)]);
-    blockers.showGrid(grid);
+    blockers.showGrid(buildNavGrid(room, [...blockers.rects, ...itemBlockers(items, room.id)]));
     // The seat was moved or picked up: stand up where you are.
     if (seatUid !== null) {
       const seat = roomItem(seatUid);
@@ -137,22 +164,28 @@ async function start(): Promise<void> {
       }
     }
     if (seatGoal !== null) {
-      const target = roomItem(seatGoal);
-      if (!target || !sitOn(target)) stop();
-    } else if (path.length > 0 && goal && !walkTo(goal)) {
-      stop();
+      const target = seatGoal.uid;
+      void sitOn(target).then((ok) => ok || stop());
+    } else if (path.length > 0 && goal) {
+      void walkTo(goal).then((ok) => ok || stop());
     }
   };
-  blockers.showGrid(grid);
   view.debugLayer.addChild(blockers.container);
-  createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
 
   const cross = createCursorCross();
   // Only furniture takes part in hit testing: the cross and avatars never hide an item from a tap.
   cross.eventMode = 'none';
   sprite.container.eventMode = 'none';
   app.stage.addChild(cross);
+
+  // ---------- HTML UI (layout rule in CLAUDE.md) ----------
+  const toast = createToast(ui);
+  const bubbles = createChatBubbles(ui);
   const label = createDebugLabel(ui);
+  const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
+  const panels = createPanels();
+  const info = createInfoPanel(ui, (kind) => void openRoomKind(kind));
+  createSideButtons(ui, panels);
 
   /** Camera state (unsnapped, so zooming never drifts). */
   let camera: Camera = { x: 0, y: 0, zoom: 1 };
@@ -160,6 +193,7 @@ async function start(): Promise<void> {
   let shown: Camera = camera;
   /** World point marked by the cross (under the mouse, or the last tap). */
   let marked: Point | null = null;
+  const intro = new CameraIntro();
 
   const redraw = (): void => {
     shown = snapCamera(camera, dpr());
@@ -169,7 +203,6 @@ async function start(): Promise<void> {
     if (marked) {
       const s = worldToScreen(marked, shown);
       cross.position.set(Math.floor(s.x), Math.floor(s.y));
-      cross.visible = true;
       text = `x ${Math.floor(marked.x)}  y ${Math.floor(marked.y)}\n${text}`;
     }
     label.set(text);
@@ -182,47 +215,53 @@ async function start(): Promise<void> {
   };
 
   // Default view: the largest zoom where the whole room fits (ZOOM_MIN to ZOOM_MAX, any value), centered.
+  const overviewZoom = (): number => fitZoom(app.screen.width, app.screen.height, bounds);
   const fit = (): void => {
+    intro.cancel();
     const w = app.screen.width;
     const h = app.screen.height;
-    setCamera(centerCamera(w, h, bounds, fitZoom(w, h, bounds)));
+    setCamera(centerCamera(w, h, bounds, overviewZoom()));
+  };
+  /** The room intro: overview first, then a zoom in on the avatar (section 4). */
+  const startIntro = (): void => {
+    fit();
+    const w = app.screen.width;
+    const h = app.screen.height;
+    const zoom = introZoom(overviewZoom(), dpr(), INTRO_DEVICE_PX_PER_ART_PX);
+    if (zoom <= camera.zoom + 1e-6) return;
+    const to = snapCamera(containCamera(cameraAt(avatar, zoom, w, h), w, h, bounds), dpr());
+    intro.start(camera, to);
   };
 
-  // Step 4b: placing (a ghost that lands only on ✓) and the item menu.
-  const setItems = (next: FurnitureItem[]): void => {
+  // ---------- Placing and the item menu ----------
+  /** Applies items from the GameAPI (null = refused). */
+  const applyItems = (next: ItemsResult): boolean => {
+    if (!next) return false;
     items = next;
     itemViews.sync(items, placer.hiddenUids());
     roomChanged();
-    refreshUI();
+    void refreshInventory();
+    return true;
   };
   const placer: Placer = new Placer(
     {
-      room,
-      ownerId: 1,
+      getRoom: () => room,
       getItems: () => items,
-      setItems,
-      newUid: () => ++lastUid,
+      commit: async (s, snap) => {
+        if (s.uid === null) return false;
+        const at = { center: s.center, facing: s.facing, snap };
+        return applyItems(s.origin ? await api.moveItem(s.uid, at) : await api.placeItem(s.uid, at));
+      },
       onChange: () => {
         itemViews.sync(items, placer.hiddenUids());
-        refreshUI();
+        hotbar.setHidden(placer.active);
       },
     },
     view.ghostLayer,
   );
   const viewCenter = (): Point => screenToWorld({ x: app.screen.width / 2, y: app.screen.height / 2 }, shown);
-  let buildOn = false;
-  const panel = createBuildPanel(ui, {
-    onToggle: (on) => {
-      buildOn = on;
-      refreshUI();
-    },
-    onSelect: (typeId) => {
-      menu.close();
-      placer.startNew(typeId, viewCenter());
-    },
-  });
   const placeBar = createPlaceBar(ui, {
-    onPlace: () => placer.place(),
+    onPlace: () => void placer.place(),
     onRotate: () => placer.rotate(),
     onCancel: () => placer.cancel(),
   });
@@ -232,27 +271,167 @@ async function start(): Promise<void> {
       placer.startMove(uid);
     },
     onRotate: (uid) => {
-      const next = rotateInPlace(room, items, uid);
-      if (next) setItems(next);
-      else itemViews.shake(uid);
+      void api.rotateItem(uid).then((next) => applyItems(next) || itemViews.shake(uid));
     },
     onPickUp: (uid) => {
       menu.close();
-      setItems(pickUpItem(items, uid));
+      void api.pickUpItem(uid).then(applyItems);
     },
     onSit: (uid) => {
       menu.close();
-      const seat = roomItem(uid);
-      if (seat && !sitOn(seat)) itemViews.shake(uid);
+      void sitOn(uid).then((ok) => ok || itemViews.shake(uid));
     },
   });
   const openMenu = (item: FurnitureItem): void => menu.open(item.uid, getFurnitureType(item.typeId));
-  function refreshUI(): void {
-    const inventory = new Map<string, number>();
-    for (const i of items) if (i.roomId === null) inventory.set(i.typeId, (inventory.get(i.typeId) ?? 0) + 1);
-    panel.refresh({ on: buildOn, placing: placer.active, inventory });
+
+  /** Starts placing an inventory item of this type in the middle of the screen. */
+  const startPlacing = (typeId: string): boolean => {
+    if (!fitsRoomKind(getFurnitureType(typeId), room)) {
+      toast(`${getFurnitureType(typeId).name} cannot go in the ${room.kind === 'shop' ? 'shop' : 'hotel room'}.`);
+      return false;
+    }
+    menu.close();
+    return placer.startNew(typeId, viewCenter());
+  };
+
+  // ---------- Hotbar and Bag ----------
+  let selectedSlot: number | null = null;
+  const hotbar = createHotbar(ui, {
+    onTap: (index) => {
+      if (bag.carrying !== null) {
+        const typeId = bag.carrying;
+        bag.endCarry();
+        void api.setHotbarSlot(index, typeId).then(() => refreshInventory());
+        return;
+      }
+      const typeId = inventory.hotbar[index];
+      if (!typeId) return;
+      if (countInInventory(inventory.furniture, typeId) === 0) {
+        toast(`No ${getFurnitureType(typeId).name} left in the bag.`);
+        return;
+      }
+      selectedSlot = index;
+      hotbar.setSelected(index);
+      if (startPlacing(typeId)) panels.close();
+    },
+    onHold: (index) => {
+      if (!inventory.hotbar[index]) return;
+      void api.setHotbarSlot(index, null).then(() => refreshInventory());
+      toast('Removed from the hotbar.');
+    },
+  });
+  const bag = createBagPanel(ui, {
+    onPlace: (typeId) => {
+      if (startPlacing(typeId)) panels.close();
+    },
+    onAssign: (index, typeId) => void api.setHotbarSlot(index, typeId).then(() => refreshInventory()),
+    onCarry: (on) => hotbar.setChoosing(on),
+  });
+  panels.add('bag', bag.el, undefined, () => bag.endCarry());
+
+  async function refreshInventory(): Promise<void> {
+    inventory = await api.getInventory();
+    const p = await api.getPlayer();
+    info.setGold(p.wallet.gold);
+    bag.refresh(furnitureStacks(inventory.furniture), materialStacks(inventory.materials));
+    hotbar.refresh(
+      inventory.hotbar.map((typeId) => {
+        if (typeId === null) return { typeId, count: 0, usable: false, name: '' };
+        const type = getFurnitureType(typeId);
+        const count = countInInventory(inventory.furniture, typeId);
+        return { typeId, count, usable: count > 0 && fitsRoomKind(type, room), name: type.name };
+      }),
+    );
   }
-  refreshUI();
+
+  // ---------- Avatar, chat, settings ----------
+  const avatarPanel = createAvatarPanel(ui, (next) => {
+    avatar = { ...avatar, look: next };
+    sprite.setLook(next);
+    void api.setLook(next);
+  });
+  avatarPanel.setLook(avatar.look);
+  panels.add('avatar', avatarPanel.el);
+
+  const chat = createChatPanel(ui, (text) => void api.chat(text));
+  panels.add('chat', chat.el, () => chat.focus());
+  api.onChat((line) => {
+    chat.add(line);
+    bubbles.add(line);
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || typing(e) || placer.active || e.repeat) return;
+    e.preventDefault();
+    if (panels.open === 'chat') chat.focus();
+    else panels.show('chat');
+  });
+
+  const settings = createSettingsPanel(ui, {
+    exportSave: () => api.exportSave(),
+    importSave: (text) => {
+      const r = api.importSave(text);
+      if (r.ok) window.location.reload();
+      else toast(r.message);
+    },
+    restoreBackup: () => {
+      const r = api.restoreBackup();
+      if (r.ok) window.location.reload();
+      else toast(r.message);
+    },
+    newGame: () => {
+      api.newGame();
+      window.location.reload();
+    },
+    giveTestFurniture: () => {
+      void api.debugGiveTestFurniture().then(async () => {
+        items = await api.getItems();
+        await refreshInventory();
+        toast('Test furniture added to the bag.');
+      });
+    },
+    onDebug: (on) => {
+      label.setVisible(on);
+      blockerButtons.setVisible(on);
+      cross.visible = on && marked !== null;
+      redraw();
+    },
+  });
+  panels.add('settings', settings.el);
+  cross.visible = false;
+
+  // ---------- Rooms ----------
+  /** Opens a room: draws it, puts the avatar in the door zone and plays the camera intro. */
+  async function openRoom(roomId: number): Promise<void> {
+    placer.cancel();
+    menu.close();
+    bubbles.clear();
+    chat.clear();
+    const state = await api.enterRoom(roomId);
+    room = state.room;
+    bounds = roomBoundsRect(room);
+    view.setRoom(room);
+    itemViews.setRoom(room.id);
+    blockers.setRoom(room);
+    items = await api.getItems();
+    const mine = state.avatars[0];
+    if (mine) avatar = { ...mine, look: avatar.look };
+    path = [];
+    goal = null;
+    seatGoal = null;
+    seatUid = null;
+    marked = null;
+    itemViews.sync(items, placer.hiddenUids());
+    roomChanged();
+    info.setRoom(room.kind);
+    await refreshInventory();
+    startIntro();
+  }
+  async function openRoomKind(kind: RoomKind): Promise<void> {
+    if (kind === room.kind) return;
+    const p = await api.getPlayer();
+    await openRoom(kind === 'hotel' ? p.hotelRoomId : p.shopRoomId);
+  }
+
   // Shift turns snapping off (desktop).
   const onShift = (e: KeyboardEvent): void => placer.setShift(e.shiftKey);
   window.addEventListener('keydown', onShift);
@@ -263,10 +442,12 @@ async function start(): Promise<void> {
   const control = attachCameraControl(app.stage, app.canvas, {
     getCamera: () => camera,
     setCamera,
-    getOverviewZoom: () => fitZoom(app.screen.width, app.screen.height, bounds),
+    getOverviewZoom: overviewZoom,
     getDevicePixelRatio: dpr,
+    onGestureStart: () => intro.cancel(),
     onPoint: (screen, kind, target) => {
       marked = screenToWorld(screen, shown);
+      cross.visible = label.visible;
       redraw();
       // While placing, taps do nothing: only ✓ places (so nothing lands by accident).
       if (kind === 'hover' || placer.active) return;
@@ -277,19 +458,27 @@ async function start(): Promise<void> {
         else menu.close();
         return;
       }
+      // A tap on the room closes an open panel (and does nothing else).
+      if (panels.open !== null) {
+        panels.close();
+        return;
+      }
       // A tap with the menu open only closes it (a tap on the same item keeps it open).
       if (menu.uid !== null) {
         if (hit?.uid !== menu.uid) menu.close();
         return;
       }
       if (hit) {
-        // A sittable item outside build mode: walk there and sit. Anything else: its menu.
-        if (!buildOn && getFurnitureType(hit.typeId).sittable && sitOn(hit)) return;
+        // A sittable item: walk there and sit. Anything else (or a seat out of reach): its menu.
+        if (getFurnitureType(hit.typeId).sittable) {
+          void sitOn(hit.uid).then((ok) => ok || openMenu(hit));
+          return;
+        }
         openMenu(hit);
         return;
       }
-      seatGoal = null;
-      walkTo(marked);
+      const to = marked;
+      void walkTo(to);
     },
     getDragMode: () => (blockers.on || placer.active ? 'draw' : 'pan'),
     onDraw: (phase, screen) => {
@@ -306,28 +495,35 @@ async function start(): Promise<void> {
     if (next !== app.renderer.resolution) app.renderer.resize(window.innerWidth, window.innerHeight, next);
   });
   let clockMs = 0;
+  const heads = new Map<number, Point>();
   app.ticker.add((ticker) => {
+    const step = intro.update(ticker.deltaMS, app.screen.width, app.screen.height);
+    if (step) setCamera(step.camera, step.done);
     control.update(ticker.deltaMS);
     clockMs += ticker.deltaMS;
     if (avatar.state !== 'sit') ({ avatar, path } = walkAvatar(avatar, path, ticker.deltaMS));
-    const target = roomItem(seatGoal);
     if (path.length === 0 && seatGoal !== null) {
-      seatGoal = null;
+      const target = roomItem(seatGoal.uid);
+      // Arrived in front of the seat: sit on it, facing the way it faces.
       if (target) {
-        // Arrived in front of the seat: sit on it, facing the way it faces.
-        avatar = { ...avatar, ...seatFor(target, getFurnitureType(target.typeId)), state: 'sit' };
+        avatar = { ...avatar, ...seatGoal.pose, state: 'sit' };
         seatUid = target.uid;
       }
+      seatGoal = null;
     }
     itemViews.update(ticker.deltaMS);
     sprite.update(avatar, clockMs);
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seatUid)));
     view.update();
-    // The floating bars follow the ghost and the item (the camera may move).
+    // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).
     placeBar.update(placer.screenBounds(), placer.valid);
     menu.follow(menu.uid === null ? null : itemViews.screenBounds(menu.uid));
+    heads.set(avatar.id, worldToScreen({ x: avatar.x, y: avatar.y - AVATAR_H }, shown));
+    bubbles.update(ticker.deltaMS, heads);
   });
-  fit();
+
+  await openRoom(room.id);
+  if (notice) toast(notice);
 }
 
 void start();

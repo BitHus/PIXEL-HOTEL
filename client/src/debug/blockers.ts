@@ -31,7 +31,7 @@ export class BlockersDebug {
   private dragStart: Point | null = null;
 
   constructor(
-    private readonly room: Room,
+    private room: Room,
     /** Called after the list of rectangles changed. */
     private readonly onChange: () => void,
   ) {
@@ -43,6 +43,14 @@ export class BlockersDebug {
     this.on = on;
     this.overlayGfx.visible = on;
     if (!on) this.cancelDraw();
+  }
+
+  /** Another room: the drawn rectangles belong to the old room and are dropped. */
+  setRoom(room: Room): void {
+    this.room = room;
+    this.cancelDraw();
+    this.rects.length = 0;
+    this.redrawRects();
   }
 
   clear(): void {

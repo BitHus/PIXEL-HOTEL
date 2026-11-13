@@ -53,6 +53,8 @@ export interface CameraControlHooks {
   getDragMode?(): DragMode;
   /** Called for drags while the drag mode is 'draw'. */
   onDraw?(phase: DrawPhase, screen: Point): void;
+  /** Any press or wheel on the room started (the camera intro stops). */
+  onGestureStart?(): void;
 }
 
 /** Wheel deltaMode 1 (lines) and 2 (pages) in px. */
@@ -148,6 +150,7 @@ export function attachCameraControl(
   };
 
   stage.on('pointerdown', (e: FederatedPointerEvent) => {
+    hooks.onGestureStart?.();
     const p = pt(e);
     const newPress = (): Press => ({
       id: e.pointerId,
@@ -220,6 +223,7 @@ export function attachCameraControl(
 
   stage.on('wheel', (e: FederatedWheelEvent) => {
     const unit = e.deltaMode === 1 ? WHEEL_LINE_PX : e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
+    hooks.onGestureStart?.();
     settle = null;
     wheelIdleMs = 0;
     const from = wheel?.target ?? hooks.getCamera().zoom;

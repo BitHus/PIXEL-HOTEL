@@ -44,8 +44,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Top-down view with a slight front angle. World coordinates are pixels: x to the right, y
   down. 1 world pixel = 1 art pixel. There is no isometric math.
 - screenToWorld(p) = p / zoom + camera, worldToScreen(p) = (p - camera) * zoom. Camera
-  position is in world pixels. Zoom is free: any number from 0.5 to 4 (ZOOM_MIN, ZOOM_MAX;
-  also 1.005), set by pinch or the mouse wheel, like in most games. Zooming stays smooth
+  position is in world pixels. Zoom is free: any number from 0.5 to 4 (ZOOM_MIN, ZOOM_MAX),
+  set by pinch or the mouse wheel, like in most games. Zooming stays smooth
   while the gesture is active. When the gesture ends, the zoom eases over 0.15 s
   (ZOOM_SETTLE_MS) to the nearest zoom where zoom * window.devicePixelRatio is a whole
   number (so one art pixel always covers a whole number of real screen pixels: whole zooms
@@ -54,6 +54,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   full devicePixelRatio. The default (overview) zoom is the
   largest one where the whole room fits on screen, and at least 0.5. If the room does not
   fit at zoom 0.5, the camera follows the avatar and the player can pan.
+- Camera intro: when a room opens, the camera starts at the overview zoom, waits 0.6 s
+  (INTRO_WAIT_MS), then zooms in smoothly over 0.8 s (INTRO_ZOOM_MS) to the settled zoom
+  (the zooms above where zoom * devicePixelRatio is whole) nearest to 3 real pixels per art
+  pixel (INTRO_DEVICE_PX_PER_ART_PX), ending centered on the avatar. A tap, a drag, a pinch or
+  the wheel during the intro skips it (the camera stays where it is).
 - The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
   grids exist only inside the code and are never shown: the navigation grid (16 px cells,
   section 6) and the dungeon's 32 px blocks (section 10).
@@ -334,8 +339,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   push at the end of every step.
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
-Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture) and 4b (placing
-and the item menu) are done.
+Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture), 4b (placing
+and the item menu) and 5 (inventory, UI, chat, local saving, camera intro) are done.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -350,7 +355,9 @@ Layout:
   rectsTouch, rectsOverlap), nav.ts (NavGrid, buildNavGrid, findPath, smoothPath,
   lineOfSight, segmentTouchesRect, inflateRect, cell helpers), minHeap.ts (A* open list),
   avatar.ts (Avatar, AvatarLook, AvatarState, walkAvatar, facingFor, pathLength), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
-  zoomAt, panBy, clampCamera, snapCamera, settleZoom, easeZoom), api.ts (GameAPI interface), palette.ts (Endesga
+  zoomAt, panBy, clampCamera, snapCamera, settleZoom, easeZoom, cameraCenter, cameraAt,
+  introZoom, introCamera, containCamera), api.ts (GameAPI interface, RoomState, Inventory,
+  PlaceAt, SitResult, ItemsResult), palette.ts (Endesga
   32 hex list, the only place it lives), furniture.ts (FURNITURE_TYPES, getFurnitureType,
   footprintSize, footprintRect, snapCoord, nextFacing, fitsRoomKind, ridersOf, itemBlockers,
   doorPoint, doorReachesMiddle, canPlace, snapToSurface, planPlacement, rotateQuarter,
@@ -359,12 +366,26 @@ Layout:
   refused while invalid), cancelPlacing (exact restore), rotateInPlace (null = does not fit),
   footprintCenter), index.ts (re-exports).
   nav.ts also exports reachableCells and nearestFreeCell.
+  Step 5: materials.ts (MATERIAL_TYPES, getMaterialType, isMaterialId), gameState.ts
+  (GameState: player, look, rooms, items (ALL furniture; roomId null = inventory), hotbar,
+  currentRoomId, nextUid, ledger; ChatLine), ledger.ts (applyChange: the ONE function for gold,
+  material and new-furniture changes; writes a LedgerEntry; null if something would go below
+  0), newPlayer.ts (createNewPlayer(config, at), DEFAULT_NEW_PLAYER, styleKey), inventory.ts
+  (inventoryItems, furnitureStacks (stacked by type, furniture.json order), countInInventory,
+  nextInventoryUid, materialStacks, setHotbarSlot (a type is in the hotbar once; swaps)),
+  chat.ts (cleanChatText), save.ts (SaveFile, saveKey, toSaveText, readSave, MIGRATIONS,
+  isGameState).
+- shared/data/materials.json: wood 3, cloth 6, bone 4, crystal 15 (+ a placeholder icon color).
 - shared/data/furniture.json: the 12 starter furniture types (step 4), all box placeholders.
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
-- client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling), draws a level 1 hotel room,
-  keeps the camera, shows the debug cross and label. Refits the camera on window resize.
-  Holds one local avatar (starts in the door zone): a tap calls findPath, the ticker calls
-  walkAvatar each frame and updates the sprite and its depth key (feet y, x, avatar id).
+- client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling). Opens
+  LocalGameAPI, enters the saved current room (openRoom: draw room, items, avatar in the door
+  zone, camera intro), keeps the camera, wires the HTML UI. Taps call api.walk / api.sit; the
+  ticker animates the returned path with walkAvatar. Refits the camera on window resize.
+- client/src/api: localGameAPI.ts (LocalGameAPI implements GameAPI + LocalSaves (export,
+  import, restore backup, new game); also debugSetBlockers), saveStorage.ts (SaveStorage
+  interface, browserStorage (localStorage), memoryStorage (tests)). localGameAPI.test.ts covers
+  new game, placing / pick up, rooms, save/load, export/import, damaged and old saves.
 - client/src/render: roomView.ts (RoomView: world container with floorLayer, rugLayer (holds
   the `rugs` DepthLayer), debugLayer, wallLayer, objects, ghostLayer; call view.update() each
   frame), depthLayer.ts (DepthLayer: a y/x/uid-sorted list; uses Pixi zIndex sorting),
@@ -381,18 +402,67 @@ Layout:
   rectangles that block navigation, a drag preview, and the faint blocked-cell overlay.
 - client/src/input/cameraControl.ts: the input rule below (pan, zoom, tap, draw hook). Uses
   Pixi federated events on the stage.
-- client/src/ui/debugLabel.ts: HTML label in #ui with world x, y and zoom.
-- client/src/ui/blockersButton.ts: "Blockers (B)" toggle and "Clear" buttons (top right),
-  plus the B key.
-- client/src/build/placer.ts: Placer (step 4b; one placing session + the ghost drawing; place,
-  rotate, cancel, drag, screenBounds). client/src/ui/buildPanel.ts: "Build (F)" toggle and the
-  temporary list of all 12 types as a sideways-scrolling strip at the bottom (inventory counts),
-  hidden while placing. client/src/ui/placeBar.ts: floating ✓ ↻ ✗ bar above the ghost (Enter,
+- client/src/input/cameraIntro.ts: CameraIntro (the room intro; cancelled by onGestureStart).
+- client/src/ui/debugLabel.ts: HTML label with world x, y and zoom (only while Debug is on).
+- client/src/ui/blockersButton.ts: "Blockers (B)" toggle and "Clear" (left, only while Debug
+  is on), plus the B key.
+- client/src/ui (step 5): ui.css (THE frame style and all UI CSS; the pixel font Pixelify Sans,
+  SIL OFL, is hosted in client/src/fonts with its license), dom.ts (el, textButton,
+  iconButton, typing), pixelIcons.ts (pixel-map SVG icons: bag, avatar, chat, gear, coin),
+  itemIcon.ts (inventory icons: a small version of the boxes / a material box; fitRects tested),
+  press.ts (tap / long press / drag on HTML slots), panels.ts (one side panel open at a time),
+  sideButtons.ts (right-edge column), infoPanel.ts (gold, room name, Hotel / Shop), hotbar.ts,
+  bagPanel.ts (tabs, grid, carry to the hotbar), avatarPanel.ts, chatPanel.ts (log + input),
+  chatBubbles.ts, settingsPanel.ts, toast.ts.
+- client/src/build/placer.ts: Placer (one placing session + the ghost drawing; startNew takes
+  an inventory item of the type (false if none), place() asks hooks.commit (the GameAPI),
+  rotate, cancel, drag, screenBounds). client/src/ui/placeBar.ts: floating ✓ ↻ ✗ bar above the ghost (Enter,
   R, Escape). client/src/ui/itemMenu.ts: item menu (Move, Rotate, Pick up, Sit) + name card.
   client/src/ui/anchorAbove.ts: puts a floating element above a screen rect, inside the screen.
 - server/src/index.ts: placeholder only (step 10).
 
 Conventions:
+- UI LAYOUT RULE (step 5). The room fills the whole screen; all UI sits on top of it at the
+  edges, never in solid bars. Every frame, button, slot and panel uses the one frame style in
+  client/src/ui/ui.css (dark wood, 2 px dark warm outline, lighter top edge, square corners,
+  pixel font, at least 44 px touch size, no default browser buttons). Places:
+  - Top-left: the info panel (gold with a coin icon, room name) with the room switcher under it.
+    New player stats (xp, level) go into this panel.
+  - Right edge: one column of square icon buttons (Bag, Avatar, Chat, Settings), tooltips via
+    title. New screens add an icon button to this column (sideButtons.ts) and a panel.
+  - Panels: open to the left of that column, top aligned, never covering the hotbar; one at a
+    time (panels.ts). A tap on the room closes the open panel. Escape closes it.
+  - Bottom center: the hotbar (6 slots, icons only, a count for stacks, the last used slot has a
+    bright warm border). Hidden while placing.
+  - Floating bars (✓ ↻ ✗, the item menu) sit above their target (anchorAbove). Toasts appear
+    just above the hotbar. Speech bubbles are cream with a dark outline and a small tail.
+  - Debug things (x/y/zoom label, Blockers buttons) show on the left only while Settings ->
+    Debug is on (off by default). Keys: I bag, Enter chat, 1-6 hotbar, Escape closes.
+- GAME API (step 5): the client changes nothing itself. Walking, sitting, placing (only
+  inventory items: placeItem), moving, rotating, picking up, the hotbar, the look and chat all
+  go through GameAPI; item calls return the current room's items + the inventory furniture
+  (null = refused). LocalGameAPI tracks the avatar by time (walkAvatar on the elapsed ms), so a
+  new path starts where the avatar is by now; the client walks the path from where it shows the
+  avatar (it only jumps when that is more than 8 px off).
+- SAVING (step 5): LocalGameAPI writes the whole GameState after every change to localStorage
+  key 'pixel-hotel.save.v<SAVE_VERSION>' as { version, savedAt, state } (the same text is the
+  exported file). One automatic backup ('pixel-hotel.save.backup'): the save as it was when the
+  game was opened, or before an import / restore / new game. On open: a damaged save loads the
+  backup (the damaged text is kept under '<key>.damaged'); an older version is migrated with
+  save.ts MIGRATIONS, or the game resets with a message (old save kept as the backup). When the
+  GameState shape changes: bump SAVE_VERSION and add MIGRATIONS[old].
+- INVENTORY (step 5): the inventory is the player's furniture with roomId null plus
+  player.materials. The bag and the hotbar stack furniture by type; the hotbar stores type ids
+  and places the oldest inventory item of that type. A hotbar slot is dimmed when none are left
+  or the type cannot go in this room. Long-press (or mouse-drag) a bag slot onto a hotbar slot
+  to put it there (dropped elsewhere: the next hotbar tap takes it); long-press a hotbar slot to
+  empty it. Player.unlockedStyles holds 'floor:<id>' / 'wall:<id>' (styleKey).
+- CHAT (step 5): cleanChatText (one line, max 120 characters). Bubbles are HTML above the
+  head, the newest lowest, fade over the last CHAT_BUBBLE_FADE_MS of CHAT_BUBBLE_MS. The chat log
+  (CHAT_LOG_MAX lines) is not saved and is cleared when you change rooms.
+- CAMERA INTRO (step 5): each time a room opens (also after a reload): overview, then the
+  intro (section 4). It ends at containCamera(camera centered on the avatar), so the screen stays
+  inside the room. Any press or wheel on the room cancels it (cameraControl onGestureStart).
 - World: floor is (0,0)-(w,h). Wall band is y -64..0 over the floor width. Side borders run
   x -16..0 and w..w+16 from y -64 to h+16. Bottom border y h..h+16 with the door gap.
 - The camera state is unsnapped and clamped with clampCamera (screen center stays inside
@@ -444,17 +514,16 @@ Conventions:
     never block the floor. doorReachesMiddle: the free cell nearest the room middle must be
     reachable from the door point.
   - Nav blockers = debug rects + itemBlockers(items, roomId) (blocking items on the floor).
-  - Placing (step 4b): choosing a type from the strip (the ghost starts in the middle of the
+  - Placing (step 4b): tapping a hotbar or bag slot (the ghost starts in the middle of the
     screen) or Move in the item menu (the ghost starts where the item is; the item and its
     riders are hidden until done) starts a placing session. A one-finger / left drag anywhere
     moves the ghost by the drag distance (getDragMode returns 'draw'); two fingers and
     right-drag still pan/zoom. No hover-follow. Taps and long presses do nothing while placing.
     Only ✓ / Enter places (disabled while red); ✗ / Escape cancels (a moved item goes back
-    exactly; a new item stays in the list). After placing the session ends. Shift (held) turns
-    the 4 px snap off. Items picked up go to the inventory (roomId null); the strip uses them
-    first.
-  - Item menu (step 4b): a tap on a placed item opens its menu, except a sittable item outside
-    build mode, which walks there and sits (if reachable). A long press (LONG_PRESS_MS, without
+    exactly; an inventory item stays in the inventory). After placing the session ends. Shift
+    (held) turns the 4 px snap off. Items picked up go to the inventory (roomId null).
+  - Item menu (step 4b): a tap on a placed item opens its menu, except a sittable item, which
+    walks there and sits (if it cannot be reached, the menu opens). A long press (LONG_PRESS_MS, without
     moving) on any item opens the menu. With the menu open, a tap elsewhere only closes it.
     Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
     the place bar follow their target every frame.
@@ -468,14 +537,14 @@ Conventions:
     sprite yet: the idle sprite is shown.
 
 Notes:
-- palette.ts was filled from memory because lospec.com is blocked in the cloud environment.
-  It is marked UNVERIFIED until the official list is pasted.
 - SHOP_START_ITEMS positions in config.ts are placeholders; adjust when the counter and
   stall_table types exist.
-- The room in main.ts is created directly with createRoom, and paths come straight from
-  findPath; both move behind GameAPI (enterRoom, walk) when LocalGameAPI arrives. Furniture
-  is also kept in main.ts (not saved; it is gone after a reload) until LocalGameAPI.
 - cameraControl reports long presses as onPoint(start, 'longpress', target at press start).
-- The build list is temporary and free (no gold yet); the catalog comes later.
+- "Give test furniture" (Settings) is a debug button: one of each of the 12 home items, free,
+  written to the ledger as reason 'debug'. Remove it in step 7 when the catalog exists.
+- Step 5 removed build mode (the "Build (F)" toggle and the item strip). A tap on a seat sits
+  (if it cannot be reached, its menu opens); a long press opens any item's menu.
+- Debug blockers (step 3) are sent to LocalGameAPI with debugSetBlockers (not saved, cleared
+  when the room changes).
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
 - The avatar look uses palette indices (skin 30, hair 5, shirt 7, legs 23, shoes 6).

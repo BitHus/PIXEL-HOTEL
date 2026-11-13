@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ZOOM_MAX, ZOOM_MIN } from './config.ts';
 import {
+  containCamera,
+  cameraAt,
+  cameraCenter,
+  introCamera,
+  introZoom,
   centerCamera,
   clampCamera,
   easeZoom,
@@ -164,5 +169,38 @@ describe('easeZoom', () => {
       expect(z).toBeGreaterThan(1);
       last = z;
     }
+  });
+});
+
+describe('camera intro', () => {
+  it('ends on the settled zoom nearest to 3 device px per art px', () => {
+    expect(introZoom(1, 1, 3)).toBe(3);
+    expect(introZoom(0.6, 3, 3)).toBe(1);
+    expect(introZoom(0.6, 2, 3)).toBe(1.5);
+  });
+  it('starts at `from`, ends exactly at `to`, and moves the center and zoom together', () => {
+    const from = cameraAt({ x: 100, y: 100 }, 1, 400, 300);
+    const to = cameraAt({ x: 200, y: 160 }, 3, 400, 300);
+    expect(introCamera(from, to, 0, 400, 300)).toEqual(from);
+    expect(introCamera(from, to, 1, 400, 300)).toBe(to);
+    const mid = introCamera(from, to, 0.5, 400, 300);
+    expect(mid.zoom).toBeCloseTo(2);
+    expect(cameraCenter(mid, 400, 300).x).toBeCloseTo(150);
+    expect(cameraCenter(mid, 400, 300).y).toBeCloseTo(130);
+  });
+});
+
+describe('containCamera', () => {
+  const rect = { x: -16, y: -64, w: 608, h: 464 };
+  it('keeps the screen inside the room when the room is bigger', () => {
+    // 390 x 844 at zoom 3: 130 x 281 world px are visible.
+    const c = containCamera(cameraAt({ x: 288, y: 360 }, 3, 390, 844), 390, 844, rect);
+    expect(c.x).toBeCloseTo(288 - 65);
+    expect(c.y).toBeCloseTo(400 - 844 / 3);
+  });
+  it('centers the room on an axis where it is smaller than the screen', () => {
+    const c = containCamera(cameraAt({ x: 0, y: 0 }, 1, 1000, 300), 1000, 300, rect);
+    expect(c.x).toBeCloseTo(-16 + 304 - 500);
+    expect(c.y).toBe(-64);
   });
 });

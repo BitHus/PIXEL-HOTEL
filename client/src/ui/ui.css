@@ -1,0 +1,521 @@
+/* The UI overlay style (step 5). ONE frame style for every panel, button and slot: dark wood
+   (palette browns), a dark warm outline, a lighter top edge, square corners, the pixel font.
+   Layout rule (also in CLAUDE.md): the room fills the screen; UI sits at the edges on top of it.
+   Top-left: info panel + room switcher. Right edge: the icon button column; panels open to its
+   left. Bottom center: the hotbar. Toasts just above the hotbar. */
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('../fonts/pixelify-sans-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('../fonts/pixelify-sans-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  /* Endesga 32 colours (palette.ts is the source of truth for game art). */
+  --outline: #3e2731;
+  --night: #181425;
+  --wood: #733e39;
+  --wood-light: #b86f50;
+  --wood-hi: #e4a672;
+  --cream: #ead4aa;
+  --warm: #feae34;
+  --ok: #265c42;
+  --no: #a22633;
+  --muted: #8b9bb4;
+  --px: 2px; /* one UI pixel */
+  --touch: 44px;
+  --edge: 8px;
+  --side-col: calc(var(--touch) + 2 * var(--edge));
+  --font: 'Pixelify Sans', monospace;
+}
+
+#ui {
+  font: 16px/1.2 var(--font);
+  color: var(--cream);
+}
+
+/* ---------- The frame style ---------- */
+.frame,
+.btn,
+.float-bar button {
+  background: var(--wood);
+  border: var(--px) solid var(--outline);
+  border-radius: 0;
+  box-shadow:
+    inset 0 var(--px) 0 var(--wood-light),
+    0 var(--px) 0 rgba(24, 20, 37, 0.6);
+  color: var(--cream);
+  font: inherit;
+  font-family: var(--font);
+  pointer-events: auto;
+}
+
+.btn,
+.float-bar button {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 4px 10px;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.btn:hover,
+.float-bar button:hover {
+  background: #7f4640;
+}
+
+.btn:active,
+.float-bar button:active {
+  box-shadow: inset 0 var(--px) 0 var(--outline);
+  transform: translateY(1px);
+}
+
+.btn.on {
+  background: var(--wood-light);
+  color: var(--night);
+  box-shadow:
+    inset 0 var(--px) 0 var(--wood-hi),
+    0 var(--px) 0 rgba(24, 20, 37, 0.6);
+}
+
+.btn:focus-visible,
+.slot:focus-visible {
+  outline: var(--px) solid var(--warm);
+  outline-offset: 0;
+}
+
+.icon-btn {
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.pixel-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* ---------- Slots (hotbar and bag) ---------- */
+.slot {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  background: var(--outline);
+  border: var(--px) solid var(--night);
+  box-shadow: inset var(--px) var(--px) 0 var(--night);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: auto;
+}
+
+.slot.empty {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.slot.selected {
+  border-color: var(--warm);
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--night),
+    0 0 0 var(--px) var(--outline);
+}
+
+.slot.dim .slot-icon {
+  opacity: 0.35;
+}
+
+.slot-icon {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.slot-count {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cream);
+  text-shadow:
+    1px 0 var(--night),
+    -1px 0 var(--night),
+    0 1px var(--night),
+    0 -1px var(--night);
+  pointer-events: none;
+}
+
+/* ---------- Top-left: info panel and room switcher ---------- */
+.top-left {
+  position: absolute;
+  left: calc(var(--edge) + env(safe-area-inset-left));
+  top: calc(var(--edge) + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.info-panel {
+  padding: 4px 10px 6px;
+  min-height: var(--touch);
+  box-sizing: border-box;
+}
+
+.info-gold {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--warm);
+}
+
+.info-gold .pixel-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.info-room {
+  font-size: 14px;
+}
+
+.room-switch {
+  display: flex;
+  gap: 4px;
+}
+
+/* ---------- Right edge: icon buttons ---------- */
+.side-buttons {
+  position: absolute;
+  right: calc(var(--edge) + env(safe-area-inset-right));
+  top: calc(var(--edge) + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+/* ---------- Bottom center: the hotbar ---------- */
+.hotbar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--edge) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+}
+
+.hotbar.choosing .slot {
+  animation: choose 0.8s steps(2) infinite;
+}
+
+@keyframes choose {
+  50% {
+    border-color: var(--warm);
+  }
+}
+
+/* ---------- Panels: left of the right-edge column, never over the hotbar ---------- */
+.panel {
+  position: absolute;
+  top: calc(var(--edge) + env(safe-area-inset-top));
+  right: calc(var(--side-col) + env(safe-area-inset-right));
+  width: min(340px, calc(100vw - var(--side-col) - 2 * var(--edge)));
+  max-height: calc(100% - 2 * var(--edge) - 80px);
+  box-sizing: border-box;
+  padding: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--warm);
+}
+
+.panel-info {
+  font-size: 14px;
+  min-height: 2.4em;
+}
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.panel-section h3 {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--wood-hi);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  flex: 1 1 auto;
+  padding: 4px 6px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 48px);
+  gap: 4px;
+  justify-content: center;
+  touch-action: pan-y;
+}
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--touch));
+  gap: 4px;
+  justify-content: center;
+}
+
+.swatch {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--touch);
+  height: var(--touch);
+  margin: 0;
+  padding: 0;
+  border: var(--px) solid var(--night);
+  border-radius: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.swatch.selected {
+  border-color: var(--warm);
+  box-shadow: inset 0 0 0 var(--px) var(--night);
+}
+
+.carry-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  image-rendering: pixelated;
+  pointer-events: none;
+  opacity: 0.85;
+  z-index: 10;
+}
+
+/* ---------- Chat ---------- */
+.chat-log {
+  height: 180px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--outline);
+  box-shadow: inset var(--px) var(--px) 0 var(--night);
+  font-size: 14px;
+  user-select: text;
+  -webkit-user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.chat-line b {
+  color: var(--warm);
+}
+
+.chat-empty {
+  color: var(--muted);
+}
+
+.chat-form {
+  display: flex;
+  gap: 4px;
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--touch);
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: var(--px) solid var(--outline);
+  border-radius: 0;
+  background: var(--cream);
+  color: var(--outline);
+  font: 16px var(--font); /* 16 px: phones do not zoom in on focus */
+}
+
+/* Speech bubbles: light cream, dark outline, a small stepped tail under the newest one. */
+.bubble-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: 200px;
+  padding: 2px 8px 4px;
+  background: var(--cream);
+  color: var(--outline);
+  border: var(--px) solid var(--outline);
+  font-size: 14px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.bubble.tail {
+  margin-top: -8px;
+}
+
+.bubble.tail::after,
+.bubble.tail::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+}
+
+.bubble.tail::after {
+  bottom: -6px;
+  width: 6px;
+  height: 4px;
+  margin-left: -3px;
+  background: var(--cream);
+  box-shadow:
+    -2px 0 0 var(--outline),
+    2px 0 0 var(--outline);
+}
+
+.bubble.tail::before {
+  bottom: -8px;
+  width: 6px;
+  height: 2px;
+  margin-left: -3px;
+  background: var(--outline);
+}
+
+/* ---------- Toast and debug ---------- */
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 8px 12px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.debug-label {
+  position: absolute;
+  left: var(--edge);
+  top: 120px;
+  padding: 4px 8px;
+  background: rgba(24, 20, 37, 0.8);
+  color: var(--cream);
+  font: 14px/1.2 monospace;
+  white-space: pre;
+}
+
+.debug-bar {
+  position: absolute;
+  left: var(--edge);
+  top: 170px;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+
+/* ---------- Floating bars (step 4b): the placing bar above the ghost, the item menu above an
+   item. Positioned with a transform by anchorAbove. ---------- */
+.float-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.place-bar button {
+  min-width: 48px;
+  font-size: 22px;
+}
+
+.place-bar button.ok {
+  background: var(--ok);
+}
+
+.place-bar button.no {
+  background: var(--no);
+}
+
+.place-bar button:disabled {
+  background: #5a6988;
+  color: var(--muted);
+  opacity: 0.7;
+  cursor: default;
+}
+
+.item-menu {
+  align-items: stretch;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 16px);
+}
+
+.item-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.item-card {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: var(--px) solid var(--outline);
+  background: var(--cream);
+  color: var(--outline);
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: auto;
+}
