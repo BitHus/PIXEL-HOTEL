@@ -460,9 +460,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - At the end of each step, update CLAUDE.md with new files, conventions and the current
   state. Out of date notes confuse later sessions.
 - Do not generate art with any tool unless I ask for it in that step.
-- I work with Claude Code on my phone or on my PC. The repo is on GitHub and every push is
-  deployed by Netlify, so I can test the game on my phone through that link. Commit and
-  push at the end of every step.
+- I work with Claude Code on my phone or on my PC. The repo is on GitHub and every push to
+  main is deployed by GitHub Pages (https://bithus.github.io/pixel-hotel/), so I can test the
+  game on my phone through that link. Commit and push at the end of every step.
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
 Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture), 4b (placing
@@ -480,7 +480,11 @@ Layout:
 - tsconfig.base.json: strict, noUncheckedIndexedAccess, moduleResolution bundler, noEmit.
   Imports inside shared/ and client/ use the .ts extension (allowImportingTsExtensions).
 - vitest.config.ts: tests are *.test.ts files next to the code (shared, client, server).
-- netlify.toml: builds the client workspace, publishes client/dist.
+- .github/workflows/deploy.yml: the deploy. Every push to main: Node 22, npm ci, npm run build
+  -w client, client/dist goes to GitHub Pages (https://bithus.github.io/pixel-hotel/; repo
+  Settings -> Pages -> Source: GitHub Actions). The site lives under /pixel-hotel/, so the vite
+  base stays './' (relative asset paths): never use absolute paths like '/assets/...'.
+- netlify.toml: the old Netlify deploy (stopped: free plan credits used up). Kept for now.
 - shared/src: config.ts (all constants), types.ts (data types, incl. Point and Rect),
   room.ts (Room, RoomKind, createRoom, floorRect, wallBandRect, left/rightBorderRect,
   bottomBorderRects, doorRect, doorZoneRect, roomBoundsRect, rectInside, rectInsideFloor,
