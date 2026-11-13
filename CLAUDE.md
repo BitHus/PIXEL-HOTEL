@@ -44,13 +44,16 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Top-down view with a slight front angle. World coordinates are pixels: x to the right, y
   down. 1 world pixel = 1 art pixel. There is no isometric math.
 - screenToWorld(p) = p / zoom + camera, worldToScreen(p) = (p - camera) * zoom. Camera
-  position is in world pixels, zoom is an integer from 1 to 4. The default zoom is the
-  largest one where the whole room fits on screen, and at least 1. If the room does not fit
+  position is in world pixels. Zoom is free: any number from 1 to 4 (also 1.005), set by
+  pinch or the mouse wheel, like in most games. The default zoom is the largest one where
+  the whole room fits on screen, and at least 1. If the room does not fit
   at zoom 1 (small phone screens), the camera follows the avatar and the player can pan.
 - The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
   grids exist only inside the code and are never shown: the navigation grid (16 px cells,
   section 6) and the dungeon's 32 px blocks (section 10).
-- Pixel-perfect: no texture smoothing, and sprites are drawn at whole world pixels.
+- Pixel-perfect: no texture smoothing, and sprites are drawn at whole world pixels. At a zoom
+  that is not a whole number some art pixels are 1 screen px wider than others; that is
+  accepted (owner's choice, step 2).
 - Draw order: see section 7.
 
 5. ROOMS
@@ -356,16 +359,19 @@ Layout:
 Conventions:
 - World: floor is (0,0)-(w,h). Wall band is y -64..0 over the floor width. Side borders run
   x -16..0 and w..w+16 from y -64 to h+16. Bottom border y h..h+16 with the door gap.
-- The camera is always passed through snapCamera (camera * zoom is a whole screen px) and
-  clampCamera (screen center stays inside roomBoundsRect), so nothing is blurry.
-- Screen coordinates are CSS px (canvas resolution 1). The wheel zooms one step per notch.
+- The camera state is unsnapped and clamped with clampCamera (screen center stays inside
+  roomBoundsRect). Drawing and hit testing use snapCamera(camera) (world offset on whole
+  screen px). Keeping the state unsnapped stops zoom drift.
+- Screen coordinates are CSS px (canvas resolution 1).
 - INPUT RULE (touch and mouse):
   - A press is a TAP only if it moved less than TAP_MAX_MOVE_PX (8 screen px) and was held
     less than TAP_MAX_MS (300 ms). A tap / left click means "walk there" (in step 2 it moves
     the debug cross). Anything else is a DRAG, and a drag never makes the avatar walk.
-  - Touch: one-finger drag pans. Two fingers pan and pinch-zoom (integer steps, the point
-    between the fingers stays fixed).
-  - Mouse: left click taps, left-drag and right-drag pan, the wheel zooms around the cursor.
+  - Touch: one-finger drag pans. Two fingers pan and pinch-zoom freely (the point between
+    the fingers stays fixed).
+  - Mouse: left click taps, left-drag and right-drag pan. The wheel zooms freely around the
+    cursor and glides to its target (WHEEL_ZOOM_SPEED, ZOOM_EASE_MS; cameraControl.update
+    runs every frame).
   - Blockers mode: while it is on, a one-finger / left drag draws a blocker instead of
     panning. The hook exists (getDragMode() returns 'draw', drags go to onDraw), but the mode
     itself is not built yet and is not in the brief; ask which step it belongs to.
