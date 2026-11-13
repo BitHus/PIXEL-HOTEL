@@ -3,13 +3,26 @@
 // everything. Item containers take part in Pixi hit testing (eventMode 'static'), so a tap can
 // find the item under it. A refused rotate shakes the item (shake(), call update() every frame).
 
-import type { Container, Graphics } from 'pixi.js';
-import { SHAKE_MS, SHAKE_PX, getFurnitureType, type FurnitureItem, type Rect, type ShopSlot } from '@pixel-hotel/shared';
+import { Graphics, type Container } from 'pixi.js';
+import { PALETTE, POP_MS, SHAKE_MS, SHAKE_PX, getFurnitureType, type FurnitureItem, type Rect, type ShopSlot } from '@pixel-hotel/shared';
 import { drawGoods } from './slotGoods.ts';
 import { FurnitureSprite } from './furnitureSprite.ts';
 import { surfaceHeight } from './furnitureArt.ts';
 import { itemDepthKey } from './depthOrder.ts';
 import type { RoomView } from './roomView.ts';
+
+/** The dust puff of a pop spreads and fades in this many ms. */
+const PUFF_MS = 450;
+
+/** The pop's scale at k (0..1): 0 -> 1.2 -> 0.9 -> 1. */
+export function popScale(k: number): number {
+  if (k <= 0) return 0;
+  if (k >= 1) return 1;
+  const ease = (a: number, b: number, t: number): number => a + (b - a) * (1 - (1 - t) ** 2);
+  if (k < 0.45) return ease(0, 1.2, k / 0.45);
+  if (k < 0.75) return ease(1.2, 0.9, (k - 0.45) / 0.3);
+  return ease(0.9, 1, (k - 0.75) / 0.25);
+}
 
 export class ItemViews {
   private readonly sprites = new Map<number, FurnitureSprite>();
@@ -19,6 +32,9 @@ export class ItemViews {
   /** Goods drawn on tables, shelves and cases (step 7), with a key of what they show. */
   private readonly goods = new Map<number, { g: Graphics; key: string }>();
   private slotLoot: readonly ShopSlot[] = [];
+  /** Items popping in (the new-game intro), with the ms so far, and their dust puffs. */
+  private readonly pops = new Map<number, number>();
+  private readonly puffs: { g: Graphics; age: number }[] = [];
 
   constructor(
     private readonly view: RoomView,
@@ -93,7 +109,46 @@ export class ItemViews {
     if (this.sprites.has(uid)) this.shakes.set(uid, 0);
   }
 
+  /**
+   * A bouncy pop ("boing"): the item scales from 0 to 1.2 to 0.9 to 1 around its anchor in POP_MS,
+   * with a small dust puff at its feet.
+   */
+  pop(uid: number): void {
+    const sprite = this.sprites.get(uid);
+    if (!sprite) return;
+    this.pops.set(uid, 0);
+    sprite.container.scale.set(0);
+    const g = new Graphics();
+    const { x, y } = sprite.container.position;
+    const w = Math.max(24, sprite.type.w);
+    for (const [dx, r] of [[-0.5, 5], [-0.25, 7], [0, 6], [0.25, 7], [0.5, 5]] as const) {
+      g.circle(Math.round(dx * w), 0, r).fill({ color: PALETTE[2], alpha: 0.8 });
+    }
+    g.position.set(x, y);
+    this.view.ghostLayer.addChild(g);
+    this.puffs.push({ g, age: 0 });
+  }
+
   update(dtMs: number): void {
+    for (const [uid, t] of this.pops) {
+      const c = this.sprites.get(uid)?.container;
+      const next = t + dtMs;
+      if (!c || next >= POP_MS) {
+        c?.scale.set(1);
+        this.pops.delete(uid);
+        continue;
+      }
+      c.scale.set(popScale(next / POP_MS));
+      this.pops.set(uid, next);
+    }
+    for (const p of this.puffs) {
+      p.age += dtMs;
+      const k = Math.min(1, p.age / PUFF_MS);
+      p.g.scale.set(1 + k);
+      p.g.alpha = 1 - k;
+    }
+    for (const p of this.puffs.filter((x) => x.age >= PUFF_MS)) p.g.destroy();
+    this.puffs.splice(0, this.puffs.length, ...this.puffs.filter((x) => x.age < PUFF_MS));
     for (const [uid, t] of this.shakes) {
       const c = this.sprites.get(uid)?.container;
       const next = t + dtMs;

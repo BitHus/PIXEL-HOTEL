@@ -113,7 +113,7 @@ export function rotateInPlace(room: Room, items: readonly FurnitureItem[], uid: 
   const facing = nextFacing(type, item.facing);
   if (facing === item.facing) return null;
   const c = footprintCenter(item, item.typeId, types);
-  const y = type.wall ? 0 : Math.round(c.y + footprintSize(type, facing).d / 2);
+  const y = type.wall ? item.y : Math.round(c.y + footprintSize(type, facing).d / 2);
   const others = items.filter((i) => i.uid !== uid);
   const carrying = ridersOf(items, uid).length > 0;
   const plan = planPlacement(room, others, type, item.x, y, facing, carrying, types);

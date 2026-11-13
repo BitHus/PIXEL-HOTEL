@@ -56,5 +56,22 @@ describe('save files', () => {
     if (!r.ok) return;
     expect(r.state.items.find((i) => i.typeId === 'counter')).toMatchObject({ x: 176, y: 88 });
   });
+
+  it('migrates a version 4 save: square rooms, the old look as clothing, and no character creation', () => {
+    const { playerCreated: _p, ...rest } = state;
+    const v4 = {
+      ...rest,
+      rooms: rest.rooms.map(({ shape: _s, ...r }) => r),
+      look: { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 },
+      player: (({ unlockedClothing: _u, ...p }) => p)(rest.player),
+    };
+    const r = readSave(JSON.stringify({ version: 4, savedAt: 0, state: v4 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.rooms.map((x) => x.shape)).toEqual(['square', 'square_shop']);
+    expect(r.state.look).toEqual({ skin: 30, hair: 5, hairStyle: 'short', top: 'long_sleeve', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 });
+    expect(r.state.player.unlockedClothing).toEqual([]);
+    expect(r.state.playerCreated).toBe(true);
+  });
 });
 

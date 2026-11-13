@@ -26,6 +26,8 @@ function goodRects(loot: LootRef): ArtRect[] {
 
 /** Where slot i of n sits on top of the item, relative to its anchor (bottom middle of the good). */
 export function goodSpot(type: FurnitureType, facing: Facing, i: number, n: number): { x: number; y: number } {
+  const spot = facing === 'down' ? type.slotSpots?.[i] : undefined;
+  if (spot) return { x: spot.dx, y: spot.dy };
   const { w, d } = footprintSize(type, facing);
   const top = surfaceHeight(type);
   return { x: Math.round(-w / 2 + ((i + 0.5) * w) / n), y: Math.round(-top - d / 2 + 3) };

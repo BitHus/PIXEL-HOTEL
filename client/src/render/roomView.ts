@@ -2,16 +2,7 @@
 // (brief section 7). All children are in world px; the camera scales and moves `world`.
 
 import { Container, Graphics, TilingSprite } from 'pixi.js';
-import {
-  bottomBorderRects,
-  doorRect,
-  floorRect,
-  leftBorderRect,
-  rightBorderRect,
-  wallBandRect,
-  type Rect,
-  type Room,
-} from '@pixel-hotel/shared';
+import { borderRects, doorRect, floorRects, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
 import { BORDER_COLOR } from './bareStyles.ts';
 import { floorTexture, wallTexture } from './styleArt.ts';
 import { DepthLayer } from './depthLayer.ts';
@@ -53,21 +44,26 @@ export class RoomView {
     this.floorLayer.removeChildren().forEach((c) => c.destroy());
     this.wallLayer.removeChildren().forEach((c) => c.destroy());
 
-    // The floor also runs through the door opening. Styles: styleArt.ts (step 7).
-    const floor = floorRect(room);
-    const door = doorRect(room);
-    const floorSprite = new TilingSprite({ texture: floorTexture(room.floorStyle), width: floor.w, height: floor.h + door.h });
-    floorSprite.position.set(floor.x, floor.y);
-    this.floorLayer.addChild(floorSprite);
-
-    const band = wallBandRect(room);
-    const wall = new TilingSprite({ texture: wallTexture(room.wallStyle), width: band.w, height: band.h });
-    wall.position.set(band.x, band.y);
-    this.wallLayer.addChild(wall);
-    const walls = new Graphics();
-    for (const r of [leftBorderRect(room), rightBorderRect(room), ...bottomBorderRects(room)]) {
-      fillRect(walls, r, BORDER_COLOR);
+    // The floor: one tiling sprite per rectangle of the shape (step 7b), the texture lined up with
+    // the world so the seams do not show. It also runs through the door opening.
+    const floorTex = floorTexture(room.floorStyle);
+    for (const r of [...floorRects(room), doorRect(room)]) {
+      const f = new TilingSprite({ texture: floorTex, width: r.w, height: r.h });
+      f.position.set(r.x, r.y);
+      f.tilePosition.set(-r.x, -r.y);
+      this.floorLayer.addChild(f);
     }
+
+    // A back wall band above every floor edge that faces up, then the thin borders.
+    const wallTex = wallTexture(room.wallStyle);
+    for (const b of wallBands(room)) {
+      const wall = new TilingSprite({ texture: wallTex, width: b.w, height: b.h });
+      wall.position.set(b.x, b.y);
+      wall.tilePosition.set(-b.x, 0);
+      this.wallLayer.addChild(wall);
+    }
+    const walls = new Graphics();
+    for (const r of borderRects(room)) fillRect(walls, r, BORDER_COLOR);
     this.wallLayer.addChild(walls);
   }
 }

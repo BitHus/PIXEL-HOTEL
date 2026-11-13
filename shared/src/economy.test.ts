@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { OFFLINE_MAX_MS } from './config.ts';
 import { applyStyle, buyCatalog, catalogPrice, catchUpShop, isStyleUnlocked, unlockStyle, upgradeCost, upgradeRoom } from './economy.ts';
-import { canPickUp, footprintRect, getFurnitureType } from './furniture.ts';
+import { canPickUp, canPlace, footprintRect, getFurnitureType } from './furniture.ts';
 import { applyChange } from './ledger.ts';
-import { createNewPlayer } from './newPlayer.ts';
+import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { doorRect, doorZoneRect, rectsTouch } from './room.ts';
 import { seededRng } from './rng.ts';
 import { putOnShelf } from './shop.ts';
@@ -127,5 +127,40 @@ describe('catchUpShop', () => {
     expect(r.state.player.wallet.gold).toBe(100 + r.total);
     expect(r.state.shop.updatedAt).toBe(48 * 3600_000);
     expect(ledgerGold(r.state)).toBe(r.state.player.wallet.gold);
+  });
+});
+
+describe('room upgrades in shaped rooms (step 7b)', () => {
+  it('L-shape and plus: items keep their places, the room switches to the next level of its shape', () => {
+    for (const shape of ['l_shape', 'plus']) {
+      let s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, hotelShape: shape, shopShape: shape }, 0);
+      s = applyChange(s, { reason: 'debug', gold: 2000, addFurniture: ['table', 'chair'] }, 0)!;
+      const hotel = s.player.hotelRoomId;
+      const room = s.rooms.find((r) => r.id === hotel)!;
+      // Put the table and chair somewhere valid in the hotel room.
+      const spots = [
+        { x: 120, y: 260 },
+        { x: 300, y: 200 },
+        { x: 160, y: 300 },
+      ];
+      const inv = s.items.filter((i) => i.roomId === null);
+      let k = 0;
+      for (const item of inv) {
+        const spot = spots.find((p) => canPlace(room, s.items.filter((o) => o.uid !== item.uid), getFurnitureType(item.typeId), p.x, p.y, 'down'));
+        expect(spot, `${shape} ${item.typeId}`).toBeDefined();
+        s = { ...s, items: s.items.map((i) => (i.uid === item.uid ? { ...i, roomId: hotel, x: spot!.x, y: spot!.y } : i)) };
+        k++;
+      }
+      expect(k).toBe(2);
+      const before = s.items.map((i) => ({ ...i }));
+      s = upgradeRoom(s, hotel, 1)!;
+      s = upgradeRoom(s, hotel, 2)!;
+      expect(s.rooms.find((r) => r.id === hotel)).toMatchObject({ shape, level: 3 });
+      expect(s.items).toEqual(before);
+      const shopId = s.player.shopRoomId;
+      const shopBefore = s.items.filter((i) => i.roomId === shopId);
+      s = upgradeRoom(s, shopId, 3)!;
+      expect(s.items.filter((i) => i.roomId === shopId)).toEqual(shopBefore);
+    }
   });
 });

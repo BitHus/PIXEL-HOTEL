@@ -89,6 +89,10 @@ export interface FurnitureType {
   /** True for the counter: the shopkeeper stands behind it (behindPoint) to take payments, so that
    *  spot must stay reachable from the door (canPlace). */
   servedFromBehind?: boolean;
+  /** Where each slot's goods stand when the item faces down (bottom middle of the good, drawn px
+   *  from the anchor: on a shelf board, inside a case). Other facings and types without it: spread
+   *  along the top. */
+  slotSpots?: { dx: number; dy: number }[];
   art: FurnitureArt;
 }
 
@@ -202,6 +206,8 @@ export interface Player {
   unlockedStyles: string[];
   gear: GearId[];
   potions: number;
+  /** Clothing ids unlocked beyond the free ones (step 7b; none yet). */
+  unlockedClothing: string[];
   hotelRoomId: number;
   shopRoomId: number;
 }

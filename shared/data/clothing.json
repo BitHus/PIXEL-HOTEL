@@ -1,0 +1,15 @@
+[
+  { "id": "short", "slot": "hair", "name": "Short", "free": true },
+  { "id": "long", "slot": "hair", "name": "Long", "free": true },
+  { "id": "ponytail", "slot": "hair", "name": "Ponytail", "free": true },
+  { "id": "buzz", "slot": "hair", "name": "Buzz cut", "free": true },
+  { "id": "mohawk", "slot": "hair", "name": "Mohawk", "free": false },
+  { "id": "t_shirt", "slot": "top", "name": "T-shirt", "free": true },
+  { "id": "long_sleeve", "slot": "top", "name": "Long sleeve", "free": true },
+  { "id": "vest", "slot": "top", "name": "Vest over shirt", "free": true },
+  { "id": "tunic", "slot": "top", "name": "Tunic", "free": false },
+  { "id": "trousers", "slot": "bottoms", "name": "Trousers", "free": true },
+  { "id": "shorts", "slot": "bottoms", "name": "Shorts", "free": true },
+  { "id": "skirt", "slot": "bottoms", "name": "Skirt", "free": true },
+  { "id": "baggy", "slot": "bottoms", "name": "Baggy trousers", "free": false }
+]

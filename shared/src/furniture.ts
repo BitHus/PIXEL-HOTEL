@@ -12,7 +12,7 @@
 import furnitureData from '../data/furniture.json';
 import { APPROACH_REACH_PX, CASHIER_BEHIND_PX, DOOR_ZONE_H, SNAP } from './config.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
-import { doorZoneRect, rectInsideFloor, rectsOverlap, rectsTouch, type Room } from './room.ts';
+import { doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, rectsTouch, wallBands, type Room } from './room.ts';
 import type { Facing, FurnitureItem, FurnitureType, Point, Rect } from './types.ts';
 
 /** The starter furniture types (step 4), from shared/data/furniture.json. */
@@ -84,9 +84,28 @@ export function itemBlockers(
     .map((i) => footprintRect(i, types(i.typeId)));
 }
 
+/**
+ * A wall item dropped at (x, y) hangs on the nearest back wall band: the anchor goes to the band's
+ * bottom edge (the floor edge it stands on), x kept (canPlace checks that it fits on the band).
+ */
+export function snapToWallBand(room: Room, x: number, y: number): Point {
+  let best: Point = { x, y: 0 };
+  let bestD = Infinity;
+  for (const b of wallBands(room)) {
+    const by = b.y + b.h;
+    const cx = Math.min(Math.max(x, b.x), b.x + b.w);
+    const d = (cx - x) ** 2 + (by - y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = { x, y: by };
+    }
+  }
+  return best;
+}
+
 /** Where avatars come in: the middle of the door zone. */
 export function doorPoint(room: Room): Point {
-  return { x: room.w / 2, y: room.h - DOOR_ZONE_H / 2 };
+  return { x: doorX(room), y: doorY(room) - DOOR_ZONE_H / 2 };
 }
 
 /**
@@ -118,7 +137,8 @@ export function canPlace(
   if (!fitsRoomKind(type, room) || !type.facings.includes(facing)) return false;
   const fp = footprintRect({ x, y, facing }, type);
   if (type.wall) {
-    if (y !== 0 || fp.x < 0 || fp.x + fp.w > room.w) return false;
+    // On a back wall band: the anchor is on the band's bottom edge, the item fully on that band.
+    if (!wallBands(room).some((b) => y === b.y + b.h && fp.x >= b.x && fp.x + fp.w <= b.x + b.w)) return false;
     return !items.some(
       (o) => o.roomId === room.id && types(o.typeId).wall && rectsOverlap(fp, footprintRect(o, types(o.typeId))),
     );
@@ -233,7 +253,7 @@ export function planPlacement(
   carrying = false,
   types: FurnitureLookup = getFurnitureType,
 ): Placement {
-  if (type.wall) y = 0;
+  if (type.wall) ({ x, y } = snapToWallBand(room, x, y));
   if (!carrying) {
     const spot = snapToSurface(room, items, type, x, y, facing, types);
     if (spot) return { ...spot, facing, ok: true };

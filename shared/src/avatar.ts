@@ -5,11 +5,16 @@ import { HOTEL_WALK_SPEED } from './config.ts';
 import type { Facing, Point } from './types.ts';
 
 export interface AvatarLook {
-  /** Palette indices (shared/palette.ts). */
+  /** Colours are palette indices (shared/palette.ts); styles are clothing.json ids (step 7b). */
   skin: number;
+  /** Hair colour. */
   hair: number;
-  hairStyle: number;
+  hairStyle: string;
+  /** The top (clothing id) and its colour. */
+  top: string;
   shirt: number;
+  /** The bottoms (clothing id) and their colour. */
+  bottoms: string;
   legs: number;
   shoes: number;
 }

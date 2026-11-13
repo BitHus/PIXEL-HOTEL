@@ -24,6 +24,8 @@ export interface GameState {
   ledger: LedgerEntry[];
   /** The player's shop: goods on the slots, prices, customers, sale history (step 7, shop.ts). */
   shop: ShopState;
+  /** False until the player made their character and picked the room shapes (step 7b). */
+  playerCreated: boolean;
   /** How many first-run hints (config HINTS) are done; they show one at a time. */
   hintsDone: number;
 }

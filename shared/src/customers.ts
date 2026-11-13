@@ -24,8 +24,9 @@ import { walkAvatar, type Avatar, type AvatarLook } from './avatar.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { cellAt, cellCenter, findPath, isCellFree, reachableCells, type NavGrid } from './nav.ts';
-import type { Room } from './room.ts';
+import { doorY, type Room } from './room.ts';
 import { rngPick } from './rng.ts';
+import { selectableClothing } from './clothing.ts';
 import {
   chooseCategory,
   customerIntervalMs,
@@ -81,7 +82,8 @@ export function findCounter(items: readonly FurnitureItem[], roomId: number): Fu
 
 /** Where customers appear and disappear: below the door, outside the floor. */
 export function outsidePoint(room: Room): Point {
-  return { x: room.w / 2, y: room.h + CUSTOMER_OUTSIDE_PX };
+  const d = doorPoint(room);
+  return { x: d.x, y: doorY(room) + CUSTOMER_OUTSIDE_PX };
 }
 
 /**
@@ -138,8 +140,10 @@ export function customerLook(rng: Rng): AvatarLook {
   return {
     skin: rngPick(rng, CUSTOMER_LOOKS.skin),
     hair: rngPick(rng, CUSTOMER_LOOKS.hair),
-    hairStyle: 0,
+    hairStyle: rngPick(rng, selectableClothing('hair')).id,
+    top: rngPick(rng, selectableClothing('top')).id,
     shirt: rngPick(rng, CUSTOMER_LOOKS.shirt),
+    bottoms: rngPick(rng, selectableClothing('bottoms')).id,
     legs: rngPick(rng, CUSTOMER_LOOKS.legs),
     shoes: rngPick(rng, CUSTOMER_LOOKS.shoes),
   };
