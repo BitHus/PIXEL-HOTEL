@@ -46,8 +46,10 @@ reference for look and HUD) and Habbo Hotel (rooms, furniture and the item info 
   Blacksmith, Room, Dungeon) get a button in this column too, not somewhere else.
 - **Quest button** (after step 8): at the top of the right-edge column, a scroll icon. It is
   there only while a quest (first-run hint) is going. It is selected while the quest shows and
-  blinks warm when the quest box is closed, so the player always knows where to find it. A tap
-  shows or hides the quest.
+  blinks warm when the quest card is closed, so the player always knows where to find it. A tap
+  shows or hides the quest card: "Quest n of 3", the task, "tap to hide". On a wide screen the
+  card opens to the left of the button with a small tail; on a phone it sits under the info
+  panel, so it never covers the gold or the room switcher. It hides while a panel is open.
 - **Spending gold asks first** (after step 8): buying in the Catalog and upgrading a room open a
   small centered "Buy this?" panel (picture, name, price, Cancel / Buy for N).
 - **Bottom-center: the hotbar.** One row of slots in a frame, centered. Icons only, no text.
