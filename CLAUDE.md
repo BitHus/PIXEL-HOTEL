@@ -461,7 +461,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   state. Out of date notes confuse later sessions.
 - Do not generate art with any tool unless I ask for it in that step.
 - I work with Claude Code on my phone or on my PC. The repo is on GitHub and every push to
-  main is deployed by GitHub Pages (https://bithus.github.io/pixel-hotel/), so I can test the
+  main is deployed by GitHub Pages (https://bithus.github.io/PIXEL-HOTEL/), so I can test the
   game on my phone through that link. Commit and push at the end of every step.
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
@@ -481,8 +481,8 @@ Layout:
   Imports inside shared/ and client/ use the .ts extension (allowImportingTsExtensions).
 - vitest.config.ts: tests are *.test.ts files next to the code (shared, client, server).
 - .github/workflows/deploy.yml: the deploy. Every push to main: Node 22, npm ci, npm run build
-  -w client, client/dist goes to GitHub Pages (https://bithus.github.io/pixel-hotel/; repo
-  Settings -> Pages -> Source: GitHub Actions). The site lives under /pixel-hotel/, so the vite
+  -w client, client/dist goes to GitHub Pages (https://bithus.github.io/PIXEL-HOTEL/; repo
+  Settings -> Pages -> Source: GitHub Actions). The site lives under /PIXEL-HOTEL/ (case-sensitive), so the vite
   base stays './' (relative asset paths): never use absolute paths like '/assets/...'.
 - netlify.toml: the old Netlify deploy (stopped: free plan credits used up). Kept for now.
 - shared/src: config.ts (all constants), types.ts (data types, incl. Point and Rect),

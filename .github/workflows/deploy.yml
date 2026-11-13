@@ -1,5 +1,5 @@
 # Builds the client and deploys it to GitHub Pages on every push to main.
-# The site: https://bithus.github.io/pixel-hotel/
+# The site: https://bithus.github.io/PIXEL-HOTEL/
 name: Deploy to GitHub Pages
 
 on:
