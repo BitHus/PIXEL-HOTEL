@@ -12,6 +12,12 @@ A browser game with three parts:
   drop.
 - Shop: each player has a shop room. They put loot on shelves and set prices. NPC customers
   walk in and buy for gold. Gold buys furniture in the catalog.
+- Farm (section 10b, step 9b): an outdoor plot where the player grows crops in real time and
+  cooks them into food that heals or buffs them in the dungeon.
+- Mine (section 10c, step 9c): a short click-to-mine trip for ore. Ore is smelted into bars
+  at the forge, and bars upgrade weapons, armor and the pickaxe.
+The loop: dungeon (loot) -> shop (gold) -> furniture; farm (food) -> stronger dungeon runs;
+mine (ore) -> better gear -> deeper dungeon runs.
 Every player starts with two small, basic rooms: a hotel room and a shop. They sell loot in
 the shop for gold, and use the gold to buy furniture for the hotel room or the shop, and to
 upgrade the rooms.
@@ -239,7 +245,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   tolerance: shrug (a bit high). Refused above that: frown (too high). The shop panel shows
   the last 5 sale prices per item type.
 - Gold sinks: catalog (baseValue * 3), room upgrades (level 2: 300 gold, level 3: 800 gold,
-  for each room), dungeon gear and potions (section 10), dungeon key 10 gold.
+  for each room), dungeon gear and potions (section 10), dungeon key 10 gold, seeds and farm
+  upgrades (section 10b), smelting fees (section 10c).
 - No trading between players in v1.
 - Every change to gold or items goes through one function and is written to a ledger.
 
@@ -284,6 +291,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - Gear is bought with gold in a Blacksmith panel and stays forever: iron_sword (attack 6-8,
   150 gold), leather_armor (each hit does 1 less damage, minimum 1, 120 gold). Health
   potion: 20 gold, heals 15 hp instantly, 1 second cooldown between potions, carry max 3.
+  From step 9c the forge (section 10c) takes over weapons and armor: the iron_sword and
+  leather_armor are no longer sold for gold but made from bars. Potions stay for sale.
+- From step 9b the player can also bring food from the farm (section 10b).
 - Each room except the spawn room has 0 to 2 enemies. (The balance check was made with
   tile-based movement, so the simulation in step 8 must be run again.) Enemy hp on floor n
   is multiplied by (1 + 0.25 * (n - 1)), rounded up; not the Bone King's, which always has 60
@@ -316,6 +326,62 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   item sells for, so crafted pieces are for showing off. The one exception is bone_throne (5
   throne_piece are worth 50 gold, the throne 120): it is the boss reward (owner's decision
   after step 8).
+
+10b. FARM (step 9b)
+- A third place next to the hotel and the shop: an outdoor plot. Same top-down renderer and
+  rules as a room (kind 'farm'), with a grass floor, a fence or hedge in place of the back
+  wall, and the door at the bottom. Sizes: level 1 576x384, level 2 704x480, level 3 832x576
+  (upgrade 200 / 600 gold). The farm is unlocked from the start.
+- Soil plots: 32x32 tilled squares at fixed positions from config, in neat rows. Level 1 has 6
+  plots, level 2 has 12, level 3 has 20. Plots are part of the farm, not furniture; the player
+  can still place decorations (fences, plants, benches) around them in build mode.
+- Seeds are bought in the catalog (a Seeds tab) and stack in the bag. Planting: in play mode,
+  with a seed selected in the hotbar, tap an empty plot: the avatar walks there and plants.
+  Tapping a ripe plot walks there and harvests into the bag (stacks).
+- Crops grow in real time, also while the game is closed, in 3 visible stages (sprout, half,
+  ripe). Growth uses times passed in (no Date.now in shared/). No watering in v1.
+- Crops (all numbers in shared/data/crops.json): turnip (seed 4 gold, 5 min, worth 10),
+  potato (seed 6, 15 min, worth 16), carrot (seed 8, 30 min, worth 22), pumpkin (seed 15,
+  2 h, worth 50), glowcap mushroom (no seed for sale; 1 glowcap spore drops from 5% of
+  dungeon chests; 1 h, worth 40). One harvest gives 1 to 2 crops.
+- Cooking: a cooking pot stands in the farm at a fixed spot (not furniture, cannot be moved).
+  Tap it to open the Cooking panel. Recipes (shared/data/food.json): roasted turnip (1
+  turnip; heals 8 hp), potato stew (2 potato + 1 turnip; heals 15 hp), carrot soup (2 carrot
+  + 1 potato; +1 attack for the rest of the run), pumpkin pie (1 pumpkin + 1 carrot; +10 max
+  hp for the run), glowcap broth (1 glowcap + 1 potato; attack cooldown 350 -> 300 ms for the
+  run).
+- In the dungeon: the player takes up to 3 food items in a lunch box (separate from the 3
+  potions). A food button eats the next item. Healing food has the same 1 s cooldown as
+  potions; each buff kind works once per run. Food in the lunch box is lost on death, like
+  the bag.
+- Crops and food are also goods for the shop (category 'food' for the customers).
+
+10c. MINE (step 9c)
+- A fourth place, unlocked at player level 3 (a hint tells the player when it opens). Built
+  from the dungeon code: 32 px blocks, the same step() style in fixed 100 ms ticks, a new
+  small layout from a seed every visit (2 to 3 rooms). Cooler, rocky look; lanterns as the
+  warm accent.
+- A visit is free and lasts as long as the lantern burns: 4 minutes (config), shown as a bar.
+  When it runs out the player walks out with everything. Leaving early is always allowed.
+- Rocks instead of chests: copper rocks (3 hits), iron rocks (5 hits), mithril rocks (8 hits,
+  only from mine visit 5 on, or a deeper second room later). Mining: tap a rock to walk next
+  to it and swing; each tap is one hit with a 400 ms pickaxe cooldown, so tapping fast is
+  the game here too. A broken rock drops 1 to 2 ore; 5% chance of a gem (sells for 60).
+- Pickaxe tiers: basic pickaxe (start; mines copper and iron), steel pickaxe (forge: 5 iron
+  bars + 2 copper bars; mines mithril, each hit counts double).
+- A few weak enemies (slimes and bats, 0 to 1 per room) keep it tense. If hp reaches 0, the
+  player is carried out and loses half the ore of this visit; nothing else is lost.
+- Forge (the Blacksmith panel gets a Forge tab): smelt 3 ore into 1 bar (copper bar, iron
+  bar, mithril bar) for a small fee (2 / 4 / 8 gold).
+- Weapons (attack range): starting sword 4-6; copper sword 5-7 (4 copper bars); iron sword
+  7-9 (5 iron bars + the copper sword); mithril sword 9-12 (5 mithril bars + the iron sword).
+- Armor (damage taken per hit, minimum 1): leather armor -1 (3 copper bars); iron armor -2
+  (5 iron bars + leather); mithril armor -3 (5 mithril bars + iron armor).
+- Each upgrade replaces the previous piece. Gear stays forever. All numbers in
+  shared/data/forge.json and config. Ore, bars and gems are shop goods (category
+  'materials').
+- After step 9c the dungeon simulation is run again with the gear tiers and food, and the
+  survival targets per tier are checked.
 
 11. NETWORK (step 10 onward)
 - WebSocket, JSON messages { t: string, ... }.
@@ -872,6 +938,9 @@ Conventions:
   back wall (176, 40) to the new start spot (176, 88), so the player fits behind it.
 
 Notes:
+- Plan after step 9 (owner's decision): playtest, then step 9b (farm, section 10b), step 9c
+  (mine and forge, section 10c), then dungeon round 2, then step 6 (art), then step 10. The
+  step prompts are in docs/NEXT-STEPS.md.
 - cameraControl reports long presses as onPoint(start, 'longpress', target at press start).
 - The debug "Give random loot" button is gone (step 9: the shop sells real loot).
   LocalGameAPI.debugGiveFurniture is for tests only.

@@ -58,6 +58,20 @@ reference for look and HUD) and Habbo Hotel (rooms, furniture and the item info 
   Resume panel are centered panels like "Buy this?".
 - **Workshop** (step 9): one button (an anvil) with two tabs, Crafting and Blacksmith, so the
   column stays short.
+- **Travel / Map** (step 9b): with four places (Hotel, Shop, Farm, Mine) plus the Dungeon,
+  the Hotel/Shop switcher under the info panel is replaced by one Map button (a small folded
+  map icon) at the top of the right column, under the quest button. It opens a travel panel
+  with a card per place (icon, name, and a short status: "3 crops ripe", "2 items for sale",
+  "Mine opens at level 3", "Dungeon: 10 gold"). Tap a card to go there. The Dungeon button can
+  stay in the column as a shortcut. Locked places show greyed out with the reason.
+- **Farm** (step 9b): in play mode the hotbar holds seeds too. A ripe plot shows a small
+  bouncing marker so the player sees it from far away. The cooking pot opens the Cooking
+  panel (same style as Crafting). In the dungeon the run HUD gets a food button next to the
+  potion button, with a count.
+- **Mine** (step 9c): the lantern bar sits in the info panel where the dungeon shows the floor;
+  the run bag shows ore stacks. The Workshop gets a third tab, Forge, with smelting on the left
+  and the gear upgrade tree (sword, armor, pickaxe; current tier highlighted, next tier with
+  its cost) on the right.
 - **Spending gold asks first** (after step 8): buying in the Catalog and upgrading a room open a
   small centered "Buy this?" panel (picture, name, price, Cancel / Buy for N).
 - **Bottom-center: the hotbar.** One row of slots in a frame, centered. Icons only, no text.
