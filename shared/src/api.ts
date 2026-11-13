@@ -11,6 +11,8 @@ import type { Room } from './room.ts';
 import type { ChatLine } from './gameState.ts';
 import type { SeatSpot } from './seats.ts';
 import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
+import type { DungeonInput, DungeonRun, RunBag } from './dungeon/run.ts';
+import type { ShopGearId } from './gear.ts';
 
 export interface RoomState {
   room: Room;
@@ -85,6 +87,34 @@ export interface BuyResult {
   first: boolean;
 }
 
+/** The run in progress (step 9). `paused` after a reload until dungeonResume. */
+export interface RunView {
+  run: DungeonRun;
+  paused: boolean;
+}
+
+/** How a run ended, after it was banked (step 9): for the death and leave screens. */
+export interface RunResult {
+  status: 'left' | 'dead';
+  /** What came home (leaving, the boss, and half the bag's gold after death). */
+  banked: RunBag;
+  /** What died with the player or was left behind (full bag). */
+  lost: RunBag;
+  xpGained: number;
+  levelBefore: number;
+  levelAfter: number;
+  /** The floor the run ended on. */
+  floor: number;
+  /** The enemy that dealt the last hit (death screen), or null. */
+  lastHitBy: string | null;
+}
+
+/** The run after an input or a step; `result` is set once, when the run ended and was banked. */
+export interface RunUpdate {
+  run: DungeonRun;
+  result: RunResult | null;
+}
+
 export interface GameAPI {
   /** The current player (gold, materials, rooms). */
   getPlayer(): Promise<Player>;
@@ -151,6 +181,23 @@ export interface GameAPI {
   currentHint(): Promise<string | null>;
   /** What sold while the player was away (once; null when nothing sold). */
   takeAwaySummary(): Promise<AwaySummary | null>;
-  /** Debug (until the dungeon in step 9): a few random materials and maybe a furniture item. */
-  debugGiveRandomLoot(): Promise<string>;
+  // ---------- Step 9: the dungeon, crafting, the Blacksmith ----------
+  /** The run in progress, or null. */
+  getRun(): Promise<RunView | null>;
+  /** Starts a run: pays the 10 gold key (free under 10 gold). Null if a run is already going. */
+  dungeonStart(): Promise<DungeonRun | null>;
+  /** One player input (applied at once, at the exact run time). Null without a running run. */
+  dungeonInput(input: DungeonInput): Promise<RunUpdate | null>;
+  /**
+   * Moves the run on by dtMs (fixed 100 ms ticks inside; the rest is kept for the next call, so no
+   * tick is ever skipped). A paused run does not move. Null without a run.
+   */
+  dungeonAdvance(dtMs: number): Promise<RunUpdate | null>;
+  /** Pauses the run (the tab was hidden); dungeonResume goes on. */
+  dungeonPause(): Promise<void>;
+  dungeonResume(): Promise<void>;
+  /** Crafts a recipe (shared/data/recipes.json). False without all ingredients. */
+  craft(recipeId: string): Promise<boolean>;
+  /** Buys gear or a potion in the Blacksmith. False if owned, at the potion limit, or gold is short. */
+  buyGear(id: ShopGearId): Promise<boolean>;
 }

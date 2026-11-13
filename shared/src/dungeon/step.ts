@@ -24,6 +24,7 @@ import {
   ENEMY_REPATH_MS,
   ENEMY_STOP_PX,
   ENEMY_WINDUP_MS,
+  MIMIC_WAKE_MS,
   MIMIC_XP,
   PLAYER_ATTACK_COOLDOWN_MS,
   PLAYER_ATTACK_REACH,
@@ -270,9 +271,11 @@ function tick(r: DungeonRun, rng: Rng): void {
     if (c.opened || distance(p, c) > CHEST_OPEN_REACH) continue;
     if (c.mimic) {
       r.chests = r.chests.filter((x) => x.id !== c.id);
-      const e = makeEnemy(MIMIC_ID_BASE + c.id, 'skeleton', r.floor, c.x, c.y, true);
+      // It opens like a chest, then waits MIMIC_WAKE_MS before its first wind-up (fair to dodge).
+      // (+ one tick: it already counts down in this tick.)
+      const e = { ...makeEnemy(MIMIC_ID_BASE + c.id, 'skeleton', r.floor, c.x, c.y, true), cooldownMs: MIMIC_WAKE_MS + TICK };
       r.enemies = [...r.enemies, e];
-      r.events.push({ t: 'mimic', enemyId: e.id });
+      r.events.push({ t: 'mimic', enemyId: e.id, chestId: c.id });
     } else {
       c.opened = true;
       r.events.push({ t: 'chest', chestId: c.id });
@@ -312,6 +315,7 @@ function enemyTick(r: DungeonRun, e: Enemy, grid: NavGrid, rng: Rng): void {
     if (d <= ENEMY_MISS_RANGE) {
       const damage = Math.max(p.minDamage, rngInt(rng, stats.hitMin, stats.hitMax) - p.damageReduction);
       p.hp -= damage;
+      r.lastHitBy = e.mimic ? 'mimic' : e.kind;
       r.events.push({ t: 'enemy_hit', enemyId: e.id, damage });
     } else {
       r.events.push({ t: 'enemy_miss', enemyId: e.id });

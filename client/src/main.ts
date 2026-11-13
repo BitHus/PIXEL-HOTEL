@@ -46,6 +46,11 @@ import {
   type ShopEvent,
   type ShopView,
   type StyleKind,
+  DUNGEON_KEY_COST,
+  LEVEL_TOTAL_XP,
+  HINTS,
+  DUNGEON_HINT,
+  xpForNextLevel,
 } from '@pixel-hotel/shared';
 import './ui/ui.css';
 import { LocalGameAPI } from './api/localGameAPI.ts';
@@ -87,6 +92,9 @@ import { flyCoin } from './ui/coinFly.ts';
 import { runNewGameSetup } from './ui/newGame.ts';
 import { createHintBox, createSaleFloats, createTillCoins, showAwaySummary } from './ui/shopFeedback.ts';
 import { pixelIcon } from './ui/pixelIcons.ts';
+import { createRunBar } from './ui/runBar.ts';
+import { createWorkshopPanel, gearEffect, recipeName } from './ui/workshopPanel.ts';
+import { DungeonScreen } from './dungeon/dungeonScreen.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
@@ -245,19 +253,48 @@ async function start(): Promise<void> {
       menu.close();
       placer.cancel();
     },
-    escapeTaken: () => panels.open !== null || placer.active,
+    escapeTaken: () => panels.open !== null || placer.active || dungeon.isActive,
   });
-  const sideButtons = createSideButtons(ui, panels, [build.button]);
+  build.button.classList.add('room-only');
+  // The Dungeon button (step 9): shows the key cost, or "free" under 10 gold.
+  const dungeonButton = iconButton('dungeon', 'Dungeon', () => void enterDungeonAsked(), 'room-only dungeon-btn');
+  const dungeonBadge = document.createElement('span');
+  dungeonBadge.className = 'btn-badge';
+  dungeonButton.appendChild(dungeonBadge);
+  const sideButtons = createSideButtons(ui, panels, [build.button, dungeonButton]);
   // The quest button, at the top of the column: shows the current quest again. Hidden without a
   // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
-  const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn');
+  const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn room-only');
   sideButtons.prepend(questButton);
   panels.onChange(() => hint.setCovered(panels.open !== null));
   hint.onChange((quest, showing) => {
     questButton.hidden = quest === null;
     questButton.classList.toggle('on', showing);
     questButton.classList.toggle('glow', quest !== null && !showing);
+    // The dungeon hint points at the Dungeon button.
+    dungeonButton.classList.toggle('glow', quest === HINTS[DUNGEON_HINT]);
   });
+
+  // The dungeon screen (step 9); created early, before any shop event can ask for the HUD.
+  const runBar = createRunBar(ui, () => dungeon.potion());
+  const dungeon: DungeonScreen = new DungeonScreen(
+    {
+      app,
+      ui: uiRoot,
+      api,
+      info,
+      runBar,
+      toast,
+      dpr,
+      backTo: () => (room.kind === 'shop' ? 'shop' : 'hotel room'),
+      onDone: async () => {
+        setDungeonMode(false);
+        items = await api.getItems();
+        await openRoom(room.id);
+      },
+    },
+    avatar.look,
+  );
 
   /** Camera state (unsnapped, so zooming never drifts). */
   let camera: Camera = { x: 0, y: 0, zoom: 1 };
@@ -449,6 +486,24 @@ async function start(): Promise<void> {
   });
   panels.add('room', roomPanel.el);
 
+  // ---------- Workshop: crafting and the Blacksmith (step 9) ----------
+  const workshop = createWorkshopPanel(ui, {
+    craft: (recipe) => {
+      void api.craft(recipe.id).then(async (ok) => {
+        toast(ok ? `Made: ${recipeName(recipe)}.${recipe.makesKind === 'furniture' ? ' It is in your bag.' : ' Pick it in the Room panel.'}` : 'You need more materials.');
+        items = await api.getItems();
+        await refreshInventory();
+      });
+    },
+    buy: async (gear) => {
+      if (!(await confirmBuy(ui, { name: gear.name, detail: gearEffect(gear), price: gear.price }))) return;
+      const ok = await api.buyGear(gear.id);
+      toast(ok ? `${gear.name}: yours.` : 'Not enough gold.');
+      await refreshInventory();
+    },
+  });
+  panels.add('workshop', workshop.el);
+
   async function refreshShop(): Promise<void> {
     shop = await api.getShop();
     itemViews.setGoods(shop.slots, items);
@@ -559,6 +614,11 @@ async function start(): Promise<void> {
     inventory = await api.getInventory();
     const p = await api.getPlayer();
     if (!newIntro.running) info.setGold(p.wallet.gold);
+    if (!dungeon.isActive) info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
+    workshop.refresh(p);
+    const free = p.wallet.gold < DUNGEON_KEY_COST;
+    dungeonBadge.textContent = free ? 'free' : String(DUNGEON_KEY_COST);
+    dungeonButton.title = free ? 'Dungeon: a free run (you have less than 10 gold)' : `Dungeon: the key costs ${DUNGEON_KEY_COST} gold`;
     catalog.refresh(p.wallet.gold, p.unlockedStyles);
     roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
     shelfPanel.refresh(shop, inventory);
@@ -585,6 +645,7 @@ async function start(): Promise<void> {
   const avatarPanel = createAvatarPanel(ui, (next) => {
     avatar = { ...avatar, look: next };
     sprite.setLook(next);
+    dungeon.setLook(next);
     void api.setLook(next);
   });
   avatarPanel.setLook(avatar.look, (await api.getPlayer()).unlockedClothing);
@@ -619,13 +680,6 @@ async function start(): Promise<void> {
       api.newGame();
       window.location.reload();
     },
-    giveRandomLoot: () => {
-      void api.debugGiveRandomLoot().then(async (what) => {
-        items = await api.getItems();
-        await refreshInventory();
-        toast(`Added to the bag: ${what}.`);
-      });
-    },
     onDebug: (on) => {
       label.setVisible(on);
       blockerButtons.setVisible(on);
@@ -635,6 +689,40 @@ async function start(): Promise<void> {
   });
   panels.add('settings', settings.el);
   cross.visible = false;
+
+  // ---------- The dungeon (step 9) ----------
+  /** Switches the screen between a room and the dungeon (the UI hides what does not belong). */
+  function setDungeonMode(on: boolean): void {
+    uiRoot.classList.toggle('in-dungeon', on);
+    view.world.visible = !on;
+    sprite.container.visible = !on;
+    hotbar.setHidden(on);
+    runBar.setHidden(!on);
+    if (!on) info.setRun(null);
+    if (on) {
+      panels.close();
+      placer.cancel();
+      menu.close();
+      build.set(false);
+      bubbles.clear();
+      floats.clear();
+      cross.visible = false;
+    }
+  }
+  /** The Dungeon button: asks first (the key costs 10 gold, free under 10), then goes in. */
+  async function enterDungeonAsked(): Promise<void> {
+    if (dungeon.isActive) return;
+    const p = await api.getPlayer();
+    const free = p.wallet.gold < DUNGEON_KEY_COST;
+    const detail = free ? 'A free run, because you have less than 10 gold. Fight, open chests, bring the loot home.' : 'The key costs 10 gold. Fight, open chests, bring the loot home.';
+    if (!(await confirmBuy(uiRoot, { name: 'The crypt', detail, price: free ? null : DUNGEON_KEY_COST, yes: 'Enter' }))) return;
+    const run = await api.dungeonStart();
+    if (!run) return;
+    await refreshInventory();
+    await refreshHint();
+    setDungeonMode(true);
+    await dungeon.enter(run, false);
+  }
 
   // ---------- The new-game intro (step 7b) ----------
   /**
@@ -764,12 +852,18 @@ async function start(): Promise<void> {
 
   app.stage.hitArea = app.screen;
   const control = attachCameraControl(app.stage, app.canvas, {
-    getCamera: () => camera,
-    setCamera,
+    getCamera: () => (dungeon.isActive ? dungeon.camera : camera),
+    setCamera: (cam, snap) => (dungeon.isActive ? dungeon.setCamera(cam) : setCamera(cam, snap)),
     getOverviewZoom: overviewZoom,
     getDevicePixelRatio: dpr,
     onGestureStart: () => intro.cancel(),
     onPoint: (screen, kind, target) => {
+      if (dungeon.isActive) {
+        if (kind !== 'tap') return;
+        if (panels.open !== null) panels.close();
+        else dungeon.tap(screenToWorld(screen, dungeon.camera));
+        return;
+      }
       marked = screenToWorld(screen, shown);
       cross.visible = label.visible;
       redraw();
@@ -819,7 +913,7 @@ async function start(): Promise<void> {
       const to = marked;
       void walkTo(to);
     },
-    getDragMode: () => (blockers.on || placer.active ? 'draw' : 'pan'),
+    getDragMode: () => (dungeon.isActive || blockers.on || placer.active ? 'draw' : 'pan'),
     onDraw: (phase, screen) => {
       const world = screenToWorld(screen, shown);
       if (placer.active) placer.drag(phase, world);
@@ -836,6 +930,11 @@ async function start(): Promise<void> {
   let clockMs = 0;
   const heads = new Map<number, Point>();
   app.ticker.add((ticker) => {
+    if (dungeon.isActive) {
+      control.update(ticker.deltaMS);
+      dungeon.frame(ticker.deltaMS);
+      return;
+    }
     const step = intro.update(ticker.deltaMS, app.screen.width, app.screen.height);
     if (step) setCamera(step.camera, step.done);
     control.update(ticker.deltaMS);
@@ -872,6 +971,12 @@ async function start(): Promise<void> {
 
   await openRoom(room.id, !introPending);
   if (introPending) await playNewGameIntro();
+  // A run in the save (step 9): back into the dungeon, paused until Resume.
+  const saved = await api.getRun();
+  if (saved) {
+    setDungeonMode(true);
+    void dungeon.enter(saved.run, saved.paused);
+  }
   if (notice) toast(notice);
   await showAway();
 }

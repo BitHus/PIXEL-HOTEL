@@ -286,7 +286,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   potion: 20 gold, heals 15 hp instantly, 1 second cooldown between potions, carry max 3.
 - Each room except the spawn room has 0 to 2 enemies. (The balance check was made with
   tile-based movement, so the simulation in step 8 must be run again.) Enemy hp on floor n
-  is multiplied by (1 + 0.25 * (n - 1)), rounded up. Each floor has 3 to 5 wooden chests and
+  is multiplied by (1 + 0.25 * (n - 1)), rounded up; not the Bone King's, which always has 60
+  hp (owner's decision after step 8, config BOSS_HP_FLOOR_SCALING = false). Each floor has 3 to 5 wooden chests and
   a 40% chance of one golden chest. Surviving is the job: enemies are the danger, chests are
   the reward.
 - Loot tables are data in shared/data/loot.json: { id, rolls, drops: [{ item, min, max,
@@ -312,7 +313,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   throne_piece, baseValue 120). Two recipes make a style instead of an item:
   crypt_flagstones (a floor, 8 bone + 2 crystal) and bone_wall (a wall, 10 bone + 4 cloth).
   They unlock that style forever and are not in the catalog. Crafting costs more than the
-  item sells for, so crafted pieces are for showing off.
+  item sells for, so crafted pieces are for showing off. The one exception is bone_throne (5
+  throne_piece are worth 50 gold, the throne 120): it is the boss reward (owner's decision
+  after step 8).
 
 11. NETWORK (step 10 onward)
 - WebSocket, JSON messages { t: string, ... }.
@@ -400,8 +403,9 @@ Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture)
 and the item menu), 5 (inventory, UI, chat, local saving, camera intro; the bag reworked to the
 docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying reworked after
 5b: drawn inside the bed only), 7 (shop, gold and upgrades; serving at the counter added after
-it), 7b (room shapes, character creation, the new-game intro) and 8 (dungeon logic, no graphics
-and no UI yet) are done. Step 6 (docs/STYLE.md) has not been done yet.
+it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
+dungeon in the game: view, HUD, screens, crafting, the Blacksmith) are done. Step 6
+(docs/STYLE.md) has not been done yet.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -529,7 +533,22 @@ Layout:
   - tools/simulate-economy.ts (npm run simulate, uses tsx): cheap / fair / greedy prices, appeal
     0 and 60, 6 items, 1 h and 8 h; prints gold, items sold, time on the slot, blocked slot time.
     tools/tsconfig.json is part of npm run typecheck.
-- Step 8 (dungeon logic; everything pure, in shared/, no client code yet):
+- Step 9 (the dungeon in the game):
+  - shared: GameState.run, api.ts RunView / RunResult / RunUpdate and the dungeon methods,
+    DungeonRun.lastHitBy, the 'mimic' event's chestId, config MIMIC_WAKE_MS, RUN_SAVE_EVERY_MS,
+    DUNGEON_HINT, the dungeon view numbers (DUNGEON_LIGHT_PX ... LEVEL_FLASH_MS).
+  - client/src/dungeon: dungeonScreen.ts (DungeonScreen: the run loop, taps, effects, HUD,
+    screens), dungeonView.ts (DungeonView), dungeonArt.ts (drawBlocks, drawExit, drawEnemy,
+    drawChest, ENEMY_HEIGHT), fog.ts (litBlocks, blockIndex, FogMemory; tested), floatTexts.ts.
+  - client/src/ui: runBar.ts (the 12-slot run bag, run gold, potion button), runScreens.ts
+    (showResume, showExitChoice, showRunResult, bagLines, flashScreen), workshopPanel.ts (tabs
+    Crafting and Blacksmith). infoPanel.ts gained setStats (level + xp bar, always) and setRun
+    (floor name and hp bar in the dungeon; the room switcher hides). pixelIcons gained dungeon,
+    workshop, sword, armor, potion, heart. confirmBuy takes price null (free). PanelName gained
+    'workshop'. Side column: Quest, Bag, Build, Dungeon (badge: the key cost or 'free'), Catalog,
+    Workshop, Room, Avatar, Chat, Settings.
+  - client/src/api/dungeonAPI.test.ts: the step 9 API tests.
+- Step 8 (dungeon logic; everything pure, in shared/):
   - Data: shared/data/loot.json (wooden_chest 2 rolls, golden_chest 3, enemy_rare (70% crystal,
     30% crypt furniture), boss (1-2 throne_piece)), levels.json (maxLevel 8, totalXp per level),
     gear.json (iron_sword, leather_armor, health_potion: prices, effects, potion heal / cooldown /
@@ -785,6 +804,40 @@ Conventions:
   (newGame.ts makeCharacter, .charmaker CSS) and lookPickers.ts use tabs (Body, Hair, Top,
   Bottoms, Shoes); the preview stays in view. Customers in an old save are settled when the game
   opens, so no save migration was needed.
+- DUNGEON IN THE GAME (step 9):
+  - GameState.run holds the run in progress (saved; a reload resumes it). GameAPI: getRun ({ run,
+    paused }), dungeonStart (startRun: the key, the potions along; marks the dungeon hint done),
+    dungeonInput (step with dt 0: applied at once, at the exact run time), dungeonAdvance(dtMs)
+    (step; the rest of a tick stays in run.carryMs), dungeonPause / dungeonResume, craft, buyGear.
+    A run loaded from a save is paused until dungeonResume. A run that ends ('left' / 'dead') is
+    banked at once (finishRun) and removed from the state, so it is banked exactly once; the
+    update carries a RunResult for the summary. LocalGameAPI saves the run when something happened
+    (any event but a wind-up) and at least every RUN_SAVE_EVERY_MS of run time. The step rng is
+    LocalGameAPI's rng (Math.random in the browser); the floor comes from the seed.
+  - The client (dungeon/dungeonScreen.ts) hands every frame's time to dungeonAdvance, one call at
+    a time (time that passes meanwhile goes into the next call: no tick is skipped). It stops the
+    run (halted) while the Resume panel, the exit choice or the result screen shows; a hidden tab
+    pauses the run and asks for Resume. main.ts setDungeonMode: the root gets .in-dungeon (CSS hides
+    the .room-only side buttons, the quest card, the hotbar, the build frame and bubbles), the room
+    world hides, the run bar shows. The camera control routes to the dungeon (camera follows the
+    player; pinch / wheel only change the zoom; drags do nothing). After the result screen the
+    player goes back to the room they came from (currentRoomId is unchanged by a run).
+  - Drawing (dungeon/dungeonView.ts, dungeonArt.ts): floor blocks dark blue, wall blocks next to
+    the floor with a stone top and, with floor below, a darker DUNGEON front face (14 px); deep wall
+    is not drawn (black). One DepthLayer for the player, enemies and chests (feet y, then x, then
+    id). Positions are drawn between the last two ticks (carryMs / 100). Fog (dungeon/fog.ts):
+    lit within DUNGEON_LIGHT_PX, seen = dim (DUNGEON_SEEN_DARK), else black; enemies only on lit
+    blocks, chests and the exit once seen. Enemies blink red during the wind-up, flash white when
+    hit, show an hp bar once hurt. The golden chest has a pulsing warm glow. A mimic is drawn as
+    an open chest with teeth; it waits MIMIC_WAKE_MS before its first wind-up. A cooldown ring
+    shows above the player's head. Floating text (dungeon/floatTexts.ts): damage, drops, '+xp',
+    'dodged!'. Screen shake on hits (HIT_SHAKE_PX) and when hurt (HURT_SHAKE_PX).
+  - Taps: an enemy (lit, generous hit circle) = click_enemy; an unopened chest = walk onto it;
+    else walk there. Q or the potion button drinks.
+  - Zoom: max(DUNGEON_DEVICE_PX_PER_ART_PX, round(DUNGEON_CSS_PX_PER_ART_PX * dpr)) device px per
+    art px, settled like the rooms.
+  - The dungeon hint (HINTS[DUNGEON_HINT], "Quest 4 of 4") only shows while the shop has nothing
+    for sale; the Dungeon button glows while it shows. Starting a run finishes it.
 - DUNGEON (step 8):
   - The dungeon never uses room shapes: its own 40 x 40 grid of 32 px blocks (DungeonMap.blocks,
     row-major). Positions are world px. Room 0 is the spawn room (no enemies, no chests). Rooms keep
@@ -811,7 +864,8 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 5: MIGRATIONS[4] gives old rooms the square shapes, the old look clothing
+- SAVE_VERSION is 6: MIGRATIONS[5] adds run: null (no run in progress).
+- (Before 6:) MIGRATIONS[4] gives old rooms the square shapes, the old look clothing
   ids (short, long_sleeve, trousers), unlockedClothing [] and playerCreated true.
 - (Before 5:) MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and
   stall_table (addShopStartItems); MIGRATIONS[3] moves a counter still on the old spot against the
@@ -819,9 +873,8 @@ Conventions:
 
 Notes:
 - cameraControl reports long presses as onPoint(start, 'longpress', target at press start).
-- "Give random loot" (Settings, step 7) is a debug button: a few random materials and maybe one
-  catalog item, free, ledger reason 'debug'. Remove it in step 9. LocalGameAPI.debugGiveFurniture
-  is for tests only.
+- The debug "Give random loot" button is gone (step 9: the shop sells real loot).
+  LocalGameAPI.debugGiveFurniture is for tests only.
 - The pixel font draws a small "2" much like an "8" (for example the hotbar numbers and the
   gold). Worth checking when the art pass (step 6) happens.
 - Build mode came back as a play / build mode switch (a change to step 4b, made after step 5):
@@ -862,13 +915,7 @@ Notes:
     the nearest free cell center); LocalGameAPI and main.ts both do this with the same rule.
   - The bone chair (crypt furniture) does not exist yet; give it one 'sit' seat when it is added.
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
-- Step 8 open questions for the owner: (1) BOSS_HP_FLOOR_SCALING (config): the brief scales the
-  Bone King to 90 hp on floor 3; the simulation hits the target survival rates only with 60 hp
-  (false). It is true (as the brief says) until the owner decides. (2) "Crafting costs more than
-  the item sells for" holds for every recipe except bone_throne (5 throne_piece = 50 gold, the
-  throne is worth 120). (3) The simulation's value per surviving run is above 60-120 in round 2
-  when materials are counted (gold alone is near it). Chest gold amounts in loot.json are
-  placeholders to tune.
+- Loot values in loot.json stay as they are until the owner tunes them after playing step 9.
 - Step 8 balance (npm run simulate:dungeon): round 1 (the current DUNGEON_ROUND) is easy (about
   100% survival); the survival targets are for round 2.
 - The start look (config START_LOOK): skin 30, hair 5, short hair, long sleeves (shirt 7),

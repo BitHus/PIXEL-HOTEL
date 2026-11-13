@@ -50,6 +50,14 @@ reference for look and HUD) and Habbo Hotel (rooms, furniture and the item info 
   shows or hides the quest card: "Quest n of 3", the task, "tap to hide". On a wide screen the
   card opens to the left of the button with a small tail; on a phone it sits under the info
   panel, so it never covers the gold or the room switcher. It hides while a panel is open.
+- **Dungeon** (step 9): a Dungeon button (an arched door) right after Build, with a small badge
+  for the key cost (10) or 'free'. In the dungeon the right column keeps only Chat and Settings;
+  the info panel shows the floor, an hp bar and the level with its xp bar (the level and xp bar
+  show in the rooms too); the run bag (12 slots, 6 per row on a phone, the run gold, the potion
+  button) takes the hotbar's place. The exit choice, the death and leave summaries and the
+  Resume panel are centered panels like "Buy this?".
+- **Workshop** (step 9): one button (an anvil) with two tabs, Crafting and Blacksmith, so the
+  column stays short.
 - **Spending gold asks first** (after step 8): buying in the Catalog and upgrading a room open a
   small centered "Buy this?" panel (picture, name, price, Cancel / Buy for N).
 - **Bottom-center: the hotbar.** One row of slots in a frame, centered. Icons only, no text.

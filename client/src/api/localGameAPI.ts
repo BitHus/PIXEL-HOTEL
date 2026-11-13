@@ -9,9 +9,21 @@
 
 import {
   AVATAR_START_FROM_BOTTOM,
-  FURNITURE_TYPES,
+  DUNGEON_HINT,
   HINTS,
-  MATERIAL_TYPES,
+  RECIPES,
+  RUN_SAVE_EVERY_MS,
+  buyGear,
+  craft as craftRecipe,
+  finishRun,
+  startRun,
+  step,
+  type DungeonInput,
+  type DungeonRun,
+  type RunResult,
+  type RunUpdate,
+  type RunView,
+  type ShopGearId,
   PALETTE,
   SHOP_CATCH_UP_GAP_MS,
   SHOP_TICK_MS,
@@ -23,7 +35,6 @@ import {
   repathCustomers,
   returnOrphanLoot,
   rngInt,
-  rngPick,
   setPrice,
   shopAppeal,
   stepShop,
@@ -85,7 +96,6 @@ import {
   type GameAPI,
   type GameState,
   type Inventory,
-  type MaterialId,
   type ItemsResult,
   type NavGrid,
   type PlaceAt,
@@ -157,6 +167,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   private shopGrid: NavGrid | null = null;
   private away: AwaySummary | null = null;
   private clock = 0;
+  /** A run loaded from a save waits for dungeonResume (the player taps Resume). */
+  private runPaused: boolean;
+  /** Run time of the last run save. */
+  private runSavedAt = 0;
 
   private constructor(
     private readonly storage: SaveStorage,
@@ -165,6 +179,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     private readonly rng: Rng,
   ) {
     this.state = arrangeState(state);
+    this.runPaused = this.state.run !== null;
+    this.runSavedAt = this.state.run?.timeMs ?? 0;
     this.walkState = this.doorWalk();
     this.grid = this.buildGrid();
     // Customers do not walk while the game is closed: catch up with maths only.
@@ -453,7 +469,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   async currentHint(): Promise<string | null> {
-    return HINTS[this.state.hintsDone] ?? null;
+    const i = this.state.hintsDone;
+    // The dungeon hint only shows while the shop has nothing for sale (and no run is going).
+    if (i === DUNGEON_HINT) return !this.state.run && !this.state.shop.slots.some((s) => s.loot) ? (HINTS[i] ?? null) : null;
+    return HINTS[i] ?? null;
   }
 
   async takeAwaySummary(): Promise<AwaySummary | null> {
@@ -462,18 +481,90 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return a;
   }
 
-  async debugGiveRandomLoot(): Promise<string> {
-    const materials: Partial<Record<MaterialId, number>> = {};
-    for (let k = 0; k < 3; k++) {
-      const m = rngPick(this.rng, MATERIAL_TYPES).id;
-      materials[m] = (materials[m] ?? 0) + rngInt(this.rng, 1, 4);
-    }
-    const furniture = this.rng() < 0.3 ? [rngPick(this.rng, FURNITURE_TYPES.filter((t) => t.inCatalog)).id] : [];
-    const next = applyChange(this.state, { reason: 'debug', materials, addFurniture: furniture, note: 'Give random loot' }, this.now());
-    if (!next) return '';
+  // ---------- The dungeon (step 9) ----------
+
+  async getRun(): Promise<RunView | null> {
+    const run = this.state.run;
+    return run ? { run, paused: this.runPaused } : null;
+  }
+
+  async dungeonStart(): Promise<DungeonRun | null> {
+    if (this.state.run) return null;
+    const seed = rngInt(this.rng, 1, 2 ** 31 - 1);
+    const r = startRun(this.state, seed, this.now());
+    // The dungeon hint is done once the player goes in.
+    this.commit({ ...this.hintDone(r.state, DUNGEON_HINT), run: r.run });
+    this.runPaused = false;
+    this.runSavedAt = 0;
+    return r.run;
+  }
+
+  async dungeonInput(input: DungeonInput): Promise<RunUpdate | null> {
+    const run = this.state.run;
+    if (!run || this.runPaused) return null;
+    return this.applyRun(step(run, [input], 0, this.rng));
+  }
+
+  async dungeonAdvance(dtMs: number): Promise<RunUpdate | null> {
+    const run = this.state.run;
+    if (!run) return null;
+    if (this.runPaused || !(dtMs > 0)) return { run, result: null };
+    return this.applyRun(step(run, [], dtMs, this.rng));
+  }
+
+  async dungeonPause(): Promise<void> {
+    if (this.state.run) this.runPaused = true;
+  }
+
+  async dungeonResume(): Promise<void> {
+    this.runPaused = false;
+  }
+
+  async craft(recipeId: string): Promise<boolean> {
+    const recipe = RECIPES.find((r) => r.id === recipeId);
+    const next = recipe ? craftRecipe(recipe, this.state, this.now()) : null;
+    if (!next) return false;
     this.commit(next);
-    const parts = Object.entries(materials).map(([id, n]) => `${n} ${id}`);
-    return [...parts, ...furniture.map((id) => getFurnitureType(id).name)].join(', ');
+    return true;
+  }
+
+  async buyGear(id: ShopGearId): Promise<boolean> {
+    const next = buyGear(this.state, id, this.now());
+    if (!next) return false;
+    this.commit(next);
+    return true;
+  }
+
+  /**
+   * Keeps a stepped run. A run that ended is banked at once (finishRun: the ledger, xp, potions)
+   * and removed from the state, so it can never be banked twice. A going run is saved when
+   * something happened, and at least every RUN_SAVE_EVERY_MS of run time.
+   */
+  private applyRun(next: DungeonRun): RunUpdate {
+    if (next.status === 'left' || next.status === 'dead') {
+      const before = this.state.player;
+      const banked = finishRun({ ...this.state, run: null }, next, this.now()) ?? { ...this.state, run: null };
+      this.commit(banked);
+      const result: RunResult = {
+        status: next.status,
+        banked: next.banked,
+        lost: next.lost,
+        xpGained: next.xpGained,
+        levelBefore: before.level,
+        levelAfter: banked.player.level,
+        floor: next.floor,
+        lastHitBy: next.lastHitBy,
+      };
+      return { run: next, result };
+    }
+    const worth = next.events.some((e) => e.t !== 'windup') || next.status !== this.state.run?.status;
+    if (worth || next.timeMs - this.runSavedAt >= RUN_SAVE_EVERY_MS) {
+      this.runSavedAt = next.timeMs;
+      this.commit({ ...this.state, run: next });
+    } else {
+      this.state = { ...this.state, run: next };
+    }
+    return { run: next, result: null };
   }
 
   /** Tests only: furniture of these types into the bag (ledger reason 'debug'). */
@@ -534,6 +625,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!r.ok) return { ok: false, message: problemMessage(r.problem) };
     this.storage.set(SAVE_BACKUP_KEY, this.exportSave());
     this.commit(r.state);
+    this.runPaused = r.state.run !== null;
     return { ok: true };
   }
 
@@ -555,6 +647,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   newGame(): void {
     this.storage.set(SAVE_BACKUP_KEY, this.exportSave());
     this.commit(createNewPlayer(undefined, this.now()));
+    this.runPaused = false;
   }
 
   // ---------- inside ----------

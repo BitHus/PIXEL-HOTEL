@@ -6,6 +6,7 @@ import type { BagLayout } from './bag.ts';
 import type { Room } from './room.ts';
 import type { ShopState } from './shop.ts';
 import type { FurnitureItem, LedgerEntry, Player } from './types.ts';
+import type { DungeonRun } from './dungeon/run.ts';
 
 export interface GameState {
   player: Player;
@@ -28,6 +29,8 @@ export interface GameState {
   playerCreated: boolean;
   /** How many first-run hints (config HINTS) are done; they show one at a time. */
   hintsDone: number;
+  /** The dungeon run in progress (step 9), saved so a reload resumes it; null between runs. */
+  run: DungeonRun | null;
 }
 
 /** One chat message (not saved). */

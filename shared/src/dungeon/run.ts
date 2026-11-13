@@ -120,7 +120,7 @@ export type RunEvent =
   | { t: 'loot'; item: string; qty: number }
   | { t: 'left_behind'; item: BagItem }
   | { t: 'chest'; chestId: number }
-  | { t: 'mimic'; enemyId: number }
+  | { t: 'mimic'; enemyId: number; chestId: number }
   | { t: 'potion'; healed: number }
   | { t: 'exit' }
   | { t: 'stairs'; floor: number; healed: number }
@@ -146,6 +146,8 @@ export interface DungeonRun {
   lost: RunBag;
   xpGained: number;
   bossDefeated: boolean;
+  /** What dealt the last hit to the player: an enemy kind, or 'mimic' (for the death screen). */
+  lastHitBy: string | null;
   status: RunStatus;
   /** Run time in ms (whole ticks). */
   timeMs: number;
@@ -223,6 +225,7 @@ export function newRun(o: NewRunOptions): DungeonRun {
     lost: emptyRunBag(),
     xpGained: 0,
     bossDefeated: false,
+    lastHitBy: null,
     status: 'active',
     timeMs: 0,
     carryMs: 0,

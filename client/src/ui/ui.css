@@ -1632,3 +1632,264 @@
     border-color: var(--select);
   }
 }
+
+/* ---------- Step 9: level, xp and hp in the info panel ---------- */
+.info-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.info-bar[hidden] {
+  display: none;
+}
+
+.info-bar .pixel-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.level-badge {
+  flex: none;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--wood);
+}
+
+.bar-track {
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 8px;
+  background: var(--slot-bg);
+  border: var(--px) solid var(--wood);
+  box-sizing: content-box;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--warm);
+}
+
+.hp-bar .bar-fill {
+  background: #e43b44;
+}
+
+.hp-bar .bar-fill.low {
+  animation: hp-low 0.8s steps(2) infinite;
+}
+
+@keyframes hp-low {
+  50% {
+    background: #f77622;
+  }
+}
+
+.bar-text {
+  flex: none;
+  min-width: 42px;
+  text-align: right;
+}
+
+/* ---------- Step 9: the dungeon screen ---------- */
+/* In the dungeon only Chat and Settings stay in the column; the room's things hide. */
+.in-dungeon .room-only,
+.in-dungeon .quest-card,
+.in-dungeon .hotbar,
+.in-dungeon .build-frame,
+.in-dungeon .bubble-layer {
+  display: none !important;
+}
+
+/* A small label on a square button (the key cost, potions left). */
+.icon-btn {
+  position: relative;
+}
+
+.btn-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -6px;
+  padding: 0 3px;
+  min-width: 10px;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--cream);
+  background: var(--wood);
+  border: 1px solid var(--outline);
+  pointer-events: none;
+}
+
+.dungeon-btn.glow {
+  animation: quest-glow 1s steps(2) infinite;
+}
+
+/* The run bag: bottom center in the hotbar's place. 12 slots in one row, two rows on a phone. */
+.run-bar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--edge) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  max-width: calc(100vw - 2 * var(--edge));
+  box-sizing: border-box;
+}
+
+.run-bar[hidden] {
+  display: none;
+}
+
+.run-slots {
+  display: grid;
+  grid-template-columns: repeat(12, var(--run-slot, 40px));
+  gap: 3px;
+}
+
+.run-slot {
+  width: var(--run-slot, 40px);
+  height: var(--run-slot, 40px);
+  cursor: default;
+}
+
+.run-slot .slot-icon {
+  width: 80%;
+  height: 80%;
+}
+
+.run-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.run-gold {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.run-gold .pixel-icon {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 680px) {
+  .run-slots {
+    grid-template-columns: repeat(6, var(--run-slot, 36px));
+    --run-slot: 36px;
+  }
+}
+
+/* Resume, the exit choice and the run summaries reuse the "Buy this?" panel. */
+.run-panel {
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+}
+
+.run-dead .panel-title {
+  color: var(--no);
+}
+
+.run-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.run-list-title {
+  font-weight: 700;
+  color: var(--wood);
+}
+
+.run-xp {
+  font-weight: 700;
+}
+
+/* Floating text over the dungeon: damage, drops, xp. */
+.float-text {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+  pointer-events: none;
+  color: var(--cream);
+  text-shadow:
+    1px 0 var(--night),
+    -1px 0 var(--night),
+    0 1px var(--night),
+    0 -1px var(--night),
+    1px 1px var(--night);
+}
+
+.float-damage {
+  color: #fee761;
+}
+
+.float-hurt {
+  color: #ff0044;
+}
+
+.float-loot {
+  color: #feae34;
+}
+
+.float-xp {
+  color: #2ce8f5;
+}
+
+.float-heal {
+  color: #63c74d;
+}
+
+.screen-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: #fee761;
+  pointer-events: none;
+  animation: screen-flash var(--flash-ms, 600ms) ease-out forwards;
+}
+
+@keyframes screen-flash {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------- Step 9: the Workshop ---------- */
+.recipe-needs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: 12px;
+}
+
+.recipe-needs .short {
+  color: var(--no);
+  font-weight: 700;
+}
+
+.workshop-panel .slot .pixel-icon {
+  width: 32px;
+  height: 32px;
+}
