@@ -303,7 +303,11 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   its own shades.
 - Sprite sheets: PNG + JSON (frame name -> x, y, w, h, anchor). Nearest-neighbour scaling
   only.
-- UI: HTML/CSS over the canvas. Free open-license pixel font, hosted locally.
+- UI: HTML/CSS over the canvas. Free open-license pixel font, hosted locally. The screen
+  layout (info panel top-left, icon buttons on the right edge, hotbar bottom-center, debug
+  tools in Settings), the frame style and the interaction patterns are in
+  docs/UI-REFERENCE.md. Read it before any step that adds or changes UI, and put new buttons
+  and panels where it says.
 
 13. SAFETY AND PRIVACY
 - Accounts need only a username and a password. No email, real name or birthday.
