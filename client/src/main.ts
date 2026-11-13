@@ -5,6 +5,8 @@ import {
   SIT_REACH_PX,
   getFurnitureType,
   itemBlockers,
+  pickUpItem,
+  rotateInPlace,
   seatFor,
   standPointFor,
   buildNavGrid,
@@ -32,8 +34,10 @@ import { BlockersDebug } from './debug/blockers.ts';
 import { createBlockersButton } from './ui/blockersButton.ts';
 import { ItemViews } from './render/itemViews.ts';
 import { avatarDepthKey } from './render/depthOrder.ts';
-import { BuildMode } from './build/buildMode.ts';
+import { Placer } from './build/placer.ts';
 import { createBuildPanel } from './ui/buildPanel.ts';
+import { createPlaceBar } from './ui/placeBar.ts';
+import { createItemMenu } from './ui/itemMenu.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
@@ -184,47 +188,76 @@ async function start(): Promise<void> {
     setCamera(centerCamera(w, h, bounds, fitZoom(w, h, bounds)));
   };
 
-  const build: BuildMode = new BuildMode(
+  // Step 4b: placing (a ghost that lands only on ✓) and the item menu.
+  const setItems = (next: FurnitureItem[]): void => {
+    items = next;
+    itemViews.sync(items, placer.hiddenUids());
+    roomChanged();
+    refreshUI();
+  };
+  const placer: Placer = new Placer(
     {
       room,
       ownerId: 1,
       getItems: () => items,
-      setItems: (next) => {
-        items = next;
-        itemViews.sync(items, build.hiddenUids());
-        roomChanged();
-        refreshPanel();
-      },
+      setItems,
       newUid: () => ++lastUid,
-      viewCenter: () => screenToWorld({ x: app.screen.width / 2, y: app.screen.height / 2 }, shown),
       onChange: () => {
-        itemViews.sync(items, build.hiddenUids());
-        refreshPanel();
+        itemViews.sync(items, placer.hiddenUids());
+        refreshUI();
       },
     },
     view.ghostLayer,
   );
+  const viewCenter = (): Point => screenToWorld({ x: app.screen.width / 2, y: app.screen.height / 2 }, shown);
+  let buildOn = false;
   const panel = createBuildPanel(ui, {
     onToggle: (on) => {
-      build.setOn(on);
-      refreshPanel();
+      buildOn = on;
+      refreshUI();
     },
-    onSelect: (typeId) => build.select(typeId),
-    onRotate: () => build.rotate(),
-    onPickUp: () => build.pickUp(),
-    onCancel: () => build.cancel(),
+    onSelect: (typeId) => {
+      menu.close();
+      placer.startNew(typeId, viewCenter());
+    },
   });
-  function refreshPanel(): void {
+  const placeBar = createPlaceBar(ui, {
+    onPlace: () => placer.place(),
+    onRotate: () => placer.rotate(),
+    onCancel: () => placer.cancel(),
+  });
+  const menu = createItemMenu(ui, {
+    onMove: (uid) => {
+      menu.close();
+      placer.startMove(uid);
+    },
+    onRotate: (uid) => {
+      const next = rotateInPlace(room, items, uid);
+      if (next) setItems(next);
+      else itemViews.shake(uid);
+    },
+    onPickUp: (uid) => {
+      menu.close();
+      setItems(pickUpItem(items, uid));
+    },
+    onSit: (uid) => {
+      menu.close();
+      const seat = roomItem(uid);
+      if (seat && !sitOn(seat)) itemViews.shake(uid);
+    },
+  });
+  const openMenu = (item: FurnitureItem): void => menu.open(item.uid, getFurnitureType(item.typeId));
+  function refreshUI(): void {
     const inventory = new Map<string, number>();
     for (const i of items) if (i.roomId === null) inventory.set(i.typeId, (inventory.get(i.typeId) ?? 0) + 1);
-    panel.refresh({ on: build.on, held: build.heldTypeId, canPickUp: build.canPickUp, inventory });
+    panel.refresh({ on: buildOn, placing: placer.active, inventory });
   }
-  refreshPanel();
+  refreshUI();
   // Shift turns snapping off (desktop).
-  const onShift = (e: KeyboardEvent): void => build.setShift(e.shiftKey);
+  const onShift = (e: KeyboardEvent): void => placer.setShift(e.shiftKey);
   window.addEventListener('keydown', onShift);
   window.addEventListener('keyup', onShift);
-  window.addEventListener('blur', () => build.setShift(false));
+  window.addEventListener('blur', () => placer.setShift(false));
 
   app.stage.hitArea = app.screen;
   const control = attachCameraControl(app.stage, app.canvas, {
@@ -234,24 +267,35 @@ async function start(): Promise<void> {
     getDevicePixelRatio: dpr,
     onPoint: (screen, kind, target) => {
       marked = screenToWorld(screen, shown);
+      redraw();
+      // While placing, taps do nothing: only ✓ places (so nothing lands by accident).
+      if (kind === 'hover' || placer.active) return;
       // The placed item under the pointer, found by Pixi's hit testing (item views are 'static').
       const hit = roomItem(itemViews.uidOf(target));
-      if (build.on) {
-        if (kind === 'hover') build.hover(marked);
-        else build.tap(marked, build.ghostContains(screen), hit?.uid ?? null);
-      } else if (kind === 'tap') {
-        if (!(hit && getFurnitureType(hit.typeId).sittable && sitOn(hit))) {
-          seatGoal = null;
-          walkTo(marked);
-        }
+      if (kind === 'longpress') {
+        if (hit) openMenu(hit);
+        else menu.close();
+        return;
       }
-      redraw();
+      // A tap with the menu open only closes it (a tap on the same item keeps it open).
+      if (menu.uid !== null) {
+        if (hit?.uid !== menu.uid) menu.close();
+        return;
+      }
+      if (hit) {
+        // A sittable item outside build mode: walk there and sit. Anything else: its menu.
+        if (!buildOn && getFurnitureType(hit.typeId).sittable && sitOn(hit)) return;
+        openMenu(hit);
+        return;
+      }
+      seatGoal = null;
+      walkTo(marked);
     },
-    getDragMode: () => (blockers.on || (build.on && build.holding) ? 'draw' : 'pan'),
+    getDragMode: () => (blockers.on || placer.active ? 'draw' : 'pan'),
     onDraw: (phase, screen) => {
       const world = screenToWorld(screen, shown);
-      if (blockers.on) blockers.draw(phase, world);
-      else build.drag(phase, world);
+      if (placer.active) placer.drag(phase, world);
+      else if (blockers.on) blockers.draw(phase, world);
     },
   });
 
@@ -275,9 +319,13 @@ async function start(): Promise<void> {
         seatUid = target.uid;
       }
     }
+    itemViews.update(ticker.deltaMS);
     sprite.update(avatar, clockMs);
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seatUid)));
     view.update();
+    // The floating bars follow the ghost and the item (the camera may move).
+    placeBar.update(placer.screenBounds(), placer.valid);
+    menu.follow(menu.uid === null ? null : itemViews.screenBounds(menu.uid));
   });
   fit();
 }

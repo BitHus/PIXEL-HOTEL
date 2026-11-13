@@ -9,12 +9,15 @@
 //   ZOOM_SETTLE_MS to settleZoom (nearest zoom where zoom * devicePixelRatio is whole, or the
 //   overview zoom if closer), around the gesture's focus point, and then the camera snaps to
 //   whole device pixels.
+// - A press held for LONG_PRESS_MS without moving past TAP_MAX_MOVE_PX is a long press
+//   (onPoint 'longpress', with what was under the pointer when it went down). It never taps.
 // - When getDragMode() returns 'draw' (Blockers mode, later), a one-finger / left drag is
 //   sent to onDraw instead of panning.
 // Uses Pixi's federated pointer and wheel events.
 
 import type { Container, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
 import {
+  LONG_PRESS_MS,
   TAP_MAX_MOVE_PX,
   TAP_MAX_MS,
   WHEEL_GESTURE_END_MS,
@@ -42,10 +45,10 @@ export interface CameraControlHooks {
   /** Real screen px per CSS px (the renderer resolution). */
   getDevicePixelRatio(): number;
   /**
-   * Mouse/pen moved (hover), or a press ended as a tap. Screen px. `target` is what Pixi's
+   * Mouse/pen moved (hover), a press ended as a tap, or a press was held still (longpress). Screen px. `target` is what Pixi's
    * hit testing found under the pointer (the event target), if anything.
    */
-  onPoint(screen: Point, kind: 'hover' | 'tap', target: Container | null): void;
+  onPoint(screen: Point, kind: 'hover' | 'tap' | 'longpress', target: Container | null): void;
   /** What a one-finger / left drag does. Default 'pan'. */
   getDragMode?(): DragMode;
   /** Called for drags while the drag mode is 'draw'. */
@@ -63,6 +66,10 @@ interface Press {
   downAt: number;
   /** null until the press moved past TAP_MAX_MOVE_PX. */
   drag: DragMode | null;
+  /** What Pixi's hit testing found under the pointer when the press started. */
+  target: Container | null;
+  /** True once the press fired a long press (it no longer taps). */
+  long: boolean;
 }
 
 export interface CameraControl {
@@ -136,13 +143,21 @@ export function attachCameraControl(
     const p = pt(e);
     movePress(p);
     if (press.drag === 'draw') hooks.onDraw?.('end', p);
-    else if (!press.drag && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap', targetOf(e));
+    else if (!press.drag && !press.long && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap', targetOf(e));
     press = null;
   };
 
   stage.on('pointerdown', (e: FederatedPointerEvent) => {
     const p = pt(e);
-    const newPress = (): Press => ({ id: e.pointerId, start: p, last: p, downAt: performance.now(), drag: null });
+    const newPress = (): Press => ({
+      id: e.pointerId,
+      start: p,
+      last: p,
+      downAt: performance.now(),
+      drag: null,
+      target: targetOf(e),
+      long: false,
+    });
     if (e.pointerType === 'touch') {
       touches.set(e.pointerId, p);
       if (touches.size === 1) press = newPress();
@@ -213,6 +228,10 @@ export function attachCameraControl(
 
   return {
     update(dtMs) {
+      if (press && !press.drag && !press.long && performance.now() - press.downAt >= LONG_PRESS_MS) {
+        press.long = true;
+        hooks.onPoint(press.start, 'longpress', press.target);
+      }
       if (settle) {
         settle.elapsed += dtMs;
         const zoom = easeZoom(settle.from, settle.to, settle.elapsed, ZOOM_SETTLE_MS);
