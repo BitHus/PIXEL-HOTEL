@@ -1970,3 +1970,88 @@
 .lunch-food .slot {
   position: relative;
 }
+
+/* ---------- Step 9c: the Forge tab (smelting | the gear tree), the mine ---------- */
+.workshop-panel.wide {
+  width: min(640px, calc(100vw - var(--side-col) - 2 * var(--edge)));
+}
+
+.forge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 10px;
+  align-items: start;
+}
+
+@media (max-width: 680px) {
+  .forge-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.forge-smelt,
+.forge-upgrades {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.forge-smelt h3,
+.forge-upgrades h3 {
+  margin: 0;
+}
+
+.forge-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.forge-slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.forge-slot .pixel-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.forge-tier {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: var(--px) solid var(--wood-light);
+  background: var(--slot-bg);
+}
+
+.forge-tier .catalog-info {
+  flex: 1 1 auto;
+}
+
+.forge-tier.current {
+  border-color: var(--select);
+  background: var(--cream);
+}
+
+.forge-tier.done,
+.forge-tier.locked {
+  opacity: 0.55;
+}
+
+.forge-tier.next {
+  border-style: dashed;
+}
+
+.run-leave {
+  min-width: var(--touch);
+  padding: 0 6px;
+}
+
+.lantern-bar .bar-fill {
+  background: var(--warm);
+}

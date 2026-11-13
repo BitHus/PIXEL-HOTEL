@@ -79,7 +79,7 @@ describe('step: the player attacks', () => {
     expect(distance(r.player, r.enemies[0]!)).toBeLessThanOrEqual(40);
   });
 
-  it('damage stays inside the ranges; the iron sword hits 6-8; levels add to both ends', () => {
+  it('damage stays inside the ranges; the iron sword hits 7-9 (step 9c); levels add to both ends', () => {
     const seen = (gear: ('iron_sword' | 'leather_armor')[], xp = 0) => {
       const ds = new Set<number>();
       const rng = seededRng(11);
@@ -92,8 +92,8 @@ describe('step: the player attacks', () => {
       return [...ds].sort();
     };
     expect(seen([])).toEqual([4, 5, 6]);
-    expect(seen(['iron_sword'])).toEqual([6, 7, 8]);
-    expect(seen(['iron_sword'], 40)).toEqual([7, 8, 9]); // level 3: +1
+    expect(seen(['iron_sword'])).toEqual([7, 8, 9]);
+    expect(seen(['iron_sword'], 40)).toEqual([10, 8, 9]); // level 3: +1 (sorted as text)
     expect(combatStats(4, [])).toMatchObject({ attackMin: 6, attackMax: 8, maxHp: 39 });
   });
 });

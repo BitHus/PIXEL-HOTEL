@@ -3,5 +3,12 @@
   { "id": "cloth", "name": "Cloth", "baseValue": 6, "color": 28 },
   { "id": "bone", "name": "Bone", "baseValue": 4, "color": 2 },
   { "id": "crystal", "name": "Crystal", "baseValue": 15, "color": 18 },
-  { "id": "throne_piece", "name": "Throne piece", "baseValue": 10, "color": 27 }
+  { "id": "throne_piece", "name": "Throne piece", "baseValue": 10, "color": 27 },
+  { "id": "copper_ore", "name": "Copper ore", "baseValue": 5, "color": 1 },
+  { "id": "iron_ore", "name": "Iron ore", "baseValue": 8, "color": 21 },
+  { "id": "mithril_ore", "name": "Mithril ore", "baseValue": 15, "color": 17 },
+  { "id": "copper_bar", "name": "Copper bar", "baseValue": 18, "color": 9 },
+  { "id": "iron_bar", "name": "Iron bar", "baseValue": 30, "color": 20 },
+  { "id": "mithril_bar", "name": "Mithril bar", "baseValue": 55, "color": 18 },
+  { "id": "gem", "name": "Gem", "baseValue": 60, "color": 28 }
 ]

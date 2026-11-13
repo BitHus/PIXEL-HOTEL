@@ -99,6 +99,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       hotelRoomId: config.hotelRoomId,
       shopRoomId: config.shopRoomId,
       farmRoomId: config.farmRoomId,
+      mineVisits: 0,
     },
     look: { ...config.look },
     rooms: [

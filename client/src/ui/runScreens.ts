@@ -104,8 +104,23 @@ function list(title: string, bag: RunBag): HTMLElement {
 export function showRunResult(parent: HTMLElement, r: RunResult, backTo: string): Promise<void> {
   return new Promise((resolve) => {
     const dead = r.status === 'dead';
-    const { shade, box } = modal(parent, dead ? `You fell on floor ${r.floor}` : 'You made it out!', dead ? 'run-dead' : 'run-left');
-    if (dead) {
+    const mine = r.place === 'mine';
+    const title = mine
+      ? dead
+        ? 'You were carried out of the mine'
+        : r.lanternOut
+          ? 'Your lantern went out'
+          : 'Back from the mine'
+      : dead
+        ? `You fell on floor ${r.floor}`
+        : 'You made it out!';
+    const { shade, box } = modal(parent, title, dead ? 'run-dead' : 'run-left');
+    if (mine && dead) {
+      // The mine (step 9c): only half of each ore is lost.
+      box.append(el('div', 'panel-info', 'You lost half of the ore from this visit. The rest is home.'));
+      box.append(list('Brought home', r.banked));
+      box.append(list('Lost', r.lost));
+    } else if (dead) {
       if (r.lastHitBy) box.append(el('div', 'panel-info', `${KILLER[r.lastHitBy] ?? 'Something'} dealt the last hit.`));
       box.append(list('Lost', r.lost));
       if (r.banked.gold > 0 || r.banked.slots.length > 0) box.append(list('Kept', r.banked));

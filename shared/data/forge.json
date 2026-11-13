@@ -1,0 +1,17 @@
+{
+  "orePerBar": 3,
+  "smelting": [
+    { "bar": "copper_bar", "ore": "copper_ore", "fee": 2 },
+    { "bar": "iron_bar", "ore": "iron_ore", "fee": 4 },
+    { "bar": "mithril_bar", "ore": "mithril_ore", "fee": 8 }
+  ],
+  "pieces": [
+    { "id": "copper_sword", "name": "Copper sword", "slot": "weapon", "needs": null, "bars": { "copper_bar": 4 }, "attackMin": 5, "attackMax": 7 },
+    { "id": "iron_sword", "name": "Iron sword", "slot": "weapon", "needs": "copper_sword", "bars": { "iron_bar": 5 }, "attackMin": 7, "attackMax": 9 },
+    { "id": "mithril_sword", "name": "Mithril sword", "slot": "weapon", "needs": "iron_sword", "bars": { "mithril_bar": 5 }, "attackMin": 9, "attackMax": 12 },
+    { "id": "leather_armor", "name": "Leather armor", "slot": "armor", "needs": null, "bars": { "copper_bar": 3 }, "damageReduction": 1, "minDamage": 1 },
+    { "id": "iron_armor", "name": "Iron armor", "slot": "armor", "needs": "leather_armor", "bars": { "iron_bar": 5 }, "damageReduction": 2, "minDamage": 1 },
+    { "id": "mithril_armor", "name": "Mithril armor", "slot": "armor", "needs": "iron_armor", "bars": { "mithril_bar": 5 }, "damageReduction": 3, "minDamage": 1 },
+    { "id": "steel_pickaxe", "name": "Steel pickaxe", "slot": "pickaxe", "needs": null, "bars": { "iron_bar": 5, "copper_bar": 2 }, "hitsPerSwing": 2, "minesMithril": true }
+  ]
+}

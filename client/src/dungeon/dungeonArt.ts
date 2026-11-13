@@ -2,10 +2,12 @@
 // shows a lighter top face and a darker front face, with a 1 px dark outline. The crypt is cool and
 // dark (blue, purple, grey); chests, the golden glow and torches are the few warm lights.
 // Anchors are the feet / the bottom middle of the footprint, as everywhere else.
+// Step 9c: the mine uses the same drawing with its own colours (cool grey rock, brown earth specks,
+// warm lanterns on some walls) and rocks in ore colours that crack with every hit.
 
 import { Container, Graphics } from 'pixi.js';
-import { DUNGEON_BLOCK, PALETTE, type DungeonMap, type EnemyKind } from '@pixel-hotel/shared';
-import { shade } from '../render/colors.ts';
+import { DUNGEON_BLOCK, PALETTE, ROCK_HITS, type DungeonMap, type EnemyKind, type RockKind, type RunPlace } from '@pixel-hotel/shared';
+import { desaturate, shade } from '../render/colors.ts';
 
 const B = DUNGEON_BLOCK;
 /** Cool dark outline for the crypt (warm DARK_WARM is for the hotel). */
@@ -24,8 +26,23 @@ function box(g: Graphics, x: number, y: number, w: number, d: number, h: number,
   g.rect(x, y - h, w, h).fill(color);
 }
 
-/** The floor and the walls of a map, drawn once per floor. */
-export function drawBlocks(map: DungeonMap): Graphics {
+interface BlockColors {
+  floor: string;
+  speck: string;
+  wallTop: string;
+  wallFront: string;
+  /** Warm lanterns on some wall fronts (the mine). */
+  lanterns: boolean;
+}
+
+const BLOCK_COLORS: Record<RunPlace, BlockColors> = {
+  crypt: { floor: CRYPT_FLOOR, speck: FLOOR_SPECK, wallTop: WALL_TOP, wallFront: WALL_FRONT, lanterns: false },
+  mine: { floor: desaturate(PALETTE[5]!, 0.7), speck: shade(desaturate(PALETTE[5]!, 0.7), 0.75), wallTop: PALETTE[21]!, wallFront: PALETTE[22]!, lanterns: true },
+};
+
+/** The floor and the walls of a map, drawn once per floor (the crypt's colours, or the mine's). */
+export function drawBlocks(map: DungeonMap, place: RunPlace = 'crypt'): Graphics {
+  const { floor: FLOOR, speck: SPECK, wallTop: TOP, wallFront: FRONT, lanterns } = BLOCK_COLORS[place];
   const g = new Graphics();
   const floor = (c: number, r: number): boolean =>
     c >= 0 && r >= 0 && c < map.cols && r < map.rows && map.blocks[r * map.cols + c] === 'floor';
@@ -34,11 +51,11 @@ export function drawBlocks(map: DungeonMap): Graphics {
       const x = c * B;
       const y = r * B;
       if (floor(c, r)) {
-        g.rect(x, y, B, B).fill(CRYPT_FLOOR);
+        g.rect(x, y, B, B).fill(FLOOR);
         // A few loose specks so the floor is not flat (same every time: from the block index).
         const h = (c * 73856093) ^ (r * 19349663);
-        if (h % 3 === 0) g.rect(x + (h & 15) + 4, y + ((h >> 4) & 15) + 6, 3, 2).fill(FLOOR_SPECK);
-        if (h % 5 === 0) g.rect(x + ((h >> 8) & 15) + 8, y + ((h >> 12) & 15) + 2, 2, 2).fill(FLOOR_SPECK);
+        if (h % 3 === 0) g.rect(x + (h & 15) + 4, y + ((h >> 4) & 15) + 6, 3, 2).fill(SPECK);
+        if (h % 5 === 0) g.rect(x + ((h >> 8) & 15) + 8, y + ((h >> 12) & 15) + 2, 2, 2).fill(SPECK);
         continue;
       }
       // Walls next to the floor: a top face, and a darker front face when the floor is below.
@@ -46,14 +63,21 @@ export function drawBlocks(map: DungeonMap): Graphics {
       for (let dr = -1; dr <= 1 && !near; dr++) for (let dc = -1; dc <= 1 && !near; dc++) near = floor(c + dc, r + dr);
       if (!near) continue;
       const front = floor(c, r + 1);
-      g.rect(x, y, B, B).fill(WALL_TOP);
+      g.rect(x, y, B, B).fill(TOP);
       // Stone joints on the top.
-      g.rect(x, y + (front ? 8 : 15), B, 1).fill(shade(WALL_TOP, 0.85));
-      g.rect(x + (r % 2 === 0 ? 10 : 22), y, 1, front ? 8 : 15).fill(shade(WALL_TOP, 0.85));
+      g.rect(x, y + (front ? 8 : 15), B, 1).fill(shade(TOP, 0.85));
+      g.rect(x + (r % 2 === 0 ? 10 : 22), y, 1, front ? 8 : 15).fill(shade(TOP, 0.85));
       if (front) {
-        g.rect(x, y + B - WALL_FRONT_H, B, WALL_FRONT_H).fill(WALL_FRONT);
+        g.rect(x, y + B - WALL_FRONT_H, B, WALL_FRONT_H).fill(FRONT);
         g.rect(x, y + B - WALL_FRONT_H, B, 1).fill(CRYPT_OUTLINE);
-        g.rect(x + (c % 2 === 0 ? 6 : 18), y + B - WALL_FRONT_H + 5, 8, 1).fill(shade(WALL_FRONT, 0.8));
+        g.rect(x + (c % 2 === 0 ? 6 : 18), y + B - WALL_FRONT_H + 5, 8, 1).fill(shade(FRONT, 0.8));
+        // The mine: a small warm lantern on every few wall fronts.
+        if (lanterns && ((c * 7 + r * 3) % 9 === 0)) {
+          g.rect(x + 13, y + B - WALL_FRONT_H - 6, 6, 9).fill(CRYPT_OUTLINE);
+          g.rect(x + 14, y + B - WALL_FRONT_H - 5, 4, 7).fill(PALETTE[10]!);
+          g.rect(x + 15, y + B - WALL_FRONT_H - 4, 2, 3).fill(PALETTE[11]!);
+          g.rect(x + 10, y + B - 3, 12, 3).fill({ color: PALETTE[9]!, alpha: 0.35 });
+        }
       }
     }
   }
@@ -168,4 +192,39 @@ export function drawChest(kind: 'wooden' | 'golden', open: number): Container {
   }
   root.addChild(g);
   return root;
+}
+
+/** Ore colours of the rocks (step 9c). */
+const ORE: Record<RockKind, string> = { copper: PALETTE[1]!, iron: PALETTE[20]!, mithril: PALETTE[18]! };
+/** Height of a rock's art above its foot (hit testing). */
+export const ROCK_HEIGHT = 26;
+
+/**
+ * A rock, foot at (0, 0): a grey boulder with flecks in its ore colour; cracks grow with every hit
+ * (hitsLeft of ROCK_HITS[kind]).
+ */
+export function drawRock(kind: RockKind, hitsLeft: number): Graphics {
+  const g = new Graphics();
+  shadow(g, 30);
+  const stone = PALETTE[22]!;
+  box(g, -14, 0, 28, 10, 14, stone);
+  box(g, -9, -14, 18, 6, 4, shade(stone, 1.08));
+  const ore = ORE[kind];
+  for (const [x, y, w, h] of [[-10, -9, 4, 3], [3, -6, 5, 3], [-3, -19, 4, 2], [7, -16, 3, 2], [-12, -16, 3, 2]] as const) {
+    g.rect(x, y, w, h).fill(ore);
+    g.rect(x, y, w, 1).fill(shade(ore, 1.3));
+  }
+  // Cracks: more of them the more it was hit.
+  const done = 1 - hitsLeft / ROCK_HITS[kind];
+  const cracks: [number, number, number, number][] = [
+    [-2, -22, 1, 8],
+    [-1, -14, 4, 1],
+    [3, -13, 1, 7],
+    [-8, -12, 1, 6],
+    [-7, -6, 5, 1],
+    [6, -22, 1, 5],
+  ];
+  const n = Math.round(done * cracks.length);
+  for (const [x, y, w, h] of cracks.slice(0, n)) g.rect(x, y, w, h).fill(CRYPT_OUTLINE);
+  return g;
 }

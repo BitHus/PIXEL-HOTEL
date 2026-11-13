@@ -60,14 +60,12 @@ describe('dungeonStart', () => {
 });
 
 describe('the Blacksmith and crafting', () => {
-  it('buying gear fails without enough gold', async () => {
-    const { api } = open(stateWith(149));
-    expect(await api.buyGear('iron_sword')).toBe(false);
-    expect((await api.getPlayer()).gear).toEqual([]);
-    expect(await api.buyGear('leather_armor')).toBe(true);
-    expect((await api.getPlayer()).wallet.gold).toBe(29);
+  it('the Blacksmith sells potions only; buying fails without enough gold', async () => {
+    const { api } = open(stateWith(29));
     expect(await api.buyGear('health_potion')).toBe(true);
+    expect((await api.getPlayer()).wallet.gold).toBe(9);
     expect(await api.buyGear('health_potion')).toBe(false); // 9 gold left
+    expect((await api.getPlayer()).gear).toEqual([]);
   });
 
   it('crafts into the bag and fails without the materials', async () => {

@@ -14,6 +14,13 @@ import {
   RECIPES,
   RUN_SAVE_EVERY_MS,
   FARM_HINT,
+  forgePiece,
+  smelt,
+  startMine,
+  type BarId,
+  type GearId,
+  MINE_HINT,
+  MINE_UNLOCK_LEVEL,
   buySeeds,
   cook,
   harvestPlot,
@@ -482,6 +489,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async currentHint(): Promise<string | null> {
     const i = this.state.hintsDone;
     // The dungeon hint only shows while the shop has nothing for sale (and no run is going).
+    // The mine hint (step 9c) waits until the mine opens.
+    if (i === MINE_HINT && this.state.player.level < MINE_UNLOCK_LEVEL) return null;
     if (i === DUNGEON_HINT) return !this.state.run && !this.state.shop.slots.some((s) => s.loot) ? (HINTS[i] ?? null) : null;
     return HINTS[i] ?? null;
   }
@@ -546,6 +555,33 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return true;
   }
 
+  // ---------- The mine and the forge (step 9c) ----------
+
+  async mineStart(): Promise<DungeonRun | null> {
+    if (this.state.run) return null;
+    const seed = rngInt(this.rng, 1, 2 ** 31 - 1);
+    const r = startMine(this.state, seed);
+    if (!r) return null;
+    this.commit({ ...this.hintDone(r.state, MINE_HINT), run: r.run });
+    this.runPaused = false;
+    this.runSavedAt = 0;
+    return r.run;
+  }
+
+  async smelt(bar: BarId): Promise<boolean> {
+    const next = smelt(this.state, bar, this.now());
+    if (!next) return false;
+    this.commit(next);
+    return true;
+  }
+
+  async forge(piece: GearId): Promise<boolean> {
+    const next = forgePiece(this.state, piece, this.now());
+    if (!next) return false;
+    this.commit(next);
+    return true;
+  }
+
   // ---------- The farm and cooking (step 9b) ----------
 
   async getFarm(): Promise<FarmView> {
@@ -599,6 +635,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       this.commit(banked);
       const result: RunResult = {
         status: next.status,
+        place: next.place,
+        lanternOut: next.events.some((e) => e.t === 'lantern_out'),
         banked: next.banked,
         lost: next.lost,
         xpGained: next.xpGained,

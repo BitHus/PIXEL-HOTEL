@@ -3,6 +3,9 @@
 // nearest unopened chest, then to the exit. At the exit it goes deeper while hp >= 50%, else
 // leaves. It drinks a potion (if it has one) below 40% hp. Runs: npm run simulate:dungeon
 // Optional arguments: the number of runs (default 1000) and the round (default: both).
+// Step 9c: also the survival per gear tier (starting, copper, iron, mithril; sword and armor of the
+// tier) at the three bot speeds, without food and with a lunch box (carrot soup + 2 potato stews: the
+// bot eats the buff at once and the stews below 40% hp).
 
 import {
   DUNGEON_ROUND,
@@ -16,6 +19,8 @@ import {
   step,
   type DungeonInput,
   type DungeonRoundId,
+  type FoodId,
+  getFoodType,
   type DungeonRun,
   type GearId,
   type Point,
@@ -38,6 +43,16 @@ function botInputs(run: DungeonRun, bot: BotState): DungeonInput[] {
     return [{ t: 'choose_exit', choice: deeper ? 'deeper' : 'leave' }];
   }
   if (p.potions > 0 && p.hp < p.maxHp * 0.4) return [{ t: 'drink_potion' }];
+  // Food: a buff not taken yet is eaten at once; healing food below 40% hp.
+  const buffLeft = p.food.some((id) => {
+    const e = getFoodType(id).effect;
+    return e.kind !== 'heal' && !p.buffs.includes(e.kind);
+  });
+  if (buffLeft || (p.food.length > 0 && p.hp < p.maxHp * 0.4 && run.timeMs + run.carryMs >= p.potionReadyAt)) {
+    const before = p.food.length;
+    const ate = step(run, [{ t: 'eat' }], 0, () => 0.5);
+    if (ate.player.food.length < before) return [{ t: 'eat' }];
+  }
   const near = run.enemies
     .filter((e) => distance(e, p) <= PLAYER_ATTACK_REACH + 4)
     .sort((a, b) => distance(a, p) - distance(b, p))[0];
@@ -54,9 +69,9 @@ function botInputs(run: DungeonRun, bot: BotState): DungeonInput[] {
   return [{ t: 'click_point', x: goal.x, y: goal.y }];
 }
 
-function playRun(seed: number, round: DungeonRoundId, clickMs: number, xp: number, gear: GearId[]): DungeonRun {
+function playRun(seed: number, round: DungeonRoundId, clickMs: number, xp: number, gear: GearId[], food: FoodId[] = []): DungeonRun {
   const rng = seededRng(seed * 7 + clickMs);
-  let run = newRun({ seed, round, xp, gear, potions: 0 });
+  let run = newRun({ seed, round, xp, gear, potions: 0, food });
   const bot: BotState = { goal: null };
   while ((run.status === 'active' || run.status === 'exit_choice') && run.timeMs < MAX_RUN_MS) {
     run = step(run, botInputs(run, bot), clickMs, rng);
@@ -78,7 +93,7 @@ for (const round of ROUNDS) {
     ['350 ms', 350, []],
     ['500 ms', 500, []],
     ['700 ms', 700, []],
-    ['500 ms + gear', 500, ['iron_sword', 'leather_armor']],
+    ['500 ms + iron', 500, ['iron_sword', 'iron_armor']],
   ];
   const drops: [string, Map<string, number>][] = [];
   for (const [name, clickMs, gear] of configs) {
@@ -125,4 +140,27 @@ for (const round of ROUNDS) {
   const ids = ['bone_chair', 'skull_lamp', 'coffin_table', 'wall_torch', 'throne_piece'];
   console.log('bot            ' + ids.map((id) => id.padStart(13)).join(''));
   for (const [name, rare] of drops) console.log(name.padEnd(15) + ids.map((id) => (((rare.get(id) ?? 0) / RUNS) * 100).toFixed(1).padStart(13)).join(''));
+}
+
+// ---------- Step 9c: survival per gear tier, with and without food ----------
+const TIERS: [string, GearId[]][] = [
+  ['starting', []],
+  ['copper', ['copper_sword', 'leather_armor']],
+  ['iron', ['iron_sword', 'iron_armor']],
+  ['mithril', ['mithril_sword', 'mithril_armor']],
+];
+const SPEEDS = [350, 500, 700];
+const LUNCH: FoodId[] = ['carrot_soup', 'potato_stew', 'potato_stew'];
+for (const round of ROUNDS) {
+  console.log(`\n=== Round ${round}: survival per gear tier (sword + armor of the tier), level 1, no potions, ${RUNS} runs per cell ===`);
+  console.log('tier       ' + SPEEDS.map((ms) => `${ms} ms`.padStart(9)).join('') + '   |  with food:' + SPEEDS.map((ms) => `${ms} ms`.padStart(9)).join(''));
+  for (const [name, gear] of TIERS) {
+    const cells = (food: FoodId[]): string =>
+      SPEEDS.map((ms) => {
+        let ok = 0;
+        for (let i = 0; i < RUNS; i++) if (playRun(i + 1, round, ms, 0, gear, food).status === 'left') ok++;
+        return pct(ok / RUNS).padStart(9);
+      }).join('');
+    console.log(`${name.padEnd(11)}${cells([])}   |            ${cells(LUNCH)}`);
+  }
 }

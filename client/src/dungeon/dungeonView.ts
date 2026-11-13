@@ -3,6 +3,8 @@
 // by feet y, then x, then id), then the fog on top. Positions are interpolated between the last
 // two ticks (run.carryMs), so walking looks smooth although the rules run in 100 ms ticks.
 // Rendering only: no game rules here.
+// Step 9c: the mine is drawn by the same view (run.place 'mine'): its own block colours, rocks in
+// the depth-sorted list (they crack per hit and shake when hit), no exit stairs.
 
 import { Container, Graphics } from 'pixi.js';
 import {
@@ -11,7 +13,7 @@ import {
   DUNGEON_SEEN_DARK,
   DUNGEON_TICK_MS,
   HIT_FLASH_MS,
-  PLAYER_ATTACK_COOLDOWN_MS,
+  PICKAXE_COOLDOWN_MS,
   facingFor,
   type Avatar,
   type AvatarLook,
@@ -21,15 +23,24 @@ import {
   type Enemy,
   type Facing,
   type Point,
+  type Rock,
+  type RunPlace,
 } from '@pixel-hotel/shared';
 import { AvatarSprite } from '../render/avatarSprite.ts';
 import { DepthLayer } from '../render/depthLayer.ts';
-import { CRYPT_OUTLINE, ENEMY_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit } from './dungeonArt.ts';
+import { CRYPT_OUTLINE, ENEMY_HEIGHT, ROCK_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit, drawRock } from './dungeonArt.ts';
 import { FogMemory } from './fog.ts';
 
 /** Depth key ids: the player first, then enemies, then chests (only breaks exact ties). */
 const PLAYER_ID = 0;
 const CHEST_ID_BASE = 100000;
+const ROCK_ID_BASE = 200000;
+
+interface RockView {
+  root: Container;
+  hitsLeft: number;
+  shakeMs: number;
+}
 
 interface EnemyView {
   root: Container;
@@ -63,6 +74,7 @@ export class DungeonView {
   private hurtMs = 0;
   private readonly enemies = new Map<number, EnemyView>();
   private readonly chests = new Map<number, ChestView>();
+  private readonly rocks = new Map<number, RockView>();
   readonly fogMemory = new FogMemory();
   private map: DungeonMap | null = null;
   /** Where the player is drawn now (world px). */
@@ -80,11 +92,16 @@ export class DungeonView {
     this.player.setLook(look);
   }
 
-  /** A new floor: draw its blocks, forget the fog and every enemy and chest view. */
-  setMap(map: DungeonMap): void {
+  /** A new floor: draw its blocks, forget the fog and every enemy, chest and rock view. */
+  setMap(map: DungeonMap, place: RunPlace = 'crypt'): void {
     this.map = map;
     this.base.removeChildren().forEach((c) => c !== this.exit && c.destroy());
-    this.base.addChild(drawBlocks(map));
+    this.base.addChild(drawBlocks(map, place));
+    for (const [id, v] of this.rocks) {
+      this.objects.remove(v.root);
+      v.root.destroy({ children: true });
+      this.rocks.delete(id);
+    }
     this.exit.position.set((map.exit.c + 0.5) * DUNGEON_BLOCK, (map.exit.r + 1) * DUNGEON_BLOCK);
     this.base.addChild(this.exit);
     for (const id of [...this.enemies.keys()]) this.removeEnemy(id);
@@ -129,6 +146,21 @@ export class DungeonView {
     return null;
   }
 
+  /** The rock drawn at a world point (seen ones only), or null. */
+  rockAt(run: DungeonRun, p: Point): Rock | null {
+    for (const r of run.rocks) {
+      const v = this.rocks.get(r.id);
+      if (v?.root.visible && Math.abs(p.x - r.x) <= 20 && p.y >= r.y - ROCK_HEIGHT - 8 && p.y <= r.y + 10) return r;
+    }
+    return null;
+  }
+
+  /** A hit rock shakes a little. */
+  shakeRock(id: number): void {
+    const v = this.rocks.get(id);
+    if (v) v.shakeMs = 160;
+  }
+
   /** Where an enemy was last drawn (for floats), or null. */
   enemyPoint(id: number): Point | null {
     const v = this.enemies.get(id);
@@ -155,7 +187,7 @@ export class DungeonView {
    */
   render(run: DungeonRun, prev: DungeonRun | null, dtMs: number, clockMs: number): void {
     const map = run.map;
-    if (map !== this.map) this.setMap(map);
+    if (map !== this.map) this.setMap(map, run.place);
     const t = Math.min(1, run.carryMs / DUNGEON_TICK_MS);
     const same = prev !== null && prev.map === map ? prev : null;
     const lerp = (a: Point | undefined, b: Point): Point => (a ? { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t } : { x: b.x, y: b.y });
@@ -169,7 +201,7 @@ export class DungeonView {
     if (moving) this.facing = facingFor(dx, dy, this.facing);
     else {
       // Facing the enemy it fights.
-      const target = run.enemies.find((e) => e.id === p.targetEnemyId);
+      const target = run.enemies.find((e) => e.id === p.targetEnemyId) ?? run.rocks.find((r) => r.id === p.targetRockId);
       if (target) this.facing = facingFor(target.x - p.x, target.y - p.y, this.facing);
     }
     this.playerAt = at;
@@ -180,7 +212,8 @@ export class DungeonView {
 
     // Fog: lit around the player, seen blocks dim, the rest black.
     if (this.fogMemory.update(map, at)) this.drawFog(map);
-    this.exit.visible = this.fogMemory.seen.has(map.exit.r * map.cols + map.exit.c);
+    // The mine has no exit block (NO_EXIT is off the map).
+    this.exit.visible = map.exit.c >= 0 && this.fogMemory.seen.has(map.exit.r * map.cols + map.exit.c);
 
     // Enemies: only on lit blocks; they blink during the wind-up and flash white when hit.
     const alive = new Set(run.enemies.map((e) => e.id));
@@ -229,13 +262,43 @@ export class DungeonView {
       this.chests.delete(id);
     }
 
-    // The attack cooldown ring above the player's head.
+    // Rocks (the mine): drawn once seen, redrawn with more cracks after each hit.
+    const rockIds = new Set(run.rocks.map((r) => r.id));
+    for (const [id, v] of this.rocks) {
+      if (rockIds.has(id)) continue;
+      this.objects.remove(v.root);
+      v.root.destroy({ children: true });
+      this.rocks.delete(id);
+    }
+    for (const r of run.rocks) {
+      let v = this.rocks.get(r.id);
+      if (!v) {
+        v = { root: new Container(), hitsLeft: -1, shakeMs: 0 };
+        v.root.position.set(r.x, r.y);
+        this.rocks.set(r.id, v);
+        this.objects.add(v.root, { y: r.y, x: r.x, uid: ROCK_ID_BASE + r.id });
+      }
+      if (v.hitsLeft !== r.hitsLeft) {
+        v.root.removeChildren().forEach((c) => c.destroy());
+        v.root.addChild(drawRock(r.kind, r.hitsLeft));
+        v.hitsLeft = r.hitsLeft;
+      }
+      v.shakeMs = Math.max(0, v.shakeMs - dtMs);
+      v.root.x = r.x + (v.shakeMs > 0 ? (Math.floor(clockMs / 40) % 2 === 0 ? 1 : -1) : 0);
+      v.root.visible = this.fogMemory.isSeen(map, r);
+    }
+
+    // The cooldown ring above the player's head: the attack, or the pickaxe in the mine.
     this.fx.clear();
-    const left = p.attackReadyAt - (run.timeMs + run.carryMs);
+    const now = run.timeMs + run.carryMs;
+    const attackLeft = p.attackReadyAt - now;
+    const pickLeft = p.pickReadyAt - now;
+    const left = Math.max(attackLeft, pickLeft);
+    const total = attackLeft >= pickLeft ? p.attackCooldownMs : PICKAXE_COOLDOWN_MS;
     if (left > 0) {
       const cx = Math.round(at.x) + 12;
       const cy = Math.round(at.y) - 66;
-      const done = 1 - left / PLAYER_ATTACK_COOLDOWN_MS;
+      const done = 1 - left / total;
       this.fx.circle(cx, cy, 5).fill({ color: CRYPT_OUTLINE, alpha: 0.7 });
       this.fx.moveTo(cx, cy).arc(cx, cy, 5, -Math.PI / 2, -Math.PI / 2 + done * Math.PI * 2).lineTo(cx, cy).fill('#feae34');
     }

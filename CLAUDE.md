@@ -470,9 +470,9 @@ and the item menu), 5 (inventory, UI, chat, local saving, camera intro; the bag 
 docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying reworked after
 5b: drawn inside the bed only), 7 (shop, gold and upgrades; serving at the counter added after
 it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
-dungeon in the game: view, HUD, screens, crafting, the Blacksmith) and 9b (farm and cooking) are
-done. Step 6 (docs/STYLE.md) has not been done yet. Next: step 9c (mine and forge,
-docs/NEXT-STEPS.md).
+dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
+(mine and forge) are done. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+turn on dungeon round 2 and tune it with the simulation, then step 6 (art), then step 10.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -600,6 +600,60 @@ Layout:
   - tools/simulate-economy.ts (npm run simulate, uses tsx): cheap / fair / greedy prices, appeal
     0 and 60, 6 items, 1 h and 8 h; prints gold, items sold, time on the slot, blocked slot time.
     tools/tsconfig.json is part of npm run typecheck.
+- Step 9c (mine and forge, section 10c):
+  - Data: shared/data/forge.json (orePerBar 3; smelting copper/iron/mithril bar with fees 2/4/8;
+    pieces: copper_sword, iron_sword, mithril_sword (weapon), leather_armor, iron_armor,
+    mithril_armor (armor), steel_pickaxe (pickaxe), each with `needs` (the piece it replaces, null =
+    first tier) and `bars`). gear.json now holds only the health potion. materials.json gained
+    copper_ore 5, iron_ore 8, mithril_ore 15, copper_bar 18, iron_bar 30, mithril_bar 55, gem 60
+    (group 'material', so shop category 'materials'; ore and bar values chosen by the AI, the
+    owner may tune them). types.ts: OreId, BarId, GearId (the 7 pieces), Player.mineVisits, ledger
+    reasons 'smelt', 'forge', 'mine_bank'.
+  - gear.ts: GEAR_PIECES, getPiece, ownedPiece(gear, slot), ownedWeapon / ownedArmor /
+    ownedPickaxe (Player.gear holds at most one piece per slot; old saves' iron_sword and
+    leather_armor ARE the iron sword and leather armor tiers: no gear migration). The iron sword is
+    7-9 now (was 6-8). forge.ts: FORGE, smeltRecipe, smelt (ledger 'smelt'), nextPiece, canForge,
+    forgePiece (the next piece of its slot only; replaces `needs`; ledger 'forge'). economy.ts
+    buyGear sells potions only.
+  - The mine reuses the dungeon: a mine visit is a DungeonRun with place 'mine' (crypt runs have
+    place 'crypt'). generate.ts: the layout code takes a rules object (generateLayout; crypt
+    floors keep exactly the same rng order); generateMine(seed, visit): MINE_ROOMS_MIN..MAX rooms,
+    0..MINE_ENEMIES_PER_ROOM_MAX slime or bat per room (not the spawn room), no chests, no exit
+    (map.exit = NO_EXIT, off the map), MINE_ROCKS_PER_ROOM_MIN..MAX rocks per room (rollRockKind by
+    ROCK_WEIGHTS; mithril from MITHRIL_FROM_VISIT). run.ts: Rock { id, kind, hitsLeft, x, y },
+    DungeonRun.place / rocks / lanternEndsAt, RunPlayer.targetRockId / pendingSwing / pickReadyAt /
+    hitsPerSwing / minesMithril, newMineRun, inputs click_rock and leave (mine only), events
+    swing, too_hard, rock_broken, lantern_out. step.ts: click_rock works like click_enemy (walk
+    within MINE_REACH, one swing per tap, PICKAXE_COOLDOWN_MS); mithril without the steel pickaxe =
+    'too_hard'; a broken rock gives ROCK_ORE_MIN..MAX ore + GEM_CHANCE gem into the run bag; the
+    lantern (MINE_LANTERN_MS of run time) ends the visit like leaving; mine kills give xp but no rare
+    drop; 0 hp in the mine (carriedOut) loses floor(half) of each ore, keeps the rest, gems and
+    potions. bank.ts startMine (free, level >= MINE_UNLOCK_LEVEL, potions along, mineVisits + 1);
+    finishRun banks a mine visit with ledger 'mine_bank'.
+  - Config: MINE_LANTERN_MS, MINE_ROOMS_*, MINE_ENEMIES, MINE_ENEMIES_PER_ROOM_MAX,
+    MINE_ROCKS_PER_ROOM_*, RockKind, ROCK_HITS, ROCK_WEIGHTS, MITHRIL_FROM_VISIT, ROCK_ORE_*,
+    GEM_CHANCE, PICKAXE_COOLDOWN_MS, MINE_REACH, MINE_DEATH_ORE_LOSS, MINE_HINT 5 (HINTS[5]: the
+    mine opens; LocalGameAPI only shows it from MINE_UNLOCK_LEVEL; going in finishes it; the Map
+    button glows while it shows). SAVE_VERSION 8.
+  - GameAPI: mineStart, smelt, forge. RunResult gained place and lanternOut. A mine visit runs
+    through getRun / dungeonInput / dungeonAdvance and the same DungeonScreen as the dungeon.
+  - client: the Map's Mine card opens the visit (free; "Enter this?" first). dungeonArt.ts
+    drawBlocks(map, place) (mine: grey rock walls, brown-grey floor, warm wall lanterns), drawRock
+    (grey boulder with ore-coloured flecks, cracks per hit), ROCK_HEIGHT. DungeonView: rocks in the
+    depth list (seen = drawn, shake when hit, rockAt for taps), no exit stairs in the mine, the ring
+    shows the pickaxe cooldown too. DungeonScreen: taps on rocks, leave(), effects for the new
+    events. infoPanel: "Mine" and the lantern bar (pixel icon 'lantern'). runBar: in the mine the
+    food button and run gold hide and a Leave button shows. runScreens: mine titles (back, lantern
+    out, carried out). workshopPanel: the Forge tab (smelting | the gear tree per slot: start
+    piece, tiers, current highlighted, next with bars and Forge; .wide panel on desktop, stacked
+    on a phone); the Blacksmith tab sells potions only.
+  - tools/simulate-dungeon.ts: the bot also eats food; a table of survival per gear tier
+    (starting, copper, iron, mithril sword + armor) at 350 / 500 / 700 ms, without and with a lunch
+    box (carrot soup + 2 potato stews). Round 2, 300 runs (step 9c): starting 90 / 65 / 45%,
+    copper 99 / 93 / 70%, iron 100 / 100 / 99%, mithril 100%; with food: starting 100 / 98 / 82%,
+    copper 100 / 100 / 99%, iron and mithril 100%. Round 1 is 100% everywhere.
+  - Tests: shared/src/dungeon/mine.test.ts, gear.test.ts (forge), save.test.ts (migration 7),
+    client/src/api/mineAPI.test.ts.
 - Step 9b (farm and cooking, section 10b):
   - Data: shared/data/crops.json (turnip, potato, carrot, pumpkin, glowcap: seed id and name,
     seedPrice (null = not sold: the glowcap spore), seedValue, growMinutes, baseValue, colours),
@@ -649,7 +703,7 @@ Layout:
     harvest, growing plot = "ripe in n min", the pot = the Cooking panel; the action happens in
     arrived() when the walk ends), farm/farmArt.ts (drawPlot, drawCrop, drawPot, drawRipeMarker).
     ui/travelPanel.ts (the Map panel: cards Hotel, Shop, Farm, Mine (locked: "Opens at level 3",
-    then "Coming soon" until step 9c), Dungeon), ui/cookingPanel.ts (foodEffectText),
+    since step 9c it opens the mine), Dungeon), ui/cookingPanel.ts (foodEffectText),
     ui/lunchPicker.ts (in the dungeon's "Enter this?" panel: confirmBuy gained `extra`). Catalog
     gained the Seeds tab (Buy = 1, xN = SEED_PACK, both ask first). The run bar gained the food
     button (E key). The hotbar shows seeds (tap = pick that seed). styleArt draws grass and hedge.
@@ -988,7 +1042,9 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 7: MIGRATIONS[6] (step 9b) adds a level 1 farm room (the next free room id) with
+- SAVE_VERSION is 8: MIGRATIONS[7] (step 9c) adds Player.mineVisits 0 and turns a saved run into
+  a crypt run (place 'crypt', no rocks, no lantern, basic pickaxe). Gear ids are unchanged.
+- (Before 8:) MIGRATIONS[6] (step 9b) adds a level 1 farm room (the next free room id) with
   empty plots, Player.farmRoomId, and gives a saved run's player food [], buffs [] and
   attackCooldownMs 350.
 - (Before 7:) MIGRATIONS[5] adds run: null (no run in progress).

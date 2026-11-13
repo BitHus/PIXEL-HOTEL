@@ -91,4 +91,15 @@ describe('save files', () => {
     expect(r.state.farm).toEqual({ roomId: 3, plots: Array.from({ length: 6 }, () => ({ crop: null, plantedAt: 0 })) });
     expect(r.state.run?.player).toMatchObject({ hp: 5, potions: 1, food: [], buffs: [], attackCooldownMs: 350 });
   });
+
+  it('migrates a version 7 save (step 9c): no mine visits, a saved run becomes a crypt run, gear ids stay', () => {
+    const { mineVisits: _m, ...player } = state.player;
+    const v7 = { ...state, player: { ...player, gear: ['iron_sword', 'leather_armor'] }, run: { map: {}, enemies: [], player: { hp: 5 } } };
+    const r = readSave(JSON.stringify({ version: 7, savedAt: 0, state: v7 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.player.mineVisits).toBe(0);
+    expect(r.state.player.gear).toEqual(['iron_sword', 'leather_armor']);
+    expect(r.state.run).toMatchObject({ place: 'crypt', rocks: [], lanternEndsAt: null, player: { hp: 5, hitsPerSwing: 1, minesMithril: false } });
+  });
 });

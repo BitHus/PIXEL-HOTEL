@@ -1,5 +1,6 @@
 // Top-left: one compact info panel (gold with a coin icon, the room name, the level with an xp
-// bar). In the dungeon (step 9) the room name becomes the floor and an hp bar shows. (The Hotel /
+// bar). In the dungeon (step 9) the room name becomes the floor and an hp bar shows. In the mine
+// (step 9c) the name is "Mine" and the lantern bar shows how long the lantern still burns. (The Hotel /
 // Shop switcher that sat under it is gone since step 9b: the Map button's travel panel replaced it.)
 
 import type { RoomKind } from '@pixel-hotel/shared';
@@ -16,7 +17,7 @@ export interface InfoPanel {
   /** Level and xp (next = total xp for the next level, null at the top level). */
   setStats(level: number, xp: number, next: number | null, prev: number): void;
   /** In the dungeon: the floor and hp. null = back in a room. */
-  setRun(run: { floor: number; maxFloors: number; hp: number; maxHp: number } | null): void;
+  setRun(run: { floor: number; maxFloors: number; hp: number; maxHp: number; lantern?: { leftMs: number; totalMs: number } } | null): void;
 }
 
 export const ROOM_NAMES: Record<RoomKind, string> = { hotel: 'Hotel room', shop: 'Shop', farm: 'Farm' };
@@ -45,7 +46,10 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
   hp.root.title = 'Health';
   const level = el('span', 'level-badge', 'Lv 1');
   const xp = bar('xp-bar', level);
-  info.append(gold, name, hp.root, xp.root);
+  const lantern = bar('lantern-bar', pixelIcon('lantern'));
+  lantern.root.hidden = true;
+  lantern.root.title = 'Lantern: when it goes out, you walk out with everything';
+  info.append(gold, name, lantern.root, hp.root, xp.root);
   box.append(info);
   parent.appendChild(box);
   return {
@@ -71,8 +75,16 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
     },
     setRun(run) {
       hp.root.hidden = run === null;
+      lantern.root.hidden = !run?.lantern;
       if (!run) return;
-      name.textContent = run.maxFloors > 1 ? `Crypt, floor ${run.floor} of ${run.maxFloors}` : 'Crypt';
+      name.textContent = run.lantern ? 'Mine' : run.maxFloors > 1 ? `Crypt, floor ${run.floor} of ${run.maxFloors}` : 'Crypt';
+      if (run.lantern) {
+        const left = Math.max(0, run.lantern.leftMs);
+        lantern.fill.style.width = `${Math.round((left / run.lantern.totalMs) * 100)}%`;
+        lantern.fill.classList.toggle('low', left <= 30_000);
+        const s = Math.ceil(left / 1000);
+        lantern.text.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      }
       const part = Math.max(0, run.hp) / run.maxHp;
       hp.fill.style.width = `${Math.round(part * 100)}%`;
       hp.fill.classList.toggle('low', part <= 0.3);
