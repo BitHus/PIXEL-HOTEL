@@ -2,7 +2,7 @@
 // LocalGameAPI (steps 2-9) runs the shared rules in the browser; RemoteGameAPI (step 10) talks to the server.
 // Methods are added in later steps as they are needed.
 
-import type { CropId, FoodId, FurnitureItem, MaterialId, Player, Point, Facing, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
+import type { BarId, CropId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
 import type { Plot } from './farm.ts';
 import type { RoomLevel } from './config.ts';
 import type { Customer, ShopEvent } from './customers.ts';
@@ -13,7 +13,7 @@ import type { Room } from './room.ts';
 import type { ChatLine } from './gameState.ts';
 import type { SeatSpot } from './seats.ts';
 import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
-import type { DungeonInput, DungeonRun, RunBag } from './dungeon/run.ts';
+import type { DungeonInput, DungeonRun, RunBag, RunPlace } from './dungeon/run.ts';
 import type { ShopGearId } from './gear.ts';
 
 export interface RoomState {
@@ -98,6 +98,10 @@ export interface RunView {
 /** How a run ended, after it was banked (step 9): for the death and leave screens. */
 export interface RunResult {
   status: 'left' | 'dead';
+  /** The crypt or (step 9c) the mine. */
+  place: RunPlace;
+  /** The mine: the visit ended because the lantern went out. */
+  lanternOut: boolean;
   /** What came home (leaving, the boss, and half the bag's gold after death). */
   banked: RunBag;
   /** What died with the player or was left behind (full bag). */
@@ -228,4 +232,12 @@ export interface GameAPI {
   buySeeds(seed: SeedId, qty: number): Promise<boolean>;
   /** Cooks one food at the pot. False without all ingredients. */
   cook(food: FoodId): Promise<boolean>;
+  // ---------- Step 9c: the mine and the forge ----------
+  /** Starts a mine visit (free; from player level 3). Null if locked or a run is already going.
+   *  The visit runs through getRun / dungeonInput / dungeonAdvance like a dungeon run. */
+  mineStart(): Promise<DungeonRun | null>;
+  /** Smelts one bar (3 ore + the fee). False without the ore or the gold. */
+  smelt(bar: BarId): Promise<boolean>;
+  /** Makes the next gear piece at the forge (it replaces the one before). False if it cannot. */
+  forge(piece: GearId): Promise<boolean>;
 }

@@ -32,6 +32,7 @@ import {
   getMaterialType,
   CROP_TYPES,
   MINE_UNLOCK_LEVEL,
+  MINE_LANTERN_MS,
   isSeedId,
   type FoodId,
   type SeedId,
@@ -57,6 +58,7 @@ import {
   LEVEL_TOTAL_XP,
   HINTS,
   DUNGEON_HINT,
+  MINE_HINT,
   xpForNextLevel,
 } from '@pixel-hotel/shared';
 import './ui/ui.css';
@@ -100,7 +102,7 @@ import { runNewGameSetup } from './ui/newGame.ts';
 import { createHintBox, createSaleFloats, createTillCoins, showAwaySummary } from './ui/shopFeedback.ts';
 import { pixelIcon } from './ui/pixelIcons.ts';
 import { createRunBar } from './ui/runBar.ts';
-import { createWorkshopPanel, gearEffect, recipeName } from './ui/workshopPanel.ts';
+import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from './ui/workshopPanel.ts';
 import { DungeonScreen } from './dungeon/dungeonScreen.ts';
 import { FarmScreen } from './farm/farmScreen.ts';
 import { createCookingPanel } from './ui/cookingPanel.ts';
@@ -289,6 +291,8 @@ async function start(): Promise<void> {
     questButton.classList.toggle('glow', quest !== null && !showing);
     // The dungeon hint points at the Dungeon button.
     dungeonButton.classList.toggle('glow', quest === HINTS[DUNGEON_HINT]);
+    // The mine hint (step 9c) points at the Map button.
+    mapButton.classList.toggle('glow', quest === HINTS[MINE_HINT]);
   });
 
   // The dungeon screen (step 9); created early, before any shop event can ask for the HUD.
@@ -296,6 +300,7 @@ async function start(): Promise<void> {
     ui,
     () => dungeon.potion(),
     () => dungeon.eat(),
+    () => dungeon.leave(),
   );
   const dungeon: DungeonScreen = new DungeonScreen(
     {
@@ -530,6 +535,22 @@ async function start(): Promise<void> {
       toast(ok ? `${gear.name}: yours.` : 'Not enough gold.');
       await refreshInventory();
     },
+    // The Forge (step 9c).
+    smelt: (bar) => {
+      void api.smelt(bar).then(async (ok) => {
+        toast(ok ? `Smelted: ${getMaterialType(bar).name}.` : 'You need 3 ore and the fee.');
+        await refreshInventory();
+      });
+    },
+    forge: async (piece) => {
+      const detail = `${pieceEffect(piece)} It replaces what you have now. Uses ${Object.entries(piece.bars)
+        .map(([b, n]) => `${n} ${getMaterialType(b as never).name}`)
+        .join(' and ')}.`;
+      if (!(await confirmBuy(ui, { name: piece.name, detail, price: null, yes: 'Forge' }))) return;
+      const ok = await api.forge(piece.id);
+      toast(ok ? `${piece.name}: yours forever.` : 'You need more bars.');
+      await refreshInventory();
+    },
   });
   panels.add('workshop', workshop.el);
 
@@ -573,7 +594,7 @@ async function start(): Promise<void> {
       { place: 'hotel', status: `Your room, level ${roomLevel(p.hotelRoomId)}`, locked: null, here: room.id === p.hotelRoomId },
       { place: 'shop', status: forSale > 0 ? `${forSale} ${forSale === 1 ? 'item' : 'items'} for sale` : 'Nothing for sale', locked: null, here: room.id === p.shopRoomId },
       { place: 'farm', status: farmStatus, locked: null, here: room.id === p.farmRoomId },
-      { place: 'mine', status: '', locked: p.level < MINE_UNLOCK_LEVEL ? `Opens at level ${MINE_UNLOCK_LEVEL}` : 'Coming soon', here: false },
+      { place: 'mine', status: `Free. Lantern: ${MINE_LANTERN_MS / 60_000} minutes`, locked: p.level < MINE_UNLOCK_LEVEL ? `Opens at level ${MINE_UNLOCK_LEVEL}` : null, here: false },
       { place: 'dungeon', status: free ? 'A free run' : `Key: ${DUNGEON_KEY_COST} gold`, locked: null, here: false },
     ];
     travel.refresh(cards);
@@ -583,7 +604,7 @@ async function start(): Promise<void> {
   async function travelTo(place: Place): Promise<void> {
     panels.close();
     if (place === 'dungeon') return enterDungeonAsked();
-    if (place === 'mine') return;
+    if (place === 'mine') return enterMineAsked();
     await openRoomKind(place);
   }
 
@@ -821,6 +842,24 @@ async function start(): Promise<void> {
     const lunch = createLunchPicker(p.materials);
     if (!(await confirmBuy(uiRoot, { name: 'The crypt', detail, price: free ? null : DUNGEON_KEY_COST, yes: 'Enter', extra: lunch.el }))) return;
     const run = await api.dungeonStart(lunch.chosen() as FoodId[]);
+    if (!run) return;
+    await refreshInventory();
+    await refreshHint();
+    setDungeonMode(true);
+    await dungeon.enter(run, false);
+  }
+
+  /** The mine (step 9c): free from level 3; asks first, then goes in (the same screen as the dungeon). */
+  async function enterMineAsked(): Promise<void> {
+    if (dungeon.isActive) return;
+    const p = await api.getPlayer();
+    if (p.level < MINE_UNLOCK_LEVEL) {
+      toast(`The mine opens at level ${MINE_UNLOCK_LEVEL}.`);
+      return;
+    }
+    const detail = `Free. Your lantern burns ${MINE_LANTERN_MS / 60_000} minutes. Tap rocks to mine ore; tap fast! Leave any time with everything.`;
+    if (!(await confirmBuy(uiRoot, { name: 'The mine', detail, price: null, yes: 'Enter' }))) return;
+    const run = await api.mineStart();
     if (!run) return;
     await refreshInventory();
     await refreshHint();

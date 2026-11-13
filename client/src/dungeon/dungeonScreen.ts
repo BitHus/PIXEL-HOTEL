@@ -20,6 +20,7 @@ import {
   DUNGEON_DEVICE_PX_PER_ART_PX,
   LEVEL_FLASH_MS,
   LEVEL_TOTAL_XP,
+  MINE_LANTERN_MS,
   FLOAT_STAGGER_MS,
   SCREEN_SHAKE_MS,
   ZOOM_MIN,
@@ -133,6 +134,12 @@ export class DungeonScreen {
       this.input({ t: 'click_enemy', id: enemy.id });
       return;
     }
+    // The mine (step 9c): a tap on a rock walks there and swings.
+    const rock = this.view.rockAt(run, p);
+    if (rock) {
+      this.input({ t: 'click_rock', id: rock.id });
+      return;
+    }
     const chest = this.view.chestAt(run, p);
     this.input(chest ? { t: 'click_point', x: chest.x, y: chest.y } : { t: 'click_point', x: p.x, y: p.y });
   }
@@ -145,6 +152,12 @@ export class DungeonScreen {
       return;
     }
     this.input({ t: 'drink_potion' });
+  }
+
+  /** The mine's Leave button (step 9c): walk out now with everything. */
+  leave(): void {
+    if (!this.run || this.halted || this.run.place !== 'mine') return;
+    this.input({ t: 'leave' });
   }
 
   /** The food button or E (step 9b): eats the first lunch box food that does something now. */
@@ -198,7 +211,7 @@ export class DungeonScreen {
     if (u.run.map !== before.map) this.prev = null;
     else if (u.run.timeMs !== before.timeMs) this.prev = before;
     this.run = u.run;
-    this.effects(u.run);
+    this.effects(u.run, before);
     this.hud();
     if (u.result) void this.finish(u.result);
     else this.checkStatus();
@@ -232,7 +245,8 @@ export class DungeonScreen {
     const run = this.run;
     if (!run) return;
     const p = run.player;
-    this.ctx.info.setRun({ floor: run.floor, maxFloors: run.maxFloors, hp: p.hp, maxHp: p.maxHp });
+    const lantern = run.lanternEndsAt !== null ? { leftMs: run.lanternEndsAt - run.timeMs, totalMs: MINE_LANTERN_MS } : undefined;
+    this.ctx.info.setRun({ floor: run.floor, maxFloors: run.maxFloors, hp: p.hp, maxHp: p.maxHp, ...(lantern ? { lantern } : {}) });
     this.ctx.info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
     this.ctx.runBar.refresh(run);
   }
@@ -241,7 +255,7 @@ export class DungeonScreen {
     if (px >= this.shake.px || this.shake.ms <= 0) this.shake = { ms: SCREEN_SHAKE_MS, px };
   }
 
-  private effects(run: DungeonRun): void {
+  private effects(run: DungeonRun, before: DungeonRun): void {
     const v = this.view;
     const head = (): Point => ({ x: v.playerAt.x, y: v.playerAt.y - 64 });
     let lootAt: Point = head();
@@ -303,6 +317,25 @@ export class DungeonScreen {
         case 'stairs':
           this.prev = null;
           this.ctx.toast(`Floor ${e.floor}. The stairs gave you a rest: +${e.healed} hp.`);
+          break;
+        case 'swing':
+          v.shakeRock(e.rockId);
+          this.shakeBy(HIT_SHAKE_PX / 2);
+          break;
+        case 'too_hard': {
+          const rk = run.rocks.find((x) => x.id === e.rockId);
+          this.floats.add(rk ? { x: rk.x, y: rk.y - 30 } : head(), 'too hard!', 'info');
+          this.ctx.toast('Mithril needs the steel pickaxe. Make it at the Forge (Workshop).');
+          break;
+        }
+        case 'rock_broken': {
+          const was = before.rocks.find((x) => x.id === e.rockId) ?? null;
+          lootAt = was ? { x: was.x, y: was.y - 24 } : head();
+          stagger = 0;
+          break;
+        }
+        case 'lantern_out':
+          this.ctx.toast('Your lantern went out. You walk out with everything.');
           break;
         case 'boss_banked':
           this.ctx.toast('The Bone King falls! Everything in your bag is safe now.');

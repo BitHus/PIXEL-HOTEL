@@ -449,6 +449,23 @@ const ICONS = {
     ],
     colors: { o: O, a: PALETTE[4], b: PALETTE[1], c: PALETTE[9] },
   },
+  lantern: {
+    rows: [
+      '....oooo....',
+      '...o....o...',
+      '..oooooooo..',
+      '..oaaaaaao..',
+      '.oabbbbbbao.',
+      '.oabccccbao.',
+      '.oabccccbao.',
+      '.oabbccbbao.',
+      '.oabbbbbbao.',
+      '..oaaaaaao..',
+      '..oooooooo..',
+      '............',
+    ],
+    colors: { o: O, a: PALETTE[25], b: PALETTE[9], c: PALETTE[11] },
+  },
   heart: {
     rows: [
       '............',
