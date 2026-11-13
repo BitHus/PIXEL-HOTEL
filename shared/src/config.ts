@@ -1,7 +1,7 @@
 // Every constant and number from the brief (CLAUDE.md). Code reads numbers from here only.
 
 // ---------- World and screen (brief section 4) ----------
-export const ZOOM_MIN = 1;
+export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 4;
 
 // ---------- Rooms (section 5) ----------

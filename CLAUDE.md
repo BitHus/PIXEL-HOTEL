@@ -44,16 +44,16 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Top-down view with a slight front angle. World coordinates are pixels: x to the right, y
   down. 1 world pixel = 1 art pixel. There is no isometric math.
 - screenToWorld(p) = p / zoom + camera, worldToScreen(p) = (p - camera) * zoom. Camera
-  position is in world pixels. Zoom is free: any number from 1 to 4 (also 1.005), set by
-  pinch or the mouse wheel, like in most games. The default zoom is the largest one where
-  the whole room fits on screen, and at least 1. If the room does not fit
-  at zoom 1 (small phone screens), the camera follows the avatar and the player can pan.
+  position is in world pixels. Zoom is free: any number from 0.5 to 4 (ZOOM_MIN, ZOOM_MAX;
+  also 1.005), set by pinch or the mouse wheel, like in most games. The default zoom is the
+  largest one where the whole room fits on screen, and at least 0.5. If the room does not
+  fit at zoom 0.5, the camera follows the avatar and the player can pan.
 - The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
   grids exist only inside the code and are never shown: the navigation grid (16 px cells,
   section 6) and the dungeon's 32 px blocks (section 10).
 - Pixel-perfect: no texture smoothing, and sprites are drawn at whole world pixels. At a zoom
-  that is not a whole number some art pixels are 1 screen px wider than others; that is
-  accepted (owner's choice, step 2).
+  that is not a whole number some art pixels are 1 screen px wider than others, and below
+  zoom 1 some art pixels are skipped; that is accepted (owner's choice, step 2).
 - Draw order: see section 7.
 
 5. ROOMS
