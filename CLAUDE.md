@@ -383,7 +383,8 @@ Layout:
   footprintSize, footprintRect, snapCoord, nextFacing, fitsRoomKind, ridersOf, itemBlockers,
   doorPoint, doorReachesMiddle, canPlace, snapToSurface, planPlacement, rotateQuarter,
   moveItem, pickUpItem, standPointFor (shop customers only)), seats.ts (step 5b: SeatSpot,
-  hasSeats, seatSpots, headDirection, headPoint, approachPoints, freeSeatsByTap, approachPath,
+  hasSeats, seatSpots, headDirection, headPoint, approachPoints, freeSeatsByTap, approaches,
+  bestApproach, approachPath,
   planSit, SitPlan, onSeat, standUpSpot), placing.ts (step 4b: PlacingSession,
   startNewPlacing, startMovePlacing, moveGhost, rotateGhost, planGhost, confirmPlacing (null =
   refused while invalid), cancelPlacing (exact restore), rotateInPlace (null = does not fit),
@@ -678,10 +679,18 @@ Notes:
   (tests), 'cover' the blanket that is drawn again over the lying avatar's head and shoulders.
   - A tap (play mode) on an item with seats: api.sit(uid, tap). planSit takes the free seat
     nearest to the tap (taken = seat indices other avatars use; [] until step 10), then the
-    reachable approach point with the shortest path. Approach points: below, left, right and
-    above the footprint, AVATAR_RADIUS outside it, level with the seat; one counts as reached when
-    the walk ends within APPROACH_REACH_PX (28). If that seat cannot be reached the next free seat
-    is tried; nothing reachable = the item shakes.
+    approach point with the shortest real route (fix after 5b): for every approach point,
+    approaches() runs findPath from the avatar, and route = pathLength of the smoothed path plus
+    the slide from its end onto the seat (without the slide a side whose walk ends in a free cell
+    nearer the avatar looked shorter and the avatar went the long way round). No straight-line
+    distance and no preference for the front. bestApproach: routes within APPROACH_TIE_PX (8) of
+    the shortest are equal, and then the one ending nearest the tap wins. Approach points: below,
+    left, right and above the footprint, AVATAR_RADIUS outside it, level with the seat; the
+    point's own cell is usually blocked, so one counts as reached when the walk ends within
+    APPROACH_REACH_PX (28) of it. A side next to other furniture counts exactly when the gap has a
+    free nav cell for the avatar (tested at every 4 px alignment; depending on alignment a gap
+    needs 40 to 56 px). If that seat cannot be reached the next free seat is tried; nothing
+    reachable = the item shakes.
   - On arrival the client slides the avatar onto a sit seat in SEAT_SLIDE_MS (150 ms, straight
     line, may cross the footprint) and shows the pose. Sitting faces the item's facing. Lying
     (fix after 5b): no slide and no separate blanket box; the avatar is drawn inside the bed only

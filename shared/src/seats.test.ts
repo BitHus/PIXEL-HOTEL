@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { AVATAR_RADIUS, LIE_HEAD_PX } from './config.ts';
+import { APPROACH_TIE_PX, AVATAR_RADIUS, LIE_HEAD_PX } from './config.ts';
 import { FURNITURE_TYPES, footprintRect, getFurnitureType, itemBlockers } from './furniture.ts';
 import { buildNavGrid, cellAt, isCellFree } from './nav.ts';
 import { createRoom } from './room.ts';
+import { pathLength } from './avatar.ts';
+import { seededRng } from './rng.ts';
 import {
+  approaches,
   approachPoints,
+  bestApproach,
   freeSeatsByTap,
   hasSeats,
   headDirection,
@@ -189,3 +193,92 @@ describe('onSeat and standUpSpot', () => {
     expect(standUpSpot(gridFor([]), seat)).toEqual({ x: seat.x, y: seat.y });
   });
 });
+
+describe('the shortest approach to a seat (fix after 5b)', () => {
+  const route = (plan: { path: { x: number; y: number }[] }, seat: { x: number; y: number }): number => {
+    const e = last(plan.path);
+    return pathLength(plan.path) + Math.hypot(seat.x - e.x, seat.y - e.y);
+  };
+
+  it('avatar above-right, a table on the left, the front open: takes the right side', () => {
+    const chair = item('chair', 196, 196); // footprint 180..212, 164..196
+    const table = item('table', 144, 196); // footprint 112..176: the left side is too narrow
+    const grid = gridFor([chair, table]);
+    const from = { x: 266, y: 126 };
+    const plan = planSit(grid, from, chair, T('chair'), null)!;
+    const end = last(plan.path);
+    expect(end.x).toBeGreaterThan(212); // right of the chair
+    expect(end.y).toBeLessThanOrEqual(196); // not around the front
+    // And it really is the shortest route of all reachable approach points.
+    const all = approaches(grid, from, chair, T('chair'), plan.seat);
+    expect(all.length).toBeGreaterThan(1);
+    expect(route(plan, plan.seat)).toBeLessThanOrEqual(Math.min(...all.map((a) => a.route)) + 1e-9);
+  });
+
+  it('never picks an approach with a longer route than another reachable one', () => {
+    const rng = seededRng(11);
+    const facings: Facing[] = ['down', 'right', 'up', 'left'];
+    let checked = 0;
+    for (let k = 0; k < 300; k++) {
+      const cx = 160 + Math.round(rng() * 64) * 4;
+      const cy = 120 + Math.round(rng() * 40) * 4;
+      const chair = item('chair', cx, cy, facings[k % 4]);
+      const others = [item('table', cx + (rng() < 0.5 ? -1 : 1) * (48 + Math.round(rng() * 10) * 4), cy + Math.round(rng() * 6 - 3) * 4)];
+      const grid = gridFor([chair, ...others]);
+      const from = { x: 24 + rng() * 528, y: 24 + rng() * 336 };
+      const seat = seatSpots(chair, T('chair'))[0]!;
+      const all = approaches(grid, from, chair, T('chair'), seat);
+      const plan = planSit(grid, from, chair, T('chair'), null);
+      if (all.length === 0) {
+        expect(plan).toBeNull();
+        continue;
+      }
+      const best = Math.min(...all.map((a) => a.route));
+      expect(route(plan!, seat)).toBeLessThanOrEqual(best + APPROACH_TIE_PX);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(200);
+  });
+
+  it('within 8 px, the side nearest the tap wins', () => {
+    const chair = item('chair', 200, 200);
+    const grid = gridFor([chair]);
+    // Straight above the chair's middle, far away: left and right are the same length.
+    const from = { x: 200, y: 20 };
+    const seat = seatSpots(chair, T('chair'))[0]!;
+    const all = approaches(grid, from, chair, T('chair'), seat).filter((a) => a.point.y === seat.y);
+    expect(all).toHaveLength(2);
+    expect(Math.abs(all[0]!.route - all[1]!.route)).toBeLessThan(APPROACH_TIE_PX);
+    expect(last(bestApproach(all, { x: 220, y: 190 })!.path).x).toBeGreaterThan(216);
+    expect(last(bestApproach(all, { x: 180, y: 190 })!.path).x).toBeLessThan(184);
+  });
+
+  it('counts an approach point next to other furniture whenever the gap is wide enough for the avatar', () => {
+    // Gaps from 24 px (the avatar) to 64 px, at every 4 px alignment. Whenever the nav grid has a
+    // free cell in the gap beside the seat (the avatar fits there), that side must be counted.
+    let open = 0;
+    for (let gap = 24; gap <= 64; gap += 4) {
+      for (let cx = 196; cx <= 208; cx += 4) {
+        const chair = item('chair', cx, 200); // right edge at cx + 16
+        const table = item('table', cx + 16 + gap + 32, 200); // left edge at cx + 16 + gap
+        const grid = gridFor([chair, table]);
+        const seat = seatSpots(chair, T('chair'))[0]!;
+        const r = cellAt(grid, seat).r;
+        let fits = false;
+        for (let c = 0; c < grid.cols; c++) {
+          const x = (c + 0.5) * grid.cell;
+          if (x > cx + 16 && x < cx + 16 + gap && isCellFree(grid, c, r)) fits = true;
+        }
+        const all = approaches(grid, { x: cx + 16 + gap / 2, y: 40 }, chair, T('chair'), seat);
+        const right = all.find((a) => a.point.x > cx + 16);
+        expect(right !== undefined, `gap ${gap}, chair at ${cx}`).toBe(fits);
+        if (fits) {
+          open++;
+          expect(last(right!.path).x).toBeLessThan(cx + 16 + gap);
+        }
+      }
+    }
+    expect(open).toBeGreaterThan(10);
+  });
+});
+

@@ -284,6 +284,8 @@ export const GHOST_ALPHA = 0.75;
 // ---------- Sitting and lying (step 5b) ----------
 /** A seat's approach point counts as reached if the walk ends this close (px) to it. */
 export const APPROACH_REACH_PX = 28;
+/** Two approach routes within this many px of each other count as equal: the one nearer the tap wins. */
+export const APPROACH_TIE_PX = 8;
 /** On arrival the avatar slides onto the seat in this many ms (no pathfinding). */
 export const SEAT_SLIDE_MS = 150;
 /** Lying: from the middle of the body to the middle of the head, floor px. */

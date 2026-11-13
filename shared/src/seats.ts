@@ -5,11 +5,13 @@
 //   avatar's head points to the pillow end (headDirection).
 // - Every seat has four approach points, one on each side of the footprint, just outside it at
 //   AVATAR_RADIUS distance and level with the seat. The avatar walks to the reachable one with
-//   the shortest path, then slides onto the seat (no pathfinding for that last bit).
+//   the shortest real route (findPath's smoothed path plus the slide onto the seat; ties within
+//   APPROACH_TIE_PX go to the one nearest the tap), then slides onto the seat (no pathfinding
+//   for that last bit).
 // - Long items have several seats: the free seat nearest to the tap is taken. `taken` lists the
 //   seat indices other avatars use (prepared for more avatars).
 
-import { APPROACH_REACH_PX, AVATAR_RADIUS } from './config.ts';
+import { APPROACH_REACH_PX, APPROACH_TIE_PX, AVATAR_RADIUS } from './config.ts';
 import { footprintRect, footprintSize, rotateQuarter, type Pose } from './furniture.ts';
 import { cellAt, cellCenter, findPath, isCellFree, nearestFreeCell, type NavGrid } from './nav.ts';
 import { pathLength } from './avatar.ts';
@@ -72,24 +74,60 @@ export function freeSeatsByTap(item: Pose, type: FurnitureType, tap: Point | nul
   return free.sort((a, b) => d(a) - d(b) || a.index - b.index);
 }
 
+/** One reachable approach: the walk (from the avatar) and the length of the whole route. */
+export interface Approach {
+  /** The approach point aimed at. */
+  point: Point;
+  path: Point[];
+  /** pathLength(path) plus the slide from the path's end onto the seat: the real route. */
+  route: number;
+}
+
 /**
- * The shortest walk from `from` to an approach point of the seat, or null when none is reachable.
- * A point counts as reached when the walk ends within APPROACH_REACH_PX of it.
+ * Every reachable approach point of the seat, each with the real path from `from` (findPath,
+ * smoothed). A point counts as reached when the walk ends within APPROACH_REACH_PX of it (its own
+ * cell is usually blocked, being only AVATAR_RADIUS from the item, so the walk ends in the nearest
+ * free cell; a point in a gap as wide as the avatar still counts).
  */
-export function approachPath(grid: NavGrid, from: Point, item: Pose, type: FurnitureType, seat: Point): Point[] | null {
-  let best: Point[] | null = null;
-  let bestLen = Infinity;
+export function approaches(grid: NavGrid, from: Point, item: Pose, type: FurnitureType, seat: Point): Approach[] {
+  const out: Approach[] = [];
   for (const p of approachPoints(item, type, seat)) {
     const path = findPath(grid, from, p);
     const end = path?.[path.length - 1];
     if (!path || !end || Math.hypot(end.x - p.x, end.y - p.y) > APPROACH_REACH_PX) continue;
-    const len = pathLength(path);
-    if (len < bestLen) {
-      bestLen = len;
-      best = path;
-    }
+    out.push({ point: p, path, route: pathLength(path) + Math.hypot(seat.x - end.x, seat.y - end.y) });
   }
-  return best;
+  return out;
+}
+
+/**
+ * The approach with the shortest real route (the walk plus the slide onto the seat; never the
+ * straight-line distance, and no side is preferred). Routes within APPROACH_TIE_PX of the shortest
+ * count as equal: then the one ending nearest to the tap wins (without a tap, the first in
+ * below, left, right, above order). Null when none is reachable.
+ */
+export function bestApproach(list: readonly Approach[], tap: Point | null): Approach | null {
+  if (list.length === 0) return null;
+  const shortest = Math.min(...list.map((a) => a.route));
+  const near = list.filter((a) => a.route <= shortest + APPROACH_TIE_PX);
+  if (!tap) return near[0] ?? null;
+  const d = (a: Approach): number => {
+    const e = a.path[a.path.length - 1]!;
+    return Math.hypot(e.x - tap.x, e.y - tap.y);
+  };
+  return near.reduce((best, a) => (d(a) < d(best) ? a : best));
+}
+
+/** The shortest walk from `from` to an approach point of the seat (bestApproach), or null. */
+export function approachPath(
+  grid: NavGrid,
+  from: Point,
+  item: Pose,
+  type: FurnitureType,
+  seat: Point,
+  tap: Point | null = null,
+): Point[] | null {
+  return bestApproach(approaches(grid, from, item, type, seat), tap)?.path ?? null;
 }
 
 export interface SitPlan {
@@ -112,7 +150,7 @@ export function planSit(
   taken: readonly number[] = [],
 ): SitPlan | null {
   for (const seat of freeSeatsByTap(item, type, tap, taken)) {
-    const path = approachPath(grid, from, item, type, seat);
+    const path = approachPath(grid, from, item, type, seat, tap);
     if (path) return { path, seat };
   }
   return null;
