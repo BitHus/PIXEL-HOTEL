@@ -400,8 +400,8 @@ Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture)
 and the item menu), 5 (inventory, UI, chat, local saving, camera intro; the bag reworked to the
 docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying reworked after
 5b: drawn inside the bed only), 7 (shop, gold and upgrades; serving at the counter added after
-it) and 7b (room shapes, character creation, the new-game intro) are done. Step 6 (docs/STYLE.md)
-has not been done yet.
+it), 7b (room shapes, character creation, the new-game intro) and 8 (dungeon logic, no graphics
+and no UI yet) are done. Step 6 (docs/STYLE.md) has not been done yet.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -529,6 +529,34 @@ Layout:
   - tools/simulate-economy.ts (npm run simulate, uses tsx): cheap / fair / greedy prices, appeal
     0 and 60, 6 items, 1 h and 8 h; prints gold, items sold, time on the slot, blocked slot time.
     tools/tsconfig.json is part of npm run typecheck.
+- Step 8 (dungeon logic; everything pure, in shared/, no client code yet):
+  - Data: shared/data/loot.json (wooden_chest 2 rolls, golden_chest 3, enemy_rare (70% crystal,
+    30% crypt furniture), boss (1-2 throne_piece)), levels.json (maxLevel 8, totalXp per level),
+    gear.json (iron_sword, leather_armor, health_potion: prices, effects, potion heal / cooldown /
+    carryMax 3), recipes.json (the 7 recipes; inputs as { material: qty }; makesKind furniture,
+    floor or wall). furniture.json gained the crypt furniture (category 'crypt_furniture', theme
+    'crypt', inCatalog false, placeIn both): bone_chair (1 seat), skull_lamp (onSurface),
+    coffin_table (surface), wall_torch (wall), bone_throne (1 seat). styles.json gained
+    crypt_flagstones and bone_wall (inCatalog false; the client draws them bare until step 6/9).
+    materials.json gained throne_piece (10). The gear prices, potion numbers and level thresholds
+    are no longer in config.ts (they live in the data files).
+  - shared/src: levels.ts (MAX_LEVEL, LEVEL_TOTAL_XP, levelForXp, addXp (returns the player with
+    the new level, max 8), xpForNextLevel, maxHpAt, attackBonusAt), gear.ts (GEAR_TYPES, getGear,
+    POTION, ownedWeapon, ownedArmor), crafting.ts (RECIPES, getRecipe, canCraft, craft(recipe,
+    state, at): ledger reason 'craft'; a style recipe unlocks the style), economy.ts buyGear (gear
+    once, ledger 'blacksmith'; a potion while potions < 3, ledger 'potion').
+  - shared/src/dungeon (exported from the shared index): run.ts (DungeonMap, Enemy, Chest,
+    BagItem, RunBag, RunPlayer, RunEvent, DungeonRun, DungeonInput, combatStats, newRun), grid.ts
+    (isFloorBlock, blockCenter, blockAt, onFloor, dungeonNavGrid: the shared NavGrid with 16 px
+    cells, a cell is blocked on a wall block, NO avatar radius because corridors are 1 block wide;
+    cached per map), generate.ts (floorRng(seed, n), enemyHp, makeEnemy, blockDistances,
+    generateFloor(seed, n, round) -> { map, enemies, chests }), loot.ts (LOOT_TABLES, getLootTable,
+    rollDrop, rollLoot), runBag.ts (addToBag (12 slots, materials stack to 10, gold no slot, the
+    rest is left behind), bagLoot), step.ts (step, isPaused, exitChoices, distance), bank.ts
+    (runIsFree, startRun (pays the key unless gold < 10, takes the potions along), finishRun
+    (ledger 'dungeon_bank', addXp, potions back)). testRun.ts holds test helpers (not exported).
+  - tools/simulate-dungeon.ts (npm run simulate:dungeon [runs] [round]): the bot of step 8 at
+    350 / 500 / 700 ms and 500 ms with sword and armor, both rounds.
 
 Conventions:
 - UI LAYOUT RULE (step 5). The room fills the whole screen; all UI sits on top of it at the
@@ -746,6 +774,32 @@ Conventions:
   (newGame.ts makeCharacter, .charmaker CSS) and lookPickers.ts use tabs (Body, Hair, Top,
   Bottoms, Shoes); the preview stays in view. Customers in an old save are settled when the game
   opens, so no save migration was needed.
+- DUNGEON (step 8):
+  - The dungeon never uses room shapes: its own 40 x 40 grid of 32 px blocks (DungeonMap.blocks,
+    row-major). Positions are world px. Room 0 is the spawn room (no enemies, no chests). Rooms keep
+    one wall block between them; each is joined to the nearest earlier room by an L corridor. The
+    exit is the room block farthest (walking) from the spawn. One thing per block. The boss floor
+    (round 2, floor 3) has the Bone King in the exit room and a golden chest next to the exit (no
+    random golden chest there).
+  - step(run, inputs, dtMs, rng): inputs first (at time run.timeMs + run.carryMs, exact), then
+    whole 100 ms ticks; the rest waits in carryMs. Tick order: player walks (re-paths to a target
+    enemy), a pending hit lands, chests open / mimics wake (CHEST_OPEN_REACH), the exit check
+    (pauses: status 'exit_choice', nothing moves until choose_exit), then each enemy, then death.
+    The player's attack and potion cooldowns are absolute times (attackReadyAt, potionReadyAt), so
+    350 ms is exact; enemy timers count down per tick. Hit reach PLAYER_ATTACK_REACH (40) center to
+    center. A click on an enemy during the cooldown is ignored as a hit (the player still walks
+    there). Enemies: wind-up 300 ms within ATTACK_REACH, the hit (or a miss beyond 48 px), then
+    their full attack cooldown (attackEveryMs); they stop ENEMY_STOP_PX from the player; straight
+    chase with line of sight, else a nav path every ENEMY_REPATH_MS; bats move in a random direction
+    half the time. A mimic becomes a skeleton (id MIMIC_ID_BASE + chest id) with the floor's hp.
+  - Banking: run.bag is at risk, run.banked is safe, run.lost keeps what died or was left behind.
+    Leaving and killing the Bone King move the bag to banked (the run goes on after the boss, so the
+    golden chest can still be opened). Death: the bag is lost, half of its gold (rounded down) is
+    kept. Xp counts at the kill (run.player.xp, run.xpGained) and is kept after death. Level up:
+    full heal, new max hp and attack. Stairs: +30% of max hp (rounded). Potions taken along at
+    startRun come back at finishRun (unused ones; also after death).
+  - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
+    golden chest's loot.
 - SAVE_VERSION is 5: MIGRATIONS[4] gives old rooms the square shapes, the old look clothing
   ids (short, long_sleeve, trousers), unlockedClothing [] and playerCreated true.
 - (Before 5:) MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and
@@ -797,5 +851,14 @@ Notes:
     the nearest free cell center); LocalGameAPI and main.ts both do this with the same rule.
   - The bone chair (crypt furniture) does not exist yet; give it one 'sit' seat when it is added.
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
+- Step 8 open questions for the owner: (1) BOSS_HP_FLOOR_SCALING (config): the brief scales the
+  Bone King to 90 hp on floor 3; the simulation hits the target survival rates only with 60 hp
+  (false). It is true (as the brief says) until the owner decides. (2) "Crafting costs more than
+  the item sells for" holds for every recipe except bone_throne (5 throne_piece = 50 gold, the
+  throne is worth 120). (3) The simulation's value per surviving run is above 60-120 in round 2
+  when materials are counted (gold alone is near it). Chest gold amounts in loot.json are
+  placeholders to tune.
+- Step 8 balance (npm run simulate:dungeon): round 1 (the current DUNGEON_ROUND) is easy (about
+  100% survival); the survival targets are for round 2.
 - The start look (config START_LOOK): skin 30, hair 5, short hair, long sleeves (shirt 7),
   trousers (legs 23), shoes 6. The box avatar lives in render/avatarParts.ts now.

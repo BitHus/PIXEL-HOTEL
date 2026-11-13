@@ -1339,5 +1339,346 @@
         }
       ]
     }
+  },
+  {
+    "id": "bone_chair",
+    "name": "Bone chair",
+    "category": "crypt_furniture",
+    "theme": "crypt",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 2,
+    "w": 32,
+    "d": 32,
+    "height": 60,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [
+      {
+        "dx": 0,
+        "dy": -14,
+        "pose": "sit"
+      }
+    ],
+    "baseValue": 20,
+    "rarity": "uncommon",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -14,
+          "dy": -28,
+          "w": 28,
+          "d": 4,
+          "z": 0,
+          "h": 22,
+          "color": 2
+        },
+        {
+          "dx": -6,
+          "dy": -28,
+          "w": 12,
+          "d": 4,
+          "z": 22,
+          "h": 6,
+          "color": 20
+        },
+        {
+          "dx": -14,
+          "dy": -2,
+          "w": 28,
+          "d": 26,
+          "z": 0,
+          "h": 10,
+          "color": 21
+        }
+      ]
+    }
+  },
+  {
+    "id": "skull_lamp",
+    "name": "Skull lamp",
+    "category": "crypt_furniture",
+    "theme": "crypt",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 4,
+    "w": 24,
+    "d": 24,
+    "height": 32,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": true,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 25,
+    "rarity": "uncommon",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -8,
+          "dy": -4,
+          "w": 16,
+          "d": 16,
+          "z": 0,
+          "h": 4,
+          "color": 22
+        },
+        {
+          "dx": -6,
+          "dy": -8,
+          "w": 12,
+          "d": 10,
+          "z": 4,
+          "h": 10,
+          "color": 2
+        },
+        {
+          "dx": -2,
+          "dy": -12,
+          "w": 4,
+          "d": 2,
+          "z": 14,
+          "h": 4,
+          "color": 18
+        }
+      ]
+    }
+  },
+  {
+    "id": "coffin_table",
+    "name": "Coffin table",
+    "category": "crypt_furniture",
+    "theme": "crypt",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 6,
+    "w": 64,
+    "d": 40,
+    "height": 60,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 40,
+    "rarity": "rare",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -30,
+          "dy": -2,
+          "w": 60,
+          "d": 36,
+          "z": 0,
+          "h": 16,
+          "color": 6
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 40,
+          "z": 16,
+          "h": 4,
+          "color": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "wall_torch",
+    "name": "Wall torch",
+    "category": "crypt_furniture",
+    "theme": "crypt",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 4,
+    "w": 24,
+    "d": 4,
+    "height": 48,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 15,
+    "rarity": "uncommon",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -12,
+          "dy": 0,
+          "w": 24,
+          "d": 2,
+          "z": 20,
+          "h": 4,
+          "color": 23
+        },
+        {
+          "dx": -2,
+          "dy": 0,
+          "w": 4,
+          "d": 2,
+          "z": 24,
+          "h": 14,
+          "color": 5
+        },
+        {
+          "dx": -3,
+          "dy": 0,
+          "w": 6,
+          "d": 2,
+          "z": 38,
+          "h": 6,
+          "color": 9
+        },
+        {
+          "dx": -1,
+          "dy": 0,
+          "w": 2,
+          "d": 1,
+          "z": 44,
+          "h": 3,
+          "color": 10
+        }
+      ]
+    }
+  },
+  {
+    "id": "bone_throne",
+    "name": "Bone throne",
+    "category": "crypt_furniture",
+    "theme": "crypt",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 12,
+    "w": 64,
+    "d": 56,
+    "height": 108,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [
+      {
+        "dx": 0,
+        "dy": -24,
+        "pose": "sit"
+      }
+    ],
+    "baseValue": 120,
+    "rarity": "epic",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -28,
+          "dy": -50,
+          "w": 56,
+          "d": 6,
+          "z": 0,
+          "h": 44,
+          "color": 2
+        },
+        {
+          "dx": -20,
+          "dy": -50,
+          "w": 8,
+          "d": 6,
+          "z": 44,
+          "h": 8,
+          "color": 2
+        },
+        {
+          "dx": 12,
+          "dy": -50,
+          "w": 8,
+          "d": 6,
+          "z": 44,
+          "h": 8,
+          "color": 2
+        },
+        {
+          "dx": -24,
+          "dy": -4,
+          "w": 48,
+          "d": 46,
+          "z": 0,
+          "h": 12,
+          "color": 27
+        },
+        {
+          "dx": -32,
+          "dy": -4,
+          "w": 8,
+          "d": 50,
+          "z": 0,
+          "h": 20,
+          "color": 20
+        },
+        {
+          "dx": 24,
+          "dy": -4,
+          "w": 8,
+          "d": 50,
+          "z": 0,
+          "h": 20,
+          "color": 20
+        }
+      ]
+    }
   }
 ]

@@ -12,7 +12,8 @@
     "build": "npm run build -w client",
     "test": "vitest run",
     "typecheck": "npm run typecheck --workspaces && tsc -p tools/tsconfig.json",
-    "simulate": "tsx tools/simulate-economy.ts"
+    "simulate": "tsx tools/simulate-economy.ts",
+    "simulate:dungeon": "tsx tools/simulate-dungeon.ts"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

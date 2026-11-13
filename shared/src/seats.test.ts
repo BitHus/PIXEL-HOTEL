@@ -37,9 +37,11 @@ describe('seat data', () => {
     expect(T('sofa').seats.map((s) => s.pose)).toEqual(['sit', 'sit']);
     expect(T('bench').seats.map((s) => s.pose)).toEqual(['sit', 'sit']);
     expect(T('bed').seats.map((s) => s.pose)).toEqual(['lie']);
+    expect(T('bone_chair').seats.map((s) => s.pose)).toEqual(['sit']);
+    expect(T('bone_throne').seats.map((s) => s.pose)).toEqual(['sit']);
     for (const t of FURNITURE_TYPES) {
       expect(t.sittable).toBe(t.seats.some((s) => s.pose === 'sit'));
-      if (!['chair', 'sofa', 'bench', 'bed'].includes(t.id)) expect(hasSeats(t)).toBe(false);
+      if (!['chair', 'sofa', 'bench', 'bed', 'bone_chair', 'bone_throne'].includes(t.id)) expect(hasSeats(t)).toBe(false);
     }
   });
 
