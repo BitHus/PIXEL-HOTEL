@@ -235,6 +235,8 @@ export const FLOOR_TEXTURE_SIZE = 64;
 export const TAP_MAX_MOVE_PX = 8;
 /** ...and was held less than this many ms. Otherwise it is a drag (pan). */
 export const TAP_MAX_MS = 300;
+/** A press held this long without moving is a long press (opens the item menu, step 4b). */
+export const LONG_PRESS_MS = 500;
 
 // ---------- Debug tools (step 3) ----------
 /** Blockers mode: drawn rectangles smaller than this (px, either side) are dropped. */
@@ -247,3 +249,13 @@ export const DEBUG_NAV_OVERLAY_ALPHA = 0.18;
 export const GHOST_ALPHA = 0.75;
 /** A tapped seat is only sat on if the walk ends this close (px) to its stand point. */
 export const SIT_REACH_PX = 24;
+
+// ---------- Placing and the item menu (step 4b) ----------
+/** Gap between the item (or ghost) and the floating menu or button bar above it, screen px. */
+export const MENU_GAP_PX = 8;
+/** Screen edge margin the floating menus keep, px. */
+export const MENU_EDGE_PX = 8;
+/** A refused rotate shakes the item for this many ms... */
+export const SHAKE_MS = 300;
+/** ...this many world px to each side. */
+export const SHAKE_PX = 2;

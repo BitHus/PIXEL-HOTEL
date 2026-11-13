@@ -334,7 +334,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   push at the end of every step.
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
-Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking) and 4 (furniture) are done.
+Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture) and 4b (placing
+and the item menu) are done.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -353,7 +354,10 @@ Layout:
   32 hex list, the only place it lives), furniture.ts (FURNITURE_TYPES, getFurnitureType,
   footprintSize, footprintRect, snapCoord, nextFacing, fitsRoomKind, ridersOf, itemBlockers,
   doorPoint, doorReachesMiddle, canPlace, snapToSurface, planPlacement, rotateQuarter,
-  moveItem, pickUpItem, standPointFor, seatFor), index.ts (re-exports).
+  moveItem, pickUpItem, standPointFor, seatFor), placing.ts (step 4b: PlacingSession,
+  startNewPlacing, startMovePlacing, moveGhost, rotateGhost, planGhost, confirmPlacing (null =
+  refused while invalid), cancelPlacing (exact restore), rotateInPlace (null = does not fit),
+  footprintCenter), index.ts (re-exports).
   nav.ts also exports reachableCells and nearestFreeCell.
 - shared/data/furniture.json: the 12 starter furniture types (step 4), all box placeholders.
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
@@ -368,7 +372,7 @@ Layout:
   tested), furnitureArt.ts (boxesForFacing, surfaceHeight, drawFurniture, tested),
   furnitureSprite.ts (FurnitureSprite: one item's art at its anchor, lifted when on a
   surface), itemViews.ts (ItemViews: one sprite per placed item, sync(items, hidden), uidOf
-  for hit testing), bareStyles.ts (bare floor texture made in code, bare wall colors),
+  for hit testing, screenBounds(uid), shake(uid) + update(dtMs) for a refused rotate), bareStyles.ts (bare floor texture made in code, bare wall colors),
   colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross),
   avatarSprite.ts (AvatarSprite: box placeholder 32x64, down/up/right drawn, left = right
   mirrored, 1 px dark warm outline, 2 px bob every WALK_BOB_MS while walking).
@@ -380,9 +384,12 @@ Layout:
 - client/src/ui/debugLabel.ts: HTML label in #ui with world x, y and zoom.
 - client/src/ui/blockersButton.ts: "Blockers (B)" toggle and "Clear" buttons (top right),
   plus the B key.
-- client/src/build/buildMode.ts: BuildMode (held item, ghost, place / lift / rotate / pick up /
-  cancel). client/src/ui/buildPanel.ts: "Build (F)" toggle, the temporary list of all 12
-  types (with inventory counts), Rotate (R), Pick up (Del), Cancel (Esc).
+- client/src/build/placer.ts: Placer (step 4b; one placing session + the ghost drawing; place,
+  rotate, cancel, drag, screenBounds). client/src/ui/buildPanel.ts: "Build (F)" toggle and the
+  temporary list of all 12 types as a sideways-scrolling strip at the bottom (inventory counts),
+  hidden while placing. client/src/ui/placeBar.ts: floating ✓ ↻ ✗ bar above the ghost (Enter,
+  R, Escape). client/src/ui/itemMenu.ts: item menu (Move, Rotate, Pick up, Sit) + name card.
+  client/src/ui/anchorAbove.ts: puts a floating element above a screen rect, inside the screen.
 - server/src/index.ts: placeholder only (step 10).
 
 Conventions:
@@ -437,14 +444,20 @@ Conventions:
     never block the floor. doorReachesMiddle: the free cell nearest the room middle must be
     reachable from the door point.
   - Nav blockers = debug rects + itemBlockers(items, roomId) (blocking items on the floor).
-  - Build mode input: F toggles. Mouse hover moves the ghost (footprint center under the
-    pointer); while an item is held, a one-finger / left drag moves the ghost by the drag
-    distance (getDragMode returns 'draw'); a tap on the ghost places it where it is, a tap
-    elsewhere moves it there and places it. With no item held, a tap on a placed item lifts it
-    (it and its riders are hidden in the room until placed; Cancel leaves it where it was).
-    Placing from the list keeps the same type held; placing a lifted item lets go. Shift (held)
-    turns the 4 px snap off. Items picked up go to the inventory (roomId null) and the list
-    uses them first.
+  - Placing (step 4b): choosing a type from the strip (the ghost starts in the middle of the
+    screen) or Move in the item menu (the ghost starts where the item is; the item and its
+    riders are hidden until done) starts a placing session. A one-finger / left drag anywhere
+    moves the ghost by the drag distance (getDragMode returns 'draw'); two fingers and
+    right-drag still pan/zoom. No hover-follow. Taps and long presses do nothing while placing.
+    Only ✓ / Enter places (disabled while red); ✗ / Escape cancels (a moved item goes back
+    exactly; a new item stays in the list). After placing the session ends. Shift (held) turns
+    the 4 px snap off. Items picked up go to the inventory (roomId null); the strip uses them
+    first.
+  - Item menu (step 4b): a tap on a placed item opens its menu, except a sittable item outside
+    build mode, which walks there and sits (if reachable). A long press (LONG_PRESS_MS, without
+    moving) on any item opens the menu. With the menu open, a tap elsewhere only closes it.
+    Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
+    the place bar follow their target every frame.
   - Hit testing: cameraControl passes the Pixi event target to onPoint; item containers are
     eventMode 'static' and ItemViews.uidOf maps a target to an item. The cursor cross, the
     avatar and the ghost layer have eventMode 'none' so they never hide an item from a tap.
@@ -462,6 +475,7 @@ Notes:
 - The room in main.ts is created directly with createRoom, and paths come straight from
   findPath; both move behind GameAPI (enterRoom, walk) when LocalGameAPI arrives. Furniture
   is also kept in main.ts (not saved; it is gone after a reload) until LocalGameAPI.
+- cameraControl reports long presses as onPoint(start, 'longpress', target at press start).
 - The build list is temporary and free (no gold yet); the catalog comes later.
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
 - The avatar look uses palette indices (skin 30, hair 5, shirt 7, legs 23, shoes 6).
