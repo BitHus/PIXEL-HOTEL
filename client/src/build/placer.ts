@@ -6,6 +6,7 @@
 
 import { Container, Graphics } from 'pixi.js';
 import {
+  FIRST_BUY_POP_MS,
   GHOST_ALPHA,
   PALETTE,
   footprintRect,
@@ -53,6 +54,8 @@ export class Placer {
   private sprite: FurnitureSprite | null = null;
   /** True while a place request is on its way. */
   private busy = false;
+  /** ms into the pop animation (the first catalog purchase), or null. */
+  private popMs: number | null = null;
 
   constructor(
     private readonly hooks: PlacerHooks,
@@ -110,6 +113,31 @@ export class Placer {
     this.end();
     this.session = startMovePlacing(item);
     this.changed();
+  }
+
+  /** A short pop: the ghost grows in from small, a bit too big, then normal (FIRST_BUY_POP_MS). */
+  pop(): void {
+    if (this.session) this.popMs = 0;
+  }
+
+  /** Call every frame (the pop animation). */
+  tick(dtMs: number): void {
+    if (this.popMs === null) return;
+    this.popMs += dtMs;
+    const k = Math.min(1, this.popMs / FIRST_BUY_POP_MS);
+    const scale = k < 0.7 ? 0.3 + (k / 0.7) * 0.9 : 1.2 - ((k - 0.7) / 0.3) * 0.2;
+    const p = this.plan;
+    if (k >= 1 || !p) {
+      this.popMs = null;
+      this.ghost.scale.set(1);
+      this.ghost.pivot.set(0, 0);
+      this.ghost.position.set(0, 0);
+      return;
+    }
+    // Grow around the item's anchor.
+    this.ghost.pivot.set(p.x, p.y);
+    this.ghost.position.set(p.x, p.y);
+    this.ghost.scale.set(scale);
   }
 
   setShift(shift: boolean): void {

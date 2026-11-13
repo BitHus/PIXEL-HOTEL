@@ -4,6 +4,7 @@
 import type { AvatarLook } from './avatar.ts';
 import type { BagLayout } from './bag.ts';
 import type { Room } from './room.ts';
+import type { ShopState } from './shop.ts';
 import type { FurnitureItem, LedgerEntry, Player } from './types.ts';
 
 export interface GameState {
@@ -21,6 +22,10 @@ export interface GameState {
   /** The next furniture uid to hand out. */
   nextUid: number;
   ledger: LedgerEntry[];
+  /** The player's shop: goods on the slots, prices, customers, sale history (step 7, shop.ts). */
+  shop: ShopState;
+  /** How many first-run hints (config HINTS) are done; they show one at a time. */
+  hintsDone: number;
 }
 
 /** One chat message (not saved). */

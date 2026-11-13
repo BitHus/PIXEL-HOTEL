@@ -26,7 +26,7 @@ describe('save files', () => {
     expect(readSave(JSON.stringify({ version: SAVE_VERSION, state: { ...state, bag: null } }))).toMatchObject({ problem: 'invalid' });
   });
   it('migrates a version 1 save (no bag layout) to an empty layout that arrangeState fills', () => {
-    const { bag: _bag, ...v1 } = state;
+    const { bag: _bag, shop: _shop, hintsDone: _h, ...v1 } = state;
     const r = readSave(JSON.stringify({ version: 1, savedAt: 0, state: v1 }));
     expect(r).toMatchObject({ ok: true, version: 1, migrated: true });
     if (!r.ok) return;
@@ -34,5 +34,18 @@ describe('save files', () => {
     const arranged = arrangeState(r.state);
     expect(arranged.bag.furniture.slice(0, 2)).toEqual(['chair', 'rug']);
     expect(arranged.bag.materials.slice(0, 2)).toEqual(['wood', 'cloth']);
+  });
+
+  it('migrates a version 2 save: an empty shop, no hints done, and the counter and stall_table in the shop', () => {
+    const { shop: _shop, hintsDone: _h, ...rest } = state;
+    const v2 = { ...rest, items: rest.items.filter((i) => i.roomId === null) };
+    const r = readSave(JSON.stringify({ version: 2, savedAt: 0, state: v2 }));
+    expect(r).toMatchObject({ ok: true, version: 2, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.hintsDone).toBe(0);
+    expect(r.state.shop.slots).toEqual([]);
+    const inShop = r.state.items.filter((i) => i.roomId === r.state.player.shopRoomId).map((i) => i.typeId);
+    expect(inShop.sort()).toEqual(['counter', 'stall_table']);
+    expect(new Set(r.state.items.map((i) => i.uid)).size).toBe(r.state.items.length);
   });
 });

@@ -1,7 +1,7 @@
 // Draws a room: floor, rugs, back wall and borders, then the depth-sorted object layer
 // (brief section 7). All children are in world px; the camera scales and moves `world`.
 
-import { Container, Graphics, TilingSprite, type Texture } from 'pixi.js';
+import { Container, Graphics, TilingSprite } from 'pixi.js';
 import {
   bottomBorderRects,
   doorRect,
@@ -12,7 +12,8 @@ import {
   type Rect,
   type Room,
 } from '@pixel-hotel/shared';
-import { BARE_WALL_COLOR, BARE_WALL_EDGE, BORDER_COLOR, createBareFloorTexture } from './bareStyles.ts';
+import { BORDER_COLOR } from './bareStyles.ts';
+import { floorTexture, wallTexture } from './styleArt.ts';
 import { DepthLayer } from './depthLayer.ts';
 
 export class RoomView {
@@ -29,7 +30,6 @@ export class RoomView {
   readonly objects = new DepthLayer();
   /** Build mode ghost, above everything. */
   readonly ghostLayer = new Container({ eventMode: 'none' });
-  private floorTexture: Texture | null = null;
 
   constructor() {
     this.rugLayer.addChild(this.rugs.container);
@@ -52,19 +52,19 @@ export class RoomView {
   setRoom(room: Room): void {
     this.floorLayer.removeChildren().forEach((c) => c.destroy());
     this.wallLayer.removeChildren().forEach((c) => c.destroy());
-    this.floorTexture ??= createBareFloorTexture();
 
-    // The floor also runs through the door opening.
+    // The floor also runs through the door opening. Styles: styleArt.ts (step 7).
     const floor = floorRect(room);
     const door = doorRect(room);
-    const floorSprite = new TilingSprite({ texture: this.floorTexture, width: floor.w, height: floor.h + door.h });
+    const floorSprite = new TilingSprite({ texture: floorTexture(room.floorStyle), width: floor.w, height: floor.h + door.h });
     floorSprite.position.set(floor.x, floor.y);
     this.floorLayer.addChild(floorSprite);
 
-    const walls = new Graphics();
     const band = wallBandRect(room);
-    fillRect(walls, band, BARE_WALL_COLOR);
-    fillRect(walls, { x: band.x, y: band.y + band.h - BARE_WALL_EDGE, w: band.w, h: BARE_WALL_EDGE }, BORDER_COLOR);
+    const wall = new TilingSprite({ texture: wallTexture(room.wallStyle), width: band.w, height: band.h });
+    wall.position.set(band.x, band.y);
+    this.wallLayer.addChild(wall);
+    const walls = new Graphics();
     for (const r of [leftBorderRect(room), rightBorderRect(room), ...bottomBorderRects(room)]) {
       fillRect(walls, r, BORDER_COLOR);
     }

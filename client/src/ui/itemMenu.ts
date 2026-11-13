@@ -42,7 +42,8 @@ export function createItemMenu(parent: HTMLElement, hooks: ItemMenuHooks): ItemM
   const act = (f: (uid: number) => void) => () => {
     if (uid !== null) f(uid);
   };
-  buttons.append(button('Move', act(hooks.onMove)), button('Rotate', act(hooks.onRotate)), button('Pick up', act(hooks.onPickUp)));
+  const pickUp = button('Pick up', act(hooks.onPickUp));
+  buttons.append(button('Move', act(hooks.onMove)), button('Rotate', act(hooks.onRotate)), pickUp);
   menu.append(buttons, card);
   menu.hidden = true;
   parent.appendChild(menu);
@@ -58,6 +59,8 @@ export function createItemMenu(parent: HTMLElement, hooks: ItemMenuHooks): ItemM
     open(next, type) {
       uid = next;
       name.textContent = type.name;
+      // The shop counter can be moved and rotated, never picked up.
+      pickUp.hidden = type.noPickup === true;
       menu.hidden = false;
     },
     close() {

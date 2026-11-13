@@ -2,11 +2,44 @@
 // through a SaveStorage (localStorage) under a versioned key after every change. It also keeps
 // one automatic backup: the save as it was when the game was opened (or before an import).
 // Local-only save tools (export, import, restore backup, new game) are in LocalSaves.
+// Step 7: the shop runs here too. update() (main.ts calls it every SHOP_TICK_MS through
+// startClock) steps the walking customers in SHOP_TICK_MS steps with the shared rules; a gap
+// longer than SHOP_CATCH_UP_GAP_MS (and every time the game opens) is caught up with maths only
+// (catchUpShop: at most 8 hours), and what sold is kept for the "while you were away" summary.
 
 import {
   AVATAR_START_FROM_BOTTOM,
   FURNITURE_TYPES,
+  HINTS,
+  MATERIAL_TYPES,
   PALETTE,
+  SHOP_CATCH_UP_GAP_MS,
+  SHOP_TICK_MS,
+  applyStyle,
+  buyCatalog,
+  canPickUp,
+  catchUpShop,
+  putOnShelf,
+  repathCustomers,
+  returnOrphanLoot,
+  rngInt,
+  rngPick,
+  setPrice,
+  shopAppeal,
+  stepShop,
+  takeFromShelf,
+  unlockStyle,
+  upgradeRoom,
+  validPrice,
+  type AwaySummary,
+  type BuyResult,
+  type ShelfSlotRef,
+  type ShopEvent,
+  type ShopView,
+  type ShopWorld,
+  type StockPick,
+  type StyleKind,
+  type Rng,
   SAVE_BACKUP_KEY,
   SAVE_VERSION,
   applyChange,
@@ -43,6 +76,7 @@ import {
   type GameAPI,
   type GameState,
   type Inventory,
+  type MaterialId,
   type ItemsResult,
   type NavGrid,
   type PlaceAt,
@@ -105,24 +139,36 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   private debugRects: Rect[] = [];
   private chatId = 0;
   private readonly chatListeners = new Set<(line: ChatLine) => void>();
+  private readonly shopListeners = new Set<(e: ShopEvent) => void>();
+  /** The shop room's navigation grid (customers), rebuilt when its furniture changes. */
+  private shopGrid: NavGrid | null = null;
+  private away: AwaySummary | null = null;
+  private clock = 0;
 
   private constructor(
     private readonly storage: SaveStorage,
     private readonly now: () => number,
     state: GameState,
+    private readonly rng: Rng,
   ) {
     this.state = arrangeState(state);
     this.walkState = this.doorWalk();
     this.grid = this.buildGrid();
+    // Customers do not walk while the game is closed: catch up with maths only.
+    this.catchUp();
   }
 
   /**
    * Opens the saved game (or a new one). `notice` is a message for the player when the save was
    * migrated, damaged or too old.
    */
-  static open(storage: SaveStorage, now: () => number = Date.now): { api: LocalGameAPI; notice: string | null } {
+  static open(
+    storage: SaveStorage,
+    now: () => number = Date.now,
+    rng: Rng = Math.random,
+  ): { api: LocalGameAPI; notice: string | null } {
     const start = (state: GameState, notice: string | null): { api: LocalGameAPI; notice: string | null } => {
-      const api = new LocalGameAPI(storage, now, state);
+      const api = new LocalGameAPI(storage, now, state, rng);
       api.save();
       return { api, notice };
     };
@@ -230,7 +276,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   async pickUpItem(uid: number): Promise<ItemsResult> {
-    if (!this.roomItem(uid)) return null;
+    const item = this.roomItem(uid);
+    // The counter is never picked up (there is always exactly one).
+    if (!item || !canPickUp(item)) return null;
     return this.setItems(pickUpItem(this.state.items, uid));
   }
 
@@ -279,10 +327,140 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return () => this.chatListeners.delete(listener);
   }
 
-  async debugGiveTestFurniture(): Promise<void> {
-    const home = FURNITURE_TYPES.filter((t) => t.category === 'home_furniture').map((t) => t.id);
-    const next = applyChange(this.state, { reason: 'debug', addFurniture: home, note: 'Give test furniture' }, this.now());
+  // ---------- Shop, catalog and rooms (step 7) ----------
+
+  async getShop(): Promise<ShopView> {
+    return this.shopView();
+  }
+
+  async putOnShelf(slot: ShelfSlotRef, pick: StockPick, price: number): Promise<ShopView | null> {
+    const next = putOnShelf(this.state, slot, pick, price, this.now());
+    if (!next) return null;
+    this.commit(this.hintDone(next, 2));
+    return this.shopView();
+  }
+
+  async takeFromShelf(slot: ShelfSlotRef): Promise<ShopView | null> {
+    const next = takeFromShelf(this.state, slot, this.now());
+    if (!next) return null;
+    this.commit(next);
+    return this.shopView();
+  }
+
+  async setPrice(slot: ShelfSlotRef, price: number): Promise<ShopView | null> {
+    if (!validPrice(price)) return null;
+    const next = setPrice(this.state, slot, price);
+    if (!next) return null;
+    this.commit(next);
+    return this.shopView();
+  }
+
+  onShop(listener: (e: ShopEvent) => void): () => void {
+    this.shopListeners.add(listener);
+    return () => this.shopListeners.delete(listener);
+  }
+
+  async buyCatalog(typeId: string): Promise<BuyResult | null> {
+    const first = !this.state.ledger.some((e) => e.reason === 'catalog' || e.reason === 'style');
+    const next = buyCatalog(this.state, typeId, this.now());
+    if (!next) return null;
+    const uid = next.ledger.at(-1)?.furnitureUids?.[0];
+    if (uid === undefined) return null;
+    this.commit(this.hintDone(next, 0));
+    return { uid, first };
+  }
+
+  async buyStyle(kind: StyleKind, id: string): Promise<boolean> {
+    const next = unlockStyle(this.state, kind, id, this.now());
+    if (!next) return false;
+    // A style as the first buy counts for the first hint, and skips the second (nothing to place).
+    this.commit(this.state.hintsDone === 0 ? { ...next, hintsDone: 2 } : next);
+    return true;
+  }
+
+  async applyStyle(roomId: number, kind: StyleKind, id: string): Promise<Room | null> {
+    const next = applyStyle(this.state, roomId, kind, id);
+    if (!next) return null;
+    this.commit(next);
+    return this.roomById(roomId);
+  }
+
+  async upgradeRoom(roomId: number): Promise<Room | null> {
+    const next = upgradeRoom(this.state, roomId, this.now());
+    if (!next) return null;
+    this.commit(next);
+    this.grid = this.buildGrid();
+    this.shopGrid = null;
+    return this.roomById(roomId);
+  }
+
+  async getRoom(roomId: number): Promise<Room | null> {
+    return this.roomById(roomId);
+  }
+
+  async currentHint(): Promise<string | null> {
+    return HINTS[this.state.hintsDone] ?? null;
+  }
+
+  async takeAwaySummary(): Promise<AwaySummary | null> {
+    const a = this.away;
+    this.away = null;
+    return a;
+  }
+
+  async debugGiveRandomLoot(): Promise<string> {
+    const materials: Partial<Record<MaterialId, number>> = {};
+    for (let k = 0; k < 3; k++) {
+      const m = rngPick(this.rng, MATERIAL_TYPES).id;
+      materials[m] = (materials[m] ?? 0) + rngInt(this.rng, 1, 4);
+    }
+    const furniture = this.rng() < 0.3 ? [rngPick(this.rng, FURNITURE_TYPES.filter((t) => t.inCatalog)).id] : [];
+    const next = applyChange(this.state, { reason: 'debug', materials, addFurniture: furniture, note: 'Give random loot' }, this.now());
+    if (!next) return '';
+    this.commit(next);
+    const parts = Object.entries(materials).map(([id, n]) => `${n} ${id}`);
+    return [...parts, ...furniture.map((id) => getFurnitureType(id).name)].join(', ');
+  }
+
+  /** Tests only: furniture of these types into the bag (ledger reason 'debug'). */
+  debugGiveFurniture(typeIds: readonly string[]): void {
+    const next = applyChange(this.state, { reason: 'debug', addFurniture: [...typeIds] }, this.now());
     if (next) this.commit(next);
+  }
+
+  /** Starts the shop clock (the browser calls it once; tests call update() themselves). */
+  startClock(): void {
+    if (this.clock) return;
+    this.clock = window.setInterval(() => this.update(), SHOP_TICK_MS);
+  }
+
+  /**
+   * Moves the shop on to now: walking customers in SHOP_TICK_MS steps, or (after a gap longer
+   * than SHOP_CATCH_UP_GAP_MS) the maths-only catch-up. Sends the shop events.
+   */
+  update(): void {
+    const now = this.now();
+    const shop = this.state.shop;
+    if (now - shop.updatedAt > SHOP_CATCH_UP_GAP_MS) {
+      this.catchUp();
+      this.save();
+      this.emit({ t: 'customers', customers: [] });
+      this.emit({ t: 'slots' });
+      return;
+    }
+    const events: ShopEvent[] = [];
+    let s = this.state;
+    while (s.shop.updatedAt + SHOP_TICK_MS <= now) {
+      const at = s.shop.updatedAt + SHOP_TICK_MS;
+      const r = stepShop(s, this.shopWorld(s), SHOP_TICK_MS, this.rng, at);
+      s = { ...r.state, shop: { ...r.state.shop, updatedAt: at } };
+      events.push(...r.events);
+    }
+    if (s === this.state) return;
+    // Only events change what is worth saving; walking positions are not saved every step.
+    if (events.length > 0) this.commit(s);
+    else this.state = s;
+    for (const e of events) this.emit(e);
   }
 
   /** Debug (Blockers mode): rectangles that block walking in the current room (not saved). */
@@ -336,6 +514,50 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.save();
   }
 
+  private emit(e: ShopEvent): void {
+    for (const l of this.shopListeners) l(e);
+  }
+
+  /** Marks hint `index` done when it is the one showing (hints go one at a time). */
+  private hintDone(state: GameState, index: number): GameState {
+    return state.hintsDone === index ? { ...state, hintsDone: index + 1 } : state;
+  }
+
+  private roomById(roomId: number): Room | null {
+    const r = this.state.rooms.find((x) => x.id === roomId);
+    return r ? { ...r } : null;
+  }
+
+  private shopView(): ShopView {
+    const shop = this.state.shop;
+    const room = this.roomById(shop.roomId);
+    return structuredClone({
+      roomId: shop.roomId,
+      slots: shop.slots,
+      saleHistory: shop.saleHistory,
+      appeal: room ? shopAppeal(room, this.state.items) : 0,
+      customers: shop.customers,
+    });
+  }
+
+  private shopWorld(state: GameState): ShopWorld {
+    const room = state.rooms.find((r) => r.id === state.shop.roomId);
+    if (!room) throw new Error('shop room missing');
+    this.shopGrid ??= buildNavGrid(room, itemBlockers(state.items, room.id));
+    return { room, items: state.items, grid: this.shopGrid };
+  }
+
+  /** Customers pay at once and the gap is done with maths (catchUpShop); keeps the summary. */
+  private catchUp(): void {
+    const r = catchUpShop(this.state, this.now(), this.rng);
+    this.state = r.state;
+    if (r.sales.length === 0) return;
+    const was = this.away;
+    this.away = was
+      ? { simulatedMs: was.simulatedMs + r.simulatedMs, sales: [...was.sales, ...r.sales], total: was.total + r.total }
+      : { simulatedMs: r.simulatedMs, sales: r.sales, total: r.total };
+  }
+
   private layout(): SlotLayout {
     return structuredClone({ hotbar: this.state.hotbar, bag: this.state.bag });
   }
@@ -369,12 +591,23 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const p = this.state.player;
     // Only inventory items are placed, so no new uid is ever needed.
     const next = confirmPlacing(this.room(), this.state.items, s, { ownerId: p.id, newUid: () => this.state.nextUid }, snap);
-    return next ? this.setItems(next) : null;
+    if (!next) return null;
+    // Hint 2: place something (after buying it).
+    if (!s.origin) this.state = this.hintDone(this.state, 1);
+    return this.setItems(next);
   }
 
   private setItems(items: FurnitureItem[]): FurnitureItem[] {
-    this.commit({ ...this.state, items });
+    // A table, shelf or case that left the shop gives its goods back to the bag.
+    let next = returnOrphanLoot({ ...this.state, items }, this.now());
+    if (this.state.currentRoomId === next.shop.roomId) {
+      this.shopGrid = null;
+      next = repathCustomers(next, this.shopWorld(next));
+    }
+    const slotsBefore = this.state.shop.slots.length;
+    this.commit(next);
     this.grid = this.buildGrid();
+    if (next.shop.slots.length !== slotsBefore) this.emit({ t: 'slots' });
     // The seat moved or was picked up: stand up next to it on a free spot.
     this.avatarNow();
     const w = this.walkState;

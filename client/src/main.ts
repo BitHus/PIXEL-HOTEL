@@ -2,6 +2,7 @@ import { Application, TextureSource } from 'pixi.js';
 import {
   AVATAR_H,
   INTRO_DEVICE_PX_PER_ART_PX,
+  REACTION_BUBBLE_MS,
   PALETTE,
   buildNavGrid,
   cameraAt,
@@ -31,6 +32,9 @@ import {
   type Rect,
   type Room,
   type RoomKind,
+  type ShopEvent,
+  type ShopView,
+  type StyleKind,
 } from '@pixel-hotel/shared';
 import './ui/ui.css';
 import { LocalGameAPI } from './api/localGameAPI.ts';
@@ -61,6 +65,12 @@ import { createChatBubbles } from './ui/chatBubbles.ts';
 import { createSettingsPanel } from './ui/settingsPanel.ts';
 import { createToast } from './ui/toast.ts';
 import { typing } from './ui/dom.ts';
+import { CustomerViews } from './render/customerViews.ts';
+import { createShelfPanel } from './ui/shelfPanel.ts';
+import { createCatalogPanel } from './ui/catalogPanel.ts';
+import { createRoomPanel } from './ui/roomPanel.ts';
+import { createHintBox, createSaleFloats, showAwaySummary } from './ui/shopFeedback.ts';
+import { pixelIcon } from './ui/pixelIcons.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
@@ -72,6 +82,8 @@ async function start(): Promise<void> {
 
   // Step 5: the game runs on LocalGameAPI (shared rules in the browser, saved in localStorage).
   const { api, notice } = LocalGameAPI.open(browserStorage());
+  // Step 7: the shop's customers walk while the game is open.
+  api.startClock();
 
   const app = new Application();
   await app.init({
@@ -143,6 +155,9 @@ async function start(): Promise<void> {
   let items: FurnitureItem[] = await api.getItems();
   let inventory: Inventory = await api.getInventory();
   const itemViews = new ItemViews(view, room.id);
+  /** The shop (goods on the slots, prices, sale history, customers). */
+  let shop: ShopView = await api.getShop();
+  const customers = new CustomerViews(view);
   const roomItem = (uid: number | null): FurnitureItem | undefined =>
     uid === null ? undefined : items.find((i) => i.uid === uid && i.roomId === room.id);
 
@@ -181,6 +196,8 @@ async function start(): Promise<void> {
   const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
   const panels = createPanels();
   const info = createInfoPanel(ui, (kind) => void openRoomKind(kind));
+  const hint = createHintBox(info.column);
+  const floats = createSaleFloats(ui);
   // Play mode (default: taps walk and sit) or build mode (taps open item menus, never walk).
   const build = createBuildMode(ui, {
     onChange: (on) => {
@@ -245,7 +262,7 @@ async function start(): Promise<void> {
     items = next;
     itemViews.sync(items, placer.hiddenUids());
     roomChanged();
-    void refreshInventory();
+    void refreshInventory().then(refreshShop);
     return true;
   };
   const placer: Placer = new Placer(
@@ -284,6 +301,109 @@ async function start(): Promise<void> {
     },
   });
   const openMenu = (item: FurnitureItem): void => menu.open(item.uid, getFurnitureType(item.typeId));
+
+  // ---------- Shop, catalog and room panels (step 7) ----------
+  const shelfPanel = createShelfPanel(ui, {
+    put: (slot, pick, price) => void api.putOnShelf(slot, pick, price).then((r) => (r ? afterShopChange() : toast('That cannot go there.'))),
+    take: (slot) => void api.takeFromShelf(slot).then(afterShopChange),
+    setPrice: (slot, price) => void api.setPrice(slot, price).then((r) => (r ? afterShopChange() : toast('Prices are whole gold, 1 or more.'))),
+  });
+  panels.add('shelf', shelfPanel.el, undefined, () => shelfPanel.clear());
+  const afterShopChange = async (): Promise<void> => {
+    await refreshInventory();
+    await refreshShop();
+    await refreshHint();
+  };
+  const catalog = createCatalogPanel(ui, {
+    buyItem: (typeId) => {
+      void api.buyCatalog(typeId).then(async (r) => {
+        if (!r) {
+          toast('Not enough gold.');
+          return;
+        }
+        items = await api.getItems();
+        await refreshInventory();
+        await refreshHint();
+        const type = getFurnitureType(typeId);
+        // The first purchase of a new game goes straight into placing, with a pop.
+        if (r.first && fitsRoomKind(type, room)) {
+          panels.close();
+          if (startPlacing(typeId)) placer.pop();
+          return;
+        }
+        toast(`${type.name} is in your bag.`);
+      });
+    },
+    buyStyle: (kind, id) => {
+      void api.buyStyle(kind, id).then(async (ok) => {
+        toast(ok ? 'Unlocked! Use it in the Room panel.' : 'Not enough gold.');
+        await refreshInventory();
+        await refreshHint();
+      });
+    },
+  });
+  panels.add('catalog', catalog.el);
+  const roomPanel = createRoomPanel(ui, {
+    upgrade: (roomId) => {
+      void api.upgradeRoom(roomId).then(async (next) => {
+        if (!next) {
+          toast('Not enough gold.');
+          return;
+        }
+        toast(`Upgraded to level ${next.level}!`);
+        await openRoom(next.id, false);
+      });
+    },
+    applyStyle: (roomId, kind: StyleKind, id) => {
+      void api.applyStyle(roomId, kind, id).then(async (next) => {
+        if (!next) return;
+        if (next.id === room.id) {
+          room = next;
+          view.setRoom(room);
+        }
+        await refreshShop();
+        await refreshInventory();
+      });
+    },
+  });
+  panels.add('room', roomPanel.el);
+
+  async function refreshShop(): Promise<void> {
+    shop = await api.getShop();
+    itemViews.setGoods(shop.slots, items);
+    shelfPanel.refresh(shop, inventory);
+    const open = roomItem(shelfPanel.uid);
+    if (panels.open === 'shelf' && !open) panels.close();
+  }
+  async function refreshHint(): Promise<void> {
+    hint.set(await api.currentHint());
+  }
+  const showAway = async (): Promise<void> => {
+    const away = await api.takeAwaySummary();
+    if (away) showAwaySummary(ui, away);
+  };
+  api.onShop((e: ShopEvent) => {
+    const here = room.id === shop.roomId;
+    switch (e.t) {
+      case 'customers':
+        customers.sync(here ? e.customers : [], room.id);
+        break;
+      case 'reaction':
+        if (here) bubbles.addNode(e.customerId, pixelIcon(e.reaction), REACTION_BUBBLE_MS);
+        break;
+      case 'sale':
+        if (here) floats.add(e.till, e.price);
+        else toast(`Sold for ${e.price} gold in your shop.`);
+        void refreshInventory();
+        void refreshShop();
+        break;
+      case 'slots':
+        void refreshShop();
+        void refreshInventory();
+        void showAway();
+        break;
+    }
+  });
 
   /** Starts placing an inventory item of this type in the middle of the screen. */
   const startPlacing = (typeId: string): boolean => {
@@ -347,6 +467,9 @@ async function start(): Promise<void> {
     inventory = await api.getInventory();
     const p = await api.getPlayer();
     info.setGold(p.wallet.gold);
+    catalog.refresh(p.wallet.gold, p.unlockedStyles);
+    roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
+    shelfPanel.refresh(shop, inventory);
     const materials = inventory.materials;
     const usable = (typeId: string): boolean =>
       countInInventory(inventory.furniture, typeId) > 0 && fitsRoomKind(getFurnitureType(typeId), room);
@@ -404,11 +527,11 @@ async function start(): Promise<void> {
       api.newGame();
       window.location.reload();
     },
-    giveTestFurniture: () => {
-      void api.debugGiveTestFurniture().then(async () => {
+    giveRandomLoot: () => {
+      void api.debugGiveRandomLoot().then(async (what) => {
         items = await api.getItems();
         await refreshInventory();
-        toast('Test furniture added to the bag.');
+        toast(`Added to the bag: ${what}.`);
       });
     },
     onDebug: (on) => {
@@ -423,7 +546,7 @@ async function start(): Promise<void> {
 
   // ---------- Rooms ----------
   /** Opens a room: draws it, puts the avatar in the door zone and plays the camera intro. */
-  async function openRoom(roomId: number): Promise<void> {
+  async function openRoom(roomId: number, intro = true): Promise<void> {
     placer.cancel();
     menu.close();
     bubbles.clear();
@@ -444,8 +567,15 @@ async function start(): Promise<void> {
     itemViews.sync(items, placer.hiddenUids());
     roomChanged();
     info.setRoom(room.kind);
+    floats.clear();
+    shop = await api.getShop();
+    customers.clear();
+    customers.sync(room.id === shop.roomId ? shop.customers : [], room.id);
+    await refreshShop();
     await refreshInventory();
-    startIntro();
+    await refreshHint();
+    if (intro) startIntro();
+    else fit();
   }
   async function openRoomKind(kind: RoomKind): Promise<void> {
     if (kind === room.kind) return;
@@ -490,6 +620,13 @@ async function start(): Promise<void> {
         panels.close();
         return;
       }
+      // A table, shelf or case in the shop: its panel (goods, prices, sale history).
+      if (hit && getFurnitureType(hit.typeId).slots > 0 && room.id === shop.roomId) {
+        shelfPanel.show(hit);
+        shelfPanel.refresh(shop, inventory);
+        panels.show('shelf');
+        return;
+      }
       // An item with seats: walk to its nearest free side, then sit or lie (it shakes if no seat
       // can be reached). Any other item is ignored: walk to the point (a blocked point walks to
       // the nearest free cell).
@@ -526,18 +663,25 @@ async function start(): Promise<void> {
     if (path.length === 0 && seating.goal !== null) avatar = seating.arrive(avatar, roomItem(seating.goal.uid));
     avatar = seating.update(avatar, ticker.deltaMS);
     itemViews.update(ticker.deltaMS);
+    customers.update(ticker.deltaMS, clockMs);
+    placer.tick(ticker.deltaMS);
     sprite.update(avatar, clockMs);
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));
     view.update();
     // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).
     placeBar.update(placer.screenBounds(), placer.valid);
     menu.follow(menu.uid === null ? null : itemViews.screenBounds(menu.uid));
+    heads.clear();
     heads.set(avatar.id, worldToScreen({ x: avatar.x, y: avatar.y - AVATAR_H }, shown));
+    customers.heads(heads, AVATAR_H);
+    for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, shown));
     bubbles.update(ticker.deltaMS, heads);
+    floats.update(ticker.deltaMS, (p) => worldToScreen(p, shown));
   });
 
   await openRoom(room.id);
   if (notice) toast(notice);
+  await showAway();
 }
 
 void start();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SAVE_BACKUP_KEY, countInInventory, saveKey, toSaveText, createNewPlayer } from '@pixel-hotel/shared';
+import { FURNITURE_TYPES, SAVE_BACKUP_KEY, countInInventory, saveKey, toSaveText, createNewPlayer } from '@pixel-hotel/shared';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
 
@@ -9,7 +9,7 @@ const clock = (): number => t;
 async function filledGame() {
   const storage = memoryStorage();
   const { api } = LocalGameAPI.open(storage, clock);
-  await api.debugGiveTestFurniture();
+  api.debugGiveFurniture(FURNITURE_TYPES.filter((t) => t.category === 'home_furniture').map((t) => t.id));
   return { storage, api };
 }
 
@@ -26,7 +26,7 @@ describe('LocalGameAPI', () => {
     expect(player.wallet.gold).toBe(100);
   });
 
-  it('Give test furniture adds one of each of the 12 home items', async () => {
+  it('the test helper adds one of each of the 12 home items', async () => {
     const { api } = await filledGame();
     const inv = await api.getInventory();
     expect(inv.furniture).toHaveLength(12);
@@ -108,7 +108,7 @@ describe('LocalGameAPI', () => {
     await api.enterRoom(1);
     const rug = (await api.getInventory()).furniture.find((i) => i.typeId === 'rug')!;
     await api.placeItem(rug.uid, { center: { x: 120, y: 120 }, facing: 'down', snap: true });
-    expect((await api.enterRoom(2)).items).toEqual([]);
+    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['counter', 'stall_table']);
     expect((await api.enterRoom(1)).items.map((i) => i.uid)).toEqual([rug.uid]);
   });
 
@@ -160,7 +160,7 @@ describe('LocalGameAPI', () => {
     storage.set(saveKey(), old);
     const r = LocalGameAPI.open(storage, clock);
     expect(r.notice).toMatch(/new game/i);
-    expect(r.api.snapshot().items).toEqual([]);
+    expect(r.api.snapshot().items.filter((i) => i.roomId !== 2)).toEqual([]);
   });
 
   it('chat cleans the text and tells the listeners', async () => {
@@ -181,5 +181,77 @@ describe('LocalGameAPI', () => {
     t += 500; // 64 px at 128 px/s
     const next = await api.walk({ x: start.x, y: start.y });
     expect(next?.[0]?.y).toBeCloseTo(start.y - 64);
+  });
+});
+
+describe('LocalGameAPI shop (step 7)', () => {
+  const seq = (): (() => number) => {
+    let k = 0;
+    return () => ((k++ * 0.6180339887) % 1);
+  };
+
+  it('stocks the table, customers come, take the item, and pay at the till', async () => {
+    let now = 0;
+    const { api } = LocalGameAPI.open(memoryStorage(), () => now, seq());
+    const shop = await api.getShop();
+    const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'stall_table')!;
+    expect(shop.slots).toEqual([]);
+    expect(await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 1)).not.toBeNull();
+    expect(await api.putOnShelf({ shelfUid: table.uid, index: 1 }, { kind: 'material', id: 'cloth' }, 1)).not.toBeNull();
+    expect(await api.putOnShelf({ shelfUid: table.uid, index: 1 }, { kind: 'material', id: 'cloth' }, 1)).toBeNull();
+    const events: string[] = [];
+    api.onShop((e) => events.push(e.t));
+    for (; now < 180_000; now += 100) api.update();
+    expect(events).toContain('reaction');
+    expect(events).toContain('sale');
+    expect((await api.getPlayer()).wallet.gold).toBeGreaterThan(100);
+    const sold = Object.values((await api.getShop()).saleHistory).flat();
+    expect(sold.length).toBeGreaterThan(0);
+  });
+
+  it('a closed game catches up with maths only and gives a summary once', async () => {
+    let now = 0;
+    const storage = memoryStorage();
+    const { api } = LocalGameAPI.open(storage, () => now, seq());
+    const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'stall_table')!;
+    await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 1);
+    now = 20 * 3600_000;
+    const again = LocalGameAPI.open(storage, () => now, seq()).api;
+    const away = await again.takeAwaySummary();
+    expect(away?.sales).toHaveLength(1);
+    expect(away?.simulatedMs).toBe(8 * 3600_000);
+    expect(await again.takeAwaySummary()).toBeNull();
+    expect((await again.getPlayer()).wallet.gold).toBe(101);
+  });
+
+  it('the counter cannot be picked up; picking up the table returns its goods', async () => {
+    const { api } = LocalGameAPI.open(memoryStorage(), clock);
+    const items = (await api.enterRoom(2)).items;
+    const counter = items.find((i) => i.typeId === 'counter')!;
+    const table = items.find((i) => i.typeId === 'stall_table')!;
+    expect(await api.pickUpItem(counter.uid)).toBeNull();
+    await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 3);
+    expect((await api.getInventory()).materials.wood).toBe(3);
+    expect(await api.pickUpItem(table.uid)).not.toBeNull();
+    expect((await api.getInventory()).materials.wood).toBe(4);
+    expect((await api.getShop()).slots).toEqual([]);
+  });
+
+  it('catalog, hints, styles and room upgrades', async () => {
+    const { api } = LocalGameAPI.open(memoryStorage(), clock);
+    expect(await api.currentHint()).toMatch(/Catalog/);
+    const first = await api.buyCatalog('chair');
+    expect(first?.first).toBe(true);
+    expect(await api.currentHint()).toMatch(/Place/);
+    expect((await api.buyCatalog('chair'))?.first).toBe(false);
+    expect(await api.buyCatalog('counter')).toBeNull();
+    await api.enterRoom(1);
+    await api.placeItem(first!.uid, { center: { x: 100, y: 100 }, facing: 'down', snap: true });
+    expect(await api.currentHint()).toMatch(/table/);
+    expect(await api.buyStyle('floor', 'wood_planks')).toBe(true);
+    expect((await api.getPlayer()).wallet.gold).toBe(100 - 15 - 15 - 30);
+    expect((await api.applyStyle(1, 'floor', 'wood_planks'))?.floorStyle).toBe('wood_planks');
+    expect(await api.applyStyle(1, 'wall', 'brick')).toBeNull();
+    expect(await api.upgradeRoom(1)).toBeNull();
   });
 });

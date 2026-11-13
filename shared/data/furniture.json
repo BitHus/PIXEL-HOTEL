@@ -225,7 +225,7 @@
     "theme": "tavern",
     "placeIn": "both",
     "slots": 0,
-    "appeal": 0,
+    "appeal": 4,
     "w": 24,
     "d": 24,
     "height": 47,
@@ -353,7 +353,7 @@
     "theme": "tavern",
     "placeIn": "both",
     "slots": 0,
-    "appeal": 0,
+    "appeal": 3,
     "w": 32,
     "d": 32,
     "height": 48,
@@ -806,6 +806,494 @@
           "h": 1,
           "color": 7,
           "role": "cover"
+        }
+      ]
+    }
+  },
+  {
+    "id": "counter",
+    "name": "Counter",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 8,
+    "w": 80,
+    "d": 40,
+    "height": 76,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 30,
+    "rarity": "common",
+    "inCatalog": false,
+    "noPickup": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -40,
+          "dy": 0,
+          "w": 80,
+          "d": 40,
+          "z": 0,
+          "h": 28,
+          "color": 5
+        },
+        {
+          "dx": -40,
+          "dy": 0,
+          "w": 80,
+          "d": 40,
+          "z": 28,
+          "h": 4,
+          "color": 4
+        },
+        {
+          "dx": -36,
+          "dy": 0,
+          "w": 72,
+          "d": 0,
+          "z": 6,
+          "h": 16,
+          "color": 4
+        },
+        {
+          "dx": 10,
+          "dy": -14,
+          "w": 22,
+          "d": 14,
+          "z": 32,
+          "h": 10,
+          "color": 31
+        },
+        {
+          "dx": 12,
+          "dy": -24,
+          "w": 18,
+          "d": 6,
+          "z": 42,
+          "h": 4,
+          "color": 10
+        }
+      ]
+    }
+  },
+  {
+    "id": "stall_table",
+    "name": "Stall table",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 3,
+    "appeal": 0,
+    "w": 80,
+    "d": 48,
+    "height": 64,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 10,
+    "rarity": "common",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -38,
+          "dy": -42,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": 34,
+          "dy": -42,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": -38,
+          "dy": -2,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": 34,
+          "dy": -2,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": -40,
+          "dy": 0,
+          "w": 80,
+          "d": 48,
+          "z": 12,
+          "h": 4,
+          "color": 4
+        },
+        {
+          "dx": -40,
+          "dy": 0,
+          "w": 80,
+          "d": 0,
+          "z": 4,
+          "h": 8,
+          "color": 7
+        }
+      ]
+    }
+  },
+  {
+    "id": "shelf",
+    "name": "Shelf",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 3,
+    "appeal": 0,
+    "w": 72,
+    "d": 24,
+    "height": 80,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 10,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -36,
+          "dy": 0,
+          "w": 72,
+          "d": 24,
+          "z": 0,
+          "h": 56,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 0,
+          "z": 6,
+          "h": 2,
+          "color": 4
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 0,
+          "z": 24,
+          "h": 2,
+          "color": 4
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 0,
+          "z": 42,
+          "h": 2,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "display_case",
+    "name": "Display case",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 4,
+    "appeal": 6,
+    "w": 72,
+    "d": 32,
+    "height": 70,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 40,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -36,
+          "dy": 0,
+          "w": 72,
+          "d": 32,
+          "z": 0,
+          "h": 20,
+          "color": 5
+        },
+        {
+          "dx": -34,
+          "dy": -2,
+          "w": 68,
+          "d": 28,
+          "z": 20,
+          "h": 16,
+          "color": 20
+        },
+        {
+          "dx": -36,
+          "dy": 0,
+          "w": 72,
+          "d": 32,
+          "z": 36,
+          "h": 2,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "sign",
+    "name": "Shop sign",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 10,
+    "w": 40,
+    "d": 4,
+    "height": 54,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 25,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -14,
+          "dy": 0,
+          "w": 2,
+          "d": 2,
+          "z": 40,
+          "h": 12,
+          "color": 6
+        },
+        {
+          "dx": 12,
+          "dy": 0,
+          "w": 2,
+          "d": 2,
+          "z": 40,
+          "h": 12,
+          "color": 6
+        },
+        {
+          "dx": -20,
+          "dy": 0,
+          "w": 40,
+          "d": 4,
+          "z": 16,
+          "h": 24,
+          "color": 4
+        },
+        {
+          "dx": -16,
+          "dy": 0,
+          "w": 32,
+          "d": 0,
+          "z": 20,
+          "h": 16,
+          "color": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "banner",
+    "name": "Banner",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 6,
+    "w": 32,
+    "d": 4,
+    "height": 59,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 15,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -14,
+          "dy": 0,
+          "w": 28,
+          "d": 0,
+          "z": 12,
+          "h": 40,
+          "color": 7
+        },
+        {
+          "dx": -6,
+          "dy": 0,
+          "w": 12,
+          "d": 0,
+          "z": 30,
+          "h": 10,
+          "color": 10
+        },
+        {
+          "dx": -16,
+          "dy": 0,
+          "w": 32,
+          "d": 4,
+          "z": 52,
+          "h": 3,
+          "color": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "shop_rug",
+    "name": "Shop rug",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 5,
+    "w": 80,
+    "d": 56,
+    "height": 56,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 12,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -40,
+          "dy": 0,
+          "w": 80,
+          "d": 56,
+          "z": 0,
+          "h": 0,
+          "color": 14
+        },
+        {
+          "dx": -34,
+          "dy": -6,
+          "w": 68,
+          "d": 44,
+          "z": 0,
+          "h": 0,
+          "color": 13
+        },
+        {
+          "dx": -24,
+          "dy": -16,
+          "w": 48,
+          "d": 24,
+          "z": 0,
+          "h": 0,
+          "color": 11
         }
       ]
     }

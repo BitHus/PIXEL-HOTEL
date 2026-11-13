@@ -84,6 +84,8 @@ export interface FurnitureType {
   baseValue: number;
   rarity: Rarity;
   inCatalog: boolean;
+  /** True for the shop counter (step 7): it can be moved and rotated, never picked up or sold. */
+  noPickup?: boolean;
   art: FurnitureArt;
 }
 
@@ -127,13 +129,14 @@ export interface MaterialType {
 /** What a customer can want. */
 export type ShopCategory = 'materials' | 'home_furniture' | 'shop_furniture' | 'crypt_furniture';
 
-/** A thing that can be sold: a stack of a material, or one furniture item. */
+/** A thing for sale on a shop slot: one unit of a material, or one furniture item (taken out of
+ *  GameState.items while it is on the slot, and put back when taken off). */
 export type LootRef =
   | { kind: 'material'; id: MaterialId; qty: number }
-  | { kind: 'furniture'; uid: number };
+  | { kind: 'furniture'; uid: number; typeId: string };
 
 export interface ShopSlot {
-  /** uid of the shelf item that owns this slot. */
+  /** uid of the table, shelf or case that owns this slot. */
   shelfUid: number;
   index: number;
   /** null = empty slot. */
@@ -148,15 +151,6 @@ export interface SaleRecord {
   typeId: string;
   price: number;
   at: number;
-}
-
-export interface Shop {
-  roomId: number;
-  slots: ShopSlot[];
-  /** Time (ms) when the next customer arrives. */
-  nextCustomerAt: number;
-  /** Last sale prices per item type (SALE_HISTORY_LENGTH each). */
-  saleHistory: Record<string, number[]>;
 }
 
 export interface Wallet {
@@ -174,6 +168,7 @@ export type LedgerReason =
   | 'potion'
   | 'craft'
   | 'shelf'
+  | 'style'
   | 'debug';
 
 export interface LedgerEntry {
@@ -183,7 +178,10 @@ export interface LedgerEntry {
   reason: LedgerReason;
   goldDelta: number;
   materials?: Partial<Record<MaterialId, number>>;
+  /** Furniture added (new or back from a shop slot). */
   furnitureUids?: number[];
+  /** Furniture taken out (put on a shop slot). */
+  removedUids?: number[];
   note?: string;
 }
 
