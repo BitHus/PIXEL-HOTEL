@@ -323,3 +323,27 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - I work with Claude Code on my phone or on my PC. The repo is on GitHub and every push is
   deployed by Netlify, so I can test the game on my phone through that link. Commit and
   push at the end of every step.
+
+CURRENT STATE (kept up to date by the AI at the end of each step)
+Step 1 (project skeleton) is done.
+
+Layout:
+- package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
+  server), build (client), test (vitest run), typecheck (tsc in every workspace).
+- tsconfig.base.json: strict, noUncheckedIndexedAccess, moduleResolution bundler, noEmit.
+  Imports inside shared/ use the .ts extension (allowImportingTsExtensions).
+- vitest.config.ts: tests are *.test.ts files next to the code.
+- netlify.toml: builds the client workspace, publishes client/dist.
+- shared/src: config.ts (all constants), types.ts (all data types), api.ts (GameAPI
+  interface), palette.ts (Endesga 32 hex list, the only place it lives), index.ts (re-exports).
+  Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
+- client: Vite (base './' so it runs on any URL) + PixiJS 8. src/main.ts makes a full-screen
+  Pixi canvas with nearest scaling (TextureSource.defaultOptions.scaleMode = 'nearest').
+  #game holds the canvas, #ui is the HTML/CSS overlay.
+- server/src/index.ts: placeholder only (step 10).
+
+Notes:
+- palette.ts was filled from memory because lospec.com is blocked in the cloud environment.
+  It is marked UNVERIFIED until the official list is pasted.
+- SHOP_START_ITEMS positions in config.ts are placeholders; adjust when the counter and
+  stall_table types exist.

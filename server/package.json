@@ -1,0 +1,11 @@
+{
+  "name": "@pixel-hotel/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pixel-hotel/shared": "*"
+  }
+}
