@@ -281,18 +281,12 @@ export function pickUpItem(items: readonly FurnitureItem[], uid: number): Furnit
   return items.map((i) => (back.has(i.uid) ? { ...i, roomId: null, onItemUid: null } : i));
 }
 
-/** Where an avatar stands in front of the item (standPoint, turned with the item). */
+/** Where a shop customer stands in front of the item (standPoint, turned with the item). Seats: seats.ts. */
 export function standPointFor(item: Pose, type: FurnitureType): Point {
   const turns = TURN_ORDER.indexOf(item.facing);
   const off = rotateQuarter({ x: type.standPoint.dx, y: type.standPoint.dy + type.d / 2 }, turns);
   const c = footprintCenter(item, type);
   return { x: c.x + off.x, y: c.y + off.y };
-}
-
-/** Where a sitting avatar is (the middle of the seat) and which way it faces. */
-export function seatFor(item: Pose, type: FurnitureType): Pose {
-  const c = footprintCenter(item, type);
-  return { x: c.x, y: c.y, facing: item.facing };
 }
 
 function clamp(v: number, lo: number, hi: number): number {

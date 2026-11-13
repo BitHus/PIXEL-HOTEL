@@ -25,6 +25,13 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [
+      {
+        "dx": 0,
+        "dy": -14,
+        "pose": "sit"
+      }
+    ],
     "baseValue": 5,
     "rarity": "common",
     "inCatalog": true,
@@ -77,6 +84,18 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [
+      {
+        "dx": -17,
+        "dy": -18,
+        "pose": "sit"
+      },
+      {
+        "dx": 17,
+        "dy": -18,
+        "pose": "sit"
+      }
+    ],
     "baseValue": 20,
     "rarity": "common",
     "inCatalog": true,
@@ -145,6 +164,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 10,
     "rarity": "common",
     "inCatalog": true,
@@ -221,6 +241,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 6,
     "rarity": "common",
     "inCatalog": true,
@@ -289,6 +310,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 8,
     "rarity": "common",
     "inCatalog": true,
@@ -347,6 +369,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 4,
     "rarity": "common",
     "inCatalog": true,
@@ -408,6 +431,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 18,
     "rarity": "common",
     "inCatalog": true,
@@ -476,6 +500,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 6,
     "rarity": "common",
     "inCatalog": true,
@@ -535,6 +560,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 4,
     "rarity": "common",
     "inCatalog": true,
@@ -587,6 +613,18 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [
+      {
+        "dx": -16,
+        "dy": -16,
+        "pose": "sit"
+      },
+      {
+        "dx": 16,
+        "dy": -16,
+        "pose": "sit"
+      }
+    ],
     "baseValue": 8,
     "rarity": "common",
     "inCatalog": true,
@@ -648,6 +686,7 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [],
     "baseValue": 15,
     "rarity": "common",
     "inCatalog": true,
@@ -709,6 +748,13 @@
       "dx": 0,
       "dy": 24
     },
+    "seats": [
+      {
+        "dx": 0,
+        "dy": -34,
+        "pose": "lie"
+      }
+    ],
     "baseValue": 25,
     "rarity": "common",
     "inCatalog": true,
@@ -748,7 +794,8 @@
           "d": 12,
           "z": 12,
           "h": 3,
-          "color": 19
+          "color": 19,
+          "role": "pillow"
         },
         {
           "dx": -28,
@@ -757,7 +804,8 @@
           "d": 40,
           "z": 12,
           "h": 1,
-          "color": 7
+          "color": 7,
+          "role": "cover"
         }
       ]
     }

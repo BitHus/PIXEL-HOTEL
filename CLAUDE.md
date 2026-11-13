@@ -347,8 +347,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
 Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture), 4b (placing
-and the item menu) and 5 (inventory, UI, chat, local saving, camera intro; the bag reworked to the
-docs/UI-REFERENCE.md layout with parchment panels) are done.
+and the item menu), 5 (inventory, UI, chat, local saving, camera intro; the bag reworked to the
+docs/UI-REFERENCE.md layout with parchment panels) and 5b (sitting and lying) are done.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -362,14 +362,17 @@ Layout:
   bottomBorderRects, doorRect, doorZoneRect, roomBoundsRect, rectInside, rectInsideFloor,
   rectsTouch, rectsOverlap), nav.ts (NavGrid, buildNavGrid, findPath, smoothPath,
   lineOfSight, segmentTouchesRect, inflateRect, cell helpers), minHeap.ts (A* open list),
-  avatar.ts (Avatar, AvatarLook, AvatarState, walkAvatar, facingFor, pathLength), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
+  avatar.ts (Avatar, AvatarLook, AvatarState ('idle' | 'walk' | 'sit' | 'lie'), walkAvatar,
+  facingFor, pathLength, slidePoint), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
   zoomAt, panBy, clampCamera, snapCamera, settleZoom, easeZoom, cameraCenter, cameraAt,
   introZoom, introCamera, containCamera), api.ts (GameAPI interface, RoomState, Inventory,
   PlaceAt, SitResult, ItemsResult), palette.ts (Endesga
   32 hex list, the only place it lives), furniture.ts (FURNITURE_TYPES, getFurnitureType,
   footprintSize, footprintRect, snapCoord, nextFacing, fitsRoomKind, ridersOf, itemBlockers,
   doorPoint, doorReachesMiddle, canPlace, snapToSurface, planPlacement, rotateQuarter,
-  moveItem, pickUpItem, standPointFor, seatFor), placing.ts (step 4b: PlacingSession,
+  moveItem, pickUpItem, standPointFor (shop customers only)), seats.ts (step 5b: SeatSpot,
+  hasSeats, seatSpots, headDirection, headPoint, approachPoints, freeSeatsByTap, approachPath,
+  planSit, SitPlan, onSeat, standUpSpot), placing.ts (step 4b: PlacingSession,
   startNewPlacing, startMovePlacing, moveGhost, rotateGhost, planGhost, confirmPlacing (null =
   refused while invalid), cancelPlacing (exact restore), rotateInPlace (null = does not fit),
   footprintCenter), index.ts (re-exports).
@@ -406,7 +409,12 @@ Layout:
   for hit testing, screenBounds(uid), shake(uid) + update(dtMs) for a refused rotate), bareStyles.ts (bare floor texture made in code, bare wall colors),
   colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross),
   avatarSprite.ts (AvatarSprite: box placeholder 32x64, down/up/right drawn, left = right
-  mirrored, 1 px dark warm outline, 2 px bob every WALK_BOB_MS while walking).
+  mirrored, 1 px dark warm outline, 2 px bob every WALK_BOB_MS while walking; step 5b poses:
+  sit (upper body lowered 14 px, bent legs; down/up/right, left mirrored) and lie (the down
+  figure turned so the head points to the pillow, lifted LIE_LIFT_PX, setCover draws the bed's
+  blanket over it)), seating.ts (Seating: the seat goal, the SEAT_SLIDE_MS slide onto the seat,
+  the pose and the blanket; stillThere / standUp).
+  furnitureArt.ts also has drawFurniture(type, facing, role) and roleFloorRects (pillow, cover).
   RoomView has a debugLayer (above rugs, below the wall) for debug drawings.
 - client/src/debug/blockers.ts: BlockersDebug (debug only, not a game feature): drawn
   rectangles that block navigation, a drag preview, and the faint blocked-cell overlay.
@@ -505,10 +513,10 @@ Conventions:
   - A press is a TAP only if it moved less than TAP_MAX_MOVE_PX (8 screen px) and was held
     less than TAP_MAX_MS (300 ms). Anything else is a DRAG (or a LONG PRESS), and neither ever
     makes the avatar walk. What a tap does depends on the mode (client/src/ui/buildMode.ts):
-  - PLAY MODE (the default): a tap on the floor, a rug or any item that is not sittable walks
-    there (the item is ignored; a blocked point walks to the nearest free cell). A tap on a
-    sittable item walks there and sits (the seat shakes if it cannot be reached). A long press
-    does nothing. No item menu.
+  - PLAY MODE (the default): a tap on the floor, a rug or any item without seats walks
+    there (the item is ignored; a blocked point walks to the nearest free cell). A tap on an
+    item with seats walks to its nearest free side and sits or lies (step 5b; the item shakes if
+    no seat can be reached). A long press does nothing. No item menu.
   - BUILD MODE: the Build button (hammer, right-edge column, right after Bag) or the B key
     toggles it; placing from the hotbar or the bag turns it on. Taps never walk. A tap or long
     press on an item opens its menu (Move, Rotate, Pick up); a tap elsewhere closes it. The
@@ -569,11 +577,7 @@ Conventions:
   - Hit testing: cameraControl passes the Pixi event target to onPoint; item containers are
     eventMode 'static' and ItemViews.uidOf maps a target to an item. The cursor cross, the
     avatar and the ghost layer have eventMode 'none' so they never hide an item from a tap.
-  - Sitting: a tap on a sittable item walks to standPointFor (only if the walk ends within
-    SIT_REACH_PX of it), then the avatar is put on seatFor (footprint center), state 'sit',
-    facing the item. A sitting avatar sorts right after its seat (right before it when the
-    seat faces up). Moving or picking up the seat makes the avatar stand where it is. No sit
-    sprite yet: the idle sprite is shown.
+  - Sitting and lying: see SITTING AND LYING (step 5b) in the notes below.
 
 Notes:
 - SHOP_START_ITEMS positions in config.ts are placeholders; adjust when the counter and
@@ -585,5 +589,27 @@ Notes:
   see INPUT RULE. The old "Build (F)" toggle and item strip of step 4 are gone for good.
 - Debug blockers (step 3) are sent to LocalGameAPI with debugSetBlockers (not saved, cleared
   when the room changes).
+- SITTING AND LYING (step 5b): FurnitureType.seats = [{ dx, dy, pose: 'sit' | 'lie' }] for the
+  'down' facing, relative to the anchor, turned with the item (seatSpots). For 'lie' (dx, dy) is
+  the middle of the body; the head is LIE_HEAD_PX toward the pillow (headDirection: up for a
+  'down' bed, left for 'right', down for 'up', right for 'left'). Seats: chair 1, settle (sofa)
+  2, bench 2, bed 1 lie. `sittable` stays in the data (true = has 'sit' seats; tested); code uses
+  hasSeats. standPoint is only for shop customers now. ArtBox.role: 'pillow' marks the pillow
+  (tests), 'cover' the blanket that is drawn again over a lying avatar.
+  - A tap (play mode) on an item with seats: api.sit(uid, tap). planSit takes the free seat
+    nearest to the tap (taken = seat indices other avatars use; [] until step 10), then the
+    reachable approach point with the shortest path. Approach points: below, left, right and
+    above the footprint, AVATAR_RADIUS outside it, level with the seat; one counts as reached when
+    the walk ends within APPROACH_REACH_PX (28). If that seat cannot be reached the next free seat
+    is tried; nothing reachable = the item shakes.
+  - On arrival the client slides the avatar onto the seat in SEAT_SLIDE_MS (150 ms, straight
+    line, may cross the footprint) and shows the pose. Sitting faces the item's facing. The
+    GameAPI puts the avatar on the seat at once (it only tracks time for walking).
+  - Depth: a sitting avatar sorts right after its seat (right before it when the seat faces
+    up); a lying avatar always right after its bed, with the blanket inside the avatar sprite.
+  - Tapping the floor stands up and walks (the path leaves via the nearest free cell). Moving or
+    picking up the item: the avatar stands at standUpSpot (where it is if that cell is free, else
+    the nearest free cell center); LocalGameAPI and main.ts both do this with the same rule.
+  - The bone chair (crypt furniture) does not exist yet; give it one 'sit' seat when it is added.
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
 - The avatar look uses palette indices (skin 30, hair 5, shirt 7, legs 23, shoes 6).

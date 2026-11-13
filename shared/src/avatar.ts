@@ -14,7 +14,7 @@ export interface AvatarLook {
   shoes: number;
 }
 
-export type AvatarState = 'idle' | 'walk' | 'sit';
+export type AvatarState = 'idle' | 'walk' | 'sit' | 'lie';
 
 export interface Avatar {
   id: number;
@@ -79,4 +79,10 @@ export function walkAvatar(avatar: Avatar, path: readonly Point[], dtMs: number,
   }
   const rest = path.slice(i);
   return { avatar: { ...avatar, x, y, facing, state: rest.length > 0 ? 'walk' : 'idle' }, path: rest };
+}
+
+/** A point slid from `from` to `to` in a straight line: t (elapsed ms) out of totalMs. */
+export function slidePoint(from: Point, to: Point, t: number, totalMs: number): Point {
+  const k = totalMs <= 0 ? 1 : Math.min(1, Math.max(0, t / totalMs));
+  return { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k };
 }

@@ -1,7 +1,8 @@
 // Draw order inside the object layer (brief section 7): sorted by y (the bottom of the
 // footprint, or the avatar's feet), then x, then uid. An item on a surface is drawn right after
 // the item under it, and so is an avatar sitting on an item (right before it when the seat
-// faces up, so the back of the seat hides the avatar).
+// faces up, so the back of the seat hides the avatar). A lying avatar is always drawn right
+// after its bed (the blanket is drawn again inside the avatar sprite, over the body).
 
 import type { Avatar, FurnitureItem } from '@pixel-hotel/shared';
 
@@ -37,5 +38,6 @@ export function itemDepthKey(item: FurnitureItem, under?: FurnitureItem): DepthK
  */
 export function avatarDepthKey(avatar: Avatar, seat?: FurnitureItem): DepthKey {
   if (!seat) return { y: avatar.y, x: avatar.x, uid: -avatar.id };
-  return { ...baseKey(seat), sub: { y: seat.facing === 'up' ? -1 : 2, x: 0, uid: -avatar.id } };
+  const behind = avatar.state !== 'lie' && seat.facing === 'up';
+  return { ...baseKey(seat), sub: { y: behind ? -1 : 2, x: 0, uid: -avatar.id } };
 }

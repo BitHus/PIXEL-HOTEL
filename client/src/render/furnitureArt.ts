@@ -4,7 +4,7 @@
 // lighter) above it, with a 1 px dark warm outline around the whole item.
 
 import { Graphics } from 'pixi.js';
-import { PALETTE, type ArtBox, type Facing, type FurnitureType } from '@pixel-hotel/shared';
+import { PALETTE, type ArtBox, type Facing, type FurnitureType, type Rect } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
 import { shade } from './colors.ts';
 
@@ -51,8 +51,9 @@ export type ArtRect = [x: number, y: number, w: number, h: number, color: string
  * outline of every box first, then each box's top face and front face. Used for the room
  * sprites and the small inventory icons.
  */
-export function furnitureRects(type: FurnitureType, facing: Facing): ArtRect[] {
-  const { boxes } = boxesForFacing(type, facing);
+export function furnitureRects(type: FurnitureType, facing: Facing, role?: ArtBox['role']): ArtRect[] {
+  const all = boxesForFacing(type, facing).boxes;
+  const boxes = role === undefined ? all : all.filter((b) => b.role === role);
   const out: ArtRect[] = [];
   for (const b of boxes) {
     const [x, y, w, h] = [b.dx, b.dy - b.z - b.h - b.d, b.w, b.h + b.d];
@@ -67,9 +68,20 @@ export function furnitureRects(type: FurnitureType, facing: Facing): ArtRect[] {
   return out;
 }
 
-/** Draws the item with the anchor at (0, 0). Mirror it with scale.x = -1 for 'left'. */
-export function drawFurniture(type: FurnitureType, facing: Facing): Graphics {
+/**
+ * Draws the item with the anchor at (0, 0). Mirror it with scale.x = -1 for 'left'. With a role,
+ * only the boxes of that role (the 'cover' blanket drawn again over a lying avatar).
+ */
+export function drawFurniture(type: FurnitureType, facing: Facing, role?: ArtBox['role']): Graphics {
   const g = new Graphics();
-  for (const [x, y, w, h, c] of furnitureRects(type, facing)) g.rect(x, y, w, h).fill(c);
+  for (const [x, y, w, h, c] of furnitureRects(type, facing, role)) g.rect(x, y, w, h).fill(c);
   return g;
+}
+
+/** The floor rectangles (relative to the anchor, mirroring applied) of the boxes with this role. */
+export function roleFloorRects(type: FurnitureType, facing: Facing, role: NonNullable<ArtBox['role']>): Rect[] {
+  const { boxes, mirror } = boxesForFacing(type, facing);
+  return boxes
+    .filter((b) => b.role === role)
+    .map((b) => ({ x: mirror ? -(b.dx + b.w) : b.dx, y: b.dy - b.d, w: b.w, h: b.d }));
 }

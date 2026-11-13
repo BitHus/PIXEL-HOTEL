@@ -247,8 +247,16 @@ export const DEBUG_NAV_OVERLAY_ALPHA = 0.18;
 // ---------- Furniture in the client (step 4) ----------
 /** Opacity of the build mode ghost. */
 export const GHOST_ALPHA = 0.75;
-/** A tapped seat is only sat on if the walk ends this close (px) to its stand point. */
-export const SIT_REACH_PX = 24;
+
+// ---------- Sitting and lying (step 5b) ----------
+/** A seat's approach point counts as reached if the walk ends this close (px) to it. */
+export const APPROACH_REACH_PX = 28;
+/** On arrival the avatar slides onto the seat in this many ms (no pathfinding). */
+export const SEAT_SLIDE_MS = 150;
+/** Lying: from the middle of the body to the middle of the head, floor px. */
+export const LIE_HEAD_PX = 23;
+/** Lying: the body is drawn this many px above the floor (on the mattress). */
+export const LIE_LIFT_PX = 12;
 
 // ---------- Placing and the item menu (step 4b) ----------
 /** Gap between the item (or ghost) and the floating menu or button bar above it, screen px. */
