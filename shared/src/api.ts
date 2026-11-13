@@ -7,6 +7,7 @@ import type { Avatar, AvatarLook } from './avatar.ts';
 import type { Room } from './room.ts';
 import type { ChatLine } from './gameState.ts';
 import type { Pose } from './furniture.ts';
+import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
 
 export interface RoomState {
   room: Room;
@@ -21,6 +22,8 @@ export interface Inventory {
   materials: Partial<Record<MaterialId, number>>;
   /** Furniture type ids per hotbar slot (null = empty). */
   hotbar: (string | null)[];
+  /** Which type sits in which bag slot (Furniture and Materials tabs). */
+  bag: BagLayout;
 }
 
 /** Where a ghost was put when the player pressed ✓ (the same input the ghost was planned from). */
@@ -67,8 +70,12 @@ export interface GameAPI {
   /** Put a placed item (and what stands on it) back in the inventory. */
   pickUpItem(uid: number): Promise<ItemsResult>;
   getInventory(): Promise<Inventory>;
-  /** Put a furniture type in a hotbar slot (null empties it). Returns the hotbar. */
-  setHotbarSlot(index: number, typeId: string | null): Promise<(string | null)[]>;
+  /** Move a stack from one slot to another (they swap if both are full). Null = refused. */
+  moveSlot(from: SlotRef, to: SlotRef): Promise<SlotLayout | null>;
+  /** Move a hotbar stack to the first free bag slot. Null = the slot was empty. */
+  hotbarToBag(index: number): Promise<SlotLayout | null>;
+  /** Sort a bag tab (catalog order) or Stack it (merge equal items, close the gaps). */
+  tidyBag(tab: BagTab, how: 'sort' | 'stack'): Promise<SlotLayout>;
   setLook(look: AvatarLook): Promise<AvatarLook>;
   /** Say something in the current room. Null if the text is empty. */
   chat(text: string): Promise<ChatLine | null>;

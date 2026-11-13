@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countInInventory, furnitureStacks, materialStacks, nextInventoryUid, setHotbarSlot } from './inventory.ts';
+import { countInInventory, furnitureStacks, materialStacks, nextInventoryUid } from './inventory.ts';
 import { applyChange } from './ledger.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { confirmPlacing, startNewPlacing } from './placing.ts';
@@ -59,19 +59,3 @@ describe('inventory stacks', () => {
   });
 });
 
-describe('hotbar', () => {
-  const empty = Array<string | null>(6).fill(null);
-  it('puts a type in a slot and empties a slot', () => {
-    const h = setHotbarSlot(empty, 2, 'chair');
-    expect(h).toEqual([null, null, 'chair', null, null, null]);
-    expect(setHotbarSlot(h, 2, null)).toEqual(empty);
-  });
-  it('keeps a type in one slot only (swaps with the target slot)', () => {
-    const h = setHotbarSlot(setHotbarSlot(empty, 0, 'chair'), 1, 'table');
-    expect(setHotbarSlot(h, 1, 'chair')).toEqual(['table', 'chair', null, null, null, null]);
-    expect(setHotbarSlot(h, 4, 'chair')).toEqual([null, 'table', null, null, 'chair', null]);
-  });
-  it('ignores a slot index out of range', () => {
-    expect(setHotbarSlot(empty, 6, 'chair')).toEqual(empty);
-  });
-});

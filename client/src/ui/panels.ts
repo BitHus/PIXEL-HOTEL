@@ -5,7 +5,8 @@ export type PanelName = 'bag' | 'avatar' | 'chat' | 'settings';
 
 export interface Panels {
   readonly open: PanelName | null;
-  add(name: PanelName, panel: HTMLElement, onOpen?: () => void, onClose?: () => void): void;
+  /** Adds a panel; a close button (✗) goes in the top-right corner of `closeHost` (default: the panel). */
+  add(name: PanelName, panel: HTMLElement, onOpen?: () => void, onClose?: () => void, closeHost?: HTMLElement): void;
   toggle(name: PanelName): void;
   show(name: PanelName): void;
   close(): void;
@@ -36,8 +37,16 @@ export function createPanels(): Panels {
     get open() {
       return open;
     },
-    add(name, el, onOpen, onClose) {
+    add(name, el, onOpen, onClose, closeHost = el) {
       el.hidden = true;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'btn panel-close';
+      x.textContent = '✗';
+      x.title = 'Close (Esc)';
+      x.setAttribute('aria-label', 'Close');
+      x.addEventListener('click', () => set(null));
+      closeHost.appendChild(x);
       panels.set(name, { el, onOpen, onClose });
     },
     toggle: (name) => set(open === name ? null : name),

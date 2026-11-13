@@ -17,6 +17,7 @@ import {
   START_XP,
 } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
+import { arrangeForInventory, emptyBag } from './bag.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { createRoom } from './room.ts';
@@ -70,11 +71,18 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     ],
     items: [],
     hotbar: Array.from({ length: HOTBAR_SLOTS }, () => null),
+    bag: emptyBag(),
     currentRoomId: config.hotelRoomId,
     nextUid: 1,
     ledger: [],
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);
   if (!state) throw new Error('bad new player config');
-  return state;
+  return arrangeState(state);
+}
+
+/** The state with its hotbar and bag layout matched to its inventory (bag.ts arrangeSlots). */
+export function arrangeState(state: GameState): GameState {
+  const l = arrangeForInventory({ hotbar: state.hotbar, bag: state.bag }, state.items, state.player.materials);
+  return { ...state, hotbar: l.hotbar, bag: l.bag };
 }

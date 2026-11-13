@@ -153,7 +153,10 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   px, feet at the bottom center. Animations: idle, sit (down, left and right only), and walk
   (4 frames). In pass 1 only the idle sprite is drawn, and the game bobs the sprite 2 px up
   and down while the avatar walks. Walk frames are added later and used when they exist.
-- Placeholder avatar: drawn in code from boxes.
+- Placeholder avatar: drawn in code from boxes. The current box avatar (its look,
+  proportions and colours, client/src/render/avatarSprite.ts) is the approved base for the
+  character: do not change its shape, and future avatar art (sprites, walk and sit frames)
+  keeps these proportions.
 - Avatar: { id, name, look: { skin, hair, hairStyle, shirt, legs, shoes }, roomId, x, y (the
   feet, in px), facing, state }
 
@@ -303,7 +306,11 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   its own shades.
 - Sprite sheets: PNG + JSON (frame name -> x, y, w, h, anchor). Nearest-neighbour scaling
   only.
-- UI: HTML/CSS over the canvas. Free open-license pixel font, hosted locally.
+- UI: HTML/CSS over the canvas. Free open-license pixel font, hosted locally. The screen
+  layout (info panel top-left, icon buttons on the right edge, hotbar bottom-center, debug
+  tools in Settings), the frame style and the interaction patterns are in
+  docs/UI-REFERENCE.md. Read it before any step that adds or changes UI, and put new buttons
+  and panels where it says.
 
 13. SAFETY AND PRIVACY
 - Accounts need only a username and a password. No email, real name or birthday.
@@ -340,7 +347,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
 Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture), 4b (placing
-and the item menu) and 5 (inventory, UI, chat, local saving, camera intro) are done.
+and the item menu) and 5 (inventory, UI, chat, local saving, camera intro; the bag reworked to the
+docs/UI-REFERENCE.md layout with parchment panels) are done.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -368,11 +376,13 @@ Layout:
   nav.ts also exports reachableCells and nearestFreeCell.
   Step 5: materials.ts (MATERIAL_TYPES, getMaterialType, isMaterialId), gameState.ts
   (GameState: player, look, rooms, items (ALL furniture; roomId null = inventory), hotbar,
-  currentRoomId, nextUid, ledger; ChatLine), ledger.ts (applyChange: the ONE function for gold,
+  bag (BagLayout), currentRoomId, nextUid, ledger; ChatLine), ledger.ts (applyChange: the ONE function for gold,
   material and new-furniture changes; writes a LedgerEntry; null if something would go below
-  0), newPlayer.ts (createNewPlayer(config, at), DEFAULT_NEW_PLAYER, styleKey), inventory.ts
-  (inventoryItems, furnitureStacks (stacked by type, furniture.json order), countInInventory,
-  nextInventoryUid, materialStacks, setHotbarSlot (a type is in the hotbar once; swaps)),
+  0), newPlayer.ts (createNewPlayer(config, at), DEFAULT_NEW_PLAYER, styleKey, arrangeState),
+  inventory.ts (inventoryItems, furnitureStacks (stacked by type, furniture.json order),
+  countInInventory, nextInventoryUid, materialStacks), bag.ts (BagTab, SlotArea, SlotRef,
+  BagLayout, SlotLayout, emptyBag, arrangeSlots / arrangeForInventory, canMoveBetween,
+  moveSlot (move or swap), hotbarToBag, sortBag, stackBag),
   chat.ts (cleanChatText), save.ts (SaveFile, saveKey, toSaveText, readSave, MIGRATIONS,
   isGameState).
 - shared/data/materials.json: wood 3, cloth 6, bone 4, crystal 15 (+ a placeholder icon color).
@@ -408,11 +418,15 @@ Layout:
   is on), plus the B key.
 - client/src/ui (step 5): ui.css (THE frame style and all UI CSS; the pixel font Pixelify Sans,
   SIL OFL, is hosted in client/src/fonts with its license), dom.ts (el, textButton,
-  iconButton, typing), pixelIcons.ts (pixel-map SVG icons: bag, avatar, chat, gear, coin),
+  iconButton, typing), pixelIcons.ts (pixel-map SVG icons: bag, avatar, chat, gear, coin,
+  chair, wood, sort, stack), format.ts (shortNumber: 1.2k, tested),
   itemIcon.ts (inventory icons: a small version of the boxes / a material box; fitRects tested),
-  press.ts (tap / long press / drag on HTML slots), panels.ts (one side panel open at a time),
+  press.ts (tap / long press / drag on HTML slots), panels.ts (one side panel open at a time;
+  adds the ✗ close button),
   sideButtons.ts (right-edge column), infoPanel.ts (gold, room name, Hotel / Shop), hotbar.ts,
-  bagPanel.ts (tabs, grid, carry to the hotbar), avatarPanel.ts, chatPanel.ts (log + input),
+  bagPanel.ts (the inventory panel of docs/UI-REFERENCE.md: icon tabs, hotbar row, 36-slot
+  grid, Sort / Stack, gold strip; picking up and dropping stacks; slotRefOf), avatarPanel.ts,
+  chatPanel.ts (log + input),
   chatBubbles.ts, settingsPanel.ts, toast.ts.
 - client/src/build/placer.ts: Placer (one placing session + the ghost drawing; startNew takes
   an inventory item of the type (false if none), place() asks hooks.commit (the GameAPI),
@@ -424,14 +438,18 @@ Layout:
 Conventions:
 - UI LAYOUT RULE (step 5). The room fills the whole screen; all UI sits on top of it at the
   edges, never in solid bars. Every frame, button, slot and panel uses the one frame style in
-  client/src/ui/ui.css (dark wood, 2 px dark warm outline, lighter top edge, square corners,
-  pixel font, at least 44 px touch size, no default browser buttons). Places:
+  client/src/ui/ui.css, as described in docs/UI-REFERENCE.md section 3: light parchment fill,
+  a 3 px mid-brown wooden border with a 1 px darkest-brown outline outside and a 1 px lighter
+  inner edge, dark brown text, square corners, pixel font, at least 44 px touch size, no default
+  browser buttons. Slots are a shade darker than the panel with a darker inset edge; the
+  selected slot has a bright orange border. Places:
   - Top-left: the info panel (gold with a coin icon, room name) with the room switcher under it.
     New player stats (xp, level) go into this panel.
   - Right edge: one column of square icon buttons (Bag, Avatar, Chat, Settings), tooltips via
     title. New screens add an icon button to this column (sideButtons.ts) and a panel.
   - Panels: open to the left of that column, top aligned, never covering the hotbar; one at a
-    time (panels.ts). A tap on the room closes the open panel. Escape closes it.
+    time (panels.ts), each with a ✗ in its top-right corner. A tap on the room closes the open
+    panel. Escape closes it. Below 680 px wide the bag is a bottom sheet above the hotbar.
   - Bottom center: the hotbar (6 slots, icons only, a count for stacks, the last used slot has a
     bright warm border). Hidden while placing.
   - Floating bars (✓ ↻ ✗, the item menu) sit above their target (anchorAbove). Toasts appear
@@ -450,13 +468,22 @@ Conventions:
   game was opened, or before an import / restore / new game. On open: a damaged save loads the
   backup (the damaged text is kept under '<key>.damaged'); an older version is migrated with
   save.ts MIGRATIONS, or the game resets with a message (old save kept as the backup). When the
-  GameState shape changes: bump SAVE_VERSION and add MIGRATIONS[old].
+  GameState shape changes: bump SAVE_VERSION and add MIGRATIONS[old]. SAVE_VERSION is 2
+  (MIGRATIONS[1] adds an empty bag layout; arrangeState fills it).
 - INVENTORY (step 5): the inventory is the player's furniture with roomId null plus
-  player.materials. The bag and the hotbar stack furniture by type; the hotbar stores type ids
-  and places the oldest inventory item of that type. A hotbar slot is dimmed when none are left
-  or the type cannot go in this room. Long-press (or mouse-drag) a bag slot onto a hotbar slot
-  to put it there (dropped elsewhere: the next hotbar tap takes it); long-press a hotbar slot to
-  empty it. Player.unlockedStyles holds 'floor:<id>' / 'wall:<id>' (styleKey).
+  player.materials (the counts). WHERE each stack sits is GameState.hotbar + GameState.bag
+  (bag.ts): three slot areas, 'hotbar' (6), 'furniture' and 'materials' (BAG_SLOTS = 36 each).
+  A slot holds a type id; every type the player has is in exactly ONE slot (hotbar or bag).
+  arrangeState runs on every LocalGameAPI commit: gone types leave the bag, new ones go in the
+  first free slot (a full tab grows by one slot, nothing is lost). A hotbar slot keeps its type
+  when the last one is placed (dimmed), so Pick up puts it back there. The hotbar places the
+  oldest inventory item of its type. Materials never go in the hotbar and cannot be placed.
+  Bag panel: tap a furniture stack = place it (the panel closes). Move = drag (mouse), or
+  long-press + drag (touch); a drop on a slot moves there (full slots swap), a drop elsewhere
+  keeps it picked up until you tap a slot. A tap on a material picks it up, then tap a slot.
+  The main hotbar takes drops too. Long-press a main hotbar slot: back to the bag. Sort =
+  catalog order, packed; Stack = merge equal stacks and close the gaps (with one slot per type
+  it only closes gaps). Player.unlockedStyles holds 'floor:<id>' / 'wall:<id>' (styleKey).
 - CHAT (step 5): cleanChatText (one line, max 120 characters). Bubbles are HTML above the
   head, the newest lowest, fade over the last CHAT_BUBBLE_FADE_MS of CHAT_BUBBLE_MS. The chat log
   (CHAT_LOG_MAX lines) is not saved and is cleared when you change rooms.

@@ -279,10 +279,14 @@ export const START_SHOP_ROOM_ID = 2;
 export const START_LOOK = { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 } as const;
 /** Slots in the hotbar at the bottom of the screen. */
 export const HOTBAR_SLOTS = 6;
-/** The bag panel shows at least this many slots (empty ones fill the grid). */
-export const BAG_MIN_SLOTS = 24;
+/** Slots in each bag tab (Furniture, Materials). Empty slots stay visible. If a new item type
+ *  finds no free slot, the tab grows by one slot so nothing is ever lost. */
+export const BAG_SLOTS = 36;
+/** Bag grid columns: on a wide screen, and on a phone (bottom sheet). */
+export const BAG_COLUMNS = 9;
+export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
