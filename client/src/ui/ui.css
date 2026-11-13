@@ -239,10 +239,6 @@
   font-size: 14px;
 }
 
-.room-switch {
-  display: flex;
-  gap: 4px;
-}
 
 /* ---------- Right edge: icon buttons ---------- */
 .side-buttons {
@@ -1766,10 +1762,16 @@
 }
 
 .run-side {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-items: center;
   align-items: center;
   gap: 6px;
+}
+
+/* The run gold over the potion and food buttons (step 9b: two buttons side by side). */
+.run-side .run-gold {
+  grid-column: 1 / -1;
 }
 
 .run-gold {
@@ -1892,4 +1894,79 @@
 .workshop-panel .slot .pixel-icon {
   width: 32px;
   height: 32px;
+}
+
+/* ---------- Step 9b: the travel panel (Map), the lunch box picker ---------- */
+.travel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.travel-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 4px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--slot-bg);
+  border: 3px solid var(--wood-light);
+  outline: 1px solid var(--outline);
+  cursor: pointer;
+}
+
+.travel-card .slot .pixel-icon {
+  width: 70%;
+  height: 70%;
+}
+
+.travel-card.here {
+  border-color: var(--select);
+  cursor: default;
+}
+
+.travel-card.locked {
+  opacity: 0.5;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+
+.travel-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lunch-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.lunch-box {
+  display: flex;
+  gap: 4px;
+}
+
+.lunch-box .slot,
+.lunch-food .slot {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+
+.lunch-food {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.lunch-food .slot {
+  position: relative;
 }

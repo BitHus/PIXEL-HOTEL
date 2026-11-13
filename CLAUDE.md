@@ -470,8 +470,9 @@ and the item menu), 5 (inventory, UI, chat, local saving, camera intro; the bag 
 docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying reworked after
 5b: drawn inside the bed only), 7 (shop, gold and upgrades; serving at the counter added after
 it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
-dungeon in the game: view, HUD, screens, crafting, the Blacksmith) are done. Step 6
-(docs/STYLE.md) has not been done yet.
+dungeon in the game: view, HUD, screens, crafting, the Blacksmith) and 9b (farm and cooking) are
+done. Step 6 (docs/STYLE.md) has not been done yet. Next: step 9c (mine and forge,
+docs/NEXT-STEPS.md).
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -599,6 +600,63 @@ Layout:
   - tools/simulate-economy.ts (npm run simulate, uses tsx): cheap / fair / greedy prices, appeal
     0 and 60, 6 items, 1 h and 8 h; prints gold, items sold, time on the slot, blocked slot time.
     tools/tsconfig.json is part of npm run typecheck.
+- Step 9b (farm and cooking, section 10b):
+  - Data: shared/data/crops.json (turnip, potato, carrot, pumpkin, glowcap: seed id and name,
+    seedPrice (null = not sold: the glowcap spore), seedValue, growMinutes, baseValue, colours),
+    shared/data/food.json (the 5 recipes: inputs, effect { kind: heal | attack | max_hp |
+    attack_cooldown, amount }, baseValue). roomShapes.json gained the 'farm' shape (kind 'farm',
+    576x384, 704x480, 832x576); styles.json gained grass (floor) and hedge (wall), not in the
+    catalog. Owner may tune: the food baseValues (a bit above their ingredients), seedValue = the
+    seed price (spore 12) were chosen by the AI; the brief gives none.
+  - Stackable goods: MaterialId now covers the dungeon materials plus seeds, crops and food
+    (types.ts BaseMaterialId, SeedId, CropId, FoodId; MaterialType.group 'material' | 'seed' |
+    'crop' | 'food'). materials.ts builds MATERIAL_TYPES from materials.json + crops.json +
+    food.json and has CROP_TYPES, FOOD_TYPES, materialGroup, isSeedId, isFoodId, cropOfSeed,
+    getCropType, getFoodType. They all live in player.materials, stack in the bag's Materials tab,
+    go on shop slots (shop.ts lootCategory: crops and food = new category 'food', seeds =
+    'materials') and through the ledger.
+  - shared/src: farmLayout.ts (farmPlotCount, plotRect, plotRects, plotCenter, potRect,
+    fixedBlockers (the pot), noPlaceRects (plots + pot), plotAt), farm.ts (Plot { crop,
+    plantedAt }, FarmState { roomId, plots }, emptyFarm, growPlots, growMs, plant, stageOf (sprout
+    for the first half of the time, half, ripe), ripeInMs, harvest (HARVEST_MIN..MAX), plantPlot
+    (ledger 'plant'), harvestPlot (ledger 'harvest'), seedsForSale, buySeeds (ledger 'seeds'),
+    farmCounts), cooking.ts (canCook, cook: ledger 'cook'). Config: FARM_UPGRADE_COST (200, 600),
+    FARM_PLOTS (20 top-left corners, all inside the level 1 farm), FARM_PLOTS_PER_LEVEL (6, 12,
+    20), FARM_PLOT_SIZE 32, COOKING_POT (fixed spot), SEED_PACK 5, LUNCH_BOX_MAX 3,
+    GLOWCAP_SPORE_CHANCE 0.05, MINE_UNLOCK_LEVEL 3, START_FARM_ROOM_ID 3, FARM_HINT 4.
+  - The farm is a Room (kind 'farm') in GameState.rooms plus GameState.farm (the plots) and
+    Player.farmRoomId. createNewPlayer makes it (level 1, 6 empty plots). upgradeRoom works for it
+    (upgradeCost uses FARM_UPGRADE_COST; growPlots adds empty plots; furniture standing on a new
+    plot goes back to the bag, like the door zone). fitsRoomKind: the farm takes home furniture
+    (placeIn 'hotel' or 'both'). canPlace refuses any footprint (rugs too) over a plot or the
+    pot. furniture.ts roomBlockers(room, items) = itemBlockers + the pot: use it for nav grids.
+  - Dungeon: RunPlayer gained food (the lunch box), buffs (FoodBuff 'attack' | 'max_hp' |
+    'attack_cooldown') and attackCooldownMs (350, or 300 with the broth). Input { t: 'eat' } eats
+    the FIRST food in the box that does something now (healing food: when hurt and the potion
+    cooldown is ready, and it starts that cooldown; a buff: when that kind is not taken yet);
+    food that would do nothing stays in the box. Event 'eat'. A level up keeps the pie's +10 max
+    hp. Death empties the box into run.lost. bank.ts packLunch / startRun(state, seed, at, round,
+    lunch) (ledger 'lunch_box'); finishRun gives back the food not eaten. A chest that opens rolls
+    GLOWCAP_SPORE_CHANCE for one glowcap_spore (also an extra rng call).
+  - bag.ts: fitsArea(area, id): the hotbar takes furniture AND seeds. A seed type the player gets
+    for the first time goes to a free hotbar slot (else the Materials tab). moveSlot checks both
+    ids of a swap; hotbarToBag puts a seed back in the Materials tab.
+  - GameAPI: getFarm (FarmView { roomId, level, plots, at }), plant, harvest (HarvestResult),
+    buySeeds, cook, dungeonStart(lunch). Planting finishes the farm hint.
+  - client: farm/farmScreen.ts (FarmScreen: plots on the rug layer, the pot in the depth-sorted
+    objects, ripe markers in RoomView.markerLayer; play mode taps: empty plot = walk there and plant
+    (pickSeed: the selected hotbar seed, else the first seed the player has), ripe plot = walk and
+    harvest, growing plot = "ripe in n min", the pot = the Cooking panel; the action happens in
+    arrived() when the walk ends), farm/farmArt.ts (drawPlot, drawCrop, drawPot, drawRipeMarker).
+    ui/travelPanel.ts (the Map panel: cards Hotel, Shop, Farm, Mine (locked: "Opens at level 3",
+    then "Coming soon" until step 9c), Dungeon), ui/cookingPanel.ts (foodEffectText),
+    ui/lunchPicker.ts (in the dungeon's "Enter this?" panel: confirmBuy gained `extra`). Catalog
+    gained the Seeds tab (Buy = 1, xN = SEED_PACK, both ask first). The run bar gained the food
+    button (E key). The hotbar shows seeds (tap = pick that seed). styleArt draws grass and hedge.
+    infoPanel: the Hotel / Shop switcher is gone (ROOM_NAMES); the Map button sits under the quest
+    button. The Room panel on the farm shows level, plots and Upgrade (no style pickers).
+  - Tests: shared/src/farm.test.ts, cooking.test.ts, dungeon/food.test.ts, bag.test.ts (seeds),
+    save.test.ts (migration 6), client/src/api/farmAPI.test.ts (the whole loop through the API).
 - Step 9 (the dungeon in the game):
   - shared: GameState.run, api.ts RunView / RunResult / RunUpdate and the dungeon methods,
     DungeonRun.lastHitBy, the 'mimic' event's chestId, config MIMIC_WAKE_MS, RUN_SAVE_EVERY_MS,
@@ -611,7 +669,7 @@ Layout:
     Crafting and Blacksmith). infoPanel.ts gained setStats (level + xp bar, always) and setRun
     (floor name and hp bar in the dungeon; the room switcher hides). pixelIcons gained dungeon,
     workshop, sword, armor, potion, heart. confirmBuy takes price null (free). PanelName gained
-    'workshop'. Side column: Quest, Bag, Build, Dungeon (badge: the key cost or 'free'), Catalog,
+    'workshop'. Side column (since step 9b): Quest, Map, Bag, Build, Dungeon (badge: the key cost or 'free'), Catalog,
     Workshop, Room, Avatar, Chat, Settings.
   - client/src/api/dungeonAPI.test.ts: the step 9 API tests.
 - Step 8 (dungeon logic; everything pure, in shared/):
@@ -651,8 +709,8 @@ Conventions:
   inner edge, dark brown text, square corners, pixel font, at least 44 px touch size, no default
   browser buttons. Slots are a shade darker than the panel with a darker inset edge; the
   selected slot has a bright orange border. Places:
-  - Top-left: the info panel (gold with a coin icon, room name) with the room switcher under it.
-    New player stats (xp, level) go into this panel.
+  - Top-left: the info panel (gold with a coin icon, room name, level and xp). (The room switcher
+    that sat under it was replaced in step 9b by the Map button and its travel panel.)
   - Right edge: one column of square icon buttons (Bag, Build, Avatar, Chat, Settings), tooltips via
     title. New screens add an icon button to this column (sideButtons.ts) and a panel.
   - Panels: open to the left of that column, top aligned, never covering the hotbar; one at a
@@ -824,12 +882,12 @@ Conventions:
   (at least TEXT_MIN_MS 4 s + TEXT_MS_PER_WORD 0.35 s per word), then fades over TEXT_FADE_MS.
   Toasts (toast.ts; a tap hides them) and chat bubbles use it. docs/UI-REFERENCE.md has the rule.
 - HINTS (step 7): config HINTS, GameState.hintsDone counts the finished ones, shown one at a
-  time in the hint box under the room switcher. The hint stays until the player taps it ("tap
+  time in the hint box under the info panel. The hint stays until the player taps it ("tap
   to continue ▸"); a tapped hint stays away until the next one comes or the player taps the
   quest button (after step 8): the scroll icon at the TOP of the right-edge column, hidden when
   there is no quest, selected ('on') while the quest card shows, and blinking warm ('glow') while
   a quest is still going but its card is closed (HintBox.toggle / onChange in shopFeedback.ts).
-  The quest card (.quest-card) says "Quest n of 3", the task and "tap to hide". It opens to the
+  The quest card (.quest-card) says "Quest n of N" (N = HINTS.length, 5 since step 9b: the farm quest "plant your first turnip" is number 5), the task and "tap to hide". It opens to the
   left of the quest button with a small tail pointing at it; when that would overlap the
   top-left info column (phones) it goes under that column instead, without the tail. It steps
   aside while a side panel is open (setCovered). 1 is done by the first buy (a style as the first
@@ -902,7 +960,7 @@ Conventions:
     else walk there. Q or the potion button drinks.
   - Zoom: max(DUNGEON_DEVICE_PX_PER_ART_PX, round(DUNGEON_CSS_PX_PER_ART_PX * dpr)) device px per
     art px, settled like the rooms.
-  - The dungeon hint (HINTS[DUNGEON_HINT], "Quest 4 of 4") only shows while the shop has nothing
+  - The dungeon hint (HINTS[DUNGEON_HINT], "Quest 4 of 5") only shows while the shop has nothing
     for sale; the Dungeon button glows while it shows. Starting a run finishes it.
 - DUNGEON (step 8):
   - The dungeon never uses room shapes: its own 40 x 40 grid of 32 px blocks (DungeonMap.blocks,
@@ -930,7 +988,10 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 6: MIGRATIONS[5] adds run: null (no run in progress).
+- SAVE_VERSION is 7: MIGRATIONS[6] (step 9b) adds a level 1 farm room (the next free room id) with
+  empty plots, Player.farmRoomId, and gives a saved run's player food [], buffs [] and
+  attackCooldownMs 350.
+- (Before 7:) MIGRATIONS[5] adds run: null (no run in progress).
 - (Before 6:) MIGRATIONS[4] gives old rooms the square shapes, the old look clothing
   ids (short, long_sleeve, trousers), unlockedClothing [] and playerCreated true.
 - (Before 5:) MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and

@@ -1,10 +1,15 @@
-// The catalog (step 7, Catalog button in the right-edge column): three tabs, Home, Shop and
-// Decor (floor and wall styles), each a list of rows with an icon, the name, where it goes, the
+// The catalog (step 7, Catalog button in the right-edge column): four tabs, Home, Shop, Decor
+// (floor and wall styles) and Seeds (step 9b: seeds for the farm, bought 1 or SEED_PACK at a time), each a list of rows with an icon, the name, where it goes, the
 // price and Buy. Buying furniture puts it in the bag; buying a style unlocks it forever (it then
 // shows "Owned"; apply it in the Room panel). Buy is greyed out when the gold is short.
 
 import {
+  SEED_PACK,
   STYLE_TYPES,
+  getCropType,
+  seedsForSale,
+  type CropType,
+  type SeedId,
   catalogPrice,
   catalogTypes,
   stylePrice,
@@ -14,15 +19,16 @@ import {
   type StyleType,
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
-import { furnitureIconUrl } from './itemIcon.ts';
+import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
 import { pixelIcon } from './pixelIcons.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
-export type CatalogTab = 'home' | 'shop' | 'decor';
+export type CatalogTab = 'home' | 'shop' | 'decor' | 'seeds';
 
 export interface CatalogHooks {
   buyItem(typeId: string): void;
   buyStyle(kind: StyleKind, id: string): void;
+  buySeeds(seed: SeedId, qty: number): void;
 }
 
 export interface CatalogPanel {
@@ -34,9 +40,14 @@ const TABS: [CatalogTab, string][] = [
   ['home', 'Home'],
   ['shop', 'Shop'],
   ['decor', 'Decor'],
+  ['seeds', 'Seeds'],
 ];
 
 const WHERE: Record<FurnitureType['placeIn'], string> = { hotel: 'Hotel room', shop: 'Shop', both: 'Hotel or shop' };
+
+function growText(c: CropType): string {
+  return c.growMinutes >= 60 ? `${c.growMinutes / 60} h` : `${c.growMinutes} min`;
+}
 
 export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): CatalogPanel {
   const panel = el('div', 'frame panel catalog-panel');
@@ -91,9 +102,24 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
       () => hooks.buyStyle(s.kind, s.id),
     );
 
+  const seedRow = (c: CropType): HTMLElement => {
+    const price = c.seedPrice ?? 0;
+    const r = row(materialIconUrl(c.seed), c.seedName, `Farm: ripe in ${growText(c)}, worth ${c.baseValue}`, price, false, () => hooks.buySeeds(c.seed, 1));
+    const pack = textButton(`x${SEED_PACK}`, () => hooks.buySeeds(c.seed, SEED_PACK));
+    pack.disabled = gold < price * SEED_PACK;
+    pack.title = `${SEED_PACK} for ${price * SEED_PACK} gold`;
+    r.appendChild(pack);
+    return r;
+  };
+
   const draw = (): void => {
     for (const [t, b] of tabButtons) b.classList.toggle('on', t === tab);
     list.replaceChildren();
+    if (tab === 'seeds') {
+      list.append(el('div', 'panel-info', `Plant seeds on your farm. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`));
+      for (const c of seedsForSale()) list.appendChild(seedRow(c));
+      return;
+    }
     if (tab === 'decor') {
       for (const s of STYLE_TYPES.filter((x) => x.inCatalog)) list.appendChild(styleRow(s));
       return;

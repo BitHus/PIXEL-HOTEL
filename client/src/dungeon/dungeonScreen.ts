@@ -35,6 +35,7 @@ import {
   type Camera,
   type DungeonInput,
   type DungeonRun,
+  type FoodBuff,
   type GameAPI,
   type Point,
   type RunResult,
@@ -60,6 +61,9 @@ export interface DungeonContext {
   /** "hotel room" or "shop": where the result screen's button goes. */
   backTo(): string;
 }
+
+/** The floating text when a food buff starts (step 9b). */
+const BUFF_TEXT: Record<FoodBuff, string> = { attack: '+1 attack', max_hp: '+10 max hp', attack_cooldown: 'faster hits' };
 
 export class DungeonScreen {
   private readonly view: DungeonView;
@@ -141,6 +145,17 @@ export class DungeonScreen {
       return;
     }
     this.input({ t: 'drink_potion' });
+  }
+
+  /** The food button or E (step 9b): eats the first lunch box food that does something now. */
+  eat(): void {
+    const run = this.run;
+    if (!run || this.halted) return;
+    if (run.player.food.length === 0) {
+      this.ctx.toast('Your lunch box is empty. Cook food at your farm and pick it when you enter.');
+      return;
+    }
+    this.input({ t: 'eat' });
   }
 
   /** Called every frame. */
@@ -275,6 +290,10 @@ export class DungeonScreen {
           break;
         case 'potion':
           this.floats.add(head(), `+${e.healed}`, 'heal');
+          break;
+        case 'eat':
+          if (e.healed > 0) this.floats.add(head(), `+${e.healed}`, 'heal');
+          if (e.buff) this.floats.add(head(), BUFF_TEXT[e.buff], 'xp');
           break;
         case 'level_up':
           flashScreen(this.ctx.ui, LEVEL_FLASH_MS);

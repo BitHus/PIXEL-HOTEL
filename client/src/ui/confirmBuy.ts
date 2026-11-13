@@ -17,6 +17,8 @@ export interface BuyQuestion {
   image?: string;
   /** The text on the yes button (default "Buy"). */
   yes?: string;
+  /** More to show under the thing (the dungeon's lunch box picker, step 9b). */
+  extra?: HTMLElement;
 }
 
 let open: ((ok: boolean) => void) | null = null;
@@ -72,7 +74,7 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
     const buttons = el('div', 'confirm-buttons');
     buttons.append(no, yes);
 
-    box.append(close, el('h2', 'panel-title', `${q.yes ?? 'Buy'} this?`), what, buttons);
+    box.append(close, el('h2', 'panel-title', `${q.yes ?? 'Buy'} this?`), what, ...(q.extra ? [q.extra] : []), buttons);
     shade.appendChild(box);
     // A tap on the dark area around the panel cancels.
     shade.addEventListener('pointerdown', (e) => {

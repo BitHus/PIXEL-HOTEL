@@ -26,8 +26,15 @@ import {
   stylePrice,
   upgradeCost,
   introZoom,
-  itemBlockers,
+  roomBlockers,
   roomBoundsRect,
+  farmCounts,
+  getMaterialType,
+  CROP_TYPES,
+  MINE_UNLOCK_LEVEL,
+  isSeedId,
+  type FoodId,
+  type SeedId,
   screenToWorld,
   hasSeats,
   standUpSpot,
@@ -82,7 +89,7 @@ import { createSettingsPanel } from './ui/settingsPanel.ts';
 import { createToast } from './ui/toast.ts';
 import { iconButton, typing } from './ui/dom.ts';
 import { confirmBuy } from './ui/confirmBuy.ts';
-import { furnitureIconUrl } from './ui/itemIcon.ts';
+import { furnitureIconUrl, materialIconUrl } from './ui/itemIcon.ts';
 import { stylePreviewUrl } from './render/styleArt.ts';
 import { CustomerViews } from './render/customerViews.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
@@ -95,6 +102,11 @@ import { pixelIcon } from './ui/pixelIcons.ts';
 import { createRunBar } from './ui/runBar.ts';
 import { createWorkshopPanel, gearEffect, recipeName } from './ui/workshopPanel.ts';
 import { DungeonScreen } from './dungeon/dungeonScreen.ts';
+import { FarmScreen } from './farm/farmScreen.ts';
+import { createCookingPanel } from './ui/cookingPanel.ts';
+import { createTravelPanel, type PlaceCard, type Place } from './ui/travelPanel.ts';
+import { createLunchPicker } from './ui/lunchPicker.ts';
+import { ROOM_NAMES } from './ui/infoPanel.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
@@ -214,11 +226,11 @@ async function start(): Promise<void> {
   });
   /** Furniture or debug blockers changed: redraw the debug overlay and re-path a walking avatar. */
   const roomChanged = (): void => {
-    blockers.showGrid(buildNavGrid(room, [...blockers.rects, ...itemBlockers(items, room.id)]));
+    blockers.showGrid(buildNavGrid(room, [...blockers.rects, ...roomBlockers(room, items)]));
     // The seat was moved or picked up: stand up next to it on a free spot (as the GameAPI does).
     const seated = seating.seated;
     if (seated !== null && !seating.stillThere(roomItem(seated.uid))) {
-      const grid = buildNavGrid(room, [...blockers.rects, ...itemBlockers(items, room.id)]);
+      const grid = buildNavGrid(room, [...blockers.rects, ...roomBlockers(room, items)]);
       avatar = seating.standUp(avatar, standUpSpot(grid, seated.seat));
     }
     if (seating.goal !== null) {
@@ -242,7 +254,7 @@ async function start(): Promise<void> {
   const label = createDebugLabel(ui);
   const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
   const panels = createPanels();
-  const info = createInfoPanel(ui, (kind) => void openRoomKind(kind));
+  const info = createInfoPanel(ui);
   const hint = createHintBox(ui, info.column);
   const floats = createSaleFloats(ui);
   const tillCoins = createTillCoins(ui);
@@ -266,6 +278,10 @@ async function start(): Promise<void> {
   // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
   const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn room-only');
   sideButtons.prepend(questButton);
+  // The Map button (step 9b), under the quest button: the travel panel with every place.
+  const mapButton = iconButton('map', 'Map: travel', () => panels.toggle('travel'), 'room-only');
+  questButton.after(mapButton);
+  panels.onChange(() => mapButton.classList.toggle('on', panels.open === 'travel'));
   panels.onChange(() => hint.setCovered(panels.open !== null));
   hint.onChange((quest, showing) => {
     questButton.hidden = quest === null;
@@ -276,7 +292,11 @@ async function start(): Promise<void> {
   });
 
   // The dungeon screen (step 9); created early, before any shop event can ask for the HUD.
-  const runBar = createRunBar(ui, () => dungeon.potion());
+  const runBar = createRunBar(
+    ui,
+    () => dungeon.potion(),
+    () => dungeon.eat(),
+  );
   const dungeon: DungeonScreen = new DungeonScreen(
     {
       app,
@@ -286,7 +306,7 @@ async function start(): Promise<void> {
       runBar,
       toast,
       dpr,
-      backTo: () => (room.kind === 'shop' ? 'shop' : 'hotel room'),
+      backTo: () => ROOM_NAMES[room.kind].toLowerCase(),
       onDone: async () => {
         setDungeonMode(false);
         items = await api.getItems();
@@ -430,6 +450,15 @@ async function start(): Promise<void> {
         toast(`${type.name} is in your bag.`);
       });
     },
+    buySeeds: async (seed, qty) => {
+      const m = getMaterialType(seed);
+      const price = (CROP_TYPES.find((c) => c.seed === seed)?.seedPrice ?? 0) * qty;
+      const sure = await confirmBuy(ui, { name: qty > 1 ? `${qty} ${m.name}` : m.name, detail: 'Goes into your hotbar or bag. Plant on your farm.', price, image: materialIconUrl(seed) });
+      if (!sure) return;
+      const ok = await api.buySeeds(seed, qty);
+      toast(ok ? `${m.name}: ${qty} in your ${inventory.hotbar.includes(seed) || !inventory.bag.materials.includes(seed) ? 'hotbar' : 'bag'}. Tap an empty plot on your farm.` : 'Not enough gold.');
+      await refreshInventory();
+    },
     buyStyle: async (kind, id) => {
       const s = getStyle(kind, id);
       const detail = `${kind === 'floor' ? 'Floor' : 'Wall'}: yours forever, put on this room now.`;
@@ -460,7 +489,7 @@ async function start(): Promise<void> {
       const r = roomId === room.id ? room : null;
       const cost = r ? upgradeCost(r) : null;
       if (r && cost !== null) {
-        const detail = `${r.kind === 'shop' ? 'Shop' : 'Hotel room'} to level ${r.level + 1}: the room grows.`;
+        const detail = `${ROOM_NAMES[r.kind]} to level ${r.level + 1}: ${r.kind === 'farm' ? 'more room and more plots' : 'the room grows'}.`;
         if (!(await confirmBuy(ui, { name: 'Room upgrade', detail, price: cost, yes: 'Upgrade' }))) return;
       }
       void api.upgradeRoom(roomId).then(async (next) => {
@@ -503,6 +532,60 @@ async function start(): Promise<void> {
     },
   });
   panels.add('workshop', workshop.el);
+
+  // ---------- The farm, cooking and travel (step 9b) ----------
+  const cooking = createCookingPanel(ui, (food) => {
+    void api.cook(food.id).then(async (ok) => {
+      toast(ok ? `Cooked: ${food.name}. It is in your bag.` : 'You need more crops.');
+      await refreshInventory();
+    });
+  });
+  panels.add('cooking', cooking.el);
+  const farm = new FarmScreen(view, {
+    api,
+    toast,
+    walkTo: (p) => walkTo(p),
+    openCooking: () => panels.show('cooking'),
+    pickSeed: () => {
+      const count = (id: string): number => (isSeedId(id) ? (inventory.materials[id] ?? 0) : 0);
+      const chosen = selectedSlot !== null ? inventory.hotbar[selectedSlot] : null;
+      if (chosen && count(chosen) > 0) return chosen as SeedId;
+      const any = [...inventory.hotbar, ...inventory.bag.materials].find((id) => id !== null && count(id) > 0);
+      return (any as SeedId | undefined) ?? null;
+    },
+    afterChange: async () => {
+      await refreshInventory();
+      await refreshHint();
+    },
+  });
+  const travel = createTravelPanel(ui, (place) => void travelTo(place));
+  panels.add('travel', travel.el, () => void refreshTravel());
+  async function refreshTravel(): Promise<void> {
+    const p = await api.getPlayer();
+    const f = await api.getFarm();
+    const s = await api.getShop();
+    const forSale = s.slots.filter((x) => x.loot).length;
+    const c = farmCounts(f, f.at);
+    const farmStatus =
+      c.ripe > 0 ? `${c.ripe} ${c.ripe === 1 ? 'crop' : 'crops'} ripe` : c.growing > 0 ? `${c.growing} growing` : `${c.empty} empty plots`;
+    const free = p.wallet.gold < DUNGEON_KEY_COST;
+    const cards: PlaceCard[] = [
+      { place: 'hotel', status: `Your room, level ${roomLevel(p.hotelRoomId)}`, locked: null, here: room.id === p.hotelRoomId },
+      { place: 'shop', status: forSale > 0 ? `${forSale} ${forSale === 1 ? 'item' : 'items'} for sale` : 'Nothing for sale', locked: null, here: room.id === p.shopRoomId },
+      { place: 'farm', status: farmStatus, locked: null, here: room.id === p.farmRoomId },
+      { place: 'mine', status: '', locked: p.level < MINE_UNLOCK_LEVEL ? `Opens at level ${MINE_UNLOCK_LEVEL}` : 'Coming soon', here: false },
+      { place: 'dungeon', status: free ? 'A free run' : `Key: ${DUNGEON_KEY_COST} gold`, locked: null, here: false },
+    ];
+    travel.refresh(cards);
+  }
+  const roomLevels = new Map<number, number>();
+  const roomLevel = (id: number): number => roomLevels.get(id) ?? 1;
+  async function travelTo(place: Place): Promise<void> {
+    panels.close();
+    if (place === 'dungeon') return enterDungeonAsked();
+    if (place === 'mine') return;
+    await openRoomKind(place);
+  }
 
   async function refreshShop(): Promise<void> {
     shop = await api.getShop();
@@ -555,7 +638,7 @@ async function start(): Promise<void> {
   /** Starts placing an inventory item of this type in the middle of the screen. */
   const startPlacing = (typeId: string): boolean => {
     if (!fitsRoomKind(getFurnitureType(typeId), room)) {
-      toast(`${getFurnitureType(typeId).name} cannot go in the ${room.kind === 'shop' ? 'shop' : 'hotel room'}.`);
+      toast(`${getFurnitureType(typeId).name} cannot go in the ${ROOM_NAMES[room.kind].toLowerCase()}.`);
       return false;
     }
     menu.close();
@@ -574,6 +657,19 @@ async function start(): Promise<void> {
       }
       const typeId = inventory.hotbar[index];
       if (!typeId) return;
+      // Seeds (step 9b): pick them for planting; the next tap on an empty plot plants one.
+      if (isSeedId(typeId)) {
+        const n = inventory.materials[typeId] ?? 0;
+        const name = getMaterialType(typeId).name;
+        if (n === 0) {
+          toast(`No ${name} left. Buy more in the Catalog (Seeds).`);
+          return;
+        }
+        selectedSlot = index;
+        hotbar.setSelected(index);
+        toast(room.kind === 'farm' ? `${name}: tap an empty plot to plant.` : `${name}: plant them on your farm (Map).`);
+        return;
+      }
       if (countInInventory(inventory.furniture, typeId) === 0) {
         toast(`No ${getFurnitureType(typeId).name} left in the bag.`);
         return;
@@ -616,6 +712,8 @@ async function start(): Promise<void> {
     if (!newIntro.running) info.setGold(p.wallet.gold);
     if (!dungeon.isActive) info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
     workshop.refresh(p);
+    cooking.refresh(p);
+    if (panels.open === 'travel') void refreshTravel();
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     dungeonBadge.textContent = free ? 'free' : String(DUNGEON_KEY_COST);
     dungeonButton.title = free ? 'Dungeon: a free run (you have less than 10 gold)' : `Dungeon: the key costs ${DUNGEON_KEY_COST} gold`;
@@ -634,6 +732,10 @@ async function start(): Promise<void> {
     hotbar.refresh(
       inventory.hotbar.map((typeId) => {
         if (typeId === null) return { typeId, count: 0, usable: false, name: '' };
+        if (isSeedId(typeId)) {
+          const n = materials[typeId] ?? 0;
+          return { typeId, count: n, usable: n > 0 && room.kind === 'farm', name: getMaterialType(typeId).name };
+        }
         const type = getFurnitureType(typeId);
         const count = countInInventory(inventory.furniture, typeId);
         return { typeId, count, usable: count > 0 && fitsRoomKind(type, room), name: type.name };
@@ -715,8 +817,10 @@ async function start(): Promise<void> {
     const p = await api.getPlayer();
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     const detail = free ? 'A free run, because you have less than 10 gold. Fight, open chests, bring the loot home.' : 'The key costs 10 gold. Fight, open chests, bring the loot home.';
-    if (!(await confirmBuy(uiRoot, { name: 'The crypt', detail, price: free ? null : DUNGEON_KEY_COST, yes: 'Enter' }))) return;
-    const run = await api.dungeonStart();
+    // Step 9b: pick up to 3 food items for the lunch box.
+    const lunch = createLunchPicker(p.materials);
+    if (!(await confirmBuy(uiRoot, { name: 'The crypt', detail, price: free ? null : DUNGEON_KEY_COST, yes: 'Enter', extra: lunch.el }))) return;
+    const run = await api.dungeonStart(lunch.chosen() as FoodId[]);
     if (!run) return;
     await refreshInventory();
     await refreshHint();
@@ -826,6 +930,8 @@ async function start(): Promise<void> {
     itemViews.sync(items, hiddenUids());
     roomChanged();
     info.setRoom(room.kind);
+    roomLevels.set(room.id, room.level);
+    await farm.enter(room);
     floats.clear();
     shop = await api.getShop();
     customers.clear();
@@ -841,7 +947,7 @@ async function start(): Promise<void> {
   async function openRoomKind(kind: RoomKind): Promise<void> {
     if (kind === room.kind) return;
     const p = await api.getPlayer();
-    await openRoom(kind === 'hotel' ? p.hotelRoomId : p.shopRoomId);
+    await openRoom(kind === 'hotel' ? p.hotelRoomId : kind === 'shop' ? p.shopRoomId : p.farmRoomId);
   }
 
   // Shift turns snapping off (desktop).
@@ -887,6 +993,9 @@ async function start(): Promise<void> {
         panels.close();
         return;
       }
+      // The farm (step 9b): plots (plant, harvest) and the cooking pot.
+      farm.cancel();
+      if (farm.tap(marked)) return;
       // The counter: walk behind it (like sitting); waiting customers pay while you stand there.
       if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
         void serveAt(hit.uid).then((ok) => {
@@ -945,6 +1054,8 @@ async function start(): Promise<void> {
     avatar = seating.update(avatar, ticker.deltaMS);
     itemViews.update(ticker.deltaMS);
     customers.update(ticker.deltaMS, clockMs);
+    farm.update(clockMs);
+    if (path.length === 0 && avatar.state !== 'walk') farm.arrived();
     placer.tick(ticker.deltaMS);
     sprite.update(avatar, clockMs);
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));

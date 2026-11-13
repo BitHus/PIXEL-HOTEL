@@ -19,6 +19,8 @@ export class RoomView {
   readonly debugLayer = new Container();
   readonly wallLayer = new Container();
   readonly objects = new DepthLayer();
+  /** Markers above everything in the room (the farm's ripe markers, step 9b). */
+  readonly markerLayer = new Container({ eventMode: 'none' });
   /** Build mode ghost, above everything. */
   readonly ghostLayer = new Container({ eventMode: 'none' });
 
@@ -30,6 +32,7 @@ export class RoomView {
       this.debugLayer,
       this.wallLayer,
       this.objects.container,
+      this.markerLayer,
       this.ghostLayer,
     );
   }

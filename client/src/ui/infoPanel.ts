@@ -1,13 +1,13 @@
 // Top-left: one compact info panel (gold with a coin icon, the room name, the level with an xp
-// bar) with the room switcher (Hotel and Shop buttons) right under it. In the dungeon (step 9) the
-// room name becomes the floor, an hp bar shows, and the room switcher hides.
+// bar). In the dungeon (step 9) the room name becomes the floor and an hp bar shows. (The Hotel /
+// Shop switcher that sat under it is gone since step 9b: the Map button's travel panel replaced it.)
 
 import type { RoomKind } from '@pixel-hotel/shared';
-import { el, textButton } from './dom.ts';
+import { el } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
 export interface InfoPanel {
-  /** The top-left column (the hint box goes under the room switcher). */
+  /** The top-left column (the hint box goes under the info panel). */
   readonly column: HTMLElement;
   /** Where coins fly to: the middle of the gold coin icon (screen px), read when called. */
   coinTarget(): () => { x: number; y: number };
@@ -18,6 +18,8 @@ export interface InfoPanel {
   /** In the dungeon: the floor and hp. null = back in a room. */
   setRun(run: { floor: number; maxFloors: number; hp: number; maxHp: number } | null): void;
 }
+
+export const ROOM_NAMES: Record<RoomKind, string> = { hotel: 'Hotel room', shop: 'Shop', farm: 'Farm' };
 
 function bar(cls: string, icon: HTMLElement | SVGSVGElement | null): { root: HTMLElement; fill: HTMLElement; text: HTMLElement } {
   const root = el('div', `info-bar ${cls}`);
@@ -30,7 +32,7 @@ function bar(cls: string, icon: HTMLElement | SVGSVGElement | null): { root: HTM
   return { root, fill, text };
 }
 
-export function createInfoPanel(parent: HTMLElement, onRoom: (kind: RoomKind) => void): InfoPanel {
+export function createInfoPanel(parent: HTMLElement): InfoPanel {
   const box = el('div', 'top-left');
   const info = el('div', 'frame info-panel');
   const gold = el('div', 'info-gold');
@@ -44,11 +46,7 @@ export function createInfoPanel(parent: HTMLElement, onRoom: (kind: RoomKind) =>
   const level = el('span', 'level-badge', 'Lv 1');
   const xp = bar('xp-bar', level);
   info.append(gold, name, hp.root, xp.root);
-  const switcher = el('div', 'room-switch');
-  const hotel = textButton('Hotel', () => onRoom('hotel'));
-  const shop = textButton('Shop', () => onRoom('shop'));
-  switcher.append(hotel, shop);
-  box.append(info, switcher);
+  box.append(info);
   parent.appendChild(box);
   return {
     column: box,
@@ -62,9 +60,7 @@ export function createInfoPanel(parent: HTMLElement, onRoom: (kind: RoomKind) =>
       goldText.textContent = String(n);
     },
     setRoom(kind) {
-      name.textContent = kind === 'hotel' ? 'Hotel room' : 'Shop';
-      hotel.classList.toggle('on', kind === 'hotel');
-      shop.classList.toggle('on', kind === 'shop');
+      name.textContent = ROOM_NAMES[kind];
     },
     setStats(lv, total, next, prev) {
       level.textContent = `Lv ${lv}`;
@@ -74,7 +70,6 @@ export function createInfoPanel(parent: HTMLElement, onRoom: (kind: RoomKind) =>
       xp.root.title = next === null ? `Level ${lv} (the top level)` : `Level ${lv}: ${total} of ${next} xp for level ${lv + 1}`;
     },
     setRun(run) {
-      switcher.hidden = run !== null;
       hp.root.hidden = run === null;
       if (!run) return;
       name.textContent = run.maxFloors > 1 ? `Crypt, floor ${run.floor} of ${run.maxFloors}` : 'Crypt';

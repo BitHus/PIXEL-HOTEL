@@ -1,12 +1,12 @@
 // The hotbar (step 5): one row of HOTBAR_SLOTS square slots, centered at the bottom, in a dark
 // wood frame. Icons only; a small count in the corner for stacks. A slot whose type is not in
 // the inventory (or cannot go in this room) is dimmed. The last used slot gets a bright border.
-// Tap a slot: place that item (main.ts). Long-press a slot: move it back to the bag. Keys 1-6
+// Tap a slot: place that item, or (step 9b) pick that seed for planting (main.ts). Long-press a slot: move it back to the bag. Keys 1-6
 // tap a slot. Slots carry data-area="hotbar" so a stack dragged from the bag can drop on them.
 
-import { HOTBAR_SLOTS } from '@pixel-hotel/shared';
+import { HOTBAR_SLOTS, isMaterialId } from '@pixel-hotel/shared';
 import { el, typing } from './dom.ts';
-import { furnitureIconUrl } from './itemIcon.ts';
+import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
 import { attachPress } from './press.ts';
 
 export interface HotbarHooks {
@@ -63,7 +63,7 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
         const s = slots[i];
         if (!s) return;
         s.img.hidden = v.typeId === null;
-        if (v.typeId !== null) s.img.src = furnitureIconUrl(v.typeId);
+        if (v.typeId !== null) s.img.src = isMaterialId(v.typeId) ? materialIconUrl(v.typeId) : furnitureIconUrl(v.typeId);
         s.count.textContent = v.count > 1 ? String(v.count) : '';
         s.root.classList.toggle('dim', v.typeId !== null && !v.usable);
         s.root.title = v.typeId === null ? 'Empty slot' : `${v.name} (${v.count})`;

@@ -2,7 +2,9 @@
 // LocalGameAPI (steps 2-9) runs the shared rules in the browser; RemoteGameAPI (step 10) talks to the server.
 // Methods are added in later steps as they are needed.
 
-import type { FurnitureItem, MaterialId, Player, Point, Facing, SaleRecord, ShopSlot, StyleKind } from './types.ts';
+import type { CropId, FoodId, FurnitureItem, MaterialId, Player, Point, Facing, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
+import type { Plot } from './farm.ts';
+import type { RoomLevel } from './config.ts';
 import type { Customer, ShopEvent } from './customers.ts';
 import type { ShelfSlotRef, StockPick } from './shop.ts';
 import type { NewPlayerChoice } from './newPlayer.ts';
@@ -115,6 +117,21 @@ export interface RunUpdate {
   result: RunResult | null;
 }
 
+/** The farm as the client sees it (step 9b). `at` is the API's clock when it was read: stages are
+ *  worked out with stageOf(plot, at + time since). */
+export interface FarmView {
+  roomId: number;
+  level: RoomLevel;
+  plots: Plot[];
+  at: number;
+}
+
+export interface HarvestResult {
+  farm: FarmView;
+  crop: CropId;
+  qty: number;
+}
+
 export interface GameAPI {
   /** The current player (gold, materials, rooms). */
   getPlayer(): Promise<Player>;
@@ -184,8 +201,9 @@ export interface GameAPI {
   // ---------- Step 9: the dungeon, crafting, the Blacksmith ----------
   /** The run in progress, or null. */
   getRun(): Promise<RunView | null>;
-  /** Starts a run: pays the 10 gold key (free under 10 gold). Null if a run is already going. */
-  dungeonStart(): Promise<DungeonRun | null>;
+  /** Starts a run: pays the 10 gold key (free under 10 gold) and packs the lunch box (at most 3
+   *  food items from the bag, step 9b). Null if a run is already going. */
+  dungeonStart(lunch?: readonly FoodId[]): Promise<DungeonRun | null>;
   /** One player input (applied at once, at the exact run time). Null without a running run. */
   dungeonInput(input: DungeonInput): Promise<RunUpdate | null>;
   /**
@@ -200,4 +218,14 @@ export interface GameAPI {
   craft(recipeId: string): Promise<boolean>;
   /** Buys gear or a potion in the Blacksmith. False if owned, at the potion limit, or gold is short. */
   buyGear(id: ShopGearId): Promise<boolean>;
+  // ---------- Step 9b: the farm and cooking ----------
+  getFarm(): Promise<FarmView>;
+  /** Plants one seed from the bag on an empty plot. Null = refused (not empty, no seed). */
+  plant(plot: number, seed: SeedId): Promise<FarmView | null>;
+  /** Harvests a ripe plot into the bag (1 to 2 crops). Null = not ripe. */
+  harvest(plot: number): Promise<HarvestResult | null>;
+  /** Buys seeds from the catalog. False = not for sale or not enough gold. */
+  buySeeds(seed: SeedId, qty: number): Promise<boolean>;
+  /** Cooks one food at the pot. False without all ingredients. */
+  cook(food: FoodId): Promise<boolean>;
 }

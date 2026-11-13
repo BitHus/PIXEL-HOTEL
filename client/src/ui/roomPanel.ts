@@ -3,7 +3,8 @@
 // with the player's unlocked styles. Picking a style shows it on the room at once (applying is
 // free, so the live preview is the change itself; pick again to go back).
 
-import { ROOM_MAX_LEVEL, STYLE_TYPES, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
+import { ROOM_MAX_LEVEL, STYLE_TYPES, farmPlotCount, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
+import { ROOM_NAMES } from './infoPanel.ts';
 import { el, textButton } from './dom.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
@@ -42,7 +43,7 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
   return {
     el: panel,
     refresh(room, gold, unlocked, appeal) {
-      title.textContent = room.kind === 'shop' ? 'Shop' : 'Hotel room';
+      title.textContent = ROOM_NAMES[room.kind];
       const facts = el('div', 'room-facts');
       facts.append(el('div', '', `Level ${room.level} of ${ROOM_MAX_LEVEL}`), el('div', '', `Size ${room.w} x ${room.h}`));
       if (appeal !== null) facts.append(el('div', '', `Appeal ${appeal} / 100`));
@@ -50,6 +51,13 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       const up = textButton(cost === null ? 'Top level' : `Upgrade: ${cost} gold`, () => hooks.upgrade(room.id));
       up.disabled = cost === null || gold < cost;
       if (cost !== null) up.title = `Level ${room.level + 1}: the room grows to the right and down.`;
+      if (room.kind === 'farm') {
+        // The farm keeps its grass and hedge; an upgrade adds plots.
+        facts.append(el('div', '', `Plots ${farmPlotCount(room.level)}`));
+        if (cost !== null) up.title = `Level ${room.level + 1}: the farm grows and gets ${farmPlotCount((room.level + 1) as 2 | 3)} plots.`;
+        body.replaceChildren(facts, up, el('div', 'panel-info', 'Place decorations around the plots in build mode.'));
+        return;
+      }
       body.replaceChildren(
         facts,
         up,

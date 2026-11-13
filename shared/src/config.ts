@@ -328,6 +328,8 @@ export const RIPE_MARKER_BOB_MS = 400;
 export const SEED_PACK = 5;
 /** The lunch box: at most this many food items go into a run (next to the potions). */
 export const LUNCH_BOX_MAX = 3;
+/** The mine (section 10c, step 9c) opens at this player level; until then its travel card is locked. */
+export const MINE_UNLOCK_LEVEL = 3;
 /** Chance that an opened dungeon chest also holds one glowcap spore. */
 export const GLOWCAP_SPORE_CHANCE = 0.05;
 
