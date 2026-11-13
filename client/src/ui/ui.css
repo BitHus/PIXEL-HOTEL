@@ -1519,3 +1519,65 @@
 .charmaker-panel .name-input {
   flex: none;
 }
+
+/* "Buy this?" (confirmBuy.ts): a centered panel over a dim shade; a tap on the shade cancels. */
+.confirm-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: rgba(24, 20, 37, 0.45);
+  pointer-events: auto;
+}
+
+.confirm-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(320px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.confirm-what {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirm-yes {
+  font-weight: 700;
+}
+
+/* The quest button (top of the right-edge column): hidden without a quest; selected while the
+   quest box shows; glowing while a quest is still going but its box is closed. */
+.quest-btn[hidden] {
+  display: none;
+}
+
+.quest-btn.glow {
+  animation: quest-glow 1s steps(2) infinite;
+}
+
+@keyframes quest-glow {
+  50% {
+    background: var(--warm);
+    border-color: var(--select);
+  }
+}

@@ -21,6 +21,10 @@ import {
   fitsRoomKind,
   isMaterialId,
   getFurnitureType,
+  catalogPrice,
+  getStyle,
+  stylePrice,
+  upgradeCost,
   introZoom,
   itemBlockers,
   roomBoundsRect,
@@ -71,7 +75,10 @@ import { createChatPanel } from './ui/chatPanel.ts';
 import { createChatBubbles } from './ui/chatBubbles.ts';
 import { createSettingsPanel } from './ui/settingsPanel.ts';
 import { createToast } from './ui/toast.ts';
-import { typing } from './ui/dom.ts';
+import { iconButton, typing } from './ui/dom.ts';
+import { confirmBuy } from './ui/confirmBuy.ts';
+import { furnitureIconUrl } from './ui/itemIcon.ts';
+import { stylePreviewUrl } from './render/styleArt.ts';
 import { CustomerViews } from './render/customerViews.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
 import { createCatalogPanel } from './ui/catalogPanel.ts';
@@ -240,7 +247,16 @@ async function start(): Promise<void> {
     },
     escapeTaken: () => panels.open !== null || placer.active,
   });
-  createSideButtons(ui, panels, [build.button]);
+  const sideButtons = createSideButtons(ui, panels, [build.button]);
+  // The quest button, at the top of the column: shows the current quest again. Hidden without a
+  // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
+  const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn');
+  sideButtons.prepend(questButton);
+  hint.onChange((quest, showing) => {
+    questButton.hidden = quest === null;
+    questButton.classList.toggle('on', showing);
+    questButton.classList.toggle('glow', quest !== null && !showing);
+  });
 
   /** Camera state (unsnapped, so zooming never drifts). */
   let camera: Camera = { x: 0, y: 0, zoom: 1 };
@@ -354,7 +370,10 @@ async function start(): Promise<void> {
     await refreshHint();
   };
   const catalog = createCatalogPanel(ui, {
-    buyItem: (typeId) => {
+    buyItem: async (typeId) => {
+      const t = getFurnitureType(typeId);
+      const sure = await confirmBuy(ui, { name: t.name, detail: 'Goes into your bag.', price: catalogPrice(typeId), image: furnitureIconUrl(typeId) });
+      if (!sure) return;
       void api.buyCatalog(typeId).then(async (r) => {
         if (!r) {
           toast('Not enough gold.');
@@ -373,7 +392,11 @@ async function start(): Promise<void> {
         toast(`${type.name} is in your bag.`);
       });
     },
-    buyStyle: (kind, id) => {
+    buyStyle: async (kind, id) => {
+      const s = getStyle(kind, id);
+      const detail = `${kind === 'floor' ? 'Floor' : 'Wall'}: yours forever, put on this room now.`;
+      const sure = await confirmBuy(ui, { name: s.name, detail, price: stylePrice(s), image: stylePreviewUrl(kind, id) });
+      if (!sure) return;
       void api.buyStyle(kind, id).then(async (ok) => {
         if (!ok) {
           toast('Not enough gold.');
@@ -395,7 +418,13 @@ async function start(): Promise<void> {
   });
   panels.add('catalog', catalog.el);
   const roomPanel = createRoomPanel(ui, {
-    upgrade: (roomId) => {
+    upgrade: async (roomId) => {
+      const r = roomId === room.id ? room : null;
+      const cost = r ? upgradeCost(r) : null;
+      if (r && cost !== null) {
+        const detail = `${r.kind === 'shop' ? 'Shop' : 'Hotel room'} to level ${r.level + 1}: the room grows.`;
+        if (!(await confirmBuy(ui, { name: 'Room upgrade', detail, price: cost, yes: 'Upgrade' }))) return;
+      }
       void api.upgradeRoom(roomId).then(async (next) => {
         if (!next) {
           toast('Not enough gold.');

@@ -123,13 +123,19 @@ export function showAwaySummary(parent: HTMLElement, a: AwaySummary): void {
 }
 
 export interface HintBox {
+  /** The current quest (null = none). A new one shows at once. */
   set(text: string | null): void;
+  /** Shows the current quest again, or hides it when it shows (the quest button). */
+  toggle(): void;
+  /** Called when the quest or whether its box shows changes. */
+  onChange(listener: (quest: string | null, showing: boolean) => void): void;
 }
 
 /**
- * The first-run hint, under the info panel (top-left column). Important hints stay until the
- * player taps them (a small "tap to continue" arrow shows that); a tapped hint stays away (for
- * this session) until the next hint comes. It fades in and out slowly (TEXT_FADE_MS).
+ * The first-run hint (the current quest), under the info panel (top-left column). It stays until
+ * the player taps it (a small "tap to continue" arrow shows that); a tapped quest stays away until
+ * the next one comes, or until the player taps the quest button (right-edge column), which glows
+ * while a quest is going and its box is closed. It fades in and out slowly (TEXT_FADE_MS).
  */
 export function createHintBox(topLeft: HTMLElement): HintBox {
   const box = el('div', 'frame hint-box');
@@ -140,24 +146,58 @@ export function createHintBox(topLeft: HTMLElement): HintBox {
   box.append(text, more);
   box.hidden = true;
   topLeft.appendChild(box);
-  let shown: string | null = null;
+  /** The current quest, shown or not. */
+  let quest: string | null = null;
+  let showing = false;
   const dismissed = new Set<string>();
-  box.addEventListener('click', () => {
-    if (shown === null) return;
-    dismissed.add(shown);
+  const listeners: ((quest: string | null, showing: boolean) => void)[] = [];
+  const changed = (): void => {
+    for (const l of listeners) l(quest, showing);
+  };
+  const show = (): void => {
+    text.textContent = quest ?? '';
+    box.classList.remove('fading');
+    box.hidden = false;
+    showing = true;
+    changed();
+  };
+  const hide = (): void => {
+    if (quest !== null) dismissed.add(quest);
+    showing = false;
     box.classList.add('fading');
     window.setTimeout(() => {
       if (box.classList.contains('fading')) box.hidden = true;
     }, TEXT_FADE_MS);
+    changed();
+  };
+  box.addEventListener('click', () => {
+    if (showing) hide();
   });
   return {
     set(next) {
-      const show = next !== null && !dismissed.has(next);
-      if (show && next === shown && !box.hidden) return;
-      shown = show ? next : null;
-      text.textContent = next ?? '';
+      if (next === quest && (showing || dismissed.has(next ?? ''))) return;
+      quest = next;
+      if (next !== null && !dismissed.has(next)) {
+        show();
+        return;
+      }
+      showing = false;
       box.classList.remove('fading');
-      box.hidden = !show;
+      box.hidden = true;
+      changed();
+    },
+    toggle() {
+      if (quest === null) return;
+      if (showing) {
+        hide();
+        return;
+      }
+      dismissed.delete(quest);
+      show();
+    },
+    onChange(listener) {
+      listeners.push(listener);
+      listener(quest, showing);
     },
   };
 }

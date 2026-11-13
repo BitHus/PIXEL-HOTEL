@@ -160,17 +160,21 @@ export const REACTION_BUBBLE_MS = 1800;
 /** 1 = small first round, 2 = the full dungeon. */
 export const DUNGEON_ROUND: 1 | 2 = 1;
 
-export const DUNGEON_ROUNDS = {
-  1: { MAX_FLOORS: 1, ROOMS_MIN: 3, ROOMS_MAX: 4, enemies: ['slime'], mimics: false, boss: false },
-  2: {
-    MAX_FLOORS: 3,
-    ROOMS_MIN: 5,
-    ROOMS_MAX: 8,
-    enemies: ['slime', 'skeleton', 'bat'],
-    mimics: true,
-    boss: true,
-  },
-} as const;
+export interface DungeonRoundRules {
+  /** How many floors a run has. */
+  maxFloors: number;
+  roomsMin: number;
+  roomsMax: number;
+  /** The normal enemy kinds that spawn in rooms. */
+  enemies: readonly EnemyKind[];
+  mimics: boolean;
+  boss: boolean;
+}
+
+export const DUNGEON_ROUNDS: Record<1 | 2, DungeonRoundRules> = {
+  1: { maxFloors: 1, roomsMin: 3, roomsMax: 4, enemies: ['slime'], mimics: false, boss: false },
+  2: { maxFloors: 3, roomsMin: 5, roomsMax: 8, enemies: ['slime', 'skeleton', 'bat'], mimics: true, boss: true },
+};
 
 export const DUNGEON_TICK_MS = 100;
 export const DUNGEON_BLOCK = 32;
@@ -220,6 +224,11 @@ export const ENEMIES_PER_ROOM_MIN = 0;
 export const ENEMIES_PER_ROOM_MAX = 2;
 /** Enemy hp on floor n = ceil(hp * (1 + ENEMY_HP_PER_FLOOR * (n - 1))). */
 export const ENEMY_HP_PER_FLOOR = 0.25;
+/**
+ * Whether the Bone King's hp is also multiplied by the floor (60 -> 90 on floor 3). The brief says
+ * yes; the step 8 simulation reaches the target survival rates only without it (owner to decide).
+ */
+export const BOSS_HP_FLOOR_SCALING = true;
 
 export const RUN_BAG_SLOTS = 12;
 export const MATERIAL_STACK_MAX = 10;
@@ -229,15 +238,16 @@ export const DUNGEON_KEY_COST = 10;
 /** Fraction of max hp healed when going down the stairs. */
 export const STAIRS_HEAL = 0.3;
 
-export const GEAR = {
-  iron_sword: { price: 150, attackMin: 6, attackMax: 8 },
-  leather_armor: { price: 120, damageReduction: 1, minDamage: 1 },
-} as const;
+// Gear and potions (prices, effects, the carry limit) live in shared/data/gear.json (gear.ts).
 
-export const POTION_PRICE = 20;
-export const POTION_HEAL = 15;
-export const POTION_COOLDOWN_MS = 1000;
-export const POTION_CARRY_MAX = 3;
+/** The player can hit an enemy whose center is this close (px). */
+export const PLAYER_ATTACK_REACH = 40;
+/** A chest opens (or a mimic wakes) when the player's feet come this close to it (px). */
+export const CHEST_OPEN_REACH = 20;
+/** Enemies stop walking when this close to the player (px); they never stand on the player. */
+export const ENEMY_STOP_PX = 24;
+/** A chasing enemy without line of sight finds a new path this often (ms). */
+export const ENEMY_REPATH_MS = 500;
 
 export const WOODEN_CHESTS_MIN = 3;
 export const WOODEN_CHESTS_MAX = 5;
@@ -254,9 +264,7 @@ export const RARE_DROP_CHANCE = 0.1;
 export const RARE_DROP_CRYSTAL_CHANCE = 0.7;
 
 // ---------- XP and levels ----------
-export const PLAYER_MAX_LEVEL = 8;
-/** Total xp needed for levels 2..8 (also in shared/data/levels.json later). */
-export const LEVEL_XP = [15, 40, 80, 140, 220, 320, 450] as const;
+// The level thresholds (levels 1 to 8) live in shared/data/levels.json (levels.ts).
 export const HP_PER_LEVEL = 3;
 /** Every even level adds this to both ends of the attack range. */
 export const ATTACK_PER_EVEN_LEVEL = 1;

@@ -278,6 +278,23 @@ const ICONS = {
     ],
     colors: { o: O, a: PALETTE[0], b: PALETTE[3], c: PALETTE[10], d: PALETTE[5] },
   },
+  quest: {
+    rows: [
+      '.oooooooooo.',
+      'oaaaaaaaaaao',
+      '.obbbccbbbo.',
+      '.obbbccbbbo.',
+      '.obbbccbbbo.',
+      '.obbbccbbbo.',
+      '.obbbbbbbbo.',
+      '.obbbccbbbo.',
+      '.obbbbbbbbo.',
+      'oaaaaaaaaaao',
+      '.oooooooooo.',
+      '............',
+    ],
+    colors: { o: O, a: PALETTE[4], b: PALETTE[2], c: PALETTE[7] },
+  },
 } satisfies Record<string, PixelMap>;
 
 export type IconName = keyof typeof ICONS;
