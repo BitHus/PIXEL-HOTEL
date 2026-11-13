@@ -10,6 +10,9 @@
 //   rounded up. 3 to 5 wooden chests (1 in 8 a mimic when the round has mimics) and a 40% chance of
 //   one golden chest. The boss floor (round 2, floor 3) has the Bone King in the exit room and
 //   always a golden chest next to the exit.
+// - The mine (step 9c) uses the same layout code with its own rules (generateMine): 2 to 3 rooms,
+//   0 to 1 slime or bat per room, no chests and no exit (the player leaves with the Leave button or
+//   when the lantern runs out), and rocks in every room.
 
 import {
   BOSS_FLOOR,
@@ -26,6 +29,16 @@ import {
   ENEMY_HP_PER_FLOOR,
   GOLDEN_CHEST_CHANCE,
   MIMIC_ONE_IN,
+  MINE_ENEMIES,
+  MINE_ENEMIES_PER_ROOM_MAX,
+  MINE_ROCKS_PER_ROOM_MAX,
+  MINE_ROCKS_PER_ROOM_MIN,
+  MINE_ROOMS_MAX,
+  MINE_ROOMS_MIN,
+  MITHRIL_FROM_VISIT,
+  ROCK_HITS,
+  ROCK_WEIGHTS,
+  type RockKind,
   WOODEN_CHESTS_MAX,
   WOODEN_CHESTS_MIN,
   type EnemyKind,
@@ -33,13 +46,32 @@ import {
 import { rngInt, rngPick, seededRng } from '../rng.ts';
 import type { Rng } from '../types.ts';
 import { blockCenter, isFloorBlock } from './grid.ts';
-import type { BlockRect, Chest, ChestKind, DungeonBlock, DungeonMap, DungeonRoundId, Enemy } from './run.ts';
+import type { BlockRect, Chest, ChestKind, DungeonBlock, DungeonMap, DungeonRoundId, Enemy, Rock } from './run.ts';
 
 export interface FloorPlan {
   map: DungeonMap;
   enemies: Enemy[];
   chests: Chest[];
+  /** The mine's rocks (none in the crypt). */
+  rocks: Rock[];
 }
+
+/** What a layout has: the crypt's round rules, or the mine's. */
+interface LayoutRules {
+  roomsMin: number;
+  roomsMax: number;
+  enemies: readonly EnemyKind[];
+  enemiesPerRoomMax: number;
+  /** Crypt: chests (wooden, golden, mimics) and an exit. Mine: rocks, no exit. */
+  kind: 'crypt' | 'mine';
+  mimics: boolean;
+  boss: boolean;
+  /** Mine visit number (mithril rocks from MITHRIL_FROM_VISIT on). */
+  visit: number;
+}
+
+/** No exit block: the mine is left with the Leave button (or when the lantern runs out). */
+export const NO_EXIT = { c: -1, r: -1 } as const;
 
 /** The rng of one floor: mixes the run seed and the floor number. */
 export function floorRng(seed: number, n: number): Rng {
@@ -102,7 +134,37 @@ export function blockDistances(map: DungeonMap, c: number, r: number): number[] 
 }
 
 export function generateFloor(seed: number, n: number, round: DungeonRoundId = DUNGEON_ROUND): FloorPlan {
-  const rules = DUNGEON_ROUNDS[round];
+  const r = DUNGEON_ROUNDS[round];
+  return generateLayout(seed, n, round, { ...r, enemiesPerRoomMax: ENEMIES_PER_ROOM_MAX, kind: 'crypt', visit: 0 });
+}
+
+/** A mine visit's layout (step 9c): a new one from every seed; `visit` is the visit number (1 = first). */
+export function generateMine(seed: number, visit: number): FloorPlan {
+  return generateLayout(seed, 1, 1, {
+    roomsMin: MINE_ROOMS_MIN,
+    roomsMax: MINE_ROOMS_MAX,
+    enemies: MINE_ENEMIES,
+    enemiesPerRoomMax: MINE_ENEMIES_PER_ROOM_MAX,
+    kind: 'mine',
+    mimics: false,
+    boss: false,
+    visit,
+  });
+}
+
+/** The kind of a new rock: by ROCK_WEIGHTS, mithril only from MITHRIL_FROM_VISIT on. */
+export function rollRockKind(rng: Rng, visit: number): RockKind {
+  const kinds = (Object.keys(ROCK_WEIGHTS) as RockKind[]).filter((k) => k !== 'mithril' || visit >= MITHRIL_FROM_VISIT);
+  const total = kinds.reduce((a, k) => a + ROCK_WEIGHTS[k], 0);
+  let roll = rng() * total;
+  for (const k of kinds) {
+    roll -= ROCK_WEIGHTS[k];
+    if (roll < 0) return k;
+  }
+  return kinds[kinds.length - 1]!;
+}
+
+function generateLayout(seed: number, n: number, round: DungeonRoundId, rules: LayoutRules): FloorPlan {
   const rng = floorRng(seed, n);
   const cols = DUNGEON_BLOCKS_W;
   const rows = DUNGEON_BLOCKS_H;
@@ -148,7 +210,7 @@ export function generateFloor(seed: number, n: number, round: DungeonRoundId = D
       }
     }
   });
-  const map: DungeonMap = { ...partial, exit };
+  const map: DungeonMap = { ...partial, exit: rules.kind === 'mine' ? { ...NO_EXIT } : exit };
 
   // Things stand in the middle of a free room block; one thing per block.
   const used = new Set<number>([spawnBlock.r * cols + spawnBlock.c, exit.r * cols + exit.c]);
@@ -187,7 +249,7 @@ export function generateFloor(seed: number, n: number, round: DungeonRoundId = D
   }
   rooms.forEach((room, ri) => {
     if (ri === 0) return;
-    const count = rngInt(rng, ENEMIES_PER_ROOM_MIN, ENEMIES_PER_ROOM_MAX);
+    const count = rngInt(rng, ENEMIES_PER_ROOM_MIN, rules.enemiesPerRoomMax);
     for (let k = 0; k < count; k++) {
       const kind = rngPick(rng, rules.enemies);
       const b = freeBlock(room);
@@ -196,6 +258,21 @@ export function generateFloor(seed: number, n: number, round: DungeonRoundId = D
       enemies.push(makeEnemy(enemies.length + 1, kind, n, p.x, p.y));
     }
   });
+  if (rules.kind === 'mine') {
+    // Rocks in every room (the spawn room too), one per free block.
+    const rocks: Rock[] = [];
+    for (const room of rooms) {
+      const count = rngInt(rng, MINE_ROCKS_PER_ROOM_MIN, MINE_ROCKS_PER_ROOM_MAX);
+      for (let k = 0; k < count; k++) {
+        const b = freeBlock(room);
+        if (!b) break;
+        const kind = rollRockKind(rng, rules.visit);
+        const p = blockCenter(b.c, b.r);
+        rocks.push({ id: rocks.length + 1, kind, hitsLeft: ROCK_HITS[kind], x: p.x, y: p.y });
+      }
+    }
+    return { map, enemies, chests, rocks };
+  }
   const others = rooms.slice(1);
   const wooden = rngInt(rng, WOODEN_CHESTS_MIN, WOODEN_CHESTS_MAX);
   for (let k = 0; k < wooden; k++) {
@@ -206,5 +283,5 @@ export function generateFloor(seed: number, n: number, round: DungeonRoundId = D
     const b = freeBlock(rngPick(rng, others));
     if (b) addChest('golden', b);
   }
-  return { map, enemies, chests };
+  return { map, enemies, chests, rocks: [] };
 }

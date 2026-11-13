@@ -122,7 +122,18 @@ export interface FurnitureItem {
 
 // ---------- Economy (section 9) ----------
 /** Dungeon materials (section 10). */
-export type BaseMaterialId = 'bone' | 'cloth' | 'crystal' | 'wood' | 'throne_piece';
+export type BaseMaterialId =
+  | 'bone'
+  | 'cloth'
+  | 'crystal'
+  | 'wood'
+  | 'throne_piece'
+  // The mine and the forge (section 10c, step 9c).
+  | OreId
+  | BarId
+  | 'gem';
+export type OreId = 'copper_ore' | 'iron_ore' | 'mithril_ore';
+export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 /** Farm goods (section 10b, step 9b): seeds (crops.json), crops (crops.json) and food (food.json). */
 export type SeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
 export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
@@ -192,6 +203,9 @@ export type LedgerReason =
   | 'harvest'
   | 'cook'
   | 'lunch_box'
+  | 'smelt'
+  | 'forge'
+  | 'mine_bank'
   | 'debug';
 
 export interface LedgerEntry {
@@ -208,7 +222,9 @@ export interface LedgerEntry {
   note?: string;
 }
 
-export type GearId = 'iron_sword' | 'leather_armor';
+/** Gear made at the forge (section 10c, shared/data/forge.json). Player.gear holds at most one
+ *  piece per slot (weapon, armor, pickaxe): an upgrade replaces the piece before it. */
+export type GearId = 'copper_sword' | 'iron_sword' | 'mithril_sword' | 'leather_armor' | 'iron_armor' | 'mithril_armor' | 'steel_pickaxe';
 
 export interface Player {
   id: number;
@@ -228,6 +244,8 @@ export interface Player {
   shopRoomId: number;
   /** The farm (step 9b). */
   farmRoomId: number;
+  /** How many mine visits were started (step 9c; mithril rocks from visit MITHRIL_FROM_VISIT on). */
+  mineVisits: number;
 }
 
 // ---------- Dungeon (section 10) ----------

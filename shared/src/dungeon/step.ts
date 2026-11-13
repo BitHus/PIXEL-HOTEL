@@ -12,6 +12,11 @@
 //   ENEMY_MISS_RANGE when it ends; then they wait their attack cooldown. Bats make half of their
 //   moves in a random direction.
 // - Walking onto the exit pauses the run (status 'exit_choice') until choose_exit.
+// - The mine (step 9c, run.place 'mine'): click_rock walks next to a rock and swings (one swing per
+//   tap, PICKAXE_COOLDOWN_MS apart, like hits); a broken rock drops ore (and maybe a gem) into the
+//   bag. 'leave' walks out at once with everything; so does the lantern running out. At 0 hp the
+//   player is carried out and loses half of each ore (rounded down), nothing else. Enemies there give
+//   xp but no rare drops.
 
 import {
   ATTACK_REACH,
@@ -28,7 +33,13 @@ import {
   MIMIC_XP,
   PLAYER_ATTACK_REACH,
   PLAYER_DUNGEON_SPEED,
+  GEM_CHANCE,
   GLOWCAP_SPORE_CHANCE,
+  MINE_DEATH_ORE_LOSS,
+  MINE_REACH,
+  PICKAXE_COOLDOWN_MS,
+  ROCK_ORE_MAX,
+  ROCK_ORE_MIN,
   RARE_DROP_CHANCE,
   STAIRS_HEAL,
 } from '../config.ts';
@@ -41,7 +52,7 @@ import type { FoodId, Point, Rng } from '../types.ts';
 import { generateFloor, makeEnemy } from './generate.ts';
 import { blockAt, dungeonNavGrid, onFloor } from './grid.ts';
 import { getLootTable, rollLoot, type Loot } from './loot.ts';
-import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type FoodBuff, type RunBag, type RunPlayer } from './run.ts';
+import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type FoodBuff, type Rock, type RunBag, type RunPlayer } from './run.ts';
 import { addToBag, bagLoot } from './runBag.ts';
 
 const TICK = DUNGEON_TICK_MS;
@@ -59,6 +70,7 @@ function cloneRun(run: DungeonRun): DungeonRun {
     player: { ...run.player, food: [...run.player.food], buffs: [...run.player.buffs] },
     enemies: run.enemies.map((e) => ({ ...e })),
     chests: run.chests.map((c) => ({ ...c })),
+    rocks: run.rocks.map((x) => ({ ...x })),
     bag: { ...run.bag },
     banked: { ...run.banked },
     lost: { ...run.lost },
@@ -107,16 +119,35 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
   }
   if (r.status !== 'active') return;
   const grid = dungeonNavGrid(r.map);
-  if (input.t === 'click_point') {
+  if (input.t === 'leave') {
+    if (r.place === 'mine') leave(r);
+  } else if (input.t === 'click_point') {
     const path = findPath(grid, p, { x: input.x, y: input.y });
     if (!path) return;
     p.path = path.slice(1);
     p.targetEnemyId = null;
     p.pendingHit = false;
+    p.targetRockId = null;
+    p.pendingSwing = false;
+  } else if (input.t === 'click_rock') {
+    const rock = r.rocks.find((x) => x.id === input.id);
+    if (!rock) return;
+    p.targetRockId = rock.id;
+    p.targetEnemyId = null;
+    p.pendingHit = false;
+    p.path = [];
+    if (now < p.pickReadyAt) {
+      p.pendingSwing = false; // a tap during the cooldown is ignored (it only keeps walking there)
+      return;
+    }
+    if (distance(p, rock) <= MINE_REACH) swing(r, rock, now, rng);
+    else p.pendingSwing = true;
   } else if (input.t === 'click_enemy') {
     const e = r.enemies.find((x) => x.id === input.id);
     if (!e) return;
     p.targetEnemyId = e.id;
+    p.targetRockId = null;
+    p.pendingSwing = false;
     p.path = [];
     if (now < p.attackReadyAt) {
       p.pendingHit = false; // a click during the cooldown is ignored (it only keeps walking there)
@@ -186,6 +217,27 @@ function hit(r: DungeonRun, e: Enemy, now: number, rng: Rng): void {
   if (e.hp <= 0) kill(r, e, rng);
 }
 
+/** One pickaxe swing at a rock (step 9c). Mithril needs the steel pickaxe. */
+function swing(r: DungeonRun, rock: Rock, now: number, rng: Rng): void {
+  const p = r.player;
+  p.pickReadyAt = now + PICKAXE_COOLDOWN_MS;
+  p.pendingSwing = false;
+  if (rock.kind === 'mithril' && !p.minesMithril) {
+    r.events.push({ t: 'too_hard', rockId: rock.id });
+    return;
+  }
+  const hits = Math.min(rock.hitsLeft, p.hitsPerSwing);
+  rock.hitsLeft -= hits;
+  r.events.push({ t: 'swing', rockId: rock.id, hits });
+  if (rock.hitsLeft > 0) return;
+  r.rocks = r.rocks.filter((x) => x.id !== rock.id);
+  p.targetRockId = null;
+  r.events.push({ t: 'rock_broken', rockId: rock.id });
+  const loot: Loot[] = [{ item: `${rock.kind}_ore`, qty: rngInt(rng, ROCK_ORE_MIN, ROCK_ORE_MAX) }];
+  if (rng() < GEM_CHANCE) loot.push({ item: 'gem', qty: 1 });
+  addLoot(r, loot);
+}
+
 function addLoot(r: DungeonRun, loot: readonly Loot[]): void {
   const added = addToBag(r.bag, loot);
   r.bag = added.bag;
@@ -227,7 +279,8 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
   }
   if (e.mimic) addLoot(r, rollLoot(getLootTable('golden_chest'), rng));
   if (e.kind === 'bone_king') addLoot(r, rollLoot(getLootTable('boss'), rng));
-  if (rng() < RARE_DROP_CHANCE) addLoot(r, rollLoot(getLootTable('enemy_rare'), rng));
+  // No rare drops in the mine (step 9c): only ore and gems come from there.
+  if (r.place === 'crypt' && rng() < RARE_DROP_CHANCE) addLoot(r, rollLoot(getLootTable('enemy_rare'), rng));
   if (e.kind === 'bone_king') {
     r.bossDefeated = true;
     bankBag(r);
@@ -242,6 +295,10 @@ function leave(r: DungeonRun): void {
 }
 
 function die(r: DungeonRun): void {
+  if (r.place === 'mine') {
+    carriedOut(r);
+    return;
+  }
   const kept = Math.floor(r.bag.gold * (1 - DEATH_GOLD_LOSS));
   const lostBag: RunBag = { slots: r.bag.slots, gold: r.bag.gold - kept };
   r.lost = { ...addToBag(r.lost, bagLoot(lostBag), Infinity).bag, gold: r.lost.gold + lostBag.gold };
@@ -251,6 +308,28 @@ function die(r: DungeonRun): void {
   const food = r.player.food.map((id) => ({ item: id, qty: 1 }));
   if (food.length > 0) r.lost = addToBag(r.lost, food, Infinity).bag;
   r.player.food = [];
+  r.player.hp = 0;
+  r.status = 'dead';
+  r.events.push({ t: 'died' });
+}
+
+/**
+ * 0 hp in the mine (section 10c): the player is carried out with everything but half of each ore of
+ * this visit (rounded down). Gems, potions and xp stay.
+ */
+function carriedOut(r: DungeonRun): void {
+  const totals = new Map<string, number>();
+  for (const l of bagLoot(r.bag)) totals.set(l.item, (totals.get(l.item) ?? 0) + l.qty);
+  const kept: Loot[] = [];
+  const lost: Loot[] = [];
+  for (const [item, qty] of totals) {
+    const gone = item.endsWith('_ore') ? Math.floor(qty * MINE_DEATH_ORE_LOSS) : 0;
+    if (qty - gone > 0) kept.push({ item, qty: qty - gone });
+    if (gone > 0) lost.push({ item, qty: gone });
+  }
+  r.banked = { ...addToBag(r.banked, kept, Infinity).bag, gold: r.banked.gold + r.bag.gold };
+  r.lost = addToBag(r.lost, lost, Infinity).bag;
+  r.bag = emptyRunBag();
   r.player.hp = 0;
   r.status = 'dead';
   r.events.push({ t: 'died' });
@@ -302,6 +381,20 @@ function tick(r: DungeonRun, rng: Rng): void {
   const p = r.player;
   const grid = dungeonNavGrid(r.map);
 
+  // The mine's lantern: when it goes out the player walks out with everything.
+  if (r.lanternEndsAt !== null && now >= r.lanternEndsAt) {
+    r.events.push({ t: 'lantern_out' });
+    leave(r);
+    return;
+  }
+
+  // The mine: walk to the target rock, then a waiting swing.
+  const rock = r.rocks.find((x) => x.id === p.targetRockId) ?? null;
+  if (rock && distance(p, rock) > MINE_REACH) {
+    const end = p.path[p.path.length - 1];
+    if (!end || distance(end, rock) > MINE_REACH) p.path = findPath(grid, p, rock)?.slice(1) ?? [];
+  }
+
   // The player: walk (towards the target enemy if there is one), then a pending hit.
   const target = r.enemies.find((e) => e.id === p.targetEnemyId) ?? null;
   if (target && distance(p, target) > PLAYER_ATTACK_REACH) {
@@ -312,6 +405,10 @@ function tick(r: DungeonRun, rng: Rng): void {
   if (target && distance(p, target) <= PLAYER_ATTACK_REACH) {
     p.path = [];
     if (p.pendingHit && now >= p.attackReadyAt) hit(r, target, now, rng);
+  }
+  if (rock && distance(p, rock) <= MINE_REACH) {
+    p.path = [];
+    if (p.pendingSwing && now >= p.pickReadyAt) swing(r, rock, now, rng);
   }
 
   // Chests open (or wake as a mimic) when walked onto.

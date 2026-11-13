@@ -333,6 +333,37 @@ export const MINE_UNLOCK_LEVEL = 3;
 /** Chance that an opened dungeon chest also holds one glowcap spore. */
 export const GLOWCAP_SPORE_CHANCE = 0.05;
 
+// ---------- The mine (section 10c, step 9c) ----------
+// The mine reuses the dungeon: the same 32 px blocks, the same step() in DUNGEON_TICK_MS ticks,
+// a new small layout from a seed every visit.
+/** The lantern burns this long (ms of run time); then the player walks out with everything. */
+export const MINE_LANTERN_MS = 4 * 60 * 1000;
+export const MINE_ROOMS_MIN = 2;
+export const MINE_ROOMS_MAX = 3;
+/** Weak enemies only: 0 to 1 per room (not the spawn room). */
+export const MINE_ENEMIES: readonly EnemyKind[] = ['slime', 'bat'];
+export const MINE_ENEMIES_PER_ROOM_MAX = 1;
+/** Rocks per room (the spawn room too). */
+export const MINE_ROCKS_PER_ROOM_MIN = 2;
+export const MINE_ROCKS_PER_ROOM_MAX = 4;
+export type RockKind = 'copper' | 'iron' | 'mithril';
+/** Hits a rock needs (a steel pickaxe swing counts double). */
+export const ROCK_HITS: Record<RockKind, number> = { copper: 3, iron: 5, mithril: 8 };
+/** Rock kinds by weight; mithril only from mine visit MITHRIL_FROM_VISIT on. */
+export const ROCK_WEIGHTS: Record<RockKind, number> = { copper: 55, iron: 35, mithril: 20 };
+export const MITHRIL_FROM_VISIT = 5;
+/** A broken rock drops this many ore (both ends included)... */
+export const ROCK_ORE_MIN = 1;
+export const ROCK_ORE_MAX = 2;
+/** ...and with this chance a gem. */
+export const GEM_CHANCE = 0.05;
+/** The pickaxe: one swing per tap, at most every this many ms. */
+export const PICKAXE_COOLDOWN_MS = 400;
+/** The player can swing at a rock whose middle is this close (px). */
+export const MINE_REACH = 40;
+/** At 0 hp the player is carried out and loses this part of the visit's ore (rounded down, per ore). */
+export const MINE_DEATH_ORE_LOSS = 0.5;
+
 // ---------- XP and levels ----------
 // The level thresholds (levels 1 to 8) live in shared/data/levels.json (levels.ts).
 export const HP_PER_LEVEL = 3;
@@ -428,7 +459,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -459,11 +490,14 @@ export const HINTS = [
   'Put an item on the table in your shop and set a price.',
   'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
   'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds) and plant your first turnip.',
+  'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
 ] as const;
 /** The index of the dungeon hint in HINTS: it only shows while the shop has nothing for sale. */
 export const DUNGEON_HINT = 3;
 /** The index of the farm hint (step 9b): done by planting anything. */
 export const FARM_HINT = 4;
+/** The index of the mine hint (step 9c): shows from MINE_UNLOCK_LEVEL on, done by going in. */
+export const MINE_HINT = 5;
 
 // ---------- New game intro (step 7b) ----------
 /** The counter and stall_table pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */

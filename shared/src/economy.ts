@@ -21,7 +21,7 @@ import { applyChange } from './ledger.ts';
 import { doorZoneRect, rectsOverlap, rectsTouch, roomAtLevel, type Room } from './room.ts';
 import { returnOrphanLoot, shopAppeal, simulateShop } from './shop.ts';
 import { findStyle, stylePrice } from './styles.ts';
-import { getGear, type ShopGearId } from './gear.ts';
+import { GEAR_TYPES, type ShopGearId } from './gear.ts';
 import { styleKey } from './newPlayer.ts';
 import type { Rng, SaleRecord, StyleKind } from './types.ts';
 
@@ -137,19 +137,14 @@ function sum(sales: readonly SaleRecord[]): number {
 }
 
 /**
- * Buys gear in the Blacksmith (brief section 10): a weapon or armor once (kept forever), or one
- * health potion while the player carries fewer than the carry limit. Null if already owned, at
- * the potion limit, or the gold is short.
+ * Buys in the Blacksmith (brief section 10): health potions while the player carries fewer than
+ * the carry limit (weapons and armor come from the forge since step 9c). Null at the potion limit
+ * or when the gold is short.
  */
 export function buyGear(state: GameState, id: ShopGearId, at: number): GameState | null {
-  const g = getGear(id);
+  const g = GEAR_TYPES.find((x) => x.id === id);
   const p = state.player;
-  if (g.kind === 'potion') {
-    if (p.potions >= g.carryMax) return null;
-    const next = applyChange(state, { reason: 'potion', gold: -g.price, note: 'bought health_potion' }, at);
-    return next && { ...next, player: { ...next.player, potions: p.potions + 1 } };
-  }
-  if (p.gear.includes(g.id)) return null;
-  const next = applyChange(state, { reason: 'blacksmith', gold: -g.price, note: `bought ${g.id}` }, at);
-  return next && { ...next, player: { ...next.player, gear: [...p.gear, g.id] } };
+  if (!g || p.potions >= g.carryMax) return null;
+  const next = applyChange(state, { reason: 'potion', gold: -g.price, note: 'bought health_potion' }, at);
+  return next && { ...next, player: { ...next.player, potions: p.potions + 1 } };
 }

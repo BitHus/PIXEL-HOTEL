@@ -5,13 +5,13 @@
 // Step 9b: the lunch box. startRun takes up to LUNCH_BOX_MAX food items out of the bag (ledger
 // 'lunch_box'); finishRun gives back the food not eaten (after death the box is lost: step.ts empties it).
 
-import { DUNGEON_KEY_COST, LUNCH_BOX_MAX } from '../config.ts';
+import { DUNGEON_KEY_COST, LUNCH_BOX_MAX, MINE_UNLOCK_LEVEL } from '../config.ts';
 import { isFoodId } from '../materials.ts';
 import type { GameState } from '../gameState.ts';
 import { addXp } from '../levels.ts';
 import { applyChange } from '../ledger.ts';
 import type { FoodId, MaterialId } from '../types.ts';
-import { newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
+import { newMineRun, newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
 
 /** True if the next run is free (the player has less gold than the key costs). */
 export function runIsFree(state: GameState): boolean {
@@ -53,6 +53,18 @@ export function startRun(
   return { state: { ...s, player: { ...p, potions: 0 } }, run };
 }
 
+/**
+ * Starts a mine visit (section 10c, step 9c): free, the potions go along, the visit counter goes up
+ * (mithril rocks from visit MITHRIL_FROM_VISIT on). Null below MINE_UNLOCK_LEVEL.
+ */
+export function startMine(state: GameState, seed: number): { state: GameState; run: DungeonRun } | null {
+  const p = state.player;
+  if (p.level < MINE_UNLOCK_LEVEL) return null;
+  const visit = p.mineVisits + 1;
+  const run = newMineRun({ seed, xp: p.xp, gear: p.gear, potions: p.potions, visit });
+  return { state: { ...state, player: { ...p, potions: 0, mineVisits: visit } }, run };
+}
+
 /** Banks a finished run ('left' or 'dead'). Null while the run is still going. */
 export function finishRun(state: GameState, run: DungeonRun, at: number): GameState | null {
   if (run.status !== 'left' && run.status !== 'dead') return null;
@@ -67,7 +79,7 @@ export function finishRun(state: GameState, run: DungeonRun, at: number): GameSt
   const banked =
     applyChange(
       state,
-      { reason: 'dungeon_bank', gold: run.banked.gold, materials, addFurniture: furniture, note: `dungeon run ${run.status}` },
+      { reason: run.place === 'mine' ? 'mine_bank' : 'dungeon_bank', gold: run.banked.gold, materials, addFurniture: furniture, note: `${run.place === 'mine' ? 'mine visit' : 'dungeon run'} ${run.status}` },
       at,
     ) ?? state;
   const player = addXp(banked.player, run.xpGained);

@@ -28,7 +28,7 @@ describe('starting and banking a run (sections 9 and 10)', () => {
 
   it('takes the gear and potions along; level and xp come from the player', () => {
     const { state, run } = startRun(withGold(100, { gear: ['iron_sword'], potions: 3, xp: 45, level: 3 }), 5, 1, 2);
-    expect(run.player).toMatchObject({ level: 3, attackMin: 7, attackMax: 9, maxHp: 36, potions: 3 });
+    expect(run.player).toMatchObject({ level: 3, attackMin: 8, attackMax: 10, maxHp: 36, potions: 3 });
     expect(run.round).toBe(2);
     expect(state.player.potions).toBe(0);
   });

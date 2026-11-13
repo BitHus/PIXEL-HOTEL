@@ -1,5 +1,3 @@
 [
-  { "id": "iron_sword", "name": "Iron sword", "kind": "weapon", "price": 150, "attackMin": 6, "attackMax": 8 },
-  { "id": "leather_armor", "name": "Leather armor", "kind": "armor", "price": 120, "damageReduction": 1, "minDamage": 1 },
   { "id": "health_potion", "name": "Health potion", "kind": "potion", "price": 20, "heal": 15, "cooldownMs": 1000, "carryMax": 3 }
 ]

@@ -14,6 +14,8 @@ import {
   RECIPES,
   RUN_SAVE_EVERY_MS,
   FARM_HINT,
+  MINE_HINT,
+  MINE_UNLOCK_LEVEL,
   buySeeds,
   cook,
   harvestPlot,
@@ -482,6 +484,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async currentHint(): Promise<string | null> {
     const i = this.state.hintsDone;
     // The dungeon hint only shows while the shop has nothing for sale (and no run is going).
+    // The mine hint (step 9c) waits until the mine opens.
+    if (i === MINE_HINT && this.state.player.level < MINE_UNLOCK_LEVEL) return null;
     if (i === DUNGEON_HINT) return !this.state.run && !this.state.shop.slots.some((s) => s.loot) ? (HINTS[i] ?? null) : null;
     return HINTS[i] ?? null;
   }

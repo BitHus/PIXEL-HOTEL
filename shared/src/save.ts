@@ -95,6 +95,24 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       run: nextRun,
     };
   },
+  // 7 -> 8 (step 9c): no mine visits yet; a saved run is a crypt run with no rocks, no lantern and
+  // the basic pickaxe. Gear ids stay: iron_sword and leather_armor are forge tiers now. An old save
+  // with both the iron sword and nothing before it simply has the iron sword tier.
+  7: (state) => {
+    if (!isObject(state) || !isObject(state.player)) return state;
+    const run = state.run;
+    const nextRun =
+      isObject(run) && isObject(run.player)
+        ? {
+            place: 'crypt',
+            rocks: [],
+            lanternEndsAt: null,
+            ...run,
+            player: { targetRockId: null, pendingSwing: false, pickReadyAt: 0, hitsPerSwing: 1, minesMithril: false, ...run.player },
+          }
+        : run;
+    return { ...state, player: { mineVisits: 0, ...state.player }, run: nextRun };
+  },
 };
 
 /** The storage key for a save version. */

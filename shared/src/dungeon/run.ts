@@ -1,12 +1,23 @@
 // The state of one dungeon run (brief section 10), plain data. A run is advanced only by
 // step.ts step(run, inputs, dtMs, rng). Positions are world px (x right, y down); the map is made
 // of DUNGEON_BLOCK px blocks.
+// Step 9c: a mine visit is a DungeonRun too (place 'mine'): the same blocks, step() and ticks, with
+// rocks instead of chests, the lantern timer instead of an exit, and pickaxe swings.
 
-import { DUNGEON_ROUND, DUNGEON_ROUNDS, PLAYER_ATTACK_COOLDOWN_MS, PLAYER_BASE_ATTACK_MAX, PLAYER_BASE_ATTACK_MIN, type EnemyKind } from '../config.ts';
-import { ownedArmor, ownedWeapon } from '../gear.ts';
+import {
+  DUNGEON_ROUND,
+  DUNGEON_ROUNDS,
+  MINE_LANTERN_MS,
+  PLAYER_ATTACK_COOLDOWN_MS,
+  PLAYER_BASE_ATTACK_MAX,
+  PLAYER_BASE_ATTACK_MIN,
+  type EnemyKind,
+  type RockKind,
+} from '../config.ts';
+import { ownedArmor, ownedPickaxe, ownedWeapon } from '../gear.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
 import type { FoodId, GearId, MaterialId, Point } from '../types.ts';
-import { generateFloor } from './generate.ts';
+import { generateFloor, generateMine, type FloorPlan } from './generate.ts';
 
 export type DungeonBlock = 'floor' | 'wall';
 export type DungeonRoundId = 1 | 2;
@@ -69,6 +80,18 @@ export interface Chest {
   y: number;
 }
 
+/** A rock in the mine (step 9c): broken after hitsLeft more hits; drops ore (and maybe a gem). */
+export interface Rock {
+  id: number;
+  kind: RockKind;
+  hitsLeft: number;
+  x: number;
+  y: number;
+}
+
+/** The crypt (the dungeon) or the mine. */
+export type RunPlace = 'crypt' | 'mine';
+
 /** One slot of the run bag: a stack of one material (up to MATERIAL_STACK_MAX) or one furniture item. */
 export type BagItem = { kind: 'material'; id: MaterialId; qty: number } | { kind: 'furniture'; typeId: string };
 
@@ -109,6 +132,14 @@ export interface RunPlayer {
   buffs: FoodBuff[];
   /** ms between hits (350; glowcap broth makes it 300 for the run). */
   attackCooldownMs: number;
+  /** The mine (step 9c): the rock the player walks to and swings at, one accepted tap waiting to
+   *  land, and the run time from which the next swing is allowed. */
+  targetRockId: number | null;
+  pendingSwing: boolean;
+  pickReadyAt: number;
+  /** The pickaxe: hits per swing (basic 1, steel 2) and whether it breaks mithril. */
+  hitsPerSwing: number;
+  minesMithril: boolean;
   /** False while still standing on the exit after choosing 'stay'. */
   exitArmed: boolean;
 }
@@ -132,10 +163,16 @@ export type RunEvent =
   | { t: 'exit' }
   | { t: 'stairs'; floor: number; healed: number }
   | { t: 'boss_banked' }
+  | { t: 'swing'; rockId: number; hits: number }
+  | { t: 'too_hard'; rockId: number }
+  | { t: 'rock_broken'; rockId: number }
+  | { t: 'lantern_out' }
   | { t: 'died' }
   | { t: 'left' };
 
 export interface DungeonRun {
+  /** The crypt or (step 9c) the mine. */
+  place: RunPlace;
   seed: number;
   round: DungeonRoundId;
   /** 1-based floor number. */
@@ -145,6 +182,10 @@ export interface DungeonRun {
   player: RunPlayer;
   enemies: Enemy[];
   chests: Chest[];
+  /** The mine's rocks (empty in the crypt). */
+  rocks: Rock[];
+  /** The mine: the run time when the lantern goes out (the visit ends). null in the crypt. */
+  lanternEndsAt: number | null;
   /** At risk until banked. */
   bag: RunBag;
   /** Safe: banked by leaving or by killing the boss (no slot limit). */
@@ -169,6 +210,9 @@ export type ExitChoice = 'deeper' | 'leave' | 'stay';
 export type DungeonInput =
   | { t: 'click_point'; x: number; y: number }
   | { t: 'click_enemy'; id: number }
+  | { t: 'click_rock'; id: number }
+  /** The mine: walk out now with everything (always allowed). */
+  | { t: 'leave' }
   | { t: 'drink_potion' }
   | { t: 'eat' }
   | { t: 'choose_exit'; choice: ExitChoice };
@@ -207,14 +251,24 @@ export function emptyRunBag(): RunBag {
 /** A new run on floor 1 at full hp. (bank.ts startRun also pays the key.) */
 export function newRun(o: NewRunOptions): DungeonRun {
   const round = o.round ?? DUNGEON_ROUND;
-  const plan = generateFloor(o.seed, 1, round);
+  return runFrom(o, generateFloor(o.seed, 1, round), round, 'crypt');
+}
+
+/** A new mine visit (step 9c): a fresh small layout from the seed; `visit` is its number (1 = first). */
+export function newMineRun(o: NewRunOptions & { visit: number }): DungeonRun {
+  return runFrom(o, generateMine(o.seed, o.visit), 1, 'mine');
+}
+
+function runFrom(o: NewRunOptions, plan: FloorPlan, round: DungeonRoundId, place: RunPlace): DungeonRun {
   const level = levelForXp(o.xp);
   const s = combatStats(level, o.gear);
+  const pick = ownedPickaxe(o.gear);
   return {
+    place,
     seed: o.seed,
     round,
     floor: 1,
-    maxFloors: DUNGEON_ROUNDS[round].maxFloors,
+    maxFloors: place === 'mine' ? 1 : DUNGEON_ROUNDS[round].maxFloors,
     map: plan.map,
     player: {
       x: plan.map.spawn.x,
@@ -232,10 +286,17 @@ export function newRun(o: NewRunOptions): DungeonRun {
       food: [...(o.food ?? [])],
       buffs: [],
       attackCooldownMs: PLAYER_ATTACK_COOLDOWN_MS,
+      targetRockId: null,
+      pendingSwing: false,
+      pickReadyAt: 0,
+      hitsPerSwing: pick?.hitsPerSwing ?? 1,
+      minesMithril: pick?.minesMithril ?? false,
       exitArmed: true,
     },
     enemies: plan.enemies,
     chests: plan.chests,
+    rocks: plan.rocks,
+    lanternEndsAt: place === 'mine' ? MINE_LANTERN_MS : null,
     bag: emptyRunBag(),
     banked: emptyRunBag(),
     lost: emptyRunBag(),
