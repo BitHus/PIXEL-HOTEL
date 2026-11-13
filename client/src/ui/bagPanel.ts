@@ -97,8 +97,8 @@ export function createBagPanel(parent: HTMLElement, hooks: BagHooks): BagPanel {
   root.style.setProperty('--bag-cols-phone', String(BAG_COLUMNS_PHONE));
   const tabRow = shell.tabs;
   const frame = shell.frame;
-  const hotbarRow = el('div', 'inset bag-section bag-hotbar-row');
-  const grid = el('div', 'inset bag-section bag-grid');
+  const hotbarRow = el('div', 'tray bag-section bag-hotbar-row');
+  const grid = el('div', 'tray bag-section bag-grid');
   const info = el('div', 'panel-info bag-info');
   shell.body.append(hotbarRow, el('div', 'divider'), grid, info);
   const tool = (icon: IconName, label: string, title: string, how: 'sort' | 'stack'): HTMLButtonElement => {

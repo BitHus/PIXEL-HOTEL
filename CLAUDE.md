@@ -795,6 +795,10 @@ Conventions:
     disabled = flat and darker; .small = 36 px with a 44 px touch area), .plate (dark name plate),
     .divider (line with diamonds), .price-short (red). All colours are Endesga 32; the frame
     images are SVG data URIs in :root.
+  - After the owner's example screenshots (general traits only, never copied, never in the repo):
+    slots are light cream on a darker .tray (bag sections, hotbar, run bag); the bag's hotbar row
+    is a dark wooden bar with a small diamond at each end; picker values sit on a light plate
+    (.plate.light), dark plates are for names and titles; inactive tabs are darker wood.
   - ui/panelShell.ts: panelShell(parent, cls, title) -> { el, tabs, frame, title, body, strip }
     (tabs on the top edge, a title plate, the scrolling body, a slim strip below), tabBar (icon
     tabs; the open one is raised, orange and shows its name), iconBox, priceTag(price, gold).

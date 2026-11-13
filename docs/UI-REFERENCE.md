@@ -114,7 +114,8 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   hotbar row section, the grid section). Never one flat area. A 2 px hard pixel shadow sits
   under panels and buttons. Big panels have a small wedge in every corner. Defined once in CSS
   (`.frame`, `.inset`) and reused everywhere.
-- **Dense slots.** 2 px between slots, a darker inset edge, the icon filling most of the slot
+- **Dense slots.** Light cream slots on a darker tray, so they stand out (owner's examples). 2 px
+  between slots, a dark edge, the icon filling most of the slot
   (about 36 px in a 44 px slot), a small count bottom-right. Slots stay 44 px or more wherever
   they are tapped.
 - **Buttons.** Small raised wooden buttons. Pressed: 2 px down and the shadow gone. The open /
@@ -122,9 +123,9 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   dark text. A button always fits its text (at 360 px too) and never shrinks under it.
 - **Tabs** sit on top of the panel's edge as small icon tabs; the open tab is raised, warm
   orange and shows its label.
-- **Name plates.** Small dark-brown bars with light text for titles, names and labels (the
-  panel title, the avatar's name, "Hair 2  Ponytail"). Pickers have a small square arrow button
-  left and right of the plate.
+- **Name plates.** Small dark-brown bars with light text for titles and names (the panel
+  title, the avatar's name). A picker's value ("Hair 2  Ponytail") sits on a light plate with a
+  small square arrow button left and right of it.
 - **Ornaments.** A divider line with small diamonds between sections; the corner wedges and
   nails of the frames. Nothing bigger.
 - **Strip below a panel.** Secondary actions (the bag's Sort and Stack) sit in a slim strip
@@ -176,7 +177,8 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
                       [Sort][Stack]       <- slim strip below the panel
   ```
 
-  - The hotbar is repeated as the top section of the panel, so items move between hotbar and
+  - The hotbar is repeated as the top section of the panel, a dark wooden bar with a small
+    diamond at each end, so items move between hotbar and
     bag by dragging (or tap one, then tap the target slot on a phone).
   - Every item is an icon with a count in the bottom-right corner. The grid shows the filled
     rows plus one empty row, not all 36 slots, so the panel stays small.
