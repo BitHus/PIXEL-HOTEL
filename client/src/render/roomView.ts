@@ -18,16 +18,35 @@ import { DepthLayer } from './depthLayer.ts';
 export class RoomView {
   /** Scaled and moved by the camera. */
   readonly world = new Container();
+
   readonly floorLayer = new Container();
   readonly rugLayer = new Container();
+  /** Non-blocking items (rugs), sorted among themselves, under everything else. */
+  readonly rugs = new DepthLayer();
   /** Debug drawings on the floor (Blockers mode), above rugs and below the wall. */
   readonly debugLayer = new Container();
   readonly wallLayer = new Container();
   readonly objects = new DepthLayer();
+  /** Build mode ghost, above everything. */
+  readonly ghostLayer = new Container({ eventMode: 'none' });
   private floorTexture: Texture | null = null;
 
   constructor() {
-    this.world.addChild(this.floorLayer, this.rugLayer, this.debugLayer, this.wallLayer, this.objects.container);
+    this.rugLayer.addChild(this.rugs.container);
+    this.world.addChild(
+      this.floorLayer,
+      this.rugLayer,
+      this.debugLayer,
+      this.wallLayer,
+      this.objects.container,
+      this.ghostLayer,
+    );
+  }
+
+  /** Call once per frame: re-sorts the rug and object lists when something moved. */
+  update(): void {
+    this.rugs.update();
+    this.objects.update();
   }
 
   setRoom(room: Room): void {

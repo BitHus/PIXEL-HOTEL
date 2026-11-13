@@ -36,12 +36,20 @@ export interface StyleType {
 export type PlaceIn = 'hotel' | 'shop' | 'both';
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic';
 
+/**
+ * A placeholder box, for the 'down' facing. (dx, dy) is the front-left corner of the box on the
+ * floor, relative to the anchor (dy <= 0 goes back). w and d are its size on the floor, z its
+ * height above the floor and h the height of its front face. It is drawn as a front face (w by
+ * h, darker) with a top face (w by d, lighter) above it. color is a palette index.
+ */
 export interface ArtBox {
   dx: number;
   dy: number;
   w: number;
+  d: number;
+  z: number;
   h: number;
-  color: string;
+  color: number;
 }
 
 export type FurnitureArt = { boxes: ArtBox[] } | { sprite: string };

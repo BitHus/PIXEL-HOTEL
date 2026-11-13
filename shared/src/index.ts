@@ -6,3 +6,4 @@ export * from './avatar.ts';
 export * from './view.ts';
 export * from './api.ts';
 export * from './palette.ts';
+export * from './furniture.ts';

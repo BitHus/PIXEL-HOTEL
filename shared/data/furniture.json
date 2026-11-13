@@ -1,0 +1,765 @@
+[
+  {
+    "id": "chair",
+    "name": "Wooden chair",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 32,
+    "d": 32,
+    "height": 52,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 5,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -14,
+          "dy": -28,
+          "w": 28,
+          "d": 4,
+          "z": 0,
+          "h": 20,
+          "color": 5
+        },
+        {
+          "dx": -14,
+          "dy": -2,
+          "w": 28,
+          "d": 26,
+          "z": 0,
+          "h": 10,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "sofa",
+    "name": "Settle",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 80,
+    "d": 40,
+    "height": 62,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 20,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -38,
+          "dy": -34,
+          "w": 76,
+          "d": 6,
+          "z": 0,
+          "h": 22,
+          "color": 5
+        },
+        {
+          "dx": -34,
+          "dy": -2,
+          "w": 68,
+          "d": 32,
+          "z": 0,
+          "h": 10,
+          "color": 4
+        },
+        {
+          "dx": -40,
+          "dy": -2,
+          "w": 6,
+          "d": 38,
+          "z": 0,
+          "h": 16,
+          "color": 5
+        },
+        {
+          "dx": 34,
+          "dy": -2,
+          "w": 6,
+          "d": 38,
+          "z": 0,
+          "h": 16,
+          "color": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "table",
+    "name": "Table",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 64,
+    "d": 40,
+    "height": 56,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 10,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -30,
+          "dy": -34,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": 26,
+          "dy": -34,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": -30,
+          "dy": -2,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": 26,
+          "dy": -2,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 40,
+          "z": 12,
+          "h": 4,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "lamp",
+    "name": "Candle stand",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 24,
+    "d": 24,
+    "height": 47,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": true,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 6,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -8,
+          "dy": -4,
+          "w": 16,
+          "d": 16,
+          "z": 0,
+          "h": 4,
+          "color": 6
+        },
+        {
+          "dx": -2,
+          "dy": -10,
+          "w": 4,
+          "d": 4,
+          "z": 4,
+          "h": 22,
+          "color": 5
+        },
+        {
+          "dx": -3,
+          "dy": -10,
+          "w": 6,
+          "d": 4,
+          "z": 26,
+          "h": 6,
+          "color": 2
+        },
+        {
+          "dx": -1,
+          "dy": -11,
+          "w": 2,
+          "d": 1,
+          "z": 32,
+          "h": 3,
+          "color": 10
+        }
+      ]
+    }
+  },
+  {
+    "id": "rug",
+    "name": "Woven rug",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 80,
+    "d": 56,
+    "height": 56,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 8,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -40,
+          "dy": 0,
+          "w": 80,
+          "d": 56,
+          "z": 0,
+          "h": 0,
+          "color": 7
+        },
+        {
+          "dx": -34,
+          "dy": -6,
+          "w": 68,
+          "d": 44,
+          "z": 0,
+          "h": 0,
+          "color": 0
+        },
+        {
+          "dx": -24,
+          "dy": -16,
+          "w": 48,
+          "d": 24,
+          "z": 0,
+          "h": 0,
+          "color": 10
+        }
+      ]
+    }
+  },
+  {
+    "id": "plant",
+    "name": "Potted plant",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 32,
+    "d": 32,
+    "height": 48,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": true,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 4,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -10,
+          "dy": -6,
+          "w": 20,
+          "d": 20,
+          "z": 0,
+          "h": 14,
+          "color": 0
+        },
+        {
+          "dx": -14,
+          "dy": -2,
+          "w": 28,
+          "d": 24,
+          "z": 14,
+          "h": 8,
+          "color": 13
+        },
+        {
+          "dx": -8,
+          "dy": -8,
+          "w": 16,
+          "d": 12,
+          "z": 22,
+          "h": 6,
+          "color": 12
+        }
+      ]
+    }
+  },
+  {
+    "id": "bookshelf",
+    "name": "Bookshelf",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "hotel",
+    "slots": 0,
+    "appeal": 0,
+    "w": 56,
+    "d": 24,
+    "height": 80,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 18,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -28,
+          "dy": 0,
+          "w": 56,
+          "d": 24,
+          "z": 0,
+          "h": 56,
+          "color": 5
+        },
+        {
+          "dx": -24,
+          "dy": 0,
+          "w": 48,
+          "d": 0,
+          "z": 6,
+          "h": 10,
+          "color": 7
+        },
+        {
+          "dx": -24,
+          "dy": 0,
+          "w": 48,
+          "d": 0,
+          "z": 22,
+          "h": 10,
+          "color": 14
+        },
+        {
+          "dx": -24,
+          "dy": 0,
+          "w": 48,
+          "d": 0,
+          "z": 38,
+          "h": 10,
+          "color": 10
+        }
+      ]
+    }
+  },
+  {
+    "id": "barrel",
+    "name": "Barrel",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 40,
+    "d": 40,
+    "height": 62,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 6,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -18,
+          "dy": -2,
+          "w": 36,
+          "d": 36,
+          "z": 0,
+          "h": 24,
+          "color": 4
+        },
+        {
+          "dx": -18,
+          "dy": -2,
+          "w": 36,
+          "d": 0,
+          "z": 4,
+          "h": 3,
+          "color": 6
+        },
+        {
+          "dx": -18,
+          "dy": -2,
+          "w": 36,
+          "d": 0,
+          "z": 17,
+          "h": 3,
+          "color": 6
+        }
+      ]
+    }
+  },
+  {
+    "id": "crate",
+    "name": "Crate",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 40,
+    "d": 40,
+    "height": 60,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 4,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -20,
+          "dy": 0,
+          "w": 40,
+          "d": 40,
+          "z": 0,
+          "h": 20,
+          "color": 31
+        },
+        {
+          "dx": -20,
+          "dy": 0,
+          "w": 40,
+          "d": 0,
+          "z": 9,
+          "h": 2,
+          "color": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "bench",
+    "name": "Plain bench",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 64,
+    "d": 32,
+    "height": 40,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 8,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -28,
+          "dy": -6,
+          "w": 6,
+          "d": 20,
+          "z": 0,
+          "h": 7,
+          "color": 5
+        },
+        {
+          "dx": 22,
+          "dy": -6,
+          "w": 6,
+          "d": 20,
+          "z": 0,
+          "h": 7,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": -2,
+          "w": 64,
+          "d": 28,
+          "z": 7,
+          "h": 3,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "desk",
+    "name": "Writing desk",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 64,
+    "d": 40,
+    "height": 56,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 15,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -30,
+          "dy": -2,
+          "w": 8,
+          "d": 36,
+          "z": 0,
+          "h": 14,
+          "color": 5
+        },
+        {
+          "dx": 22,
+          "dy": -2,
+          "w": 8,
+          "d": 36,
+          "z": 0,
+          "h": 14,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 40,
+          "z": 14,
+          "h": 2,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "bed",
+    "name": "Bed",
+    "category": "home_furniture",
+    "theme": "tavern",
+    "placeIn": "hotel",
+    "slots": 0,
+    "appeal": 0,
+    "w": 64,
+    "d": 80,
+    "height": 100,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "baseValue": 25,
+    "rarity": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -32,
+          "dy": -76,
+          "w": 64,
+          "d": 4,
+          "z": 0,
+          "h": 20,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 76,
+          "z": 0,
+          "h": 8,
+          "color": 5
+        },
+        {
+          "dx": -28,
+          "dy": -4,
+          "w": 56,
+          "d": 68,
+          "z": 8,
+          "h": 4,
+          "color": 2
+        },
+        {
+          "dx": -20,
+          "dy": -56,
+          "w": 40,
+          "d": 12,
+          "z": 12,
+          "h": 3,
+          "color": 19
+        },
+        {
+          "dx": -28,
+          "dy": -4,
+          "w": 56,
+          "d": 40,
+          "z": 12,
+          "h": 1,
+          "color": 7
+        }
+      ]
+    }
+  }
+]

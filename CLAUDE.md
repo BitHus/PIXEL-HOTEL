@@ -334,7 +334,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   push at the end of every step.
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
-Steps 1 (project skeleton), 2 (room view) and 3 (avatar and walking) are done.
+Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking) and 4 (furniture) are done.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -350,16 +350,25 @@ Layout:
   lineOfSight, segmentTouchesRect, inflateRect, cell helpers), minHeap.ts (A* open list),
   avatar.ts (Avatar, AvatarLook, AvatarState, walkAvatar, facingFor, pathLength), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
   zoomAt, panBy, clampCamera, snapCamera, settleZoom, easeZoom), api.ts (GameAPI interface), palette.ts (Endesga
-  32 hex list, the only place it lives), index.ts (re-exports).
+  32 hex list, the only place it lives), furniture.ts (FURNITURE_TYPES, getFurnitureType,
+  footprintSize, footprintRect, snapCoord, nextFacing, fitsRoomKind, ridersOf, itemBlockers,
+  doorPoint, doorReachesMiddle, canPlace, snapToSurface, planPlacement, rotateQuarter,
+  moveItem, pickUpItem, standPointFor, seatFor), index.ts (re-exports).
+  nav.ts also exports reachableCells and nearestFreeCell.
+- shared/data/furniture.json: the 12 starter furniture types (step 4), all box placeholders.
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
 - client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling), draws a level 1 hotel room,
   keeps the camera, shows the debug cross and label. Refits the camera on window resize.
   Holds one local avatar (starts in the door zone): a tap calls findPath, the ticker calls
   walkAvatar each frame and updates the sprite and its depth key (feet y, x, avatar id).
-- client/src/render: roomView.ts (RoomView: world container with floorLayer, rugLayer,
-  wallLayer, then objects), depthLayer.ts (DepthLayer: the one y/x/uid-sorted list of items
-  and avatars; uses Pixi zIndex sorting, call update() each frame), depthOrder.ts
-  (compareDepth, tested), bareStyles.ts (bare floor texture made in code, bare wall colors),
+- client/src/render: roomView.ts (RoomView: world container with floorLayer, rugLayer (holds
+  the `rugs` DepthLayer), debugLayer, wallLayer, objects, ghostLayer; call view.update() each
+  frame), depthLayer.ts (DepthLayer: a y/x/uid-sorted list; uses Pixi zIndex sorting),
+  depthOrder.ts (DepthKey with optional `sub`, compareDepth, itemDepthKey, avatarDepthKey,
+  tested), furnitureArt.ts (boxesForFacing, surfaceHeight, drawFurniture, tested),
+  furnitureSprite.ts (FurnitureSprite: one item's art at its anchor, lifted when on a
+  surface), itemViews.ts (ItemViews: one sprite per placed item, sync(items, hidden), uidOf
+  for hit testing), bareStyles.ts (bare floor texture made in code, bare wall colors),
   colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross),
   avatarSprite.ts (AvatarSprite: box placeholder 32x64, down/up/right drawn, left = right
   mirrored, 1 px dark warm outline, 2 px bob every WALK_BOB_MS while walking).
@@ -371,6 +380,9 @@ Layout:
 - client/src/ui/debugLabel.ts: HTML label in #ui with world x, y and zoom.
 - client/src/ui/blockersButton.ts: "Blockers (B)" toggle and "Clear" buttons (top right),
   plus the B key.
+- client/src/build/buildMode.ts: BuildMode (held item, ghost, place / lift / rotate / pick up /
+  cancel). client/src/ui/buildPanel.ts: "Build (F)" toggle, the temporary list of all 12
+  types (with inventory counts), Rotate (R), Pick up (Del), Cancel (Esc).
 - server/src/index.ts: placeholder only (step 10).
 
 Conventions:
@@ -410,6 +422,37 @@ Conventions:
   null; a blocked target walks to the nearest reachable free cell center. If the avatar
   stands on a blocked cell (a blocker drawn on it), it leaves via the nearest free cell.
 - When blockers change, the grid is rebuilt and a walking avatar re-paths to its goal.
+- FURNITURE (step 4):
+  - ArtBox is { dx, dy, w, d, z, h, color } for the 'down' facing: (dx, dy) is the box's
+    front-left corner on the floor relative to the anchor (dy <= 0 goes back), w x d its floor
+    size, z its height above the floor, h its front face height, color a palette INDEX (hex
+    lives only in palette.ts). 'right' and 'up' turn the boxes on the floor, 'left' mirrors
+    'right'. Boxes draw sorted by z, then back edge, then front edge. type.height is the
+    tallest box extent (tested). Barrel, crate and bed are taller than the section 12 art
+    sizes because their footprints are as deep as those sizes.
+  - Riders: an onSurface item on a surface has onItemUid set and is drawn surfaceHeight px
+    higher, right after the surface (depth key `sub`). moveItem moves and turns riders with
+    the surface (riders that no longer fit go to the inventory); pickUpItem takes them along.
+  - canPlace's `items` are the OTHER items (leave out the one being moved). Items on surfaces
+    never block the floor. doorReachesMiddle: the free cell nearest the room middle must be
+    reachable from the door point.
+  - Nav blockers = debug rects + itemBlockers(items, roomId) (blocking items on the floor).
+  - Build mode input: F toggles. Mouse hover moves the ghost (footprint center under the
+    pointer); while an item is held, a one-finger / left drag moves the ghost by the drag
+    distance (getDragMode returns 'draw'); a tap on the ghost places it where it is, a tap
+    elsewhere moves it there and places it. With no item held, a tap on a placed item lifts it
+    (it and its riders are hidden in the room until placed; Cancel leaves it where it was).
+    Placing from the list keeps the same type held; placing a lifted item lets go. Shift (held)
+    turns the 4 px snap off. Items picked up go to the inventory (roomId null) and the list
+    uses them first.
+  - Hit testing: cameraControl passes the Pixi event target to onPoint; item containers are
+    eventMode 'static' and ItemViews.uidOf maps a target to an item. The cursor cross, the
+    avatar and the ghost layer have eventMode 'none' so they never hide an item from a tap.
+  - Sitting: a tap on a sittable item walks to standPointFor (only if the walk ends within
+    SIT_REACH_PX of it), then the avatar is put on seatFor (footprint center), state 'sit',
+    facing the item. A sitting avatar sorts right after its seat (right before it when the
+    seat faces up). Moving or picking up the seat makes the avatar stand where it is. No sit
+    sprite yet: the idle sprite is shown.
 
 Notes:
 - palette.ts was filled from memory because lospec.com is blocked in the cloud environment.
@@ -417,6 +460,8 @@ Notes:
 - SHOP_START_ITEMS positions in config.ts are placeholders; adjust when the counter and
   stall_table types exist.
 - The room in main.ts is created directly with createRoom, and paths come straight from
-  findPath; both move behind GameAPI (enterRoom, walk) when LocalGameAPI arrives.
+  findPath; both move behind GameAPI (enterRoom, walk) when LocalGameAPI arrives. Furniture
+  is also kept in main.ts (not saved; it is gone after a reload) until LocalGameAPI.
+- The build list is temporary and free (no gold yet); the catalog comes later.
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
 - The avatar look uses palette indices (skin 30, hair 5, shirt 7, legs 23, shoes 6).
