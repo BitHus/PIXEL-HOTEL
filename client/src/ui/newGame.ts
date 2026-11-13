@@ -79,11 +79,17 @@ function screen(parent: HTMLElement): HTMLElement {
   return s;
 }
 
-/** Character creation. Resolves with the name and look. */
+/**
+ * Character creation. Resolves with the name and look. Layout (docs/UI-REFERENCE.md): the avatar
+ * preview always in view (phone: fixed at the top, about 35% of the screen height; desktop: on the
+ * left), turning slowly and updated the moment a choice is tapped; under it (desktop: on the right)
+ * the name, the tabs (Body, Hair, Top, Bottoms, Shoes) with one tab's pickers, and Done, always
+ * visible at the bottom.
+ */
 function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: AvatarLook }> {
   return new Promise((resolve) => {
-    const s = screen(parent);
-    const frame = el('div', 'frame newgame-frame');
+    const s = el('div', 'charmaker');
+    parent.appendChild(s);
     let look: AvatarLook = { ...START_LOOK };
     const preview = createAvatarPreview(4);
     const pickers = createLookPickers((next) => {
@@ -97,7 +103,7 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: Avata
     name.autocomplete = 'off';
     name.setAttribute('aria-label', 'Display name');
     const problem = el('div', 'panel-info newgame-problem');
-    const done = textButton('Next', () => {
+    const done = textButton('Done', () => {
       const clean = cleanDisplayName(name.value);
       if (!clean) {
         problem.textContent = `Pick a name: up to ${DISPLAY_NAME_MAX} letters, digits and spaces.`;
@@ -109,16 +115,13 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: Avata
       resolve({ name: clean, look });
     }, 'newgame-next');
     name.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
-    const left = el('div', 'newgame-avatar');
-    const stage = el('div', 'avatar-stage');
-    stage.appendChild(preview.el);
-    left.append(stage, name, problem);
-    const right = el('div', 'newgame-pickers');
-    right.appendChild(pickers.el);
-    const body = el('div', 'newgame-body');
-    body.append(left, right);
-    frame.append(el('h2', 'panel-title', 'Make your character'), body, done);
-    s.appendChild(frame);
+    const stage = el('div', 'charmaker-stage');
+    stage.append(el('h2', 'charmaker-title', 'Make your character'), preview.el);
+    const panel = el('div', 'frame charmaker-panel');
+    const choices = el('div', 'charmaker-choices');
+    choices.append(pickers.body);
+    panel.append(name, problem, pickers.tabs, choices, done);
+    s.append(stage, panel);
   });
 }
 

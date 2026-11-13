@@ -122,6 +122,21 @@ export const CUSTOMER_PAY_MS = 900;
 export const CASHIER_BEHIND_PX = 20;
 /** No new customers come while this many are carrying something to the till. */
 export const QUEUE_MAX = 5;
+/** At most this many customers are in the shop at the same time (fix after 7b). */
+export const CUSTOMER_MAX_IN_SHOP = 3;
+/** Customers walk calmer than the player: this many px per second, each one up to
+ *  CUSTOMER_SPEED_VARIATION faster or slower (fix after 7b). */
+export const CUSTOMER_WALK_SPEED = 72;
+export const CUSTOMER_SPEED_VARIATION = 0.1;
+/** A customer stops just inside the door this long before walking on, ms. */
+export const CUSTOMER_ENTER_PAUSE_MS = 900;
+/** A customer looks at an item (the "..." thought bubble) between these times, ms. */
+export const CUSTOMER_BROWSE_MIN_MS = 2000;
+export const CUSTOMER_BROWSE_MAX_MS = 5000;
+/** Chance that a customer also looks at a second table, shelf or case before deciding. */
+export const CUSTOMER_SECOND_LOOK_CHANCE = 0.35;
+/** After paying, a customer waits this long at the till before walking out, ms. */
+export const CUSTOMER_AFTER_PAY_MS = 1000;
 /** Queue spots behind the paying spot are this far apart, px. */
 export const QUEUE_SPACING_PX = 24;
 /** Customers appear this far below the floor and walk in through the door, px. */
@@ -341,15 +356,19 @@ export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 export const SAVE_BACKUP_KEY = 'pixel-hotel.save.backup';
 
 // ---------- Chat (step 5) ----------
-/** A chat bubble stays this long (ms), fading out during the last CHAT_BUBBLE_FADE_MS. */
+/** A chat bubble stays at least this long (ms; longer texts: readingMs), fading out during the
+ *  last CHAT_BUBBLE_FADE_MS. */
 export const CHAT_BUBBLE_MS = 6000;
-export const CHAT_BUBBLE_FADE_MS = 1000;
+export const CHAT_BUBBLE_FADE_MS = 900;
 /** Gap between stacked bubbles and above the head, screen px. */
 export const CHAT_BUBBLE_GAP_PX = 4;
 /** The chat log keeps this many lines. */
 export const CHAT_LOG_MAX = 100;
-/** Toasts (short messages at the top) stay this long, ms. */
-export const TOAST_MS = 4000;
+/** Reading pace (fix after 7b): every text on screen (toasts, chat bubbles) stays at least
+ *  TEXT_MIN_MS plus TEXT_MS_PER_WORD per word (readingMs), then fades out over TEXT_FADE_MS. */
+export const TEXT_MIN_MS = 4000;
+export const TEXT_MS_PER_WORD = 350;
+export const TEXT_FADE_MS = 900;
 
 // ---------- Catalog, rooms and hints (step 7) ----------
 /** The first catalog purchase pops into placing: the ghost grows in over this many ms. */

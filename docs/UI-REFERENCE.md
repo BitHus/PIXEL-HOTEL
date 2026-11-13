@@ -125,6 +125,16 @@ What makes the reference look clean, translated into rules:
 - **Panels** (Bag, Catalog, Crafting, Settings) open as one panel at a time in the same
   frame style, centered or as a bottom sheet on a phone, with a clear close button (✗) in the
   top-right corner. Opening one closes the other.
+- **Reading pace for every text** (after step 7b): toasts, messages and chat bubbles stay on
+  screen for at least 4 s plus 0.35 s per word (TEXT_MIN_MS, TEXT_MS_PER_WORD, shared readingMs)
+  and then fade out slowly (TEXT_FADE_MS). A tap on a toast hides it. Important first-run hints
+  never time out: they stay until the player taps them, with a small "tap to continue ▸" arrow.
+- **Character creation** (after step 7b): the avatar preview is always in view while choosing.
+  Phone: fixed at the top, about 35% of the screen height, turning slowly and updating the moment
+  a choice is tapped. Under it one compact panel: the name, tabs Body (skin), Hair (style +
+  colour), Top (style + colour), Bottoms (style + colour), Shoes, only one tab open at a time,
+  and a Done button always visible at the bottom. Desktop: the same, with the preview on the
+  left and the panel on the right. The Avatar panel uses the same tabs.
 - **Feedback for every action:** a small sound later, and now at least a visual: a pop when
   something is placed, a shake when something is refused, a floating "+12 gold" for a sale.
 

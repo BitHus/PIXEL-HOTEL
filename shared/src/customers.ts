@@ -1,7 +1,10 @@
 // Walking shop customers (step 7). Pure: time (dtMs, at) and rng are passed in.
 //
-// Flow: a customer appears below the door and walks in to the table, shelf or case that holds
-// the cheapest item of the category they want, and decides there (the reaction bubble). If they
+// Flow: a customer appears below the door, walks in calmly (CUSTOMER_WALK_SPEED, a little
+// different per customer), stops just inside the door for a moment, walks to the table, shelf or
+// case that holds the cheapest item of the category they want, looks at it for 2 to 5 s (a "..."
+// thought bubble; sometimes at a second one too), and decides (the reaction bubble). At most
+// CUSTOMER_MAX_IN_SHOP are in the shop at once. If they
 // buy, the item leaves the slot at once and they carry it to the customer side of the counter.
 // Customers wait in a queue line: spot 0 is the paying spot in front of the counter, the others
 // are in a row behind it (queueSpots; every spot is a different free nav cell). The one on spot
@@ -16,8 +19,15 @@ import {
   CUSTOMER_LOOKS,
   CUSTOMER_OUTSIDE_PX,
   CUSTOMER_PAY_MS,
-  HOTEL_WALK_SPEED,
   QUEUE_MAX,
+  CUSTOMER_AFTER_PAY_MS,
+  CUSTOMER_BROWSE_MAX_MS,
+  CUSTOMER_BROWSE_MIN_MS,
+  CUSTOMER_ENTER_PAUSE_MS,
+  CUSTOMER_MAX_IN_SHOP,
+  CUSTOMER_SECOND_LOOK_CHANCE,
+  CUSTOMER_SPEED_VARIATION,
+  CUSTOMER_WALK_SPEED,
   QUEUE_SPACING_PX,
 } from './config.ts';
 import { walkAvatar, type Avatar, type AvatarLook } from './avatar.ts';
@@ -41,7 +51,12 @@ import {
 } from './shop.ts';
 import type { Facing, FurnitureItem, LootRef, Point, Reaction, Rng, SaleRecord, ShopCategory } from './types.ts';
 
-export type CustomerPhase = 'browse' | 'decide' | 'queue' | 'pay' | 'leave';
+/**
+ * enter: walks in to just inside the door and stops there a moment. browse: walks to a table,
+ * shelf or case and looks at it (2 to 5 s, sometimes a second one). decide: the reaction bubble.
+ * queue / pay: at the counter. paid: waits a moment after paying. leave: walks out.
+ */
+export type CustomerPhase = 'enter' | 'browse' | 'decide' | 'queue' | 'pay' | 'paid' | 'leave';
 
 export interface Customer {
   /** Negative ids (players are positive). */
@@ -55,8 +70,16 @@ export interface Customer {
   phase: CustomerPhase;
   want: ShopCategory;
   tolerance: number;
-  /** ms left standing in 'decide' or 'pay'. */
+  /** ms left standing still (the pause at the door, browsing, deciding, paying, after paying). */
   waitMs: number;
+  /** Walk speed, px per second (CUSTOMER_WALK_SPEED, varied per customer). */
+  speed: number;
+  /** The table, shelf or case they walk to and look at. */
+  shelfUid: number | null;
+  /** True while standing at an item, looking (the "..." bubble). */
+  browsing: boolean;
+  /** How many items they looked at so far. */
+  looks: number;
   /** What they bought and carry to the till. */
   carrying: { loot: LootRef; price: number } | null;
   reaction: Reaction | null;
@@ -72,6 +95,8 @@ export type ShopEvent =
   | { t: 'paying'; customerId: number; till: Point }
   /** A customer paid at the till: the gold is in the wallet now. */
   | { t: 'sale'; customerId: number; typeId: string; price: number; till: Point }
+  /** A customer stands at an item thinking ("..."), for ms. */
+  | { t: 'thinking'; customerId: number; ms: number }
   /** Slot contents changed (a customer took an item). */
   | { t: 'slots' };
 
@@ -179,6 +204,16 @@ function shelfStand(w: ShopWorld, shelfUid: number): Point | null {
   return shelf ? standPointFor(shelf, getFurnitureType(shelf.typeId)) : null;
 }
 
+/** The stand point of a table, shelf or case with stock other than `not` (the first one), or null. */
+function anyStand(shop: ShopState, w: ShopWorld, not: number | null): { uid: number; stand: Point } | null {
+  for (const slot of shop.slots) {
+    if (!slot.loot || slot.shelfUid === not) continue;
+    const stand = shelfStand(w, slot.shelfUid);
+    if (stand) return { uid: slot.shelfUid, stand };
+  }
+  return null;
+}
+
 /** Spawns a customer if the timer ran out. */
 function spawn(state: GameState, w: ShopWorld, rng: Rng): { state: GameState; spawned: boolean } {
   const shop = state.shop;
@@ -188,19 +223,24 @@ function spawn(state: GameState, w: ShopWorld, rng: Rng): { state: GameState; sp
   const target = visit(shop, want, tolerance).slot ?? shop.slots.find((s) => s.loot !== null);
   const stand = target ? shelfStand(w, target.shelfUid) : null;
   const start = outsidePoint(w.room);
-  const walkIn = stand ? findPath(w.grid, doorPoint(w.room), stand) : null;
-  if (!walkIn) return { state, spawned: false };
+  // They come in through the door and stop just inside it first (phase 'enter').
+  if (!stand || !findPath(w.grid, doorPoint(w.room), stand)) return { state, spawned: false };
+  const speed = CUSTOMER_WALK_SPEED * (1 + (rng() * 2 - 1) * CUSTOMER_SPEED_VARIATION);
   const c: Customer = {
     id: shop.nextCustomerId,
     look,
     x: start.x,
     y: start.y,
     facing: 'up',
-    path: walkIn,
-    phase: 'browse',
+    path: [doorPoint(w.room)],
+    phase: 'enter',
     want,
     tolerance,
-    waitMs: 0,
+    waitMs: CUSTOMER_ENTER_PAUSE_MS,
+    speed,
+    shelfUid: target?.shelfUid ?? null,
+    browsing: false,
+    looks: 0,
     carrying: null,
     reaction: null,
     queueSpot: -1,
@@ -235,9 +275,10 @@ export function stepShop(state: GameState, w: ShopWorld, dtMs: number, rng: Rng,
   if (hasStock(s.shop)) {
     let left = s.shop.nextCustomerInMs - dtMs;
     if (left <= 0) {
-      // A full line at the till: nobody new comes in (the timer starts again).
+      // A full shop or a full line at the till: nobody new comes in (the timer starts again).
       const carrying = s.shop.customers.filter((c) => c.carrying !== null).length;
-      const r = carrying < QUEUE_MAX ? spawn(s, w, rng) : { state: s, spawned: false };
+      const room = s.shop.customers.length < CUSTOMER_MAX_IN_SHOP && carrying < QUEUE_MAX;
+      const r = room ? spawn(s, w, rng) : { state: s, spawned: false };
       s = r.state;
       listChanged ||= r.spawned;
       left += customerIntervalMs(shopAppeal(w.room, w.items));
@@ -253,7 +294,7 @@ export function stepShop(state: GameState, w: ShopWorld, dtMs: number, rng: Rng,
     let c = c0;
     // Walk.
     if (c.path.length > 0) {
-      const r = walkAvatar(customerAvatar(c, w.room.id), c.path, dtMs, HOTEL_WALK_SPEED);
+      const r = walkAvatar(customerAvatar(c, w.room.id), c.path, dtMs, c.speed ?? CUSTOMER_WALK_SPEED);
       c = { ...c, x: r.avatar.x, y: r.avatar.y, facing: r.avatar.facing, path: r.path };
       if (c.path.length > 0) {
         out.push(c);
@@ -264,7 +305,34 @@ export function stepShop(state: GameState, w: ShopWorld, dtMs: number, rng: Rng,
         continue; // Out of the door: gone.
       }
     }
-    if (c.phase === 'browse') {
+    if (c.phase === 'enter') {
+      // Just inside the door: a short stop, then on to the table, shelf or case.
+      c = { ...c, waitMs: c.waitMs - dtMs };
+      if (c.waitMs <= 0) {
+        const own = c.shelfUid !== null ? shelfStand(w, c.shelfUid) : null;
+        const target = own && c.shelfUid !== null ? { uid: c.shelfUid, stand: own } : anyStand(s.shop, w, null);
+        const path = target ? findPath(w.grid, c, target.stand) : null;
+        c =
+          path && target
+            ? { ...c, phase: 'browse', waitMs: 0, shelfUid: target.uid, path: path.slice(1) }
+            : { ...c, phase: 'leave', waitMs: 0, path: exitPath(w, c) };
+        listChanged = true;
+      }
+    } else if (c.phase === 'browse' && !c.browsing) {
+      // Arrived at the item: look at it for a while (the "..." bubble).
+      const ms = CUSTOMER_BROWSE_MIN_MS + Math.floor(rng() * (CUSTOMER_BROWSE_MAX_MS - CUSTOMER_BROWSE_MIN_MS));
+      c = { ...c, browsing: true, waitMs: ms, looks: (c.looks ?? 0) + 1, facing: 'up' };
+      events.push({ t: 'thinking', customerId: c.id, ms });
+      listChanged = true;
+    } else if (c.phase === 'browse' && c.waitMs - dtMs > 0) {
+      c = { ...c, waitMs: c.waitMs - dtMs };
+    } else if (c.phase === 'browse' && (c.looks ?? 1) < 2 && rng() < CUSTOMER_SECOND_LOOK_CHANCE && anyStand(s.shop, w, c.shelfUid)) {
+      // Sometimes they look at a second table, shelf or case first.
+      const other = anyStand(s.shop, w, c.shelfUid)!;
+      const path = findPath(w.grid, c, other.stand);
+      c = { ...c, browsing: false, waitMs: 0, shelfUid: other.uid, path: path ? path.slice(1) : [] };
+      listChanged = true;
+    } else if (c.phase === 'browse') {
       const v = visit(s.shop, c.want, c.tolerance);
       if (!v.slot?.loot || !v.decision) {
         c = { ...c, phase: 'leave', path: exitPath(w, c) };
@@ -307,7 +375,14 @@ export function stepShop(state: GameState, w: ShopWorld, dtMs: number, rng: Rng,
         const r = pay(s, c, at);
         s = r.state;
         if (r.sale) events.push({ t: 'sale', customerId: c.id, typeId: r.sale.typeId, price: r.sale.price, till: tillPoint(counter) ?? c });
-        c = { ...c, phase: 'leave', carrying: null, queueSpot: -1, waitMs: 0, path: exitPath(w, c) };
+        // A moment at the till after paying, then out.
+        c = { ...c, phase: 'paid', carrying: null, queueSpot: -1, waitMs: CUSTOMER_AFTER_PAY_MS };
+        listChanged = true;
+      }
+    } else if (c.phase === 'paid') {
+      c = { ...c, waitMs: c.waitMs - dtMs };
+      if (c.waitMs <= 0) {
+        c = { ...c, phase: 'leave', waitMs: 0, path: exitPath(w, c) };
         listChanged = true;
       }
     }

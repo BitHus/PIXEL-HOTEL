@@ -2,7 +2,7 @@
 // GameAPI sends the customer list (with each one's path) whenever it changes; this animates the
 // paths locally with walkAvatar, like the own avatar, and keeps them in the depth-sorted list.
 
-import { customerAvatar, walkAvatar, type Avatar, type Customer, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_WALK_SPEED, customerAvatar, walkAvatar, type Avatar, type Customer, type Point } from '@pixel-hotel/shared';
 import { AvatarSprite } from './avatarSprite.ts';
 import { avatarDepthKey } from './depthOrder.ts';
 import type { RoomView } from './roomView.ts';
@@ -10,6 +10,8 @@ import type { RoomView } from './roomView.ts';
 interface Shown {
   avatar: Avatar;
   path: Point[];
+  /** The customer's own walk speed, px per second. */
+  speed: number;
   sprite: AvatarSprite;
 }
 
@@ -29,7 +31,7 @@ export class CustomerViews {
         const sprite = new AvatarSprite(c.look);
         sprite.container.eventMode = 'none';
         this.view.objects.add(sprite.container, avatarDepthKey(a));
-        this.shown.set(c.id, { avatar: a, path: [...c.path], sprite });
+        this.shown.set(c.id, { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite });
         continue;
       }
       // Keep the shown position unless it is clearly off (tiny timing differences are walked off).
@@ -45,7 +47,7 @@ export class CustomerViews {
 
   update(dtMs: number, timeMs: number): void {
     for (const s of this.shown.values()) {
-      const r = walkAvatar(s.avatar, s.path, dtMs);
+      const r = walkAvatar(s.avatar, s.path, dtMs, s.speed);
       s.avatar = r.avatar;
       s.path = r.path;
       s.sprite.update(s.avatar, timeMs);

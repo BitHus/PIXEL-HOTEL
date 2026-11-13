@@ -1,9 +1,9 @@
 // Chat bubbles (step 5): light cream bubbles with a dark outline above an avatar's head. New
 // bubbles appear right above the head and push older ones up (they stack upward). Each one
-// fades out during its last CHAT_BUBBLE_FADE_MS and is gone after CHAT_BUBBLE_MS. HTML, so the
+// stays at reading pace (readingMs, at least CHAT_BUBBLE_MS), then fades out over CHAT_BUBBLE_FADE_MS. HTML, so the
 // text stays sharp at every zoom; call update() every frame with the heads' screen positions.
 
-import { CHAT_BUBBLE_FADE_MS, CHAT_BUBBLE_GAP_PX, CHAT_BUBBLE_MS, type ChatLine, type Point } from '@pixel-hotel/shared';
+import { CHAT_BUBBLE_FADE_MS, CHAT_BUBBLE_GAP_PX, CHAT_BUBBLE_MS, readingMs, type ChatLine, type Point } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 
 interface Bubble {
@@ -32,7 +32,7 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
     add(line) {
       const b = el('div', 'bubble', line.text);
       layer.appendChild(b);
-      bubbles.push({ avatarId: line.avatarId, el: b, age: 0, life: CHAT_BUBBLE_MS });
+      bubbles.push({ avatarId: line.avatarId, el: b, age: 0, life: readingMs(line.text, CHAT_BUBBLE_MS) + CHAT_BUBBLE_FADE_MS });
     },
     addNode(avatarId, node, lifeMs) {
       const b = el('div', 'bubble bubble-icon');

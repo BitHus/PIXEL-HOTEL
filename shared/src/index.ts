@@ -23,3 +23,4 @@ export * from './shop.ts';
 export * from './customers.ts';
 export * from './economy.ts';
 export * from './clothing.ts';
+export * from './text.ts';
