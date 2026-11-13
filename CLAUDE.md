@@ -410,10 +410,13 @@ Layout:
   colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross),
   avatarSprite.ts (AvatarSprite: box placeholder 32x64, down/up/right drawn, left = right
   mirrored, 1 px dark warm outline, 2 px bob every WALK_BOB_MS while walking; step 5b poses:
-  sit (upper body lowered 14 px, bent legs; down/up/right, left mirrored) and lie (the down
-  figure turned so the head points to the pillow, lifted LIE_LIFT_PX, setCover draws the bed's
-  blanket over it)), seating.ts (Seating: the seat goal, the SEAT_SLIDE_MS slide onto the seat,
-  the pose and the blanket; stillThere / standUp).
+  sit (upper body lowered 14 px, bent legs; down/up/right, left mirrored) and lie (setLying:
+  the lieArt.ts drawing, tied to the bed's anchor)), lieArt.ts (lyingRects: only the head and a
+  little of the shoulders on the pillow, turned so the top of the head points to the pillow end,
+  then the bed's own 'cover' boxes drawn over them, so the avatar looks tucked in; everything
+  inside the bed's drawing in all 4 facings, tested), seating.ts (Seating: the seat goal, the
+  SEAT_SLIDE_MS slide onto a sit seat (lying has no slide: the avatar is put on the seat at once
+  and kept there), the pose and the lying drawing; stillThere / standUp).
   furnitureArt.ts also has drawFurniture(type, facing, role) and roleFloorRects (pillow, cover).
   RoomView has a debugLayer (above rugs, below the wall) for debug drawings.
 - client/src/debug/blockers.ts: BlockersDebug (debug only, not a game feature): drawn
@@ -592,7 +595,8 @@ Notes:
 - SITTING AND LYING (step 5b): FurnitureType.seats = [{ dx, dy, pose: 'sit' | 'lie' }] for the
   'down' facing, relative to the anchor, turned with the item (seatSpots). For 'lie' (dx, dy) is
   the middle of the body; the head is LIE_HEAD_PX toward the pillow (headDirection: up for a
-  'down' bed, left for 'right', down for 'up', right for 'left'). Seats: chair 1, settle (sofa)
+  'down' bed, left for 'right', down for 'up', right for 'left'); the drawing centers the head
+  on the pillow box. Seats: chair 1, settle (sofa)
   2, bench 2, bed 1 lie. `sittable` stays in the data (true = has 'sit' seats; tested); code uses
   hasSeats. standPoint is only for shop customers now. ArtBox.role: 'pillow' marks the pillow
   (tests), 'cover' the blanket that is drawn again over a lying avatar.
@@ -602,8 +606,10 @@ Notes:
     above the footprint, AVATAR_RADIUS outside it, level with the seat; one counts as reached when
     the walk ends within APPROACH_REACH_PX (28). If that seat cannot be reached the next free seat
     is tried; nothing reachable = the item shakes.
-  - On arrival the client slides the avatar onto the seat in SEAT_SLIDE_MS (150 ms, straight
-    line, may cross the footprint) and shows the pose. Sitting faces the item's facing. The
+  - On arrival the client slides the avatar onto a sit seat in SEAT_SLIDE_MS (150 ms, straight
+    line, may cross the footprint) and shows the pose. Sitting faces the item's facing. Lying
+    (fix after 5b): no slide and no separate blanket box; the avatar is drawn inside the bed only
+    (lieArt.ts): bed frame, then the head on the pillow, then the bed's blanket on top. The
     GameAPI puts the avatar on the seat at once (it only tracks time for walking).
   - Depth: a sitting avatar sorts right after its seat (right before it when the seat faces
     up); a lying avatar always right after its bed, with the blanket inside the avatar sprite.

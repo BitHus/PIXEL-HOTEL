@@ -3,33 +3,33 @@
 // bottom center. Down, up and right are drawn; left is right mirrored. While walking the
 // sprite bobs WALK_BOB_PX up and down (no walk frames yet).
 // Step 5b poses: sit (the same boxes with the upper body lowered SIT_DROP px onto a seat about
-// 10 px high, the legs bent; down, up and right drawn, left mirrored) and lie (the down-facing
-// figure turned so the head points to the pillow, lifted LIE_LIFT_PX onto the mattress, with
-// the bed's blanket drawn again over the legs: setCover).
+// 10 px high, the legs bent; down, up and right drawn, left mirrored) and lie (lieArt.ts: only the
+// head and shoulders on the pillow with the bed's blanket over them, drawn inside the bed:
+// setLying).
 
 import { Container, Graphics } from 'pixi.js';
 import {
-  LIE_LIFT_PX,
   PALETTE,
   WALK_BOB_MS,
   WALK_BOB_PX,
-  headDirection,
   type Avatar,
   type AvatarLook,
   type Facing,
+  type FurnitureType,
 } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
 import { shade } from './colors.ts';
+import { lyingRects } from './lieArt.ts';
 
 /** A box relative to the feet (0, 0); y grows down, so the figure has negative y. */
-type Part = [x: number, y: number, w: number, h: number, color: string];
+export type Part = [x: number, y: number, w: number, h: number, color: string];
 
 function color(i: number): string {
   return PALETTE[i] ?? PALETTE[0];
 }
 
 /** Boxes for one facing, back to front. */
-function parts(look: AvatarLook, facing: 'down' | 'up' | 'right'): Part[] {
+export function avatarParts(look: AvatarLook, facing: 'down' | 'up' | 'right'): Part[] {
   const skin = color(look.skin);
   const hair = color(look.hair);
   const shirt = color(look.shirt);
@@ -74,8 +74,6 @@ function parts(look: AvatarLook, facing: 'down' | 'up' | 'right'): Part[] {
 
 /** Sitting lowers the upper body this many px (the hips come down to the seat). */
 const SIT_DROP = 14;
-/** The middle of the standing figure, from the feet (a lying body turns around it). */
-const BODY_MIDDLE = 30;
 
 const lower = (ps: Part[], dy: number): Part[] => ps.map(([x, y, w, h, c]) => [x, y + dy, w, h, c]);
 
@@ -84,7 +82,7 @@ function sitParts(look: AvatarLook, facing: 'down' | 'up' | 'right'): Part[] {
   const legs = color(look.legs);
   const shoes = color(look.shoes);
   // The standing boxes without the legs and shoes (the first 4 boxes in every facing).
-  const upper = lower(parts(look, facing).slice(4), SIT_DROP);
+  const upper = lower(avatarParts(look, facing).slice(4), SIT_DROP);
   if (facing === 'up') return upper;
   if (facing === 'right') {
     const legParts: Part[] = [
@@ -118,18 +116,16 @@ function drawParts(ps: Part[], shadow: boolean): Graphics {
   return g;
 }
 
-type View = 'down' | 'up' | 'right' | 'sit-down' | 'sit-up' | 'sit-right' | 'lie';
+type View = 'down' | 'up' | 'right' | 'sit-down' | 'sit-up' | 'sit-right';
 
 function drawViews(look: AvatarLook): Record<View, Graphics> {
   return {
-    down: drawParts(parts(look, 'down'), true),
-    up: drawParts(parts(look, 'up'), true),
-    right: drawParts(parts(look, 'right'), true),
+    down: drawParts(avatarParts(look, 'down'), true),
+    up: drawParts(avatarParts(look, 'up'), true),
+    right: drawParts(avatarParts(look, 'right'), true),
     'sit-down': drawParts(sitParts(look, 'down'), false),
     'sit-up': drawParts(sitParts(look, 'up'), false),
     'sit-right': drawParts(sitParts(look, 'right'), false),
-    // Face up, the middle of the body at (0, 0), head toward -y (turned in update).
-    lie: drawParts(lower(parts(look, 'down'), BODY_MIDDLE), false),
   };
 }
 
@@ -138,35 +134,44 @@ export class AvatarSprite {
   readonly container = new Container();
   private readonly body = new Container();
   private views: Record<View, Graphics>;
-  private cover: Graphics | null = null;
+  private look: AvatarLook;
+  /** The lying drawing (head on the pillow, blanket over it), or null when not lying. */
+  private lying: { g: Graphics; bed: FurnitureType; facing: Facing; dx: number; dy: number } | null = null;
   private last: Pick<Avatar, 'facing' | 'state'> = { facing: 'down', state: 'idle' };
 
   constructor(look: AvatarLook) {
+    this.look = look;
     this.views = this.draw(look);
     this.container.addChild(this.body);
   }
 
   /** Redraws the avatar with new colours (the avatar panel). */
   setLook(look: AvatarLook): void {
+    this.look = look;
     for (const v of Object.values(this.views)) v.destroy();
     this.views = this.draw(look);
+    if (this.lying) this.setLying(this.lying.bed, this.lying.facing, this.lying.dx, this.lying.dy);
     this.show(this.last);
   }
 
   /**
-   * The blanket drawn over a lying avatar (null = none). Its anchor is put at (dx, dy) from the
-   * avatar's position; the sprite takes it over and destroys it when replaced.
+   * Lying in a bed (null = not lying): the head on the pillow and the bed's blanket over it, all
+   * inside the bed. (dx, dy) is the bed's anchor relative to the avatar's position.
    */
-  setCover(cover: Graphics | null, dx = 0, dy = 0): void {
-    this.cover?.destroy();
-    this.cover = cover;
-    if (!cover) return;
-    cover.position.set(dx + cover.position.x, dy + cover.position.y);
-    this.container.addChild(cover);
+  setLying(bed: FurnitureType | null, facing: Facing = 'down', dx = 0, dy = 0): void {
+    this.lying?.g.destroy();
+    this.lying = null;
+    if (!bed) return;
+    const g = new Graphics();
+    for (const [x, y, w, h, c] of lyingRects(this.look, bed, facing)) g.rect(x, y, w, h).fill(c);
+    g.position.set(dx, dy);
+    this.container.addChild(g);
+    this.lying = { g, bed, facing, dx, dy };
+    this.show(this.last);
   }
 
-  get hasCover(): boolean {
-    return this.cover !== null;
+  get isLying(): boolean {
+    return this.lying !== null;
   }
 
   private draw(look: AvatarLook): Record<View, Graphics> {
@@ -180,17 +185,16 @@ export class AvatarSprite {
     this.container.position.set(Math.round(avatar.x), Math.round(avatar.y));
     this.show(avatar);
     const up = avatar.state === 'walk' && Math.floor(timeMs / WALK_BOB_MS) % 2 === 1;
-    this.body.y = avatar.state === 'lie' ? -LIE_LIFT_PX : up ? -WALK_BOB_PX : 0;
+    this.body.y = up ? -WALK_BOB_PX : 0;
   }
 
   private show({ facing, state }: Pick<Avatar, 'facing' | 'state'>): void {
     this.last = { facing, state };
+    const lying = state === 'lie' && this.lying !== null;
     const turned = facing === 'left' ? 'right' : facing;
-    const view: View = state === 'lie' ? 'lie' : state === 'sit' ? `sit-${turned}` : turned;
-    for (const [k, v] of Object.entries(this.views)) v.visible = k === view;
-    this.body.scale.x = facing === 'left' && state !== 'lie' ? -1 : 1;
-    // Lying: the head points to the pillow end (quarter turns keep whole pixels).
-    const d = headDirection(facing);
-    this.views.lie.rotation = Math.atan2(d.x, -d.y);
+    const view: View = state === 'sit' ? `sit-${turned}` : turned;
+    for (const [k, v] of Object.entries(this.views)) v.visible = !lying && k === view;
+    if (this.lying) this.lying.g.visible = lying;
+    this.body.scale.x = facing === 'left' ? -1 : 1;
   }
 }

@@ -1,6 +1,6 @@
 // The own avatar sitting or lying in the client (step 5b): the seat it walks to, the 150 ms
-// slide from the approach point onto the seat (no pathfinding, it may cross the footprint),
-// the pose, and the blanket drawn over a lying avatar. The rules (which seat, which side) are
+// slide from the approach point onto the seat (no pathfinding, it may cross the footprint; lying
+// has no slide), the pose, and the lying drawing inside the bed (lieArt.ts). The rules (which seat, which side) are
 // in shared/src/seats.ts; this only animates what the GameAPI planned.
 
 import {
@@ -14,7 +14,6 @@ import {
   type SeatSpot,
 } from '@pixel-hotel/shared';
 import type { AvatarSprite } from './avatarSprite.ts';
-import { drawFurniture } from './furnitureArt.ts';
 
 export interface SeatGoal {
   uid: number;
@@ -44,17 +43,22 @@ export class Seating {
     if (!goal || !item) return avatar;
     const { seat } = goal;
     this.seated = { uid: goal.uid, seat };
-    this.slide = { from: { x: avatar.x, y: avatar.y }, ms: 0 };
     if (seat.pose === 'lie') {
-      const cover = drawFurniture(getFurnitureType(item.typeId), item.facing, 'cover');
-      cover.scale.x = item.facing === 'left' ? -1 : 1;
-      this.sprite.setCover(cover, item.x - seat.x, item.y - seat.y);
+      // Lying is drawn inside the bed only (lieArt.ts): no slide, the avatar is on the seat at once.
+      this.slide = null;
+      this.sprite.setLying(getFurnitureType(item.typeId), item.facing, item.x - seat.x, item.y - seat.y);
+      return { ...avatar, x: seat.x, y: seat.y, facing: seat.facing, state: seat.pose };
     }
+    this.slide = { from: { x: avatar.x, y: avatar.y }, ms: 0 };
     return { ...avatar, facing: seat.facing, state: seat.pose };
   }
 
-  /** Moves the slide on by dtMs. */
+  /** Moves the slide on by dtMs. A lying avatar always stays on its seat (the drawing is tied to the bed). */
   update(avatar: Avatar, dtMs: number): Avatar {
+    if (this.seated?.seat.pose === 'lie') {
+      const { x, y } = this.seated.seat;
+      return avatar.x === x && avatar.y === y ? avatar : { ...avatar, x, y };
+    }
     if (!this.slide || !this.seated) return avatar;
     this.slide.ms += dtMs;
     const p = slidePoint(this.slide.from, this.seated.seat, this.slide.ms, SEAT_SLIDE_MS);
@@ -79,6 +83,6 @@ export class Seating {
     this.goal = null;
     this.seated = null;
     this.slide = null;
-    if (this.sprite.hasCover) this.sprite.setCover(null);
+    if (this.sprite.isLying) this.sprite.setLying(null);
   }
 }

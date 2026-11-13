@@ -255,8 +255,6 @@ export const APPROACH_REACH_PX = 28;
 export const SEAT_SLIDE_MS = 150;
 /** Lying: from the middle of the body to the middle of the head, floor px. */
 export const LIE_HEAD_PX = 23;
-/** Lying: the body is drawn this many px above the floor (on the mattress). */
-export const LIE_LIFT_PX = 12;
 
 // ---------- Placing and the item menu (step 4b) ----------
 /** Gap between the item (or ghost) and the floating menu or button bar above it, screen px. */
