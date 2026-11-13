@@ -21,7 +21,7 @@ export class FurnitureSprite {
     this.art?.destroy();
     this.art = drawFurniture(this.type, facing);
     this.art.scale.x = facing === 'left' ? -1 : 1;
-    this.container.addChild(this.art);
+    this.container.addChildAt(this.art, 0);
   }
 
   destroy(): void {

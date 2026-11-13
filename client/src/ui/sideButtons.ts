@@ -1,5 +1,6 @@
-// Right edge: small square icon buttons stacked vertically: Bag, Build, Avatar, Chat, Settings.
-// Each panel button toggles its panel (Build toggles build mode, buildMode.ts). Keys: I (bag), Enter (chat), Escape closes the open panel.
+// Right edge: small square icon buttons stacked vertically: Bag, Build, Catalog, Room, Avatar, Chat,
+// Settings.
+// Each panel button toggles its panel (Build toggles build mode, buildMode.ts). Keys: I (bag), C (catalog), Enter (chat), Escape closes the open panel.
 
 import { el, iconButton, typing } from './dom.ts';
 import type { PanelName, Panels } from './panels.ts';
@@ -7,6 +8,8 @@ import type { IconName } from './pixelIcons.ts';
 
 const BUTTONS: [PanelName, IconName, string][] = [
   ['bag', 'bag', 'Bag (I)'],
+  ['catalog', 'book', 'Catalog (C)'],
+  ['room', 'house', 'Room'],
   ['avatar', 'avatar', 'Avatar'],
   ['chat', 'chat', 'Chat (Enter)'],
   ['settings', 'gear', 'Settings'],
@@ -33,6 +36,7 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
     if (e.key === 'Escape' && panels.open !== null) panels.close();
     else if (e.key.toLowerCase() === 'i') panels.toggle('bag');
+    else if (e.key.toLowerCase() === 'c') panels.toggle('catalog');
     else return;
     e.preventDefault();
   });

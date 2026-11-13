@@ -11,9 +11,12 @@
     "dev": "npm run dev -w client",
     "build": "npm run build -w client",
     "test": "vitest run",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces && tsc -p tools/tsconfig.json",
+    "simulate": "tsx tools/simulate-economy.ts"
   },
   "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsx": "^4.19.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   }

@@ -89,6 +89,9 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Every new player gets two basic rooms: a hotel room (level 1) and a shop room (level 1).
   The hotel room starts completely empty. The shop starts with a counter and one stall_table
   at fixed positions from config, nothing else.
+- The counter (step 7): every shop has exactly one counter with a cash register (till) on top.
+  It is placed at the start (against the back wall, left of center) and can be moved and
+  rotated in build mode, but never picked up or sold (FurnitureType.noPickup).
 - Room upgrade (costs gold): level 2 and level 3 use the sizes above. The room grows to the
   right and down. Every item keeps its position. The door moves to the new bottom center,
   and any item standing in the new door zone goes back to the inventory. Costs are in
@@ -183,6 +186,13 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   that cheapest item. There is no sales cap: sales are limited by the number of customers,
   by slots, and by the stock the player brings back from the dungeon. Offline: when the
   player returns, simulate customers for up to 8 hours and show a summary of what sold.
+- Customer flow (step 7): a customer enters at the door, walks to the table, shelf or case
+  with stock, decides there (the reaction bubble below), and if buying takes the item (it
+  leaves the slot at once), walks to the customer side of the counter, waits in a queue line
+  if someone is already paying (queue spots in a row behind the first, each on a different
+  free nav cell), pays (a coin pop and a floating "+12 gold" above the till; a coin sound
+  later; gold goes up only now), then leaves through the door. A customer who refuses just
+  leaves. Offline catch-up skips the walking and only does the maths.
 - Price feedback (this is how the player learns pricing): after each customer decision a
   bubble shows a reaction. Bought at price <= 0.7 * baseValue * tolerance: big smile (too
   cheap). Bought at a higher price: smile (fair). Refused at price <= 1.15 * baseValue *
@@ -348,7 +358,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 CURRENT STATE (kept up to date by the AI at the end of each step)
 Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture), 4b (placing
 and the item menu), 5 (inventory, UI, chat, local saving, camera intro; the bag reworked to the
-docs/UI-REFERENCE.md layout with parchment panels) and 5b (sitting and lying) are done.
+docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying reworked after
+5b: drawn inside the bed only) and 7 (shop, gold and upgrades) are done. Step 6 (docs/STYLE.md)
+has not been done yet.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -446,6 +458,34 @@ Layout:
   R, Escape). client/src/ui/itemMenu.ts: item menu (build mode: Move, Rotate, Pick up) + name card.
   client/src/ui/anchorAbove.ts: puts a floating element above a screen rect, inside the screen.
 - server/src/index.ts: placeholder only (step 10).
+- Step 7 (shop, gold, upgrades):
+  - shared/data/styles.json (floor/wall styles: bare, wood_planks, stone_tiles, red_carpet;
+    bare, plaster, wood_panels, brick; the crypt styles come in step 8). shared/data/furniture.json
+    gained the shop types: counter (noPickup, not in the catalog), stall_table (3 slots, not in
+    the catalog), shelf (3), display_case (4), sign and banner (wall items), shop_rug. All have
+    category 'shop_furniture'. Lamp and plant are placeIn 'both' with appeal 4 and 3.
+  - shared/src: styles.ts (STYLE_TYPES, findStyle, getStyle, stylePrice, styleAppeal), rng.ts
+    (seededRng (mulberry32), rngInt, rngPick; for tests, tools and LocalGameAPI's debug loot),
+    shop.ts (ShopState, emptyShop, slotItems, allSlots, slotAt, putOnShelf, takeFromShelf,
+    setPrice, returnOrphanLoot, shopAppeal, customerIntervalMs, chooseCategory, rollTolerance,
+    cheapestIn, decide, visit, recordSale, simulateShop (maths only, capped at 8 h), lootTypeId,
+    lootCategory, lootBaseValue, typeName, typeBaseValue, validPrice), customers.ts (Customer,
+    ShopEvent, stepShop (the live customers: timer, walk, decide, queue, pay), queueSpots,
+    findCounter, tillPoint, repathCustomers, settleCustomers, customerLook), economy.ts
+    (catalogPrice, catalogTypes, buyCatalog, unlockStyle, applyStyle, isStyleUnlocked,
+    upgradeCost, upgradeRoom, catchUpShop), testState.ts (test helpers: ledgerGold,
+    ledgerMaterials; not exported). furniture.ts gained canPickUp. newPlayer.ts gained
+    addShopStartItems (save migration 2 -> 3).
+  - client/src/render: styleArt.ts (floorTexture, wallTexture, stylePreviewUrl: code-drawn
+    style art), slotGoods.ts (goods drawn small on top of tables, shelves and cases),
+    customerViews.ts (CustomerViews: customers animated along their paths), lieArt.ts.
+    ItemViews.setGoods draws the goods; wall items are in the objects layer.
+  - client/src/ui: shelfPanel.ts, catalogPanel.ts, roomPanel.ts, shopFeedback.ts (sale floats,
+    the away summary, the hint box). pixelIcons gained book, house and the reaction faces
+    (big_smile, smile, shrug, frown). chatBubbles.addNode shows a reaction bubble.
+  - tools/simulate-economy.ts (npm run simulate, uses tsx): cheap / fair / greedy prices, appeal
+    0 and 60, 6 items, 1 h and 8 h; prints gold, items sold, time on the slot, blocked slot time.
+    tools/tsconfig.json is part of npm run typecheck.
 
 Conventions:
 - UI LAYOUT RULE (step 5). The room fills the whole screen; all UI sits on top of it at the
@@ -582,12 +622,48 @@ Conventions:
     avatar and the ghost layer have eventMode 'none' so they never hide an item from a tap.
   - Sitting and lying: see SITTING AND LYING (step 5b) in the notes below.
 
+- SHOP (step 7):
+  - GameState.shop (ShopState) holds only the FILLED slots { shelfUid, index, loot, price }; the
+    slots themselves come from the placed items with type.slots > 0 in the shop room. A slot
+    holds one unit. Putting a material on a slot takes it out of player.materials, putting a
+    furniture item takes the item out of GameState.items (the slot keeps its uid and typeId);
+    both through applyChange (reason 'shelf'), and taking back reverses it. The ledger's
+    materials always add up to the bag. A shelf that leaves the shop (picked up, door zone on an
+    upgrade) gives its goods back (returnOrphanLoot, run on every item change).
+  - The customer timer (shop.nextCustomerInMs) only counts down while the shop has stock.
+    Customers have negative ids. Gold comes in only when a customer pays at the till (ledger
+    reason 'sale'). The queue is numbered 0, 1, 2 (0 = paying spot) every step; spots come from
+    queueSpots (each a different free cell reachable from the door).
+  - LocalGameAPI runs the shop: startClock() calls update() every SHOP_TICK_MS (100 ms); update
+    steps stepShop to now and sends ShopEvents (customers, reaction, sale, slots) to onShop
+    listeners. It saves when an event happened (not every step). A gap over
+    SHOP_CATCH_UP_GAP_MS (10 s; also always when the game opens) uses catchUpShop: customers in
+    the shop pay at once (or leave), then simulateShop for at most 8 hours; the sales become the
+    "while you were away" summary (takeAwaySummary, shown once).
+  - The shop is simulated wherever the player is; customers are only drawn in the shop room. A
+    sale while in the hotel shows a toast.
+  - Play mode: a tap on a table, shelf or case in the shop opens the shelf panel (no walking).
+    Build mode: as before (item menu); the counter's menu has no Pick up.
+- CATALOG, STYLES, ROOMS (step 7): the Catalog button (book, key C) opens tabs Home, Shop and
+  Decor; prices are baseValue * 3. Buying puts furniture in the bag, or unlocks a style
+  (ledger reason 'style'). The first catalog purchase of a game (furniture or style) goes
+  straight into placing with a pop (Placer.pop / tick) if it fits the current room. The Room
+  button (house) shows level, size, appeal (shop), Upgrade, and the floor and wall pickers:
+  picking applies the style at once (free; that is the live preview). Upgrading reopens the
+  room without the camera intro.
+- HINTS (step 7): config HINTS, GameState.hintsDone counts the finished ones, shown one at a
+  time in the hint box under the room switcher. 1 is done by the first buy (a style as the first
+  buy also skips 2), 2 by placing an inventory item, 3 by putting an item on a slot.
+- SAVE_VERSION is 3: MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and
+  stall_table (addShopStartItems).
+
 Notes:
-- SHOP_START_ITEMS positions in config.ts are placeholders; adjust when the counter and
-  stall_table types exist.
 - cameraControl reports long presses as onPoint(start, 'longpress', target at press start).
-- "Give test furniture" (Settings) is a debug button: one of each of the 12 home items, free,
-  written to the ledger as reason 'debug'. Remove it in step 7 when the catalog exists.
+- "Give random loot" (Settings, step 7) is a debug button: a few random materials and maybe one
+  catalog item, free, ledger reason 'debug'. Remove it in step 9. LocalGameAPI.debugGiveFurniture
+  is for tests only.
+- The pixel font draws a small "2" much like an "8" (for example the hotbar numbers and the
+  gold). Worth checking when the art pass (step 6) happens.
 - Build mode came back as a play / build mode switch (a change to step 4b, made after step 5):
   see INPUT RULE. The old "Build (F)" toggle and item strip of step 4 are gone for good.
 - Debug blockers (step 3) are sent to LocalGameAPI with debugSetBlockers (not saved, cleared
@@ -599,7 +675,7 @@ Notes:
   on the pillow box. Seats: chair 1, settle (sofa)
   2, bench 2, bed 1 lie. `sittable` stays in the data (true = has 'sit' seats; tested); code uses
   hasSeats. standPoint is only for shop customers now. ArtBox.role: 'pillow' marks the pillow
-  (tests), 'cover' the blanket that is drawn again over a lying avatar.
+  (tests), 'cover' the blanket that is drawn again over the lying avatar's head and shoulders.
   - A tap (play mode) on an item with seats: api.sit(uid, tap). planSit takes the free seat
     nearest to the tap (taken = seat indices other avatars use; [] until step 10), then the
     reachable approach point with the shortest path. Approach points: below, left, right and

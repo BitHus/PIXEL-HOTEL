@@ -6,6 +6,8 @@ import { el, textButton } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
 export interface InfoPanel {
+  /** The top-left column (the hint box goes under the room switcher). */
+  readonly column: HTMLElement;
   setGold(gold: number): void;
   setRoom(kind: RoomKind): void;
 }
@@ -26,6 +28,7 @@ export function createInfoPanel(parent: HTMLElement, onRoom: (kind: RoomKind) =>
   box.append(info, switcher);
   parent.appendChild(box);
   return {
+    column: box,
     setGold(n) {
       goldText.textContent = String(n);
     },
