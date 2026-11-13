@@ -44,7 +44,9 @@ reference for look and HUD) and Habbo Hotel (rooms, furniture and the item info 
   Bag (inventory), Avatar, Chat, Settings. New screens from later steps (Catalog, Crafting,
   Blacksmith, Room, Dungeon) get a button in this column too, not somewhere else.
 - **Bottom-center: the hotbar.** One row of slots in a frame, centered. Icons only, no text.
-  The selected slot has a bright warm border. Stack counts sit small in the slot's corner.
+  The selected slot has a bright warm border. Stack counts sit small in the slot's
+  bottom-right corner (light digits with a dark outline). On desktop the slots are numbered
+  and the number keys 1 to 9 and 0 select them.
 - **Debug tools** (x/y/zoom label, Blockers) live in Settings behind a "Debug" toggle, off by
   default. They are never visible to a normal player.
 
@@ -55,11 +57,15 @@ column stays, the info panel stays small. Nothing overlaps the hotbar.
 
 What makes the reference look clean, translated into rules:
 
-- **One frame style for everything.** Every panel, slot and button uses the same frame: dark
-  wood brown fill, a 1 px darkest-brown outline, a 1 px lighter top/left edge (light from the
-  top-left, like the art), square corners. Defined once in CSS and reused.
-- **Warm colours from the palette.** Wood browns, cream for text and paper, deep red and green
-  as accents. No pure white, no pure black, no modern blue or grey UI.
+- **One frame style for everything.** Panels are light: a warm parchment / light tan fill
+  with a thick dark-brown wooden border (a 1 px darkest-brown outline outside, a 2 to 3 px
+  mid-brown border, a 1 px lighter inner edge). Slots inside a panel are small squares a shade
+  darker than the panel, with a 1 px darker inset edge. Small buttons and tabs use the same
+  border. Square or very slightly cut corners. Defined once in CSS and reused everywhere.
+- **Contrast:** the light panel sits clearly on top of the darker world, so it reads at a
+  glance. Text on panels is dark brown, not black.
+- **Warm colours from the palette.** Parchment and tan for panels, wood browns for borders,
+  deep red and green as accents. No pure white, no pure black, no modern blue or grey UI.
 - **Icons instead of words** wherever possible (hotbar, side buttons). Words only in panels
   and tooltips.
 - **Pixel font everywhere**, hosted locally, at sizes that are whole multiples of the font's
@@ -74,8 +80,32 @@ What makes the reference look clean, translated into rules:
 ## 4. Interaction patterns
 
 - **Hotbar + Bag (inventory).** The hotbar shows a few chosen items. The Bag button opens the
-  full inventory: a grid of slots with tabs (Furniture, Materials, later more). Tap an item to
-  use or place it. Drag or long-press to move an item into a hotbar slot.
+  full inventory panel, laid out like this:
+
+  ```
+     [tab][Inventory][tab][tab]          <- icon tabs on top; the open one shows its name
+  +-------------------------------------+  [sort]
+  |  [1][2][3][4][5][6]  (hotbar row)   |  [stack]  <- small square buttons beside the panel
+  |  ---------------------------------  |
+  |  [ ][ ][ ][ ][ ][ ][ ][ ][ ]        |
+  |  [ ][ ][ ][ ][ ][ ][ ][ ][ ]        |  <- the bag: a grid of square slots
+  |  [ ][ ][ ][ ][ ][ ][ ][ ][ ]        |
+  +-------------------------------------+
+                         [coin 1,2k]      <- currency strip under the panel
+  ```
+
+  - The hotbar is repeated as the top row of the panel, separated by a line, so items move
+    between hotbar and bag by dragging (or tap one, then tap the target slot on a phone).
+  - Every item is an icon with a count in the bottom-right corner. Empty slots stay visible
+    as empty squares, so the bag's size is clear.
+  - Tabs along the top edge are small icon tabs (Furniture, Materials, later Crafting and
+    more); the open tab is wider and shows its name.
+  - Small square buttons on the right side of the panel: Sort, and Stack (merge equal items).
+  - Under the panel, a small strip shows the currencies (gold as a coin icon and a short
+    number, 1.2k for 1,200).
+  - The panel covers only part of the screen; the room stays visible around it. On a phone it
+    becomes a bottom sheet with fewer columns (6) and the same parts.
+  - Tap a furniture item to start placing it (the panel closes). Materials cannot be placed.
 - **Placing furniture** (our own pattern, built in step 4b): the item appears as a ghost,
   green if it fits and red if not. Drag the ghost. A small bar above it: ✓ Place, ↻ Rotate,
   ✗ Cancel. Nothing is placed until ✓. Placed furniture comes out of the inventory; Pick up
