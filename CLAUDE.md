@@ -472,7 +472,8 @@ docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying
 it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
 (mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
-turn on dungeon round 2 and tune it with the simulation, then step 6 (art), then step 10.
+step 9d (shop life), the atmosphere step, 9e (ranks and the Book), 9f (lakeside), 9g (livelier
+hotel), 9h (dungeon types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
