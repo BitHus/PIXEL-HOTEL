@@ -20,12 +20,14 @@ export class RoomView {
   readonly world = new Container();
   readonly floorLayer = new Container();
   readonly rugLayer = new Container();
+  /** Debug drawings on the floor (Blockers mode), above rugs and below the wall. */
+  readonly debugLayer = new Container();
   readonly wallLayer = new Container();
   readonly objects = new DepthLayer();
   private floorTexture: Texture | null = null;
 
   constructor() {
-    this.world.addChild(this.floorLayer, this.rugLayer, this.wallLayer, this.objects.container);
+    this.world.addChild(this.floorLayer, this.rugLayer, this.debugLayer, this.wallLayer, this.objects.container);
   }
 
   setRoom(room: Room): void {

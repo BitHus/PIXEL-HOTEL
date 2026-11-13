@@ -2,7 +2,8 @@
 // LocalGameAPI (steps 2-9) runs the shared rules in the browser; RemoteGameAPI (step 10) talks to the server.
 // Methods are added in later steps as they are needed.
 
-import type { Avatar, FurnitureItem, Player, Point } from './types.ts';
+import type { FurnitureItem, Player, Point } from './types.ts';
+import type { Avatar } from './avatar.ts';
 import type { Room } from './room.ts';
 
 export interface RoomState {

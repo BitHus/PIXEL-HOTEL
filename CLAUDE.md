@@ -328,7 +328,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   push at the end of every step.
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
-Steps 1 (project skeleton) and 2 (room view) are done.
+Steps 1 (project skeleton), 2 (room view) and 3 (avatar and walking) are done.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -340,20 +340,31 @@ Layout:
 - shared/src: config.ts (all constants), types.ts (data types, incl. Point and Rect),
   room.ts (Room, RoomKind, createRoom, floorRect, wallBandRect, left/rightBorderRect,
   bottomBorderRects, doorRect, doorZoneRect, roomBoundsRect, rectInside, rectInsideFloor,
-  rectsTouch), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
+  rectsTouch, rectsOverlap), nav.ts (NavGrid, buildNavGrid, findPath, smoothPath,
+  lineOfSight, segmentTouchesRect, inflateRect, cell helpers), minHeap.ts (A* open list),
+  avatar.ts (Avatar, AvatarLook, AvatarState, walkAvatar, facingFor, pathLength), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
   zoomAt, panBy, clampCamera, snapCamera), api.ts (GameAPI interface), palette.ts (Endesga
   32 hex list, the only place it lives), index.ts (re-exports).
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
 - client/src/main.ts: Pixi app (resolution 1, nearest scaling), draws a level 1 hotel room,
   keeps the camera, shows the debug cross and label. Refits the camera on window resize.
+  Holds one local avatar (starts in the door zone): a tap calls findPath, the ticker calls
+  walkAvatar each frame and updates the sprite and its depth key (feet y, x, avatar id).
 - client/src/render: roomView.ts (RoomView: world container with floorLayer, rugLayer,
   wallLayer, then objects), depthLayer.ts (DepthLayer: the one y/x/uid-sorted list of items
   and avatars; uses Pixi zIndex sorting, call update() each frame), depthOrder.ts
   (compareDepth, tested), bareStyles.ts (bare floor texture made in code, bare wall colors),
-  colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross).
+  colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross),
+  avatarSprite.ts (AvatarSprite: box placeholder 32x64, down/up/right drawn, left = right
+  mirrored, 1 px dark warm outline, 2 px bob every WALK_BOB_MS while walking).
+  RoomView has a debugLayer (above rugs, below the wall) for debug drawings.
+- client/src/debug/blockers.ts: BlockersDebug (debug only, not a game feature): drawn
+  rectangles that block navigation, a drag preview, and the faint blocked-cell overlay.
 - client/src/input/cameraControl.ts: the input rule below (pan, zoom, tap, draw hook). Uses
   Pixi federated events on the stage.
 - client/src/ui/debugLabel.ts: HTML label in #ui with world x, y and zoom.
+- client/src/ui/blockersButton.ts: "Blockers (B)" toggle and "Clear" buttons (top right),
+  plus the B key.
 - server/src/index.ts: placeholder only (step 10).
 
 Conventions:
@@ -365,21 +376,32 @@ Conventions:
 - Screen coordinates are CSS px (canvas resolution 1).
 - INPUT RULE (touch and mouse):
   - A press is a TAP only if it moved less than TAP_MAX_MOVE_PX (8 screen px) and was held
-    less than TAP_MAX_MS (300 ms). A tap / left click means "walk there" (in step 2 it moves
-    the debug cross). Anything else is a DRAG, and a drag never makes the avatar walk.
+    less than TAP_MAX_MS (300 ms). A tap / left click means "walk there". Anything else is a
+    DRAG, and a drag never makes the avatar walk.
   - Touch: one-finger drag pans. Two fingers pan and pinch-zoom freely (the point between
     the fingers stays fixed).
   - Mouse: left click taps, left-drag and right-drag pan. The wheel zooms freely around the
     cursor and glides to its target (WHEEL_ZOOM_SPEED, ZOOM_EASE_MS; cameraControl.update
     runs every frame).
-  - Blockers mode: while it is on, a one-finger / left drag draws a blocker instead of
-    panning. The hook exists (getDragMode() returns 'draw', drags go to onDraw), but the mode
-    itself is not built yet and is not in the brief; ask which step it belongs to.
+  - Blockers mode (debug, step 3): while it is on, a one-finger / left drag draws a blocking
+    rectangle instead of panning (getDragMode() returns 'draw', drags go to onDraw). Two
+    fingers and right-drag still pan/zoom. Taps still walk.
+- NAVIGATION (shared/nav.ts): a cell is blocked if ANY part of it is outside the floor or
+  overlaps a blocker grown by AVATAR_RADIUS, so every point in a free cell is at least the
+  radius away from every blocker, and gaps narrower than the avatar (24 px) are never
+  passable (a gap needs about 24 + 16 px to open a free cell). Line of sight fails if the
+  segment touches a blocked cell (edges count). findPath returns points starting with the
+  avatar's position; the client walks path.slice(1). A free but unreachable target gives
+  null; a blocked target walks to the nearest reachable free cell center. If the avatar
+  stands on a blocked cell (a blocker drawn on it), it leaves via the nearest free cell.
+- When blockers change, the grid is rebuilt and a walking avatar re-paths to its goal.
 
 Notes:
 - palette.ts was filled from memory because lospec.com is blocked in the cloud environment.
   It is marked UNVERIFIED until the official list is pasted.
 - SHOP_START_ITEMS positions in config.ts are placeholders; adjust when the counter and
   stall_table types exist.
-- The room in main.ts is created directly with createRoom for now; it moves behind GameAPI
-  when LocalGameAPI arrives.
+- The room in main.ts is created directly with createRoom, and paths come straight from
+  findPath; both move behind GameAPI (enterRoom, walk) when LocalGameAPI arrives.
+- Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
+- The avatar look uses palette indices (skin 30, hair 5, shirt 7, legs 23, shoes 6).

@@ -7,6 +7,7 @@ import {
   doorZoneRect,
   floorRect,
   rectInsideFloor,
+  rectsOverlap,
   roomBoundsRect,
   wallBandRect,
 } from './room.ts';
@@ -82,5 +83,14 @@ describe('rectInsideFloor', () => {
       { x: -10, y: -10, w: 700, h: 500 },
     ];
     for (const r of outside) expect(rectInsideFloor(room, r)).toBe(false);
+  });
+});
+
+describe('rectsOverlap', () => {
+  it('needs shared area; a shared edge is not an overlap', () => {
+    const a = { x: 0, y: 0, w: 10, h: 10 };
+    expect(rectsOverlap(a, { x: 5, y: 5, w: 10, h: 10 })).toBe(true);
+    expect(rectsOverlap(a, { x: 10, y: 0, w: 10, h: 10 })).toBe(false);
+    expect(rectsOverlap(a, { x: 20, y: 20, w: 1, h: 1 })).toBe(false);
   });
 });
