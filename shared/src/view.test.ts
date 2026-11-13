@@ -3,7 +3,9 @@ import { ZOOM_MAX, ZOOM_MIN } from './config.ts';
 import {
   centerCamera,
   clampCamera,
+  easeZoom,
   fitZoom,
+  settleZoom,
   panBy,
   screenToWorld,
   snapCamera,
@@ -103,5 +105,39 @@ describe('camera helpers', () => {
     const cam = clampCamera({ x: 5000, y: -5000, zoom: 1 }, 800, 600, room);
     const center = screenToWorld({ x: 400, y: 300 }, cam);
     expect(center).toEqual({ x: room.x + room.w, y: room.y });
+  });
+});
+
+describe('settleZoom', () => {
+  it('goes to the nearest whole zoom', () => {
+    expect(settleZoom(1.4, 0.6)).toBe(1);
+    expect(settleZoom(1.6, 0.6)).toBe(2);
+    expect(settleZoom(3.7, 0.6)).toBe(4);
+    expect(settleZoom(4, 0.6)).toBe(4);
+  });
+  it('goes to the overview zoom if that is closer', () => {
+    expect(settleZoom(0.7, 0.6)).toBe(0.6);
+    expect(settleZoom(1.3, 1.25)).toBe(1.25);
+    expect(settleZoom(2.2, 2.33)).toBe(2.33);
+    expect(settleZoom(1.9, 2.33)).toBe(2);
+  });
+  it('never goes below ZOOM_MIN', () => {
+    expect(settleZoom(0.5, 0.5)).toBe(0.5);
+    expect(settleZoom(0.5, 0.2)).toBe(0.5);
+  });
+});
+
+describe('easeZoom', () => {
+  it('starts at from, ends exactly at to, and moves one way', () => {
+    expect(easeZoom(1.4, 1, 0, 150)).toBe(1.4);
+    expect(easeZoom(1.4, 1, 150, 150)).toBe(1);
+    expect(easeZoom(1.4, 1, 999, 150)).toBe(1);
+    let last = 1.4;
+    for (let ms = 10; ms < 150; ms += 10) {
+      const z = easeZoom(1.4, 1, ms, 150);
+      expect(z).toBeLessThan(last);
+      expect(z).toBeGreaterThan(1);
+      last = z;
+    }
   });
 });

@@ -45,7 +45,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   down. 1 world pixel = 1 art pixel. There is no isometric math.
 - screenToWorld(p) = p / zoom + camera, worldToScreen(p) = (p - camera) * zoom. Camera
   position is in world pixels. Zoom is free: any number from 0.5 to 4 (ZOOM_MIN, ZOOM_MAX;
-  also 1.005), set by pinch or the mouse wheel, like in most games. The default zoom is the
+  also 1.005), set by pinch or the mouse wheel, like in most games. Zooming stays smooth
+  while the gesture is active. When the gesture ends, the zoom eases over 0.15 s
+  (ZOOM_SETTLE_MS) to the nearest integer zoom, or to the overview zoom if that is closer,
+  and the camera snaps to whole pixels. The default (overview) zoom is the
   largest one where the whole room fits on screen, and at least 0.5. If the room does not
   fit at zoom 0.5, the camera follows the avatar and the player can pan.
 - The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
@@ -343,7 +346,7 @@ Layout:
   rectsTouch, rectsOverlap), nav.ts (NavGrid, buildNavGrid, findPath, smoothPath,
   lineOfSight, segmentTouchesRect, inflateRect, cell helpers), minHeap.ts (A* open list),
   avatar.ts (Avatar, AvatarLook, AvatarState, walkAvatar, facingFor, pathLength), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
-  zoomAt, panBy, clampCamera, snapCamera), api.ts (GameAPI interface), palette.ts (Endesga
+  zoomAt, panBy, clampCamera, snapCamera, settleZoom, easeZoom), api.ts (GameAPI interface), palette.ts (Endesga
   32 hex list, the only place it lives), index.ts (re-exports).
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
 - client/src/main.ts: Pixi app (resolution 1, nearest scaling), draws a level 1 hotel room,
@@ -383,6 +386,11 @@ Conventions:
   - Mouse: left click taps, left-drag and right-drag pan. The wheel zooms freely around the
     cursor and glides to its target (WHEEL_ZOOM_SPEED, ZOOM_EASE_MS; cameraControl.update
     runs every frame).
+  - ZOOM SETTLE: a gesture ends when the second finger lifts (pinch) or after
+    WHEEL_GESTURE_END_MS (200 ms) without a wheel event. Then the zoom eases (ease-out,
+    ZOOM_SETTLE_MS) to settleZoom(zoom, overview) around the gesture's focus point, and
+    the camera state is snapped with snapCamera (setCamera(cam, snap = true)). A new pinch
+    or wheel cancels a running settle; a one-finger pan runs alongside it.
   - Blockers mode (debug, step 3): while it is on, a one-finger / left drag draws a blocking
     rectangle instead of panning (getDragMode() returns 'draw', drags go to onDraw). Two
     fingers and right-drag still pan/zoom. Taps still walk.

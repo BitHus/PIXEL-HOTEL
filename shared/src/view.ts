@@ -73,3 +73,27 @@ export function clampCamera(cam: Camera, screenW: number, screenH: number, rect:
   const cy = Math.min(rect.y + rect.h, Math.max(rect.y, cam.y + halfH));
   return { x: cx - halfW, y: cy - halfH, zoom: cam.zoom };
 }
+
+/**
+ * Where the zoom settles when a zoom gesture ends: the nearest whole zoom (ZOOM_MIN..ZOOM_MAX),
+ * or the overview zoom if that is closer. A tie goes to the whole zoom.
+ */
+export function settleZoom(zoom: number, overview: number): number {
+  let best = clampZoom(overview);
+  let bestD = Math.abs(zoom - best);
+  for (let z = Math.ceil(ZOOM_MIN); z <= Math.floor(ZOOM_MAX); z++) {
+    const d = Math.abs(zoom - z);
+    if (d <= bestD) {
+      best = z;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+/** Zoom part way through a settle: ease-out from `from` to `to`; returns `to` exactly at the end. */
+export function easeZoom(from: number, to: number, elapsedMs: number, durationMs: number): number {
+  if (elapsedMs >= durationMs) return to;
+  const t = Math.max(0, elapsedMs) / durationMs;
+  return from + (to - from) * (1 - (1 - t) ** 3);
+}

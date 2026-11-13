@@ -225,6 +225,10 @@ export const RATE_LIMIT_PER_SECOND = 10;
 export const WHEEL_ZOOM_SPEED = 0.0015;
 /** Wheel zoom glides to its target; time constant in ms (smaller = snappier). */
 export const ZOOM_EASE_MS = 60;
+/** When a zoom gesture ends, the zoom eases to the nearest integer (or overview) zoom in this many ms. */
+export const ZOOM_SETTLE_MS = 150;
+/** The wheel has no end event: a wheel gesture ends after this many ms without a wheel event. */
+export const WHEEL_GESTURE_END_MS = 200;
 /** Floor textures are seamless squares of this size, in px. */
 export const FLOOR_TEXTURE_SIZE = 64;
 /** A press is a tap (click/walk) only if it moved less than this many screen px... */
