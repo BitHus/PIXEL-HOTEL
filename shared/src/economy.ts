@@ -5,17 +5,18 @@
 // - Styles: buying one unlocks it forever (unlockStyle); applying an unlocked style to one of the
 //   player's rooms is free and can be done any time (applyStyle, no ledger entry: nothing is
 //   paid or given).
-// - Room upgrade: level 2 costs 300, level 3 costs 800 (each room). The room grows to the right
-//   and down, every item keeps its position, the door moves to the new bottom center, and an
-//   item standing in the new door zone goes back to the inventory (with what stands on it).
+// - Room upgrade: level 2 costs 300, level 3 costs 800 (each room). The room switches to the next
+//   level of its shape (whose floor contains the old one), every item keeps its position, the door
+//   moves to the new level's door, and an item standing in the new door zone goes back to the
+//   inventory (with what stands on it).
 // - Shop catch-up: walking customers pay at once, then simulateShop does the maths.
 
-import { CATALOG_PRICE_MULT, OFFLINE_MAX_MS, ROOM_MAX_LEVEL, ROOM_SIZES, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
+import { CATALOG_PRICE_MULT, OFFLINE_MAX_MS, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
 import { settleCustomers } from './customers.ts';
 import { FURNITURE_TYPES, footprintRect, getFurnitureType, pickUpItem } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
-import { doorZoneRect, rectsTouch, type Room } from './room.ts';
+import { doorZoneRect, rectsTouch, roomAtLevel, type Room } from './room.ts';
 import { returnOrphanLoot, shopAppeal, simulateShop } from './shop.ts';
 import { findStyle, stylePrice } from './styles.ts';
 import { styleKey } from './newPlayer.ts';
@@ -82,8 +83,8 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   const paid = applyChange(state, { reason: 'room_upgrade', gold: -cost, note: `room ${roomId} to level ${room.level + 1}` }, at);
   if (!paid) return null;
   const level = (room.level + 1) as RoomLevel;
-  const size = ROOM_SIZES[room.kind][level];
-  const grown: Room = { ...room, level, w: size.w, h: size.h };
+  // The next level of the room's shape: its floor contains the old one, so every item still fits.
+  const grown: Room = roomAtLevel(room, level);
   const zone = doorZoneRect(grown);
   let items = paid.items;
   for (const i of paid.items) {

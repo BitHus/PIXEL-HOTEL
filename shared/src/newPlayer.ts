@@ -23,7 +23,8 @@ import { arrangeForInventory, emptyBag } from './bag.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
-import { createRoom } from './room.ts';
+import { createRoom, defaultShape, getRoomShape, shapesFor } from './room.ts';
+import { cleanDisplayName, lookAllowed } from './clothing.ts';
 import { emptyShop } from './shop.ts';
 import type { MaterialId, StyleKind } from './types.ts';
 
@@ -35,6 +36,9 @@ export interface NewPlayerConfig {
   gold: number;
   materials: Partial<Record<MaterialId, number>>;
   look: AvatarLook;
+  /** Room shapes (roomShapes.json) the player picked for the hotel room and the shop. */
+  hotelShape: string;
+  shopShape: string;
 }
 
 export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
@@ -45,7 +49,29 @@ export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
   gold: START_GOLD,
   materials: { ...START_MATERIALS },
   look: { ...START_LOOK },
+  hotelShape: defaultShape('hotel'),
+  shopShape: defaultShape('shop'),
 };
+
+/** What the player chooses when a new game starts (character creation and the room shapes). */
+export interface NewPlayerChoice {
+  name: string;
+  look: AvatarLook;
+  hotelShape: string;
+  shopShape: string;
+}
+
+/**
+ * The new player config for a choice, or null when the choice is not allowed (a name that is not
+ * clean, clothing that is not free, a colour not in the lists, a shape not for that room kind).
+ */
+export function configForChoice(choice: NewPlayerChoice): NewPlayerConfig | null {
+  const name = cleanDisplayName(choice.name);
+  if (!name || !lookAllowed(choice.look)) return null;
+  if (!shapesFor('hotel').some((s) => s.id === choice.hotelShape)) return null;
+  if (!shapesFor('shop').some((s) => s.id === choice.shopShape && s.shopStart)) return null;
+  return { ...DEFAULT_NEW_PLAYER, name, look: { ...choice.look }, hotelShape: choice.hotelShape, shopShape: choice.shopShape };
+}
 
 /** How an unlocked style is stored in Player.unlockedStyles (floor and wall ids may match). */
 export function styleKey(kind: StyleKind, id: string): string {
@@ -65,21 +91,22 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       unlockedStyles: [styleKey('floor', START_FLOOR_STYLE), styleKey('wall', START_WALL_STYLE)],
       gear: [],
       potions: 0,
+      unlockedClothing: [],
       hotelRoomId: config.hotelRoomId,
       shopRoomId: config.shopRoomId,
     },
     look: { ...config.look },
     rooms: [
-      createRoom(config.hotelRoomId, 'hotel', 1, config.playerId),
-      createRoom(config.shopRoomId, 'shop', 1, config.playerId),
+      createRoom(config.hotelRoomId, 'hotel', 1, config.playerId, config.hotelShape),
+      createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape),
     ],
     items: SHOP_START_ITEMS.map((s, k) => ({
       uid: k + 1,
       typeId: s.typeId,
       ownerId: config.playerId,
       roomId: config.shopRoomId,
-      x: s.x,
-      y: s.y,
+      // The shop shape says where they stand (config SHOP_START_ITEMS for the square shop).
+      ...(getRoomShape(config.shopShape).shopStart?.[s.typeId] ?? { x: s.x, y: s.y }),
       facing: s.facing,
       onItemUid: null,
     })),
@@ -90,6 +117,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     ledger: [],
     shop: emptyShop(config.shopRoomId, at),
     hintsDone: 0,
+    playerCreated: false,
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);
   if (!state) throw new Error('bad new player config');

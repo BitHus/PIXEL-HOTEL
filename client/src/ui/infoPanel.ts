@@ -8,6 +8,8 @@ import { pixelIcon } from './pixelIcons.ts';
 export interface InfoPanel {
   /** The top-left column (the hint box goes under the room switcher). */
   readonly column: HTMLElement;
+  /** Where coins fly to: the middle of the gold coin icon (screen px), read when called. */
+  coinTarget(): () => { x: number; y: number };
   setGold(gold: number): void;
   setRoom(kind: RoomKind): void;
 }
@@ -29,6 +31,12 @@ export function createInfoPanel(parent: HTMLElement, onRoom: (kind: RoomKind) =>
   parent.appendChild(box);
   return {
     column: box,
+    coinTarget() {
+      return () => {
+        const r = (gold.querySelector('.pixel-icon') ?? gold).getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      };
+    },
     setGold(n) {
       goldText.textContent = String(n);
     },

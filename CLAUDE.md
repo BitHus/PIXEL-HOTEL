@@ -68,13 +68,23 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Draw order: see section 7.
 
 5. ROOMS
-- A room is a rectangle: { id, kind: 'hotel' | 'shop', level, w, h (floor size in px),
-  floorStyle, wallStyle }. The back wall is a 64 px band along the top (WALL_BAND), drawn
-  above the floor. The sides and the bottom have only a thin 16 px border. The floor is a
-  seamless repeating texture, not a tile map.
-- The door is in the bottom wall, centered, a 64 px wide opening. The DOOR ZONE is a 64 x 48
-  px rectangle on the floor just inside it. Nothing can be placed on the door zone. Avatars
-  enter and leave through it, walking up from the bottom of the screen.
+- A room is { id, kind: 'hotel' | 'shop', level, shape, w, h (the floor's bounding box in px),
+  floorStyle, wallStyle }. Its floor is a union of rectangles (step 7b), from its shape and
+  level. Shapes are data in shared/data/roomShapes.json: { id, name, kind: 'hotel'|'shop'|'both',
+  levels: [ { rects: [{x, y, w, h}], door: {x} } x3 ] } (plus shopStart: where a new shop's
+  counter and stall_table stand). Each level's floor fully contains the previous level's floor,
+  so upgrades never cut off furniture. Shapes: square (the old rectangle; 'square' for the hotel,
+  'square_shop' for the shop), long (narrow and long), l_shape, plus (a cross) and wide_hall
+  (wide and shallow), each with 3 levels, all about the same area at level 1, 16 px aligned.
+- Walls: every floor edge that faces up gets the 64 px back wall band (WALL_BAND) above it;
+  all other outside edges get the thin 16 px border. Inner corners are drawn cleanly. The
+  floor is a seamless repeating texture, not a tile map.
+- The door is a 64 px wide opening in the border under a bottom edge, at the x from the shape
+  data. The DOOR ZONE is a 64 x 48 px rectangle on the floor just inside it. Nothing can be
+  placed on the door zone. Avatars enter and leave through it, walking up from the bottom of
+  the screen.
+- The player picks one shape for the hotel and one for the shop when a new game starts. Later
+  a shape change could be a paid option; not now.
 - Floors and walls are unlockables. Every room starts with the 'bare' floor and the 'bare'
   wall: plain, dull and a bit boring on purpose, so the first things you earn feel like
   yours. Styles are data in shared/data/styles.json: { id, kind: 'floor'|'wall', name,
@@ -84,20 +94,20 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   walls bare, plaster (8), wood_panels (12), brick (15). All of those are in the catalog
   (price = baseValue * 3). Dungeon-only styles are crafted (section 10): crypt_flagstones
   (floor) and bone_wall (wall).
-- Sizes (floor area in px, kept in config): hotel level 1 is 576x384, level 2 is 704x480,
-  level 3 is 832x576. Shop level 1 is 576x320, level 2 is 704x384, level 3 is 832x448.
+- Sizes: per shape and level in roomShapes.json. The squares keep the old sizes: hotel level 1
+  is 576x384, level 2 is 704x480, level 3 is 832x576; shop level 1 is 576x320, level 2 is
+  704x384, level 3 is 832x448.
 - Every new player gets two basic rooms: a hotel room (level 1) and a shop room (level 1).
   The hotel room starts completely empty. The shop starts with a counter and one stall_table
-  at fixed positions from config, nothing else.
+  at fixed positions from the shop shape's data, nothing else.
 - The counter (step 7): every shop has exactly one counter with a cash register (till) on top.
   It is placed at the start (near the back wall with room behind it, left of center) and can be
   moved and rotated in build mode, but never picked up or sold (FurnitureType.noPickup). The
   spot behind it (where the player serves) must stay reachable from the door: a placement that
   blocks it is refused (FurnitureType.servedFromBehind, canPlace).
-- Room upgrade (costs gold): level 2 and level 3 use the sizes above. The room grows to the
-  right and down. Every item keeps its position. The door moves to the new bottom center,
-  and any item standing in the new door zone goes back to the inventory. Costs are in
-  config.
+- Room upgrade (costs gold): the room switches to the next level of its shape. Every item
+  keeps its position. The door moves to the new level's door, and any item standing in the new
+  door zone goes back to the inventory. Costs are in config.
 - Room ids are integers.
 
 6. MOVEMENT
@@ -159,11 +169,30 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   (4 frames). In pass 1 only the idle sprite is drawn, and the game bobs the sprite 2 px up
   and down while the avatar walks. Walk frames are added later and used when they exist.
 - Placeholder avatar: drawn in code from boxes. The current box avatar (its look,
-  proportions and colours, client/src/render/avatarSprite.ts) is the approved base for the
+  proportions and colours, client/src/render/avatarParts.ts) is the approved base for the
   character: do not change its shape, and future avatar art (sprites, walk and sit frames)
   keeps these proportions.
-- Avatar: { id, name, look: { skin, hair, hairStyle, shirt, legs, shoes }, roomId, x, y (the
-  feet, in px), facing, state }
+- Clothing (step 7b) is data in shared/data/clothing.json: { id, slot: 'hair'|'top'|'bottoms',
+  name, free }. Free at the start: hair short, long, ponytail, buzz; tops t_shirt, long_sleeve,
+  vest (over a shirt); bottoms trousers, shorts, skirt. Items with free = false exist but stay
+  hidden until unlocked later (catalog or dungeon; Player.unlockedClothing). Colours: short
+  lists of palette indices per slot (config LOOK_COLORS). The styles only change the boxes for
+  hair, top and bottoms; the body keeps the approved proportions (the old look is short hair,
+  long sleeves and trousers, drawn exactly as before).
+- Avatar: { id, name, look: { skin, hair (colour), hairStyle, top, shirt (top colour),
+  bottoms, legs (bottoms colour), shoes }, roomId, x, y (the feet, in px), facing, state }
+- Character creation (step 7b): once, at the very start of a new game, a full-screen panel
+  shows the avatar large in the middle, turning slowly (down, right, up, left), with pickers for
+  skin tone, hair style and colour, top and colour, bottoms and colour, shoes colour, and a
+  display name (max 16 characters: letters, digits, spaces; no real names asked). The Avatar
+  panel uses the same pickers later, with the same free/unlocked rule.
+- The new-game intro (after character creation, once): pick the hotel shape, then the shop
+  shape, from cards with a small top-down preview. Then the camera shows the empty shop at the
+  overview zoom; after a short pause the counter pops in ("boing": scale 0, 1.2, 0.9, 1 in about
+  0.5 s, with a small dust puff), then the stall_table. The avatar walks in through the door,
+  coins fly from the till to the gold counter one by one while the number counts up from 0 to
+  100, then the first hint appears. A tap anywhere skips the intro. A save that already has a
+  player skips all of this.
 
 9. ECONOMY (starting values, all kept in shared/config.ts)
 - One currency: gold (integer). Every loot and furniture type has a baseValue (gold).
@@ -366,7 +395,8 @@ CURRENT STATE (kept up to date by the AI at the end of each step)
 Steps 1 (project skeleton), 2 (room view), 3 (avatar and walking), 4 (furniture), 4b (placing
 and the item menu), 5 (inventory, UI, chat, local saving, camera intro; the bag reworked to the
 docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying reworked after
-5b: drawn inside the bed only) and 7 (shop, gold and upgrades) are done. Step 6 (docs/STYLE.md)
+5b: drawn inside the bed only), 7 (shop, gold and upgrades; serving at the counter added after
+it) and 7b (room shapes, character creation, the new-game intro) are done. Step 6 (docs/STYLE.md)
 has not been done yet.
 
 Layout:
@@ -485,7 +515,8 @@ Layout:
     ledgerMaterials; not exported). furniture.ts gained canPickUp. newPlayer.ts gained
     addShopStartItems (save migration 2 -> 3).
   - client/src/render: styleArt.ts (floorTexture, wallTexture, stylePreviewUrl: code-drawn
-    style art), slotGoods.ts (goods drawn small on top of tables, shelves and cases),
+    style art), slotGoods.ts (goods drawn small: at FurnitureType.slotSpots when facing down (the
+    shelf's three boards, inside the display case), else spread along the top),
     customerViews.ts (CustomerViews: customers animated along their paths), lieArt.ts.
     ItemViews.setGoods draws the goods; wall items are in the objects layer.
   - client/src/ui: shelfPanel.ts, catalogPanel.ts, roomPanel.ts, shopFeedback.ts (sale floats,
@@ -661,7 +692,8 @@ Conventions:
     Build mode: as before (item menu); the counter's menu has no Pick up.
 - CATALOG, STYLES, ROOMS (step 7): the Catalog button (book, key C) opens tabs Home, Shop and
   Decor; prices are baseValue * 3. Buying puts furniture in the bag, or unlocks a style
-  (ledger reason 'style'). The first catalog purchase of a game (furniture or style) goes
+  (ledger reason 'style') and puts it on the room the player is in at once (applyStyle, free;
+  change it back in the Room panel). The first catalog purchase of a game (furniture or style) goes
   straight into placing with a pop (Placer.pop / tick) if it fits the current room. The Room
   button (house) shows level, size, appeal (shop), Upgrade, and the floor and wall pickers:
   picking applies the style at once (free; that is the live preview). Upgrading reopens the
@@ -669,7 +701,37 @@ Conventions:
 - HINTS (step 7): config HINTS, GameState.hintsDone counts the finished ones, shown one at a
   time in the hint box under the room switcher. 1 is done by the first buy (a style as the first
   buy also skips 2), 2 by placing an inventory item, 3 by putting an item on a slot.
-- SAVE_VERSION is 4: MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and
+- STEP 7b (room shapes, character creation, intro):
+  - shared/data/roomShapes.json, shared/data/clothing.json. room.ts now: ROOM_SHAPES,
+    getRoomShape, shapesFor, defaultShape, boundsOf, createRoom(..., shape), roomAtLevel,
+    floorRects, floorRect (the bounding box), doorX, doorY, pointOnFloor, wallBands (every up
+    edge), wallBandRect (the first band, old code), borderRects (a 16 px ring of cells around
+    the floor and bands, not above bands, gap at the door), doorRect, doorZoneRect,
+    roomBoundsRect, rectInsideFloor (fully inside the union; the shape's rectangles never
+    overlap). The old left/right/bottomBorderRects and config ROOM_SIZES are gone; config
+    ROOM_GRID = 16.
+  - Rules that used one rectangle now use the union: the nav grid (a cell is free only if it is
+    fully on the floor), canPlace, doorPoint, the customers' way in and out, wall items
+    (snapToWallBand: a wall item's anchor y is the bottom of the nearest band, and it must fit on
+    that band; any band, also an inner one), upgrades (roomAtLevel). The camera uses
+    roomBoundsRect and fitZoom as before.
+  - clothing.ts: CLOTHING, getClothing, selectableClothing(slot, unlocked), SLOT_FIELD,
+    lookAllowed, cleanDisplayName. newPlayer.ts: NewPlayerConfig gains hotelShape and
+    shopShape; NewPlayerChoice; configForChoice (checks the name, look and shapes). GameState
+    gains playerCreated (false until character creation is done). GameAPI gains needsNewPlayer
+    and createPlayer(choice); LocalGameAPI.setLook only takes allowed looks; newGame() leaves a
+    default state with playerCreated false, so the reload starts character creation.
+  - client: render/avatarParts.ts (avatarBoxes, avatarParts, sitParts, drawAvatarOnCanvas;
+    pure, no Pixi; the clothing boxes), ui/lookPickers.ts (the shared pickers),
+    ui/newGame.ts (runNewGameSetup: character, hotel shape, shop shape; createAvatarPreview,
+    shapePreview), ui/coinFly.ts (flyCoin), avatarPanel.ts uses the pickers. ItemViews.pop(uid)
+    (POP_MS boing + dust puff). main.ts playNewGameIntro (newIntro state hides the start items
+    and holds the gold and the hint; a full-screen .intro-skip layer takes the skipping tap).
+    roomView draws one floor sprite per rectangle (texture lined up with the world), a wall band
+    sprite per band, and the border ring.
+- SAVE_VERSION is 5: MIGRATIONS[4] gives old rooms the square shapes, the old look clothing
+  ids (short, long_sleeve, trousers), unlockedClothing [] and playerCreated true.
+- (Before 5:) MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and
   stall_table (addShopStartItems); MIGRATIONS[3] moves a counter still on the old spot against the
   back wall (176, 40) to the new start spot (176, 88), so the player fits behind it.
 
@@ -718,4 +780,5 @@ Notes:
     the nearest free cell center); LocalGameAPI and main.ts both do this with the same rule.
   - The bone chair (crypt furniture) does not exist yet; give it one 'sit' seat when it is added.
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
-- The avatar look uses palette indices (skin 30, hair 5, shirt 7, legs 23, shoes 6).
+- The start look (config START_LOOK): skin 30, hair 5, short hair, long sleeves (shirt 7),
+  trousers (legs 23), shoes 6. The box avatar lives in render/avatarParts.ts now.

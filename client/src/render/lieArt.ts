@@ -7,7 +7,7 @@
 
 import type { AvatarLook, Facing, FurnitureType } from '@pixel-hotel/shared';
 import { furnitureRects, type ArtRect } from './furnitureArt.ts';
-import { avatarParts, type Part } from './avatarSprite.ts';
+import { avatarParts, type Part } from './avatarParts.ts';
 import { DARK_WARM } from './bareStyles.ts';
 
 /** The middle of the standing head, from the feet (avatarParts 'down': head y -60..-46). */

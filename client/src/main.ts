@@ -3,6 +3,12 @@ import {
   AVATAR_H,
   INTRO_DEVICE_PX_PER_ART_PX,
   REACTION_BUBBLE_MS,
+  INTRO_COINS,
+  doorY,
+  INTRO_COIN_EVERY_MS,
+  INTRO_COIN_FLY_MS,
+  INTRO_FIRST_POP_MS,
+  INTRO_STEP_MS,
   tillPoint,
   PALETTE,
   buildNavGrid,
@@ -70,6 +76,8 @@ import { CustomerViews } from './render/customerViews.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
 import { createCatalogPanel } from './ui/catalogPanel.ts';
 import { createRoomPanel } from './ui/roomPanel.ts';
+import { flyCoin } from './ui/coinFly.ts';
+import { runNewGameSetup } from './ui/newGame.ts';
 import { createHintBox, createSaleFloats, createTillCoins, showAwaySummary } from './ui/shopFeedback.ts';
 import { pixelIcon } from './ui/pixelIcons.ts';
 
@@ -80,9 +88,20 @@ async function start(): Promise<void> {
   const host = document.getElementById('game');
   const ui = document.getElementById('ui');
   if (!host || !ui) throw new Error('#game or #ui element missing');
+  const uiRoot: HTMLElement = ui;
 
   // Step 5: the game runs on LocalGameAPI (shared rules in the browser, saved in localStorage).
   const { api, notice } = LocalGameAPI.open(browserStorage());
+  // Step 7b: a brand new game first makes the character and picks the room shapes, then plays
+  // the intro in the shop. A save that already has a player skips all of this.
+  let introPending = false;
+  if (await api.needsNewPlayer()) {
+    for (;;) {
+      const choice = await runNewGameSetup(ui);
+      if (await api.createPlayer(choice)) break;
+    }
+    introPending = true;
+  }
   // Step 7: the shop's customers walk while the game is open.
   api.startClock();
 
@@ -100,8 +119,8 @@ async function start(): Promise<void> {
   const dpr = (): number => app.renderer.resolution;
   host.appendChild(app.canvas);
 
-  // Open the room the player was in last (saved).
-  const first = await api.enterRoom(await api.currentRoomId());
+  // Open the room the player was in last (saved); the intro starts in the shop.
+  const first = await api.enterRoom(introPending ? (await api.getPlayer()).shopRoomId : await api.currentRoomId());
   let room: Room = first.room;
   let bounds: Rect = roomBoundsRect(room);
   const view = new RoomView();
@@ -270,11 +289,17 @@ async function start(): Promise<void> {
   };
 
   // ---------- Placing and the item menu ----------
+  /** The intro's state: while it runs, the gold and the hint wait, and some items are hidden. */
+  const newIntro = { running: false, hidden: new Set<number>() };
+  /** Items not drawn now: a moved item (and its riders) while placing, and the intro's items. */
+  const hiddenUids = (): Set<number> => new Set([...placer.hiddenUids(), ...newIntro.hidden]);
+  /** What is on screen now (for the intro's coins). */
+  const shown0 = (): Camera => shown;
   /** Applies items from the GameAPI (null = refused). */
   const applyItems = (next: ItemsResult): boolean => {
     if (!next) return false;
     items = next;
-    itemViews.sync(items, placer.hiddenUids());
+    itemViews.sync(items, hiddenUids());
     roomChanged();
     void refreshInventory().then(refreshShop).then(refreshHint);
     return true;
@@ -289,7 +314,7 @@ async function start(): Promise<void> {
         return applyItems(s.origin ? await api.moveItem(s.uid, at) : await api.placeItem(s.uid, at));
       },
       onChange: () => {
-        itemViews.sync(items, placer.hiddenUids());
+        itemViews.sync(items, hiddenUids());
         hotbar.setHidden(placer.active);
       },
     },
@@ -350,7 +375,19 @@ async function start(): Promise<void> {
     },
     buyStyle: (kind, id) => {
       void api.buyStyle(kind, id).then(async (ok) => {
-        toast(ok ? 'Unlocked! Use it in the Room panel.' : 'Not enough gold.');
+        if (!ok) {
+          toast('Not enough gold.');
+          return;
+        }
+        // A bought floor or wall goes straight onto the room you are in (free to change back in
+        // the Room panel).
+        const next = await api.applyStyle(room.id, kind, id);
+        if (next && next.id === room.id) {
+          room = next;
+          view.setRoom(room);
+        }
+        toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
+        await refreshShop();
         await refreshInventory();
         await refreshHint();
       });
@@ -390,7 +427,7 @@ async function start(): Promise<void> {
     if (panels.open === 'shelf' && !open) panels.close();
   }
   async function refreshHint(): Promise<void> {
-    hint.set(await api.currentHint());
+    hint.set(newIntro.running ? null : await api.currentHint());
   }
   const showAway = async (): Promise<void> => {
     const away = await api.takeAwaySummary();
@@ -486,7 +523,7 @@ async function start(): Promise<void> {
   async function refreshInventory(): Promise<void> {
     inventory = await api.getInventory();
     const p = await api.getPlayer();
-    info.setGold(p.wallet.gold);
+    if (!newIntro.running) info.setGold(p.wallet.gold);
     catalog.refresh(p.wallet.gold, p.unlockedStyles);
     roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
     shelfPanel.refresh(shop, inventory);
@@ -515,7 +552,7 @@ async function start(): Promise<void> {
     sprite.setLook(next);
     void api.setLook(next);
   });
-  avatarPanel.setLook(avatar.look);
+  avatarPanel.setLook(avatar.look, (await api.getPlayer()).unlockedClothing);
   panels.add('avatar', avatarPanel.el);
 
   const chat = createChatPanel(ui, (text) => void api.chat(text));
@@ -564,6 +601,85 @@ async function start(): Promise<void> {
   panels.add('settings', settings.el);
   cross.visible = false;
 
+  // ---------- The new-game intro (step 7b) ----------
+  /**
+   * The shop at the overview: the counter and then the stall_table pop in, the avatar walks in
+   * through the door, the start gold flies from the till to the gold counter coin by coin while the
+   * number counts up, then the first hint shows. A tap anywhere skips to the end.
+   */
+  async function playNewGameIntro(): Promise<void> {
+    const startItems = items.filter((i) => i.roomId === room.id);
+    const gold = (await api.getPlayer()).wallet.gold;
+    newIntro.running = true;
+    newIntro.hidden = new Set(startItems.map((i) => i.uid));
+    itemViews.sync(items, hiddenUids());
+    hint.set(null);
+    info.setGold(0);
+    const home = { x: avatar.x, y: avatar.y };
+    const outside = { x: avatar.x, y: doorY(room) + 40 };
+    avatar = { ...avatar, ...outside };
+    sprite.container.visible = false;
+
+    const skip = document.createElement('div');
+    skip.className = 'intro-skip';
+    skip.title = 'Tap to skip';
+    uiRoot.appendChild(skip);
+    let skipped = false;
+    const wait = (ms: number): Promise<void> =>
+      new Promise((resolve) => {
+        if (skipped) return resolve();
+        const t = window.setTimeout(resolve, ms);
+        skip.addEventListener('pointerdown', () => (window.clearTimeout(t), resolve()), { once: true });
+      });
+    skip.addEventListener('pointerdown', () => (skipped = true), { once: true });
+
+    const counter = startItems.find((i) => i.typeId === 'counter');
+    await wait(INTRO_FIRST_POP_MS);
+    for (const item of [counter, ...startItems.filter((i) => i !== counter)]) {
+      if (skipped || !item) break;
+      newIntro.hidden.delete(item.uid);
+      itemViews.sync(items, hiddenUids());
+      itemViews.pop(item.uid);
+      await wait(INTRO_STEP_MS);
+    }
+    if (!skipped) {
+      // The avatar walks in through the door.
+      sprite.container.visible = true;
+      path = [home];
+      avatar = { ...avatar, state: 'walk' };
+      await wait(INTRO_STEP_MS * 2);
+    }
+    if (!skipped && counter) {
+      // The start gold flies from the till to the gold counter, coin by coin.
+      const till = tillPoint(counter);
+      const target = info.coinTarget();
+      let shown = 0;
+      const per = Math.ceil(gold / INTRO_COINS);
+      for (let k = 0; k < INTRO_COINS && !skipped; k++) {
+        const from = till ? worldToScreen(till, shown0()) : { x: 0, y: 0 };
+        flyCoin(uiRoot, from, target(), INTRO_COIN_FLY_MS, () => {
+          if (skipped) return;
+          shown = Math.min(gold, shown + per);
+          info.setGold(shown);
+        });
+        await wait(INTRO_COIN_EVERY_MS);
+      }
+      await wait(INTRO_COIN_FLY_MS);
+    }
+    // The end (also after a skip): everything in place.
+    skip.remove();
+    newIntro.running = false;
+    newIntro.hidden.clear();
+    itemViews.sync(items, hiddenUids());
+    sprite.container.visible = true;
+    if (skipped) {
+      path = [];
+      avatar = { ...avatar, ...home, state: 'idle' };
+    }
+    info.setGold(gold);
+    await refreshHint();
+  }
+
   // ---------- Rooms ----------
   /** Opens a room: draws it, puts the avatar in the door zone and plays the camera intro. */
   async function openRoom(roomId: number, intro = true): Promise<void> {
@@ -584,7 +700,7 @@ async function start(): Promise<void> {
     goal = null;
     seating.clear();
     marked = null;
-    itemViews.sync(items, placer.hiddenUids());
+    itemViews.sync(items, hiddenUids());
     roomChanged();
     info.setRoom(room.kind);
     floats.clear();
@@ -719,7 +835,8 @@ async function start(): Promise<void> {
     tillCoins.update(ticker.deltaMS, (p) => worldToScreen(p, shown), waiting && counterItem ? tillPoint(counterItem) : null);
   });
 
-  await openRoom(room.id);
+  await openRoom(room.id, !introPending);
+  if (introPending) await playNewGameIntro();
   if (notice) toast(notice);
   await showAway();
 }

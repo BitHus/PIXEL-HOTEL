@@ -9,7 +9,7 @@ function avatarAt(p: Point): Avatar {
   return {
     id: 1,
     name: 'test',
-    look: { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 },
+    look: { skin: 30, hair: 5, hairStyle: 'short', top: 't_shirt', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 },
     roomId: 1,
     x: p.x,
     y: p.y,

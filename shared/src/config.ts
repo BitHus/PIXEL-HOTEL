@@ -18,19 +18,11 @@ export const DOOR_ZONE_H = 48;
 export type RoomLevel = 1 | 2 | 3;
 export const ROOM_MAX_LEVEL: RoomLevel = 3;
 
-/** Floor size in px per room kind and level. */
-export const ROOM_SIZES = {
-  hotel: {
-    1: { w: 576, h: 384 },
-    2: { w: 704, h: 480 },
-    3: { w: 832, h: 576 },
-  },
-  shop: {
-    1: { w: 576, h: 320 },
-    2: { w: 704, h: 384 },
-    3: { w: 832, h: 448 },
-  },
-} as const;
+/**
+ * Room shapes and their floor rectangles per level live in shared/data/roomShapes.json (step 7b).
+ * Shape rectangles, doors and walls are aligned to this grid, px.
+ */
+export const ROOM_GRID = 16;
 
 /** Gold cost to upgrade a room TO this level (same for hotel and shop). */
 export const ROOM_UPGRADE_COST = {
@@ -321,8 +313,18 @@ export const LOCAL_PLAYER_NAME = 'You';
 /** Room ids of a new local player's two rooms. */
 export const START_HOTEL_ROOM_ID = 1;
 export const START_SHOP_ROOM_ID = 2;
-/** The starting avatar look (palette indices). */
-export const START_LOOK = { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 } as const;
+/** The starting avatar look (palette indices; styles are clothing.json ids). */
+export const START_LOOK = { skin: 30, hair: 5, hairStyle: 'short', top: 'long_sleeve', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 } as const;
+/** Colour choices per look slot (palette indices), for character creation and the Avatar panel. */
+export const LOOK_COLORS = {
+  skin: [30, 31, 3, 4, 5],
+  hair: [5, 6, 0, 1, 10, 2, 24, 20],
+  top: [7, 13, 16, 27, 0, 14, 9, 22, 2],
+  bottoms: [23, 5, 24, 15, 6, 14, 27, 7],
+  shoes: [6, 5, 25, 4, 23],
+} as const;
+/** Display names: at most this many letters, digits and spaces. */
+export const DISPLAY_NAME_MAX = 16;
 /** Slots in the hotbar at the bottom of the screen. */
 export const HOTBAR_SLOTS = 6;
 /** Slots in each bag tab (Furniture, Materials). Empty slots stay visible. If a new item type
@@ -332,7 +334,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -358,3 +360,15 @@ export const HINTS = [
   'Place it in your room.',
   'Put an item on the table in your shop and set a price.',
 ] as const;
+
+// ---------- New game intro (step 7b) ----------
+/** The counter and stall_table pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */
+export const POP_MS = 500;
+/** The intro waits this long at the overview before the first pop, ms. */
+export const INTRO_FIRST_POP_MS = 700;
+/** Time between the intro's steps (pops, the walk in, the coins), ms. */
+export const INTRO_STEP_MS = 650;
+/** The start gold flies in as this many coins, one every INTRO_COIN_EVERY_MS, each flight INTRO_COIN_FLY_MS. */
+export const INTRO_COINS = 10;
+export const INTRO_COIN_EVERY_MS = 140;
+export const INTRO_COIN_FLY_MS = 600;

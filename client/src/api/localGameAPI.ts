@@ -40,6 +40,11 @@ import {
   type StockPick,
   type StyleKind,
   type Rng,
+  doorX,
+  doorY,
+  type NewPlayerChoice,
+  configForChoice,
+  lookAllowed,
   type ServeResult,
   type Facing,
   APPROACH_REACH_PX,
@@ -208,6 +213,22 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return start(createNewPlayer(undefined, now()), null);
   }
 
+  async needsNewPlayer(): Promise<boolean> {
+    return !this.state.playerCreated;
+  }
+
+  async createPlayer(choice: NewPlayerChoice): Promise<boolean> {
+    if (this.state.playerCreated) return false;
+    const config = configForChoice(choice);
+    if (!config) return false;
+    this.commit({ ...createNewPlayer(config, this.now()), playerCreated: true });
+    this.walkState = this.doorWalk();
+    this.grid = this.buildGrid();
+    this.shopGrid = null;
+    this.away = null;
+    return true;
+  }
+
   /** A copy of the whole state (tests, debugging). */
   snapshot(): GameState {
     return structuredClone(this.state);
@@ -341,10 +362,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   async setLook(look: AvatarLook): Promise<AvatarLook> {
-    const ok = (n: number): boolean => Number.isInteger(n) && n >= 0 && n < PALETTE.length;
-    if ([look.skin, look.hair, look.shirt, look.legs, look.shoes].every(ok) && Number.isInteger(look.hairStyle)) {
-      this.commit({ ...this.state, look: { ...look } });
-    }
+    // Free or unlocked clothing and colours from the lists only (step 7b).
+    if (lookAllowed(look, this.state.player.unlockedClothing)) this.commit({ ...this.state, look: { ...look } });
     return { ...this.state.look };
   }
 
@@ -670,8 +689,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       name: p.name,
       look: { ...this.state.look },
       roomId: room.id,
-      x: room.w / 2,
-      y: room.h - AVATAR_START_FROM_BOTTOM,
+      x: doorX(room),
+      y: doorY(room) - AVATAR_START_FROM_BOTTOM,
       facing: 'up',
       state: 'idle',
     };

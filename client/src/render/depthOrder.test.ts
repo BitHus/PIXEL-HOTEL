@@ -5,7 +5,7 @@ import { avatarDepthKey, compareDepth, itemDepthKey, type DepthKey } from './dep
 const avatar = (x: number, y: number): Avatar => ({
   id: 1,
   name: 'A',
-  look: { skin: 0, hair: 0, hairStyle: 0, shirt: 0, legs: 0, shoes: 0 },
+  look: { skin: 0, hair: 0, hairStyle: 'short', top: 't_shirt', shirt: 0, bottoms: 'trousers', legs: 0, shoes: 0 },
   roomId: 1,
   x,
   y,

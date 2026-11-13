@@ -12,7 +12,8 @@ import {
   standPointFor,
   type FurnitureLookup,
 } from './furniture.ts';
-import { createRoom } from './room.ts';
+import { createRoom, rectInsideFloor } from './room.ts';
+import { buildNavGrid, findPath, isCellFree } from './nav.ts';
 import type { Facing, FurnitureItem, FurnitureType } from './types.ts';
 
 const room = createRoom(1, 'hotel', 1, 1); // 576 x 384, door zone x 256..320, y 336..384
@@ -195,3 +196,44 @@ describe('the counter (served from behind)', () => {
   });
 });
 
+
+describe('non-rectangular rooms (step 7b)', () => {
+  const l = createRoom(5, 'hotel', 1, 1, 'l_shape'); // (0,0,320,448) + (320,192,320,256)
+  const plus = createRoom(6, 'hotel', 1, 1, 'plus'); // arms x 208..432, bar y 128..320
+  const at = (room: typeof l, typeId: string, x: number, y: number): FurnitureItem => ({ uid: 900, typeId, ownerId: 1, roomId: room.id, x, y, facing: 'down', onItemUid: null });
+
+  it('placement rejects items crossing outside the floor', () => {
+    expect(canPlace(l, [], T('table'), 320, 300, 'down')).toBe(true); // across the seam of the L
+    expect(canPlace(l, [], T('table'), 352, 200, 'down')).toBe(false); // pokes into the cut-out
+    expect(canPlace(l, [], T('table'), 480, 100, 'down')).toBe(false); // in the cut-out
+    expect(canPlace(plus, [], T('table'), 320, 100, 'down')).toBe(true); // in the top arm
+    expect(canPlace(plus, [], T('table'), 220, 100, 'down')).toBe(false); // half off the top arm
+    expect(canPlace(plus, [], T('table'), 100, 400, 'down')).toBe(false); // below the bar, outside
+  });
+
+  it('the nav grid blocks every cell outside the union', () => {
+    for (const room of [l, plus]) {
+      const grid = buildNavGrid(room, []);
+      for (let r = 0; r < grid.rows; r++) {
+        for (let c = 0; c < grid.cols; c++) {
+          const cell = { x: c * 16, y: r * 16, w: 16, h: 16 };
+          if (!rectInsideFloor(room, cell)) expect(isCellFree(grid, c, r)).toBe(false);
+        }
+      }
+      expect(isCellFree(grid, 30, 4) && room === l).toBe(false); // the L's cut-out corner
+    }
+    // Walking from the top arm of the plus to its bottom arm goes through the bar.
+    expect(findPath(buildNavGrid(plus, []), { x: 320, y: 40 }, { x: 320, y: 420 })).not.toBeNull();
+  });
+
+  it('wall items hang on any back wall band, also the inner one of an L', () => {
+    const l = createRoom(7, 'shop', 1, 1, 'l_shape'); // banners are shop items
+    expect(canPlace(l, [], T('banner'), 480, 192, 'down')).toBe(true); // the inner band
+    expect(canPlace(l, [], T('banner'), 160, 0, 'down')).toBe(true); // the top band
+    expect(canPlace(l, [], T('banner'), 320, 192, 'down')).toBe(false); // half off the inner band
+    expect(canPlace(l, [], T('banner'), 480, 0, 'down')).toBe(false); // no wall up there
+    const p = planPlacement(l, [], T('banner'), 470, 230, 'down');
+    expect(p).toMatchObject({ x: 470, y: 192, ok: true });
+    expect(at(l, 'banner', 470, 192).y).toBe(192);
+  });
+});

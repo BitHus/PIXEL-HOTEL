@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createNewPlayer, styleKey } from './newPlayer.ts';
-import { HOTBAR_SLOTS, SHOP_START_ITEMS } from './config.ts';
+import { DEFAULT_NEW_PLAYER, configForChoice, createNewPlayer, styleKey } from './newPlayer.ts';
+import { CLOTHING, cleanDisplayName, lookAllowed, selectableClothing } from './clothing.ts';
+import { shapesFor } from './room.ts';
+import { HOTBAR_SLOTS, SHOP_START_ITEMS, START_LOOK } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 
 describe('createNewPlayer (brief section 9)', () => {
@@ -63,5 +65,55 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.ledger).toEqual([
       { id: 1, at: 1234, playerId: s.player.id, reason: 'start', goldDelta: 100, materials: { wood: 4, cloth: 2 } },
     ]);
+  });
+});
+
+describe('a new player from character creation (step 7b)', () => {
+  const look = { skin: 4, hair: 10, hairStyle: 'ponytail', top: 'vest', shirt: 13, bottoms: 'skirt', legs: 5, shoes: 25 };
+  const choice = { name: '  Ada  Lovely 7 ', look, hotelShape: 'l_shape', shopShape: 'plus' };
+
+  it('uses the chosen shapes, look and name', () => {
+    const config = configForChoice(choice)!;
+    const s = createNewPlayer(config, 5);
+    expect(s.player.name).toBe('Ada Lovely 7');
+    expect(s.look).toEqual(look);
+    expect(s.rooms.find((r) => r.id === s.player.hotelRoomId)).toMatchObject({ shape: 'l_shape', level: 1, kind: 'hotel' });
+    expect(s.rooms.find((r) => r.id === s.player.shopRoomId)).toMatchObject({ shape: 'plus', level: 1, kind: 'shop' });
+    expect(s.player.unlockedClothing).toEqual([]);
+    expect(s.playerCreated).toBe(false); // the API sets it once the player is made
+  });
+
+  it('refuses names that are not clean, clothing that is not free, and shapes for the wrong room', () => {
+    expect(configForChoice({ ...choice, name: '' })).toBeNull();
+    expect(configForChoice({ ...choice, name: 'a'.repeat(17) })).toBeNull();
+    expect(configForChoice({ ...choice, name: 'hi<script>' })).toBeNull();
+    expect(configForChoice({ ...choice, look: { ...look, hairStyle: 'mohawk' } })).toBeNull();
+    expect(configForChoice({ ...choice, look: { ...look, shirt: 999 } })).toBeNull();
+    expect(configForChoice({ ...choice, hotelShape: 'square_shop' })).toBeNull();
+    expect(configForChoice({ ...choice, shopShape: 'square' })).toBeNull();
+    expect(cleanDisplayName('Émile 2')).toBe('Émile 2');
+  });
+
+  it('only free clothing is selectable at the start', () => {
+    expect(selectableClothing('hair').map((c) => c.id)).toEqual(['short', 'long', 'ponytail', 'buzz']);
+    expect(selectableClothing('top').map((c) => c.id)).toEqual(['t_shirt', 'long_sleeve', 'vest']);
+    expect(selectableClothing('bottoms').map((c) => c.id)).toEqual(['trousers', 'shorts', 'skirt']);
+    for (const c of CLOTHING.filter((x) => !x.free)) expect(selectableClothing(c.slot).some((x) => x.id === c.id)).toBe(false);
+    // Unlocked later (catalog or dungeon): then it shows.
+    expect(selectableClothing('hair', ['mohawk']).map((c) => c.id)).toContain('mohawk');
+    expect(lookAllowed(START_LOOK)).toBe(true);
+  });
+
+  it('every shop shape has a counter (with room behind it) and a stall_table that fit', () => {
+    for (const shape of shapesFor('shop')) {
+      const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
+      const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
+      const shop = s.items.filter((i) => i.roomId === room.id);
+      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['counter', 'stall_table']);
+      for (const i of shop) {
+        const others = s.items.filter((o) => o.uid !== i.uid);
+        expect(canPlace(room, others, getFurnitureType(i.typeId), i.x, i.y, i.facing), `${shape.id} ${i.typeId}`).toBe(true);
+      }
+    }
   });
 });

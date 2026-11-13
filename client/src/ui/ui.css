@@ -1131,3 +1131,240 @@
     opacity: 0;
   }
 }
+
+/* ---------- Step 7b: a new game (character creation, room shapes, the intro) ---------- */
+.newgame {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  /* flex-start + margin: auto on the frame: centered when it fits, scrollable from the top when not. */
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(var(--edge) + env(safe-area-inset-top)) var(--edge) calc(var(--edge) + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: var(--night);
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.newgame-frame {
+  position: relative;
+  width: min(760px, 100%);
+  box-sizing: border-box;
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: auto;
+}
+
+.newgame-body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.newgame-avatar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 200px;
+}
+
+.newgame-pickers {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.avatar-stage {
+  display: grid;
+  place-items: end center;
+  width: 180px;
+  height: 280px;
+  background: var(--slot-bg);
+  border: var(--px) solid var(--wood-light);
+  box-shadow: inset 1px 1px 0 var(--wood);
+}
+
+.avatar-stage.small {
+  width: 100%;
+  height: 148px;
+}
+
+.avatar-preview {
+  image-rendering: pixelated;
+  margin-bottom: 8px;
+}
+
+.name-input {
+  width: 100%;
+}
+
+.newgame-problem {
+  min-height: 0;
+  color: var(--no);
+}
+
+.newgame-next {
+  align-self: flex-end;
+  min-width: 160px;
+  font-weight: 700;
+  background: var(--ok);
+  color: var(--cream);
+}
+
+.newgame-next:hover {
+  background: #2f6e50;
+}
+
+.look-pickers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.look-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.look-label {
+  font-size: 14px;
+  color: var(--wood);
+}
+
+.look-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.look-step {
+  width: var(--touch);
+  min-width: var(--touch);
+  padding: 0;
+}
+
+.look-value {
+  flex: 1 1 auto;
+  min-height: var(--touch);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  background: #f1e2c4;
+  border: 1px solid var(--wood-light);
+}
+
+.look-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.shape-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.shape-card {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 150px;
+  padding: 8px;
+  background: #f1e2c4;
+  border: var(--px) solid var(--wood-light);
+  border-radius: 0;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.shape-card.selected {
+  border-color: var(--select);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--warm),
+    0 0 0 1px var(--outline);
+  background: var(--slot-bg);
+}
+
+.shape-preview {
+  image-rendering: pixelated;
+  flex: none;
+  max-width: 100%;
+  height: auto;
+  margin: auto 0;
+}
+
+.shape-name {
+  font-weight: 700;
+}
+
+/* The intro: an invisible layer that takes a tap (skip), and the coins flying to the gold. */
+.intro-skip {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.fly-coin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 16;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.fly-coin .pixel-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Phone: the character screen stacks (avatar on top, pickers under it). */
+@media (max-width: 680px) {
+  .newgame-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .newgame-avatar {
+    width: auto;
+  }
+
+  .avatar-stage {
+    width: 100%;
+    height: 200px;
+  }
+
+  .newgame-next {
+    align-self: stretch;
+  }
+}
+
+.avatar-stage .avatar-preview {
+  height: 264px;
+  width: auto;
+}
+
+.avatar-stage.small .avatar-preview {
+  height: 132px;
+}
+
+@media (max-width: 680px) {
+  .avatar-stage:not(.small) .avatar-preview {
+    height: 186px;
+  }
+}

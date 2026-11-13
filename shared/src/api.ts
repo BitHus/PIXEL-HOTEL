@@ -5,6 +5,7 @@
 import type { FurnitureItem, MaterialId, Player, Point, Facing, SaleRecord, ShopSlot, StyleKind } from './types.ts';
 import type { Customer, ShopEvent } from './customers.ts';
 import type { ShelfSlotRef, StockPick } from './shop.ts';
+import type { NewPlayerChoice } from './newPlayer.ts';
 import type { Avatar, AvatarLook } from './avatar.ts';
 import type { Room } from './room.ts';
 import type { ChatLine } from './gameState.ts';
@@ -120,6 +121,11 @@ export interface GameAPI {
   chat(text: string): Promise<ChatLine | null>;
   /** Chat lines said in the current room (also your own). Returns an unsubscribe function. */
   onChat(listener: (line: ChatLine) => void): () => void;
+  // ---------- Step 7b: a new player ----------
+  /** True until the player made their character and picked the room shapes. */
+  needsNewPlayer(): Promise<boolean>;
+  /** Starts the game with the chosen name, look and room shapes. False = not allowed. */
+  createPlayer(choice: NewPlayerChoice): Promise<boolean>;
   // ---------- Step 7: shop, catalog, rooms ----------
   /** The player's shop. */
   getShop(): Promise<ShopView>;

@@ -118,7 +118,7 @@ describe('LocalGameAPI', () => {
     const lamp = (await api.getInventory()).furniture.find((i) => i.typeId === 'lamp')!;
     await api.placeItem(lamp.uid, { center: { x: 200, y: 150 }, facing: 'down', snap: true });
     await api.moveSlot({ area: 'furniture', index: 0 }, { area: 'hotbar', index: 0 });
-    await api.setLook({ skin: 1, hair: 2, hairStyle: 0, shirt: 3, legs: 4, shoes: 5 });
+    await api.setLook({ skin: 31, hair: 2, hairStyle: 'ponytail', top: 'vest', shirt: 13, bottoms: 'skirt', legs: 5, shoes: 25 });
     const reloaded = LocalGameAPI.open(storage, clock);
     expect(reloaded.notice).toBeNull();
     expect(reloaded.api.snapshot()).toEqual(api.snapshot());

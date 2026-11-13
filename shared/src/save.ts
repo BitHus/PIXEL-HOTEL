@@ -58,6 +58,18 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       return state;
     }
   },
+  // 4 -> 5 (step 7b): rooms get a shape (the old rectangle = 'square' / 'square_shop'), the look
+  // gets clothing ids (the old look = short hair, long sleeves, trousers), unlockedClothing starts
+  // empty.
+  4: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms) || !isObject(state.look) || !isObject(state.player)) return state;
+    const rooms = state.rooms.map((r) =>
+      isObject(r) && typeof r.shape !== 'string' ? { ...r, shape: r.kind === 'shop' ? 'square_shop' : 'square' } : r,
+    );
+    const look = { ...state.look, hairStyle: 'short', top: 'long_sleeve', bottoms: 'trousers' };
+    // A save that already has a player skips character creation and the intro.
+    return { ...state, rooms, look, player: { ...state.player, unlockedClothing: [] }, playerCreated: true };
+  },
 };
 
 /** The storage key for a save version. */
@@ -106,7 +118,9 @@ export function isGameState(x: unknown): x is GameState {
   const p = x.player;
   if (!isObject(p) || !isInt(p.id) || !isObject(p.wallet) || !isInt(p.wallet.gold) || !isObject(p.materials)) return false;
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
-  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop'))) return false;
+  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop') && typeof r.shape === 'string')) return false;
+  if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
+  if (!Array.isArray(p.unlockedClothing) || typeof x.playerCreated !== 'boolean') return false;
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
   if (!Array.isArray(x.hotbar) || x.hotbar.length !== HOTBAR_SLOTS) return false;
   if (!x.hotbar.every((h) => h === null || typeof h === 'string')) return false;

@@ -10,7 +10,7 @@
 
 import { AVATAR_RADIUS, NAV_CELL } from './config.ts';
 import { MinHeap } from './minHeap.ts';
-import { floorRect, rectInside, rectsOverlap, type Room } from './room.ts';
+import { rectInsideFloor, rectsOverlap, type Room } from './room.ts';
 import type { Point, Rect } from './types.ts';
 
 export interface NavGrid {
@@ -30,13 +30,13 @@ export function inflateRect(rect: Rect, r: number): Rect {
 export function buildNavGrid(room: Room, blockers: readonly Rect[], radius = AVATAR_RADIUS, cell = NAV_CELL): NavGrid {
   const cols = Math.ceil(room.w / cell);
   const rows = Math.ceil(room.h / cell);
-  const floor = floorRect(room);
   const grown = blockers.map((b) => inflateRect(b, radius));
   const blocked: boolean[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const rect = cellRect({ cols, rows, cell, blocked }, c, r);
-      blocked.push(!rectInside(rect, floor) || grown.some((g) => rectsOverlap(rect, g)));
+      // Outside the floor (the union of the shape's rectangles) or too close to a blocker.
+      blocked.push(!rectInsideFloor(room, rect) || grown.some((g) => rectsOverlap(rect, g)));
     }
   }
   return { cols, rows, cell, blocked };
