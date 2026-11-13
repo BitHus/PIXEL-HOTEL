@@ -115,8 +115,9 @@ async function start(): Promise<void> {
     label.set(text);
   };
 
-  const setCamera = (cam: Camera): void => {
+  const setCamera = (cam: Camera, snap = false): void => {
     camera = clampCamera(cam, app.screen.width, app.screen.height, bounds);
+    if (snap) camera = snapCamera(camera);
     redraw();
   };
 
@@ -131,6 +132,7 @@ async function start(): Promise<void> {
   const control = attachCameraControl(app.stage, app.canvas, {
     getCamera: () => camera,
     setCamera,
+    getOverviewZoom: () => fitZoom(app.screen.width, app.screen.height, bounds),
     onPoint: (screen, kind) => {
       marked = screenToWorld(screen, shown);
       if (kind === 'tap') walkTo(marked);

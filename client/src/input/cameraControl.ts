@@ -4,6 +4,10 @@
 //   glides to its target (call update(dtMs) every frame).
 // - A press counts as a tap only if it moved less than TAP_MAX_MOVE_PX screen px and was held
 //   less than TAP_MAX_MS. Otherwise it is a drag, and a drag never taps (the avatar won't walk).
+// - Zooming stays smooth while a pinch or wheel gesture is active. When it ends (the second
+//   finger lifts, or no wheel event for WHEEL_GESTURE_END_MS), the zoom eases in
+//   ZOOM_SETTLE_MS to settleZoom (nearest whole zoom, or the overview zoom if closer), around
+//   the gesture's focus point, and then the camera snaps to whole pixels.
 // - When getDragMode() returns 'draw' (Blockers mode, later), a one-finger / left drag is
 //   sent to onDraw instead of panning.
 // Uses Pixi's federated pointer and wheel events.
@@ -12,10 +16,14 @@ import type { Container, FederatedPointerEvent, FederatedWheelEvent } from 'pixi
 import {
   TAP_MAX_MOVE_PX,
   TAP_MAX_MS,
+  WHEEL_GESTURE_END_MS,
   WHEEL_ZOOM_SPEED,
   ZOOM_EASE_MS,
+  ZOOM_SETTLE_MS,
   clampZoom,
+  easeZoom,
   panBy,
+  settleZoom,
   zoomAt,
   type Camera,
   type Point,
@@ -26,7 +34,10 @@ export type DrawPhase = 'start' | 'move' | 'end';
 
 export interface CameraControlHooks {
   getCamera(): Camera;
-  setCamera(cam: Camera): void;
+  /** snap: also put the camera on whole pixels (end of a zoom settle). */
+  setCamera(cam: Camera, snap?: boolean): void;
+  /** The overview zoom (whole room fits), one of the zooms a gesture can settle on. */
+  getOverviewZoom(): number;
   /** Mouse/pen moved (hover), or a press ended as a tap. Screen px. */
   onPoint(screen: Point, kind: 'hover' | 'tap'): void;
   /** What a one-finger / left drag does. Default 'pan'. */
@@ -65,6 +76,24 @@ export function attachCameraControl(
   let pinch: { dist: number; mid: Point } | null = null;
   /** Where the wheel zoom is gliding to, and the screen point that stays fixed. */
   let wheel: { target: number; at: Point } | null = null;
+  /** ms since the last wheel event while a wheel gesture is active, else null. */
+  let wheelIdleMs: number | null = null;
+  /** Easing to the settled zoom after a gesture ended. */
+  let settle: { from: number; to: number; at: Point; elapsed: number } | null = null;
+
+  const startSettle = (at: Point): void => {
+    wheel = null;
+    wheelIdleMs = null;
+    const from = hooks.getCamera().zoom;
+    settle = { from, to: settleZoom(from, hooks.getOverviewZoom()), at, elapsed: 0 };
+  };
+
+  /** A pinch ended if there was one and fewer than two fingers are left now. */
+  const updatePinch = (): void => {
+    const was = pinch;
+    pinch = pinchState();
+    if (was && !pinch) startSettle(was.mid);
+  };
 
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   stage.eventMode = 'static';
@@ -112,6 +141,9 @@ export function attachCameraControl(
       if (touches.size === 1) press = newPress();
       else cancelPress();
       wheel = null;
+      wheelIdleMs = null;
+      // A new pinch takes over from a running settle; one finger (a pan) runs alongside it.
+      if (touches.size >= 2) settle = null;
       pinch = pinchState();
     } else if (e.button === 0) {
       press = newPress();
@@ -148,7 +180,7 @@ export function attachCameraControl(
       if (!touches.has(e.pointerId)) return;
       touches.delete(e.pointerId);
       endPress(e);
-      pinch = pinchState();
+      updatePinch();
     } else if (e.button === 0) {
       endPress(e);
     } else if (e.button === 2) {
@@ -160,26 +192,43 @@ export function attachCameraControl(
   stage.on('pointercancel', (e: FederatedPointerEvent) => {
     touches.delete(e.pointerId);
     if (press?.id === e.pointerId) cancelPress();
-    pinch = pinchState();
+    updatePinch();
     rightDrag = null;
   });
 
   stage.on('wheel', (e: FederatedWheelEvent) => {
     const unit = e.deltaMode === 1 ? WHEEL_LINE_PX : e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
+    settle = null;
+    wheelIdleMs = 0;
     const from = wheel?.target ?? hooks.getCamera().zoom;
     wheel = { target: clampZoom(from * Math.exp(-e.deltaY * unit * WHEEL_ZOOM_SPEED)), at: { x: e.global.x, y: e.global.y } };
   });
 
   return {
     update(dtMs) {
-      if (!wheel) return;
+      if (settle) {
+        settle.elapsed += dtMs;
+        const zoom = easeZoom(settle.from, settle.to, settle.elapsed, ZOOM_SETTLE_MS);
+        const done = zoom === settle.to;
+        hooks.setCamera(zoomAt(hooks.getCamera(), settle.at, zoom), done);
+        if (done) settle = null;
+        return;
+      }
+      if (wheelIdleMs !== null) {
+        wheelIdleMs += dtMs;
+        if (wheelIdleMs >= WHEEL_GESTURE_END_MS && wheel) {
+          startSettle(wheel.at);
+          return;
+        }
+      }
+      // The wheel target stays (for the settle point) until the gesture ends; glide only if needed.
       const cam = hooks.getCamera();
+      if (!wheel || cam.zoom === wheel.target) return;
       const t = 1 - Math.exp(-dtMs / ZOOM_EASE_MS);
       let zoom = cam.zoom + (wheel.target - cam.zoom) * t;
       // Close enough: land exactly on the target and stop.
       if (Math.abs(wheel.target - zoom) < 0.001) zoom = wheel.target;
       hooks.setCamera(zoomAt(cam, wheel.at, zoom));
-      if (zoom === wheel.target) wheel = null;
     },
   };
 }
