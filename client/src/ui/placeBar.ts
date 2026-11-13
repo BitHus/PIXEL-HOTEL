@@ -3,6 +3,7 @@
 
 import type { Rect } from '@pixel-hotel/shared';
 import { anchorAbove } from './anchorAbove.ts';
+import { typing } from './dom.ts';
 
 export interface PlaceBarHooks {
   onPlace(): void;
@@ -36,7 +37,7 @@ export function createPlaceBar(parent: HTMLElement, hooks: PlaceBarHooks): Place
   parent.appendChild(bar);
 
   window.addEventListener('keydown', (e) => {
-    if (bar.hidden || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (bar.hidden || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
     const k = e.key.toLowerCase();
     if (k === 'enter') hooks.onPlace();
     else if (k === 'r') hooks.onRotate();

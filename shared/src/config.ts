@@ -259,3 +259,42 @@ export const MENU_EDGE_PX = 8;
 export const SHAKE_MS = 300;
 /** ...this many world px to each side. */
 export const SHAKE_PX = 2;
+
+// ---------- Camera intro (step 5, section 4) ----------
+/** When a room opens: wait this long at the overview zoom... */
+export const INTRO_WAIT_MS = 600;
+/** ...then zoom in over this long, centered on the avatar... */
+export const INTRO_ZOOM_MS = 800;
+/** ...to the settled zoom nearest to this many real screen px per art px. */
+export const INTRO_DEVICE_PX_PER_ART_PX = 3;
+
+// ---------- Player, inventory and saving (step 5) ----------
+/** The local player's id and name (one player per browser until accounts exist). */
+export const LOCAL_PLAYER_ID = 1;
+export const LOCAL_PLAYER_NAME = 'You';
+/** Room ids of a new local player's two rooms. */
+export const START_HOTEL_ROOM_ID = 1;
+export const START_SHOP_ROOM_ID = 2;
+/** The starting avatar look (palette indices). */
+export const START_LOOK = { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 } as const;
+/** Slots in the hotbar at the bottom of the screen. */
+export const HOTBAR_SLOTS = 6;
+/** The bag panel shows at least this many slots (empty ones fill the grid). */
+export const BAG_MIN_SLOTS = 24;
+/** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
+export const SAVE_VERSION = 1;
+/** localStorage key of the save: SAVE_KEY_PREFIX + version. */
+export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
+/** One automatic backup: the save as it was when the game was opened (or before an import). */
+export const SAVE_BACKUP_KEY = 'pixel-hotel.save.backup';
+
+// ---------- Chat (step 5) ----------
+/** A chat bubble stays this long (ms), fading out during the last CHAT_BUBBLE_FADE_MS. */
+export const CHAT_BUBBLE_MS = 6000;
+export const CHAT_BUBBLE_FADE_MS = 1000;
+/** Gap between stacked bubbles and above the head, screen px. */
+export const CHAT_BUBBLE_GAP_PX = 4;
+/** The chat log keeps this many lines. */
+export const CHAT_LOG_MAX = 100;
+/** Toasts (short messages at the top) stay this long, ms. */
+export const TOAST_MS = 4000;

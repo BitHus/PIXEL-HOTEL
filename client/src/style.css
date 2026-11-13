@@ -1,3 +1,4 @@
+/* Page and canvas basics. The UI overlay style (frames, buttons, panels) is in ui/ui.css. */
 html,
 body {
   margin: 0;
@@ -19,167 +20,20 @@ body {
   image-rendering: pixelated;
 }
 
-/* HTML/CSS UI overlay sits above the canvas. */
-#ui {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
-
-.debug-label {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  padding: 4px 8px;
-  background: rgba(24, 20, 37, 0.8);
-  color: #ead4aa;
-  font: 14px/1.2 monospace;
-  white-space: pre;
-}
-
-.debug-bar {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  display: flex;
-  gap: 6px;
-  pointer-events: auto;
-}
-
-.debug-bar button {
-  min-width: 44px;
-  min-height: 36px;
-  padding: 4px 10px;
-  border: 2px solid #3e2731;
-  background: rgba(24, 20, 37, 0.85);
-  color: #ead4aa;
-  font: 14px/1.2 monospace;
-  touch-action: manipulation;
-}
-
-.debug-bar button.on {
-  background: #b86f50;
-  color: #181425;
-}
-
-.debug-bar button[hidden] {
-  display: none;
-}
-
-/* Build mode (step 4b): the toggle and a compact item strip along the bottom, scrolling sideways. */
-.build-bar {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  pointer-events: none;
-}
-
-.build-strip {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px;
-  background: rgba(24, 20, 37, 0.6);
-  pointer-events: auto;
-  touch-action: pan-x;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-}
-
-.build-bar button,
-.float-bar button {
-  flex: 0 0 auto;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 4px 10px;
-  border: 2px solid #3e2731;
-  background: rgba(24, 20, 37, 0.9);
-  color: #ead4aa;
-  font: 14px/1.2 monospace;
-  white-space: nowrap;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  pointer-events: auto;
-}
-
-.build-toggle {
-  pointer-events: auto;
-}
-
-.build-bar button.on {
-  background: #b86f50;
-  color: #181425;
-}
-
-[hidden] {
-  display: none !important;
-}
-
-/* Floating bars (step 4b): the placing buttons above the ghost, the item menu above an item.
-   Positioned with a transform by anchorAbove. */
-.float-bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: flex;
-  gap: 4px;
-  pointer-events: none;
-}
-
-.place-bar button {
-  min-width: 48px;
-  font-size: 22px;
-}
-
-.place-bar button.ok {
-  background: #265c42;
-}
-
-.place-bar button.no {
-  background: #a22633;
-}
-
-.place-bar button:disabled {
-  background: rgba(90, 105, 136, 0.9);
-  color: #8b9bb4;
-  opacity: 0.7;
-}
-
-.item-menu {
-  align-items: stretch;
-  flex-wrap: wrap;
-  max-width: calc(100vw - 16px);
-}
-
-.item-buttons {
-  display: flex;
-  gap: 4px;
-}
-
-.item-card {
-  display: flex;
-  align-items: center;
-  padding: 4px 10px;
-  border: 2px solid #3e2731;
-  background: #ead4aa;
-  color: #3e2731;
-  font: bold 14px/1.2 monospace;
-  white-space: nowrap;
-  pointer-events: auto;
-}
-
 #game {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* The HTML/CSS UI overlay sits above the canvas and lets taps through except on its own parts. */
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+[hidden] {
+  display: none !important;
 }

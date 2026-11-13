@@ -107,6 +107,8 @@ export interface MaterialType {
   id: MaterialId;
   name: string;
   baseValue: number;
+  /** Placeholder icon color (palette index) until real 32x32 icons exist. */
+  color: number;
 }
 
 /** What a customer can want. */
@@ -158,7 +160,8 @@ export type LedgerReason =
   | 'blacksmith'
   | 'potion'
   | 'craft'
-  | 'shelf';
+  | 'shelf'
+  | 'debug';
 
 export interface LedgerEntry {
   id: number;
@@ -179,7 +182,9 @@ export interface Player {
   level: number;
   xp: number;
   wallet: Wallet;
-  materials: Record<MaterialId, number>;
+  /** Only materials the player has (missing = 0). */
+  materials: Partial<Record<MaterialId, number>>;
+  /** Unlocked styles as 'floor:<id>' and 'wall:<id>' (styleKey). */
   unlockedStyles: string[];
   gear: GearId[];
   potions: number;

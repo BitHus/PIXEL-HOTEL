@@ -18,8 +18,15 @@ export class ItemViews {
 
   constructor(
     private readonly view: RoomView,
-    private readonly roomId: number,
+    private roomId: number,
   ) {}
+
+  /** Shows another room: every sprite of the old room is dropped. */
+  setRoom(roomId: number): void {
+    for (const [uid, sprite] of this.sprites) this.drop(uid, sprite);
+    this.shakes.clear();
+    this.roomId = roomId;
+  }
 
   /** Shows the items of this room; `hidden` items (held in build mode) are not drawn. */
   sync(items: readonly FurnitureItem[], hidden: ReadonlySet<number> = new Set()): void {

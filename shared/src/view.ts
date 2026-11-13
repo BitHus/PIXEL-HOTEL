@@ -1,5 +1,5 @@
 // World <-> screen math (brief section 4). Camera position is in world px. Zoom is free
-// (any number from ZOOM_MIN to ZOOM_MAX, also 1.005).
+// (any number from ZOOM_MIN to ZOOM_MAX).
 
 import { ZOOM_MAX, ZOOM_MIN } from './config.ts';
 import type { Point, Rect } from './types.ts';
@@ -98,4 +98,51 @@ export function easeZoom(from: number, to: number, elapsedMs: number, durationMs
   if (elapsedMs >= durationMs) return to;
   const t = Math.max(0, elapsedMs) / durationMs;
   return from + (to - from) * (1 - (1 - t) ** 3);
+}
+
+/** The world point at the middle of the screen. */
+export function cameraCenter(cam: Camera, screenW: number, screenH: number): Point {
+  return { x: cam.x + screenW / cam.zoom / 2, y: cam.y + screenH / cam.zoom / 2 };
+}
+
+/** A camera at this zoom with the world point `center` in the middle of the screen. */
+export function cameraAt(center: Point, zoom: number, screenW: number, screenH: number): Camera {
+  return { x: center.x - screenW / zoom / 2, y: center.y - screenH / zoom / 2, zoom };
+}
+
+/**
+ * The zoom the room intro ends on: the settled zoom (see settleZoom) nearest to
+ * devicePxPerArtPx real screen px per art px.
+ */
+export function introZoom(overview: number, dpr: number, devicePxPerArtPx: number): number {
+  return settleZoom(clampZoom(devicePxPerArtPx / dpr), overview, dpr);
+}
+
+/**
+ * The camera part way (t from 0 to 1) through the intro from `from` to `to`: the zoom and the
+ * screen-center point move together with an ease-in-out. Returns `to` exactly at t >= 1.
+ */
+export function introCamera(from: Camera, to: Camera, t: number, screenW: number, screenH: number): Camera {
+  if (t >= 1) return to;
+  const k = Math.max(0, t);
+  const e = k < 0.5 ? 4 * k ** 3 : 1 - (-2 * k + 2) ** 3 / 2;
+  const a = cameraCenter(from, screenW, screenH);
+  const b = cameraCenter(to, screenW, screenH);
+  const zoom = from.zoom + (to.zoom - from.zoom) * e;
+  return cameraAt({ x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e }, zoom, screenW, screenH);
+}
+
+/**
+ * Keeps the whole screen inside the rect where the rect is big enough (on each axis), else
+ * centers the rect on that axis. Used for the end of the intro, so zooming in on an avatar near
+ * the door does not show empty space below the room.
+ */
+export function containCamera(cam: Camera, screenW: number, screenH: number, rect: Rect): Camera {
+  const axis = (pos: number, view: number, start: number, size: number): number =>
+    view >= size ? start + size / 2 - view / 2 : Math.min(start + size - view, Math.max(start, pos));
+  return {
+    x: axis(cam.x, screenW / cam.zoom, rect.x, rect.w),
+    y: axis(cam.y, screenH / cam.zoom, rect.y, rect.h),
+    zoom: cam.zoom,
+  };
 }
