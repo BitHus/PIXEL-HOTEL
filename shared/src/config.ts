@@ -70,6 +70,10 @@ export const AVATAR_H = 64;
 /** While walking without walk frames, the idle sprite bobs this many px. */
 export const WALK_BOB_PX = 2;
 export const WALK_FRAMES = 4;
+/** The walk bob switches between up and down every this many ms. */
+export const WALK_BOB_MS = 150;
+/** Where a new avatar stands: this far above the bottom of the floor, centered (in the door zone). */
+export const AVATAR_START_FROM_BOTTOM = 24;
 
 // ---------- Economy (section 9) ----------
 export const START_PLAYER_LEVEL = 1;
@@ -227,3 +231,9 @@ export const FLOOR_TEXTURE_SIZE = 64;
 export const TAP_MAX_MOVE_PX = 8;
 /** ...and was held less than this many ms. Otherwise it is a drag (pan). */
 export const TAP_MAX_MS = 300;
+
+// ---------- Debug tools (step 3) ----------
+/** Blockers mode: drawn rectangles smaller than this (px, either side) are dropped. */
+export const DEBUG_BLOCKER_MIN_PX = 4;
+/** Opacity of the blocked nav cell overlay. */
+export const DEBUG_NAV_OVERLAY_ALPHA = 0.18;

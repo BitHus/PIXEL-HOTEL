@@ -113,3 +113,8 @@ export function rectInsideFloor(room: Room, rect: Rect): boolean {
 export function rectsTouch(a: Rect, b: Rect): boolean {
   return a.x <= b.x + b.w && b.x <= a.x + a.w && a.y <= b.y + b.h && b.y <= a.y + a.h;
 }
+
+/** True if two rectangles overlap with some area (sharing only an edge does not count). */
+export function rectsOverlap(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}

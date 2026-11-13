@@ -90,28 +90,7 @@ export interface FurnitureItem {
 }
 
 // ---------- Avatars (section 8) ----------
-export interface AvatarLook {
-  skin: number;
-  hair: number;
-  hairStyle: number;
-  shirt: number;
-  legs: number;
-  shoes: number;
-}
-
-export type AvatarState = 'idle' | 'walk' | 'sit';
-
-export interface Avatar {
-  id: number;
-  name: string;
-  look: AvatarLook;
-  roomId: number | null;
-  /** The feet, in px. */
-  x: number;
-  y: number;
-  facing: Facing;
-  state: AvatarState;
-}
+// Avatar, AvatarLook and AvatarState live in avatar.ts.
 
 // ---------- Economy (section 9) ----------
 export type MaterialId = 'bone' | 'cloth' | 'crystal' | 'wood' | 'throne_piece';
