@@ -235,7 +235,7 @@ async function start(): Promise<void> {
   const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
   const panels = createPanels();
   const info = createInfoPanel(ui, (kind) => void openRoomKind(kind));
-  const hint = createHintBox(info.column);
+  const hint = createHintBox(ui, info.column);
   const floats = createSaleFloats(ui);
   const tillCoins = createTillCoins(ui);
   // Play mode (default: taps walk and sit) or build mode (taps open item menus, never walk).
@@ -252,6 +252,7 @@ async function start(): Promise<void> {
   // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
   const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn');
   sideButtons.prepend(questButton);
+  panels.onChange(() => hint.setCovered(panels.open !== null));
   hint.onChange((quest, showing) => {
     questButton.hidden = quest === null;
     questButton.classList.toggle('on', showing);

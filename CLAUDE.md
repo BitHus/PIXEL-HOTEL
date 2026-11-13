@@ -742,8 +742,12 @@ Conventions:
   time in the hint box under the room switcher. The hint stays until the player taps it ("tap
   to continue ▸"); a tapped hint stays away until the next one comes or the player taps the
   quest button (after step 8): the scroll icon at the TOP of the right-edge column, hidden when
-  there is no quest, selected ('on') while the quest box shows, and blinking warm ('glow') while
-  a quest is still going but its box is closed (HintBox.toggle / onChange in shopFeedback.ts). 1 is done by the first buy (a style as the first
+  there is no quest, selected ('on') while the quest card shows, and blinking warm ('glow') while
+  a quest is still going but its card is closed (HintBox.toggle / onChange in shopFeedback.ts).
+  The quest card (.quest-card) says "Quest n of 3", the task and "tap to hide". It opens to the
+  left of the quest button with a small tail pointing at it; when that would overlap the
+  top-left info column (phones) it goes under that column instead, without the tail. It steps
+  aside while a side panel is open (setCovered). 1 is done by the first buy (a style as the first
   buy also skips 2), 2 by placing an inventory item, 3 by putting an item on a slot.
 - STEP 7b (room shapes, character creation, intro):
   - shared/data/roomShapes.json, shared/data/clothing.json. room.ts now: ROOM_SHAPES,

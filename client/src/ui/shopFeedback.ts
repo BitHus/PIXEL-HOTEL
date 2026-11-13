@@ -2,7 +2,7 @@
 // when a customer pays (it rises and fades over SALE_FLOAT_MS), the "while you were away" summary,
 // and the first-run hint under the info panel.
 
-import { CUSTOMER_PAY_MS, SALE_FLOAT_MS, TEXT_FADE_MS, typeName, type AwaySummary, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_PAY_MS, HINTS, SALE_FLOAT_MS, TEXT_FADE_MS, typeName, type AwaySummary, type Point } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
@@ -127,38 +127,71 @@ export interface HintBox {
   set(text: string | null): void;
   /** Shows the current quest again, or hides it when it shows (the quest button). */
   toggle(): void;
-  /** Called when the quest or whether its box shows changes. */
+  /** While a panel is open the card steps aside (it opens where the panels open). */
+  setCovered(covered: boolean): void;
+  /** Called when the quest or whether its card shows changes. */
   onChange(listener: (quest: string | null, showing: boolean) => void): void;
 }
 
 /**
- * The first-run hint (the current quest), under the info panel (top-left column). It stays until
- * the player taps it (a small "tap to continue" arrow shows that); a tapped quest stays away until
- * the next one comes, or until the player taps the quest button (right-edge column), which glows
- * while a quest is going and its box is closed. It fades in and out slowly (TEXT_FADE_MS).
+ * The quest card (the first-run hints, HINTS): it opens from the quest button at the top of the
+ * right-edge column, to its left, with a small tail pointing at the button. It shows "Quest 1 of
+ * 3", the task, and "tap to hide". It stays until the player taps it; a hidden quest comes back
+ * with the quest button (which blinks while a quest is going and its card is hidden) or when the
+ * next quest comes. It fades in and out slowly (TEXT_FADE_MS). When the screen is too narrow
+ * for it next to `avoid` (the top-left info column), it goes under that column instead (no tail).
  */
-export function createHintBox(topLeft: HTMLElement): HintBox {
-  const box = el('div', 'frame hint-box');
+export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox {
+  const box = el('div', 'frame quest-card');
   box.setAttribute('role', 'status');
   box.style.setProperty('--fade-ms', `${TEXT_FADE_MS}ms`);
-  const text = el('div', 'hint-text');
-  const more = el('div', 'hint-more', 'tap to continue ▸');
-  box.append(text, more);
+  const head = el('div', 'quest-head');
+  const step = el('span', '', '');
+  head.append(pixelIcon('quest'), step);
+  const text = el('div', 'quest-text');
+  const more = el('div', 'quest-hide', 'tap to hide');
+  box.append(head, text, more);
   box.hidden = true;
-  topLeft.appendChild(box);
+  parent.appendChild(box);
   /** The current quest, shown or not. */
   let quest: string | null = null;
   let showing = false;
+  let covered = false;
   const dismissed = new Set<string>();
   const listeners: ((quest: string | null, showing: boolean) => void)[] = [];
   const changed = (): void => {
     for (const l of listeners) l(quest, showing);
   };
+  const place = (): void => {
+    if (box.hidden) return;
+    box.classList.remove('below');
+    box.style.top = '';
+    // Layout boxes (offset*), not the screen rects: the pop-in animation scales the card.
+    const p = parent.getBoundingClientRect();
+    const a = avoid.getBoundingClientRect();
+    const left = box.offsetLeft;
+    const top = box.offsetTop;
+    if (left < a.right - p.left + 6 && top < a.bottom - p.top) {
+      box.classList.add('below');
+      box.style.top = `${a.bottom - p.top + 6}px`;
+    }
+  };
+  window.addEventListener('resize', place);
+  const draw = (): void => {
+    box.classList.toggle('covered', covered);
+    place();
+  };
   const show = (): void => {
+    const n = HINTS.indexOf(quest as (typeof HINTS)[number]);
+    step.textContent = n >= 0 ? `Quest ${n + 1} of ${HINTS.length}` : 'Quest';
     text.textContent = quest ?? '';
     box.classList.remove('fading');
+    // Restart the pop-in animation.
+    box.hidden = true;
+    void box.offsetWidth;
     box.hidden = false;
     showing = true;
+    draw();
     changed();
   };
   const hide = (): void => {
@@ -194,6 +227,10 @@ export function createHintBox(topLeft: HTMLElement): HintBox {
       }
       dismissed.delete(quest);
       show();
+    },
+    setCovered(c) {
+      covered = c;
+      draw();
     },
     onChange(listener) {
       listeners.push(listener);
