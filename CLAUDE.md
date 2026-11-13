@@ -731,12 +731,19 @@ Conventions:
   button (house) shows level, size, appeal (shop), Upgrade, and the floor and wall pickers:
   picking applies the style at once (free; that is the live preview). Upgrading reopens the
   room without the camera intro.
+- BUYING ASKS FIRST (after step 8): every Catalog buy (furniture, floors, walls) and every room
+  upgrade opens ui/confirmBuy.ts first: a centered "Buy this?" panel over a dim shade with the
+  picture, name, what it does and the price; Cancel / Buy for N. Enter buys; Escape, ✗ or a tap on
+  the shade cancels (it takes those keys before the panels and the chat do).
 - TEXTS (after 7b): every text on screen stays at reading pace: shared/src/text.ts readingMs
   (at least TEXT_MIN_MS 4 s + TEXT_MS_PER_WORD 0.35 s per word), then fades over TEXT_FADE_MS.
   Toasts (toast.ts; a tap hides them) and chat bubbles use it. docs/UI-REFERENCE.md has the rule.
 - HINTS (step 7): config HINTS, GameState.hintsDone counts the finished ones, shown one at a
   time in the hint box under the room switcher. The hint stays until the player taps it ("tap
-  to continue ▸"); a tapped hint stays away for the session until the next one comes. 1 is done by the first buy (a style as the first
+  to continue ▸"); a tapped hint stays away until the next one comes or the player taps the
+  quest button (after step 8): the scroll icon at the TOP of the right-edge column, hidden when
+  there is no quest, selected ('on') while the quest box shows, and blinking warm ('glow') while
+  a quest is still going but its box is closed (HintBox.toggle / onChange in shopFeedback.ts). 1 is done by the first buy (a style as the first
   buy also skips 2), 2 by placing an inventory item, 3 by putting an item on a slot.
 - STEP 7b (room shapes, character creation, intro):
   - shared/data/roomShapes.json, shared/data/clothing.json. room.ts now: ROOM_SHAPES,
