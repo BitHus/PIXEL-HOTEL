@@ -661,6 +661,11 @@
 }
 
 /* ---------- Toast and debug ---------- */
+.toast.fading {
+  opacity: 0;
+  transition: opacity var(--fade-ms, 900ms) ease-in;
+}
+
 .toast {
   position: absolute;
   z-index: 5;
@@ -671,7 +676,8 @@
   box-sizing: border-box;
   padding: 8px 12px;
   text-align: center;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .debug-label {
@@ -979,10 +985,41 @@
   display: none;
 }
 
-.hint-box::before {
+.hint-box {
+  cursor: pointer;
+  pointer-events: auto;
+  animation: hint-in var(--fade-ms, 900ms) ease-out;
+}
+
+.hint-box.fading {
+  opacity: 0;
+  transition: opacity var(--fade-ms, 900ms) ease-in;
+}
+
+.hint-text::before {
   content: '! ';
   color: var(--no);
   font-weight: 700;
+}
+
+.hint-more {
+  margin-top: 2px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--wood);
+  animation: hint-nudge 1.2s steps(2) infinite;
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hint-nudge {
+  50% {
+    transform: translateX(3px);
+  }
 }
 
 .bubble-icon {
@@ -1367,4 +1404,118 @@
   .avatar-stage:not(.small) .avatar-preview {
     height: 186px;
   }
+}
+
+/* ---------- Character creation (fix after 7b; docs/UI-REFERENCE.md) ----------
+   Phone: the avatar preview fixed at the top (35% of the height), the panel under it with the
+   name, the tabs, one tab's pickers (scrolls if it must) and Done at the bottom, always visible.
+   Desktop: the preview on the left, the panel on the right. */
+.charmaker {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: calc(var(--edge) + env(safe-area-inset-top)) var(--edge) calc(var(--edge) + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: var(--night);
+  pointer-events: auto;
+}
+
+.charmaker-stage {
+  flex: 0 0 35%;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  background: var(--slot-bg);
+  border: 3px solid var(--wood);
+  box-shadow:
+    0 0 0 1px var(--outline),
+    inset 0 0 0 1px var(--wood-hi);
+  overflow: hidden;
+}
+
+.charmaker-title {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  margin: 0;
+  font-size: 16px;
+  color: var(--wood);
+}
+
+.charmaker-stage .avatar-preview {
+  height: calc(100% - 34px);
+  width: auto;
+  margin-bottom: 6px;
+  image-rendering: pixelated;
+}
+
+.charmaker-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.charmaker-choices {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.charmaker-panel .newgame-problem:empty {
+  display: none;
+}
+
+.charmaker-panel .newgame-next {
+  align-self: stretch;
+  flex: none;
+}
+
+.look-tabs .tab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 2px;
+  font-size: 14px;
+}
+
+.look-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+@media (min-width: 681px) {
+  .charmaker {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .charmaker-stage {
+    flex: 0 1 340px;
+  }
+
+  .charmaker-panel {
+    flex: 0 1 460px;
+  }
+}
+
+.avatar-panel .look-tabs {
+  margin-top: 4px;
+}
+
+.charmaker-panel .name-input {
+  flex: none;
 }

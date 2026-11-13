@@ -1,5 +1,5 @@
-// Avatar panel: the same look pickers as character creation (step 7b): skin tone, hair style and
-// colour, top and colour, bottoms and colour, shoes colour, with the free and unlocked clothing
+// Avatar panel: the same look pickers as character creation (step 7b; tabs Body, Hair, Top,
+// Bottoms, Shoes after 7b), with the free and unlocked clothing
 // only. A small preview turns slowly; the avatar in the room updates at once.
 
 import type { AvatarLook } from '@pixel-hotel/shared';

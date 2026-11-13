@@ -217,15 +217,19 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   that cheapest item. There is no sales cap: sales are limited by the number of customers,
   by slots, and by the stock the player brings back from the dungeon. Offline: when the
   player returns, simulate customers for up to 8 hours and show a summary of what sold.
-- Customer flow (step 7): a customer enters at the door, walks to the table, shelf or case
-  with stock, decides there (the reaction bubble below), and if buying takes the item (it
+- Customer flow (step 7, paced after 7b): customers walk calmer than the player (72 px/s, each
+  one up to 10% faster or slower) and at most 3 are in the shop at once. A customer enters at
+  the door and stops just inside it for a moment, walks to the table, shelf or case with stock,
+  looks at it for 2 to 5 s (a "..." thought bubble; sometimes at a second item too), decides
+  there (the reaction bubble below), and if buying takes the item (it
   leaves the slot at once), walks to the customer side of the counter, waits in a queue line
   if someone is already paying (queue spots in a row behind the first, each on a different
   free nav cell), and waits at the till until the player serves (owner's change after step 7):
   a coin marker shows above the till; the player taps the counter in play mode and, like
   sitting, the avatar walks behind the counter and faces the customers. While the player stands
   there, the waiting customers pay one by one (coins hop out of the till for CUSTOMER_PAY_MS, then
-  a floating "+12 gold"; a coin sound later; gold goes up only now), then leave through the door.
+  a floating "+12 gold"; a coin sound later; gold goes up only now), wait 1 s, then leave through
+  the door at the same calm pace.
   While QUEUE_MAX (5) customers carry something to the till, no new customers come in. A
   customer who refuses just leaves. Offline catch-up (and a long gap) skips the walking and the
   serving and only does the maths.
@@ -577,7 +581,8 @@ Conventions:
   catalog order, packed; Stack = merge equal stacks and close the gaps (with one slot per type
   it only closes gaps). Player.unlockedStyles holds 'floor:<id>' / 'wall:<id>' (styleKey).
 - CHAT (step 5): cleanChatText (one line, max 120 characters). Bubbles are HTML above the
-  head, the newest lowest, fade over the last CHAT_BUBBLE_FADE_MS of CHAT_BUBBLE_MS. The chat log
+  head, the newest lowest; they stay readingMs (at least CHAT_BUBBLE_MS), then fade over
+  CHAT_BUBBLE_FADE_MS. The chat log
   (CHAT_LOG_MAX lines) is not saved and is cleared when you change rooms.
 - CAMERA INTRO (step 5): each time a room opens (also after a reload): overview, then the
   intro (section 4). It ends at containCamera(camera centered on the avatar), so the screen stays
@@ -698,8 +703,12 @@ Conventions:
   button (house) shows level, size, appeal (shop), Upgrade, and the floor and wall pickers:
   picking applies the style at once (free; that is the live preview). Upgrading reopens the
   room without the camera intro.
+- TEXTS (after 7b): every text on screen stays at reading pace: shared/src/text.ts readingMs
+  (at least TEXT_MIN_MS 4 s + TEXT_MS_PER_WORD 0.35 s per word), then fades over TEXT_FADE_MS.
+  Toasts (toast.ts; a tap hides them) and chat bubbles use it. docs/UI-REFERENCE.md has the rule.
 - HINTS (step 7): config HINTS, GameState.hintsDone counts the finished ones, shown one at a
-  time in the hint box under the room switcher. 1 is done by the first buy (a style as the first
+  time in the hint box under the room switcher. The hint stays until the player taps it ("tap
+  to continue ▸"); a tapped hint stays away for the session until the next one comes. 1 is done by the first buy (a style as the first
   buy also skips 2), 2 by placing an inventory item, 3 by putting an item on a slot.
 - STEP 7b (room shapes, character creation, intro):
   - shared/data/roomShapes.json, shared/data/clothing.json. room.ts now: ROOM_SHAPES,
@@ -729,6 +738,14 @@ Conventions:
     and holds the gold and the hint; a full-screen .intro-skip layer takes the skipping tap).
     roomView draws one floor sprite per rectangle (texture lined up with the world), a wall band
     sprite per band, and the border ring.
+- AFTER 7b (playtest fixes): customers.ts phases enter, browse, decide, queue, pay, paid,
+  leave; Customer gains speed, shelfUid, browsing, looks; ShopEvent 'thinking' (the "..." bubble
+  for ms). Config: CUSTOMER_WALK_SPEED, CUSTOMER_SPEED_VARIATION, CUSTOMER_ENTER_PAUSE_MS,
+  CUSTOMER_BROWSE_MIN_MS / MAX_MS, CUSTOMER_SECOND_LOOK_CHANCE, CUSTOMER_AFTER_PAY_MS,
+  CUSTOMER_MAX_IN_SHOP. CustomerViews walks each customer at its own speed. Character creation
+  (newGame.ts makeCharacter, .charmaker CSS) and lookPickers.ts use tabs (Body, Hair, Top,
+  Bottoms, Shoes); the preview stays in view. Customers in an old save are settled when the game
+  opens, so no save migration was needed.
 - SAVE_VERSION is 5: MIGRATIONS[4] gives old rooms the square shapes, the old look clothing
   ids (short, long_sleeve, trousers), unlockedClothing [] and playerCreated true.
 - (Before 5:) MIGRATIONS[2] adds the empty shop, hintsDone 0 and the counter and

@@ -2,7 +2,7 @@
 // when a customer pays (it rises and fades over SALE_FLOAT_MS), the "while you were away" summary,
 // and the first-run hint under the info panel.
 
-import { CUSTOMER_PAY_MS, SALE_FLOAT_MS, typeName, type AwaySummary, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_PAY_MS, SALE_FLOAT_MS, TEXT_FADE_MS, typeName, type AwaySummary, type Point } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
@@ -126,16 +126,38 @@ export interface HintBox {
   set(text: string | null): void;
 }
 
-/** The first-run hint: one at a time, under the info panel (top-left column). */
+/**
+ * The first-run hint, under the info panel (top-left column). Important hints stay until the
+ * player taps them (a small "tap to continue" arrow shows that); a tapped hint stays away (for
+ * this session) until the next hint comes. It fades in and out slowly (TEXT_FADE_MS).
+ */
 export function createHintBox(topLeft: HTMLElement): HintBox {
   const box = el('div', 'frame hint-box');
   box.setAttribute('role', 'status');
+  box.style.setProperty('--fade-ms', `${TEXT_FADE_MS}ms`);
+  const text = el('div', 'hint-text');
+  const more = el('div', 'hint-more', 'tap to continue ▸');
+  box.append(text, more);
   box.hidden = true;
   topLeft.appendChild(box);
+  let shown: string | null = null;
+  const dismissed = new Set<string>();
+  box.addEventListener('click', () => {
+    if (shown === null) return;
+    dismissed.add(shown);
+    box.classList.add('fading');
+    window.setTimeout(() => {
+      if (box.classList.contains('fading')) box.hidden = true;
+    }, TEXT_FADE_MS);
+  });
   return {
-    set(text) {
-      box.hidden = text === null;
-      box.textContent = text ?? '';
+    set(next) {
+      const show = next !== null && !dismissed.has(next);
+      if (show && next === shown && !box.hidden) return;
+      shown = show ? next : null;
+      text.textContent = next ?? '';
+      box.classList.remove('fading');
+      box.hidden = !show;
     },
   };
 }

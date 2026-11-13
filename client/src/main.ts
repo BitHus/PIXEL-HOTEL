@@ -438,6 +438,11 @@ async function start(): Promise<void> {
   api.onShop((e: ShopEvent) => {
     const here = room.id === shop.roomId;
     switch (e.t) {
+      case 'thinking': {
+        // Browsing: a "..." thought bubble while the customer looks at the item.
+        if (here) bubbles.addNode(e.customerId, document.createTextNode('...'), e.ms);
+        break;
+      }
       case 'paying':
         if (here) tillCoins.add(e.till);
         break;
