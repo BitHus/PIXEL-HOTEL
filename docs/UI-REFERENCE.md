@@ -24,6 +24,7 @@ reference for look and HUD) and Habbo Hotel (rooms, furniture and the item info 
 | [INFO PANEL]                                    [quest/msg]  |
 |  gold, room name                                             |
 |                                                       [Bag]  |
+|                                                     [Build]  |
 |                                                    [Avatar]  |
 |                    the room (full screen)            [Chat]  |
 |                                                  [Settings]  |
@@ -41,7 +42,7 @@ reference for look and HUD) and Habbo Hotel (rooms, furniture and the item info 
   and fade after a few seconds. In Travellers Rest the top of the screen also shows what
   customers want; our shop can use the same spot for customer requests later.
 - **Right edge, stacked vertically: icon buttons.** Small square buttons, icons only:
-  Bag (inventory), Avatar, Chat, Settings. New screens from later steps (Catalog, Crafting,
+  Bag (inventory), Build (hammer, toggles build mode), Avatar, Chat, Settings. New screens from later steps (Catalog, Crafting,
   Blacksmith, Room, Dungeon) get a button in this column too, not somewhere else.
 - **Bottom-center: the hotbar.** One row of slots in a frame, centered. Icons only, no text.
   The selected slot has a bright warm border. Stack counts sit small in the slot's
@@ -79,6 +80,15 @@ What makes the reference look clean, translated into rules:
 
 ## 4. Interaction patterns
 
+- **Two modes: play and build.** Play mode is the default: a tap on the floor, a rug or any
+  item that is not sittable walks there (the item is ignored), and a tap on a sittable item
+  walks there and sits. There is no item menu in play mode. Build mode is switched on with the
+  Build button (hammer) or the B key on desktop, and automatically when placing starts from the
+  hotbar or the bag. In build mode taps never walk; a tap or long press on an item opens its
+  menu. While build mode is on, the Build button is highlighted and a thin warm border runs
+  around the screen edge, so the mode is always clear. Tapping Build again, or Escape, returns
+  to play mode and closes any menu.
+
 - **Hotbar + Bag (inventory).** The hotbar shows a few chosen items. The Bag button opens the
   full inventory panel, laid out like this:
 
@@ -110,9 +120,8 @@ What makes the reference look clean, translated into rules:
   green if it fits and red if not. Drag the ghost. A small bar above it: ✓ Place, ↻ Rotate,
   ✗ Cancel. Nothing is placed until ✓. Placed furniture comes out of the inventory; Pick up
   puts it back.
-- **Item info, Habbo style:** tap a placed item and a small menu appears next to it (Move,
-  Rotate, Pick up, and Use or Sit when it applies), with a small card showing the item's
-  name. Later the card can also show its value or rarity. A tap elsewhere closes it.
+- **Item info, Habbo style (build mode):** tap a placed item and a small menu appears next to
+  it (Move, Rotate, Pick up), with a small card showing the item's name. Later the card can also show its value or rarity. A tap elsewhere closes it.
 - **Panels** (Bag, Catalog, Crafting, Settings) open as one panel at a time in the same
   frame style, centered or as a bottom sheet on a phone, with a clear close button (✗) in the
   top-right corner. Opening one closes the other.

@@ -1,5 +1,5 @@
-// Right edge: small square icon buttons stacked vertically: Bag, Avatar, Chat, Settings. Each
-// toggles its panel. Keys: I (bag), Enter (chat), Escape closes the open panel.
+// Right edge: small square icon buttons stacked vertically: Bag, Build, Avatar, Chat, Settings.
+// Each panel button toggles its panel (Build toggles build mode, buildMode.ts). Keys: I (bag), Enter (chat), Escape closes the open panel.
 
 import { el, iconButton, typing } from './dom.ts';
 import type { PanelName, Panels } from './panels.ts';
@@ -12,14 +12,18 @@ const BUTTONS: [PanelName, IconName, string][] = [
   ['settings', 'gear', 'Settings'],
 ];
 
-/** The right-edge column. Later steps add their buttons here (see CLAUDE.md, UI layout rule). */
-export function createSideButtons(parent: HTMLElement, panels: Panels): HTMLElement {
+/**
+ * The right-edge column. Later steps add their buttons here (see CLAUDE.md, UI layout rule).
+ * `extra` buttons (Build) go right after the Bag button.
+ */
+export function createSideButtons(parent: HTMLElement, panels: Panels, extra: readonly HTMLElement[] = []): HTMLElement {
   const col = el('div', 'side-buttons');
   const buttons = new Map<PanelName, HTMLButtonElement>();
   for (const [name, icon, title] of BUTTONS) {
     const b = iconButton(icon, title, () => panels.toggle(name));
     buttons.set(name, b);
     col.appendChild(b);
+    if (name === 'bag') col.append(...extra);
   }
   parent.appendChild(col);
   panels.onChange(() => {
