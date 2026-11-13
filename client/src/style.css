@@ -25,3 +25,14 @@ body {
   inset: 0;
   pointer-events: none;
 }
+
+.debug-label {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 4px 8px;
+  background: rgba(24, 20, 37, 0.8);
+  color: #ead4aa;
+  font: 14px/1.2 monospace;
+  white-space: pre;
+}

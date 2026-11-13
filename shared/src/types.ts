@@ -1,6 +1,6 @@
 // Plain data types from the brief (sections 5, 7, 8, 9, 10). No logic here.
 
-import type { EnemyKind, RoomLevel } from './config.ts';
+import type { EnemyKind } from './config.ts';
 
 // ---------- Common ----------
 export type Facing = 'down' | 'right' | 'up' | 'left';
@@ -8,25 +8,18 @@ export interface Point {
   x: number;
   y: number;
 }
+/** Axis-aligned rectangle in world px: top-left corner plus size. */
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 /** Random number source passed into rules: returns a float in [0, 1). */
 export type Rng = () => number;
 
 // ---------- Rooms and styles (section 5) ----------
-export type RoomKind = 'hotel' | 'shop';
-
-export interface Room {
-  id: number;
-  kind: RoomKind;
-  level: RoomLevel;
-  /** Floor size in px. */
-  w: number;
-  h: number;
-  floorStyle: string;
-  wallStyle: string;
-  ownerId: number;
-  /** Owners can set a room to private (section 13). */
-  private: boolean;
-}
+// Room and RoomKind live in room.ts.
 
 export type StyleKind = 'floor' | 'wall';
 

@@ -325,25 +325,45 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   push at the end of every step.
 
 CURRENT STATE (kept up to date by the AI at the end of each step)
-Step 1 (project skeleton) is done.
+Steps 1 (project skeleton) and 2 (room view) are done.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
   server), build (client), test (vitest run), typecheck (tsc in every workspace).
 - tsconfig.base.json: strict, noUncheckedIndexedAccess, moduleResolution bundler, noEmit.
-  Imports inside shared/ use the .ts extension (allowImportingTsExtensions).
-- vitest.config.ts: tests are *.test.ts files next to the code.
+  Imports inside shared/ and client/ use the .ts extension (allowImportingTsExtensions).
+- vitest.config.ts: tests are *.test.ts files next to the code (shared, client, server).
 - netlify.toml: builds the client workspace, publishes client/dist.
-- shared/src: config.ts (all constants), types.ts (all data types), api.ts (GameAPI
-  interface), palette.ts (Endesga 32 hex list, the only place it lives), index.ts (re-exports).
+- shared/src: config.ts (all constants), types.ts (data types, incl. Point and Rect),
+  room.ts (Room, RoomKind, createRoom, floorRect, wallBandRect, left/rightBorderRect,
+  bottomBorderRects, doorRect, doorZoneRect, roomBoundsRect, rectInside, rectInsideFloor,
+  rectsTouch), view.ts (Camera, screenToWorld, worldToScreen, fitZoom, centerCamera,
+  zoomAt, panBy, clampCamera, snapCamera), api.ts (GameAPI interface), palette.ts (Endesga
+  32 hex list, the only place it lives), index.ts (re-exports).
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
-- client: Vite (base './' so it runs on any URL) + PixiJS 8. src/main.ts makes a full-screen
-  Pixi canvas with nearest scaling (TextureSource.defaultOptions.scaleMode = 'nearest').
-  #game holds the canvas, #ui is the HTML/CSS overlay.
+- client/src/main.ts: Pixi app (resolution 1, nearest scaling), draws a level 1 hotel room,
+  keeps the camera, shows the debug cross and label. Refits the camera on window resize.
+- client/src/render: roomView.ts (RoomView: world container with floorLayer, rugLayer,
+  wallLayer, then objects), depthLayer.ts (DepthLayer: the one y/x/uid-sorted list of items
+  and avatars; uses Pixi zIndex sorting, call update() each frame), depthOrder.ts
+  (compareDepth, tested), bareStyles.ts (bare floor texture made in code, bare wall colors),
+  colors.ts (shade/desaturate for placeholder art), cursorCross.ts (screen-space cross).
+- client/src/input/cameraControl.ts: right-drag / two-finger pan, wheel / pinch zoom in
+  integer steps around the pointer, touch tap. Uses Pixi federated events on the stage.
+- client/src/ui/debugLabel.ts: HTML label in #ui with world x, y and zoom.
 - server/src/index.ts: placeholder only (step 10).
+
+Conventions:
+- World: floor is (0,0)-(w,h). Wall band is y -64..0 over the floor width. Side borders run
+  x -16..0 and w..w+16 from y -64 to h+16. Bottom border y h..h+16 with the door gap.
+- The camera is always passed through snapCamera (camera * zoom is a whole screen px) and
+  clampCamera (screen center stays inside roomBoundsRect), so nothing is blurry.
+- Screen coordinates are CSS px (canvas resolution 1). The wheel zooms one step per notch.
 
 Notes:
 - palette.ts was filled from memory because lospec.com is blocked in the cloud environment.
   It is marked UNVERIFIED until the official list is pasted.
 - SHOP_START_ITEMS positions in config.ts are placeholders; adjust when the counter and
   stall_table types exist.
+- The room in main.ts is created directly with createRoom for now; it moves behind GameAPI
+  when LocalGameAPI arrives.
