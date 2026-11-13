@@ -69,6 +69,14 @@ export interface AwaySummary {
   total: number;
 }
 
+/** The walk to the spot behind the counter (step 7). */
+export interface ServeResult {
+  /** The path to the spot behind the counter (starts at the avatar). */
+  path: Point[];
+  /** The way the avatar faces once there (toward the customers). */
+  facing: Facing;
+}
+
 export interface BuyResult {
   /** The new item in the bag. */
   uid: number;
@@ -120,6 +128,8 @@ export interface GameAPI {
   /** Takes the item on a slot back to the bag. */
   takeFromShelf(slot: ShelfSlotRef): Promise<ShopView | null>;
   setPrice(slot: ShelfSlotRef, price: number): Promise<ShopView | null>;
+  /** Walk behind the shop's counter; while the avatar stands there, waiting customers pay. Null = no way there. */
+  serve(uid: number): Promise<ServeResult | null>;
   /** Shop events (customers, reactions, sales at the till, slot changes). Returns an unsubscribe function. */
   onShop(listener: (e: ShopEvent) => void): () => void;
   /** Buys a catalog furniture item into the bag. Null = not in the catalog or not enough gold. */

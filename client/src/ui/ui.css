@@ -758,14 +758,12 @@
   gap: 6px;
 }
 
-.shelf-row,
 .catalog-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.shelf-info,
 .catalog-info {
   flex: 1 1 auto;
   min-width: 0;
@@ -785,31 +783,115 @@
   color: var(--wood);
 }
 
+/* One card per slot: icon | name, sale history | Take, and the price row under it. */
+.shelf-sub {
+  min-height: 0;
+  margin-top: -6px;
+  color: var(--wood);
+}
+
+.shelf-card {
+  display: grid;
+  grid-template-columns: var(--slot) minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon name take'
+    'icon hist take'
+    'price price price';
+  column-gap: 8px;
+  row-gap: 6px;
+  align-items: center;
+  padding: 6px;
+  background: #f1e2c4;
+  border: var(--px) solid var(--wood-light);
+  box-shadow: inset 1px 1px 0 var(--wood-hi);
+}
+
+.shelf-card.empty {
+  border-style: dashed;
+  background: transparent;
+}
+
+.shelf-card .slot.empty {
+  opacity: 0.6;
+}
+
+.shelf-card .shelf-name {
+  grid-area: name;
+  align-self: end;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shelf-card .shelf-history {
+  grid-area: hist;
+  align-self: start;
+}
+
+.shelf-take {
+  grid-area: take;
+}
+
 .price-row {
+  grid-area: price;
   display: flex;
   align-items: center;
   gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--wood-light);
+}
+
+.price-label {
+  flex: 1 1 auto;
+  font-size: 14px;
+  color: var(--wood);
 }
 
 .price-row .btn.step {
+  width: var(--touch);
   min-width: var(--touch);
   padding: 0;
   font-size: 20px;
 }
 
-.price-input {
-  width: 64px;
+.price-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   min-height: var(--touch);
   box-sizing: border-box;
-  padding: 4px 6px;
+  padding: 0 6px;
   border: var(--px) solid var(--outline);
-  border-radius: 0;
   background: var(--cream);
+  cursor: text;
+}
+
+.price-field .pixel-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.price-input {
+  width: 3.5em;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--outline);
-  font: 16px var(--font);
+  font: 700 16px var(--font);
   text-align: center;
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+.price-input:focus {
+  outline: none;
+}
+
+.price-field:focus-within {
+  outline: var(--px) solid var(--warm);
 }
 
 .price-input::-webkit-inner-spin-button,
@@ -818,11 +900,8 @@
   margin: 0;
 }
 
-.price-unit {
-  font-size: 14px;
-}
-
 .shelf-choose {
+  grid-area: price;
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--slot));
   gap: 4px;
@@ -974,4 +1053,81 @@
   align-items: center;
   gap: 6px;
   font-weight: 700;
+}
+
+/* The counter (step 7): a coin marker above the till while a customer waits to pay, and coins
+   hopping out of the till while one pays. */
+.till-marker {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px 2px 4px;
+  font-weight: 700;
+  color: var(--no);
+  animation: till-bob 0.8s steps(2) infinite;
+}
+
+.till-marker[hidden] {
+  display: none;
+}
+
+.till-marker .pixel-icon {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes till-bob {
+  50% {
+    margin-top: -4px;
+  }
+}
+
+.till-coins {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 60px;
+  height: 48px;
+  pointer-events: none;
+}
+
+.till-coin {
+  position: absolute;
+  bottom: 0;
+  left: 22px;
+  width: 16px;
+  height: 16px;
+  animation: till-hop var(--pay-ms) steps(9) both;
+}
+
+.till-coin .pixel-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.till-coin.c1 {
+  --dx: -18px;
+  animation-delay: calc(var(--pay-ms) * 0.15);
+}
+
+.till-coin.c2 {
+  --dx: 18px;
+  animation-delay: calc(var(--pay-ms) * 0.3);
+}
+
+@keyframes till-hop {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate(calc(var(--dx, 0px) * 0.6), -34px);
+  }
+  100% {
+    transform: translate(var(--dx, 0px), -8px);
+    opacity: 0;
+  }
 }

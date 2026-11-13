@@ -184,3 +184,14 @@ describe('standPointFor', () => {
     expect(standPointFor({ x: 100, y: 100, facing: 'left' }, t)).toEqual({ x: 60, y: 84 });
   });
 });
+
+describe('the counter (served from behind)', () => {
+  it('cannot stand against the back wall: the shopkeeper must fit behind it', () => {
+    const shop = createRoom(2, 'shop', 1, 1);
+    expect(canPlace(shop, [], T('counter'), 176, 40, 'down')).toBe(false);
+    expect(canPlace(shop, [], T('counter'), 176, 88, 'down')).toBe(true);
+    // Facing up, its back is toward the door side: against the back wall is fine then.
+    expect(canPlace(shop, [], T('counter'), 176, 40, 'up')).toBe(true);
+  });
+});
+

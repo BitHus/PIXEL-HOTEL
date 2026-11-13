@@ -48,4 +48,13 @@ describe('save files', () => {
     expect(inShop.sort()).toEqual(['counter', 'stall_table']);
     expect(new Set(r.state.items.map((i) => i.uid)).size).toBe(r.state.items.length);
   });
+
+  it('migrates a version 3 save: a counter against the back wall moves out so the player fits behind it', () => {
+    const v3 = { ...state, items: state.items.map((i) => (i.typeId === 'counter' ? { ...i, x: 176, y: 40 } : i)) };
+    const r = readSave(JSON.stringify({ version: 3, savedAt: 0, state: v3 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.items.find((i) => i.typeId === 'counter')).toMatchObject({ x: 176, y: 88 });
+  });
 });
+

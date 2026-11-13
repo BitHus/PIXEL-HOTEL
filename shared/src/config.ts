@@ -44,10 +44,11 @@ export const START_WALL_STYLE = 'bare';
 
 /**
  * Fixed starting furniture in a new shop (step 7). Anchor positions (bottom center of the
- * footprint): the counter against the back wall, left of center; the stall_table in the middle.
+ * footprint): the counter near the back wall (with room behind it for the shopkeeper), left of
+ * center; the stall_table in the middle.
  */
 export const SHOP_START_ITEMS = [
-  { typeId: 'counter', x: 176, y: 40, facing: 'down' },
+  { typeId: 'counter', x: 176, y: 88, facing: 'down' },
   { typeId: 'stall_table', x: 288, y: 184, facing: 'down' },
 ] as const;
 
@@ -123,8 +124,12 @@ export const SHOP_TICK_MS = 100;
 export const SHOP_CATCH_UP_GAP_MS = 10_000;
 /** A customer stands at the item this long while the reaction bubble shows. */
 export const CUSTOMER_DECIDE_MS = 1200;
-/** A customer stands at the till this long before the gold comes in. */
+/** Paying takes this long once the player stands behind the counter (the till animation). */
 export const CUSTOMER_PAY_MS = 900;
+/** The shopkeeper's spot is this far behind the counter's back edge, px. */
+export const CASHIER_BEHIND_PX = 20;
+/** No new customers come while this many are carrying something to the till. */
+export const QUEUE_MAX = 5;
 /** Queue spots behind the paying spot are this far apart, px. */
 export const QUEUE_SPACING_PX = 24;
 /** Customers appear this far below the floor and walk in through the door, px. */
@@ -327,7 +332,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */

@@ -86,6 +86,9 @@ export interface FurnitureType {
   inCatalog: boolean;
   /** True for the shop counter (step 7): it can be moved and rotated, never picked up or sold. */
   noPickup?: boolean;
+  /** True for the counter: the shopkeeper stands behind it (behindPoint) to take payments, so that
+   *  spot must stay reachable from the door (canPlace). */
+  servedFromBehind?: boolean;
   art: FurnitureArt;
 }
 

@@ -2,7 +2,8 @@
 // storage and used for Export / Import. Old versions are migrated step by step with MIGRATIONS;
 // a version without a migration path is refused ('too_old'), and the caller resets with a message.
 
-import { HOTBAR_SLOTS, SAVE_KEY_PREFIX, SAVE_VERSION } from './config.ts';
+import { HOTBAR_SLOTS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
+import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
 import { addShopStartItems } from './newPlayer.ts';
 import { emptyShop } from './shop.ts';
@@ -36,6 +37,23 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     const s = { ...state, shop: emptyShop(player.shopRoomId, 0), hintsDone: 0 } as unknown as GameState;
     try {
       return addShopStartItems(s);
+    } catch {
+      return state;
+    }
+  },
+  // 3 -> 4: the counter moved away from the back wall, so the player can stand behind it. A counter
+  // still on the old start spot moves to the new one when that is free.
+  3: (state) => {
+    if (!isObject(state) || !Array.isArray(state.items) || !Array.isArray(state.rooms)) return state;
+    try {
+      const s = state as unknown as GameState;
+      const room = s.rooms.find((r) => r.id === s.player.shopRoomId);
+      const counter = s.items.find((i) => i.typeId === 'counter' && i.roomId === s.player.shopRoomId);
+      const to = SHOP_START_ITEMS.find((i) => i.typeId === 'counter');
+      if (!room || !counter || !to || counter.x !== 176 || counter.y !== 40 || counter.facing !== 'down') return state;
+      const others = s.items.filter((i) => i.uid !== counter.uid);
+      if (!canPlace(room, others, getFurnitureType('counter'), to.x, to.y, 'down')) return state;
+      return { ...s, items: s.items.map((i) => (i.uid === counter.uid ? { ...i, x: to.x, y: to.y } : i)) };
     } catch {
       return state;
     }

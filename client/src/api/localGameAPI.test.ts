@@ -196,13 +196,24 @@ describe('LocalGameAPI shop (step 7)', () => {
     const shop = await api.getShop();
     const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'stall_table')!;
     expect(shop.slots).toEqual([]);
+    expect(await api.serve(table.uid)).toBeNull();
     expect(await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 1)).not.toBeNull();
     expect(await api.putOnShelf({ shelfUid: table.uid, index: 1 }, { kind: 'material', id: 'cloth' }, 1)).not.toBeNull();
     expect(await api.putOnShelf({ shelfUid: table.uid, index: 1 }, { kind: 'material', id: 'cloth' }, 1)).toBeNull();
     const events: string[] = [];
     api.onShop((e) => events.push(e.t));
-    for (; now < 180_000; now += 100) api.update();
+    // Nobody pays while the player is not behind the counter.
+    for (; now < 120_000; now += 100) api.update();
     expect(events).toContain('reaction');
+    expect(events).not.toContain('sale');
+    expect((await api.getPlayer()).wallet.gold).toBe(100);
+    // Walk behind the counter: the waiting customers pay.
+    const counter = (await api.getItems()).find((i) => i.typeId === 'counter')!;
+    const serve = await api.serve(counter.uid);
+    expect(serve?.facing).toBe('down');
+    for (; now < 180_000; now += 100) api.update();
+    expect(api.isServing()).toBe(true);
+    expect(events).toContain('paying');
     expect(events).toContain('sale');
     expect((await api.getPlayer()).wallet.gold).toBeGreaterThan(100);
     const sold = Object.values((await api.getShop()).saleHistory).flat();

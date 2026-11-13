@@ -2,7 +2,7 @@
 // when a customer pays (it rises and fades over SALE_FLOAT_MS), the "while you were away" summary,
 // and the first-run hint under the info panel.
 
-import { SALE_FLOAT_MS, typeName, type AwaySummary, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_PAY_MS, SALE_FLOAT_MS, typeName, type AwaySummary, type Point } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
@@ -45,6 +45,54 @@ export function createSaleFloats(parent: HTMLElement): SaleFloats {
         const scale = k < 0.12 ? 0.6 + (k / 0.12) * 0.5 : k < 0.2 ? 1.1 - ((k - 0.12) / 0.08) * 0.1 : 1;
         f.el.style.transform = `translate(${Math.round(s.x - f.el.offsetWidth / 2)}px, ${Math.round(s.y - f.el.offsetHeight - 40 * k)}px) scale(${scale.toFixed(2)})`;
         f.el.style.opacity = String(k < 0.5 ? 1 : 1 - (k - 0.5) * 2);
+      }
+    },
+  };
+}
+
+export interface TillCoins {
+  /** The till animation while a customer pays (coins hop out of the till), CUSTOMER_PAY_MS long. */
+  add(world: Point): void;
+  /**
+   * Moves the animations; `waiting` is the till's world point while a customer waits to pay and
+   * nobody stands behind the counter (a bobbing coin marker shows there), else null.
+   */
+  update(dtMs: number, toScreen: (p: Point) => Point, waiting: Point | null): void;
+}
+
+export function createTillCoins(parent: HTMLElement): TillCoins {
+  const layer = el('div', 'bubble-layer');
+  parent.appendChild(layer);
+  const marker = el('div', 'bubble till-marker tail');
+  marker.append(pixelIcon('coin'), el('span', '', '!'));
+  marker.title = 'A customer is waiting: tap the counter';
+  marker.hidden = true;
+  layer.appendChild(marker);
+  let anims: Float[] = [];
+  const place = (e: HTMLElement, s: Point): void => {
+    e.style.transform = `translate(${Math.round(s.x - e.offsetWidth / 2)}px, ${Math.round(s.y - e.offsetHeight)}px)`;
+  };
+  return {
+    add(world) {
+      const a = el('div', 'till-coins');
+      for (let i = 0; i < 3; i++) {
+        const c = el('span', `till-coin c${i}`);
+        c.appendChild(pixelIcon('coin'));
+        a.appendChild(c);
+      }
+      a.style.setProperty('--pay-ms', `${CUSTOMER_PAY_MS}ms`);
+      layer.appendChild(a);
+      anims.push({ el: a, world, age: 0 });
+    },
+    update(dtMs, toScreen, waiting) {
+      for (const a of anims) a.age += dtMs;
+      for (const a of anims.filter((x) => x.age >= CUSTOMER_PAY_MS)) a.el.remove();
+      anims = anims.filter((a) => a.age < CUSTOMER_PAY_MS);
+      for (const a of anims) place(a.el, toScreen(a.world));
+      marker.hidden = waiting === null;
+      if (waiting) {
+        const s = toScreen(waiting);
+        place(marker, { x: s.x, y: s.y - 4 });
       }
     },
   };

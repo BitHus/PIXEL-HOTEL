@@ -5,8 +5,10 @@
 // buy, the item leaves the slot at once and they carry it to the customer side of the counter.
 // Customers wait in a queue line: spot 0 is the paying spot in front of the counter, the others
 // are in a row behind it (queueSpots; every spot is a different free nav cell). The one on spot
-// 0 pays (CUSTOMER_PAY_MS): only then the gold comes in (ledger reason 'sale'). Then they walk
-// out through the door. A customer who refuses (or finds nothing) just leaves.
+// 0 waits until the player stands behind the counter (ShopWorld.cashier), then pays
+// (CUSTOMER_PAY_MS, the till animation): only then the gold comes in (ledger reason 'sale'). Then
+// they walk out through the door. A customer who refuses (or finds nothing) just leaves. While
+// QUEUE_MAX customers carry something to the till, no new customers come in.
 
 import { getFurnitureType, doorPoint, standPointFor } from './furniture.ts';
 import {
@@ -15,6 +17,7 @@ import {
   CUSTOMER_OUTSIDE_PX,
   CUSTOMER_PAY_MS,
   HOTEL_WALK_SPEED,
+  QUEUE_MAX,
   QUEUE_SPACING_PX,
 } from './config.ts';
 import { walkAvatar, type Avatar, type AvatarLook } from './avatar.ts';
@@ -64,6 +67,8 @@ export type ShopEvent =
   /** The customer list changed (someone came, left, or got a new path). */
   | { t: 'customers'; customers: Customer[] }
   | { t: 'reaction'; customerId: number; reaction: Reaction }
+  /** The player is behind the counter and this customer starts paying (the till animation). */
+  | { t: 'paying'; customerId: number; till: Point }
   /** A customer paid at the till: the gold is in the wallet now. */
   | { t: 'sale'; customerId: number; typeId: string; price: number; till: Point }
   /** Slot contents changed (a customer took an item). */
@@ -151,6 +156,8 @@ export interface ShopWorld {
   /** All the player's items (the shop room's are used). */
   items: readonly FurnitureItem[];
   grid: NavGrid;
+  /** True while the player stands behind the counter: only then customers pay. */
+  cashier: boolean;
 }
 
 function pathTo(grid: NavGrid, from: Point, to: Point): Point[] {
@@ -224,7 +231,9 @@ export function stepShop(state: GameState, w: ShopWorld, dtMs: number, rng: Rng,
   if (hasStock(s.shop)) {
     let left = s.shop.nextCustomerInMs - dtMs;
     if (left <= 0) {
-      const r = spawn(s, w, rng);
+      // A full line at the till: nobody new comes in (the timer starts again).
+      const carrying = s.shop.customers.filter((c) => c.carrying !== null).length;
+      const r = carrying < QUEUE_MAX ? spawn(s, w, rng) : { state: s, spawned: false };
       s = r.state;
       listChanged ||= r.spawned;
       left += customerIntervalMs(shopAppeal(w.room, w.items));
@@ -277,8 +286,18 @@ export function stepShop(state: GameState, w: ShopWorld, dtMs: number, rng: Rng,
         }
       }
     } else if (c.phase === 'queue') {
-      if (c.queueSpot === 0) c = { ...c, phase: 'pay', waitMs: CUSTOMER_PAY_MS, facing: counterFacing(c, counter) };
+      if (c.queueSpot === 0) {
+        // Waiting at the till: the client shows the coin marker until the player comes to serve.
+        c = { ...c, phase: 'pay', waitMs: CUSTOMER_PAY_MS, facing: counterFacing(c, counter) };
+        listChanged = true;
+      }
     } else if (c.phase === 'pay') {
+      // Waits at the till until the player stands behind the counter.
+      if (!w.cashier) {
+        out.push({ ...c, waitMs: CUSTOMER_PAY_MS });
+        continue;
+      }
+      if (c.waitMs === CUSTOMER_PAY_MS) events.push({ t: 'paying', customerId: c.id, till: tillPoint(counter) ?? c });
       c = { ...c, waitMs: c.waitMs - dtMs };
       if (c.waitMs <= 0) {
         const r = pay(s, c, at);
@@ -322,7 +341,9 @@ function counterFacing(c: Customer, counter: FurnitureItem | undefined): Facing 
 export function tillPoint(counter: FurnitureItem | undefined): Point | null {
   if (!counter) return null;
   const t = getFurnitureType(counter.typeId);
-  return { x: counter.x, y: counter.y - t.height };
+  // The till box sits right of the middle (furniture.json: dx 10..32 facing down), turned with the counter.
+  const side = counter.facing === 'down' ? 21 : counter.facing === 'up' ? -21 : 0;
+  return { x: counter.x + side, y: counter.y - t.height };
 }
 
 /** Customers that walked away from their goal get a new path (the furniture changed). */
