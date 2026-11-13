@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ENEMY_WINDUP_MS, PLAYER_DUNGEON_SPEED } from '../config.ts';
+import { ENEMY_WINDUP_MS, MIMIC_WAKE_MS, PLAYER_DUNGEON_SPEED } from '../config.ts';
 import { seededRng } from '../rng.ts';
 import type { Rng } from '../types.ts';
 import { blockCenter } from './grid.ts';
@@ -173,6 +173,28 @@ describe('step: enemies', () => {
     r = step(r, [{ t: 'click_enemy', id: m.id }], 0, seededRng(4));
     expect(r.events).toContainEqual({ t: 'kill', enemyId: m.id, kind: 'skeleton', xp: 8 });
     expect(r.events.filter((e) => e.t === 'loot').length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('step: mimics and the last hit (step 9)', () => {
+  it('a mimic opens like a chest, then waits MIMIC_WAKE_MS before its wind-up', () => {
+    const chest = { id: 3, kind: 'wooden' as const, mimic: true, opened: false, x: start.x + 16, y: start.y };
+    let r = step(testRun({ at: start, chests: [chest] }), [], 100, seededRng(1));
+    expect(r.events).toContainEqual({ t: 'mimic', enemyId: 1003, chestId: 3 });
+    let windupAt = -1;
+    for (let k = 0; k < 20 && windupAt < 0; k++) {
+      r = step(r, [], 100, seededRng(k));
+      if (r.events.some((e) => e.t === 'windup')) windupAt = r.timeMs;
+    }
+    expect(windupAt).toBe(100 + MIMIC_WAKE_MS);
+  });
+
+  it('remembers what dealt the last hit', () => {
+    let r = testRun({ at: start, enemies: [enemyAt(1, start.x + 30, start.y, 'bat', 99)] });
+    expect(r.lastHitBy).toBeNull();
+    r = { ...r, enemies: [{ ...r.enemies[0]!, windupMs: 100 }] };
+    r = step(r, [], 100, seededRng(1));
+    expect(r.lastHitBy).toBe('bat');
   });
 });
 

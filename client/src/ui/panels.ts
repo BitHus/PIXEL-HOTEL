@@ -1,7 +1,7 @@
 // One side panel open at a time (Bag, Catalog, Room, the shelf panel, Avatar, Chat, Settings). Panels open to the left of the
 // right-edge button column, top aligned, and never cover the hotbar (ui.css).
 
-export type PanelName = 'bag' | 'catalog' | 'room' | 'shelf' | 'avatar' | 'chat' | 'settings';
+export type PanelName = 'bag' | 'catalog' | 'room' | 'shelf' | 'avatar' | 'chat' | 'settings' | 'workshop';
 
 export interface Panels {
   readonly open: PanelName | null;

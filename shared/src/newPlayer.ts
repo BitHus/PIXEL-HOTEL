@@ -117,6 +117,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     ledger: [],
     shop: emptyShop(config.shopRoomId, at),
     hintsDone: 0,
+    run: null,
     playerCreated: false,
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);

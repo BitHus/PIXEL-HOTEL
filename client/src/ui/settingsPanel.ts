@@ -1,7 +1,6 @@
 // Settings panel (gear button): Export save (downloads one JSON file), Import save (checks the
 // version, then loads it), Restore backup (the save from when the game was opened, or from
-// before the last import), New game, the debug button "Give random loot" (until the dungeon
-// brings loot, removed in step 9), and the "Debug" toggle (off by default) that shows the x/y/zoom label and the
+// before the last import), New game, and the "Debug" toggle (off by default) that shows the x/y/zoom label and the
 // Blockers buttons.
 
 import { el, textButton } from './dom.ts';
@@ -11,7 +10,6 @@ export interface SettingsHooks {
   importSave(text: string): void;
   restoreBackup(): void;
   newGame(): void;
-  giveRandomLoot(): void;
   onDebug(on: boolean): void;
 }
 
@@ -48,7 +46,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   const newBtn = textButton('New game', () => {
     if (window.confirm('Start a new game? The current game becomes the backup.')) hooks.newGame();
   });
-  const giveBtn = textButton('Give random loot', () => hooks.giveRandomLoot());
   let debug = false;
   const debugBtn = textButton('Debug: off', () => {
     debug = !debug;
@@ -65,7 +62,7 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   panel.append(
     el('h2', 'panel-title', 'Settings'),
     section('Save', exportBtn, importBtn, backupBtn, newBtn),
-    section('Testing', giveBtn, debugBtn),
+    section('Testing', debugBtn),
     file,
   );
   parent.appendChild(panel);

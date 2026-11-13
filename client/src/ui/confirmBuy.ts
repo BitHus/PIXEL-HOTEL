@@ -11,7 +11,8 @@ export interface BuyQuestion {
   name: string;
   /** e.g. "Floor: unlocked forever, goes on this room now." */
   detail: string;
-  price: number;
+  /** null = free (no price shown). */
+  price: number | null;
   /** A picture (data URL), or none. */
   image?: string;
   /** The text on the yes button (default "Buy"). */
@@ -60,11 +61,12 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
     }
     const info = el('div', 'confirm-info');
     const price = el('div', 'catalog-price');
-    price.append(pixelIcon('coin'), el('span', '', String(q.price)));
+    if (q.price === null) price.append(el('span', '', 'Free'));
+    else price.append(pixelIcon('coin'), el('span', '', String(q.price)));
     info.append(el('div', 'catalog-name', q.name), el('div', 'catalog-sub', q.detail), price);
     what.appendChild(info);
 
-    const yes = textButton(`${q.yes ?? 'Buy'} for ${q.price}`, () => finish(true));
+    const yes = textButton(q.price === null ? (q.yes ?? 'Buy') : `${q.yes ?? 'Buy'} for ${q.price}`, () => finish(true));
     yes.classList.add('confirm-yes');
     const no = textButton('Cancel', () => finish(false));
     const buttons = el('div', 'confirm-buttons');

@@ -212,6 +212,35 @@ export const ENEMIES: Record<EnemyKind, EnemyStats> = {
   bat: { hp: 6, hitMin: 2, hitMax: 4, attackEveryMs: 900, speed: 92, randomMoveChance: 0.5, xp: 4 },
   bone_king: { hp: 60, hitMin: 5, hitMax: 8, attackEveryMs: 1500, speed: 54, randomMoveChance: 0, xp: 40 },
 };
+/** A mimic opens like a chest, then waits this long before its first wind-up (step 9: fair). */
+export const MIMIC_WAKE_MS = 700;
+// ---------- The dungeon in the client (step 9) ----------
+/**
+ * The dungeon camera's zoom: at least DUNGEON_DEVICE_PX_PER_ART_PX device px per art px (closer
+ * would hide enemies on a monitor), and on dense phone screens about DUNGEON_CSS_PX_PER_ART_PX
+ * CSS px per art px, so enemies stay big enough to tap.
+ */
+export const DUNGEON_DEVICE_PX_PER_ART_PX = 2;
+export const DUNGEON_CSS_PX_PER_ART_PX = 1.25;
+/** Blocks whose middle is this close to the player are lit (px); seen blocks stay dim. */
+export const DUNGEON_LIGHT_PX = 224;
+/** How dark a seen but unlit block is (0 = lit, 1 = black). */
+export const DUNGEON_SEEN_DARK = 0.6;
+/** Screen shake (screen px) when the player lands a hit, and when the player is hit. */
+export const HIT_SHAKE_PX = 2;
+export const HURT_SHAKE_PX = 5;
+export const SCREEN_SHAKE_MS = 160;
+/** A hit enemy flashes white this long; the player flashes red when hit. */
+export const HIT_FLASH_MS = 120;
+/** A chest's lid opens in this many ms. */
+export const CHEST_OPEN_MS = 300;
+/** Floating text (damage, drops, xp) rises and fades in this many ms; drops of one chest come this far apart. */
+export const FLOAT_TEXT_MS = 1100;
+export const FLOAT_STAGGER_MS = 180;
+/** The level-up flash over the whole screen, ms. */
+export const LEVEL_FLASH_MS = 600;
+/** LocalGameAPI saves a going run at least this often (run time, ms), and whenever something happens. */
+export const RUN_SAVE_EVERY_MS = 2000;
 /** A mimic fights as a skeleton but gives this xp. */
 export const MIMIC_XP = 8;
 
@@ -225,10 +254,10 @@ export const ENEMIES_PER_ROOM_MAX = 2;
 /** Enemy hp on floor n = ceil(hp * (1 + ENEMY_HP_PER_FLOOR * (n - 1))). */
 export const ENEMY_HP_PER_FLOOR = 0.25;
 /**
- * Whether the Bone King's hp is also multiplied by the floor (60 -> 90 on floor 3). The brief says
- * yes; the step 8 simulation reaches the target survival rates only without it (owner to decide).
+ * Whether the Bone King's hp is also multiplied by the floor. Owner's decision after step 8: no,
+ * the Bone King always has 60 hp (the simulation's survival targets need it).
  */
-export const BOSS_HP_FLOOR_SCALING = true;
+export const BOSS_HP_FLOOR_SCALING = false;
 
 export const RUN_BAG_SLOTS = 12;
 export const MATERIAL_STACK_MAX = 10;
@@ -357,7 +386,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -386,7 +415,10 @@ export const HINTS = [
   'Open the Catalog and buy something with your 100 gold.',
   'Place it in your room.',
   'Put an item on the table in your shop and set a price.',
+  'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
 ] as const;
+/** The index of the dungeon hint in HINTS: it only shows while the shop has nothing for sale. */
+export const DUNGEON_HINT = 3;
 
 // ---------- New game intro (step 7b) ----------
 /** The counter and stall_table pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */

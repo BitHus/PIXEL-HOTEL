@@ -70,6 +70,8 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     // A save that already has a player skips character creation and the intro.
     return { ...state, rooms, look, player: { ...state.player, unlockedClothing: [] }, playerCreated: true };
   },
+  // 5 -> 6 (step 9): no dungeon run in progress.
+  5: (state) => (isObject(state) ? { ...state, run: null } : state),
 };
 
 /** The storage key for a save version. */
@@ -129,6 +131,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isInt(x.currentRoomId) || !x.rooms.some((r) => isObject(r) && r.id === x.currentRoomId)) return false;
   if (!isObject(x.shop) || !Array.isArray(x.shop.slots) || !Array.isArray(x.shop.customers) || !isObject(x.shop.saleHistory)) return false;
   if (typeof x.shop.nextCustomerInMs !== 'number' || typeof x.shop.updatedAt !== 'number' || !isInt(x.hintsDone)) return false;
+  if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }
 
