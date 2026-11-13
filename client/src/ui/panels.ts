@@ -1,11 +1,12 @@
 // One side panel open at a time (Bag, Catalog, Room, the shelf panel, Avatar, Chat, Settings). Panels open to the left of the
-// right-edge button column, top aligned, and never cover the hotbar (ui.css).
+// right-edge button column and always end above the hotbar (ui.css). Panels are built with
+// panelShell.ts; the ✗ goes on the corner of the panel's frame.
 
 export type PanelName = 'bag' | 'catalog' | 'room' | 'shelf' | 'avatar' | 'chat' | 'settings' | 'workshop' | 'travel' | 'cooking';
 
 export interface Panels {
   readonly open: PanelName | null;
-  /** Adds a panel; a close button (✗) goes in the top-right corner of `closeHost` (default: the panel). */
+  /** Adds a panel; a close button (✗) goes on the top-right corner of `closeHost` (default: the panel's frame). */
   add(name: PanelName, panel: HTMLElement, onOpen?: () => void, onClose?: () => void, closeHost?: HTMLElement): void;
   toggle(name: PanelName): void;
   show(name: PanelName): void;
@@ -37,7 +38,7 @@ export function createPanels(): Panels {
     get open() {
       return open;
     },
-    add(name, el, onOpen, onClose, closeHost = el) {
+    add(name, el, onOpen, onClose, closeHost = el.querySelector<HTMLElement>('.panel-frame') ?? el) {
       el.hidden = true;
       const x = document.createElement('button');
       x.type = 'button';

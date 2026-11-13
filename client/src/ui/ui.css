@@ -1,10 +1,15 @@
-/* The UI overlay style (step 5, docs/UI-REFERENCE.md section 3). ONE frame style for every
-   panel, button and slot: a light parchment fill, a thick wooden border (1 px darkest brown
-   outside, 3 px mid brown, 1 px lighter inner edge), dark brown text, square corners, the pixel
-   font. Slots are a shade darker than the panel with a darker inset edge.
+/* The UI overlay style (docs/UI-REFERENCE.md section 3; reworked in the UI polish step).
+   ONE frame style for every panel, button and slot, in layers:
+   - .frame: a dark wooden frame (1 px darkest outline, wood with a light top-left edge, small
+     corner nails, a lighter inner bevel) around speckled parchment, with a 2 px hard shadow.
+   - .inset: a darker inset section inside a panel (the bag's hotbar row, its grid, list cards).
+   - .slot: a dense square slot with a dark inset edge; the icon fills most of it.
+   - .btn: a small raised wooden button; pressed = 2 px down, no shadow; .on stays pressed.
+   - .plate: a dark-brown name plate with light text (titles, names, picker labels).
+   Square corners, no gradients, no blur. Colours are Endesga 32 (shared/palette.ts).
    Layout rule (also in CLAUDE.md): the room fills the screen; UI sits at the edges on top of it.
-   Top-left: info panel + room switcher. Right edge: the icon button column; panels open to its
-   left. Bottom center: the hotbar. Toasts just above the hotbar. */
+   Top-left: the info panel. Right edge: the icon button column; panels open to its left and
+   always end above the hotbar. Bottom center: the hotbar. Toasts just above the hotbar. */
 
 @font-face {
   font-family: 'Pixelify Sans';
@@ -18,12 +23,24 @@
   font-weight: 700;
   font-display: swap;
 }
+/* Digits only (UI polish step): Pixelify's 5 reads as S and its 2 as 8, so every digit on screen
+   comes from Jersey 15 (SIL OFL, hosted here). It is first in --font and only covers 0-9. One
+   weight serves normal and bold, so the browser never smears it. */
+@font-face {
+  font-family: 'Pixel Digits';
+  src: url('../fonts/jersey-15-latin-400-normal.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+  size-adjust: 118%;
+}
 
 :root {
   /* Endesga 32 colours (palette.ts is the source of truth for game art). */
   --outline: #3e2731;
   --night: #181425;
   --wood: #733e39;
+  --wood-mid: #c28569;
   --wood-light: #b86f50;
   --wood-hi: #e4a672;
   --cream: #ead4aa;
@@ -36,10 +53,27 @@
   --no: #a22633;
   --px: 2px; /* one UI pixel */
   --touch: 44px;
-  --slot: 48px;
+  --slot: 44px;
   --edge: 8px;
-  --side-col: calc(var(--touch) + 2 * var(--edge));
-  --font: 'Pixelify Sans', monospace;
+  --side-btn: 44px;
+  --side-col: calc(var(--side-btn) + 2 * var(--edge));
+  /* Measured by layoutVars.ts: the info panel's height and the hotbar's (or run bag's) height. */
+  --info-h: 48px;
+  --bar-h: 62px;
+  --bottom-clear: calc(var(--bar-h) + var(--edge) + 6px + env(safe-area-inset-bottom));
+  --font: 'Pixel Digits', 'Pixelify Sans', monospace;
+  --shadow: 0 2px 0 rgba(24, 20, 37, 0.55);
+  /* The frames as 9-slice pixel art (drawn here, palette colours only). */
+  --frame-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%233e2731'/%3E%3Crect x='1' y='1' width='14' height='14' fill='%23733e39'/%3E%3Crect x='1' y='1' width='14' height='1' fill='%23b86f50'/%3E%3Crect x='1' y='1' width='1' height='14' fill='%23b86f50'/%3E%3Crect x='4' y='4' width='8' height='8' fill='%23e4a672'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%23ead4aa'/%3E%3Crect x='2' y='2' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='12' y='2' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='2' y='12' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='12' y='12' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23c28569'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23c28569'/%3E%3Crect x='3' y='13' width='1' height='1' fill='%23c28569'/%3E%3Crect x='13' y='13' width='1' height='1' fill='%23c28569'/%3E%3C/svg%3E");
+  --btn-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' shape-rendering='crispEdges'%3E%3Crect width='10' height='10' fill='%233e2731'/%3E%3Crect x='1' y='1' width='8' height='8' fill='%23733e39'/%3E%3Crect x='1' y='1' width='8' height='1' fill='%23b86f50'/%3E%3Crect x='1' y='1' width='1' height='8' fill='%23b86f50'/%3E%3Crect x='2' y='2' width='6' height='6' fill='%23c28569'/%3E%3Crect x='2' y='2' width='6' height='1' fill='%23ead4aa'/%3E%3Crect x='2' y='2' width='1' height='6' fill='%23ead4aa'/%3E%3C/svg%3E");
+  /* Parchment: a few specks per 32 px tile. */
+  --specks: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'%3E%3Cg fill='%23e4a672'%3E%3Crect x='3' y='5' width='2' height='1'/%3E%3Crect x='19' y='2' width='1' height='1'/%3E%3Crect x='26' y='11' width='2' height='1'/%3E%3Crect x='10' y='17' width='1' height='1'/%3E%3Crect x='22' y='24' width='1' height='2'/%3E%3Crect x='5' y='27' width='2' height='1'/%3E%3C/g%3E%3Cg fill='%23e8b796'%3E%3Crect x='13' y='8' width='1' height='1'/%3E%3Crect x='29' y='20' width='1' height='1'/%3E%3Crect x='15' y='29' width='2' height='1'/%3E%3Crect x='1' y='15' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E");
+  /* Ornaments: a small corner wedge for big panels, and the divider's diamonds. */
+  --corner: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5' shape-rendering='crispEdges'%3E%3Cg fill='%23c28569'%3E%3Crect width='5' height='1'/%3E%3Crect y='1' width='3' height='1'/%3E%3Crect y='2' width='2' height='1'/%3E%3Crect y='3' width='1' height='2'/%3E%3C/g%3E%3C/svg%3E");
+  --corner-tr: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5' shape-rendering='crispEdges'%3E%3Cg fill='%23c28569'%3E%3Crect width='5' height='1'/%3E%3Crect x='2' y='1' width='3' height='1'/%3E%3Crect x='3' y='2' width='2' height='1'/%3E%3Crect x='4' y='3' width='1' height='2'/%3E%3C/g%3E%3C/svg%3E");
+  --corner-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5' shape-rendering='crispEdges'%3E%3Cg fill='%23c28569'%3E%3Crect y='4' width='5' height='1'/%3E%3Crect y='3' width='3' height='1'/%3E%3Crect y='2' width='2' height='1'/%3E%3Crect width='1' height='2'/%3E%3C/g%3E%3C/svg%3E");
+  --corner-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5' shape-rendering='crispEdges'%3E%3Cg fill='%23c28569'%3E%3Crect y='4' width='5' height='1'/%3E%3Crect x='2' y='3' width='3' height='1'/%3E%3Crect x='3' y='2' width='2' height='1'/%3E%3Crect x='4' width='1' height='2'/%3E%3C/g%3E%3C/svg%3E");
+  --diamonds: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='7' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='29' height='7' fill='%23ead4aa'/%3E%3Cg fill='%23733e39'%3E%3Crect x='14' y='0' width='1' height='7'/%3E%3Crect x='13' y='1' width='3' height='5'/%3E%3Crect x='12' y='2' width='5' height='3'/%3E%3Crect x='11' y='3' width='7' height='1'/%3E%3Crect x='5' y='2' width='1' height='3'/%3E%3Crect x='4' y='3' width='3' height='1'/%3E%3Crect x='23' y='2' width='1' height='3'/%3E%3Crect x='22' y='3' width='3' height='1'/%3E%3C/g%3E%3Crect x='14' y='2' width='1' height='3' fill='%23feae34'/%3E%3Crect x='13' y='3' width='3' height='1' fill='%23feae34'/%3E%3C/svg%3E");
 }
 
 #ui {
@@ -48,28 +82,51 @@
 }
 
 /* ---------- The frame style ---------- */
-.frame,
-.btn,
-.float-bar button {
-  background: var(--parch);
-  border: 3px solid var(--wood);
+.frame {
+  background: var(--parch) var(--specks);
+  border: 5px solid var(--wood);
+  border-image: var(--frame-img) 5 / 5px stretch;
   border-radius: 0;
-  box-shadow:
-    0 0 0 1px var(--outline),
-    inset 0 0 0 1px var(--wood-hi);
+  box-shadow: var(--shadow);
   color: var(--text);
   font: inherit;
   font-family: var(--font);
   pointer-events: auto;
 }
 
+/* Big panels get a small wedge in every corner. */
+.panel-frame,
+.confirm-panel,
+.away-panel,
+.newgame-frame,
+.charmaker-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
 .btn,
 .float-bar button {
   -webkit-appearance: none;
   appearance: none;
+  background: var(--slot-bg);
+  border: 3px solid var(--wood);
+  border-image: var(--btn-img) 3 / 3px stretch;
+  border-radius: 0;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font: inherit;
+  font-family: var(--font);
+  pointer-events: auto;
+  flex: none; /* a button never shrinks under its text */
   min-width: var(--touch);
   min-height: var(--touch);
-  padding: 4px 10px;
+  box-sizing: border-box;
+  padding: 2px 8px;
   margin: 0;
   cursor: pointer;
   white-space: nowrap;
@@ -79,24 +136,23 @@
   -webkit-touch-callout: none;
 }
 
-.btn:hover,
-.float-bar button:hover {
-  background: #f1e2c4;
+@media (hover: hover) {
+  .btn:hover:not(:disabled),
+  .float-bar button:hover:not(:disabled) {
+    background: var(--cream);
+  }
 }
 
-.btn:active,
-.float-bar button:active {
-  box-shadow:
-    0 0 0 1px var(--outline),
-    inset 0 var(--px) 0 var(--wood-light);
-  transform: translateY(1px);
+/* Pressed: 2 px down, the shadow gone. The open / selected button stays pressed. */
+.btn:active:not(:disabled),
+.float-bar button:active:not(:disabled),
+.btn.on {
+  box-shadow: none;
+  transform: translateY(2px);
 }
 
 .btn.on {
-  background: var(--slot-bg);
-  box-shadow:
-    0 0 0 1px var(--outline),
-    inset 0 var(--px) 0 var(--wood-light);
+  background: var(--warm);
 }
 
 .btn:focus-visible,
@@ -105,16 +161,31 @@
   outline-offset: 0;
 }
 
-.icon-btn {
-  width: var(--touch);
-  height: var(--touch);
-  min-width: 0;
-  min-height: 0;
-  box-sizing: border-box;
-  padding: 0;
-  display: grid;
-  place-items: center;
+
+.btn.small {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 0 6px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
 }
+
+/* A 36 px button keeps a 44 px touch area. */
+.btn.small::after,
+.panel-close::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+.btn.small .pixel-icon {
+  width: 18px;
+  height: 18px;
+}
+
 
 .pixel-icon {
   width: 24px;
@@ -122,15 +193,62 @@
   display: block;
 }
 
-/* ---------- Slots (hotbar and bag) ---------- */
+.icon-btn > .pixel-icon {
+  width: 30px;
+  height: 30px;
+}
+
+/* A name plate: a small dark-brown bar with light text. */
+.plate {
+  background: var(--wood);
+  color: var(--cream);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    0 0 0 1px var(--outline);
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
+/* A darker inset section inside a panel. */
+.inset {
+  background: var(--slot-bg);
+  border: 1px solid var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream);
+  padding: 3px;
+}
+
+/* A divider line with small diamonds between sections. */
+.divider {
+  flex: none;
+  height: 7px;
+  background:
+    var(--diamonds) center no-repeat,
+    var(--wood);
+  background-clip: border-box, content-box;
+  padding: 3px 0;
+  box-sizing: border-box;
+}
+
+.price-short,
+.short {
+  color: var(--no);
+  font-weight: 700;
+}
+
+/* ---------- Slots (hotbar, bag, catalog, shelves): dense, the icon fills most of it ---------- */
 .slot {
   position: relative;
+  flex: none;
   width: var(--slot);
   height: var(--slot);
   box-sizing: border-box;
   background: var(--slot-bg);
-  border: var(--px) solid var(--wood-light);
-  box-shadow: inset 1px 1px 0 var(--wood);
+  border: 1px solid var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -146,10 +264,9 @@
 }
 
 .slot.selected {
-  border-color: var(--select);
-  box-shadow:
-    inset 0 0 0 var(--px) var(--warm),
-    0 0 0 1px var(--outline);
+  border-color: var(--outline);
+  box-shadow: inset 0 0 0 var(--px) var(--select);
+  background: var(--warm);
 }
 
 .slot.carried {
@@ -166,10 +283,16 @@
 }
 
 .slot-icon {
-  width: calc(var(--slot) - 8px);
-  height: calc(var(--slot) - 8px);
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: contain;
   image-rendering: pixelated;
   pointer-events: none;
+}
+
+.slot > .pixel-icon {
+  width: 32px;
+  height: 32px;
 }
 
 .slot-count {
@@ -177,6 +300,7 @@
   right: 2px;
   bottom: 0;
   font-size: 14px;
+  line-height: 1.1;
   font-weight: 700;
   color: var(--cream);
   text-shadow:
@@ -191,8 +315,8 @@
 .slot-key {
   position: absolute;
   left: 3px;
-  top: 1px;
-  font-size: 12px;
+  top: 2px;
+  font-size: 11px;
   line-height: 1;
   color: var(--wood);
   pointer-events: none;
@@ -204,10 +328,58 @@
   }
 }
 
-/* ---------- Top-left: info panel and room switcher ---------- */
+/* ---------- Top-left: the info panel (two short lines) ---------- */
 .top-left {
   position: absolute;
   left: calc(var(--edge) + env(safe-area-inset-left));
+  top: calc(var(--edge) + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.info-panel {
+  padding: 1px 6px 3px;
+  min-width: 132px;
+  box-sizing: border-box;
+}
+
+.info-gold {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.info-gold .pixel-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.info-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.info-line .bar-track {
+  min-width: 34px;
+  height: 4px;
+  border-width: 1px;
+}
+
+/* ---------- Right edge: icon buttons ---------- */
+.side-buttons {
+  position: absolute;
+  z-index: 2;
+  right: calc(var(--edge) + env(safe-area-inset-right));
   top: calc(var(--edge) + env(safe-area-inset-top));
   display: flex;
   flex-direction: column;
@@ -215,40 +387,74 @@
   pointer-events: none;
 }
 
-.info-panel {
-  padding: 4px 10px 6px;
-  min-height: var(--touch);
-  box-sizing: border-box;
+.side-buttons .icon-btn {
+  width: var(--side-btn);
+  height: var(--side-btn);
 }
 
-.info-gold {
+/* "More": the buttons that are not needed all the time live in a small grid with labels. On a
+   wide screen (>= 900 px) the grid dissolves and every button stands in the column. */
+.more-wrap {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--text);
 }
 
-.info-gold .pixel-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.info-room {
-  font-size: 14px;
-}
-
-
-/* ---------- Right edge: icon buttons ---------- */
-.side-buttons {
+.more-menu {
   position: absolute;
-  right: calc(var(--edge) + env(safe-area-inset-right));
-  top: calc(var(--edge) + env(safe-area-inset-top));
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
+  right: calc(100% + 8px);
+  top: 0;
+  display: none;
+  grid-template-columns: repeat(3, auto);
+  gap: 4px;
+  padding: 4px;
+}
+
+.more-menu.open {
+  display: grid;
+  animation: panel-pop 0.12s steps(3);
+  transform-origin: top right;
+}
+
+.side-buttons .more-item {
+  width: 74px;
+  height: 56px;
+  grid-template-rows: 32px auto;
+  align-content: center;
+  justify-items: center;
+}
+
+.more-item > .pixel-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.more-label {
+  font-size: 12px;
+  line-height: 1;
+}
+
+@media (min-width: 900px) {
+  .more-wrap,
+  .more-menu,
+  .more-menu.open {
+    display: contents;
+  }
+
+  .more-btn,
+  .more-label {
+    display: none !important;
+  }
+
+  .side-buttons .more-item {
+    width: var(--side-btn);
+    height: var(--side-btn);
+    grid-template-rows: none;
+  }
+
+  .more-item > .pixel-icon {
+    width: 30px;
+    height: 30px;
+  }
 }
 
 /* ---------- Bottom center: the hotbar ---------- */
@@ -258,8 +464,9 @@
   bottom: calc(var(--edge) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
-  gap: 4px;
-  padding: 6px;
+  gap: var(--px);
+  padding: 3px;
+  background: var(--wood-hi);
 }
 
 .hotbar.choosing .slot {
@@ -269,55 +476,99 @@
 @keyframes choose {
   50% {
     border-color: var(--select);
+    background: var(--warm);
   }
 }
 
-/* ---------- Panels: left of the right-edge column, never over the hotbar ---------- */
+/* ---------- Panels (panelShell.ts) ----------
+   .panel is only the place: tabs on the top edge, the frame (title plate, scrolling body), and a
+   slim strip below. It sits left of the button column and ends above the hotbar. On a phone it
+   starts under the info panel and spans the width, so it never half-covers that panel. */
 .panel {
   position: absolute;
+  z-index: 1;
   top: calc(var(--edge) + env(safe-area-inset-top));
   right: calc(var(--side-col) + env(safe-area-inset-right));
   width: min(340px, calc(100vw - var(--side-col) - 2 * var(--edge)));
-  max-height: calc(100% - 2 * var(--edge) - 80px);
+  max-height: calc(100dvh - var(--edge) - env(safe-area-inset-top) - var(--bottom-clear));
   box-sizing: border-box;
-  padding: 8px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  pointer-events: none;
+  transform-origin: top right;
+  animation: panel-pop 0.12s steps(3);
 }
 
-.panel[hidden] {
-  display: none;
+@keyframes panel-pop {
+  from {
+    transform: scale(0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .more-menu.open,
+  .confirm-panel {
+    animation: none !important;
+  }
+}
+
+.panel-frame {
+  position: relative;
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+}
+
+.panel-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  /* Room for focus rings and the cards' shadows at the scroll edge. */
+  padding: 1px 1px 3px;
 }
 
 .panel-title {
-  margin: 0;
-  min-height: var(--touch);
-  padding-right: calc(var(--touch) + 4px);
-  font-size: 18px;
-  line-height: var(--touch);
-  font-weight: 700;
-  color: var(--wood);
+  flex: none;
+  margin: 0 30px 0 0;
+  font-size: 16px;
+  line-height: 20px;
 }
 
-/* The ✗ in a panel's top-right corner. */
+.panel-title:empty {
+  display: none;
+}
+
+/* The ✗ on a panel's top-right corner: 36 px to look at, 44 px to hit. */
 .panel-close {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: var(--touch);
-  height: var(--touch);
+  z-index: 2;
+  top: -9px;
+  right: -9px;
+  width: 36px;
+  height: 36px;
   min-width: 0;
+  min-height: 0;
   padding: 0;
-  font-size: 20px;
+  font-size: 18px;
+  line-height: 1;
+  background: var(--warm);
 }
 
+.panel-close:active {
+  transform: translateY(2px);
+}
 
 .panel-info {
   font-size: 14px;
-  min-height: 2.4em;
 }
 
 .panel-section {
@@ -326,190 +577,138 @@
   gap: 4px;
 }
 
-.panel-section h3 {
-  margin: 6px 0 0;
+.panel-section h3,
+.panel-body h3 {
+  margin: 4px 0 0;
   font-size: 14px;
   color: var(--wood);
 }
 
-.tabs {
+/* Tabs sit on the panel's top edge: small icon tabs; the open one is raised, warm orange and
+   shows its name. */
+.panel-tabs {
+  flex: none;
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--px);
+  padding: 0 44px 0 8px;
+  margin-bottom: -3px;
+  min-height: 0;
 }
 
-.tab {
-  flex: 1 1 auto;
-  padding: 4px 6px;
-}
-
-/* ---------- The Bag (docs/UI-REFERENCE.md section 4) ---------- */
-/* A grid: tabs on top, the frame with Sort / Stack beside it, the gold strip under it. */
-.panel.bag {
-  width: auto;
-  max-height: none;
-  padding: 0;
-  overflow: visible;
-  display: grid;
-  grid-template-areas:
-    'tabs .'
-    'frame tools'
-    'foot .';
-  grid-template-columns: auto auto;
-  gap: 4px 6px;
-  pointer-events: none;
-}
-
-.panel.bag[hidden] {
+.panel-tabs:empty,
+.panel-strip:empty {
   display: none;
 }
 
-.bag-tabs {
-  grid-area: tabs;
+.tab-btn {
+  height: 40px;
+  min-height: 0;
+  min-width: 44px;
+  padding: 0 5px 3px;
   display: flex;
-  gap: 4px;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--wood-mid);
+  box-shadow: none;
 }
 
-.bag-tab {
-  pointer-events: auto;
+.tab-btn .pixel-icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
 }
 
-.bag-tab.on {
-  width: auto;
-  padding: 0 10px 0 8px;
-  display: flex;
-  gap: 6px;
-}
-
-.bag-tab-name {
+.tab-name {
   display: none;
   font-weight: 700;
+  font-size: 14px;
 }
 
-.bag-tab.on .bag-tab-name {
+.tab-btn.on {
+  height: 46px;
+  background: var(--warm);
+  transform: none;
+}
+
+.tab-btn.on .tab-name {
   display: inline;
 }
 
-.bag-body {
-  display: contents;
+.tab-btn:active:not(.on) {
+  transform: translateY(2px);
 }
 
-.bag-frame {
-  grid-area: frame;
-  position: relative;
-  padding: 10px;
+/* The slim strip just below a panel: secondary actions (Sort, Stack). */
+.panel-strip {
+  flex: none;
+  align-self: flex-end;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* The bag's ✗ sits on the frame's corner, half outside it. */
-.bag-frame .panel-close {
-  top: -16px;
-  right: -16px;
-}
-
-.bag-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--bag-cols), var(--slot));
   gap: 4px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  max-height: max(104px, calc(100dvh - 330px));
-  touch-action: pan-y;
-}
-
-.bag-hotbar-row {
-  max-height: none;
-  overflow: visible;
-}
-
-.bag-line {
-  height: var(--px);
-  background: var(--wood-light);
-  box-shadow: 0 1px 0 var(--wood-hi);
-}
-
-.bag-info {
-  max-width: calc(var(--bag-cols) * (var(--slot) + 4px));
-  min-height: 2.4em;
-}
-
-.bag-tools {
-  grid-area: tools;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 36px;
-}
-
-.bag-tools .btn {
+  margin: 2px 6px 0 0;
+  padding: 3px 4px 4px;
+  background: var(--wood);
+  border: 1px solid var(--outline);
+  border-top: 0;
+  box-shadow: var(--shadow);
   pointer-events: auto;
 }
 
-.bag-gold {
-  grid-area: foot;
-  justify-self: end;
-  align-self: start;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 10px;
-  font-weight: 700;
+.panel-strip .btn {
+  box-shadow: none;
 }
 
-.bag-gold .pixel-icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* Phone: the bag is a bottom sheet above the hotbar with 6 columns; Sort and Stack move under
-   it (left of the gold strip) and the ✗ goes to the right end of the tab row. */
 @media (max-width: 680px) {
-  #ui {
-    --slot: 44px;
+  :root {
+    --side-btn: 48px;
   }
 
+  .panel {
+    top: calc(var(--edge) + var(--info-h) + 6px + env(safe-area-inset-top));
+    left: calc(var(--edge) + env(safe-area-inset-left));
+    width: auto;
+    max-height: calc(100dvh - var(--edge) - var(--info-h) - 6px - env(safe-area-inset-top) - var(--bottom-clear));
+  }
+}
+
+/* ---------- The Bag (docs/UI-REFERENCE.md section 4) ----------
+   Tabs on top; in the frame the hotbar row and the grid, each in its own inset section, with a
+   diamond divider between; Sort and Stack in the strip below. Only the filled rows plus one
+   empty row show. */
+.panel.bag {
+  width: auto;
+}
+
+.bag-section {
+  display: grid;
+  grid-template-columns: repeat(var(--bag-cols), var(--slot));
+  gap: var(--px);
+  align-self: flex-start;
+}
+
+.bag-info {
+  max-width: calc(var(--bag-cols) * (var(--slot) + 2px));
+  min-height: 2.4em;
+}
+
+/* Phone: the bag is a bottom sheet just above the hotbar, 6 columns. */
+@media (max-width: 680px) {
   .panel.bag {
     top: auto;
-    left: calc(var(--edge) + env(safe-area-inset-left));
     right: auto;
-    bottom: calc(2 * var(--edge) + var(--slot) + 20px + env(safe-area-inset-bottom));
+    bottom: var(--bottom-clear);
+    max-height: calc(100dvh - var(--edge) - var(--info-h) - 6px - env(safe-area-inset-top) - var(--bottom-clear));
+    transform-origin: bottom left;
   }
 
-  .bag-grid {
+  .bag-section {
     grid-template-columns: repeat(var(--bag-cols-phone), var(--slot));
-    max-height: max(96px, calc(100dvh - 400px));
-  }
-
-  .panel.bag {
-    grid-template-areas:
-      'tabs'
-      'frame'
-      'foot';
-    grid-template-columns: auto;
   }
 
   .bag-info {
-    max-width: calc(var(--bag-cols-phone) * (var(--slot) + 4px));
+    max-width: calc(var(--bag-cols-phone) * (var(--slot) + 2px));
     min-height: 0;
-  }
-
-  .bag-tools {
-    grid-area: foot;
-    justify-self: start;
-    flex-direction: row;
-    margin: 0;
-  }
-
-  .bag-frame .panel-close {
-    top: calc(-1 * var(--touch) - 7px);
-    right: -3px;
-  }
-
-  .bag-gold {
-    align-self: center;
   }
 }
 
@@ -527,7 +726,8 @@
   height: var(--touch);
   margin: 0;
   padding: 0;
-  border: var(--px) solid var(--night);
+  border: var(--px) solid var(--outline);
+  box-shadow: inset 1px 1px 0 rgba(234, 212, 170, 0.5);
   border-radius: 0;
   cursor: pointer;
   touch-action: manipulation;
@@ -535,7 +735,9 @@
 
 .swatch.selected {
   border-color: var(--warm);
-  box-shadow: inset 0 0 0 var(--px) var(--night);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--outline),
+    0 0 0 1px var(--outline);
 }
 
 .carry-ghost {
@@ -554,11 +756,13 @@
 /* ---------- Chat ---------- */
 .chat-log {
   height: 180px;
+  flex: 0 1 auto;
+  min-height: 60px;
   overflow-y: auto;
-  padding: 6px;
-  background: #f1e2c4;
-  border: 1px solid var(--wood-light);
-  box-shadow: inset 1px 1px 0 var(--wood-light);
+  padding: 5px;
+  background: var(--cream);
+  border: 1px solid var(--wood);
+  box-shadow: inset 1px 1px 0 var(--wood-mid);
   font-size: 14px;
   user-select: text;
   -webkit-user-select: text;
@@ -570,7 +774,7 @@
 }
 
 .chat-empty {
-  color: var(--wood-light);
+  color: var(--wood);
 }
 
 .chat-form {
@@ -584,7 +788,8 @@
   min-height: var(--touch);
   box-sizing: border-box;
   padding: 4px 8px;
-  border: var(--px) solid var(--outline);
+  border: 1px solid var(--outline);
+  box-shadow: inset 1px 1px 0 var(--wood-mid);
   border-radius: 0;
   background: var(--cream);
   color: var(--outline);
@@ -666,11 +871,11 @@
   position: absolute;
   z-index: 5;
   left: 50%;
-  bottom: calc(80px + env(safe-area-inset-bottom));
+  bottom: calc(var(--bar-h) + var(--edge) + 10px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   max-width: calc(100vw - 32px);
   box-sizing: border-box;
-  padding: 8px 12px;
+  padding: 5px 10px;
   text-align: center;
   pointer-events: auto;
   cursor: pointer;
@@ -724,8 +929,8 @@
 
 .place-bar button:disabled {
   background: var(--slot-bg);
-  color: var(--wood-light);
-  opacity: 0.8;
+  color: var(--wood);
+  opacity: 0.6;
   cursor: default;
 }
 
@@ -744,9 +949,12 @@
   display: flex;
   align-items: center;
   padding: 4px 10px;
-  border: var(--px) solid var(--outline);
-  background: var(--cream);
-  color: var(--outline);
+  background: var(--wood);
+  color: var(--cream);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    0 0 0 1px var(--outline),
+    var(--shadow);
   font-weight: 700;
   white-space: nowrap;
   pointer-events: auto;
@@ -757,13 +965,19 @@
 .catalog-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .catalog-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 3px 4px 3px 3px;
+  background: var(--slot-bg);
+  border: 1px solid var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream);
 }
 
 .catalog-info {
@@ -782,14 +996,12 @@
 .shelf-history,
 .catalog-sub {
   font-size: 14px;
-  color: var(--wood);
+  color: var(--text);
 }
 
 /* One card per slot: icon | name, sale history | Take, and the price row under it. */
 .shelf-sub {
   min-height: 0;
-  margin-top: -6px;
-  color: var(--wood);
 }
 
 .shelf-card {
@@ -799,18 +1011,21 @@
     'icon name take'
     'icon hist take'
     'price price price';
-  column-gap: 8px;
-  row-gap: 6px;
+  column-gap: 6px;
+  row-gap: 3px;
   align-items: center;
-  padding: 6px;
-  background: #f1e2c4;
-  border: var(--px) solid var(--wood-light);
-  box-shadow: inset 1px 1px 0 var(--wood-hi);
+  padding: 4px;
+  background: var(--slot-bg);
+  border: 1px solid var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream);
 }
 
 .shelf-card.empty {
-  border-style: dashed;
   background: transparent;
+  box-shadow: none;
+  border-style: dashed;
 }
 
 .shelf-card .slot.empty {
@@ -839,14 +1054,13 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-top: 6px;
-  border-top: 1px solid var(--wood-light);
+  padding-top: 4px;
+  border-top: 1px solid var(--wood-mid);
 }
 
 .price-label {
   flex: 1 1 auto;
   font-size: 14px;
-  color: var(--wood);
 }
 
 .price-row .btn.step {
@@ -863,7 +1077,8 @@
   min-height: var(--touch);
   box-sizing: border-box;
   padding: 0 6px;
-  border: var(--px) solid var(--outline);
+  border: 1px solid var(--outline);
+  box-shadow: inset 1px 1px 0 var(--wood-mid);
   background: var(--cream);
   cursor: text;
 }
@@ -906,10 +1121,10 @@
   grid-area: price;
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--slot));
-  gap: 4px;
-  padding: 6px;
-  background: #f1e2c4;
-  border: 1px solid var(--wood-light);
+  gap: var(--px);
+  padding: 4px;
+  background: var(--cream);
+  border: 1px solid var(--wood);
 }
 
 .shelf-choose .slot {
@@ -929,23 +1144,31 @@
   height: 16px;
 }
 
+/* Disabled: flat and darker, the text still dark (no pale text on parchment). */
 .btn:disabled {
-  color: var(--wood-light);
   cursor: default;
-  opacity: 0.75;
+  background: var(--wood-mid);
+  color: var(--wood);
+  box-shadow: none;
+}
+
+.chat-input::placeholder {
+  color: var(--wood);
+  opacity: 1;
 }
 
 .room-facts {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  padding: 4px 6px;
+  font-size: 14px;
 }
 
 .style-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--touch));
-  gap: 4px;
+  gap: var(--px);
 }
 
 .style-swatch {
@@ -955,7 +1178,8 @@
   height: var(--touch);
   margin: 0;
   padding: 0;
-  border: var(--px) solid var(--wood);
+  border: 1px solid var(--outline);
+  box-shadow: inset 0 0 0 1px var(--wood);
   border-radius: 0;
   background-size: 64px 64px;
   background-position: center;
@@ -965,10 +1189,10 @@
 }
 
 .style-swatch.selected {
-  border-color: var(--select);
+  border-color: var(--outline);
   box-shadow:
-    inset 0 0 0 var(--px) var(--warm),
-    0 0 0 1px var(--outline);
+    inset 0 0 0 var(--px) var(--select),
+    inset 0 0 0 3px var(--warm);
 }
 
 /* The quest card (shopFeedback.ts createHintBox): opens from the quest button at the top of the
@@ -980,7 +1204,7 @@
   right: calc(var(--side-col) + 6px + env(safe-area-inset-right));
   width: min(230px, calc(100vw - var(--side-col) - 2 * var(--edge) - 6px));
   box-sizing: border-box;
-  padding: 4px 10px 6px;
+  padding: 2px 6px 4px;
   font-size: 14px;
   cursor: pointer;
   pointer-events: auto;
@@ -996,17 +1220,17 @@
 /* The tail: a wood triangle with a parchment one inside, at the button's height. */
 .quest-card::before,
 .quest-card::after {
-  content: '';
-  position: absolute;
-  border-style: solid;
-  border-color: transparent;
+  right: -11px;
+  top: 13px;
+  border-width: 6px 0 6px 7px;
+  border-left-color: var(--wood);
 }
 
 .quest-card::before {
-  right: -13px;
-  top: 12px;
+  right: -15px;
+  top: 10px;
   border-width: 9px 0 9px 10px;
-  border-left-color: var(--wood);
+  border-left-color: var(--outline);
 }
 
 .quest-card::after {
@@ -1041,9 +1265,9 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--wood);
-  border-bottom: var(--px) solid var(--wood-hi);
+  border-bottom: 1px solid var(--wood-mid);
   padding-bottom: 2px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .quest-head .pixel-icon {
@@ -1056,10 +1280,10 @@
 }
 
 .quest-hide {
-  margin-top: 4px;
+  margin-top: 2px;
   text-align: right;
-  font-size: 11px;
-  color: var(--wood-light);
+  font-size: 12px;
+  color: var(--wood);
 }
 
 @keyframes quest-in {
@@ -1113,7 +1337,7 @@
   max-height: calc(100% - 32px);
   overflow-y: auto;
   box-sizing: border-box;
-  padding: 8px 12px 12px;
+  padding: 6px 8px 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1236,10 +1460,10 @@
   position: relative;
   width: min(760px, 100%);
   box-sizing: border-box;
-  padding: 10px 14px 14px;
+  padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin: auto;
 }
 
@@ -1264,18 +1488,23 @@
 }
 
 .avatar-stage {
+  position: relative;
   display: grid;
   place-items: end center;
   width: 180px;
   height: 280px;
+  box-sizing: border-box;
   background: var(--slot-bg);
-  border: var(--px) solid var(--wood-light);
-  box-shadow: inset 1px 1px 0 var(--wood);
+  border: 1px solid var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream);
 }
 
 .avatar-stage.small {
   width: 100%;
-  height: 148px;
+  height: 124px;
+  flex: none;
 }
 
 .avatar-preview {
@@ -1296,18 +1525,14 @@
   align-self: flex-end;
   min-width: 160px;
   font-weight: 700;
-  background: var(--ok);
-  color: var(--cream);
+  background: var(--warm);
 }
 
-.newgame-next:hover {
-  background: #2f6e50;
-}
 
 .look-pickers {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .look-row {
@@ -1317,8 +1542,9 @@
 }
 
 .look-label {
-  font-size: 14px;
-  color: var(--wood);
+  align-self: flex-start;
+  font-size: 12px;
+  padding: 1px 6px;
 }
 
 .look-stepper {
@@ -1328,25 +1554,25 @@
 }
 
 .look-step {
-  width: var(--touch);
-  min-width: var(--touch);
-  padding: 0;
+  font-size: 14px;
 }
 
 .look-value {
   flex: 1 1 auto;
-  min-height: var(--touch);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  background: #f1e2c4;
-  border: 1px solid var(--wood-light);
+  min-width: 0;
+  min-height: 36px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .look-swatches {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--px);
 }
 
 .shape-grid {
@@ -1364,8 +1590,12 @@
   gap: 6px;
   min-height: 150px;
   padding: 8px;
-  background: #f1e2c4;
-  border: var(--px) solid var(--wood-light);
+  background: var(--slot-bg);
+  border: 1px solid var(--wood);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream),
+    var(--shadow);
   border-radius: 0;
   color: var(--text);
   font: inherit;
@@ -1374,11 +1604,10 @@
 }
 
 .shape-card.selected {
-  border-color: var(--select);
-  box-shadow:
-    inset 0 0 0 var(--px) var(--warm),
-    0 0 0 1px var(--outline);
-  background: var(--slot-bg);
+  border-color: var(--outline);
+  box-shadow: inset 0 0 0 var(--px) var(--select);
+  background: var(--warm);
+  transform: translateY(2px);
 }
 
 .shape-preview {
@@ -1444,7 +1673,8 @@
 }
 
 .avatar-stage.small .avatar-preview {
-  height: 132px;
+  height: 112px;
+  margin-bottom: 4px;
 }
 
 @media (max-width: 680px) {
@@ -1479,20 +1709,18 @@
   align-items: center;
   justify-content: flex-end;
   background: var(--slot-bg);
-  border: 3px solid var(--wood);
-  box-shadow:
-    0 0 0 1px var(--outline),
-    inset 0 0 0 1px var(--wood-hi);
+  border: 5px solid var(--wood);
+  border-image: var(--frame-img) 5 / 5px stretch;
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
 .charmaker-title {
   position: absolute;
   top: 4px;
-  left: 10px;
+  left: 4px;
   margin: 0;
-  font-size: 16px;
-  color: var(--wood);
+  font-size: 14px;
 }
 
 .charmaker-stage .avatar-preview {
@@ -1528,18 +1756,11 @@
   flex: none;
 }
 
-.look-tabs .tab {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 4px 2px;
-  font-size: 14px;
-}
 
 .look-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 4px;
+  gap: 6px;
 }
 
 @media (min-width: 681px) {
@@ -1555,12 +1776,8 @@
   }
 
   .charmaker-panel {
-    flex: 0 1 460px;
+    flex: 1 1 auto;
   }
-}
-
-.avatar-panel .look-tabs {
-  margin-top: 4px;
 }
 
 .charmaker-panel .name-input {
@@ -1572,27 +1789,28 @@
   position: absolute;
   inset: 0;
   z-index: 8;
+  display: grid;
+  place-items: center;
   background: rgba(24, 20, 37, 0.45);
   pointer-events: auto;
 }
 
 .confirm-panel {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(320px, calc(100vw - 32px));
+  position: relative;
+  width: min(360px, calc(100vw - 32px));
   box-sizing: border-box;
-  padding: 8px 12px 12px;
+  padding: 6px 8px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  animation: panel-pop 0.12s steps(3);
 }
 
 .confirm-what {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 4px;
 }
 
 .confirm-info {
@@ -1604,12 +1822,14 @@
 
 .confirm-buttons {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .confirm-yes {
   font-weight: 700;
+  background: var(--warm);
 }
 
 /* The quest button (top of the right-edge column): hidden without a quest; selected while the
@@ -1634,8 +1854,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 3px;
-  font-size: 11px;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .info-bar[hidden] {
@@ -1651,16 +1872,14 @@
 .level-badge {
   flex: none;
   font-weight: 700;
-  font-size: 12px;
-  color: var(--wood);
 }
 
 .bar-track {
   flex: 1 1 auto;
   min-width: 60px;
-  height: 8px;
-  background: var(--slot-bg);
-  border: var(--px) solid var(--wood);
+  height: 6px;
+  background: var(--wood);
+  border: 1px solid var(--outline);
   box-sizing: content-box;
   position: relative;
 }
@@ -1687,8 +1906,9 @@
 
 .bar-text {
   flex: none;
-  min-width: 42px;
+  min-width: 36px;
   text-align: right;
+  font-weight: 700;
 }
 
 /* ---------- Step 9: the dungeon screen ---------- */
@@ -1701,19 +1921,18 @@
   display: none !important;
 }
 
-/* A small label on a square button (the key cost, potions left). */
-.icon-btn {
+/* A small label on a square button (the key cost, potions left). */.icon-btn {
   position: relative;
 }
 
 .btn-badge {
   position: absolute;
-  right: -4px;
-  bottom: -6px;
+  right: -3px;
+  bottom: -4px;
   padding: 0 3px;
   min-width: 10px;
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 12px;
+  line-height: 13px;
   font-weight: 700;
   text-align: center;
   color: var(--cream);
@@ -1735,7 +1954,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px;
+  padding: 3px;
+  background: var(--wood-hi);
   max-width: calc(100vw - 2 * var(--edge));
   box-sizing: border-box;
 }
@@ -1747,7 +1967,7 @@
 .run-slots {
   display: grid;
   grid-template-columns: repeat(12, var(--run-slot, 40px));
-  gap: 3px;
+  gap: var(--px);
 }
 
 .run-slot {
@@ -1756,10 +1976,6 @@
   cursor: default;
 }
 
-.run-slot .slot-icon {
-  width: 80%;
-  height: 80%;
-}
 
 .run-side {
   display: grid;
@@ -1799,10 +2015,6 @@
   width: min(340px, calc(100vw - 32px));
   max-height: calc(100% - 32px);
   overflow-y: auto;
-}
-
-.run-dead .panel-title {
-  color: var(--no);
 }
 
 .run-list {
@@ -1886,51 +2098,45 @@
   font-size: 12px;
 }
 
-.recipe-needs .short {
-  color: var(--no);
-  font-weight: 700;
-}
-
-.workshop-panel .slot .pixel-icon {
-  width: 32px;
-  height: 32px;
-}
-
 /* ---------- Step 9b: the travel panel (Map), the lunch box picker ---------- */
 .travel-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .travel-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
+  box-sizing: border-box;
   min-height: var(--touch);
-  padding: 4px;
+  padding: 3px;
   text-align: left;
   font: inherit;
   color: inherit;
   background: var(--slot-bg);
-  border: 3px solid var(--wood-light);
-  outline: 1px solid var(--outline);
+  border: 1px solid var(--wood);
+  border-radius: 0;
+  box-shadow:
+    inset 1px 1px 0 var(--cream),
+    inset -1px -1px 0 var(--wood-mid),
+    var(--shadow);
   cursor: pointer;
 }
 
-.travel-card .slot .pixel-icon {
-  width: 70%;
-  height: 70%;
-}
 
 .travel-card.here {
-  border-color: var(--select);
+  background: var(--warm);
+  box-shadow: inset 0 0 0 1px var(--select);
+  transform: translateY(2px);
   cursor: default;
 }
 
 .travel-card.locked {
-  opacity: 0.5;
+  opacity: 0.55;
   filter: grayscale(1);
   cursor: not-allowed;
 }
@@ -2025,8 +2231,9 @@
   align-items: center;
   gap: 6px;
   padding: 3px 6px;
-  border: var(--px) solid var(--wood-light);
+  border: 1px solid var(--wood);
   background: var(--slot-bg);
+  box-shadow: inset 1px 1px 0 var(--wood-mid);
 }
 
 .forge-tier .catalog-info {
@@ -2034,16 +2241,15 @@
 }
 
 .forge-tier.current {
-  border-color: var(--select);
-  background: var(--cream);
+  border-color: var(--outline);
+  box-shadow: inset 0 0 0 var(--px) var(--select);
+  background: var(--warm);
 }
 
 .forge-tier.done,
 .forge-tier.locked {
-  opacity: 0.55;
-}
-
-.forge-tier.next {
+  background: transparent;
+  box-shadow: none;
   border-style: dashed;
 }
 
@@ -2052,6 +2258,190 @@
   padding: 0 6px;
 }
 
+@media (max-width: 680px) {
+  .run-bar {
+    gap: 4px;
+  }
+
+  .run-side {
+    gap: 4px;
+  }
+
+  .run-leave {
+    padding: 0 4px;
+    font-size: 14px;
+  }
+}
+
 .lantern-bar .bar-fill {
   background: var(--warm);
+}
+
+/* ---------- UI polish step: catalog cards, tags, small parts ---------- */
+/* The catalog: a grid of cards (big icon, name, price); 2 columns on a phone, 3 when wide. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.shop-card {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 3px 4px;
+  margin: 0 0 2px;
+  background: var(--slot-bg);
+  border: 1px solid var(--wood);
+  border-radius: 0;
+  box-shadow:
+    inset 1px 1px 0 var(--cream),
+    inset -1px -1px 0 var(--wood-mid),
+    var(--shadow);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  pointer-events: auto;
+}
+
+.shop-card:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 1px 1px 0 var(--wood-mid);
+}
+
+.shop-card-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.shop-card-name {
+  max-width: 100%;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.1;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.shop-card-owned {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ok);
+}
+
+/* Too expensive: dimmed, the price in red. */
+.shop-card.poor .shop-card-icon,
+.shop-card.poor .shop-card-name,
+.shop-card.owned .shop-card-icon,
+.shop-card.owned .shop-card-name {
+  opacity: 0.45;
+}
+
+.shop-card.owned {
+  cursor: default;
+  box-shadow: inset 1px 1px 0 var(--wood-mid);
+}
+
+.shop-card-tag {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.btn.poor {
+  color: var(--no);
+}
+
+.here-tag {
+  margin-left: auto;
+  margin-right: 4px;
+  font-size: 12px;
+  padding: 1px 5px;
+}
+
+.avatar-name {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  font-size: 14px;
+  padding: 1px 6px;
+}
+
+.avatar-name:empty {
+  display: none;
+}
+
+.look-kind {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--wood-hi);
+}
+
+.look-stepper .btn.small {
+  width: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+.confirm-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.confirm-panel .panel-close {
+  top: -9px;
+  right: -9px;
+}
+
+.run-panel .panel-title,
+.confirm-panel .panel-title,
+.away-panel .panel-title {
+  margin-right: 30px;
+}
+
+.run-dead .panel-title {
+  background: var(--no);
+  color: var(--cream);
+}
+
+/* Character creation: the tabs sit on the panel's top edge. */
+.charmaker-side {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.charmaker-side .panel-tabs {
+  padding-right: 8px;
+}
+
+@media (min-width: 681px) {
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .catalog-panel {
+    width: min(430px, calc(100vw - var(--side-col) - 2 * var(--edge)));
+  }
+
+  .charmaker-side {
+    flex: 0 1 460px;
+  }
+}
+
+.confirm-short {
+  font-size: 14px;
 }

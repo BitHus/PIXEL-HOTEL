@@ -20,6 +20,7 @@ import {
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
+import { panelShell } from './panelShell.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
 export interface ShelfHooks {
@@ -46,12 +47,12 @@ function icon(typeId: string): HTMLImageElement {
 }
 
 export function createShelfPanel(parent: HTMLElement, hooks: ShelfHooks): ShelfPanel {
-  const panel = el('div', 'frame panel shelf-panel');
-  const title = el('h2', 'panel-title', 'Shelf');
+  const shell = panelShell(parent, 'shelf-panel', 'Shelf');
+  const panel = shell.el;
+  const title = shell.title;
   const sub = el('div', 'panel-info shelf-sub');
   const body = el('div', 'shelf-rows');
-  panel.append(title, sub, body);
-  parent.appendChild(panel);
+  shell.body.append(sub, body);
 
   let item: FurnitureItem | null = null;
   let shop: ShopView | null = null;

@@ -64,7 +64,8 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
         if (!s) return;
         s.img.hidden = v.typeId === null;
         if (v.typeId !== null) s.img.src = isMaterialId(v.typeId) ? materialIconUrl(v.typeId) : furnitureIconUrl(v.typeId);
-        s.count.textContent = v.count > 1 ? String(v.count) : '';
+        // Every stack shows its count: seeds always (also 1), furniture from 2.
+        s.count.textContent = v.typeId !== null && (v.count > 1 || (isMaterialId(v.typeId) && v.count > 0)) ? String(v.count) : '';
         s.root.classList.toggle('dim', v.typeId !== null && !v.usable);
         s.root.title = v.typeId === null ? 'Empty slot' : `${v.name} (${v.count})`;
       });

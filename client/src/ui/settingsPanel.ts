@@ -4,6 +4,7 @@
 // Blockers buttons.
 
 import { el, textButton } from './dom.ts';
+import { panelShell } from './panelShell.ts';
 
 export interface SettingsHooks {
   exportSave(): string;
@@ -18,7 +19,8 @@ export interface SettingsPanel {
 }
 
 export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): SettingsPanel {
-  const panel = el('div', 'frame panel settings-panel');
+  const shell = panelShell(parent, 'settings-panel', 'Settings');
+  const panel = shell.el;
   const file = el('input');
   file.type = 'file';
   file.accept = '.json,application/json';
@@ -59,12 +61,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
     s.append(el('h3', '', title), ...buttons);
     return s;
   };
-  panel.append(
-    el('h2', 'panel-title', 'Settings'),
-    section('Save', exportBtn, importBtn, backupBtn, newBtn),
-    section('Testing', debugBtn),
-    file,
-  );
-  parent.appendChild(panel);
+  shell.body.append(section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

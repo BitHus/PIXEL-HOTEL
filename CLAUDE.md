@@ -471,7 +471,7 @@ docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying
 5b: drawn inside the bed only), 7 (shop, gold and upgrades; serving at the counter added after
 it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
-(mine and forge) are done. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+(mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
 turn on dungeon round 2 and tune it with the simulation, then step 6 (art), then step 10.
 
 Layout:
@@ -556,8 +556,9 @@ Layout:
 - client/src/ui/debugLabel.ts: HTML label with world x, y and zoom (only while Debug is on).
 - client/src/ui/blockersButton.ts: "Blockers (K)" toggle and "Clear" (left, only while Debug
   is on), plus the K key (B is Build).
-- client/src/ui (step 5): ui.css (THE frame style and all UI CSS; the pixel font Pixelify Sans,
-  SIL OFL, is hosted in client/src/fonts with its license), dom.ts (el, textButton,
+- client/src/ui (step 5): ui.css (THE frame style and all UI CSS; the pixel fonts Pixelify Sans
+  and Jersey 15 (digits), both SIL OFL, are hosted in client/src/fonts with their licenses),
+  panelShell.ts and layoutVars.ts (UI polish step, see UI POLISH), dom.ts (el, textButton,
   iconButton, typing), pixelIcons.ts (pixel-map SVG icons: bag, avatar, chat, gear, coin,
   chair, wood, sort, stack, hammer), format.ts (shortNumber: 1.2k, tested),
   itemIcon.ts (inventory icons: a small version of the boxes / a material box; fitRects tested),
@@ -762,25 +763,57 @@ Layout:
 Conventions:
 - UI LAYOUT RULE (step 5). The room fills the whole screen; all UI sits on top of it at the
   edges, never in solid bars. Every frame, button, slot and panel uses the one frame style in
-  client/src/ui/ui.css, as described in docs/UI-REFERENCE.md section 3: light parchment fill,
-  a 3 px mid-brown wooden border with a 1 px darkest-brown outline outside and a 1 px lighter
-  inner edge, dark brown text, square corners, pixel font, at least 44 px touch size, no default
-  browser buttons. Slots are a shade darker than the panel with a darker inset edge; the
-  selected slot has a bright orange border. Places:
-  - Top-left: the info panel (gold with a coin icon, room name, level and xp). (The room switcher
-    that sat under it was replaced in step 9b by the Map button and its travel panel.)
-  - Right edge: one column of square icon buttons (Bag, Build, Avatar, Chat, Settings), tooltips via
-    title. New screens add an icon button to this column (sideButtons.ts) and a panel.
-  - Panels: open to the left of that column, top aligned, never covering the hotbar; one at a
-    time (panels.ts), each with a ✗ in its top-right corner. A tap on the room closes the open
-    panel. Escape closes it. Below 680 px wide the bag is a bottom sheet above the hotbar.
-  - Bottom center: the hotbar (6 slots, icons only, a count for stacks, the last used slot has a
-    bright warm border). Hidden while placing.
+  client/src/ui/ui.css, as described in docs/UI-REFERENCE.md section 3 (reworked in the UI
+  polish step, see UI POLISH below): a layered wooden frame around speckled parchment, darker
+  inset sections, dense slots, raised buttons, dark name plates, dark brown text, square corners,
+  pixel font, at least 44 px touch size, no default browser buttons. Places:
+  - Top-left: the info panel, two short lines: coin + gold, then room name, level and a thin xp
+    bar (hp and lantern bars under it in the dungeon and the mine).
+  - Right edge: one column of square icon buttons: Quest, Map, Bag, Build, Dungeon, then More
+    (a small grid with labels: Catalog, Workshop, Room, Avatar, Chat, Settings). From 900 px wide
+    every button stands in the column. New screens add a button in sideButtons.ts (with a label
+    = in the More grid) and a panel.
+  - Panels: built with panelShell.ts; left of that column, always ending above the hotbar and
+    scrolling inside; one at a time (panels.ts), each with a 36 px ✗ on its top-right corner. On
+    a phone (<= 680 px) they start under the info panel and span the width (never half over the
+    info panel). A tap on the room closes the open panel. Escape closes it. The bag is a bottom
+    sheet above the hotbar on a phone.
+  - Bottom center: the hotbar (6 slots of 44 px, icons only, a count on every stack, the last
+    used slot is warm orange). Hidden while placing.
   - Floating bars (✓ ↻ ✗, the item menu) sit above their target (anchorAbove). Toasts appear
     just above the hotbar. Speech bubbles are cream with a dark outline and a small tail.
   - Debug things (x/y/zoom label, Blockers buttons) show on the left only while Settings ->
     Debug is on (off by default). Keys: I bag, B build mode, Enter chat, 1-6 hotbar, Escape
     closes (a panel first, then the placing session, then build mode), K blockers (debug).
+- UI POLISH (owner's request after step 9c; docs/UI-REFERENCE.md sections 2 to 4 hold the rules):
+  - Fonts: Pixelify Sans for letters; every digit comes from Jersey 15 (SIL OFL, client/src/fonts,
+    license next to it) through the @font-face 'Pixel Digits' with unicode-range 0-9, first in
+    --font. Never set a font-family without var(--font), or digits become unreadable again.
+  - ui.css parts: .frame (9-slice SVG border image: outline, wood with a light top-left edge,
+    corner nails, inner bevel; speckled parchment; 2 px hard shadow), .inset (darker section),
+    .slot, .btn (pressed = 2 px down without shadow; .on stays pressed and is warm orange;
+    disabled = flat and darker; .small = 36 px with a 44 px touch area), .plate (dark name plate),
+    .divider (line with diamonds), .price-short (red). All colours are Endesga 32; the frame
+    images are SVG data URIs in :root.
+  - ui/panelShell.ts: panelShell(parent, cls, title) -> { el, tabs, frame, title, body, strip }
+    (tabs on the top edge, a title plate, the scrolling body, a slim strip below), tabBar (icon
+    tabs; the open one is raised, orange and shows its name), iconBox, priceTag(price, gold).
+    Every side panel uses it. ui/layoutVars.ts watchLayout keeps --info-h and --bar-h (hotbar or
+    run bag height) on the UI root; ui.css places panels and toasts with them.
+  - Catalog: cards (2 columns on a phone, 3 from 681 px): big icon, name, price; a tap opens
+    "Buy this?". Too expensive = dimmed with a red price (the confirm panel shows it red, says
+    "Not enough gold." and greys out Buy). A tag only when it cannot go in the current room
+    ("Shop only", "Not here"), plus Floor / Wall and Owned for styles. Seeds: the confirm panel
+    has Buy 1 and Buy 5 (confirmBuy `more`, answer 'more'). confirmBuy takes `gold` and `title`.
+  - Bag: bagPanel.ts shownSlots = the rows up to the last filled slot plus one empty row (tested);
+    no gold in the bag; Sort and Stack sit in the strip below the panel.
+  - Icons: itemIcon.ts iconCanvasSize makes the icon canvas as big as the art, so icons fill
+    their slot. New pixel icons: more, hair, shirt, trousers, shoe.
+  - Look pickers: icon tabs; a style is a name plate ("Hair 2  Ponytail") between two small
+    square arrow buttons; the Avatar panel shows the display name on a plate.
+  - Panels pop in (scale 0.95 -> 1, 120 ms), off with prefers-reduced-motion.
+  - Checked with a headless browser at 360 x 740 and 1280 x 800 (all panels, confirm panels,
+    character creation, shop, farm, mine, dungeon).
 - GAME API (step 5): the client changes nothing itself. Walking, sitting, placing (only
   inventory items: placeItem), moving, rotating, picking up, the hotbar, the look and chat all
   go through GameAPI; item calls return the current room's items + the inventory furniture

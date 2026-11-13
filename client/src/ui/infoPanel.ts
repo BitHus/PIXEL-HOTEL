@@ -1,5 +1,5 @@
-// Top-left: one compact info panel (gold with a coin icon, the room name, the level with an xp
-// bar). In the dungeon (step 9) the room name becomes the floor and an hp bar shows. In the mine
+// Top-left: one compact info panel, two short lines (UI polish step): the coin and the gold, then
+// the room name and the level with a thin xp bar. In the dungeon (step 9) the room name becomes the floor and an hp bar shows. In the mine
 // (step 9c) the name is "Mine" and the lantern bar shows how long the lantern still burns. (The Hotel /
 // Shop switcher that sat under it is gone since step 9b: the Map button's travel panel replaced it.)
 
@@ -10,6 +10,8 @@ import { pixelIcon } from './pixelIcons.ts';
 export interface InfoPanel {
   /** The top-left column (the hint box goes under the info panel). */
   readonly column: HTMLElement;
+  /** The info panel itself (panels on a phone start under it). */
+  readonly panel: HTMLElement;
   /** Where coins fly to: the middle of the gold coin icon (screen px), read when called. */
   coinTarget(): () => { x: number; y: number };
   setGold(gold: number): void;
@@ -40,20 +42,26 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
   const goldText = el('span', '', '0');
   gold.append(pixelIcon('coin'), goldText);
   gold.title = 'Gold';
-  const name = el('div', 'info-room');
+  // Line 2: the room name, the level and a thin xp bar (the numbers are in its tooltip).
+  const line = el('div', 'info-line');
+  const name = el('span', 'info-room');
+  const level = el('span', 'level-badge', 'Lv 1');
+  const xpTrack = el('div', 'bar-track');
+  const xp = { root: line, fill: el('div', 'bar-fill'), text: el('span') };
+  xpTrack.append(xp.fill);
+  line.append(name, level, xpTrack);
   const hp = bar('hp-bar', pixelIcon('heart'));
   hp.root.hidden = true;
   hp.root.title = 'Health';
-  const level = el('span', 'level-badge', 'Lv 1');
-  const xp = bar('xp-bar', level);
   const lantern = bar('lantern-bar', pixelIcon('lantern'));
   lantern.root.hidden = true;
   lantern.root.title = 'Lantern: when it goes out, you walk out with everything';
-  info.append(gold, name, lantern.root, hp.root, xp.root);
+  info.append(gold, line, lantern.root, hp.root);
   box.append(info);
   parent.appendChild(box);
   return {
     column: box,
+    panel: info,
     coinTarget() {
       return () => {
         const r = (gold.querySelector('.pixel-icon') ?? gold).getBoundingClientRect();
@@ -70,7 +78,6 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
       level.textContent = `Lv ${lv}`;
       const part = next === null ? 1 : (total - prev) / Math.max(1, next - prev);
       xp.fill.style.width = `${Math.round(Math.min(1, Math.max(0, part)) * 100)}%`;
-      xp.text.textContent = next === null ? 'max' : `${total}/${next}`;
       xp.root.title = next === null ? `Level ${lv} (the top level)` : `Level ${lv}: ${total} of ${next} xp for level ${lv + 1}`;
     },
     setRun(run) {

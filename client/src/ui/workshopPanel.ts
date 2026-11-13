@@ -29,6 +29,7 @@ import {
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
+import { panelShell, priceTag, tabBar } from './panelShell.ts';
 import { pixelIcon, type IconName } from './pixelIcons.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
@@ -74,27 +75,25 @@ export function pieceEffect(g: GearPiece): string {
 const barsText = (bars: GearPiece['bars']): [BarId, number][] => Object.entries(bars) as [BarId, number][];
 
 export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): WorkshopPanel {
-  const panel = el('div', 'frame panel workshop-panel');
-  const tabs = el('div', 'tabs');
+  const shell = panelShell(parent, 'workshop-panel', 'Workshop');
+  const panel = shell.el;
   const list = el('div', 'catalog-list');
-  panel.append(el('h2', 'panel-title', 'Workshop'), tabs, list);
-  parent.appendChild(panel);
+  shell.body.append(list);
   let tab: WorkshopTab = 'crafting';
   let player: Player | null = null;
-  const tabButtons = (
+  const markTab = tabBar(
+    shell.tabs,
     [
-      ['crafting', 'Crafting'],
-      ['blacksmith', 'Blacksmith'],
-      ['forge', 'Forge'],
-    ] as const
-  ).map(([t, label]) => {
-    const b = textButton(label, () => {
+      ['crafting', 'hammer', 'Crafting'],
+      ['blacksmith', 'potion', 'Blacksmith'],
+      ['forge', 'workshop', 'Forge'],
+    ] as const,
+    (t) => {
       tab = t;
       draw();
-    }, 'tab');
-    tabs.appendChild(b);
-    return [t, b] as const;
-  });
+      shell.body.scrollTop = 0;
+    },
+  );
 
   const iconSlot = (content: HTMLElement | SVGSVGElement): HTMLElement => {
     const box = el('div', 'slot');
@@ -132,8 +131,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
   const gearRow = (g: GearType, p: Player): HTMLElement => {
     const row = el('div', 'catalog-row');
     const info = el('div', 'catalog-info');
-    const price = el('span', 'catalog-price');
-    price.append(pixelIcon('coin'), el('span', '', String(g.price)));
+    const price = priceTag(g.price, p.wallet.gold);
     info.append(el('div', 'catalog-name', g.name), el('div', 'catalog-sub', `${gearEffect(g)} You have ${p.potions}.`), price);
     const full = p.potions >= g.carryMax;
     const b = textButton(full ? 'Full' : 'Buy', () => hooks.buy(g));
@@ -202,7 +200,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
   const draw = (): void => {
     // The Forge has two columns on a wide screen.
     panel.classList.toggle('wide', tab === 'forge');
-    for (const [t, b] of tabButtons) b.classList.toggle('on', t === tab);
+    markTab(tab);
     list.replaceChildren();
     const p = player;
     if (!p) return;
