@@ -23,7 +23,11 @@ import {
   rotateInPlace,
   saveKey,
   seatFor,
-  setHotbarSlot,
+  arrangeState,
+  hotbarToBag,
+  moveSlot,
+  sortBag,
+  stackBag,
   standPointFor,
   startMovePlacing,
   startNewPlacing,
@@ -31,6 +35,9 @@ import {
   walkAvatar,
   type Avatar,
   type AvatarLook,
+  type BagTab,
+  type SlotLayout,
+  type SlotRef,
   type ChatLine,
   type FurnitureItem,
   type GameAPI,
@@ -104,7 +111,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     private readonly now: () => number,
     state: GameState,
   ) {
-    this.state = state;
+    this.state = arrangeState(state);
     this.walkState = this.doorWalk();
     this.grid = this.buildGrid();
   }
@@ -233,13 +240,22 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       furniture: this.state.items.filter((i) => i.roomId === null).map((i) => ({ ...i })),
       materials: { ...this.state.player.materials },
       hotbar: [...this.state.hotbar],
+      bag: structuredClone(this.state.bag),
     };
   }
 
-  async setHotbarSlot(index: number, typeId: string | null): Promise<(string | null)[]> {
-    if (typeId !== null && !FURNITURE_TYPES.some((t) => t.id === typeId)) return [...this.state.hotbar];
-    this.commit({ ...this.state, hotbar: setHotbarSlot(this.state.hotbar, index, typeId) });
-    return [...this.state.hotbar];
+  async moveSlot(from: SlotRef, to: SlotRef): Promise<SlotLayout | null> {
+    return this.setLayout(moveSlot(this.layout(), from, to));
+  }
+
+  async hotbarToBag(index: number): Promise<SlotLayout | null> {
+    return this.setLayout(hotbarToBag(this.layout(), index));
+  }
+
+  async tidyBag(tab: BagTab, how: 'sort' | 'stack'): Promise<SlotLayout> {
+    const l = this.layout();
+    if (tab !== 'furniture' && tab !== 'materials') return l;
+    return this.setLayout(how === 'sort' ? sortBag(l, tab) : stackBag(l, tab)) ?? l;
   }
 
   async setLook(look: AvatarLook): Promise<AvatarLook> {
@@ -317,8 +333,18 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   private commit(state: GameState): void {
-    this.state = state;
+    this.state = arrangeState(state);
     this.save();
+  }
+
+  private layout(): SlotLayout {
+    return structuredClone({ hotbar: this.state.hotbar, bag: this.state.bag });
+  }
+
+  private setLayout(l: SlotLayout | null): SlotLayout | null {
+    if (!l) return null;
+    this.commit({ ...this.state, hotbar: l.hotbar, bag: l.bag });
+    return this.layout();
   }
 
   private room(): Room {

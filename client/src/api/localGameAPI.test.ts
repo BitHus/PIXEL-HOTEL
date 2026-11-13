@@ -48,6 +48,37 @@ describe('LocalGameAPI', () => {
     expect(countInInventory((await api.getInventory()).furniture, 'chair')).toBe(1);
   });
 
+  it('the bag: hotbar and bag slots, a placed hotbar type keeps its slot, materials stay out of the hotbar', async () => {
+    const { api } = await filledGame();
+    await api.enterRoom(1);
+    let inv = await api.getInventory();
+    expect(inv.bag.furniture.slice(0, 3)).toEqual(['chair', 'sofa', 'table']);
+    expect(inv.bag.furniture).toHaveLength(36);
+    expect(inv.bag.materials.slice(0, 2)).toEqual(['wood', 'cloth']);
+    // Chair to the hotbar: it leaves the bag.
+    await api.moveSlot({ area: 'furniture', index: 0 }, { area: 'hotbar', index: 3 });
+    inv = await api.getInventory();
+    expect(inv.hotbar[3]).toBe('chair');
+    expect(inv.bag.furniture[0]).toBeNull();
+    // Place the only chair: the hotbar slot keeps it (dimmed), and Pick up brings it back there.
+    const chair = inv.furniture.find((i) => i.typeId === 'chair')!;
+    await api.placeItem(chair.uid, { center: { x: 100, y: 100 }, facing: 'down', snap: true });
+    expect((await api.getInventory()).hotbar[3]).toBe('chair');
+    await api.pickUpItem(chair.uid);
+    inv = await api.getInventory();
+    expect(inv.hotbar[3]).toBe('chair');
+    expect(inv.bag.furniture.includes('chair')).toBe(false);
+    // Materials cannot go in the hotbar.
+    expect(await api.moveSlot({ area: 'materials', index: 0 }, { area: 'hotbar', index: 0 })).toBeNull();
+    // Sort packs the tab in catalog order; hotbarToBag puts the chair in the first free slot.
+    await api.moveSlot({ area: 'furniture', index: 1 }, { area: 'furniture', index: 30 });
+    const sorted = await api.tidyBag('furniture', 'sort');
+    expect(sorted.bag.furniture.slice(0, 2)).toEqual(['sofa', 'table']);
+    const back = await api.hotbarToBag(3);
+    expect(back?.hotbar[3]).toBeNull();
+    expect(back?.bag.furniture[11]).toBe('chair');
+  });
+
   it('each room keeps its own furniture', async () => {
     const { api } = await filledGame();
     await api.enterRoom(1);
@@ -62,7 +93,7 @@ describe('LocalGameAPI', () => {
     await api.enterRoom(1);
     const lamp = (await api.getInventory()).furniture.find((i) => i.typeId === 'lamp')!;
     await api.placeItem(lamp.uid, { center: { x: 200, y: 150 }, facing: 'down', snap: true });
-    await api.setHotbarSlot(0, 'chair');
+    await api.moveSlot({ area: 'furniture', index: 0 }, { area: 'hotbar', index: 0 });
     await api.setLook({ skin: 1, hair: 2, hairStyle: 0, shirt: 3, legs: 4, shoes: 5 });
     const reloaded = LocalGameAPI.open(storage, clock);
     expect(reloaded.notice).toBeNull();
@@ -71,7 +102,7 @@ describe('LocalGameAPI', () => {
 
   it('export then import gives an identical state', async () => {
     const { api } = await filledGame();
-    await api.setHotbarSlot(2, 'bed');
+    await api.moveSlot({ area: 'furniture', index: 11 }, { area: 'hotbar', index: 2 });
     const file = api.exportSave();
     const other = LocalGameAPI.open(memoryStorage(), clock).api;
     expect(other.importSave(file)).toEqual({ ok: true });
@@ -88,6 +119,15 @@ describe('LocalGameAPI', () => {
     const r = LocalGameAPI.open(storage, clock);
     expect(r.notice).toMatch(/backup/);
     expect(r.api.snapshot()).toEqual(api.snapshot());
+  });
+
+  it('updates a version 1 save and fills its bag layout from the inventory', () => {
+    const storage = memoryStorage();
+    const { bag: _bag, ...v1 } = createNewPlayer(undefined, 1);
+    storage.set(saveKey(1), JSON.stringify({ version: 1, savedAt: 1, state: v1 }));
+    const r = LocalGameAPI.open(storage, clock);
+    expect(r.notice).toMatch(/updated/);
+    expect(r.api.snapshot().bag.materials.slice(0, 2)).toEqual(['wood', 'cloth']);
   });
 
   it('resets with a message when the save version is too old to migrate', () => {

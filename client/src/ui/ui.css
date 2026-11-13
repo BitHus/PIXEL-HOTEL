@@ -1,5 +1,7 @@
-/* The UI overlay style (step 5). ONE frame style for every panel, button and slot: dark wood
-   (palette browns), a dark warm outline, a lighter top edge, square corners, the pixel font.
+/* The UI overlay style (step 5, docs/UI-REFERENCE.md section 3). ONE frame style for every
+   panel, button and slot: a light parchment fill, a thick wooden border (1 px darkest brown
+   outside, 3 px mid brown, 1 px lighter inner edge), dark brown text, square corners, the pixel
+   font. Slots are a shade darker than the panel with a darker inset edge.
    Layout rule (also in CLAUDE.md): the room fills the screen; UI sits at the edges on top of it.
    Top-left: info panel + room switcher. Right edge: the icon button column; panels open to its
    left. Bottom center: the hotbar. Toasts just above the hotbar. */
@@ -25,12 +27,16 @@
   --wood-light: #b86f50;
   --wood-hi: #e4a672;
   --cream: #ead4aa;
+  --parch: #ead4aa;
+  --slot-bg: #e4a672;
   --warm: #feae34;
+  --select: #f77622;
+  --text: #3e2731;
   --ok: #265c42;
   --no: #a22633;
-  --muted: #8b9bb4;
   --px: 2px; /* one UI pixel */
   --touch: 44px;
+  --slot: 48px;
   --edge: 8px;
   --side-col: calc(var(--touch) + 2 * var(--edge));
   --font: 'Pixelify Sans', monospace;
@@ -38,20 +44,20 @@
 
 #ui {
   font: 16px/1.2 var(--font);
-  color: var(--cream);
+  color: var(--text);
 }
 
 /* ---------- The frame style ---------- */
 .frame,
 .btn,
 .float-bar button {
-  background: var(--wood);
-  border: var(--px) solid var(--outline);
+  background: var(--parch);
+  border: 3px solid var(--wood);
   border-radius: 0;
   box-shadow:
-    inset 0 var(--px) 0 var(--wood-light),
-    0 var(--px) 0 rgba(24, 20, 37, 0.6);
-  color: var(--cream);
+    0 0 0 1px var(--outline),
+    inset 0 0 0 1px var(--wood-hi);
+  color: var(--text);
   font: inherit;
   font-family: var(--font);
   pointer-events: auto;
@@ -75,21 +81,22 @@
 
 .btn:hover,
 .float-bar button:hover {
-  background: #7f4640;
+  background: #f1e2c4;
 }
 
 .btn:active,
 .float-bar button:active {
-  box-shadow: inset 0 var(--px) 0 var(--outline);
+  box-shadow:
+    0 0 0 1px var(--outline),
+    inset 0 var(--px) 0 var(--wood-light);
   transform: translateY(1px);
 }
 
 .btn.on {
-  background: var(--wood-light);
-  color: var(--night);
+  background: var(--slot-bg);
   box-shadow:
-    inset 0 var(--px) 0 var(--wood-hi),
-    0 var(--px) 0 rgba(24, 20, 37, 0.6);
+    0 0 0 1px var(--outline),
+    inset 0 var(--px) 0 var(--wood-light);
 }
 
 .btn:focus-visible,
@@ -101,6 +108,9 @@
 .icon-btn {
   width: var(--touch);
   height: var(--touch);
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
   padding: 0;
   display: grid;
   place-items: center;
@@ -115,12 +125,12 @@
 /* ---------- Slots (hotbar and bag) ---------- */
 .slot {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: var(--slot);
+  height: var(--slot);
   box-sizing: border-box;
-  background: var(--outline);
-  border: var(--px) solid var(--night);
-  box-shadow: inset var(--px) var(--px) 0 var(--night);
+  background: var(--slot-bg);
+  border: var(--px) solid var(--wood-light);
+  box-shadow: inset 1px 1px 0 var(--wood);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -133,14 +143,22 @@
 
 .slot.empty {
   cursor: default;
-  opacity: 0.6;
 }
 
 .slot.selected {
-  border-color: var(--warm);
+  border-color: var(--select);
   box-shadow:
-    inset var(--px) var(--px) 0 var(--night),
-    0 0 0 var(--px) var(--outline);
+    inset 0 0 0 var(--px) var(--warm),
+    0 0 0 1px var(--outline);
+}
+
+.slot.carried {
+  border-color: var(--select);
+  border-style: dashed;
+}
+
+.slot.carried .slot-icon {
+  opacity: 0.4;
 }
 
 .slot.dim .slot-icon {
@@ -148,8 +166,8 @@
 }
 
 .slot-icon {
-  width: 40px;
-  height: 40px;
+  width: calc(var(--slot) - 8px);
+  height: calc(var(--slot) - 8px);
   image-rendering: pixelated;
   pointer-events: none;
 }
@@ -167,6 +185,23 @@
     0 1px var(--night),
     0 -1px var(--night);
   pointer-events: none;
+}
+
+/* Hotbar numbers (desktop only: keys 1-6). */
+.slot-key {
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--wood);
+  pointer-events: none;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .slot-key {
+    display: none;
+  }
 }
 
 /* ---------- Top-left: info panel and room switcher ---------- */
@@ -192,7 +227,7 @@
   gap: 6px;
   font-weight: 700;
   font-size: 18px;
-  color: var(--warm);
+  color: var(--text);
 }
 
 .info-gold .pixel-icon {
@@ -237,7 +272,7 @@
 
 @keyframes choose {
   50% {
-    border-color: var(--warm);
+    border-color: var(--select);
   }
 }
 
@@ -263,10 +298,26 @@
 
 .panel-title {
   margin: 0;
+  min-height: var(--touch);
+  padding-right: calc(var(--touch) + 4px);
   font-size: 18px;
+  line-height: var(--touch);
   font-weight: 700;
-  color: var(--warm);
+  color: var(--wood);
 }
+
+/* The ✗ in a panel's top-right corner. */
+.panel-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: var(--touch);
+  height: var(--touch);
+  min-width: 0;
+  padding: 0;
+  font-size: 20px;
+}
+
 
 .panel-info {
   font-size: 14px;
@@ -282,7 +333,7 @@
 .panel-section h3 {
   margin: 6px 0 0;
   font-size: 14px;
-  color: var(--wood-hi);
+  color: var(--wood);
 }
 
 .tabs {
@@ -296,12 +347,174 @@
   padding: 4px 6px;
 }
 
-.slot-grid {
+/* ---------- The Bag (docs/UI-REFERENCE.md section 4) ---------- */
+/* A grid: tabs on top, the frame with Sort / Stack beside it, the gold strip under it. */
+.panel.bag {
+  width: auto;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 48px);
+  grid-template-areas:
+    'tabs .'
+    'frame tools'
+    'foot .';
+  grid-template-columns: auto auto;
+  gap: 4px 6px;
+  pointer-events: none;
+}
+
+.panel.bag[hidden] {
+  display: none;
+}
+
+.bag-tabs {
+  grid-area: tabs;
+  display: flex;
   gap: 4px;
-  justify-content: center;
+  align-items: flex-end;
+}
+
+.bag-tab {
+  pointer-events: auto;
+}
+
+.bag-tab.on {
+  width: auto;
+  padding: 0 10px 0 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.bag-tab-name {
+  display: none;
+  font-weight: 700;
+}
+
+.bag-tab.on .bag-tab-name {
+  display: inline;
+}
+
+.bag-body {
+  display: contents;
+}
+
+.bag-frame {
+  grid-area: frame;
+  position: relative;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The bag's ✗ sits on the frame's corner, half outside it. */
+.bag-frame .panel-close {
+  top: -16px;
+  right: -16px;
+}
+
+.bag-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--bag-cols), var(--slot));
+  gap: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: max(104px, calc(100dvh - 330px));
   touch-action: pan-y;
+}
+
+.bag-hotbar-row {
+  max-height: none;
+  overflow: visible;
+}
+
+.bag-line {
+  height: var(--px);
+  background: var(--wood-light);
+  box-shadow: 0 1px 0 var(--wood-hi);
+}
+
+.bag-info {
+  max-width: calc(var(--bag-cols) * (var(--slot) + 4px));
+  min-height: 2.4em;
+}
+
+.bag-tools {
+  grid-area: tools;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 36px;
+}
+
+.bag-tools .btn {
+  pointer-events: auto;
+}
+
+.bag-gold {
+  grid-area: foot;
+  justify-self: end;
+  align-self: start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  font-weight: 700;
+}
+
+.bag-gold .pixel-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Phone: the bag is a bottom sheet above the hotbar with 6 columns; Sort and Stack move under
+   it (left of the gold strip) and the ✗ goes to the right end of the tab row. */
+@media (max-width: 680px) {
+  #ui {
+    --slot: 44px;
+  }
+
+  .panel.bag {
+    top: auto;
+    left: calc(var(--edge) + env(safe-area-inset-left));
+    right: auto;
+    bottom: calc(2 * var(--edge) + var(--slot) + 20px + env(safe-area-inset-bottom));
+  }
+
+  .bag-grid {
+    grid-template-columns: repeat(var(--bag-cols-phone), var(--slot));
+    max-height: max(96px, calc(100dvh - 400px));
+  }
+
+  .panel.bag {
+    grid-template-areas:
+      'tabs'
+      'frame'
+      'foot';
+    grid-template-columns: auto;
+  }
+
+  .bag-info {
+    max-width: calc(var(--bag-cols-phone) * (var(--slot) + 4px));
+    min-height: 0;
+  }
+
+  .bag-tools {
+    grid-area: foot;
+    justify-self: start;
+    flex-direction: row;
+    margin: 0;
+  }
+
+  .bag-frame .panel-close {
+    top: calc(-1 * var(--touch) - 7px);
+    right: -3px;
+  }
+
+  .bag-gold {
+    align-self: center;
+  }
 }
 
 .swatch-grid {
@@ -347,8 +560,9 @@
   height: 180px;
   overflow-y: auto;
   padding: 6px;
-  background: var(--outline);
-  box-shadow: inset var(--px) var(--px) 0 var(--night);
+  background: #f1e2c4;
+  border: 1px solid var(--wood-light);
+  box-shadow: inset 1px 1px 0 var(--wood-light);
   font-size: 14px;
   user-select: text;
   -webkit-user-select: text;
@@ -356,11 +570,11 @@
 }
 
 .chat-line b {
-  color: var(--warm);
+  color: var(--no);
 }
 
 .chat-empty {
-  color: var(--muted);
+  color: var(--wood-light);
 }
 
 .chat-form {
@@ -436,6 +650,7 @@
 /* ---------- Toast and debug ---------- */
 .toast {
   position: absolute;
+  z-index: 5;
   left: 50%;
   bottom: calc(80px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
@@ -484,16 +699,18 @@
 
 .place-bar button.ok {
   background: var(--ok);
+  color: var(--cream);
 }
 
 .place-bar button.no {
   background: var(--no);
+  color: var(--cream);
 }
 
 .place-bar button:disabled {
-  background: #5a6988;
-  color: var(--muted);
-  opacity: 0.7;
+  background: var(--slot-bg);
+  color: var(--wood-light);
+  opacity: 0.8;
   cursor: default;
 }
 

@@ -33,6 +33,12 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.hotbar).toEqual(Array(HOTBAR_SLOTS).fill(null));
   });
 
+  it('puts the starting wood and cloth in the first two Materials slots of a 36-slot bag', () => {
+    expect(s.bag.materials.slice(0, 3)).toEqual(['wood', 'cloth', null]);
+    expect(s.bag.materials).toHaveLength(36);
+    expect(s.bag.furniture.every((x) => x === null)).toBe(true);
+  });
+
   it('writes the start gold and materials to the ledger', () => {
     expect(s.ledger).toEqual([
       { id: 1, at: 1234, playerId: s.player.id, reason: 'start', goldDelta: 100, materials: { wood: 4, cloth: 2 } },

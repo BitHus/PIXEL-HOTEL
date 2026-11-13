@@ -13,5 +13,6 @@ export * from './gameState.ts';
 export * from './ledger.ts';
 export * from './newPlayer.ts';
 export * from './inventory.ts';
+export * from './bag.ts';
 export * from './chat.ts';
 export * from './save.ts';

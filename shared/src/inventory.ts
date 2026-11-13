@@ -1,7 +1,6 @@
 // The inventory (step 5): furniture items with roomId null, stacked by type for the bag and the
-// hotbar, plus the material stacks. The hotbar holds furniture type ids. Pure functions.
+// hotbar, plus the material stacks. Where each stack sits is in bag.ts. Pure functions.
 
-import { HOTBAR_SLOTS } from './config.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
 import { MATERIAL_TYPES } from './materials.ts';
 import type { FurnitureItem, MaterialId } from './types.ts';
@@ -54,15 +53,3 @@ export function materialStacks(materials: Partial<Record<MaterialId, number>>): 
   return [...new Set(ids)].map((id) => ({ id, qty: materials[id] ?? 0 })).filter((s) => s.qty > 0);
 }
 
-/**
- * Puts a furniture type in a hotbar slot (null empties it). A type is in the hotbar at most once:
- * if it was in another slot, that slot gets what was in the target slot (they swap).
- */
-export function setHotbarSlot(hotbar: readonly (string | null)[], index: number, typeId: string | null): (string | null)[] {
-  const next = Array.from({ length: HOTBAR_SLOTS }, (_, i) => hotbar[i] ?? null);
-  if (!Number.isInteger(index) || index < 0 || index >= HOTBAR_SLOTS) return next;
-  const from = typeId === null ? -1 : next.indexOf(typeId);
-  if (from >= 0) next[from] = next[index] ?? null;
-  next[index] = typeId;
-  return next;
-}

@@ -3,6 +3,7 @@
 // a version without a migration path is refused ('too_old'), and the caller resets with a message.
 
 import { HOTBAR_SLOTS, SAVE_KEY_PREFIX, SAVE_VERSION } from './config.ts';
+import { emptyBag } from './bag.ts';
 import type { GameState } from './gameState.ts';
 
 export interface SaveFile {
@@ -19,9 +20,12 @@ export type LoadResult =
 
 /**
  * Migrations: MIGRATIONS[n] turns a version n state into a version n + 1 state. Add one each
- * time SAVE_VERSION goes up. (Version 1 is the first save format, so there are none yet.)
+ * time SAVE_VERSION goes up.
  */
-export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {};
+export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
+  // 1 -> 2: the bag got a slot layout. It starts empty; arrangeState fills it from the inventory.
+  1: (state) => (isObject(state) ? { ...state, bag: emptyBag() } : state),
+};
 
 /** The storage key for a save version. */
 export function saveKey(version = SAVE_VERSION): string {
@@ -73,6 +77,12 @@ export function isGameState(x: unknown): x is GameState {
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
   if (!Array.isArray(x.hotbar) || x.hotbar.length !== HOTBAR_SLOTS) return false;
   if (!x.hotbar.every((h) => h === null || typeof h === 'string')) return false;
+  const bag = x.bag;
+  if (!isObject(bag) || !isSlotList(bag.furniture) || !isSlotList(bag.materials)) return false;
   if (!isInt(x.currentRoomId) || !x.rooms.some((r) => isObject(r) && r.id === x.currentRoomId)) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
+}
+
+function isSlotList(x: unknown): boolean {
+  return Array.isArray(x) && x.every((h) => h === null || typeof h === 'string');
 }

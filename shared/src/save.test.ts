@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readSave, saveKey, toSaveText } from './save.ts';
-import { createNewPlayer } from './newPlayer.ts';
+import { arrangeState, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { SAVE_VERSION } from './config.ts';
 
@@ -23,5 +23,16 @@ describe('save files', () => {
       ok: false,
       problem: 'invalid',
     });
+    expect(readSave(JSON.stringify({ version: SAVE_VERSION, state: { ...state, bag: null } }))).toMatchObject({ problem: 'invalid' });
+  });
+  it('migrates a version 1 save (no bag layout) to an empty layout that arrangeState fills', () => {
+    const { bag: _bag, ...v1 } = state;
+    const r = readSave(JSON.stringify({ version: 1, savedAt: 0, state: v1 }));
+    expect(r).toMatchObject({ ok: true, version: 1, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.bag.furniture.every((s) => s === null)).toBe(true);
+    const arranged = arrangeState(r.state);
+    expect(arranged.bag.furniture.slice(0, 2)).toEqual(['chair', 'rug']);
+    expect(arranged.bag.materials.slice(0, 2)).toEqual(['wood', 'cloth']);
   });
 });

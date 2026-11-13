@@ -11,11 +11,10 @@ import {
   countInInventory,
   fitZoom,
   fitsRoomKind,
-  furnitureStacks,
+  isMaterialId,
   getFurnitureType,
   introZoom,
   itemBlockers,
-  materialStacks,
   roomBoundsRect,
   screenToWorld,
   seatFor,
@@ -298,10 +297,8 @@ async function start(): Promise<void> {
   let selectedSlot: number | null = null;
   const hotbar = createHotbar(ui, {
     onTap: (index) => {
-      if (bag.carrying !== null) {
-        const typeId = bag.carrying;
-        bag.endCarry();
-        void api.setHotbarSlot(index, typeId).then(() => refreshInventory());
+      if (bag.carrying) {
+        bag.dropOn({ area: 'hotbar', index });
         return;
       }
       const typeId = inventory.hotbar[index];
@@ -316,24 +313,45 @@ async function start(): Promise<void> {
     },
     onHold: (index) => {
       if (!inventory.hotbar[index]) return;
-      void api.setHotbarSlot(index, null).then(() => refreshInventory());
-      toast('Removed from the hotbar.');
+      void api.hotbarToBag(index).then(() => refreshInventory());
+      toast('Moved to the bag.');
     },
   });
   const bag = createBagPanel(ui, {
     onPlace: (typeId) => {
+      if (countInInventory(inventory.furniture, typeId) === 0) {
+        toast(`No ${getFurnitureType(typeId).name} left in the bag.`);
+        return;
+      }
+      const index = inventory.hotbar.indexOf(typeId);
+      selectedSlot = index >= 0 ? index : selectedSlot;
+      hotbar.setSelected(selectedSlot);
       if (startPlacing(typeId)) panels.close();
     },
-    onAssign: (index, typeId) => void api.setHotbarSlot(index, typeId).then(() => refreshInventory()),
+    onMove: (from, to) => {
+      void api.moveSlot(from, to).then((l) => {
+        if (!l) toast('That cannot go there.');
+        return refreshInventory();
+      });
+    },
+    onTidy: (tab, how) => void api.tidyBag(tab, how).then(() => refreshInventory()),
     onCarry: (on) => hotbar.setChoosing(on),
   });
-  panels.add('bag', bag.el, undefined, () => bag.endCarry());
+  panels.add('bag', bag.el, undefined, () => bag.endCarry(), bag.frame);
 
   async function refreshInventory(): Promise<void> {
     inventory = await api.getInventory();
     const p = await api.getPlayer();
     info.setGold(p.wallet.gold);
-    bag.refresh(furnitureStacks(inventory.furniture), materialStacks(inventory.materials));
+    const materials = inventory.materials;
+    const usable = (typeId: string): boolean =>
+      countInInventory(inventory.furniture, typeId) > 0 && fitsRoomKind(getFurnitureType(typeId), room);
+    bag.refresh({
+      layout: { hotbar: inventory.hotbar, bag: inventory.bag },
+      count: (id) => (isMaterialId(id) ? (materials[id] ?? 0) : countInInventory(inventory.furniture, id)),
+      usable,
+      gold: p.wallet.gold,
+    });
     hotbar.refresh(
       inventory.hotbar.map((typeId) => {
         if (typeId === null) return { typeId, count: 0, usable: false, name: '' };

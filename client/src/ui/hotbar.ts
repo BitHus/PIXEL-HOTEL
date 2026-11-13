@@ -1,7 +1,8 @@
 // The hotbar (step 5): one row of HOTBAR_SLOTS square slots, centered at the bottom, in a dark
 // wood frame. Icons only; a small count in the corner for stacks. A slot whose type is not in
 // the inventory (or cannot go in this room) is dimmed. The last used slot gets a bright border.
-// Tap a slot: place that item (main.ts). Long-press a slot: empty it. Keys 1-6 tap a slot.
+// Tap a slot: place that item (main.ts). Long-press a slot: move it back to the bag. Keys 1-6
+// tap a slot. Slots carry data-area="hotbar" so a stack dragged from the bag can drop on them.
 
 import { HOTBAR_SLOTS } from '@pixel-hotel/shared';
 import { el, typing } from './dom.ts';
@@ -35,13 +36,14 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
   const slots: { root: HTMLElement; img: HTMLImageElement; count: HTMLElement }[] = [];
   for (let i = 0; i < HOTBAR_SLOTS; i++) {
     const root = el('div', 'slot hotbar-slot');
+    root.dataset.area = 'hotbar';
     root.dataset.index = String(i);
     root.setAttribute('role', 'button');
     const img = el('img', 'slot-icon');
     img.alt = '';
     img.draggable = false;
     const count = el('span', 'slot-count');
-    root.append(img, count);
+    root.append(el('span', 'slot-key', String(i + 1)), img, count);
     attachPress(root, { onTap: () => hooks.onTap(i), onHold: () => hooks.onHold(i) });
     bar.appendChild(root);
     slots.push({ root, img, count });
