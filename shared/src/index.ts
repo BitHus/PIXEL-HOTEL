@@ -8,6 +8,7 @@ export * from './api.ts';
 export * from './palette.ts';
 export * from './furniture.ts';
 export * from './placing.ts';
+export * from './seats.ts';
 export * from './materials.ts';
 export * from './gameState.ts';
 export * from './ledger.ts';

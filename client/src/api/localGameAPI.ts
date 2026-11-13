@@ -9,7 +9,6 @@ import {
   PALETTE,
   SAVE_BACKUP_KEY,
   SAVE_VERSION,
-  SIT_REACH_PX,
   applyChange,
   buildNavGrid,
   cleanChatText,
@@ -22,13 +21,14 @@ import {
   readSave,
   rotateInPlace,
   saveKey,
-  seatFor,
+  onSeat,
+  planSit,
+  standUpSpot,
   arrangeState,
   hotbarToBag,
   moveSlot,
   sortBag,
   stackBag,
-  standPointFor,
   startMovePlacing,
   startNewPlacing,
   toSaveText,
@@ -49,7 +49,7 @@ import {
   type PlacingSession,
   type Player,
   type Point,
-  type Pose,
+  type SeatSpot,
   type Rect,
   type Room,
   type RoomState,
@@ -92,10 +92,10 @@ interface WalkState {
   avatar: Avatar;
   path: Point[];
   at: number;
-  /** Sits on this seat when the path ends. */
-  sitOn: { uid: number; pose: Pose } | null;
-  /** The seat the avatar is sitting on. */
-  seatUid: number | null;
+  /** Sits (or lies) on this seat when the path ends. */
+  sitOn: { uid: number; seat: SeatSpot } | null;
+  /** The item and seat index the avatar is sitting or lying on. */
+  seated: { uid: number; index: number } | null;
 }
 
 export class LocalGameAPI implements GameAPI, LocalSaves {
@@ -188,23 +188,22 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const avatar = this.avatarNow();
     const path = findPath(this.grid, avatar, to);
     if (!path) return null;
-    this.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seatUid: null };
+    this.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seated: null };
     return path;
   }
 
-  async sit(uid: number): Promise<SitResult | null> {
-    const seat = this.roomItem(uid);
-    if (!seat) return null;
-    const type = getFurnitureType(seat.typeId);
-    if (!type.sittable) return null;
-    const front = standPointFor(seat, type);
+  async sit(uid: number, tap?: Point): Promise<SitResult | null> {
+    const item = this.roomItem(uid);
+    if (!item || (tap !== undefined && !finitePoint(tap))) return null;
+    const type = getFurnitureType(item.typeId);
     const avatar = this.avatarNow();
-    const path = findPath(this.grid, avatar, front);
-    const end = path?.[path.length - 1];
-    if (!path || !end || Math.hypot(end.x - front.x, end.y - front.y) > SIT_REACH_PX) return null;
-    const pose = seatFor(seat, type);
-    this.walkState = { avatar: { ...avatar, state: 'walk' }, path: path.slice(1), at: this.now(), sitOn: { uid, pose }, seatUid: null };
-    return { path, seat: pose };
+    // Seats taken by other avatars (only the own avatar exists until step 10).
+    const taken: number[] = [];
+    const plan = planSit(this.grid, avatar, item, type, tap ?? null, taken);
+    if (!plan) return null;
+    const { path, seat } = plan;
+    this.walkState = { avatar: { ...avatar, state: 'walk' }, path: path.slice(1), at: this.now(), sitOn: { uid, seat }, seated: null };
+    return { path, seat };
   }
 
   async getItems(): Promise<FurnitureItem[]> {
@@ -376,14 +375,15 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   private setItems(items: FurnitureItem[]): FurnitureItem[] {
     this.commit({ ...this.state, items });
     this.grid = this.buildGrid();
-    // The seat moved or was picked up: stand up where you are.
+    // The seat moved or was picked up: stand up next to it on a free spot.
+    this.avatarNow();
     const w = this.walkState;
-    if (w.seatUid !== null) {
-      const seat = this.roomItem(w.seatUid);
-      const pose = seat && seatFor(seat, getFurnitureType(seat.typeId));
+    if (w.seated !== null) {
+      const item = this.roomItem(w.seated.uid);
       const a = w.avatar;
-      if (!pose || pose.x !== a.x || pose.y !== a.y || pose.facing !== a.facing) {
-        this.walkState = { ...w, avatar: { ...a, state: 'idle' }, seatUid: null };
+      if (!onSeat(a, item, item && getFurnitureType(item.typeId), w.seated.index)) {
+        const spot = standUpSpot(this.grid, a);
+        this.walkState = { ...w, avatar: { ...a, ...spot, state: 'idle' }, seated: null };
       }
     }
     return this.visibleItems();
@@ -407,18 +407,19 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       facing: 'up',
       state: 'idle',
     };
-    return { avatar, path: [], at: this.now(), sitOn: null, seatUid: null };
+    return { avatar, path: [], at: this.now(), sitOn: null, seated: null };
   }
 
   /** Where the own avatar is now (it walks by time), and sits down when it reached a seat. */
   private avatarNow(): Avatar {
     const w = this.walkState;
     const now = this.now();
-    if (w.avatar.state === 'sit') return w.avatar;
+    if (w.avatar.state === 'sit' || w.avatar.state === 'lie') return w.avatar;
     const r = walkAvatar(w.avatar, w.path, Math.max(0, now - w.at));
     let next: WalkState = { ...w, avatar: r.avatar, path: r.path, at: now };
     if (r.path.length === 0 && w.sitOn) {
-      next = { ...next, avatar: { ...r.avatar, ...w.sitOn.pose, state: 'sit' }, sitOn: null, seatUid: w.sitOn.uid };
+      const { x, y, facing, pose, index } = w.sitOn.seat;
+      next = { ...next, avatar: { ...r.avatar, x, y, facing, state: pose }, sitOn: null, seated: { uid: w.sitOn.uid, index } };
     }
     this.walkState = next;
     return next.avatar;

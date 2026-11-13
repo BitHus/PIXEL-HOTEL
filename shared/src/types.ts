@@ -50,6 +50,8 @@ export interface ArtBox {
   z: number;
   h: number;
   color: number;
+  /** Optional part name: 'pillow' (where a lying head goes), 'cover' (drawn again over a lying avatar). */
+  role?: 'pillow' | 'cover';
 }
 
 export type FurnitureArt = { boxes: ArtBox[] } | { sprite: string };
@@ -77,10 +79,21 @@ export interface FurnitureType {
   facings: Facing[];
   /** Where a customer stands, relative to the anchor. Default { dx: 0, dy: 24 }. */
   standPoint: { dx: number; dy: number };
+  /** Places to sit or lie (step 5b), relative to the anchor for the 'down' facing; turned with the item. */
+  seats: Seat[];
   baseValue: number;
   rarity: Rarity;
   inCatalog: boolean;
   art: FurnitureArt;
+}
+
+export type SeatPoseKind = 'sit' | 'lie';
+
+/** A seat for the 'down' facing: (dx, dy) from the anchor; for 'lie' it is the middle of the body. */
+export interface Seat {
+  dx: number;
+  dy: number;
+  pose: SeatPoseKind;
 }
 
 export interface FurnitureItem {

@@ -48,6 +48,30 @@ describe('LocalGameAPI', () => {
     expect(countInInventory((await api.getInventory()).furniture, 'chair')).toBe(1);
   });
 
+  it('lies in the bed from the nearest side, and stands next to it when the bed is moved', async () => {
+    const { api } = await filledGame();
+    await api.enterRoom(1); // avatar in the door zone (288, ~360)
+    const bed = (await api.getInventory()).furniture.find((i) => i.typeId === 'bed')!;
+    await api.placeItem(bed.uid, { center: { x: 160, y: 160 }, facing: 'down', snap: true });
+    const r = await api.sit(bed.uid);
+    expect(r?.seat.pose).toBe('lie');
+    t += 60_000; // long arrived
+    // The next walk starts on the bed (the avatar was lying there).
+    const from = (await api.walk({ x: 400, y: 200 }))![0]!;
+    expect(from).toEqual({ x: r!.seat.x, y: r!.seat.y });
+    // Lie down again, then nudge the bed: the avatar stands next to it on a free spot.
+    await api.sit(bed.uid);
+    t += 60_000;
+    await api.moveItem(bed.uid, { center: { x: 176, y: 160 }, facing: 'down', snap: true });
+    const stood = (await api.walk({ x: 288, y: 300 }))![0]!;
+    expect(stood).not.toEqual({ x: r!.seat.x, y: r!.seat.y });
+    expect(Math.hypot(stood.x - r!.seat.x, stood.y - r!.seat.y)).toBeLessThan(64);
+    // Not an item with seats: refused.
+    const table = (await api.getInventory()).furniture.find((i) => i.typeId === 'table')!;
+    await api.placeItem(table.uid, { center: { x: 160, y: 260 }, facing: 'down', snap: true });
+    expect(await api.sit(table.uid)).toBeNull();
+  });
+
   it('the bag: hotbar and bag slots, a placed hotbar type keeps its slot, materials stay out of the hotbar', async () => {
     const { api } = await filledGame();
     await api.enterRoom(1);

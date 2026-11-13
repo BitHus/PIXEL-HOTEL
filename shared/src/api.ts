@@ -6,7 +6,7 @@ import type { FurnitureItem, MaterialId, Player, Point, Facing } from './types.t
 import type { Avatar, AvatarLook } from './avatar.ts';
 import type { Room } from './room.ts';
 import type { ChatLine } from './gameState.ts';
-import type { Pose } from './furniture.ts';
+import type { SeatSpot } from './seats.ts';
 import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
 
 export interface RoomState {
@@ -36,10 +36,10 @@ export interface PlaceAt {
 }
 
 export interface SitResult {
-  /** Path to the front of the seat (starts at the avatar). */
+  /** Path to the seat's nearest reachable approach point (starts at the avatar). */
   path: Point[];
-  /** Where the avatar sits on arrival. */
-  seat: Pose;
+  /** The seat the avatar slides onto on arrival (SEAT_SLIDE_MS), and its pose (sit or lie). */
+  seat: SeatSpot;
 }
 
 /**
@@ -57,8 +57,11 @@ export interface GameAPI {
   enterRoom(roomId: number): Promise<RoomState>;
   /** Ask to walk to a world point. Returns the path (world points, starting at the avatar) or null. */
   walk(to: Point): Promise<Point[] | null>;
-  /** Walk to the front of a sittable item and sit. Null if it cannot be reached. */
-  sit(uid: number): Promise<SitResult | null>;
+  /**
+   * Walk to an item with seats and sit or lie on it: the free seat nearest to `tap` (world px),
+   * reached from its nearest reachable side. Null if no free seat can be reached.
+   */
+  sit(uid: number, tap?: Point): Promise<SitResult | null>;
   /** The current room's items and the inventory furniture (see ItemsResult). */
   getItems(): Promise<FurnitureItem[]>;
   /** Place an inventory item in the current room. */

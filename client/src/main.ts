@@ -17,7 +17,8 @@ import {
   itemBlockers,
   roomBoundsRect,
   screenToWorld,
-  seatFor,
+  hasSeats,
+  standUpSpot,
   snapCamera,
   walkAvatar,
   worldToScreen,
@@ -27,7 +28,6 @@ import {
   type Inventory,
   type ItemsResult,
   type Point,
-  type Pose,
   type Rect,
   type Room,
   type RoomKind,
@@ -45,6 +45,7 @@ import { BlockersDebug } from './debug/blockers.ts';
 import { createBlockersButton } from './ui/blockersButton.ts';
 import { ItemViews } from './render/itemViews.ts';
 import { avatarDepthKey } from './render/depthOrder.ts';
+import { Seating } from './render/seating.ts';
 import { Placer } from './build/placer.ts';
 import { createPlaceBar } from './ui/placeBar.ts';
 import { createItemMenu } from './ui/itemMenu.ts';
@@ -100,10 +101,9 @@ async function start(): Promise<void> {
   /** Points the avatar still has to walk to, and where it was sent (to re-path when the room changes). */
   let path: Point[] = [];
   let goal: Point | null = null;
-  /** The seat the avatar is walking to (sits on arrival), and the one it sits on. */
-  let seatGoal: { uid: number; pose: Pose } | null = null;
-  let seatUid: number | null = null;
   const sprite = new AvatarSprite(avatar.look);
+  /** The seat the avatar walks to, slides onto, and sits or lies on. */
+  const seating = new Seating(sprite);
   view.objects.add(sprite.container, avatarDepthKey(avatar));
 
   /** Starts walking along a path from the API (it starts where the API thinks the avatar is). */
@@ -112,7 +112,7 @@ async function start(): Promise<void> {
     // Only jump when the API's start point is clearly elsewhere (tiny timing differences are walked off).
     if (first && Math.hypot(first.x - avatar.x, first.y - avatar.y) > 8) avatar = { ...avatar, x: first.x, y: first.y };
     path = p.slice(1);
-    seatUid = null;
+    seating.clear();
     avatar = { ...avatar, state: path.length > 0 ? 'walk' : 'idle' };
   };
   /** Walks to a world point (the nearest free spot if it is blocked). False if unreachable. */
@@ -121,21 +121,20 @@ async function start(): Promise<void> {
     if (!p) return false;
     follow(p);
     goal = to;
-    seatGoal = null;
     return true;
   };
-  /** Walks to the front of a sittable item and sits down on arrival. */
-  const sitOn = async (uid: number): Promise<boolean> => {
-    const r = await api.sit(uid);
+  /** Walks to the nearest reachable side of an item's free seat (nearest the tap) and sits or lies on arrival. */
+  const sitOn = async (uid: number, tap: Point | null): Promise<boolean> => {
+    const r = await api.sit(uid, tap ?? undefined);
     if (!r) return false;
     follow(r.path);
     goal = null;
-    seatGoal = { uid, pose: r.seat };
+    seating.goal = { uid, seat: r.seat, tap };
     return true;
   };
   const stop = (): void => {
     path = [];
-    seatGoal = null;
+    seating.goal = null;
     if (avatar.state === 'walk') avatar = { ...avatar, state: 'idle' };
   };
 
@@ -154,18 +153,15 @@ async function start(): Promise<void> {
   /** Furniture or debug blockers changed: redraw the debug overlay and re-path a walking avatar. */
   const roomChanged = (): void => {
     blockers.showGrid(buildNavGrid(room, [...blockers.rects, ...itemBlockers(items, room.id)]));
-    // The seat was moved or picked up: stand up where you are.
-    if (seatUid !== null) {
-      const seat = roomItem(seatUid);
-      const pose = seat && seatFor(seat, getFurnitureType(seat.typeId));
-      if (!pose || pose.x !== avatar.x || pose.y !== avatar.y || pose.facing !== avatar.facing) {
-        seatUid = null;
-        avatar = { ...avatar, state: 'idle' };
-      }
+    // The seat was moved or picked up: stand up next to it on a free spot (as the GameAPI does).
+    const seated = seating.seated;
+    if (seated !== null && !seating.stillThere(roomItem(seated.uid))) {
+      const grid = buildNavGrid(room, [...blockers.rects, ...itemBlockers(items, room.id)]);
+      avatar = seating.standUp(avatar, standUpSpot(grid, seated.seat));
     }
-    if (seatGoal !== null) {
-      const target = seatGoal.uid;
-      void sitOn(target).then((ok) => ok || stop());
+    if (seating.goal !== null) {
+      const { uid, tap } = seating.goal;
+      void sitOn(uid, tap).then((ok) => ok || stop());
     } else if (path.length > 0 && goal) {
       void walkTo(goal).then((ok) => ok || stop());
     }
@@ -443,8 +439,7 @@ async function start(): Promise<void> {
     if (mine) avatar = { ...mine, look: avatar.look };
     path = [];
     goal = null;
-    seatGoal = null;
-    seatUid = null;
+    seating.clear();
     marked = null;
     itemViews.sync(items, placer.hiddenUids());
     roomChanged();
@@ -495,10 +490,11 @@ async function start(): Promise<void> {
         panels.close();
         return;
       }
-      // A sittable item: walk there and sit (it shakes if it cannot be reached). Any other item
-      // is ignored: walk to the point (a blocked point walks to the nearest free cell).
-      if (hit && getFurnitureType(hit.typeId).sittable) {
-        void sitOn(hit.uid).then((ok) => ok || itemViews.shake(hit.uid));
+      // An item with seats: walk to its nearest free side, then sit or lie (it shakes if no seat
+      // can be reached). Any other item is ignored: walk to the point (a blocked point walks to
+      // the nearest free cell).
+      if (hit && hasSeats(getFurnitureType(hit.typeId))) {
+        void sitOn(hit.uid, marked).then((ok) => ok || itemViews.shake(hit.uid));
         return;
       }
       const to = marked;
@@ -525,19 +521,13 @@ async function start(): Promise<void> {
     if (step) setCamera(step.camera, step.done);
     control.update(ticker.deltaMS);
     clockMs += ticker.deltaMS;
-    if (avatar.state !== 'sit') ({ avatar, path } = walkAvatar(avatar, path, ticker.deltaMS));
-    if (path.length === 0 && seatGoal !== null) {
-      const target = roomItem(seatGoal.uid);
-      // Arrived in front of the seat: sit on it, facing the way it faces.
-      if (target) {
-        avatar = { ...avatar, ...seatGoal.pose, state: 'sit' };
-        seatUid = target.uid;
-      }
-      seatGoal = null;
-    }
+    if (!seating.busy) ({ avatar, path } = walkAvatar(avatar, path, ticker.deltaMS));
+    // Arrived at the seat's approach point: take the pose and slide onto the seat.
+    if (path.length === 0 && seating.goal !== null) avatar = seating.arrive(avatar, roomItem(seating.goal.uid));
+    avatar = seating.update(avatar, ticker.deltaMS);
     itemViews.update(ticker.deltaMS);
     sprite.update(avatar, clockMs);
-    view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seatUid)));
+    view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));
     view.update();
     // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).
     placeBar.update(placer.screenBounds(), placer.valid);
