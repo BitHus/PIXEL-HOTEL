@@ -95,7 +95,9 @@ import { furnitureIconUrl, materialIconUrl } from './ui/itemIcon.ts';
 import { stylePreviewUrl } from './render/styleArt.ts';
 import { CustomerViews } from './render/customerViews.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
-import { createCatalogPanel } from './ui/catalogPanel.ts';
+import { WHERE, createCatalogPanel, growText } from './ui/catalogPanel.ts';
+import { SEED_PACK } from '@pixel-hotel/shared';
+import { watchLayout } from './ui/layoutVars.ts';
 import { createRoomPanel } from './ui/roomPanel.ts';
 import { flyCoin } from './ui/coinFly.ts';
 import { runNewGameSetup } from './ui/newGame.ts';
@@ -256,6 +258,8 @@ async function start(): Promise<void> {
   const label = createDebugLabel(ui);
   const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
   const panels = createPanels();
+  /** The player's gold as last read (for the "Buy this?" panels). */
+  let walletGold = 0;
   const info = createInfoPanel(ui);
   const hint = createHintBox(ui, info.column);
   const floats = createSaleFloats(ui);
@@ -435,7 +439,7 @@ async function start(): Promise<void> {
   const catalog = createCatalogPanel(ui, {
     buyItem: async (typeId) => {
       const t = getFurnitureType(typeId);
-      const sure = await confirmBuy(ui, { name: t.name, detail: 'Goes into your bag.', price: catalogPrice(typeId), image: furnitureIconUrl(typeId) });
+      const sure = await confirmBuy(ui, { name: t.name, detail: `Goes into your bag. For ${WHERE[t.placeIn]}.`, price: catalogPrice(typeId), image: furnitureIconUrl(typeId), gold: walletGold });
       if (!sure) return;
       void api.buyCatalog(typeId).then(async (r) => {
         if (!r) {
@@ -455,11 +459,23 @@ async function start(): Promise<void> {
         toast(`${type.name} is in your bag.`);
       });
     },
-    buySeeds: async (seed, qty) => {
+    buySeeds: async (seed) => {
       const m = getMaterialType(seed);
-      const price = (CROP_TYPES.find((c) => c.seed === seed)?.seedPrice ?? 0) * qty;
-      const sure = await confirmBuy(ui, { name: qty > 1 ? `${qty} ${m.name}` : m.name, detail: 'Goes into your hotbar or bag. Plant on your farm.', price, image: materialIconUrl(seed) });
+      const crop = CROP_TYPES.find((c) => c.seed === seed);
+      const price = crop?.seedPrice ?? 0;
+      const detail = crop ? `Plant on your farm: ripe in ${growText(crop)}, the crop is worth ${crop.baseValue}.` : 'Plant on your farm.';
+      const sure = await confirmBuy(ui, {
+        name: m.name,
+        detail,
+        price,
+        image: materialIconUrl(seed),
+        gold: walletGold,
+        title: 'Buy this?',
+        yes: 'Buy 1',
+        more: { label: `Buy ${SEED_PACK}`, price: price * SEED_PACK },
+      });
       if (!sure) return;
+      const qty = sure === 'more' ? SEED_PACK : 1;
       const ok = await api.buySeeds(seed, qty);
       toast(ok ? `${m.name}: ${qty} in your ${inventory.hotbar.includes(seed) || !inventory.bag.materials.includes(seed) ? 'hotbar' : 'bag'}. Tap an empty plot on your farm.` : 'Not enough gold.');
       await refreshInventory();
@@ -467,7 +483,7 @@ async function start(): Promise<void> {
     buyStyle: async (kind, id) => {
       const s = getStyle(kind, id);
       const detail = `${kind === 'floor' ? 'Floor' : 'Wall'}: yours forever, put on this room now.`;
-      const sure = await confirmBuy(ui, { name: s.name, detail, price: stylePrice(s), image: stylePreviewUrl(kind, id) });
+      const sure = await confirmBuy(ui, { name: s.name, detail, price: stylePrice(s), image: stylePreviewUrl(kind, id), gold: walletGold });
       if (!sure) return;
       void api.buyStyle(kind, id).then(async (ok) => {
         if (!ok) {
@@ -495,7 +511,7 @@ async function start(): Promise<void> {
       const cost = r ? upgradeCost(r) : null;
       if (r && cost !== null) {
         const detail = `${ROOM_NAMES[r.kind]} to level ${r.level + 1}: ${r.kind === 'farm' ? 'more room and more plots' : 'the room grows'}.`;
-        if (!(await confirmBuy(ui, { name: 'Room upgrade', detail, price: cost, yes: 'Upgrade' }))) return;
+        if (!(await confirmBuy(ui, { name: 'Room upgrade', detail, price: cost, yes: 'Upgrade', gold: walletGold }))) return;
       }
       void api.upgradeRoom(roomId).then(async (next) => {
         if (!next) {
@@ -726,6 +742,8 @@ async function start(): Promise<void> {
     onCarry: (on) => hotbar.setChoosing(on),
   });
   panels.add('bag', bag.el, undefined, () => bag.endCarry(), bag.frame);
+  // Panels start under the info panel (phone) and end above the hotbar or the run bag.
+  watchLayout(ui, info.panel, [hotbar.el, runBar.el]);
 
   async function refreshInventory(): Promise<void> {
     inventory = await api.getInventory();
@@ -738,7 +756,8 @@ async function start(): Promise<void> {
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     dungeonBadge.textContent = free ? 'free' : String(DUNGEON_KEY_COST);
     dungeonButton.title = free ? 'Dungeon: a free run (you have less than 10 gold)' : `Dungeon: the key costs ${DUNGEON_KEY_COST} gold`;
-    catalog.refresh(p.wallet.gold, p.unlockedStyles);
+    walletGold = p.wallet.gold;
+    catalog.refresh(p.wallet.gold, p.unlockedStyles, room);
     roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
     shelfPanel.refresh(shop, inventory);
     const materials = inventory.materials;
@@ -748,7 +767,6 @@ async function start(): Promise<void> {
       layout: { hotbar: inventory.hotbar, bag: inventory.bag },
       count: (id) => (isMaterialId(id) ? (materials[id] ?? 0) : countInInventory(inventory.furniture, id)),
       usable,
-      gold: p.wallet.gold,
     });
     hotbar.refresh(
       inventory.hotbar.map((typeId) => {
@@ -772,6 +790,7 @@ async function start(): Promise<void> {
     void api.setLook(next);
   });
   avatarPanel.setLook(avatar.look, (await api.getPlayer()).unlockedClothing);
+  avatarPanel.setName(avatar.name);
   panels.add('avatar', avatarPanel.el);
 
   const chat = createChatPanel(ui, (text) => void api.chat(text));

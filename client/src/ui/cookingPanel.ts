@@ -7,6 +7,7 @@
 import { FOOD_TYPES, getMaterialType, type FoodEffect, type FoodType, type MaterialId, type Player } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
+import { iconBox, panelShell } from './panelShell.ts';
 
 export interface CookingPanel {
   readonly el: HTMLElement;
@@ -28,18 +29,14 @@ export function foodEffectText(e: FoodEffect): string {
 }
 
 export function createCookingPanel(parent: HTMLElement, cook: (food: FoodType) => void): CookingPanel {
-  const panel = el('div', 'frame panel workshop-panel cooking-panel');
+  const shell = panelShell(parent, 'workshop-panel cooking-panel', 'Cooking pot');
+  const panel = shell.el;
   const list = el('div', 'catalog-list');
-  panel.append(el('h2', 'panel-title', 'Cooking pot'), list);
-  parent.appendChild(panel);
+  shell.body.append(list);
 
   const row = (f: FoodType, p: Player): HTMLElement => {
     const r = el('div', 'catalog-row');
-    const slot = el('div', 'slot');
-    const img = el('img', 'slot-icon');
-    img.src = materialIconUrl(f.id);
-    img.alt = '';
-    slot.appendChild(img);
+    const slot = iconBox(materialIconUrl(f.id));
     const needs = el('div', 'recipe-needs');
     let ok = true;
     for (const [id, n] of Object.entries(f.inputs) as [MaterialId, number][]) {

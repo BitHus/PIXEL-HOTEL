@@ -116,12 +116,15 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: Avata
     }, 'newgame-next');
     name.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
     const stage = el('div', 'charmaker-stage');
-    stage.append(el('h2', 'charmaker-title', 'Make your character'), preview.el);
+    stage.append(el('h2', 'charmaker-title plate', 'Make your character'), preview.el);
+    // The tabs sit on the panel's top edge, like in every panel.
+    const side = el('div', 'charmaker-side');
     const panel = el('div', 'frame charmaker-panel');
     const choices = el('div', 'charmaker-choices');
     choices.append(pickers.body);
-    panel.append(name, problem, pickers.tabs, choices, done);
-    s.append(stage, panel);
+    panel.append(name, problem, el('div', 'divider'), choices, done);
+    side.append(pickers.tabs, panel);
+    s.append(stage, side);
   });
 }
 
@@ -149,7 +152,7 @@ function pickShape(parent: HTMLElement, kind: RoomKind, title: string, button: s
       s.remove();
       resolve(chosen);
     }, 'newgame-next');
-    frame.append(el('h2', 'panel-title', title), el('div', 'panel-info', 'You can grow it later with room upgrades.'), grid, next);
+    frame.append(el('h2', 'panel-title plate', title), el('div', 'panel-info', 'You can grow it later with room upgrades.'), grid, next);
     s.appendChild(frame);
   });
 }

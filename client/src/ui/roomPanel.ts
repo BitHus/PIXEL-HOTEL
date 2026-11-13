@@ -6,6 +6,7 @@
 import { ROOM_MAX_LEVEL, STYLE_TYPES, farmPlotCount, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
 import { ROOM_NAMES } from './infoPanel.ts';
 import { el, textButton } from './dom.ts';
+import { panelShell } from './panelShell.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
 export interface RoomHooks {
@@ -19,11 +20,11 @@ export interface RoomPanel {
 }
 
 export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPanel {
-  const panel = el('div', 'frame panel room-panel');
-  const title = el('h2', 'panel-title', 'Room');
+  const shell = panelShell(parent, 'room-panel', 'Room');
+  const panel = shell.el;
+  const title = shell.title;
   const body = el('div', 'panel-section');
-  panel.append(title, body);
-  parent.appendChild(panel);
+  shell.body.append(body);
 
   const picker = (room: Room, kind: StyleKind, unlocked: readonly string[]): HTMLElement => {
     const grid = el('div', 'style-grid');
@@ -44,12 +45,13 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
     el: panel,
     refresh(room, gold, unlocked, appeal) {
       title.textContent = ROOM_NAMES[room.kind];
-      const facts = el('div', 'room-facts');
+      const facts = el('div', 'room-facts inset');
       facts.append(el('div', '', `Level ${room.level} of ${ROOM_MAX_LEVEL}`), el('div', '', `Size ${room.w} x ${room.h}`));
       if (appeal !== null) facts.append(el('div', '', `Appeal ${appeal} / 100`));
       const cost = upgradeCost(room);
       const up = textButton(cost === null ? 'Top level' : `Upgrade: ${cost} gold`, () => hooks.upgrade(room.id));
-      up.disabled = cost === null || gold < cost;
+      up.disabled = cost === null;
+      up.classList.toggle('poor', cost !== null && gold < cost);
       if (cost !== null) up.title = `Level ${room.level + 1}: the room grows to the right and down.`;
       if (room.kind === 'farm') {
         // The farm keeps its grass and hedge; an upgrade adds plots.
@@ -61,6 +63,7 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       body.replaceChildren(
         facts,
         up,
+        el('div', 'divider'),
         el('h3', '', 'Floor'),
         picker(room, 'floor', unlocked),
         el('h3', '', 'Wall'),

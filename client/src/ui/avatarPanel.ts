@@ -5,29 +5,37 @@
 import type { AvatarLook } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { createLookPickers } from './lookPickers.ts';
+import { panelShell } from './panelShell.ts';
 import { createAvatarPreview } from './newGame.ts';
 
 export interface AvatarPanel {
   readonly el: HTMLElement;
   setLook(look: AvatarLook, unlocked?: readonly string[]): void;
+  /** The display name, shown on a name plate under the preview. */
+  setName(name: string): void;
 }
 
 export function createAvatarPanel(parent: HTMLElement, onChange: (look: AvatarLook) => void): AvatarPanel {
-  const panel = el('div', 'frame panel avatar-panel');
+  const shell = panelShell(parent, 'avatar-panel', 'Avatar');
+  const panel = shell.el;
   const preview = createAvatarPreview(2);
   const pickers = createLookPickers((look) => {
     preview.setLook(look);
     onChange(look);
-  });
+  }, shell.tabs);
   const stage = el('div', 'avatar-stage small');
   stage.appendChild(preview.el);
-  panel.append(el('h2', 'panel-title', 'Avatar'), stage, pickers.el);
-  parent.appendChild(panel);
+  const name = el('div', 'plate avatar-name');
+  stage.appendChild(name);
+  shell.body.append(stage, pickers.el);
   return {
     el: panel,
     setLook(look, unlocked) {
       preview.setLook(look);
       pickers.setLook(look, unlocked);
+    },
+    setName(n) {
+      name.textContent = n;
     },
   };
 }

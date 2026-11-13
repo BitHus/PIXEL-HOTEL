@@ -117,7 +117,7 @@ export function showAwaySummary(parent: HTMLElement, a: AwaySummary): void {
   const total = el('div', 'away-total');
   total.append(pixelIcon('coin'), el('span', '', `Total: ${a.total} gold`));
   const ok = textButton('Nice!', () => box.remove());
-  box.append(el('h2', 'panel-title', 'While you were away'), el('div', 'panel-info', `Your shop was open for ${span}. Sold:`), list, total, ok);
+  box.append(el('h2', 'panel-title plate', 'While you were away'), el('div', 'panel-info', `Your shop was open for ${span}. Sold:`), list, total, ok);
   parent.appendChild(box);
   ok.focus();
 }

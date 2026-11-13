@@ -7,8 +7,19 @@ import { furnitureRects, type ArtRect } from '../render/furnitureArt.ts';
 import { DARK_WARM } from '../render/bareStyles.ts';
 import { shade } from '../render/colors.ts';
 
-/** Icon canvases are drawn at this size (px) and shown at the slot's icon size by CSS. */
+/** Icon canvases are at most this size (px); CSS shows them at the slot's icon size. */
 export const ICON_CANVAS = 64;
+
+/**
+ * The canvas size for an icon: as big as the art (at most ICON_CANVAS), so the art fills the
+ * whole icon and so most of its slot (UI polish step; before, small art sat tiny in a 64 px box).
+ */
+export function iconCanvasSize(rects: readonly ArtRect[]): number {
+  if (rects.length === 0) return 1;
+  const w = Math.max(...rects.map((r) => r[0] + r[2])) - Math.min(...rects.map((r) => r[0]));
+  const h = Math.max(...rects.map((r) => r[1] + r[3])) - Math.min(...rects.map((r) => r[1]));
+  return Math.max(1, Math.min(ICON_CANVAS, Math.ceil(Math.max(w, h))));
+}
 
 /**
  * Fits rectangles into a size x size square (centered, scaled down if needed, never up), on whole
@@ -38,12 +49,13 @@ function render(key: string, rects: readonly ArtRect[]): string {
   const hit = cache.get(key);
   if (hit) return hit;
   const canvas = document.createElement('canvas');
-  canvas.width = ICON_CANVAS;
-  canvas.height = ICON_CANVAS;
+  const size = iconCanvasSize(rects);
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.imageSmoothingEnabled = false;
-    for (const [x, y, w, h, c] of fitRects(rects, ICON_CANVAS)) {
+    for (const [x, y, w, h, c] of fitRects(rects, size)) {
       ctx.fillStyle = c;
       ctx.fillRect(x, y, w, h);
     }
@@ -59,11 +71,11 @@ export function furnitureIconUrl(typeId: string): string {
 
 export function materialIconUrl(id: MaterialId): string {
   const color = PALETTE[getMaterialType(id).color] ?? PALETTE[0];
-  // One small box: a top face and a darker front face with a dark outline.
+  // One small box (18 px, shown at twice that in a slot): a top face, a darker front face, a dark outline.
   const rects: ArtRect[] = [
-    [-1, -1, 26, 22, DARK_WARM],
-    [0, 0, 24, 8, color],
-    [0, 8, 24, 12, shade(color, 0.72)],
+    [-1, -1, 18, 18, DARK_WARM],
+    [0, 0, 16, 6, color],
+    [0, 6, 16, 10, shade(color, 0.72)],
   ];
   return render(`m:${id}`, rects);
 }

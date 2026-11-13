@@ -3,6 +3,7 @@
 
 import { CHAT_LOG_MAX, CHAT_MAX_LENGTH, type ChatLine } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
+import { panelShell } from './panelShell.ts';
 
 export interface ChatPanel {
   readonly el: HTMLElement;
@@ -12,7 +13,8 @@ export interface ChatPanel {
 }
 
 export function createChatPanel(parent: HTMLElement, onSend: (text: string) => void): ChatPanel {
-  const panel = el('div', 'frame panel chat-panel');
+  const shell = panelShell(parent, 'chat-panel', 'Chat');
+  const panel = shell.el;
   const log = el('div', 'chat-log');
   log.setAttribute('role', 'log');
   const empty = el('div', 'chat-empty', 'Nobody has said anything here yet.');
@@ -27,8 +29,7 @@ export function createChatPanel(parent: HTMLElement, onSend: (text: string) => v
   const send = textButton('Say', () => {}, 'chat-send');
   send.type = 'submit';
   form.append(input, send);
-  panel.append(el('h2', 'panel-title', 'Chat'), log, form);
-  parent.appendChild(panel);
+  shell.body.append(log, form);
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();

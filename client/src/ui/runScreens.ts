@@ -10,7 +10,7 @@ function modal(parent: HTMLElement, title: string, cls = ''): { shade: HTMLEleme
   const shade = el('div', 'confirm-shade run-shade');
   const box = el('div', `frame confirm-panel run-panel ${cls}`.trim());
   box.setAttribute('role', 'dialog');
-  box.append(el('h2', 'panel-title', title));
+  box.append(el('h2', 'panel-title plate', title));
   shade.appendChild(box);
   parent.appendChild(shade);
   return { shade, box };

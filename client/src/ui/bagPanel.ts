@@ -1,7 +1,9 @@
 // The Bag (step 5), laid out as in docs/UI-REFERENCE.md section 4:
-//   icon tabs on top (Furniture, Materials; the open tab is wider and shows its name),
-//   a parchment panel with the hotbar row on top, a line, and the bag grid (BAG_SLOTS slots,
-//   empty ones visible), Sort and Stack buttons beside it, and the gold strip under it.
+//   icon tabs on the top edge (Furniture, Materials; the open tab is raised and shows its name),
+//   a parchment panel with the hotbar row and the bag grid, each in its own inset section with a
+//   diamond divider between, and Sort and Stack in a slim strip below. The grid shows the rows
+//   up to the last filled slot plus one empty row (shownSlots), not all BAG_SLOTS. No gold here:
+//   the info panel shows it (UI polish step).
 // Every slot (also the main hotbar's) has data-area / data-index (bag.ts SlotRef).
 //   Tap a furniture stack: start placing it (main.ts closes the panel).
 //   Move a stack: drag it (mouse), or long-press it and drag (touch). Dropped on a slot, it moves
@@ -22,9 +24,9 @@ import {
   type SlotLayout,
   type SlotRef,
 } from '@pixel-hotel/shared';
-import { el, iconButton } from './dom.ts';
-import { shortNumber } from './format.ts';
+import { el } from './dom.ts';
 import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
+import { panelShell, tabBar } from './panelShell.ts';
 import { pixelIcon, type IconName } from './pixelIcons.ts';
 import { attachPress } from './press.ts';
 
@@ -43,7 +45,6 @@ export interface BagContents {
   count(id: string): number;
   /** False when a furniture type cannot be placed now (none left, or not in this room). */
   usable(typeId: string): boolean;
-  gold: number;
 }
 
 export interface BagPanel {
@@ -58,7 +59,7 @@ export interface BagPanel {
   refresh(contents: BagContents): void;
 }
 
-const TABS: [BagTab, IconName, string][] = [
+const TABS: readonly (readonly [BagTab, IconName, string])[] = [
   ['furniture', 'chair', 'Furniture'],
   ['materials', 'wood', 'Materials'],
 ];
@@ -79,39 +80,45 @@ export function slotRefOf(target: Element | null): SlotRef | null {
   return { area, index };
 }
 
+/** How many slots of a tab to show: the rows up to the last filled slot plus one empty row. */
+export function shownSlots(ids: readonly (string | null)[], cols: number): number {
+  let last = -1;
+  ids.forEach((id, i) => {
+    if (id !== null) last = i;
+  });
+  const rows = Math.floor(last / cols) + 2;
+  return Math.min(ids.length, rows * cols);
+}
+
 export function createBagPanel(parent: HTMLElement, hooks: BagHooks): BagPanel {
-  const root = el('div', 'panel bag');
+  const shell = panelShell(parent, 'bag');
+  const root = shell.el;
   root.style.setProperty('--bag-cols', String(BAG_COLUMNS));
   root.style.setProperty('--bag-cols-phone', String(BAG_COLUMNS_PHONE));
-  const tabRow = el('div', 'bag-tabs');
-  const frame = el('div', 'frame bag-frame');
-  const hotbarRow = el('div', 'bag-grid bag-hotbar-row');
-  const grid = el('div', 'bag-grid');
+  const tabRow = shell.tabs;
+  const frame = shell.frame;
+  const hotbarRow = el('div', 'inset bag-section bag-hotbar-row');
+  const grid = el('div', 'inset bag-section bag-grid');
   const info = el('div', 'panel-info bag-info');
-  frame.append(hotbarRow, el('div', 'bag-line'), grid, info);
-  const tools = el('div', 'bag-tools');
-  tools.append(
-    iconButton('sort', 'Sort', () => hooks.onTidy(tab, 'sort')),
-    iconButton('stack', 'Stack (merge equal items)', () => hooks.onTidy(tab, 'stack')),
-  );
-  const body = el('div', 'bag-body');
-  body.append(frame, tools);
-  const goldText = el('span', '', '0');
-  const gold = el('div', 'frame bag-gold');
-  gold.append(pixelIcon('coin'), goldText);
-  root.append(tabRow, body, gold);
-  parent.appendChild(root);
+  shell.body.append(hotbarRow, el('div', 'divider'), grid, info);
+  const tool = (icon: IconName, label: string, title: string, how: 'sort' | 'stack'): HTMLButtonElement => {
+    const b = el('button', 'btn small');
+    b.type = 'button';
+    b.title = title;
+    b.append(pixelIcon(icon), el('span', '', label));
+    b.addEventListener('click', () => hooks.onTidy(tab, how));
+    return b;
+  };
+  shell.strip.append(tool('sort', 'Sort', 'Sort', 'sort'), tool('stack', 'Stack', 'Stack (merge equal items)', 'stack'));
+  // The grid has fewer columns on a phone (ui.css uses the same width).
+  const phone = window.matchMedia('(max-width: 680px)');
+  phone.addEventListener('change', () => draw());
 
   let tab: BagTab = 'furniture';
   let contents: BagContents | null = null;
   let carry: SlotRef | null = null;
 
-  const tabButtons = TABS.map(([name, icon, label]) => {
-    const b = iconButton(icon, label, () => setTab(name), 'bag-tab');
-    b.appendChild(el('span', 'bag-tab-name', label));
-    tabRow.appendChild(b);
-    return [name, b] as const;
-  });
+  const markTab = tabBar(tabRow, TABS, (name) => setTab(name));
 
   const setTab = (next: BagTab): void => {
     endCarry();
@@ -256,20 +263,19 @@ export function createBagPanel(parent: HTMLElement, hooks: BagHooks): BagPanel {
   let gridSlots: HTMLElement[] = [];
 
   function draw(): void {
-    for (const [name, b] of tabButtons) b.classList.toggle('on', name === tab);
+    markTab(tab);
     if (carry === null) info.textContent = HINT[tab];
     if (!contents) return;
     const l = contents.layout;
     hotbarSlots.forEach((s, i) => fillSlot(s, l.hotbar[i] ?? null, i + 1));
     const ids = l.bag[tab];
-    if (gridSlots.length !== ids.length || grid.dataset.tab !== tab) {
+    const shown = shownSlots(ids, phone.matches ? BAG_COLUMNS_PHONE : BAG_COLUMNS);
+    if (gridSlots.length !== shown || grid.dataset.tab !== tab) {
       grid.dataset.tab = tab;
-      gridSlots = ids.map((_, i) => makeSlot({ area: tab, index: i }));
+      gridSlots = Array.from({ length: shown }, (_, i) => makeSlot({ area: tab, index: i }));
       grid.replaceChildren(...gridSlots);
     }
     gridSlots.forEach((s, i) => fillSlot(s, ids[i] ?? null, null));
-    goldText.textContent = shortNumber(contents.gold);
-    gold.title = `${contents.gold} gold`;
     markCarry();
   }
 

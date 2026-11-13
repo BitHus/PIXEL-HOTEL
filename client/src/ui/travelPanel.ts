@@ -5,6 +5,7 @@
 // with the reason. It replaces the old Hotel / Shop switcher under the info panel.
 
 import { el } from './dom.ts';
+import { iconBox, panelShell } from './panelShell.ts';
 import { pixelIcon, type IconName } from './pixelIcons.ts';
 
 export type Place = 'hotel' | 'shop' | 'farm' | 'mine' | 'dungeon';
@@ -32,10 +33,10 @@ const NAMES: Record<Place, [string, IconName]> = {
 };
 
 export function createTravelPanel(parent: HTMLElement, go: (place: Place) => void): TravelPanel {
-  const panel = el('div', 'frame panel travel-panel');
+  const shell = panelShell(parent, 'travel-panel', 'Map');
+  const panel = shell.el;
   const list = el('div', 'travel-list');
-  panel.append(el('h2', 'panel-title', 'Map'), list);
-  parent.appendChild(panel);
+  shell.body.append(list);
   return {
     el: panel,
     refresh(cards) {
@@ -44,11 +45,11 @@ export function createTravelPanel(parent: HTMLElement, go: (place: Place) => voi
           const [name, icon] = NAMES[c.place];
           const b = el('button', `travel-card${c.here ? ' here' : ''}${c.locked ? ' locked' : ''}`);
           b.type = 'button';
-          const slot = el('div', 'slot');
-          slot.appendChild(pixelIcon(icon));
+          const slot = iconBox(pixelIcon(icon));
           const info = el('div', 'travel-info');
-          info.append(el('div', 'catalog-name', c.here ? `${name} (you are here)` : name), el('div', 'catalog-sub', c.locked ?? c.status));
+          info.append(el('div', 'catalog-name', name), el('div', 'catalog-sub', c.locked ?? c.status));
           b.append(slot, info);
+          if (c.here) b.append(el('span', 'plate here-tag', 'Here'));
           b.disabled = c.locked !== null || c.here;
           b.title = c.locked ?? (c.here ? `You are in the ${name.toLowerCase()}` : `Go to the ${name.toLowerCase()}`);
           b.addEventListener('click', () => go(c.place));
