@@ -2,10 +2,10 @@
 // step.ts step(run, inputs, dtMs, rng). Positions are world px (x right, y down); the map is made
 // of DUNGEON_BLOCK px blocks.
 
-import { DUNGEON_ROUND, DUNGEON_ROUNDS, PLAYER_BASE_ATTACK_MAX, PLAYER_BASE_ATTACK_MIN, type EnemyKind } from '../config.ts';
+import { DUNGEON_ROUND, DUNGEON_ROUNDS, PLAYER_ATTACK_COOLDOWN_MS, PLAYER_BASE_ATTACK_MAX, PLAYER_BASE_ATTACK_MIN, type EnemyKind } from '../config.ts';
 import { ownedArmor, ownedWeapon } from '../gear.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
-import type { GearId, MaterialId, Point } from '../types.ts';
+import type { FoodId, GearId, MaterialId, Point } from '../types.ts';
 import { generateFloor } from './generate.ts';
 
 export type DungeonBlock = 'floor' | 'wall';
@@ -103,6 +103,12 @@ export interface RunPlayer {
   /** Run time (ms) from which the next potion is allowed. */
   potionReadyAt: number;
   potions: number;
+  /** The lunch box (step 9b): food brought from the farm, eaten front to back. Lost on death. */
+  food: FoodId[];
+  /** Buff kinds eaten on this run (each works once per run). */
+  buffs: FoodBuff[];
+  /** ms between hits (350; glowcap broth makes it 300 for the run). */
+  attackCooldownMs: number;
   /** False while still standing on the exit after choosing 'stay'. */
   exitArmed: boolean;
 }
@@ -122,6 +128,7 @@ export type RunEvent =
   | { t: 'chest'; chestId: number }
   | { t: 'mimic'; enemyId: number; chestId: number }
   | { t: 'potion'; healed: number }
+  | { t: 'eat'; food: FoodId; healed: number; buff: FoodBuff | null }
   | { t: 'exit' }
   | { t: 'stairs'; floor: number; healed: number }
   | { t: 'boss_banked' }
@@ -163,6 +170,7 @@ export type DungeonInput =
   | { t: 'click_point'; x: number; y: number }
   | { t: 'click_enemy'; id: number }
   | { t: 'drink_potion' }
+  | { t: 'eat' }
   | { t: 'choose_exit'; choice: ExitChoice };
 
 /** Combat numbers from the level and the gear (section 10). */
@@ -185,7 +193,12 @@ export interface NewRunOptions {
   xp: number;
   gear: readonly GearId[];
   potions: number;
+  /** The lunch box (at most LUNCH_BOX_MAX food items). */
+  food?: readonly FoodId[];
 }
+
+/** A food buff (step 9b): +attack, +max hp, or a shorter attack cooldown, once per run each. */
+export type FoodBuff = 'attack' | 'max_hp' | 'attack_cooldown';
 
 export function emptyRunBag(): RunBag {
   return { slots: [], gold: 0 };
@@ -216,6 +229,9 @@ export function newRun(o: NewRunOptions): DungeonRun {
       attackReadyAt: 0,
       potionReadyAt: 0,
       potions: o.potions,
+      food: [...(o.food ?? [])],
+      buffs: [],
+      attackCooldownMs: PLAYER_ATTACK_COOLDOWN_MS,
       exitArmed: true,
     },
     enemies: plan.enemies,

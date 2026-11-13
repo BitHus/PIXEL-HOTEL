@@ -37,7 +37,8 @@ import type { Room } from './room.ts';
 import { styleAppeal } from './styles.ts';
 import type { FurnitureItem, LootRef, MaterialId, Reaction, Rng, SaleRecord, ShopCategory, ShopSlot } from './types.ts';
 
-export const SHOP_CATEGORIES: readonly ShopCategory[] = ['materials', 'home_furniture', 'shop_furniture', 'crypt_furniture'];
+/** 'food' (step 9b): crops and cooked food. Seeds count as materials. */
+export const SHOP_CATEGORIES: readonly ShopCategory[] = ['materials', 'home_furniture', 'shop_furniture', 'crypt_furniture', 'food'];
 
 export interface ShopState {
   roomId: number;
@@ -99,7 +100,9 @@ export function lootTypeId(loot: LootRef): string {
 }
 
 export function lootCategory(loot: LootRef): ShopCategory {
-  return loot.kind === 'material' ? 'materials' : (getFurnitureType(loot.typeId).category as ShopCategory);
+  if (loot.kind === 'furniture') return getFurnitureType(loot.typeId).category as ShopCategory;
+  const group = getMaterialType(loot.id).group;
+  return group === 'crop' || group === 'food' ? 'food' : 'materials';
 }
 
 export function lootBaseValue(loot: LootRef): number {

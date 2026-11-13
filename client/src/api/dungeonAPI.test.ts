@@ -161,7 +161,8 @@ describe('a run in the game', () => {
     const { api } = open(stateWith(100, { hintsDone: 3 }));
     expect(await api.currentHint()).toMatch(/Dungeon/);
     await api.dungeonStart();
-    expect(await api.currentHint()).toBeNull();
+    // The next quest (step 9b) is the farm.
+    expect(await api.currentHint()).toMatch(/farm/);
     expect(api.snapshot().hintsDone).toBe(4);
   });
 });

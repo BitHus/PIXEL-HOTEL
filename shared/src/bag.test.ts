@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { arrangeSlots, emptyBag, hotbarToBag, moveSlot, sortBag, stackBag, type SlotLayout } from './bag.ts';
-import { BAG_SLOTS } from './config.ts';
+import { BAG_SLOTS, HOTBAR_SLOTS } from './config.ts';
 
 const hot = (...ids: (string | null)[]): (string | null)[] => [...ids, ...Array(6 - ids.length).fill(null)];
 const tab = (...ids: (string | null)[]): (string | null)[] => [...ids, ...Array(BAG_SLOTS - ids.length).fill(null)];
@@ -86,5 +86,30 @@ describe('sort and stack', () => {
   it('stack merges equal items and closes gaps, keeping the order', () => {
     const l = layout(hot(), tab(null, 'rug', 'rug', null, 'chair'));
     expect(stackBag(l, 'furniture').bag.furniture).toEqual(tab('rug', 'chair'));
+  });
+});
+
+describe('seeds in the hotbar (step 9b)', () => {
+  const empty = { hotbar: Array<string | null>(HOTBAR_SLOTS).fill(null), bag: emptyBag() };
+  it('a new seed type goes into a free hotbar slot; crops and food go to the Materials tab', () => {
+    const l = arrangeSlots(empty, ['chair'], ['wood', 'turnip_seed', 'turnip', 'potato_stew']);
+    expect(l.hotbar[0]).toBe('turnip_seed');
+    expect(l.bag.materials.slice(0, 3)).toEqual(['wood', 'turnip', 'potato_stew']);
+    expect(l.bag.furniture[0]).toBe('chair');
+  });
+  it('seeds move between the hotbar and the Materials tab; other materials never go in the hotbar', () => {
+    const l = arrangeSlots(empty, ['chair'], ['wood', 'turnip_seed']);
+    const back = hotbarToBag(l, 0)!;
+    expect(back.hotbar[0]).toBeNull();
+    expect(back.bag.materials).toContain('turnip_seed');
+    const k = back.bag.materials.indexOf('turnip_seed');
+    expect(moveSlot(back, { area: 'materials', index: k }, { area: 'hotbar', index: 2 })?.hotbar[2]).toBe('turnip_seed');
+    expect(moveSlot(back, { area: 'materials', index: 0 }, { area: 'hotbar', index: 2 })).toBeNull();
+    expect(moveSlot(back, { area: 'materials', index: k }, { area: 'furniture', index: 5 })).toBeNull();
+    // A seed cannot swap with furniture into the Materials tab.
+    const withChair = moveSlot(l, { area: 'furniture', index: 0 }, { area: 'hotbar', index: 1 })!;
+    const sk = arrangeSlots(hotbarToBag(withChair, 0)!, ['chair'], ['wood', 'turnip_seed']);
+    const seedAt = sk.bag.materials.indexOf('turnip_seed');
+    expect(moveSlot(sk, { area: 'materials', index: seedAt }, { area: 'hotbar', index: 1 })).toBeNull();
   });
 });

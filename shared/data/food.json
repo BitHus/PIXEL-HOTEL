@@ -1,0 +1,7 @@
+[
+  { "id": "roasted_turnip", "name": "Roasted turnip", "inputs": { "turnip": 1 }, "effect": { "kind": "heal", "amount": 8 }, "baseValue": 14, "color": 0 },
+  { "id": "potato_stew", "name": "Potato stew", "inputs": { "potato": 2, "turnip": 1 }, "effect": { "kind": "heal", "amount": 15 }, "baseValue": 48, "color": 4 },
+  { "id": "carrot_soup", "name": "Carrot soup", "inputs": { "carrot": 2, "potato": 1 }, "effect": { "kind": "attack", "amount": 1 }, "baseValue": 66, "color": 9 },
+  { "id": "pumpkin_pie", "name": "Pumpkin pie", "inputs": { "pumpkin": 1, "carrot": 1 }, "effect": { "kind": "max_hp", "amount": 10 }, "baseValue": 80, "color": 10 },
+  { "id": "glowcap_broth", "name": "Glowcap broth", "inputs": { "glowcap": 1, "potato": 1 }, "effect": { "kind": "attack_cooldown", "amount": 300 }, "baseValue": 62, "color": 17 }
+]

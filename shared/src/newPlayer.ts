@@ -14,6 +14,7 @@ import {
   START_MATERIALS,
   START_PLAYER_LEVEL,
   START_SHOP_ROOM_ID,
+  START_FARM_ROOM_ID,
   START_WALL_STYLE,
   START_XP,
   SHOP_START_ITEMS,
@@ -26,6 +27,7 @@ import { canPlace, getFurnitureType } from './furniture.ts';
 import { createRoom, defaultShape, getRoomShape, shapesFor } from './room.ts';
 import { cleanDisplayName, lookAllowed } from './clothing.ts';
 import { emptyShop } from './shop.ts';
+import { emptyFarm } from './farm.ts';
 import type { MaterialId, StyleKind } from './types.ts';
 
 export interface NewPlayerConfig {
@@ -33,6 +35,7 @@ export interface NewPlayerConfig {
   name: string;
   hotelRoomId: number;
   shopRoomId: number;
+  farmRoomId: number;
   gold: number;
   materials: Partial<Record<MaterialId, number>>;
   look: AvatarLook;
@@ -46,6 +49,7 @@ export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
   name: LOCAL_PLAYER_NAME,
   hotelRoomId: START_HOTEL_ROOM_ID,
   shopRoomId: START_SHOP_ROOM_ID,
+  farmRoomId: START_FARM_ROOM_ID,
   gold: START_GOLD,
   materials: { ...START_MATERIALS },
   look: { ...START_LOOK },
@@ -94,11 +98,13 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       unlockedClothing: [],
       hotelRoomId: config.hotelRoomId,
       shopRoomId: config.shopRoomId,
+      farmRoomId: config.farmRoomId,
     },
     look: { ...config.look },
     rooms: [
       createRoom(config.hotelRoomId, 'hotel', 1, config.playerId, config.hotelShape),
       createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape),
+      createRoom(config.farmRoomId, 'farm', 1, config.playerId),
     ],
     items: SHOP_START_ITEMS.map((s, k) => ({
       uid: k + 1,
@@ -118,6 +124,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     shop: emptyShop(config.shopRoomId, at),
     hintsDone: 0,
     run: null,
+    farm: emptyFarm(config.farmRoomId),
     playerCreated: false,
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);

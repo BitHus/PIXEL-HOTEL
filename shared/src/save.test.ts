@@ -58,20 +58,37 @@ describe('save files', () => {
   });
 
   it('migrates a version 4 save: square rooms, the old look as clothing, and no character creation', () => {
-    const { playerCreated: _p, ...rest } = state;
+    const { playerCreated: _p, farm: _f, ...rest } = state;
     const v4 = {
       ...rest,
-      rooms: rest.rooms.map(({ shape: _s, ...r }) => r),
+      rooms: rest.rooms.filter((r) => r.kind !== 'farm').map(({ shape: _s, ...r }) => r),
       look: { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 },
       player: (({ unlockedClothing: _u, ...p }) => p)(rest.player),
     };
     const r = readSave(JSON.stringify({ version: 4, savedAt: 0, state: v4 }));
     expect(r).toMatchObject({ ok: true, migrated: true });
     if (!r.ok) return;
-    expect(r.state.rooms.map((x) => x.shape)).toEqual(['square', 'square_shop']);
+    expect(r.state.rooms.map((x) => x.shape)).toEqual(['square', 'square_shop', 'farm']);
     expect(r.state.look).toEqual({ skin: 30, hair: 5, hairStyle: 'short', top: 'long_sleeve', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 });
     expect(r.state.player.unlockedClothing).toEqual([]);
     expect(r.state.playerCreated).toBe(true);
   });
-});
 
+  it('migrates a version 6 save (step 9b): a level 1 farm with empty plots, and the run gets a lunch box', () => {
+    const { farm: _f, ...rest } = state;
+    const v6 = {
+      ...rest,
+      rooms: rest.rooms.filter((r) => r.kind !== 'farm'),
+      player: (({ farmRoomId: _id, ...p }) => p)(rest.player),
+      run: { map: {}, enemies: [], player: { hp: 5, potions: 1 } },
+    };
+    const r = readSave(JSON.stringify({ version: 6, savedAt: 0, state: v6 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    const farm = r.state.rooms.find((x) => x.kind === 'farm');
+    expect(farm).toMatchObject({ id: 3, level: 1, shape: 'farm', floorStyle: 'grass', wallStyle: 'hedge' });
+    expect(r.state.player.farmRoomId).toBe(3);
+    expect(r.state.farm).toEqual({ roomId: 3, plots: Array.from({ length: 6 }, () => ({ crop: null, plantedAt: 0 })) });
+    expect(r.state.run?.player).toMatchObject({ hp: 5, potions: 1, food: [], buffs: [], attackCooldownMs: 350 });
+  });
+});

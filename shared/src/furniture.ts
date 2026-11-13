@@ -11,6 +11,7 @@
 
 import furnitureData from '../data/furniture.json';
 import { APPROACH_REACH_PX, CASHIER_BEHIND_PX, DOOR_ZONE_H, SNAP } from './config.ts';
+import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
 import { doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, rectsTouch, wallBands, type Room } from './room.ts';
 import type { Facing, FurnitureItem, FurnitureType, Point, Rect } from './types.ts';
@@ -60,6 +61,8 @@ export function nextFacing(type: FurnitureType, facing: Facing): Facing {
 
 /** True if the type may be placed in this kind of room (placeIn). */
 export function fitsRoomKind(type: FurnitureType, room: Room): boolean {
+  // The farm (step 9b) takes home decorations: everything that may go in the hotel room.
+  if (room.kind === 'farm') return type.placeIn === 'both' || type.placeIn === 'hotel';
   return type.placeIn === 'both' || type.placeIn === room.kind;
 }
 
@@ -82,6 +85,11 @@ export function itemBlockers(
   return floorItems(items, roomId, types)
     .filter((i) => types(i.typeId).blocks)
     .map((i) => footprintRect(i, types(i.typeId)));
+}
+
+/** Everything that blocks walking in a room: the blocking furniture plus fixed things (the farm's pot). */
+export function roomBlockers(room: Room, items: readonly FurnitureItem[], types: FurnitureLookup = getFurnitureType): Rect[] {
+  return [...itemBlockers(items, room.id, types), ...fixedBlockers(room)];
 }
 
 /**
@@ -145,8 +153,10 @@ export function canPlace(
   }
   if (!rectInsideFloor(room, fp)) return false;
   if (rectsTouch(fp, doorZoneRect(room))) return false;
+  // The farm's plots and cooking pot (step 9b): nothing on them, not even a rug.
+  if (noPlaceRects(room).some((r) => rectsOverlap(fp, r))) return false;
   if (!type.blocks) return true;
-  const blockers = itemBlockers(items, room.id, types);
+  const blockers = roomBlockers(room, items, types);
   if (blockers.some((b) => rectsOverlap(fp, b))) return false;
   if (!doorReachesMiddle(room, [...blockers, fp])) return false;
   // The counter: the shopkeeper must be able to get behind it.

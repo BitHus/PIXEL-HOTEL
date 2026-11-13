@@ -4,9 +4,11 @@
   { "id": "stone_tiles", "kind": "floor", "name": "Stone tiles", "baseValue": 15, "inCatalog": true, "appeal": 4 },
   { "id": "red_carpet", "kind": "floor", "name": "Red carpet", "baseValue": 20, "inCatalog": true, "appeal": 4 },
   { "id": "crypt_flagstones", "kind": "floor", "name": "Crypt flagstones", "baseValue": 30, "inCatalog": false, "appeal": 4 },
+  { "id": "grass", "kind": "floor", "name": "Grass", "baseValue": 0, "inCatalog": false, "appeal": 0 },
   { "id": "bare", "kind": "wall", "name": "Bare wall", "baseValue": 0, "inCatalog": false, "appeal": 0 },
   { "id": "plaster", "kind": "wall", "name": "Plaster", "baseValue": 8, "inCatalog": true, "appeal": 4 },
   { "id": "wood_panels", "kind": "wall", "name": "Wood panels", "baseValue": 12, "inCatalog": true, "appeal": 4 },
   { "id": "brick", "kind": "wall", "name": "Brick", "baseValue": 15, "inCatalog": true, "appeal": 4 },
-  { "id": "bone_wall", "kind": "wall", "name": "Bone wall", "baseValue": 35, "inCatalog": false, "appeal": 4 }
+  { "id": "bone_wall", "kind": "wall", "name": "Bone wall", "baseValue": 35, "inCatalog": false, "appeal": 4 },
+  { "id": "hedge", "kind": "wall", "name": "Hedge", "baseValue": 0, "inCatalog": false, "appeal": 0 }
 ]

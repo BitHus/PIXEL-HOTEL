@@ -28,7 +28,7 @@ const area = (rects: { w: number; h: number }[]): number => rects.reduce((a, r) 
 
 describe('room shapes (step 7b)', () => {
   it('has square (hotel and shop), long, L-shape, plus and wide hall, each with 3 levels', () => {
-    expect(ROOM_SHAPES.map((s) => s.id)).toEqual(['square', 'square_shop', 'long', 'l_shape', 'plus', 'wide_hall']);
+    expect(ROOM_SHAPES.map((s) => s.id)).toEqual(['square', 'square_shop', 'long', 'l_shape', 'plus', 'wide_hall', 'farm']);
     for (const s of ROOM_SHAPES) expect(s.levels).toHaveLength(3);
     expect(shapesFor('hotel').map((s) => s.id)).not.toContain('square_shop');
     expect(shapesFor('shop').map((s) => s.id)).not.toContain('square');
