@@ -66,7 +66,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   pixel (INTRO_DEVICE_PX_PER_ART_PX), ending centered on the avatar. A tap, a drag, a pinch or
   the wheel during the intro skips it (the camera stays where it is).
 - The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
-  grids exist only inside the code and are never shown: the navigation grid (16 px cells,
+  grids exist only inside the code and are never shown: the navigation grid (8 px cells,
   section 6) and the dungeon's 32 px blocks (section 10).
 - Pixel-perfect: no texture smoothing, and sprites are drawn at whole world pixels. At a zoom
   that is not a whole number some art pixels are 1 screen px wider than others, and below
@@ -119,9 +119,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 6. MOVEMENT
 - Click the floor: the avatar walks there. Click a sittable item: it walks to the front of
   the item and sits.
-- Navigation uses an internal grid of 16 px cells (NAV_CELL), rebuilt when furniture changes.
+- Navigation uses an internal grid of 8 px cells (NAV_CELL), rebuilt when furniture changes.
   A cell is blocked if it is outside the floor or inside the footprint of an item with
-  blocks = true, with the footprint made bigger by the avatar radius (12 px). A* with 8
+  blocks = true, with the footprint made bigger by the avatar radius (AVATAR_RADIUS 4 px;
+  owner's decision after 9d: a gap of 24 px between two items is always walkable, and the
+  avatar may overlap furniture edges a little). A* with 8
   directions and no corner cutting finds a cell path. Then the path is smoothed: a waypoint
   is removed when a straight line between its neighbours does not touch a blocked cell. The
   result is a list of world points, so avatars walk in straight lines, not in grid zigzags.
@@ -231,7 +233,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   customers stand at their queue spots. Waiting customers never leave on their own (v1). There
   is no "while you were away" summary. The Map button and the Map's Shop card show "n waiting".
 - Customer flow (step 7, paced after 7b): customers walk calmer than the player (72 px/s, each
-  one up to 10% faster or slower) and at most 3 are in the shop at once. A customer enters at
+  one up to 10% faster or slower) and at most 5 NPCs are in the shop at once (at most 3 of them
+  buyers; see NATURAL CUSTOMERS in the notes: no fixed route, window-shoppers, pairs, and the
+  area behind the counter is staff only). A customer enters at
   the door and stops just inside it for a moment, walks to the table, shelf or case with stock,
   looks at it for 2 to 5 s (a "..." thought bubble; sometimes at a second item too), decides
   there (the reaction bubble below), and if buying takes the item (it
@@ -246,7 +250,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   While QUEUE_MAX (3, step 9d) customers carry something to the till, no new customers come in. A
   customer who refuses just leaves. Offline catch-up (and a long gap) skips the walking and only
   fills the queue (see NO AUTO-SELLING).
-- Natural customers (step 9d): each customer gets a random look from the free clothing and
+- Natural customers (step 9d; reworked after 9d, see NATURAL CUSTOMERS in the notes): each customer gets a random look from the free clothing and
   LOOK_COLORS (seeded by its id) and a kind: 'hurried' (walks 20% faster, short browse),
   'browser' (looks at 2 to 3 things, decorations too), 'chatty' (talks more). Some stop at a
   decoration (a plant, a rug, a banner) first and face what they look at; standing customers
@@ -497,7 +501,7 @@ it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic)
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
 (mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). The atmosphere
 step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE), the logo splash and step 9d (shop
-life, see STEP 9d) are done too. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+life, see STEP 9d) are done too, and so is the fix list after 9d (see FIX LIST AFTER 9d). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
 9e (ranks and the Book), 9f (lakeside), 9g (livelier hotel), 9h (dungeon
 types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
@@ -777,7 +781,7 @@ Layout:
   - shared/src/dungeon (exported from the shared index): run.ts (DungeonMap, Enemy, Chest,
     BagItem, RunBag, RunPlayer, RunEvent, DungeonRun, DungeonInput, combatStats, newRun), grid.ts
     (isFloorBlock, blockCenter, blockAt, onFloor, dungeonNavGrid: the shared NavGrid with 16 px
-    cells, a cell is blocked on a wall block, NO avatar radius because corridors are 1 block wide;
+    cells (DUNGEON_NAV_CELL, its own number), a cell is blocked on a wall block, NO avatar radius because corridors are 1 block wide;
     cached per map), generate.ts (floorRng(seed, n), enemyHp, makeEnemy, blockDistances,
     generateFloor(seed, n, round) -> { map, enemies, chests }), loot.ts (LOOT_TABLES, getLootTable,
     rollDrop, rollLoot), runBag.ts (addToBag (12 slots, materials stack to 10, gold no slot, the
@@ -796,8 +800,10 @@ Conventions:
   pixel font, at least 44 px touch size, no default browser buttons. Places:
   - Top-left: the info panel, two short lines: coin + gold, then room name, level and a thin xp
     bar (hp and lantern bars under it in the dungeon and the mine).
-  - Right edge: one column of square icon buttons: Quest, Map, Bag, Build, Dungeon, then More
-    (a small grid with labels: Catalog, Workshop, Room, Avatar, Chat, Settings). From 900 px wide
+  - Right edge: one column of square icon buttons: Quest, Map, Catalog, Build, Dungeon, then More
+    (a small grid with labels: Workshop, Room, Avatar, Chat, Settings). The Bag button is not in
+    the column (owner's decision after 9d): it sits at the right end of the hotbar, inside its
+    frame, as tall as a slot (sideButtons.ts makes it, main.ts appends it to hotbar.el). From 900 px wide
     every button stands in the column. New screens add a button in sideButtons.ts (with a label
     = in the More grid) and a panel.
   - Panels: built with panelShell.ts; left of that column, always ending above the hotbar and
@@ -876,6 +882,44 @@ Conventions:
     min over 8 h; gold, sold, minutes lost to a full line).
   - Tests: npcTalk.test.ts, customers.test.ts (catch-up, full line, looks, talk, decorations,
     sitting), shop.test.ts (fillQueueMath), save.test.ts (migration 8), localGameAPI.test.ts.
+- FIX LIST AFTER 9d (owner's playtest):
+  - Nav: NAV_CELL 8, AVATAR_RADIUS 4 (see NAVIGATION). queueSpots keeps spots QUEUE_MIN_GAP_PX
+    apart (cells are small now) and is cached per grid.
+  - NATURAL CUSTOMERS (shared/src/customerPlan.ts + customers.ts): no fixed route. Every visitor
+    gets a plan (Customer.plan, step, doing) from planVisit(rng, kind, buys, lastPlan): small
+    behaviours picked by weight (config ACT_WEIGHTS x ACT_KIND_BONUS per kind; how many:
+    BUYER_ACTS / WINDOW_ACTS): wander (a random free spot, stand a moment), decor (a random
+    decoration, never the one before), goods (a look at a stocked table / shelf / case), talk (walk
+    next to another standing customer; they face each other, 2 to 3 bubbles in turns: lines
+    smalltalk, smalltalk_reply, smalltalk_end; the other one is held with holdMs), remark (a
+    'remark' line to nobody), sit (a free seat for 3 to 6 s). Never the same behaviour twice in a
+    row, and never the same plan as the visitor before (ShopState.lastPlan). A buyer's plan ends
+    with 'goods' = the look they decide at (phase 'browse' -> 'decide' as before); what cannot be
+    done now becomes a remark or a wander. Phases: enter, act, follow, browse, decide, queue, pay,
+    paid, leave ('admire' and looks / looksMax / decorLeft are gone).
+  - Window-shoppers (Customer.buys false; WINDOW_SHOPPER_CHANCE): only small behaviours, maybe a
+    'window' line, then out; no decision, no reaction face, nothing counted. Pairs (PAIR_CHANCE):
+    a friend (followId, phase 'follow', buys false) comes in behind the other, stays PAIR_NEAR_PX
+    beside where they go, and their plan gets a 'talk' (with the friend first). Limits:
+    CUSTOMER_MAX_IN_SHOP 5 NPCs; a buyer only comes while buyerCount (buyers not yet paid) <
+    QUEUE_MAX, so at most 3 wait at the till; with a full line only window-shoppers come
+    (WINDOW_SHOPPER_WHEN_FULL_CHANCE). The first visitor of a game is always a buyer.
+  - STAFF ONLY: furniture.ts staffZone (the strip behind the counter, STAFF_ZONE_DEPTH_PX deep,
+    STAFF_ZONE_SIDE_PX wider on each side). customerPlan.ts npcGrid = the room's grid with those
+    cells blocked (cached); EVERY customer path, wander spot, queue spot and seat uses it
+    (npcPath: a blocked or unreachable goal ends at the nearest free cell they can reach, so a
+    decoration behind the counter is looked at from the customer side). The player's grid is
+    unchanged.
+  - npcLines.json gained smalltalk, smalltalk_reply, smalltalk_end, remark, window.
+  - Lighting: the indoor look stays as it was (owner: "keep it"); outdoors has daylight (see
+    ATMOSPHERE). Backdrop: grass and trees outdoors, calmer planks indoors.
+  - UI: Catalog in the column, Bag at the hotbar (see UI LAYOUT RULE; docs/UI-REFERENCE.md).
+  - Dungeon chests are spread (generate.ts chestSpotOk, blocksFromRect; config CHEST_SPACING 3,
+    CHEST_SPAWN_ROOM_GAP 3, diagonals count as 1): at least 3 blocks from the spawn room and from
+    each other; a floor too small for that relaxes it by 1 or 2 blocks (never under 2).
+  - Tests: nav.test.ts (24 px gap, 12 px gap, speed), customerPlan.test.ts (the picker, the staff
+    grid), customers.test.ts (staff only, natural customers, window-shoppers, talk and pairs),
+    generate.test.ts (chest spread), save.test.ts (migration 9).
 - LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
   logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
   client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts
@@ -890,7 +934,8 @@ Conventions:
     flicker (0 steady .. 1 candle) } (types.ts LightSource). furniture.json: lamp (candle stand),
     counter (the till glow), skull_lamp, wall_torch. The cooking pot uses config COOKING_POT_LIGHT.
   - Config (end of shared/config.ts): AMBIENT_LIGHT per room kind { color, strength } (a palette
-    colour laid over the room with that alpha; kept low, the owner tunes the darkness here),
+    colour laid over the room with that alpha; kept low, the owner tunes the darkness here; the farm has 0), OUTDOOR_KINDS (the farm: daylight, no
+    shade and no light pools from furniture, only the small glow of the pot's fire),
     LIGHT_PIXEL 2, LIGHT_CUT (the part of the shade a light takes away at the flame), LIGHT_GLOW
     (how much of its colour a light adds at the flame), LIGHT_STEP_MS, FLICKER_RADIUS /
     FLICKER_BRIGHTNESS, DUST_PER_LIGHT, DUST_MAX, WALK_PUFF_MS, IDLE_SHIFT_EVERY_MS / HOLD_MS,
@@ -903,7 +948,7 @@ Conventions:
     view.setRoom, setItems from syncItems (use syncItems, never itemViews.sync alone), update every
     frame with the feet of standing / walking avatars, puff, setLighting). Lighting (reworked twice
     after the owner's playtests; now: a bright warm room with small soft halos, no ringed pools, no
-    door daylight patch; general traits of cozy tavern games only) = a light map RenderTexture
+    door daylight patch; the owner approved this indoor look after 9d: KEEP IT, do not rework it; general traits of cozy tavern games only) = a light map RenderTexture
     (1 texel = LIGHT_PIXEL art px) shown as ONE normal layer (RoomView.lightLayer): empty outside
     the room, the mild ambient shade on it; every light takes the shade away with a halo sprite
     (one 64 px white texture with lightFalloff alpha, blend 'erase'). Above the map every light has
@@ -912,8 +957,10 @@ Conventions:
     RoomView.shadowLayer (under the objects) for blocking floor items, the pot and avatars
     (AvatarSprite(look, false) = no built-in shadow; the dungeon keeps the built-in one). Dust:
     1 px specks in RoomView.airLayer, the walk puff in shadowLayer.
-  - client/src/render/backdrop.ts (Backdrop): dark planks that move with the camera plus a stepped
-    vignette, baked into ONE opaque screen picture that is redrawn only when the camera moves. Under
+  - client/src/render/backdrop.ts (Backdrop): indoors calm dark planks (low contrast), outdoors
+    (setOutdoor(true), the farm: main.ts calls it after every atmosphere.setRoom) darker grass
+    with code-drawn tree crowns and bushes on a seamless 256 px tile; it moves with the camera,
+    plus a stepped vignette (lighter outdoors), baked into ONE opaque screen picture that is redrawn only when the camera moves. Under
     view.world on the stage; hidden in the dungeon / mine (they keep their own look).
   - CustomerViews: standing customers shift 1 px sideways now and then (AvatarSprite.setShift).
   - Sound: client/src/audio/sound.ts (Sound; Web Audio, no files): step, coin, bell, pop, click,
@@ -1001,10 +1048,15 @@ Conventions:
   - Blockers mode (debug, step 3; key K, button "Blockers (K)"): while it is on, a one-finger / left drag draws a blocking
     rectangle instead of panning (getDragMode() returns 'draw', drags go to onDraw). Two
     fingers and right-drag still pan/zoom. Taps still walk.
-- NAVIGATION (shared/nav.ts): a cell is blocked if ANY part of it is outside the floor or
-  overlaps a blocker grown by AVATAR_RADIUS, so every point in a free cell is at least the
-  radius away from every blocker, and gaps narrower than the avatar (24 px) are never
-  passable (a gap needs about 24 + 16 px to open a free cell). Line of sight fails if the
+- NAVIGATION (shared/nav.ts): NAV_CELL 8 px, AVATAR_RADIUS 4 px (owner's decision after 9d; it
+  was 16 and 12). A cell is blocked if ANY part of it is outside the floor or overlaps a blocker
+  grown by AVATAR_RADIUS, so every point in a free cell is at least the radius away from every
+  blocker. A gap between two items of 24 px or more is always walkable (it keeps 16 px, so a
+  whole free cell at every 4 px alignment), 16 to 24 px depends on the alignment, under 16 px
+  never (tested). The owner asked for a radius of about 6; with 8 px cells that would need 28 px
+  for a gap, so it is 4. The avatar may overlap furniture edges a little. The biggest room is
+  104 x 72 cells; a path takes a few ms (tested). The dungeon keeps its own cells
+  (DUNGEON_NAV_CELL 16, no radius). Line of sight fails if the
   segment touches a blocked cell (edges count). findPath returns points starting with the
   avatar's position; the client walks path.slice(1). A free but unreachable target gives
   null; a blocked target walks to the nearest reachable free cell center. If the avatar
@@ -1196,7 +1248,9 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 9: MIGRATIONS[8] (step 9d) adds ShopState.lastLines {} and keeps only the
+- SAVE_VERSION is 10: MIGRATIONS[9] (fix list after 9d) gives the customers in the line the new
+  fields (buys, plan, step, doing, followId, talk, holdMs) and drops looks / looksMax / decorLeft.
+- (Before 10:) SAVE_VERSION 9: MIGRATIONS[8] (step 9d) adds ShopState.lastLines {} and keeps only the
   customers carrying an item (with the new Customer fields; the catch-up puts them on their spots).
 - (Before 9:) SAVE_VERSION 8: MIGRATIONS[7] (step 9c) adds Player.mineVisits 0 and turns a saved run into
   a crypt run (place 'crypt', no rocks, no lantern, basic pickaxe). Gear ids are unchanged.
@@ -1241,9 +1295,9 @@ Notes:
     the shortest are equal, and then the one ending nearest the tap wins. Approach points: below,
     left, right and above the footprint, AVATAR_RADIUS outside it, level with the seat; the
     point's own cell is usually blocked, so one counts as reached when the walk ends within
-    APPROACH_REACH_PX (28) of it. A side next to other furniture counts exactly when the gap has a
+    APPROACH_REACH_PX (16) of it. A side next to other furniture counts exactly when the gap has a
     free nav cell for the avatar (tested at every 4 px alignment; depending on alignment a gap
-    needs 40 to 56 px). If that seat cannot be reached the next free seat is tried; nothing
+    needs 16 to 24 px). If that seat cannot be reached the next free seat is tried; nothing
     reachable = the item shakes.
   - On arrival the client slides the avatar onto a sit seat in SEAT_SLIDE_MS (150 ms, straight
     line, may cross the footprint) and shows the pose. Sitting faces the item's facing. Lying

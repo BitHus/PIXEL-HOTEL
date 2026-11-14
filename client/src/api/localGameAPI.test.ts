@@ -203,7 +203,7 @@ describe('LocalGameAPI shop (step 7)', () => {
     const events: string[] = [];
     api.onShop((e) => events.push(e.t));
     // Nobody pays while the player is not behind the counter.
-    for (; now < 120_000; now += 100) api.update();
+    for (; now < 240_000; now += 100) api.update();
     expect(events).toContain('reaction');
     expect(events).not.toContain('sale');
     expect((await api.getPlayer()).wallet.gold).toBe(100);
@@ -211,7 +211,7 @@ describe('LocalGameAPI shop (step 7)', () => {
     const counter = (await api.getItems()).find((i) => i.typeId === 'counter')!;
     const serve = await api.serve(counter.uid);
     expect(serve?.facing).toBe('down');
-    for (; now < 180_000; now += 100) api.update();
+    for (; now < 300_000; now += 100) api.update();
     expect(api.isServing()).toBe(true);
     expect(events).toContain('paying');
     expect(events).toContain('sale');

@@ -1,9 +1,9 @@
 // The dungeon's blocks and its navigation grid (brief sections 6 and 10). The dungeon uses its
 // own DUNGEON_BLOCK px block grid, never the room shapes. Navigation is the same NavGrid as in the
-// hotel (NAV_CELL px cells, A*, smoothing; shared/nav.ts): a cell is blocked when it lies on a wall
+// hotel (DUNGEON_NAV_CELL px cells, A*, smoothing; shared/nav.ts): a cell is blocked when it lies on a wall
 // block. No avatar radius is added, because corridors are only one block (32 px) wide.
 
-import { DUNGEON_BLOCK, NAV_CELL } from '../config.ts';
+import { DUNGEON_BLOCK, DUNGEON_NAV_CELL } from '../config.ts';
 import type { NavGrid } from '../nav.ts';
 import type { Point } from '../types.ts';
 import type { DungeonMap } from './run.ts';
@@ -34,14 +34,14 @@ const GRIDS = new WeakMap<DungeonMap['blocks'], NavGrid>();
 export function dungeonNavGrid(map: DungeonMap): NavGrid {
   const cached = GRIDS.get(map.blocks);
   if (cached) return cached;
-  const per = DUNGEON_BLOCK / NAV_CELL;
+  const per = DUNGEON_BLOCK / DUNGEON_NAV_CELL;
   const cols = map.cols * per;
   const rows = map.rows * per;
   const blocked: boolean[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) blocked.push(!isFloorBlock(map, Math.floor(c / per), Math.floor(r / per)));
   }
-  const grid = { cols, rows, cell: NAV_CELL, blocked };
+  const grid = { cols, rows, cell: DUNGEON_NAV_CELL, blocked };
   GRIDS.set(map.blocks, grid);
   return grid;
 }

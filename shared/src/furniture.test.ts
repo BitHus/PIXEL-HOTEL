@@ -108,7 +108,8 @@ describe('canPlace', () => {
     // Bookshelves (56 wide) in a row above the door zone, from x 0 to 504: a 72 px gap is left.
     const row = Array.from({ length: 9 }, (_, i) => item('bookshelf', 28 + i * 56, 320));
     expect(canPlace(room, row, T('chair'), 100, 100, 'down')).toBe(true);
-    expect(canPlace(room, row, T('bookshelf'), 532, 320, 'down')).toBe(false);
+    // A bookshelf at 516..572 leaves 12 px and 4 px: too narrow to walk through.
+    expect(canPlace(room, row, T('bookshelf'), 544, 320, 'down')).toBe(false);
     // A rug in the gap is fine: it does not block walking.
     expect(canPlace(room, row, T('rug'), 536, 320, 'right')).toBe(true);
   });
@@ -216,11 +217,11 @@ describe('non-rectangular rooms (step 7b)', () => {
       const grid = buildNavGrid(room, []);
       for (let r = 0; r < grid.rows; r++) {
         for (let c = 0; c < grid.cols; c++) {
-          const cell = { x: c * 16, y: r * 16, w: 16, h: 16 };
+          const cell = { x: c * grid.cell, y: r * grid.cell, w: grid.cell, h: grid.cell };
           if (!rectInsideFloor(room, cell)) expect(isCellFree(grid, c, r)).toBe(false);
         }
       }
-      expect(isCellFree(grid, 30, 4) && room === l).toBe(false); // the L's cut-out corner
+      expect(isCellFree(grid, 60, 8) && room === l).toBe(false); // the L's cut-out corner
     }
     // Walking from the top arm of the plus to its bottom arm goes through the bar.
     expect(findPath(buildNavGrid(plus, []), { x: 320, y: 40 }, { x: 320, y: 420 })).not.toBeNull();

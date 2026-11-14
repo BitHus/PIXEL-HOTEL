@@ -30,15 +30,15 @@ screenshots of it in the repo.
 +--------------------------------------------------------------+
 | [INFO PANEL]                                    [quest/msg]  |
 |  gold, room name                                             |
-|                                                       [Bag]  |
+|                                                       [Map]  |
+|                                                   [Catalog]  |
 |                                                     [Build]  |
-|                                                    [Avatar]  |
-|                    the room (full screen)            [Chat]  |
-|                                                  [Settings]  |
+|                    the room (full screen)         [Dungeon]  |
+|                                                      [More]  |
 |                                                              |
 |          (popups appear next to their item)                  |
 |                                                              |
-|              [ hotbar: 6 slots, centered ]                   |
+|           [ hotbar: 6 slots, centered ][Bag]                 |
 +--------------------------------------------------------------+
 ```
 
@@ -50,8 +50,10 @@ screenshots of it in the repo.
   and fade after a few seconds. In Travellers Rest the top of the screen also shows what
   customers want; our shop can use the same spot for customer requests later.
 - **Right edge, stacked vertically: icon buttons (polish).** Square buttons, icons only, about
-  48 px on a phone. Always visible: Quest (while a quest is going), Map, Bag, Build and Dungeon.
-  Everything else (Catalog, Workshop, Room, Avatar, Chat, Settings) sits behind one "More"
+  48 px on a phone. Always visible: Quest (while a quest is going), Map, Catalog, Build and Dungeon
+  (owner's decision after step 9d: the Catalog is its own button again, and the Bag left the
+  column, see the hotbar below).
+  Everything else (Workshop, Room, Avatar, Chat, Settings) sits behind one "More"
   button that opens a small grid of icons with labels; a tap elsewhere closes it. On a wide
   screen (900 px and up) all buttons stand in the column and there is no More button. New
   screens get a button here (in the More grid unless they are needed all the time).
@@ -90,7 +92,9 @@ screenshots of it in the repo.
 - **Spending gold asks first** (after step 8): buying in the Catalog and upgrading a room open a
   small centered "Buy this?" panel (picture, name, price, Cancel / Buy for N).
 - **Bottom-center: the hotbar.** One row of 44 px slots in a frame, centered, 2 px apart (polish:
-  a bit smaller than before). Icons only, no text. The selected slot is warm orange. Every stack
+  a bit smaller than before). The **Bag button** is attached to the hotbar's right end, inside
+  the same frame and as tall as a slot (owner's decision after step 9d); it hides with the hotbar
+  (while placing, in the dungeon). Icons only, no text. The selected slot is warm orange. Every stack
   shows its count, small, in the slot's bottom-right corner (light digits with a dark outline);
   seeds show it from 1. On desktop the slots are numbered
   and the number keys 1 to 9 and 0 select them.

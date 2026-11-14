@@ -90,5 +90,51 @@
     "Bit empty in here.",
     "Are you restocking soon?",
     "The shelves look lonely."
+  ],
+  "smalltalk": [
+    "Lovely weather today, isn't it?",
+    "Have you tried the stew next door?",
+    "Did you hear about the old crypt?",
+    "My feet are killing me.",
+    "Do you come here often?",
+    "I heard the baker got a cat.",
+    "Nice boots! Where from?",
+    "Busy day in town, hm?"
+  ],
+  "smalltalk_reply": [
+    "Oh, absolutely!",
+    "Ha! You don't say.",
+    "Hm, I'm not so sure.",
+    "That's what I heard too.",
+    "Really? Tell me more.",
+    "Could be worse, could be rain.",
+    "Now and then, yes.",
+    "You always say that."
+  ],
+  "smalltalk_end": [
+    "Well, take care now!",
+    "Ha, true enough.",
+    "I'll remember that.",
+    "Good talking to you.",
+    "Right, back to looking.",
+    "See you around!"
+  ],
+  "remark": [
+    "I do like the smell of wood.",
+    "Now where did I put my purse?",
+    "La la la... hm hm...",
+    "I should buy mother something.",
+    "Was that a mouse just now?",
+    "So much to see!",
+    "My cousin would love this place.",
+    "I could stay here all day."
+  ],
+  "window": [
+    "Just looking today.",
+    "Maybe next time.",
+    "Nothing for me today, thanks.",
+    "I'll come back with more coin.",
+    "Only having a look around.",
+    "Hm, I'll think about it."
   ]
 }

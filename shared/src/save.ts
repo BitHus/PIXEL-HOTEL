@@ -136,6 +136,29 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       }));
     return { ...state, shop: { lastLines: {}, ...state.shop, customers } };
   },
+  // 9 -> 10 (natural customers, after 9d): a customer has a plan of small behaviours, may be a
+  // window-shopper or a friend, and can talk. Only customers carrying an item stay (as before: the
+  // catch-up when the game opens puts them on their queue spots); they get the new fields.
+  9: (state) => {
+    if (!isObject(state) || !isObject(state.shop)) return state;
+    const old = Array.isArray(state.shop.customers) ? state.shop.customers : [];
+    const customers = old
+      .filter((c): c is Record<string, unknown> => isObject(c) && c.carrying !== null && c.carrying !== undefined)
+      .map(({ looks: _looks, looksMax: _max, decorLeft: _left, ...c }) => ({
+        ...c,
+        buys: true,
+        plan: [],
+        step: 0,
+        doing: null,
+        followId: null,
+        talk: null,
+        holdMs: 0,
+        phase: 'queue',
+        path: [],
+        browsing: false,
+      }));
+    return { ...state, shop: { ...state.shop, customers } };
+  },
 };
 
 /** The storage key for a save version. */
