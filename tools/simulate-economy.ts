@@ -1,11 +1,15 @@
-// Economy simulation (step 7): how a shop does with three pricing strategies (cheap, fair,
-// greedy), at appeal 0 and 60, with 6 items in stock (no restocking), over 1 hour and 8 hours.
-// Uses the same rules as the game (shared/src/shop.ts simulateShop). Averages over many seeds.
+// Economy simulation (step 7; new rule in step 9d): nothing sells without the player at the till.
+// Customers keep coming and take items, but at most QUEUE_MAX wait at the till; while the line is
+// full nobody new comes in. The player looks in every N minutes and serves the whole line. Three
+// pricing strategies (cheap, fair, greedy), appeal 0 and 60, 6 items in stock (no restocking),
+// over 8 hours. Uses the same rules as the game (shared/src/shop.ts fillQueueMath: the maths of the
+// catch-up). Averages over many seeds.
 // Run: npm run simulate
 
-import { emptyShop, lootBaseValue, seededRng, simulateShop, type LootRef, type ShopSlot } from '../shared/src/index.ts';
+import { QUEUE_MAX, emptyShop, fillQueueMath, lootBaseValue, seededRng, type LootRef, type ShopSlot, type ShopState } from '../shared/src/index.ts';
 
 const RUNS = 500;
+const HOURS = 8;
 const STOCK: LootRef[] = [
   { kind: 'material', id: 'wood', qty: 1 },
   { kind: 'material', id: 'wood', qty: 1 },
@@ -19,9 +23,11 @@ const STRATEGIES: [string, number][] = [
   ['fair (1.0x)', 1.0],
   ['greedy (1.3x)', 1.3],
 ];
-const HOUR = 3_600_000;
+/** How often the player comes to the till, minutes. */
+const CHECK_EVERY = [5, 30, 120, 480];
+const MINUTE = 60_000;
 
-function stockedShop(mult: number) {
+function stockedShop(mult: number): ShopState {
   const slots: ShopSlot[] = STOCK.map((loot, i) => ({
     shelfUid: 100 + Math.floor(i / 3),
     index: i % 3,
@@ -32,31 +38,39 @@ function stockedShop(mult: number) {
 }
 
 const pad = (s: string | number, n: number): string => String(s).padEnd(n);
-console.log(`Economy simulation: 6 items in stock (2 wood, 2 cloth, 1 crystal, 1 chair; worth ${STOCK.reduce((a, l) => a + lootBaseValue(l), 0)} gold at base value), no restocking, ${RUNS} runs each.`);
-console.log('"slot time" = average minutes an item sat on its slot (until sold, or to the end if unsold).');
-console.log('"blocked" = slot-hours still taken by unsold items at the end.\n');
-console.log(pad('strategy', 15) + pad('appeal', 8) + pad('time', 6) + pad('gold', 8) + pad('sold', 7) + pad('slot time', 11) + 'blocked');
+console.log(`Economy simulation (step 9d rule: no selling without the player, at most ${QUEUE_MAX} wait at the till).`);
+console.log(`6 items in stock (2 wood, 2 cloth, 1 crystal, 1 chair; worth ${STOCK.reduce((a, l) => a + lootBaseValue(l), 0)} gold at base value), no restocking, ${HOURS} hours, ${RUNS} runs each.`);
+console.log('"check" = the player serves the whole line every N minutes (also at the end).');
+console.log('"lost min" = minutes of customer time lost because the line was full (nobody could come in).\n');
+console.log(pad('strategy', 15) + pad('appeal', 8) + pad('check', 9) + pad('gold', 8) + pad('sold', 7) + 'lost min');
 for (const [name, mult] of STRATEGIES) {
   for (const appeal of [0, 60]) {
-    for (const hours of [1, 8]) {
+    for (const every of CHECK_EVERY) {
       let gold = 0;
       let sold = 0;
-      let slotMs = 0;
-      let blockedMs = 0;
+      let lostMs = 0;
       for (let seed = 1; seed <= RUNS; seed++) {
-        const r = simulateShop(stockedShop(mult), appeal, hours * HOUR, seededRng(seed));
-        gold += r.sales.reduce((a, s) => a + s.price, 0);
-        sold += r.sales.length;
-        slotMs += r.sales.reduce((a, s) => a + s.at, 0);
-        const unsold = STOCK.length - r.sales.length;
-        slotMs += unsold * hours * HOUR;
-        blockedMs += unsold * hours * HOUR;
+        const rng = seededRng(seed);
+        let shop = stockedShop(mult);
+        let waiting: number[] = [];
+        for (let t = 0; t < HOURS * 60 * MINUTE; t += every * MINUTE) {
+          const span = Math.min(every * MINUTE, HOURS * 60 * MINUTE - t);
+          const r = fillQueueMath(shop, appeal, waiting.length, span, rng);
+          shop = r.shop;
+          waiting = [...waiting, ...r.arrivals.map((a) => a.price)];
+          // The line was full from the last arrival (or the start) to the end of the span.
+          if (waiting.length >= QUEUE_MAX && shop.slots.length > 0) {
+            const fullFrom = r.arrivals.length > 0 ? r.arrivals[r.arrivals.length - 1]!.afterMs : 0;
+            lostMs += span - fullFrom;
+          }
+          // The player serves the whole line.
+          gold += waiting.reduce((a, p) => a + p, 0);
+          sold += waiting.length;
+          waiting = [];
+        }
       }
       const f = (n: number, d = 1): string => (n / RUNS).toFixed(d);
-      console.log(
-        pad(name, 15) + pad(appeal, 8) + pad(`${hours} h`, 6) + pad(f(gold), 8) + pad(f(sold), 7) +
-          pad((slotMs / RUNS / STOCK.length / 60_000).toFixed(0) + ' min', 11) + (blockedMs / RUNS / HOUR).toFixed(1) + ' h',
-      );
+      console.log(pad(name, 15) + pad(appeal, 8) + pad(`${every} min`, 9) + pad(f(gold), 8) + pad(f(sold), 7) + (lostMs / RUNS / MINUTE).toFixed(0));
     }
   }
 }

@@ -5,7 +5,8 @@
 // Step 7: the shop runs here too. update() (main.ts calls it every SHOP_TICK_MS through
 // startClock) steps the walking customers in SHOP_TICK_MS steps with the shared rules; a gap
 // longer than SHOP_CATCH_UP_GAP_MS (and every time the game opens) is caught up with maths only
-// (catchUpShop: at most 8 hours), and what sold is kept for the "while you were away" summary.
+// (catchUpShop, step 9d: nothing is sold; the customers who would have come wait in the line, at
+// most QUEUE_MAX, at their queue spots).
 
 import {
   AVATAR_START_FROM_BOTTOM,
@@ -60,7 +61,6 @@ import {
   unlockStyle,
   upgradeRoom,
   validPrice,
-  type AwaySummary,
   type BuyResult,
   type ShelfSlotRef,
   type ShopEvent,
@@ -183,7 +183,6 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   private readonly shopListeners = new Set<(e: ShopEvent) => void>();
   /** The shop room's navigation grid (customers), rebuilt when its furniture changes. */
   private shopGrid: NavGrid | null = null;
-  private away: AwaySummary | null = null;
   private clock = 0;
   /** A run loaded from a save waits for dungeonResume (the player taps Resume). */
   private runPaused: boolean;
@@ -259,7 +258,6 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.walkState = this.doorWalk();
     this.grid = this.buildGrid();
     this.shopGrid = null;
-    this.away = null;
     return true;
   }
 
@@ -306,8 +304,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!item || (tap !== undefined && !finitePoint(tap))) return null;
     const type = getFurnitureType(item.typeId);
     const avatar = this.avatarNow();
-    // Seats taken by other avatars (only the own avatar exists until step 10).
-    const taken: number[] = [];
+    // Seats taken by others: shop customers waiting on a seat (other players come in step 10).
+    const taken = this.state.currentRoomId === this.state.shop.roomId ? this.state.shop.customers.flatMap((c) => (c.seat?.uid === uid ? [c.seat.index] : [])) : [];
     const plan = planSit(this.grid, avatar, item, type, tap ?? null, taken);
     if (!plan) return null;
     const { path, seat } = plan;
@@ -495,12 +493,6 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return HINTS[i] ?? null;
   }
 
-  async takeAwaySummary(): Promise<AwaySummary | null> {
-    const a = this.away;
-    this.away = null;
-    return a;
-  }
-
   // ---------- The dungeon (step 9) ----------
 
   async getRun(): Promise<RunView | null> {
@@ -679,7 +671,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (now - shop.updatedAt > SHOP_CATCH_UP_GAP_MS) {
       this.catchUp();
       this.save();
-      this.emit({ t: 'customers', customers: [] });
+      this.emit({ t: 'customers', customers: this.state.shop.customers });
       this.emit({ t: 'slots' });
       return;
     }
@@ -781,18 +773,14 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const room = state.rooms.find((r) => r.id === state.shop.roomId);
     if (!room) throw new Error('shop room missing');
     this.shopGrid ??= buildNavGrid(room, itemBlockers(state.items, room.id));
-    return { room, items: state.items, grid: this.shopGrid, cashier: this.isServing() };
+    // The own avatar's seat in the shop (customers do not sit there).
+    const seated = state.currentRoomId === room.id ? this.walkState.seated : null;
+    return { room, items: state.items, grid: this.shopGrid, cashier: this.isServing(), seatsTaken: seated ? [seated] : [] };
   }
 
-  /** Customers pay at once and the gap is done with maths (catchUpShop); keeps the summary. */
+  /** The gap is done with maths (catchUpShop): no sales; the line fills up (at most QUEUE_MAX). */
   private catchUp(): void {
-    const r = catchUpShop(this.state, this.now(), this.rng);
-    this.state = r.state;
-    if (r.sales.length === 0) return;
-    const was = this.away;
-    this.away = was
-      ? { simulatedMs: was.simulatedMs + r.simulatedMs, sales: [...was.sales, ...r.sales], total: was.total + r.total }
-      : { simulatedMs: r.simulatedMs, sales: r.sales, total: r.total };
+    this.state = catchUpShop(this.state, this.shopWorld(this.state), this.now(), this.rng).state;
   }
 
   private layout(): SlotLayout {

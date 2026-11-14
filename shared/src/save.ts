@@ -2,7 +2,7 @@
 // storage and used for Export / Import. Old versions are migrated step by step with MIGRATIONS;
 // a version without a migration path is refused ('too_old'), and the caller resets with a message.
 
-import { HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
+import { CUSTOMER_CALL_AFTER_MS, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
 import { addShopStartItems } from './newPlayer.ts';
@@ -112,6 +112,29 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
           }
         : run;
     return { ...state, player: { mineVisits: 0, ...state.player }, run: nextRun };
+  },
+  // 8 -> 9 (step 9d, shop life): the shop remembers the last talk line per moment; customers got a
+  // kind, a plan, a seat and a call timer. Only customers carrying an item stay (they wait in the
+  // line; the catch-up when the game opens puts them on their queue spots), the rest are gone.
+  8: (state) => {
+    if (!isObject(state) || !isObject(state.shop)) return state;
+    const old = Array.isArray(state.shop.customers) ? state.shop.customers : [];
+    const customers = old
+      .filter((c): c is Record<string, unknown> => isObject(c) && c.carrying !== null && c.carrying !== undefined)
+      .map((c) => ({
+        kind: 'browser',
+        looksMax: 1,
+        decorLeft: 0,
+        decorUid: null,
+        seat: null,
+        sitChecked: false,
+        callInMs: CUSTOMER_CALL_AFTER_MS,
+        ...c,
+        phase: 'queue',
+        path: [],
+        browsing: false,
+      }));
+    return { ...state, shop: { lastLines: {}, ...state.shop, customers } };
   },
 };
 

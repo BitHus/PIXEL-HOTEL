@@ -66,14 +66,6 @@ export interface ShopView {
   customers: Customer[];
 }
 
-/** What sold while the player was away (offline catch-up). */
-export interface AwaySummary {
-  /** How long the shop was simulated (at most 8 hours), ms. */
-  simulatedMs: number;
-  sales: SaleRecord[];
-  total: number;
-}
-
 /** The walk to the spot behind the counter (step 7). */
 export interface ServeResult {
   /** The path to the spot behind the counter (starts at the avatar). */
@@ -200,8 +192,6 @@ export interface GameAPI {
   getRoom(roomId: number): Promise<Room | null>;
   /** The first-run hint to show now, or null when all are done. */
   currentHint(): Promise<string | null>;
-  /** What sold while the player was away (once; null when nothing sold). */
-  takeAwaySummary(): Promise<AwaySummary | null>;
   // ---------- Step 9: the dungeon, crafting, the Blacksmith ----------
   /** The run in progress, or null. */
   getRun(): Promise<RunView | null>;

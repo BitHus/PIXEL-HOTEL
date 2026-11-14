@@ -9,21 +9,20 @@
 //   level of its shape (whose floor contains the old one), every item keeps its position, the door
 //   moves to the new level's door, and an item standing in the new door zone goes back to the
 //   inventory (with what stands on it).
-// - Shop catch-up: walking customers pay at once, then simulateShop does the maths.
+// - Shop catch-up: customers.ts catchUpShop (step 9d: it only fills the queue; no gold).
 
-import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, OFFLINE_MAX_MS, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
+import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
 import { growPlots } from './farm.ts';
 import { noPlaceRects } from './farmLayout.ts';
-import { settleCustomers } from './customers.ts';
 import { FURNITURE_TYPES, footprintRect, getFurnitureType, pickUpItem } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { doorZoneRect, rectsOverlap, rectsTouch, roomAtLevel, type Room } from './room.ts';
-import { returnOrphanLoot, shopAppeal, simulateShop } from './shop.ts';
+import { returnOrphanLoot } from './shop.ts';
 import { findStyle, stylePrice } from './styles.ts';
 import { GEAR_TYPES, type ShopGearId } from './gear.ts';
 import { styleKey } from './newPlayer.ts';
-import type { Rng, SaleRecord, StyleKind } from './types.ts';
+import type { StyleKind } from './types.ts';
 
 /** Catalog price of a furniture type: baseValue * 3. */
 export function catalogPrice(typeId: string): number {
@@ -101,39 +100,6 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   }
   const farm = grown.kind === 'farm' && paid.farm.roomId === roomId ? growPlots(paid.farm, level) : paid.farm;
   return returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items, farm }, at);
-}
-
-export interface CatchUp {
-  state: GameState;
-  /** ms simulated (capped at OFFLINE_MAX_MS); the real gap may be longer. */
-  simulatedMs: number;
-  sales: SaleRecord[];
-  total: number;
-}
-
-/**
- * Catches the shop up to `at` without walking: customers in the shop pay at once (or leave), then
- * simulateShop runs the customers for the gap (at most 8 hours). Every sale's gold goes through
- * the ledger (reason 'sale').
- */
-export function catchUpShop(state: GameState, at: number, rng: Rng, maxMs?: number): CatchUp {
-  const settled = settleCustomers(state, at);
-  let s = settled.state;
-  const room = s.rooms.find((r) => r.id === s.shop.roomId);
-  const gap = Math.max(0, at - s.shop.updatedAt);
-  if (!room) return { state: s, simulatedMs: 0, sales: settled.sales, total: sum(settled.sales) };
-  const sim = simulateShop(s.shop, shopAppeal(room, s.items), maxMs === undefined ? gap : Math.min(gap, maxMs), rng);
-  s = { ...s, shop: { ...sim.shop, updatedAt: at } };
-  for (const sale of sim.sales) {
-    const next = applyChange(s, { reason: 'sale', gold: sale.price, note: `sold: ${sale.typeId}` }, sale.at);
-    if (next) s = next;
-  }
-  const sales = [...settled.sales, ...sim.sales];
-  return { state: s, simulatedMs: Math.min(gap, maxMs ?? OFFLINE_MAX_MS, OFFLINE_MAX_MS), sales, total: sum(sales) };
-}
-
-function sum(sales: readonly SaleRecord[]): number {
-  return sales.reduce((a, s) => a + s.price, 0);
 }
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { OFFLINE_MAX_MS } from './config.ts';
-import { applyStyle, buyCatalog, catalogPrice, catchUpShop, isStyleUnlocked, unlockStyle, upgradeCost, upgradeRoom } from './economy.ts';
+import { applyStyle, buyCatalog, catalogPrice, isStyleUnlocked, unlockStyle, upgradeCost, upgradeRoom } from './economy.ts';
 import { canPickUp, canPlace, footprintRect, getFurnitureType } from './furniture.ts';
 import { applyChange } from './ledger.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
@@ -112,21 +112,6 @@ describe('the counter', () => {
     s = upgradeRoom(upgradeRoom(s, s.player.shopRoomId, 1)!, s.player.shopRoomId, 2)!;
     expect(s.items.filter((i) => i.typeId === 'counter')).toHaveLength(1);
     expect(s.items.find((i) => i.typeId === 'counter')?.roomId).toBe(s.player.shopRoomId);
-  });
-});
-
-describe('catchUpShop', () => {
-  it('sells for at most 8 hours, adds gold through the ledger', () => {
-    let s = createNewPlayer(undefined, 0);
-    const shelf = s.items.find((i) => i.typeId === 'stall_table')!;
-    for (let index = 0; index < 3; index++) s = putOnShelf(s, { shelfUid: shelf.uid, index }, { kind: 'material', id: 'wood' }, 2, 0)!;
-    const r = catchUpShop(s, 48 * 3600_000, seededRng(1));
-    expect(r.simulatedMs).toBe(OFFLINE_MAX_MS);
-    expect(r.sales.length).toBe(3);
-    for (const sale of r.sales) expect(sale.at).toBeLessThanOrEqual(OFFLINE_MAX_MS);
-    expect(r.state.player.wallet.gold).toBe(100 + r.total);
-    expect(r.state.shop.updatedAt).toBe(48 * 3600_000);
-    expect(ledgerGold(r.state)).toBe(r.state.player.wallet.gold);
   });
 });
 

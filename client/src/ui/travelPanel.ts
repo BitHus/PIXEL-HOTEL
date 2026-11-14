@@ -17,6 +17,8 @@ export interface PlaceCard {
   locked: string | null;
   /** The place the player is in now. */
   here: boolean;
+  /** A small badge on the card (step 9d: "2 waiting" on the Shop), or none. */
+  badge?: string;
 }
 
 export interface TravelPanel {
@@ -49,6 +51,7 @@ export function createTravelPanel(parent: HTMLElement, go: (place: Place) => voi
           const info = el('div', 'travel-info');
           info.append(el('div', 'catalog-name', name), el('div', 'catalog-sub', c.locked ?? c.status));
           b.append(slot, info);
+          if (c.badge) b.append(el('span', 'btn-badge card-badge', c.badge));
           if (c.here) b.append(el('span', 'plate here-tag', 'Here'));
           b.disabled = c.locked !== null || c.here;
           b.title = c.locked ?? (c.here ? `You are in the ${name.toLowerCase()}` : `Go to the ${name.toLowerCase()}`);

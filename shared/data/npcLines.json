@@ -1,0 +1,94 @@
+{
+  "enter": [
+    "Hello there!",
+    "Good day to you!",
+    "Ooh, let's have a look.",
+    "Smells like old wood in here.",
+    "Just browsing, thanks!",
+    "Is this place new?",
+    "Morning, shopkeeper!",
+    "Let's see what's in today."
+  ],
+  "browse": [
+    "Hmm, interesting...",
+    "Is this any good?",
+    "I could use one of these.",
+    "Not bad, not bad.",
+    "What would my aunt say?",
+    "This looks well made.",
+    "Hm. Decisions, decisions."
+  ],
+  "cheap": [
+    "What a bargain!",
+    "That cheap? I'll take it!",
+    "Are you sure about this price?",
+    "My lucky day!",
+    "Wow, that's a steal!",
+    "Quick, before you change it!"
+  ],
+  "fair": [
+    "Fair price. I'll take it.",
+    "Sounds right to me.",
+    "Yes, this one please.",
+    "Good, I'll have it.",
+    "Just what I needed.",
+    "A fair deal, thank you."
+  ],
+  "high": [
+    "A bit much for me...",
+    "Maybe if it were cheaper.",
+    "Hmm, not at that price.",
+    "Close, but no.",
+    "I'll wait for a sale.",
+    "Too rich for today."
+  ],
+  "too_high": [
+    "That price?! No way!",
+    "Who pays that much?",
+    "Ha! Good one.",
+    "Way too expensive!",
+    "My purse just fainted.",
+    "Not in a hundred years!"
+  ],
+  "queue": [
+    "Hello? Anyone here?",
+    "Shopkeeper? I'd like to pay!",
+    "Is anybody minding the till?",
+    "I'll just wait here then...",
+    "Hellooo? Customer here!",
+    "Ahem! Ready to pay!",
+    "Should I ring a bell?"
+  ],
+  "pay": [
+    "Here you go.",
+    "Thanks a lot!",
+    "Keep the change... oh, no change.",
+    "Pleasure doing business!",
+    "Here's the gold.",
+    "Thank you kindly!"
+  ],
+  "leave": [
+    "Have a nice day!",
+    "Bye now!",
+    "I'll be back!",
+    "See you around!",
+    "Lovely, thanks!",
+    "Off I go!"
+  ],
+  "lovely": [
+    "What a lovely shop!",
+    "So cozy in here!",
+    "I love what you did here.",
+    "Nice place you've got!",
+    "Pretty shop, pretty things.",
+    "This shop has charm!"
+  ],
+  "empty": [
+    "Not much left...",
+    "Slim pickings today.",
+    "Did someone buy it all?",
+    "Bit empty in here.",
+    "Are you restocking soon?",
+    "The shelves look lonely."
+  ]
+}
