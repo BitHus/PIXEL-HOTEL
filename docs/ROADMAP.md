@@ -5,7 +5,7 @@ bottom. A phase is finished before the next one starts, unless the owner says ot
 How it works:
 - Each numbered item becomes one step: a prompt in docs/NEXT-STEPS.md, one fresh session, one PR.
 - Items marked [prompt ready] already have their prompt in docs/NEXT-STEPS.md.
-- After each step: tick it here (move it to DONE) and update CLAUDE.md.
+- After each step: tick it here (move it to DONE) and update CLAUDE.md (short) and docs/NOTES.md.
 - New ideas go in the IDEA POOL at the bottom, not into a running step.
 
 The identity: hotel management + dungeon loot + workshop + pets + collectibles. Every part feeds
@@ -16,13 +16,13 @@ something to look forward to, and the hotel and shop show what the player has ac
 Rooms, avatar, walking, furniture, placing, inventory, chat, saving (steps 1 to 5b). Shop with
 customers and the till (7), room shapes and character creation (7b), dungeon (8, 9), farm and
 cooking (9b), mine and forge (9c), UI polish, atmosphere (light, shadows, sound), logo splash,
-shop life (9d), ranks and the Book (9e).
+shop life (9d), ranks and the Book (9e), the lakeside: fishing and woodcutting (9f), housekeeping
+(1.0: CLAUDE.md shortened; the full brief is docs/BRIEF.md, earlier steps' details docs/NOTES.md).
 
 ## PHASE 1 - Finish the core game
 The loops that are planned must all exist before anything else is added.
-1.0 Housekeeping: shorten CLAUDE.md (move the long per-step notes to docs/NOTES.md, keep the
-    brief, the conventions and a short current state). Saves usage in every session.
-1.1 Step 9f - Lakeside: fishing and woodcutting. [prompt ready]
+1.0 Housekeeping: shorten CLAUDE.md. [done]
+1.1 Step 9f - Lakeside: fishing and woodcutting. [done]
 1.2 Step 9t - The tavern: the shop becomes a tavern (owner's decision, 14 Nov). Guests sit, order
     drinks and dishes, the player serves and collects the coins; brewing; the loot stall stays as
     a market corner. [prompt ready]
