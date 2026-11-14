@@ -1,75 +1,108 @@
-# Roadmap: the owner's idea list (14 Nov)
+# ROADMAP
 
-Ideas for later, in the owner's words, cleaned up. This is NOT a build order and nothing here is
-decided until it becomes a step in docs/NEXT-STEPS.md. Things that already exist or are already
-planned in steps 9e to 9i (ranks, the Book, the lakeside, hats, emotes, the cat, visitors, room
-stars, more dungeon themes, the questline) are left out or only named.
+The one roadmap for the game (owner + AI, 14 Nov). It replaces the loose idea list. Work top to
+bottom. A phase is finished before the next one starts, unless the owner says otherwise.
+How it works:
+- Each numbered item becomes one step: a prompt in docs/NEXT-STEPS.md, one fresh session, one PR.
+- Items marked [prompt ready] already have their prompt in docs/NEXT-STEPS.md.
+- After each step: tick it here (move it to DONE) and update CLAUDE.md.
+- New ideas go in the IDEA POOL at the bottom, not into a running step.
 
-The identity: hotel management + dungeon loot + workshop + pets + collectibles. The player always
-has something to look forward to. The hotel and the shop show everything the player has achieved.
-Every part feeds another part: gather -> craft -> decorate / upgrade -> earn -> go further.
+The identity: hotel management + dungeon loot + workshop + pets + collectibles. Every part feeds
+another part (gather -> craft -> decorate / upgrade -> earn -> go further), the player always has
+something to look forward to, and the hotel and shop show what the player has achieved.
 
-## Conflicts with CLAUDE.md (ask the owner before building)
-- Mystery boxes: section 13 says no loot boxes. Only as a free reward with visible odds, never
-  bought, or not at all.
-- Trading, a player marketplace, a friends list: section 9 and 13 say no trading, no friend
-  requests and no private messages in v1. These are for after step 10, with new safety rules.
-- Player levels up to 50 and skill levels: levels now stop at 8 (levels.json). Needs a new curve.
-- Seasonal events (Halloween, Christmas): fine, but only earned by play.
+## DONE
+Rooms, avatar, walking, furniture, placing, inventory, chat, saving (steps 1 to 5b). Shop with
+customers and the till (7), room shapes and character creation (7b), dungeon (8, 9), farm and
+cooking (9b), mine and forge (9c), UI polish, atmosphere (light, shadows, sound), logo splash,
+shop life (9d), ranks and the Book (9e).
 
-## A. Soon (fits the game as it is)
-1. Skills: each activity gets its own xp and levels with small unlocks: Mining, Farming, Fishing,
-   Woodcutting, Cooking, Crafting / Smithing, Dungeon. Shown in a Profile panel.
-2. Unlocks through play: hotel level, shop level and achievements give furniture and decorations
-   (for example: open 100 chests -> a treasure chest to place; catch every fish -> a golden
-   aquarium; beat every boss -> a boss trophy). Trophies hang on the wall.
-3. Achievements with badges and titles (First Steps, Master Miner, Master Farmer, Dungeon
-   Explorer, Furniture Collector, Hotel Tycoon, Completionist...).
-4. Pets as companions (after the cat of step 9g): a few pets that follow the player, are found
-   as rare drops or boss rewards (baby slime, bat, tiny mimic, ghost, mini crab...), can be named
-   and fed, sleep in the room, have funny idle moves, and have their own page in the Book.
-5. Collectibles: small rare finds in sets (for example the crystal set in 7 colours); a full set
-   gives a special piece of furniture. Shown on a trophy shelf or display in the hotel room.
-6. More potions with a timed effect: speed, luck, mining, fishing, xp, night vision.
-7. Gear that changes how the avatar looks; accessories (lucky ring, mining helmet, boots,
-   backpack = more bag slots).
-8. Farm: more crops (tomato, strawberry, blueberry, corn, golden apple), crop quality (normal,
-   good, excellent, golden), a scarecrow, a greenhouse, fruit trees, a beehive; animals later
-   (chickens, cows, sheep, bees).
-9. Mine: floors that go deeper with rarer ore (silver, gold, crystal, obsidian, starstone),
-   hidden rooms and treasure rooms.
-10. Dungeon: mini-bosses, difficulty levels, more themes (spider cave, ice, lava, void) with a
-    boss and a special reward each (a crown, a pet, a throne, armor, wings).
-11. Shop: more shelf types and displays (potion display, rare item display), a bigger counter, a
-    special shop bell, a travelling merchant with a small changing stock.
-12. Hotel: more rooms (kitchen, bathroom, balcony, a secret cellar), more furniture sets
-    (royal, crystal, mushroom, pumpkin, cloud, ghost), an aquarium, instruments.
-13. Small details: a clock with the real time, candles that burn down, birds outside, rain and
-    snow, day and night, a notice board with tasks, a calendar, hidden passages, a rare rainbow,
-    shooting stars, a pet that sometimes sits on your head.
-14. UI: item descriptions, item comparison, equipment slots, a pet slot, favourites, search in the
-    bag, recipes that show what is missing (exists), collection percentage (step 9e).
+## PHASE 1 - Finish the core game
+The loops that are planned must all exist before anything else is added.
+1.0 Housekeeping: shorten CLAUDE.md (move the long per-step notes to docs/NOTES.md, keep the
+    brief, the conventions and a short current state). Saves usage in every session.
+1.1 Step 9f - Lakeside: fishing and woodcutting. [prompt ready]
+1.2 Step 9g - Livelier hotel: hats, emotes, usable furniture, the cat, room stars, visitors.
+    [prompt ready]
+1.3 Step 9h - Dungeon round 2 (3 floors, boss) and two more dungeon types. [prompt ready]
+1.4 Step 9i - The questline: chapters, progress, rewards, daily tasks. [prompt ready]
 
-## B. Later (bigger systems)
-- New areas on the Map, unlocked by level: Enchanted Forest (mushrooms, magic plants, rare
-  seeds, hidden caves), Crystal Cavern, Snow Mountain, Tropical Island, Haunted Graveyard, Desert
-  Ruins, a Town Square with NPCs, a market and daily events.
-- Restaurant / tavern: a kitchen and dining room where guests order dishes cooked from the farm
-  (bread, pies, soups, stews, a royal feast) and pay; guest rooms; a reception desk.
-- Random events: gold rush, meteor shower, treasure hunt, ghost night, lucky day, flower
-  festival, crystal storm, fishing frenzy, a mystery visitor.
-- Seasons and events: Halloween, winter, spring, summer, an anniversary, double xp weekends.
-- Extra buildings: bakery, pet shop, alchemy lab, treasure vault, boathouse, clock tower.
+## PHASE 2 - Playtest and balance
+No new features. Make what exists fun.
+2.1 A full playthrough from a new game by the owner; one fix list; fix it.
+2.2 Economy pass: prices, drop rates, xp curve, customer pace, craft costs (with the simulation
+    tools). Raise the level cap from 8 to about 20 with a new curve.
+2.3 First-hour pass: the first 60 minutes must explain themselves (quests, hints, pacing).
 
-## C. Online (after step 10)
-Visiting each other's rooms and rating them, room contests, leaderboards, fishing contests,
-shared events, profiles with showcases, titles and badges. Trading and player shops only after
-the safety rules are rewritten.
+## PHASE 3 - Goals (small systems that give long-term reasons to play)
+These reuse the quest event counters from 9i, so they are cheap.
+3.1 Skills: own xp and levels for Mining, Farming, Fishing, Woodcutting, Cooking, Smithing and
+    Dungeon, with small unlocks, shown in a Profile panel.
+3.2 Achievements with titles, and unlocks through play: achievements, hotel level and shop level
+    give furniture, decorations and trophies for the wall (open 100 chests -> a treasure chest to
+    place; catch every fish -> a golden aquarium; beat every boss -> a boss trophy).
+3.3 Collectibles in sets (for example crystals in 7 colours); a full set gives a special piece.
+    Shown on a trophy shelf or display case in the hotel room; a tab in the Book.
 
-## Look and feel references (owner's taste, 14 Nov; never copy, no screenshots in the repo)
-- Rooms packed with detail: many small props, rugs, plants, wall decorations, things on tables.
-- Warm, soft light: a gentle glow close to candles, fires and windows; the room itself stays
-  readable and colourful. No big flat coloured discs on the floor.
-- Many people at once doing different things: sitting, eating, talking, wandering, with speech
-  and thought bubbles.
-- Outdoor places are full: trees, bushes, flowers, paths, fences, cliffs, falling petals.
+## PHASE 4 - Art (step 6)
+Now the feature set is stable enough to draw once.
+4.1 docs/STYLE.md and a test set: the avatar, 5 pieces of furniture, one floor, one wall.
+4.2 Avatar: clothing, hats, walk and sit frames.
+4.3 Furniture and styles (home, shop, crypt, lake).
+4.4 Outdoors: farm, lakeside, crops, trees, water.
+4.5 Dungeon and mine: blocks, enemies, chests, rocks.
+4.6 Icons (materials, food, fish, gear) and the UI skin.
+The look and feel wanted: rooms packed with small props; warm, soft light close to its source;
+many people doing different things; outdoor places that are full (trees, bushes, flowers, paths).
+Never copy another game; no screenshots of other games in the repo.
+
+## PHASE 5 - Online (step 10 and on)
+The long-term goal: a real online hotel.
+5.1 Server, accounts (username + password), saves on the server, RemoteGameAPI.
+5.2 Visiting rooms: see other players walk, sit, emote; public room chat with the filter, report
+    and mute (section 13).
+5.3 A lobby / town square as the shared place to meet; a room list.
+5.4 Room ratings, room contests, leaderboards, profiles with showcases, titles and badges.
+5.5 A small private test with friends; fix list.
+
+## PHASE 6 - Depth (pick in this order; each is its own step)
+6.1 Pets: companions that follow the player, found as rare drops or boss rewards, named and fed,
+    with funny idle moves and a page in the Book.
+6.2 Potions with timed effects (speed, luck, mining, fishing, xp, night vision) and accessories:
+    equipment slots, lucky ring, mining helmet, boots, a backpack for more bag slots; gear that
+    changes how the avatar looks.
+6.3 Farm 2: more crops, crop quality (normal, good, excellent, golden), scarecrow, greenhouse,
+    fruit trees, beehive; then animals (chickens, cows, sheep).
+6.4 Mine 2: floors that go deeper with rarer ore (silver, gold, crystal, obsidian, starstone),
+    hidden rooms and treasure rooms.
+6.5 Dungeon 2: mini-bosses, difficulty levels, more themes (spider cave, ice, lava, void), each
+    with a boss and a special reward.
+6.6 Shop 2: more displays (potion display, rare item display), a bigger counter, a travelling
+    merchant with a small changing stock.
+6.7 Hotel 2: more rooms (kitchen, bathroom, balcony, a cellar), more furniture sets (royal,
+    crystal, mushroom, pumpkin, cloud, ghost), an aquarium, instruments.
+6.8 World life: day and night, rain and snow, birds, a notice board, a calendar, small secrets.
+
+## PHASE 7 - A bigger world
+7.1 Restaurant / tavern: guests order dishes cooked from the farm and pay; guest rooms.
+7.2 New areas on the Map, one per step, unlocked by level: Enchanted Forest, Crystal Cavern,
+    Snow Mountain, Tropical Island, Haunted Graveyard, Desert Ruins.
+7.3 Random events (gold rush, meteor shower, ghost night, lucky day, fishing frenzy, a mystery
+    visitor) and seasons (Halloween, winter, spring, summer), earned by play only.
+7.4 Extra buildings: bakery, pet shop, alchemy lab, treasure vault, boathouse, clock tower.
+
+## PHASE 8 - Release
+8.1 The real, original name; new logo if the name changes.
+8.2 Legal and safety check (ages 13+, rules per country, privacy text).
+8.3 Windows desktop app; Steam page; a public test; launch.
+
+## NEEDS THE OWNER'S DECISION (conflicts with CLAUDE.md; do not build until decided)
+- Mystery boxes: section 13 says no loot boxes. Only as a free reward with visible odds, or not.
+- Trading, a player marketplace, player shops, a friends list: section 9 and 13 say not in v1.
+  Only after phase 5, with new safety rules.
+
+## IDEA POOL (not planned yet)
+Item descriptions and comparison, favourites, search in the bag, a pet that sits on your head,
+candles that burn down, a rare rainbow, shooting stars, footprints in snow, hidden passages, a
+hidden NPC, mine carts, mining companions, fishing tournaments, a radio with music.

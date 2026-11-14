@@ -103,6 +103,8 @@ gear tier. Update CLAUDE.md (current state). Commit "step 9c done" and push.
 
 # Plan after the UI polish (owner's wishes, 14 Nov)
 
+The order of ALL work is in docs/ROADMAP.md. This file only holds the step prompts.
+
 New order: 9d (shop life) -> atmosphere step (light, shadows, sound; prompt at the end) -> 9e
 (ranks and the collection book) -> 9f (lakeside: fishing and woodcutting) -> 9g (a livelier
 hotel: hats, emotes, visitors) -> 9h (more dungeon types, with round 2) -> 9i (the questline)
