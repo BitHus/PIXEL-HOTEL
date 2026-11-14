@@ -472,7 +472,7 @@ docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying
 it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
 (mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). The atmosphere
-step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE) is done too. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE) and the logo splash are done too. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
 step 9d (shop life), 9e (ranks and the Book), 9f (lakeside), 9g (livelier hotel), 9h (dungeon
 types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
@@ -820,6 +820,15 @@ Conventions:
   - Panels pop in (scale 0.95 -> 1, 120 ms), off with prefers-reduced-motion.
   - Checked with a headless browser at 360 x 740 and 1280 x 800 (all panels, confirm panels,
     character creation, shop, farm, mine, dungeon).
+- LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
+  logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
+  client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts
+  runSplash() pops, holds and fades it (config SPLASH_POP_MS 400, SPLASH_POP_FROM, SPLASH_HOLD_MS
+  1500, SPLASH_FADE_MS 500, SPLASH_LOGO_PX, SPLASH_MARGIN_PX; reduced motion = fade only), a tap or
+  key skips it (the event is swallowed), then the element is removed. splashBox (tested) picks x1 /
+  x2 and whole device px. main.ts awaits it before character creation and before the first
+  openRoom (so the camera intro starts after it). The logo is also the favicon (index.html) and the
+  128 px picture at the top of Settings (settingsPanel.ts, .settings-logo).
 - ATMOSPHERE (owner's request after the UI polish; rendering, sound and data only, no rules):
   - Light sources are data: FurnitureType.light = { radius (world px), color (palette index),
     flicker (0 steady .. 1 candle) } (types.ts LightSource). furniture.json: lamp (candle stand),

@@ -104,6 +104,16 @@ on a wide screen it sits at the right, fully clear of it; on a phone it starts u
 panel and spans from the left edge to the button column, so the gold stays readable while
 shopping. The bag is a bottom sheet just above the hotbar on a phone.
 
+**Logo splash (every page load).** The owner's logo (client/src/assets/logo.gif; never redrawn)
+in the middle of a dark warm screen (palette #3e2731) that covers the game while it loads. It
+pops in (0.8 -> 1 with a small bounce), stays, then the logo and the background fade out (times
+SPLASH_* in config); with prefers-reduced-motion it only fades. Pixelated, at a whole multiple of
+its size: x1 on a phone, x2 when it fits with 16 px to spare (ui/splash.ts splashBox; on a
+fractional devicePixelRatio it rounds to whole device px per art px). A tap or a key skips it at
+once (that tap or key does nothing else), and the element is removed. Character creation and the
+room's camera intro start only after it. The logo is also the favicon and sits small (128 px) at
+the top of the Settings panel.
+
 ## 3. Visual style of UI elements
 
 Rewritten in the UI polish step (owner's decision). Still pixel art: square corners, no

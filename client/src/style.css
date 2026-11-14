@@ -37,3 +37,21 @@ body {
 [hidden] {
   display: none !important;
 }
+
+/* The logo splash (ui/splash.ts): covers the game until it is removed. */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #3e2731;
+  touch-action: none;
+}
+
+#splash img {
+  position: absolute;
+  visibility: hidden;
+  image-rendering: pixelated;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}

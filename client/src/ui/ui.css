@@ -2546,3 +2546,12 @@
   font-size: 13px;
   color: var(--wood);
 }
+
+/* The logo at the top of Settings (small; pixelated, never smoothed). */
+.settings-logo {
+  display: block;
+  width: 128px;
+  height: 128px;
+  margin: 0 auto 4px;
+  image-rendering: pixelated;
+}

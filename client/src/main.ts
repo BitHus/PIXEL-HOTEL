@@ -116,11 +116,14 @@ import { RoomAtmosphere } from './render/roomAtmosphere.ts';
 import { Backdrop } from './render/backdrop.ts';
 import { Sound } from './audio/sound.ts';
 import { loadPrefs, savePrefs } from './api/prefs.ts';
+import { runSplash } from './ui/splash.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
 
 async function start(): Promise<void> {
+  // The logo splash runs while the game loads; character creation and the camera intro wait for it.
+  const splashGone = runSplash();
   const host = document.getElementById('game');
   const ui = document.getElementById('ui');
   if (!host || !ui) throw new Error('#game or #ui element missing');
@@ -140,6 +143,7 @@ async function start(): Promise<void> {
   // the intro in the shop. A save that already has a player skips all of this.
   let introPending = false;
   if (await api.needsNewPlayer()) {
+    await splashGone;
     for (;;) {
       const choice = await runNewGameSetup(ui);
       if (await api.createPlayer(choice)) break;
@@ -1209,6 +1213,7 @@ async function start(): Promise<void> {
     tillCoins.update(ticker.deltaMS, (p) => worldToScreen(p, shown), waiting && counterItem ? tillPoint(counterItem) : null);
   });
 
+  await splashGone;
   await openRoom(room.id, !introPending);
   if (introPending) await playNewGameIntro();
   // A run in the save (step 9): back into the dungeon, paused until Resume.

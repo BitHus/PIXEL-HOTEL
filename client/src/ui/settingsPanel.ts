@@ -6,6 +6,9 @@
 import { el, textButton } from './dom.ts';
 import { panelShell } from './panelShell.ts';
 
+/** The owner's logo (also the splash and the favicon). */
+const LOGO_URL = new URL('../assets/logo.gif', import.meta.url).href;
+
 export interface SettingsHooks {
   exportSave(): string;
   importSave(text: string): void;
@@ -99,6 +102,12 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
     s.append(el('h3', '', title), ...buttons);
     return s;
   };
-  shell.body.append(section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  // The logo, small, at the top (x0.5: 128 px, every art px = 2 device px on a phone with ratio 2+).
+  const logo = el('img', 'settings-logo');
+  logo.src = LOGO_URL;
+  logo.alt = 'Pixel Hotel';
+  logo.width = 128;
+  logo.height = 128;
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

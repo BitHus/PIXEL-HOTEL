@@ -544,3 +544,14 @@ export const IDLE_SHIFT_HOLD_MS = 700;
 export const SOUND_DEFAULT_VOLUME = 0.35;
 /** Where the device settings (sound, volume, lighting) are stored. */
 export const PREFS_KEY = 'pixel-hotel.prefs';
+
+// ---------- Logo splash on every page load (client only) ----------
+/** The logo pops in (scale SPLASH_POP_FROM -> 1 with a small bounce) over this many ms. */
+export const SPLASH_POP_MS = 400;
+export const SPLASH_POP_FROM = 0.8;
+/** It stays this long after the pop, then the logo and the background fade out over SPLASH_FADE_MS. */
+export const SPLASH_HOLD_MS = 1500;
+export const SPLASH_FADE_MS = 500;
+/** The logo art is SPLASH_LOGO_PX square; it is shown x2 when that fits with SPLASH_MARGIN_PX free on each side. */
+export const SPLASH_LOGO_PX = 256;
+export const SPLASH_MARGIN_PX = 16;
