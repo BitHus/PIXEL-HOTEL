@@ -103,7 +103,9 @@ gear tier. Update CLAUDE.md (current state). Commit "step 9c done" and push.
 
 # Plan after the UI polish (owner's wishes, 14 Nov)
 
-New order: 9d (shop life) -> atmosphere step (light, shadows, sound; prompt at the end) -> 9e
+The order of ALL work is in docs/ROADMAP.md. This file only holds the step prompts.
+
+New order (see docs/ROADMAP.md, it leads): 9d (shop life) -> atmosphere step (light, shadows, sound; prompt at the end) -> 9e
 (ranks and the collection book) -> 9f (lakeside: fishing and woodcutting) -> 9g (a livelier
 hotel: hats, emotes, visitors) -> 9h (more dungeon types, with round 2) -> 9i (the questline)
 -> step 6 (art) -> step 10 (online). One step per fresh Claude Code session. Every step that
@@ -153,6 +155,23 @@ Step 9f: the Lakeside (owner's decision; add section 10d to CLAUDE.md). A new ou
 Plan first (max 8 lines). Tests for tree regrowth, the fishing session and the catch rolls. Save migration. Run typecheck and tests, update CLAUDE.md and docs, commit and push, tell me what to try.
 ```
 
+## Step 9t - The tavern
+
+```
+Step 9t: the shop becomes a tavern (owner's decision, 14 Nov: a cosy tavern feels much better than a shop). This changes CLAUDE.md sections 1, 5 and 9: update the brief. Everything original: never copy another tavern game's names, art or layout. Read CLAUDE.md, docs/NOTES.md (shop and customers) and docs/UI-REFERENCE.md first. If this is too much for one session, do it in parts and stop after each: A) shared rules and tests, B) the room, guests and serving in the client, C) brewing, the menu panel, the migration and the texts.
+
+1. THE ROOM. The shop room is now the Tavern everywhere the player sees it (Map card, info panel, catalog tab, quests, texts). Keep the internal kind 'shop' and the room id, so saves and code keep working. The counter is now the bar (same item, same till, same staff-only side).
+2. GUESTS replace customers as the main visitors. They come in alone, in pairs or in a group of 3 (rate from the tavern's appeal, as now), look for free seats at a table (a seat counts when a surface item with a free spot is next to it), walk there and sit. No free seat: they stand around a moment, say so and leave. At most as many guests as seats, capped in config.
+3. ORDERS. A seated guest orders one thing from the menu after a moment: an order bubble with the item's icon. The player taps the guest (or the bubble): the avatar walks to the bar, picks the item up (it shows in the hands), walks to the guest and puts it on the table, all from one tap (taps queue up, at most 3). The guest eats or drinks for 20 to 40 s (the item stays on the table, small sip / bite moves, they chat with table mates), then leaves coins on the table and walks out. The coins stay until the player taps them (walk there, collect, "+n gold"): nothing is ever collected automatically. An empty mug or plate stays too: tap to clear it; a table spot with dirt or coins on it cannot be used by a new guest. A guest who waits too long for the order (config, about 90 s) leaves unhappy without paying.
+4. THE MENU. A Menu panel (tap the bar in play mode: tabs Serve and Menu): the player chooses which drinks and dishes are on the menu and sets a price for each. The price feedback rule of section 9 stays (tolerance, the four faces): a guest who finds the price too high orders something cheaper or leaves. Stock comes from the bag: dishes are the cooked food (food.json), drinks come from brewing. Out of stock = off the menu. An empty menu: guests still come in, sit, talk and leave ("Nothing to drink?").
+5. BREWING. A brewing barrel (furniture, one at the start, more in the catalog): put in crops, wait in real time (also while the game is closed, time passed in), tap to collect mugs. Recipes in shared/data/drinks.json, original names, for example: root ale (2 turnip + 1 potato, 10 min, 6 mugs), carrot cider (3 carrot, 20 min, 6), pumpkin stout (1 pumpkin + 2 potato, 45 min, 8), glowcap tonic (1 glowcap + 1 carrot, 30 min, 4; guests tip extra). Drinks are a new group in MATERIAL_TYPES with baseValue; they can also go in the lunch box later (not now).
+6. THE MARKET CORNER stays: the stall table, shelves and display cases keep selling loot exactly as now (browse, decide, pay at the bar while the player stands behind it, queue of 3). Guests who finished their drink sometimes browse the stall on the way out. Window-shoppers stay.
+7. AWAY RULE: nothing happens without the player. While the player is elsewhere or the game is closed, at most 3 guests are seated with an open order (maths only), and the loot queue rule stays. Unserved guests there do not walk off while the player is away.
+8. START AND MIGRATION. A new game starts with the bar, the stall table, one round table with 2 stools, and one brewing barrel holding 6 root ale ready to collect. Old saves get the table, 2 stools and the barrel in the bag, and a toast that explains the tavern. New furniture in the catalog (Tavern tab, replaces Shop): bar stool, round table, long table, mug shelf (wall), menu board (wall), keg rack, brewing barrel.
+9. FEEL: guests talk at the table (npcLines.json: toasts, small talk, remarks about the drink and the room), a soft murmur sound when 3 or more guests sit, a clink when an order lands. The hint / quest texts about the shop are rewritten for the tavern.
+Plan first (max 8 lines). Tests: seating and groups, the order and serve chain, coins and dirt blocking a spot, the patience timer, brewing over real time and across a reload, the menu price rule, the away rule, the migration, the ledger still adds up. Update tools/simulate-economy.ts for tavern income. Run typecheck and tests, update CLAUDE.md, docs/NOTES.md, docs/UI-REFERENCE.md and tick docs/ROADMAP.md, commit and push, tell me what to try on my phone.
+```
+
 ## Step 9g - A livelier hotel: hats, emotes, visitors
 
 ```
@@ -189,7 +208,7 @@ Plan first (max 8 lines). Tests for the new enemy rules, the features and the ge
 Step 9i: a real questline (owner's decision: the hints of step 7 are replaced; update CLAUDE.md). Read CLAUDE.md and docs/UI-REFERENCE.md first.
 
 1. Quests are data (shared/data/quests.json): { id, chapter, title, text, goal: { event, target?, count }, reward: { gold?, items?, hat?, unlock? }, next }. Progress is counted from game events through one pure function (questProgress(state, event)), fed from the ledger and the run / fishing / farm events, so quests can never be out of date.
-2. Chapters, in play order, covering EVERYTHING that exists now: 1 Opening the shop (buy, place, stock a slot, serve a customer, earn 100 gold), 2 The crypt (first run, open 3 chests, defeat 5 slimes, bring loot home, craft one piece), 3 The farm (plant, harvest, cook, eat food in a run), 4 The mine and forge (mine ore, smelt, forge a sword, forge armor), 5 The lakeside (chop a tree, catch a fish, catch a rare fish, build a lake piece), 6 A real home (reach 3 stars, get a visitor's tip, wear a hat, adopt the cat), 7 Deeper (reach floor 3, beat the Bone King, enter the Sunken Cave, enter the Ruins), 8 Collector (fill 25% / 50% of the Book, find a legendary). Skip chapters whose feature is not built yet and say so.
+2. Chapters, in play order, covering EVERYTHING that exists now: 1 Opening the tavern (buy and place a table, brew a drink, serve a guest, collect the coins, sell one thing at the stall, earn 100 gold), 2 The crypt (first run, open 3 chests, defeat 5 slimes, bring loot home, craft one piece), 3 The farm (plant, harvest, cook, eat food in a run), 4 The mine and forge (mine ore, smelt, forge a sword, forge armor), 5 The lakeside (chop a tree, catch a fish, catch a rare fish, build a lake piece), 6 A real home (reach 3 stars, get a visitor's tip, wear a hat, adopt the cat), 7 Deeper (reach floor 3, beat the Bone King, enter the Sunken Cave, enter the Ruins), 8 Collector (fill 25% / 50% of the Book, find a legendary). Skip chapters whose feature is not built yet and say so.
 3. One main quest is active at a time, plus up to 3 side tasks that refresh daily (small: "sell 5 items", "catch 3 fish"; a real-time day passed in, no Date.now in shared/).
 4. UI: the quest card shows the active quest with a progress count (2 / 5); a Quest log panel lists the chapters, done quests (ticked), the current one and the next ones as "???". A finished quest shows a short reward pop with a Claim button (rewards are claimed by tapping, never silently).
 5. Old saves: quests already done by the state (owns a sword, has a farm plot planted...) are marked done without a reward spam: give one summary reward.
