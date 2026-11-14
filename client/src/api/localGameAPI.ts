@@ -24,6 +24,9 @@ import {
   MINE_UNLOCK_LEVEL,
   buySeeds,
   cook,
+  claimBookReward,
+  openBook,
+  type BookTab,
   harvestPlot,
   plantPlot,
   roomBlockers,
@@ -600,6 +603,18 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!next) return false;
     this.commit(next);
     return true;
+  }
+
+  async bookOpened(): Promise<void> {
+    this.commit(openBook(this.state, this.now()));
+  }
+
+  async claimBookReward(tab: BookTab, percent: number): Promise<number | null> {
+    const next = claimBookReward(this.state, tab, percent, this.now());
+    if (!next) return null;
+    const gold = next.player.wallet.gold - this.state.player.wallet.gold;
+    this.commit(next);
+    return gold;
   }
 
   async cook(food: FoodId): Promise<boolean> {

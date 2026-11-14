@@ -53,7 +53,7 @@ screenshots of it in the repo.
   48 px on a phone. Always visible: Quest (while a quest is going), Map, Catalog, Build and Dungeon
   (owner's decision after step 9d: the Catalog is its own button again, and the Bag left the
   column, see the hotbar below).
-  Everything else (Workshop, Room, Avatar, Chat, Settings) sits behind one "More"
+  Everything else (Workshop, Book, Room, Avatar, Chat, Settings) sits behind one "More"
   button that opens a small grid of icons with labels; a tap elsewhere closes it. On a wide
   screen (900 px and up) all buttons stand in the column and there is no More button. New
   screens get a button here (in the More grid unless they are needed all the time).
@@ -89,6 +89,20 @@ screenshots of it in the repo.
   the run bag shows ore stacks. The Workshop gets a third tab, Forge, with smelting on the left
   and the gear upgrade tree (sword, armor, pickaxe; current tier highlighted, next tier with
   its cost) on the right.
+- **Ranks (step 9e).** Every item has one of four ranks with a colour (config RANK_COLORS:
+  common grey-brown, rare blue, ultra rare purple, legendary gold). Wherever an item is shown,
+  its slot border and its name use that colour (common keeps the plain wooden border; gold names
+  get a dark outline so they read on parchment). In the dungeon a drop above common floats up in
+  its rank colour, and ultra rare and legendary drops get a short sparkle (four small stars).
+- **The Book (step 9e).** A panel in the More grid (open-book icon, key J). Icon tabs Materials,
+  Furniture, Food and crops, Enemies. A header section shows the tab's name, "n / N found", the
+  whole book in percent and the four rewards (25 / 50 / 75 / 100%: a coin and the gold; a reward
+  that is ready is a warm button). Below it a grid of cards (2 columns on a phone, 3 on a wide
+  screen): never seen = a grey silhouette and "???"; seen = the icon in colour, the name in its
+  rank colour, the rank, "Found: n" (enemies: "Kills: n") and where it comes from; enemy cards
+  list their four drops (not found yet: grey "???"). A small "New!" plate marks what was first
+  seen since the Book was last opened, and a red dot sits on the Book button (and on More while
+  the Book is in its grid) until the Book is opened.
 - **Spending gold asks first** (after step 8): buying in the Catalog and upgrading a room open a
   small centered "Buy this?" panel (picture, name, price, Cancel / Buy for N).
 - **Bottom-center: the hotbar.** One row of 44 px slots in a frame, centered, 2 px apart (polish:

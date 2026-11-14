@@ -2,49 +2,98 @@
   {
     "id": "wooden_chest",
     "rolls": 2,
+    "rankMultiplier": {"common": 1, "rare": 1, "ultra_rare": 1, "legendary": 1},
     "drops": [
-      { "item": "gold", "min": 3, "max": 8, "weight": 60 },
-      { "item": "bone", "min": 1, "max": 3, "weight": 14 },
-      { "item": "wood", "min": 1, "max": 3, "weight": 12 },
-      { "item": "cloth", "min": 1, "max": 2, "weight": 8 },
-      { "item": "crystal", "min": 1, "max": 1, "weight": 3 },
-      { "item": "bone_chair", "min": 1, "max": 1, "weight": 0.75 },
-      { "item": "skull_lamp", "min": 1, "max": 1, "weight": 0.75 },
-      { "item": "coffin_table", "min": 1, "max": 1, "weight": 0.75 },
-      { "item": "wall_torch", "min": 1, "max": 1, "weight": 0.75 }
+      {"item": "gold", "min": 3, "max": 8, "weight": 60, "rank": "common"},
+      {"item": "bone", "min": 1, "max": 3, "weight": 14, "rank": "common"},
+      {"item": "wood", "min": 1, "max": 3, "weight": 12, "rank": "common"},
+      {"item": "cloth", "min": 1, "max": 2, "weight": 8, "rank": "common"},
+      {"item": "gold", "min": 10, "max": 18, "weight": 12, "rank": "rare"},
+      {"item": "crystal", "min": 1, "max": 1, "weight": 5, "rank": "rare"},
+      {"item": "bone_chair", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "skull_lamp", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "coffin_table", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "wall_torch", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"}
     ]
   },
   {
     "id": "golden_chest",
     "rolls": 3,
+    "rankMultiplier": {"common": 0.7, "rare": 2, "ultra_rare": 2.2, "legendary": 2},
     "drops": [
-      { "item": "gold", "min": 6, "max": 16, "weight": 45 },
-      { "item": "bone", "min": 2, "max": 4, "weight": 12 },
-      { "item": "wood", "min": 2, "max": 4, "weight": 8 },
-      { "item": "cloth", "min": 1, "max": 3, "weight": 10 },
-      { "item": "crystal", "min": 1, "max": 2, "weight": 15 },
-      { "item": "bone_chair", "min": 1, "max": 1, "weight": 2.5 },
-      { "item": "skull_lamp", "min": 1, "max": 1, "weight": 2.5 },
-      { "item": "coffin_table", "min": 1, "max": 1, "weight": 2.5 },
-      { "item": "wall_torch", "min": 1, "max": 1, "weight": 2.5 }
-    ]
-  },
-  {
-    "id": "enemy_rare",
-    "rolls": 1,
-    "drops": [
-      { "item": "crystal", "min": 1, "max": 1, "weight": 70 },
-      { "item": "bone_chair", "min": 1, "max": 1, "weight": 7.5 },
-      { "item": "skull_lamp", "min": 1, "max": 1, "weight": 7.5 },
-      { "item": "coffin_table", "min": 1, "max": 1, "weight": 7.5 },
-      { "item": "wall_torch", "min": 1, "max": 1, "weight": 7.5 }
+      {"item": "gold", "min": 6, "max": 16, "weight": 45, "rank": "common"},
+      {"item": "bone", "min": 2, "max": 4, "weight": 12, "rank": "common"},
+      {"item": "wood", "min": 2, "max": 4, "weight": 8, "rank": "common"},
+      {"item": "cloth", "min": 1, "max": 3, "weight": 10, "rank": "common"},
+      {"item": "gold", "min": 18, "max": 30, "weight": 10, "rank": "rare"},
+      {"item": "crystal", "min": 1, "max": 2, "weight": 15, "rank": "rare"},
+      {"item": "bone_chair", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "skull_lamp", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "coffin_table", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "wall_torch", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"}
     ]
   },
   {
     "id": "boss",
     "rolls": 1,
+    "rankMultiplier": {"common": 1, "rare": 1, "ultra_rare": 1, "legendary": 1},
     "drops": [
-      { "item": "throne_piece", "min": 1, "max": 2, "weight": 1 }
+      {"item": "throne_piece", "min": 1, "max": 2, "weight": 1, "rank": "ultra_rare"}
+    ]
+  },
+  {
+    "id": "slime",
+    "rolls": 1,
+    "rankMultiplier": {"common": 1, "rare": 1, "ultra_rare": 1, "legendary": 1},
+    "drops": [
+      {"item": "slime_gel", "min": 1, "max": 1, "weight": 1, "rank": "common"},
+      {"item": "sticky_core", "min": 1, "max": 1, "weight": 1, "rank": "rare"},
+      {"item": "royal_jelly", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "slime_crown", "min": 1, "max": 1, "weight": 1, "rank": "legendary"}
+    ]
+  },
+  {
+    "id": "bat",
+    "rolls": 1,
+    "rankMultiplier": {"common": 1, "rare": 1, "ultra_rare": 1, "legendary": 1},
+    "drops": [
+      {"item": "bat_wing", "min": 1, "max": 1, "weight": 1, "rank": "common"},
+      {"item": "echo_fang", "min": 1, "max": 1, "weight": 1, "rank": "rare"},
+      {"item": "moon_membrane", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "night_pearl", "min": 1, "max": 1, "weight": 1, "rank": "legendary"}
+    ]
+  },
+  {
+    "id": "skeleton",
+    "rolls": 1,
+    "rankMultiplier": {"common": 1, "rare": 1, "ultra_rare": 1, "legendary": 1},
+    "drops": [
+      {"item": "bone_dust", "min": 1, "max": 1, "weight": 1, "rank": "common"},
+      {"item": "rusty_buckle", "min": 1, "max": 1, "weight": 1, "rank": "rare"},
+      {"item": "grave_ring", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "ancient_skull", "min": 1, "max": 1, "weight": 1, "rank": "legendary"}
+    ]
+  },
+  {
+    "id": "mimic",
+    "rolls": 1,
+    "rankMultiplier": {"common": 0.6, "rare": 2, "ultra_rare": 3, "legendary": 4},
+    "drops": [
+      {"item": "chest_hinge", "min": 1, "max": 1, "weight": 1, "rank": "common"},
+      {"item": "mimic_tongue", "min": 1, "max": 1, "weight": 1, "rank": "rare"},
+      {"item": "gilded_lock", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "greedy_heart", "min": 1, "max": 1, "weight": 1, "rank": "legendary"}
+    ]
+  },
+  {
+    "id": "bone_king",
+    "rolls": 1,
+    "rankMultiplier": {"common": 0.4, "rare": 2.5, "ultra_rare": 5, "legendary": 10},
+    "drops": [
+      {"item": "royal_bone", "min": 1, "max": 1, "weight": 1, "rank": "common"},
+      {"item": "king_seal", "min": 1, "max": 1, "weight": 1, "rank": "rare"},
+      {"item": "crown_shard", "min": 1, "max": 1, "weight": 1, "rank": "ultra_rare"},
+      {"item": "kings_heart", "min": 1, "max": 1, "weight": 1, "rank": "legendary"}
     ]
   }
 ]

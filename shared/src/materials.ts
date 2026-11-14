@@ -6,7 +6,7 @@
 import materialData from '../data/materials.json';
 import cropData from '../data/crops.json';
 import foodData from '../data/food.json';
-import type { CropId, FoodId, MaterialGroup, MaterialId, MaterialType, SeedId } from './types.ts';
+import type { CropId, FoodId, MaterialGroup, MaterialId, MaterialType, Rank, SeedId } from './types.ts';
 
 /** A crop (crops.json): its seed, grow time and value. A seed with seedPrice null is not sold. */
 export interface CropType {
@@ -22,6 +22,8 @@ export interface CropType {
   baseValue: number;
   color: number;
   seedColor: number;
+  /** The rank of the crop and of its seed (step 9e). */
+  rank: Rank;
 }
 
 export type FoodEffect =
@@ -38,6 +40,7 @@ export interface FoodType {
   effect: FoodEffect;
   baseValue: number;
   color: number;
+  rank: Rank;
 }
 
 export const CROP_TYPES = cropData as CropType[];
@@ -47,9 +50,9 @@ const base = (materialData as Omit<MaterialType, 'group'>[]).map((m): MaterialTy
 
 export const MATERIAL_TYPES: MaterialType[] = [
   ...base,
-  ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, group: 'seed' })),
-  ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, group: 'crop' })),
-  ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, group: 'food' })),
+  ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, rank: c.rank, group: 'seed' })),
+  ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, rank: c.rank, group: 'crop' })),
+  ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, rank: f.rank, group: 'food' })),
 ];
 
 const BY_ID = new Map(MATERIAL_TYPES.map((m) => [m.id, m]));

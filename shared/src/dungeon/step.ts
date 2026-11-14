@@ -48,16 +48,21 @@ import { getFoodType } from '../materials.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
 import { findPath, lineOfSight, type NavGrid } from '../nav.ts';
 import { rngInt } from '../rng.ts';
-import type { FoodId, Point, Rng } from '../types.ts';
+import type { Rank, FoodId, Point, Rng } from '../types.ts';
 import { generateFloor, makeEnemy } from './generate.ts';
 import { blockAt, dungeonNavGrid, onFloor } from './grid.ts';
-import { getLootTable, rollLoot, type Loot } from './loot.ts';
+import { getLootTable, rollLoot, type EnemyTableId, type Loot } from './loot.ts';
 import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type FoodBuff, type Rock, type RunBag, type RunPlayer } from './run.ts';
 import { addToBag, bagLoot } from './runBag.ts';
 
 const TICK = DUNGEON_TICK_MS;
 /** A mimic's enemy id: this plus the chest id. */
 export const MIMIC_ID_BASE = 1000;
+
+/** The enemy's type for drops and the Book: its kind, or 'mimic'. */
+export function enemyTypeOf(e: Pick<Enemy, 'kind' | 'mimic'>): EnemyTableId {
+  return e.mimic ? 'mimic' : e.kind;
+}
 
 export function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -74,6 +79,8 @@ function cloneRun(run: DungeonRun): DungeonRun {
     bag: { ...run.bag },
     banked: { ...run.banked },
     lost: { ...run.lost },
+    kills: { ...run.kills },
+    met: [...run.met],
     events: [],
   };
 }
@@ -238,10 +245,10 @@ function swing(r: DungeonRun, rock: Rock, now: number, rng: Rng): void {
   addLoot(r, loot);
 }
 
-function addLoot(r: DungeonRun, loot: readonly Loot[]): void {
+function addLoot(r: DungeonRun, loot: readonly (Loot & { rank?: Rank })[]): void {
   const added = addToBag(r.bag, loot);
   r.bag = added.bag;
-  for (const l of loot) r.events.push({ t: 'loot', item: l.item, qty: l.qty });
+  for (const l of loot) r.events.push({ t: 'loot', item: l.item, qty: l.qty, ...(l.rank && l.rank !== 'common' ? { rank: l.rank } : {}) });
   if (added.leftBehind.length > 0) {
     r.lost = addToBag(r.lost, bagLoot({ slots: added.leftBehind, gold: 0 }), Infinity).bag;
     for (const item of added.leftBehind) r.events.push({ t: 'left_behind', item });
@@ -264,7 +271,11 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
   const xp = e.mimic ? MIMIC_XP : ENEMIES[e.kind].xp;
   r.xpGained += xp;
   p.xp += xp;
-  r.events.push({ t: 'kill', enemyId: e.id, kind: e.kind, xp });
+  r.events.push({ t: 'kill', enemyId: e.id, kind: e.kind, xp, mimic: e.mimic === true });
+  // The Book: a kill counts for the enemy's type (a mimic is its own type).
+  const type = enemyTypeOf(e);
+  r.kills[type] = (r.kills[type] ?? 0) + 1;
+  if (!r.met.includes(type)) r.met.push(type);
   const level = levelForXp(p.xp);
   if (level > p.level) {
     // Level up: new stats and a full heal.
@@ -279,8 +290,9 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
   }
   if (e.mimic) addLoot(r, rollLoot(getLootTable('golden_chest'), rng));
   if (e.kind === 'bone_king') addLoot(r, rollLoot(getLootTable('boss'), rng));
-  // No rare drops in the mine (step 9c): only ore and gems come from there.
-  if (r.place === 'crypt' && rng() < RARE_DROP_CHANCE) addLoot(r, rollLoot(getLootTable('enemy_rare'), rng));
+  // The enemy's own drop table (step 9e): RARE_DROP_CHANCE per kill, and the table decides the
+  // rank. The Bone King always drops. No such drops in the mine (step 9c): only ore and gems.
+  if (r.place === 'crypt' && (e.kind === 'bone_king' || rng() < RARE_DROP_CHANCE)) addLoot(r, rollLoot(getLootTable(type), rng));
   if (e.kind === 'bone_king') {
     r.bossDefeated = true;
     bankBag(r);
@@ -482,6 +494,9 @@ function enemyTick(r: DungeonRun, e: Enemy, grid: NavGrid, rng: Rng): void {
     e.path = [];
     return;
   }
+  // It noticed the player: this enemy type is met (the Book, step 9e).
+  const type = enemyTypeOf(e);
+  if (!r.met.includes(type)) r.met.push(type);
   if (d <= ENEMY_STOP_PX) return;
   const move = (stats.speed * TICK) / 1000;
   if (stats.randomMoveChance > 0 && rng() < stats.randomMoveChance) {

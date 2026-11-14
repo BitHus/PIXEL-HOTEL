@@ -6,7 +6,7 @@
 // marked room-only).
 // The Bag button is NOT in the column (owner, after 9d): it is made here (`bag`) and main.ts puts
 // it at the right end of the hotbar.
-// Each panel button toggles its panel (Build toggles build mode, buildMode.ts). Keys: I (bag), C (catalog), Enter (chat), Escape closes the open panel.
+// Each panel button toggles its panel (Build toggles build mode, buildMode.ts). Keys: I (bag), C (catalog), J (book), Enter (chat), Escape closes the open panel.
 
 import { el, iconButton, typing } from './dom.ts';
 import type { PanelName, Panels } from './panels.ts';
@@ -17,6 +17,7 @@ const BUTTONS: [PanelName, IconName, string, string | null][] = [
   ['bag', 'bag', 'Bag (I)', 'hotbar'],
   ['catalog', 'book', 'Catalog (C)', null],
   ['workshop', 'workshop', 'Workshop: crafting and the Blacksmith', 'Workshop'],
+  ['book', 'journal', 'Book: everything you found (J)', 'Book'],
   ['room', 'house', 'Room', 'Room'],
   ['avatar', 'avatar', 'Avatar', 'Avatar'],
   ['chat', 'chat', 'Chat (Enter)', 'Chat'],
@@ -27,7 +28,7 @@ const BUTTONS: [PanelName, IconName, string, string | null][] = [
  * The right-edge column. Later steps add their buttons here (see CLAUDE.md, UI layout rule).
  * `extra` buttons (Build, Dungeon) go right after the Catalog button. `bag` is the Bag button for the hotbar.
  */
-export function createSideButtons(parent: HTMLElement, panels: Panels, extra: readonly HTMLElement[] = []): { col: HTMLElement; bag: HTMLButtonElement } {
+export function createSideButtons(parent: HTMLElement, panels: Panels, extra: readonly HTMLElement[] = []): { col: HTMLElement; bag: HTMLButtonElement; setBookDot(on: boolean): void } {
   const col = el('div', 'side-buttons');
   const buttons = new Map<PanelName, HTMLButtonElement>();
   const wrap = el('div', 'more-wrap');
@@ -80,8 +81,23 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
     else if (e.key === 'Escape' && panels.open !== null) panels.close();
     else if (e.key.toLowerCase() === 'i') panels.toggle('bag');
     else if (e.key.toLowerCase() === 'c') panels.toggle('catalog');
+    else if (e.key.toLowerCase() === 'j') panels.toggle('book');
     else return;
     e.preventDefault();
   });
-  return { col, bag: buttons.get('bag')! };
+  // The Book's dot (step 9e): something new was found. On the Book button, and on More while the
+  // Book button is inside its grid.
+  const dots = [buttons.get('book')!, more].map((b) => {
+    const d = el('span', 'new-dot');
+    d.hidden = true;
+    b.appendChild(d);
+    return d;
+  });
+  return {
+    col,
+    bag: buttons.get('bag')!,
+    setBookDot(on) {
+      for (const d of dots) d.hidden = !on;
+    },
+  };
 }

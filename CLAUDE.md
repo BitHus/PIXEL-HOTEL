@@ -141,8 +141,8 @@ how many items it holds, else 0), appeal (shop decoration value, else 0), w, d (
 the floor in px), height (px, for drawing only), blocks (blocks walking), sittable, surface
 (true if small items can stand on top), onSurface (true if it can stand on a surface), wall
 (hangs on the back wall), facings: ('down'|'right'|'up'|'left')[], standPoint: { dx, dy }
-(where a customer stands, relative to the item's anchor, default 0, 24), baseValue, rarity:
-'common'|'uncommon'|'rare'|'epic', inCatalog: boolean, art: { boxes: [{ dx, dy, w, h,
+(where a customer stands, relative to the item's anchor, default 0, 24), baseValue, rank:
+'common'|'rare'|'ultra_rare'|'legendary' (step 9e, see RANKS below), inCatalog: boolean, art: { boxes: [{ dx, dy, w, h,
 color }] } or { sprite: string } }
 FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facing, onItemUid
 (null, or the uid of the surface item it stands on) }
@@ -163,6 +163,11 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - Rotation cycles through the type's facings. A left facing is the right sprite mirrored.
 - Placeholder boxes: every box is drawn as a front face (w by h, darker) with a top face (w
   by d, lighter) above it, offset by dx and dy from the anchor.
+- RANKS (owner's decision, step 9e): every item, material, crop, food, ore, gem and furniture
+  type has one of four ranks: common, rare, ultra_rare, legendary (they replace common /
+  uncommon / rare / epic). Each rank has a colour (config RANK_COLORS, palette indices:
+  grey-brown, blue, purple, gold) used as the slot border and the name colour everywhere an item
+  is shown; ultra_rare and legendary drops sparkle.
 - Catalog: home items and shop items. Catalog price = baseValue * 3 gold. Items with
   inCatalog = false only come from the dungeon. An item can only be placed in a room that
   matches its placeIn. Step 4 builds 12 home items. Shop items arrive in step 7.
@@ -330,14 +335,27 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   the reward.
 - Loot tables are data in shared/data/loot.json: { id, rolls, drops: [{ item, min, max,
   weight }] }. Rolls use an rng that is passed in.
-- Loot: wooden chests roll 2 drops each (mostly gold, then materials, a 3% chance of a crypt
-  furniture item). A golden chest rolls 3 drops with better odds (more crystal, 10% crypt
-  furniture). 1 in 8 wooden chests is a mimic: it looks like a normal chest, but when walked
+- DROPS BY RANK (owner's decision, step 9e): every drop row in a loot table has a rank. A roll
+  first picks a rank (config RANK_WEIGHTS: common 75%, rare 20%, ultra_rare 4.5%, legendary
+  0.5%, times the table's rankMultiplier: golden chests, mimics and bosses shift the odds up),
+  then one of the table's drops of that rank by weight. A rank a table does not have falls to
+  the next lower one.
+- Loot: wooden chests roll 2 drops each (mostly gold, then materials; rare: a bigger pile of
+  gold or a crystal; ultra rare: a crypt furniture item, 5%). A golden chest rolls 3 drops with
+  better odds (more crystal, about 11% crypt furniture). 1 in 8 wooden chests is a mimic: it looks like a normal chest, but when walked
   onto it turns into a skeleton, and when it dies it drops a golden chest's loot. The boss
   floor always ends with a golden chest next to the exit, and the Bone King also drops 1 to
-  2 throne_piece. Normal enemies drop no materials. Each kill gives xp (slime 3, bat 4,
-  skeleton 5, mimic 8, Bone King 40) and has a 10% chance of one rare drop: 70% a crystal,
-  30% a random crypt furniture item (about 3% per kill).
+  2 throne_piece. Each kill gives xp (slime 3, bat 4,
+  skeleton 5, mimic 8, Bone King 40) and has a 10% chance (RARE_DROP_CHANCE) of one drop from
+  the enemy's own table (step 9e; the Bone King always drops): one new material per rank.
+  Slime: slime gel, sticky core, royal jelly, slime crown. Bat: bat wing, echo fang, moon
+  membrane, night pearl. Skeleton: bone dust, rusty buckle, grave ring, ancient skull. Mimic:
+  chest hinge, mimic tongue, gilded lock, greedy heart. Bone King: royal bone, king's seal,
+  crown shard, king's heart. They sell in the shop, and each enemy has a trophy recipe: slime
+  jar, bat wing fan, skull trophy, toothy chest, king's banner.
+- THE BOOK (owner's decision, step 9e): a collection book of everything the player ever found
+  (tabs Materials, Furniture, Food and crops, Enemies). Never seen = a grey silhouette and
+  "???". Filling 25 / 50 / 75 / 100% of a tab gives gold (and later a hat, step 9g).
 - XP and levels: levels 1 to 8, thresholds in shared/data/levels.json (total xp for level 2
   to 8: 15, 40, 80, 140, 220, 320, 450). Every level gives +3 max hp, and every even level
   gives +1 attack (added to both ends of the damage range). Xp counts the moment an enemy
@@ -501,8 +519,9 @@ it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic)
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
 (mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). The atmosphere
 step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE), the logo splash and step 9d (shop
-life, see STEP 9d) are done too, and so is the fix list after 9d (see FIX LIST AFTER 9d). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
-9e (ranks and the Book), 9f (lakeside), 9g (livelier hotel), 9h (dungeon
+life, see STEP 9d) are done too, and so are the fix list after 9d (see FIX LIST AFTER 9d) and step 9e
+(ranks and the Book, see STEP 9e). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+9f (lakeside), 9g (livelier hotel), 9h (dungeon
 types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 Layout:
@@ -920,6 +939,52 @@ Conventions:
   - Tests: nav.test.ts (24 px gap, 12 px gap, speed), customerPlan.test.ts (the picker, the staff
     grid), customers.test.ts (staff only, natural customers, window-shoppers, talk and pairs),
     generate.test.ts (chest spread), save.test.ts (migration 9).
+- STEP 9e (ranks and the collection book; owner's decisions in sections 7 and 10):
+  - Ranks: types.ts Rank ('common' | 'rare' | 'ultra_rare' | 'legendary'; Rarity is gone).
+    FurnitureType.rank and MaterialType.rank; the data files carry `rank` (furniture.json,
+    materials.json, crops.json (crop and seed share it), food.json). The crypt furniture is
+    ultra_rare (it comes from the ultra rare chest rows), the bone throne legendary; the ranks of
+    materials, ores, bars, crops and food were chosen by the AI (the owner may tune them).
+    shared/src/ranks.ts: RANKS, RANK_NAMES, rankOf(id), sparkles, rankWeights, rollRank (a rank
+    that cannot come falls to the next lower one). Config: RANK_COLORS, RANK_WEIGHTS, SPARKLE_MS,
+    BOOK_REWARD_STEPS.
+  - Loot (dungeon/loot.ts, loot.json): LootDrop.rank, LootTable.rankMultiplier, tableRanks,
+    rankChances, rollDrop (rank first, then a weighted pick in that rank; returns the rank).
+    Tables: wooden_chest, golden_chest, boss, and one per enemy type (ENEMY_TABLES: slime, bat,
+    skeleton, mimic, bone_king; the old enemy_rare table is gone). step.ts enemyTypeOf (the kind,
+    or 'mimic'); a kill rolls RARE_DROP_CHANCE for the enemy's table (the Bone King always; not
+    in the mine). The 'loot' event carries `rank` when above common; the 'kill' event `mimic`.
+    20 new materials (types.ts EnemyDropId) and 5 new crypt furniture types with recipes
+    (slime_jar, bat_wing_fan, skull_trophy, mimic_chest "Toothy chest", kings_banner).
+  - The seen list: Player.seen (SeenMap: id -> { count, firstSeenAt }), kept right in two places
+    only: ledger.ts applyChange (every material or furniture gained; not reason 'shelf', and not
+    Change.notFound = food brought home from a run) and bank.ts finishRun (DungeonRun.kills and
+    .met, keys 'enemy:<type>', count = kills; kept after death like xp). An enemy is met when it
+    notices the player (chase range) or is killed. shared/src/seen.ts: enemyKey, addSeen,
+    addSeenAll, isSeen, seenCount, ownedFinds. createNewPlayer marks the start items.
+  - The Book: shared/src/book.ts (BOOK_TABS, bookEntries(tab), sourceOf(id) ("Drops from: Slime",
+    "Dungeon chests", "Catalog", "Crafted", "Farm", "Cooked", "Mine", "Forge", "Your shop"),
+    bookProgress, bookTotal, newEntries, BOOK_REWARDS (shared/data/bookRewards.json: per tab
+    { percent, gold, hat: null }; step 9g fills in the hats), bookRewards (locked / ready /
+    taken), claimBookReward (ledger reason 'book_reward'; Player.bookRewards '<tab>:<percent>'),
+    openBook (Player.bookOpenedAt)). GameAPI: bookOpened, claimBookReward; the panel reads
+    Player from getPlayer.
+  - client: ui/bookPanel.ts (the panel; enemy pictures are small pixel maps in code), ui/rank.ts
+    (applyRankColors puts --rank-* on the UI root; setRank, rankName), the rank classes in ui.css
+    (.rank-<rank>, .rank-name, .slot.rank-*), used by the hotbar, bag, run bag, catalog cards,
+    shelf panel, crafting, cooking and the run result lists. floatTexts.add(..., rank): rank
+    colour and the sparkle. pixelIcons 'journal'; PanelName 'book'; sideButtons: Book in the More
+    grid, key J, setBookDot (the red .new-dot on Book and More).
+  - tools/simulate-dungeon.ts prints the average kills per drop of each rank per enemy (step 9e):
+    slime / bat / skeleton about 13 (common), 50 (rare), 220 (ultra rare), 1900 to 2000
+    (legendary); mimic 22 / 25 / 75 / 470; Bone King 3.6 / 2.1 / 4.8 / 21.5. The 500 ms bot with
+    iron gear kills about 4 to 5 of each normal enemy per round 2 run.
+  - Chat bubbles (fix found while testing): a bubble's age is real time, nothing is added while
+    the page is hidden, and one avatar shows at most CHAT_BUBBLES_PER_AVATAR (3). Before, bubbles
+    aged per drawn frame and piled up above a waiting customer while the page was in the
+    background.
+  - Tests: ranks.test.ts, book.test.ts (the seen list and the Book), dungeon/loot.test.ts (rank
+    rolls), save.test.ts (migration 10).
 - LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
   logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
   client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts
@@ -1248,7 +1313,9 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 10: MIGRATIONS[9] (fix list after 9d) gives the customers in the line the new
+- SAVE_VERSION is 11: MIGRATIONS[10] (step 9e) adds Player.seen (everything owned now counts as
+  seen, first seen at 0), bookOpenedAt 0, bookRewards [], and kills {} / met [] on a saved run.
+- (Before 11:) SAVE_VERSION 10: MIGRATIONS[9] (fix list after 9d) gives the customers in the line the new
   fields (buys, plan, step, doing, followId, talk, holdMs) and drops looks / looksMax / decorLeft.
 - (Before 10:) SAVE_VERSION 9: MIGRATIONS[8] (step 9d) adds ShopState.lastLines {} and keeps only the
   customers carrying an item (with the new Customer fields; the catch-up puts them on their spots).

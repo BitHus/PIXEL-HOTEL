@@ -4,6 +4,7 @@
 // (greyed out without all ingredients). Food stacks in the bag and goes into the dungeon in the
 // lunch box (picked when you enter).
 
+import { rankName } from './rank.ts';
 import { FOOD_TYPES, getMaterialType, type FoodEffect, type FoodType, type MaterialId, type Player } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
@@ -46,7 +47,7 @@ export function createCookingPanel(parent: HTMLElement, cook: (food: FoodType) =
     }
     const owned = p.materials[f.id] ?? 0;
     const info = el('div', 'catalog-info');
-    info.append(el('div', 'catalog-name', owned > 0 ? `${f.name} (${owned})` : f.name), el('div', 'catalog-sub', foodEffectText(f.effect)), needs);
+    info.append(rankName('div', 'catalog-name', owned > 0 ? `${f.name} (${owned})` : f.name, f.id), el('div', 'catalog-sub', foodEffectText(f.effect)), needs);
     const b = textButton('Cook', () => cook(f));
     b.disabled = !ok;
     r.append(slot, info, b);

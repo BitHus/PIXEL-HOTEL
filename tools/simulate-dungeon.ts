@@ -9,6 +9,11 @@
 
 import {
   DUNGEON_ROUND,
+  ENEMY_TABLES,
+  RANKS,
+  RARE_DROP_CHANCE,
+  getLootTable,
+  rollLoot,
   PLAYER_ATTACK_REACH,
   distance,
   getFurnitureType,
@@ -164,3 +169,35 @@ for (const round of ROUNDS) {
     console.log(`${name.padEnd(11)}${cells([])}   |            ${cells(LUNCH)}`);
   }
 }
+
+// ---------- Step 9e: how many kills each rank needs ----------
+/**
+ * Rolls the enemy drop rule (RARE_DROP_CHANCE per kill, the Bone King always; the enemy's table
+ * decides the rank) for many kills and prints the average kills per drop of each rank, next to
+ * the kills per run the 500 ms bot makes in round 2.
+ */
+function ranksTable(): void {
+  const KILLS = 400_000;
+  const perRun: Record<string, number> = {};
+  const runs = Math.min(RUNS, 300);
+  for (let i = 0; i < runs; i++) {
+    const run = playRun(i + 1, 2, 500, 0, ['iron_sword', 'iron_armor']);
+    for (const [type, n] of Object.entries(run.kills)) perRun[type] = (perRun[type] ?? 0) + (n ?? 0) / runs;
+  }
+  console.log(`\n=== Step 9e: average kills for one drop of each rank (${KILLS} kills rolled per enemy; drop chance ${RARE_DROP_CHANCE * 100}% per kill, the Bone King always drops) ===`);
+  console.log('enemy       ' + RANKS.map((r) => r.padStart(12)).join('') + '   kills/run (500 ms + iron, round 2)');
+  for (const type of ENEMY_TABLES) {
+    const rng = seededRng(9000 + type.length);
+    const table = getLootTable(type);
+    const got: Record<string, number> = {};
+    for (let k = 0; k < KILLS; k++) {
+      if (type !== 'bone_king' && rng() >= RARE_DROP_CHANCE) continue;
+      const rank = rollLoot(table, rng)[0]!.rank;
+      got[rank] = (got[rank] ?? 0) + 1;
+    }
+    const cells = RANKS.map((r) => (got[r] ? (KILLS / got[r]!).toFixed(got[r]! > KILLS / 100 ? 1 : 0) : '-').padStart(12)).join('');
+    console.log(`${type.padEnd(12)}${cells}   ${(perRun[type] ?? 0).toFixed(2)}`);
+  }
+}
+
+ranksTable();

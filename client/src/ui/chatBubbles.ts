@@ -2,14 +2,19 @@
 // bubbles appear right above the head and push older ones up (they stack upward). Each one
 // stays at reading pace (readingMs, at least CHAT_BUBBLE_MS), then fades out over CHAT_BUBBLE_FADE_MS. HTML, so the
 // text stays sharp at every zoom; call update() every frame with the heads' screen positions.
+// A bubble's age is REAL time (fix after 9d): the shop keeps running while the page is in the
+// background and no frames are drawn, so bubbles that aged per frame piled up above a waiting
+// customer. Nothing is added while the page is hidden, and one avatar shows at most
+// CHAT_BUBBLES_PER_AVATAR bubbles (the oldest goes).
 
-import { CHAT_BUBBLE_FADE_MS, CHAT_BUBBLE_GAP_PX, CHAT_BUBBLE_MS, readingMs, type ChatLine, type Point } from '@pixel-hotel/shared';
+import { CHAT_BUBBLE_FADE_MS, CHAT_BUBBLE_GAP_PX, CHAT_BUBBLE_MS, CHAT_BUBBLES_PER_AVATAR, readingMs, type ChatLine, type Point } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 
 interface Bubble {
   avatarId: number;
   el: HTMLElement;
-  age: number;
+  /** When it appeared (performance.now()). */
+  born: number;
   /** How long it stays, ms. */
   life: number;
 }
@@ -27,27 +32,35 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
   const layer = el('div', 'bubble-layer');
   parent.appendChild(layer);
   let bubbles: Bubble[] = [];
+  const push = (avatarId: number, b: HTMLElement, life: number): void => {
+    if (document.hidden) return; // Nobody sees it, and it would only pile up.
+    layer.appendChild(b);
+    bubbles.push({ avatarId, el: b, born: performance.now(), life });
+    const mine = bubbles.filter((x) => x.avatarId === avatarId);
+    for (const old of mine.slice(0, Math.max(0, mine.length - CHAT_BUBBLES_PER_AVATAR))) {
+      old.el.remove();
+      bubbles = bubbles.filter((x) => x !== old);
+    }
+  };
 
   return {
     add(line) {
       const b = el('div', 'bubble', line.text);
-      layer.appendChild(b);
-      bubbles.push({ avatarId: line.avatarId, el: b, age: 0, life: readingMs(line.text, CHAT_BUBBLE_MS) + CHAT_BUBBLE_FADE_MS });
+      push(line.avatarId, b, readingMs(line.text, CHAT_BUBBLE_MS) + CHAT_BUBBLE_FADE_MS);
     },
     addNode(avatarId, node, lifeMs) {
       const b = el('div', 'bubble bubble-icon');
       b.appendChild(node);
-      layer.appendChild(b);
-      bubbles.push({ avatarId, el: b, age: 0, life: lifeMs });
+      push(avatarId, b, lifeMs);
     },
     clear() {
       for (const b of bubbles) b.el.remove();
       bubbles = [];
     },
-    update(dtMs, heads) {
-      for (const b of bubbles) b.age += dtMs;
-      for (const b of bubbles.filter((x) => x.age >= x.life)) b.el.remove();
-      bubbles = bubbles.filter((b) => b.age < b.life);
+    update(_dtMs, heads) {
+      const now = performance.now();
+      for (const b of bubbles.filter((x) => now - x.born >= x.life)) b.el.remove();
+      bubbles = bubbles.filter((b) => now - b.born < b.life);
       // Per avatar: the newest bubble sits right above the head, older ones above it.
       const bottom = new Map<number, number>();
       for (let i = bubbles.length - 1; i >= 0; i--) {
@@ -61,7 +74,7 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
         const x = Math.min(Math.max(head.x - w / 2, 4), window.innerWidth - w - 4);
         b.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y - h)}px)`;
         b.el.classList.toggle('tail', !bottom.has(b.avatarId));
-        b.el.style.opacity = String(Math.min(1, (b.life - b.age) / CHAT_BUBBLE_FADE_MS));
+        b.el.style.opacity = String(Math.min(1, (b.life - (now - b.born)) / CHAT_BUBBLE_FADE_MS));
         bottom.set(b.avatarId, y - h - CHAT_BUBBLE_GAP_PX);
       }
     },
