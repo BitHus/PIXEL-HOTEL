@@ -5,6 +5,7 @@
 import rewardData from '../data/bookRewards.json';
 import { applyChange } from './ledger.ts';
 import { RECIPES } from './crafting.ts';
+import { isCatchId, CATCH_TYPES } from './fish.ts';
 import { ENEMY_TABLES, LOOT_TABLES, getLootTable, type EnemyTableId } from './dungeon/loot.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
 import type { GameState } from './gameState.ts';
@@ -12,9 +13,9 @@ import { MATERIAL_TYPES } from './materials.ts';
 import { enemyKey } from './seen.ts';
 import type { Rank, SeenMap } from './types.ts';
 
-export type BookTab = 'materials' | 'furniture' | 'food' | 'enemies';
-export const BOOK_TABS: readonly BookTab[] = ['materials', 'furniture', 'food', 'enemies'];
-export const BOOK_TAB_NAMES: Record<BookTab, string> = { materials: 'Materials', furniture: 'Furniture', food: 'Food and crops', enemies: 'Enemies' };
+export type BookTab = 'materials' | 'furniture' | 'food' | 'fish' | 'enemies';
+export const BOOK_TABS: readonly BookTab[] = ['materials', 'furniture', 'food', 'fish', 'enemies'];
+export const BOOK_TAB_NAMES: Record<BookTab, string> = { materials: 'Materials', furniture: 'Furniture', food: 'Food and crops', fish: 'Fish', enemies: 'Enemies' };
 
 export const ENEMY_NAMES: Record<EnemyTableId, string> = { slime: 'Slime', bat: 'Bat', skeleton: 'Skeleton', mimic: 'Mimic', bone_king: 'Bone King' };
 /** The Book's rank for an enemy type (how hard it is to meet). */
@@ -32,6 +33,8 @@ export interface BookEntry {
   source: string;
   /** Enemies: the ids of their drops, lowest rank first. */
   drops?: string[];
+  /** Fish: the size range of a catch in cm (the Book shows the biggest caught). */
+  cm?: { min: number; max: number };
 }
 
 /** The enemy types whose table drops this item. */
@@ -40,6 +43,7 @@ function droppedBy(id: string): EnemyTableId[] {
 }
 
 const ORES = ['copper_ore', 'iron_ore', 'mithril_ore', 'gem'];
+const TREE_DROPS = ['wood', 'resin', 'amber', 'golden_acorn'];
 const BARS = ['copper_bar', 'iron_bar', 'mithril_bar'];
 const START_FURNITURE = ['counter', 'stall_table'];
 
@@ -51,6 +55,8 @@ export function sourceOf(id: string): string {
   if (id === 'throne_piece') parts.push(`Drops from: ${ENEMY_NAMES.bone_king}`);
   if (id === 'glowcap_spore' || LOOT_TABLES.some((t) => (t.id === 'wooden_chest' || t.id === 'golden_chest') && t.drops.some((d) => d.item === id))) parts.push('Dungeon chests');
   if (ORES.includes(id)) parts.push('Mine');
+  if (TREE_DROPS.includes(id)) parts.push('Woodcutting');
+  if (isCatchId(id)) parts.push('Fishing');
   if (BARS.includes(id)) parts.push('Forge');
   const material = MATERIAL_TYPES.find((m) => m.id === id);
   if (material?.group === 'seed' && id !== 'glowcap_spore') parts.push('Catalog');
@@ -69,7 +75,10 @@ export function bookEntries(tab: BookTab): BookEntry[] {
     return ENEMY_TABLES.map((t) => ({ key: enemyKey(t), id: t, kind: 'enemy' as const, name: ENEMY_NAMES[t], rank: ENEMY_RANKS[t], source: t === 'mimic' ? 'Dungeon chests' : 'Dungeon', drops: getLootTable(t).drops.map((d) => d.item) }));
   }
   if (tab === 'furniture') return FURNITURE_TYPES.map((f) => ({ key: f.id, id: f.id, kind: 'furniture' as const, name: f.name, rank: f.rank, source: sourceOf(f.id) }));
-  return MATERIAL_TYPES.filter((m) => (tab === 'materials' ? m.group === 'material' : m.group !== 'material')).map((m) => ({ key: m.id, id: m.id, kind: 'material' as const, name: m.name, rank: m.rank, source: sourceOf(m.id) }));
+  if (tab === 'fish') {
+    return CATCH_TYPES.map((c) => ({ key: c.id, id: c.id, kind: 'material' as const, name: c.name, rank: c.rank, source: sourceOf(c.id), ...(c.kind === 'fish' ? { cm: { min: c.minCm ?? 0, max: c.maxCm ?? 0 } } : {}) }));
+  }
+  return MATERIAL_TYPES.filter((m) => (tab === 'materials' ? m.group === 'material' : tab === 'food' && ['seed', 'crop', 'food'].includes(m.group))).map((m) => ({ key: m.id, id: m.id, kind: 'material' as const, name: m.name, rank: m.rank, source: sourceOf(m.id) }));
 }
 
 export interface BookProgress {

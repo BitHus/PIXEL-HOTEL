@@ -2031,5 +2031,569 @@
         }
       ]
     }
+  },
+  {
+    "id": "fish_tank",
+    "name": "Fish tank",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 5,
+    "w": 24,
+    "d": 16,
+    "height": 36,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": true,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 30,
+    "rank": "rare",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -12,
+          "dy": 0,
+          "w": 24,
+          "d": 16,
+          "z": 0,
+          "h": 4,
+          "color": 5
+        },
+        {
+          "dx": -11,
+          "dy": -1,
+          "w": 22,
+          "d": 14,
+          "z": 4,
+          "h": 14,
+          "color": 17
+        },
+        {
+          "dx": -12,
+          "dy": 0,
+          "w": 24,
+          "d": 16,
+          "z": 18,
+          "h": 2,
+          "color": 5
+        }
+      ]
+    },
+    "swim": {
+      "dx": -8,
+      "z": 8,
+      "w": 6,
+      "h": 3,
+      "range": 13,
+      "color": 9
+    }
+  },
+  {
+    "id": "mounted_fish",
+    "name": "Mounted fish",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 5,
+    "w": 40,
+    "d": 4,
+    "height": 46,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 30,
+    "rank": "rare",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -18,
+          "dy": 0,
+          "w": 36,
+          "d": 2,
+          "z": 24,
+          "h": 16,
+          "color": 4
+        },
+        {
+          "dx": -12,
+          "dy": 0,
+          "w": 22,
+          "d": 1,
+          "z": 29,
+          "h": 7,
+          "color": 13
+        },
+        {
+          "dx": 10,
+          "dy": 0,
+          "w": 6,
+          "d": 1,
+          "z": 27,
+          "h": 11,
+          "color": 13
+        },
+        {
+          "dx": -16,
+          "dy": 0,
+          "w": 32,
+          "d": 4,
+          "z": 40,
+          "h": 2,
+          "color": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "fishing_net",
+    "name": "Fishing net",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 5,
+    "w": 48,
+    "d": 4,
+    "height": 47,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 14,
+    "rank": "common",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -22,
+          "dy": 0,
+          "w": 44,
+          "d": 1,
+          "z": 14,
+          "h": 26,
+          "color": 31
+        },
+        {
+          "dx": -22,
+          "dy": 0,
+          "w": 44,
+          "d": 1,
+          "z": 22,
+          "h": 2,
+          "color": 4
+        },
+        {
+          "dx": -22,
+          "dy": 0,
+          "w": 44,
+          "d": 1,
+          "z": 30,
+          "h": 2,
+          "color": 4
+        },
+        {
+          "dx": -24,
+          "dy": 0,
+          "w": 48,
+          "d": 4,
+          "z": 40,
+          "h": 3,
+          "color": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "shell_lamp",
+    "name": "Shell lamp",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 5,
+    "w": 16,
+    "d": 16,
+    "height": 25,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": true,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 36,
+    "rank": "rare",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -6,
+          "dy": -3,
+          "w": 12,
+          "d": 10,
+          "z": 0,
+          "h": 3,
+          "color": 4
+        },
+        {
+          "dx": -5,
+          "dy": -4,
+          "w": 10,
+          "d": 8,
+          "z": 3,
+          "h": 9,
+          "color": 29
+        },
+        {
+          "dx": -2,
+          "dy": -6,
+          "w": 4,
+          "d": 3,
+          "z": 12,
+          "h": 4,
+          "color": 11
+        }
+      ]
+    },
+    "light": {
+      "radius": 80,
+      "color": 10,
+      "flicker": 0.2
+    }
+  },
+  {
+    "id": "driftwood_bench",
+    "name": "Driftwood bench",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 5,
+    "w": 64,
+    "d": 24,
+    "height": 39,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [
+      {
+        "dx": -16,
+        "dy": -10,
+        "pose": "sit"
+      },
+      {
+        "dx": 16,
+        "dy": -10,
+        "pose": "sit"
+      }
+    ],
+    "baseValue": 14,
+    "rank": "common",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -30,
+          "dy": -2,
+          "w": 6,
+          "d": 20,
+          "z": 0,
+          "h": 10,
+          "color": 5
+        },
+        {
+          "dx": 24,
+          "dy": -2,
+          "w": 6,
+          "d": 20,
+          "z": 0,
+          "h": 10,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 24,
+          "z": 10,
+          "h": 5,
+          "color": 31
+        }
+      ]
+    }
+  },
+  {
+    "id": "anchor",
+    "name": "Anchor",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 5,
+    "w": 24,
+    "d": 16,
+    "height": 39,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 50,
+    "rank": "rare",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -10,
+          "dy": -2,
+          "w": 20,
+          "d": 6,
+          "z": 0,
+          "h": 5,
+          "color": 22
+        },
+        {
+          "dx": -2,
+          "dy": -4,
+          "w": 4,
+          "d": 4,
+          "z": 5,
+          "h": 26,
+          "color": 22
+        },
+        {
+          "dx": -8,
+          "dy": -4,
+          "w": 16,
+          "d": 3,
+          "z": 24,
+          "h": 4,
+          "color": 21
+        }
+      ]
+    }
+  },
+  {
+    "id": "pearl_chandelier",
+    "name": "Pearl chandelier",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 8,
+    "w": 40,
+    "d": 4,
+    "height": 54,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 190,
+    "rank": "ultra_rare",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -2,
+          "dy": 0,
+          "w": 4,
+          "d": 2,
+          "z": 30,
+          "h": 22,
+          "color": 10
+        },
+        {
+          "dx": -18,
+          "dy": 0,
+          "w": 36,
+          "d": 3,
+          "z": 24,
+          "h": 4,
+          "color": 10
+        },
+        {
+          "dx": -16,
+          "dy": 0,
+          "w": 6,
+          "d": 2,
+          "z": 18,
+          "h": 6,
+          "color": 19
+        },
+        {
+          "dx": -3,
+          "dy": 0,
+          "w": 6,
+          "d": 2,
+          "z": 16,
+          "h": 8,
+          "color": 19
+        },
+        {
+          "dx": 10,
+          "dy": 0,
+          "w": 6,
+          "d": 2,
+          "z": 18,
+          "h": 6,
+          "color": 19
+        }
+      ]
+    },
+    "light": {
+      "radius": 112,
+      "color": 2,
+      "flicker": 0.3
+    }
+  },
+  {
+    "id": "sunken_throne",
+    "name": "Sunken throne",
+    "category": "lake_furniture",
+    "theme": "lake",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 10,
+    "w": 40,
+    "d": 32,
+    "height": 92,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [
+      {
+        "dx": 0,
+        "dy": -12,
+        "pose": "sit"
+      }
+    ],
+    "baseValue": 300,
+    "rank": "legendary",
+    "inCatalog": false,
+    "art": {
+      "boxes": [
+        {
+          "dx": -20,
+          "dy": 0,
+          "w": 40,
+          "d": 32,
+          "z": 0,
+          "h": 14,
+          "color": 15
+        },
+        {
+          "dx": -20,
+          "dy": -24,
+          "w": 40,
+          "d": 8,
+          "z": 14,
+          "h": 40,
+          "color": 14
+        },
+        {
+          "dx": -20,
+          "dy": 0,
+          "w": 6,
+          "d": 24,
+          "z": 14,
+          "h": 10,
+          "color": 15
+        },
+        {
+          "dx": 14,
+          "dy": 0,
+          "w": 6,
+          "d": 24,
+          "z": 14,
+          "h": 10,
+          "color": 15
+        },
+        {
+          "dx": -8,
+          "dy": -26,
+          "w": 16,
+          "d": 4,
+          "z": 54,
+          "h": 8,
+          "color": 10
+        }
+      ]
+    }
   }
 ]

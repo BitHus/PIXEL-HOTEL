@@ -10,5 +10,15 @@
   {"id": "bat_wing_fan", "makes": "bat_wing_fan", "makesKind": "furniture", "inputs": {"bat_wing": 5, "echo_fang": 1}},
   {"id": "skull_trophy", "makes": "skull_trophy", "makesKind": "furniture", "inputs": {"bone_dust": 8, "rusty_buckle": 1}},
   {"id": "mimic_chest", "makes": "mimic_chest", "makesKind": "furniture", "inputs": {"chest_hinge": 3, "mimic_tongue": 1, "wood": 4}},
-  {"id": "kings_banner", "makes": "kings_banner", "makesKind": "furniture", "inputs": {"king_seal": 2, "crown_shard": 1, "cloth": 4}}
+  {"id": "kings_banner", "makes": "kings_banner", "makesKind": "furniture", "inputs": {"king_seal": 2, "crown_shard": 1, "cloth": 4}},
+  {"id": "fish_tank", "makes": "fish_tank", "makesKind": "furniture", "inputs": {"glass_bottle": 2, "pebble_perch": 1}},
+  {"id": "mounted_fish", "makes": "mounted_fish", "makesKind": "furniture", "inputs": {"stripe_pike": 1, "wood": 2}},
+  {"id": "fishing_net", "makes": "fishing_net", "makesKind": "furniture", "inputs": {"driftwood": 2, "cloth": 2}},
+  {"id": "shell_lamp", "makes": "shell_lamp", "makesKind": "furniture", "inputs": {"shell": 2, "resin": 1}},
+  {"id": "driftwood_bench", "makes": "driftwood_bench", "makesKind": "furniture", "inputs": {"driftwood": 4, "wood": 2}},
+  {"id": "anchor", "makes": "anchor", "makesKind": "furniture", "inputs": {"iron_bar": 2, "driftwood": 1}},
+  {"id": "pearl_chandelier", "makes": "pearl_chandelier", "makesKind": "furniture", "inputs": {"pearl": 2, "amber": 1}},
+  {"id": "sunken_throne", "makes": "sunken_throne", "makesKind": "furniture", "inputs": {"sunken_crown": 1, "pearl": 1, "driftwood": 4}},
+  {"id": "lake_pebbles", "makes": "lake_pebbles", "makesKind": "floor", "inputs": {"shell": 3, "driftwood": 2}},
+  {"id": "reed_wall", "makes": "reed_wall", "makesKind": "wall", "inputs": {"driftwood": 4, "resin": 1}}
 ]

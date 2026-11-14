@@ -8,6 +8,7 @@ import { emptyBag } from './bag.ts';
 import { addShopStartItems } from './newPlayer.ts';
 import { emptyShop } from './shop.ts';
 import { emptyFarm } from './farm.ts';
+import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
 import type { Player } from './types.ts';
 import type { GameState } from './gameState.ts';
@@ -181,6 +182,21 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     const run = isObject(state.run) ? { kills: {}, met: [], ...state.run } : state.run;
     return { ...state, run, player: { seen, bookOpenedAt: 0, bookRewards: [], ...player } };
   },
+  // 11 -> 12 (step 9f, the lakeside): a level 1 lakeside room (the next free room id) with 8 whole
+  // trees, Player.lakesideRoomId and Player.biggest {}.
+  11: (state) => {
+    if (!isObject(state) || !isObject(state.player) || !Array.isArray(state.rooms)) return state;
+    if (isObject(state.lakeside)) return state;
+    const ids = state.rooms.map((r) => (isObject(r) && typeof r.id === 'number' ? r.id : 0));
+    const lakesideRoomId = Math.max(0, ...ids) + 1;
+    const ownerId = typeof state.player.id === 'number' ? state.player.id : 1;
+    return {
+      ...state,
+      player: { biggest: {}, ...state.player, lakesideRoomId },
+      rooms: [...state.rooms, createRoom(lakesideRoomId, 'lakeside', 1, ownerId)],
+      lakeside: emptyLakeside(lakesideRoomId),
+    };
+  },
 };
 
 /** The storage key for a save version. */
@@ -229,7 +245,7 @@ export function isGameState(x: unknown): x is GameState {
   const p = x.player;
   if (!isObject(p) || !isInt(p.id) || !isObject(p.wallet) || !isInt(p.wallet.gold) || !isObject(p.materials)) return false;
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
-  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm') && typeof r.shape === 'string')) return false;
+  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
   if (!Array.isArray(p.unlockedClothing) || typeof x.playerCreated !== 'boolean') return false;
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
@@ -242,6 +258,7 @@ export function isGameState(x: unknown): x is GameState {
   if (typeof x.shop.nextCustomerInMs !== 'number' || typeof x.shop.updatedAt !== 'number' || !isInt(x.hintsDone)) return false;
   if (!isObject(x.farm) || !isInt(x.farm.roomId) || !Array.isArray(x.farm.plots) || !isInt(p.farmRoomId)) return false;
   if (!x.farm.plots.every((pl) => isObject(pl) && (pl.crop === null || typeof pl.crop === 'string') && typeof pl.plantedAt === 'number')) return false;
+  if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }

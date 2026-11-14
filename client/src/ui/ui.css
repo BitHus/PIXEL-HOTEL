@@ -2899,3 +2899,141 @@
 .book-drop.unseen .book-drop-name {
   opacity: 0.6;
 }
+
+/* ---------- Step 9f: the fishing bar (above the hotbar while the line is out) ---------- */
+.fish-bar {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: calc(var(--bar-h) + var(--edge) + 8px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(380px, calc(100vw - 2 * var(--edge) - var(--side-col)));
+  box-sizing: border-box;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+
+.fish-bar[hidden] {
+  display: none;
+}
+
+/* A toast stays clear of the bar while fishing. */
+.fishing .toast {
+  bottom: calc(var(--bar-h) + var(--edge) + 190px + env(safe-area-inset-bottom));
+}
+
+.fish-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fish-text {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.fish-bar[data-phase='bite'] .fish-text {
+  color: var(--select);
+  animation: fish-flash 0.3s steps(2) infinite;
+}
+
+@keyframes fish-flash {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* The track: water-blue, the catch box (green) and the fish. Pressing it holds too. */
+.fish-track {
+  position: relative;
+  height: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--water, #124e89);
+  border: 2px solid var(--rank, var(--wood));
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.fish-track[hidden],
+.fish-meter[hidden] {
+  display: none;
+}
+
+.fish-box {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(99, 199, 77, 0.45);
+  border: 2px solid #63c74d;
+  box-sizing: border-box;
+}
+
+.fish-track.catching .fish-box {
+  background: rgba(99, 199, 77, 0.8);
+  border-color: #fee761;
+}
+
+.fish-fish {
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.fish-fish .pixel-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.fish-meter {
+  position: relative;
+  height: 12px;
+  background: var(--wood);
+  border: 2px solid var(--rank, var(--wood));
+  box-sizing: border-box;
+}
+
+.fish-fill {
+  height: 100%;
+  background: var(--warm);
+  box-shadow: inset 0 -3px 0 var(--select);
+}
+
+.fish-tap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fish-tap .pixel-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.fish-tap.held {
+  background: var(--warm);
+}
+
+.fish-stop {
+  flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fish-bar[data-phase='bite'] .fish-text {
+    animation: none;
+  }
+}

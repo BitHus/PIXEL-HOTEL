@@ -16,6 +16,7 @@ import { step } from './dungeon/step.ts';
 import { testRun } from './dungeon/testRun.ts';
 import { makeEnemy } from './dungeon/generate.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
+import { CATCH_TYPES } from './fish.ts';
 
 const fresh = (): GameState => createNewPlayer(undefined, 1000);
 
@@ -109,8 +110,8 @@ describe('the seen list (Player.seen, step 9e)', () => {
 });
 
 describe('the Book (step 9e)', () => {
-  it('has four tabs; every material and furniture type is in exactly one', () => {
-    expect(BOOK_TABS).toEqual(['materials', 'furniture', 'food', 'enemies']);
+  it('has five tabs; every material, fish and furniture type is in exactly one', () => {
+    expect(BOOK_TABS).toEqual(['materials', 'furniture', 'food', 'fish', 'enemies']);
     const keys = BOOK_TABS.flatMap((t) => bookEntries(t).map((e) => e.key));
     expect(new Set(keys).size).toBe(keys.length);
     for (const m of MATERIAL_TYPES) expect(keys).toContain(m.id);
@@ -181,5 +182,30 @@ describe('the Book (step 9e)', () => {
     expect(claimBookReward(paid, 'enemies', 25, 6000)).toBeNull();
     expect(claimBookReward(paid, 'enemies', 50, 6000)).toBeNull();
     expect(RARE_DROP_CHANCE).toBe(0.1);
+  });
+
+  it('has a Fish tab with every fish and fished-up thing (step 9f), grey until caught, with the size range', () => {
+    const fish = bookEntries('fish');
+    expect(fish).toHaveLength(18);
+    expect(fish.map((e) => e.id)).toEqual(CATCH_TYPES.map((c) => c.id));
+    expect(fish.every((e) => e.source === 'Fishing')).toBe(true);
+    expect(fish.find((e) => e.id === 'mudfin')?.cm).toEqual({ min: 8, max: 18 });
+    expect(fish.find((e) => e.id === 'pearl')?.cm).toBeUndefined();
+    expect(fish.find((e) => e.id === 'old_king_barbel')?.rank).toBe('legendary');
+    expect(bookProgress(fresh().player.seen, 'fish')).toEqual({ found: 0, total: 18 });
+    const s = applyChange(fresh(), { reason: 'fish', materials: { mudfin: 1, pearl: 1 } }, 5)!;
+    expect(bookProgress(s.player.seen, 'fish')).toEqual({ found: 2, total: 18 });
+    expect(BOOK_REWARDS.fish.map((r) => r.percent)).toEqual([25, 50, 75, 100]);
+  });
+
+  it('the trees give wood, resin, amber and golden acorn: under Materials, from Woodcutting', () => {
+    const mats = bookEntries('materials').map((e) => e.id);
+    for (const id of ['wood', 'resin', 'amber', 'golden_acorn']) expect(mats).toContain(id);
+    expect(sourceOf('resin')).toBe('Woodcutting');
+    expect(sourceOf('golden_acorn')).toBe('Woodcutting');
+    expect(sourceOf('wood')).toBe('Dungeon chests, Woodcutting');
+    expect(sourceOf('mudfin')).toBe('Fishing');
+    expect(sourceOf('fish_tank')).toBe('Crafted');
+    expect(sourceOf('grilled_perch')).toBe('Cooked');
   });
 });

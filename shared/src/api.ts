@@ -3,7 +3,9 @@
 // Methods are added in later steps as they are needed.
 
 import type { BookTab } from './book.ts';
-import type { BarId, CropId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
+import type { BarId, CropId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
+import type { FishInput, FishSession } from './fishing.ts';
+import type { ChopKind } from './woodcut.ts';
 import type { Plot } from './farm.ts';
 import type { RoomLevel } from './config.ts';
 import type { Customer, ShopEvent } from './customers.ts';
@@ -129,6 +131,42 @@ export interface HarvestResult {
   qty: number;
 }
 
+/** One tree as the client sees it (step 9f). */
+export interface TreeView {
+  hits: number;
+  /** ms until a stump is a tree again, or null for a standing tree (worked out at `at`). */
+  regrowInMs: number | null;
+}
+
+/** The lakeside's trees (step 9f). `at` is the API's clock when it was read. */
+export interface LakesideView {
+  roomId: number;
+  trees: TreeView[];
+  at: number;
+}
+
+/** One swing at a tree (step 9f). */
+export interface ChopUpdate {
+  kind: ChopKind;
+  hits: number;
+  /** What a felled tree gave. */
+  loot?: Partial<Record<MaterialId, number>>;
+  lakeside: LakesideView;
+}
+
+/** Walking to a cast spot (step 9f): the path (starting at the avatar), the spot and where the bobber lands. */
+export interface CastPlan {
+  path: Point[];
+  spot: Point;
+  bobber: Point;
+}
+
+/** The fishing session after a call, and what it caught when it ended with a catch. */
+export interface FishUpdate {
+  session: FishSession;
+  caught: { id: string; rank: Rank; cm: number | null; record: boolean } | null;
+}
+
 export interface GameAPI {
   /** The current player (gold, materials, rooms). */
   getPlayer(): Promise<Player>;
@@ -223,6 +261,18 @@ export interface GameAPI {
   buySeeds(seed: SeedId, qty: number): Promise<boolean>;
   /** Cooks one food at the pot. False without all ingredients. */
   cook(food: FoodId): Promise<boolean>;
+  // ---------- Step 9f: the lakeside (woodcutting and fishing) ----------
+  getLakeside(): Promise<LakesideView>;
+  /** One swing at a tree (the avatar must stand next to it, else null). 'cooldown' and 'regrowing' change nothing. */
+  chopTree(index: number): Promise<ChopUpdate | null>;
+  /** Walks to the shore or pier spot nearest to a tapped water point and returns the plan (null = no way). */
+  castAt(target: Point): Promise<CastPlan | null>;
+  /** Casts the line (rolls the catch with the player's rod). Null if not on the lakeside; a running session is kept. */
+  fishStart(): Promise<FishSession | null>;
+  /** Moves the session on: the inputs first, then dtMs (100 ms ticks). A catch is banked at once. Null without a session. */
+  fishStep(inputs: readonly FishInput[], dtMs: number): Promise<FishUpdate | null>;
+  /** Stops fishing without a result (the player walked away). */
+  fishStop(): Promise<void>;
   // ---------- Step 9e: the collection book (what was found is Player.seen) ----------
   /** The Book was opened: nothing is "New!" any more. */
   bookOpened(): Promise<void>;

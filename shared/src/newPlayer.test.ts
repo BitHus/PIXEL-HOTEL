@@ -17,10 +17,11 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.player.potions).toBe(0);
   });
 
-  it('unlocks only the bare floor and bare wall, used in both rooms (the farm has grass and a hedge)', () => {
+  it('unlocks only the bare floor and bare wall, used in both rooms (the farm and the lakeside have grass and a hedge)', () => {
     expect(s.player.unlockedStyles).toEqual([styleKey('floor', 'bare'), styleKey('wall', 'bare')]);
-    for (const r of s.rooms.filter((x) => x.kind !== 'farm')) expect([r.floorStyle, r.wallStyle]).toEqual(['bare', 'bare']);
+    for (const r of s.rooms.filter((x) => x.kind !== 'farm' && x.kind !== 'lakeside')) expect([r.floorStyle, r.wallStyle]).toEqual(['bare', 'bare']);
     expect(s.rooms.find((r) => r.kind === 'farm')).toMatchObject({ floorStyle: 'grass', wallStyle: 'hedge' });
+    expect(s.rooms.find((r) => r.kind === 'lakeside')).toMatchObject({ floorStyle: 'grass', wallStyle: 'hedge' });
   });
 
   it('has an empty level 1 hotel room (576x384) and a level 1 shop room (576x320)', () => {
@@ -28,7 +29,11 @@ describe('createNewPlayer (brief section 9)', () => {
     const shop = s.rooms.find((r) => r.id === s.player.shopRoomId);
     expect(hotel).toMatchObject({ kind: 'hotel', level: 1, w: 576, h: 384, ownerId: s.player.id });
     expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 320, ownerId: s.player.id });
-    expect(s.rooms).toHaveLength(3);
+    expect(s.rooms).toHaveLength(4);
+    // Step 9f: a level 1 lakeside (576x384) with 8 whole trees.
+    expect(s.rooms.find((r) => r.id === s.player.lakesideRoomId)).toMatchObject({ kind: 'lakeside', level: 1, w: 576, h: 384 });
+    expect(s.lakeside.trees).toEqual(Array.from({ length: 8 }, () => ({ hits: 0, felledAt: null })));
+    expect(s.player.biggest).toEqual({});
     // Step 9b: a level 1 farm (576x384) with 6 empty plots.
     expect(s.rooms.find((r) => r.id === s.player.farmRoomId)).toMatchObject({ kind: 'farm', level: 1, w: 576, h: 384 });
     expect(s.farm.roomId).toBe(s.player.farmRoomId);

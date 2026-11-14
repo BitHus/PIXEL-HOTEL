@@ -73,7 +73,7 @@ screenshots of it in the repo.
   Resume panel are centered panels like "Buy this?".
 - **Workshop** (step 9): one button (an anvil) with two tabs, Crafting and Blacksmith, so the
   column stays short.
-- **Travel / Map** (step 9b): with four places (Hotel, Shop, Farm, Mine) plus the Dungeon,
+- **Travel / Map** (step 9b; the Lakeside card came in step 9f): with the places Hotel, Shop, Farm, Lakeside and Mine plus the Dungeon,
   the Hotel/Shop switcher under the info panel is replaced by one Map button (a small folded
   map icon) at the top of the right column, under the quest button. It opens a travel panel
   with a card per place (icon, name, and a short status: "3 crops ripe", "2 items for sale",
@@ -87,8 +87,24 @@ screenshots of it in the repo.
   potion button, with a count.
 - **Mine** (step 9c): the lantern bar sits in the info panel where the dungeon shows the floor;
   the run bag shows ore stacks. The Workshop gets a third tab, Forge, with smelting on the left
-  and the gear upgrade tree (sword, armor, pickaxe; current tier highlighted, next tier with
-  its cost) on the right.
+  and the gear upgrade tree (sword, armor, pickaxe; since step 9f also axe and fishing rod;
+  current tier highlighted, next tier with its cost) on the right.
+- **Lakeside** (step 9f). A card on the Map ("n of 8 trees standing"). Outdoors like the farm
+  (grass, no shade). In play mode a tap on a tree walks there and swings; every further tap is
+  one swing (a short shake of the tree, a small reach of the avatar, a "hit" sound); a felled
+  tree leaves a stump, and what it gave floats up in its rank colour (sparkle for ultra rare and
+  legendary). A tap on a stump says when it grows back. A tap on the water walks to the nearest
+  shore or pier spot and casts: a bobber with a line to the rod, and the **fishing bar** appears
+  above the hotbar (it pushes the toasts up). The bar is a framed panel: a line of text on top
+  ("Waiting for a bite...", "Bite! Tap now!", "Keep the box on the fish!") with a ✗ to stop; in the
+  reel a **track** (water blue, a green catch box, a fish icon swimming back and forth), a thin
+  **catch bar** under it, and a big **Hold!** button. The catch bar's and the track's border take
+  the fish's rank colour. Holding (the button, the track or Space) pushes the box right, a tap on
+  the room kicks it, it falls back left by itself; the box goes brighter while the fish is in it.
+  Everything reacts on the press and the release, not on a click. A "!" shows over the bobber on a
+  bite (and the Tap! button flashes). The Book has a **Fish tab** (fish icon): cards with the
+  biggest catch and the size range. Inspired by the reel bars of Stardew Valley and Pixel Worlds
+  (general idea only).
 - **Ranks (step 9e).** Every item has one of four ranks with a colour (config RANK_COLORS:
   common grey-brown, rare blue, ultra rare purple, legendary gold). Wherever an item is shown,
   its slot border and its name use that colour (common keeps the plain wooden border; gold names

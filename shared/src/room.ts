@@ -22,8 +22,8 @@ import {
 } from './config.ts';
 import type { Point, Rect } from './types.ts';
 
-/** The hotel room, the shop and (step 9b) the farm. */
-export type RoomKind = 'hotel' | 'shop' | 'farm';
+/** The hotel room, the shop, the farm (step 9b) and the lakeside (step 9f). */
+export type RoomKind = 'hotel' | 'shop' | 'farm' | 'lakeside';
 
 export interface Room {
   /** Room ids are integers. */
@@ -72,7 +72,7 @@ export function shapesFor(kind: RoomKind): RoomShape[] {
 
 /** The plain rectangle every room had before step 7b. */
 export function defaultShape(kind: RoomKind): string {
-  return kind === 'hotel' ? 'square' : kind === 'shop' ? 'square_shop' : 'farm';
+  return kind === 'hotel' ? 'square' : kind === 'shop' ? 'square_shop' : kind;
 }
 
 function shapeLevel(shape: string, level: RoomLevel): ShapeLevel {
@@ -100,8 +100,8 @@ export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId
     shape,
     w: b.x + b.w,
     h: b.y + b.h,
-    floorStyle: kind === 'farm' ? FARM_FLOOR_STYLE : START_FLOOR_STYLE,
-    wallStyle: kind === 'farm' ? FARM_WALL_STYLE : START_WALL_STYLE,
+    floorStyle: kind === 'farm' || kind === 'lakeside' ? FARM_FLOOR_STYLE : START_FLOOR_STYLE,
+    wallStyle: kind === 'farm' || kind === 'lakeside' ? FARM_WALL_STYLE : START_WALL_STYLE,
     ownerId,
     private: false,
   };

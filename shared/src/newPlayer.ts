@@ -16,6 +16,7 @@ import {
   START_PLAYER_LEVEL,
   START_SHOP_ROOM_ID,
   START_FARM_ROOM_ID,
+  START_LAKESIDE_ROOM_ID,
   START_WALL_STYLE,
   START_XP,
   SHOP_START_ITEMS,
@@ -29,6 +30,7 @@ import { createRoom, defaultShape, getRoomShape, shapesFor } from './room.ts';
 import { cleanDisplayName, lookAllowed } from './clothing.ts';
 import { emptyShop } from './shop.ts';
 import { emptyFarm } from './farm.ts';
+import { emptyLakeside } from './woodcut.ts';
 import type { MaterialId, StyleKind } from './types.ts';
 
 export interface NewPlayerConfig {
@@ -37,6 +39,7 @@ export interface NewPlayerConfig {
   hotelRoomId: number;
   shopRoomId: number;
   farmRoomId: number;
+  lakesideRoomId: number;
   gold: number;
   materials: Partial<Record<MaterialId, number>>;
   look: AvatarLook;
@@ -51,6 +54,7 @@ export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
   hotelRoomId: START_HOTEL_ROOM_ID,
   shopRoomId: START_SHOP_ROOM_ID,
   farmRoomId: START_FARM_ROOM_ID,
+  lakesideRoomId: START_LAKESIDE_ROOM_ID,
   gold: START_GOLD,
   materials: { ...START_MATERIALS },
   look: { ...START_LOOK },
@@ -100,6 +104,8 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       hotelRoomId: config.hotelRoomId,
       shopRoomId: config.shopRoomId,
       farmRoomId: config.farmRoomId,
+      lakesideRoomId: config.lakesideRoomId,
+      biggest: {},
       mineVisits: 0,
       seen: {},
       bookOpenedAt: at,
@@ -110,6 +116,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       createRoom(config.hotelRoomId, 'hotel', 1, config.playerId, config.hotelShape),
       createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape),
       createRoom(config.farmRoomId, 'farm', 1, config.playerId),
+      createRoom(config.lakesideRoomId, 'lakeside', 1, config.playerId),
     ],
     items: SHOP_START_ITEMS.map((s, k) => ({
       uid: k + 1,
@@ -130,6 +137,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     hintsDone: 0,
     run: null,
     farm: emptyFarm(config.farmRoomId),
+    lakeside: emptyLakeside(config.lakesideRoomId),
     playerCreated: false,
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);

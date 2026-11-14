@@ -4,6 +4,7 @@
 
 import { COOKING_POT, FARM_PLOTS, FARM_PLOTS_PER_LEVEL, FARM_PLOT_SIZE, type RoomLevel } from './config.ts';
 import type { Rect } from './types.ts';
+import { lakeFixedBlockers } from './lakeLayout.ts';
 import type { Room } from './room.ts';
 
 /** How many plots a farm of this level has (6, 12, 20). */
@@ -34,9 +35,9 @@ export function potRect(): Rect {
   return { x: COOKING_POT.x - COOKING_POT.w / 2, y: COOKING_POT.y - COOKING_POT.d, w: COOKING_POT.w, h: COOKING_POT.d };
 }
 
-/** Fixed things in a room that block walking (the farm's pot), besides the furniture. */
+/** Fixed things in a room that block walking (the farm's pot, the lakeside's water and trees), besides the furniture. */
 export function fixedBlockers(room: Room): Rect[] {
-  return room.kind === 'farm' ? [potRect()] : [];
+  return room.kind === 'farm' ? [potRect()] : lakeFixedBlockers(room);
 }
 
 /** Where no furniture may stand (any part of it): the farm's plots and pot. */

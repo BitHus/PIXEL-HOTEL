@@ -139,6 +139,8 @@ Plan first (max 8 lines). Tests for rank rolls, the seen list and the migration.
 ## Step 9f - Lakeside: fishing and woodcutting
 
 ```
+Owner's change during step 9f (after the first playtest): point 2's reel is NOT a bar that fills by tapping. It is a Stardew-style bar: a fish swims back and forth, the player holds to push a green catch box to the right and it falls left by itself; keep the box on the fish to fill the catch bar. Rod upgrades make the box wider and the fall slower. See CLAUDE.md section 10d.
+
 Step 9f: the Lakeside (owner's decision; add section 10d to CLAUDE.md). A new outdoor place on the Map, open from the start: grass, a lake taking up about a third, a short wooden pier, 8 trees, bushes. Same top-down renderer as the farm (kind 'lakeside'), not buildable in v1. Read CLAUDE.md and docs/UI-REFERENCE.md first. Ranks and the Book from step 9e are used everywhere.
 
 1. WOODCUTTING. Tap a tree: the avatar walks next to it and swings; each tap is one hit with a 400 ms axe cooldown (tapping is the game). A tree falls after 5 hits and gives 2 to 3 wood, plus by rank: resin (rare), amber (ultra_rare), golden acorn (legendary). A stump is left and the tree grows back after 5 minutes of real time (time passed in, also while the game is closed). Wood stays a dungeon drop too. Axe tiers at the forge: basic axe (start), steel axe (bars; each hit counts double).

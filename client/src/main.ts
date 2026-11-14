@@ -39,6 +39,7 @@ import {
   MINE_UNLOCK_LEVEL,
   MINE_LANTERN_MS,
   isSeedId,
+  OUTDOOR_KINDS,
   type FoodId,
   type SeedId,
   screenToWorld,
@@ -115,6 +116,9 @@ import { createRunBar } from './ui/runBar.ts';
 import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from './ui/workshopPanel.ts';
 import { DungeonScreen } from './dungeon/dungeonScreen.ts';
 import { FarmScreen } from './farm/farmScreen.ts';
+import { LakesideScreen } from './lakeside/lakesideScreen.ts';
+import { createFishBar } from './ui/fishBar.ts';
+import { FloatTexts } from './dungeon/floatTexts.ts';
 import { createCookingPanel } from './ui/cookingPanel.ts';
 import { createBookPanel } from './ui/bookPanel.ts';
 import { applyRankColors } from './ui/rank.ts';
@@ -542,7 +546,7 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
-          backdrop.setOutdoor(room.kind === 'farm');
+          backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
         }
         toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
         await refreshShop();
@@ -576,7 +580,7 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
-          backdrop.setOutdoor(room.kind === 'farm');
+          backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
         }
         await refreshShop();
         await refreshInventory();
@@ -662,6 +666,31 @@ async function start(): Promise<void> {
       await refreshHint();
     },
   });
+  // ---------- The lakeside: woodcutting and fishing (step 9f) ----------
+  /** Floating texts in the rooms (what a tree or a fish gave): the dungeon's FloatTexts, at world points. */
+  const roomFloats = new FloatTexts(ui);
+  const fishBar = createFishBar(ui, { onHold: (on) => lakeside.fishHold(on), onStop: () => lakeside.stopFishing() });
+  const lakeside: LakesideScreen = new LakesideScreen(view, {
+    api,
+    bar: fishBar,
+    toast,
+    walkTo: (p) => walkTo(p),
+    follow: (p) => {
+      follow(p);
+      goal = null;
+    },
+    avatar: () => ({ x: avatar.x, y: avatar.y, facing: avatar.facing }),
+    face: (f) => {
+      avatar = { ...avatar, facing: f };
+    },
+    swing: () => sprite.gesture('reach'),
+    float: (at, text, rank, delayMs = 0) => roomFloats.add(at, text, 'loot', delayMs, rank),
+    sound: (name) => sound.play(name),
+    afterChange: async () => {
+      await refreshInventory();
+      await refreshHint();
+    },
+  });
   const travel = createTravelPanel(ui, (place) => void travelTo(place));
   panels.add('travel', travel.el, () => void refreshTravel());
   async function refreshTravel(): Promise<void> {
@@ -673,6 +702,9 @@ async function start(): Promise<void> {
     const c = farmCounts(f, f.at);
     const farmStatus =
       c.ripe > 0 ? `${c.ripe} ${c.ripe === 1 ? 'crop' : 'crops'} ripe` : c.growing > 0 ? `${c.growing} growing` : `${c.empty} empty plots`;
+    const lake = await api.getLakeside();
+    const standing = lake.trees.filter((t) => t.regrowInMs === null).length;
+    const lakeStatus = `Fish and chop wood: ${standing} of ${lake.trees.length} trees standing`;
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     const cards: PlaceCard[] = [
       { place: 'hotel', status: `Your room, level ${roomLevel(p.hotelRoomId)}`, locked: null, here: room.id === p.hotelRoomId },
@@ -684,6 +716,7 @@ async function start(): Promise<void> {
         here: room.id === p.shopRoomId,
       },
       { place: 'farm', status: farmStatus, locked: null, here: room.id === p.farmRoomId },
+      { place: 'lakeside', status: lakeStatus, locked: null, here: room.id === p.lakesideRoomId },
       { place: 'mine', status: `Free. Lantern: ${MINE_LANTERN_MS / 60_000} minutes`, locked: p.level < MINE_UNLOCK_LEVEL ? `Opens at level ${MINE_UNLOCK_LEVEL}` : null, here: false },
       { place: 'dungeon', status: free ? 'A free run' : `Key: ${DUNGEON_KEY_COST} gold`, locked: null, here: false },
     ];
@@ -1015,6 +1048,7 @@ async function start(): Promise<void> {
     runBar.setHidden(!on);
     if (!on) info.setRun(null);
     if (on) {
+      lakeside.stop();
       panels.close();
       placer.cancel();
       menu.close();
@@ -1150,7 +1184,7 @@ async function start(): Promise<void> {
     bounds = roomBoundsRect(room);
     view.setRoom(room);
     atmosphere.setRoom(room);
-    backdrop.setOutdoor(room.kind === 'farm');
+    backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
     itemViews.setRoom(room.id);
     blockers.setRoom(room);
     items = await api.getItems();
@@ -1165,6 +1199,8 @@ async function start(): Promise<void> {
     info.setRoom(room.kind);
     roomLevels.set(room.id, room.level);
     await farm.enter(room);
+    roomFloats.clear();
+    await lakeside.enter(room);
     floats.clear();
     shop = await api.getShop();
     customers.clear();
@@ -1182,7 +1218,7 @@ async function start(): Promise<void> {
   async function openRoomKind(kind: RoomKind): Promise<void> {
     if (kind === room.kind) return;
     const p = await api.getPlayer();
-    await openRoom(kind === 'hotel' ? p.hotelRoomId : kind === 'shop' ? p.shopRoomId : p.farmRoomId);
+    await openRoom(kind === 'hotel' ? p.hotelRoomId : kind === 'shop' ? p.shopRoomId : kind === 'lakeside' ? p.lakesideRoomId : p.farmRoomId);
   }
 
   // Shift turns snapping off (desktop).
@@ -1213,6 +1249,14 @@ async function start(): Promise<void> {
       cross.visible = label.visible;
       redraw();
       if (kind === 'hover') return;
+      // While the line is out every tap on the room is a fishing tap (the bar's ✗ stops).
+      if (lakeside.fishing && !placer.active) {
+        if (kind === 'tap') {
+          if (panels.open !== null) panels.close();
+          else lakeside.fishTap();
+        }
+        return;
+      }
       if (placer.active) {
         // Placing a new item: a tap on the room puts it there at once when it fits (else the ghost
         // just goes there, red). No extra ✓ needed.
@@ -1255,7 +1299,10 @@ async function start(): Promise<void> {
       }
       // The farm (step 9b): plots (plant, harvest) and the cooking pot.
       farm.cancel();
+      lakeside.cancel();
       if (farm.tap(marked)) return;
+      // The lakeside (step 9f): a tree (swing) or the water (cast).
+      if (lakeside.tap(marked)) return;
       // The counter: walk behind it (like sitting); waiting customers pay while you stand there.
       if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
         void serveAt(hit.uid).then((ok) => {
@@ -1344,6 +1391,9 @@ async function start(): Promise<void> {
     hops.update(ticker.deltaMS);
     farm.update(clockMs);
     if (path.length === 0 && avatar.state !== 'walk') farm.arrived();
+    lakeside.update(ticker.deltaMS, clockMs);
+    if (path.length === 0 && avatar.state !== 'walk') lakeside.arrived();
+    roomFloats.update(ticker.deltaMS, (p) => worldToScreen(p, shown));
     placer.tick(ticker.deltaMS);
     sprite.update(avatar, clockMs);
     // Soft footsteps, one per bob of the walk.
