@@ -1,12 +1,13 @@
-// The item menu (build mode only): tap or long-press a placed item and a small menu pops up
-// above it: Move, Rotate, Pick up, with an info card on the side showing the item's name.
+// The item menu (build mode only): tap or long-press a placed item to select it and a small menu
+// pops up above it: Rotate, Pick up, with an info card on the side showing the item's name. There
+// is no Move button (owner, after 9e): a selected item moves by dragging it, or by tapping the
+// spot where it should go.
 // main.ts closes it when the player taps elsewhere or leaves build mode.
 
 import type { FurnitureType, Rect } from '@pixel-hotel/shared';
 import { anchorAbove } from './anchorAbove.ts';
 
 export interface ItemMenuHooks {
-  onMove(uid: number): void;
   onRotate(uid: number): void;
   onPickUp(uid: number): void;
 }
@@ -43,7 +44,7 @@ export function createItemMenu(parent: HTMLElement, hooks: ItemMenuHooks): ItemM
     if (uid !== null) f(uid);
   };
   const pickUp = button('Pick up', act(hooks.onPickUp));
-  buttons.append(button('Move', act(hooks.onMove)), button('Rotate', act(hooks.onRotate)), pickUp);
+  buttons.append(button('Rotate', act(hooks.onRotate)), pickUp);
   menu.append(buttons, card);
   menu.hidden = true;
   parent.appendChild(menu);

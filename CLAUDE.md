@@ -1028,7 +1028,8 @@ Conventions:
     plus a stepped vignette (lighter outdoors), baked into ONE opaque screen picture that is redrawn only when the camera moves. Under
     view.world on the stage; hidden in the dungeon / mine (they keep their own look).
   - CustomerViews: standing customers shift 1 px sideways now and then (AvatarSprite.setShift).
-  - Sound: client/src/audio/sound.ts (Sound; Web Audio, no files): step, coin, bell, pop, click,
+  - Sound: client/src/audio/sound.ts (Sound; Web Audio, no files): step, coin, bell (a soft
+    two-note door chime, at most once per 6 s; the owner found the first bell irritating), pop, click,
     hit, hurt. The context is made on the first tap or key. main.ts: a step per walk bob, coin at a
     'sale' event, bell when a new customer id appears, pop when a placement is accepted, click for
     every <button> inside the UI root, hit / hurt from DungeonContext.sound (mine swings use hit).
@@ -1093,8 +1094,13 @@ Conventions:
     item with seats walks to its nearest free side and sits or lies (step 5b; the item shakes if
     no seat can be reached). A long press does nothing. No item menu.
   - BUILD MODE: the Build button (hammer, right-edge column, right after Bag) or the B key
-    toggles it; placing from the hotbar or the bag turns it on. Taps never walk. A tap or long
-    press on an item opens its menu (Move, Rotate, Pick up); a tap elsewhere closes it. The
+    toggles it; placing from the hotbar or the bag turns it on. Taps never walk. Building is
+    fast (owner's decision after 9e; like other building games): a DRAG that starts on an item
+    moves it (the ghost follows the finger; letting go puts it down, or back where it was with a
+    shake when it does not fit); a drag on the floor pans. A tap or long press on an item
+    selects it and opens its menu (Rotate, Pick up; no Move button); with an item selected a tap
+    on a free spot moves it there at once (a shake when it does not fit), a tap on the item again
+    lets it go. The
     Build button is highlighted and a thin warm border (.build-frame) runs around the screen
     edge. Build again, or Escape (when no panel is open and nothing is being placed), returns
     to play mode, closes the menu and cancels a placing session.
@@ -1142,17 +1148,20 @@ Conventions:
     never block the floor. doorReachesMiddle: the free cell nearest the room middle must be
     reachable from the door point.
   - Nav blockers = debug rects + itemBlockers(items, roomId) (blocking items on the floor).
-  - Placing (step 4b): tapping a hotbar or bag slot (the ghost starts in the middle of the
-    screen; build mode turns on) or Move in the item menu (the ghost starts where the item is; the item and its
-    riders are hidden until done) starts a placing session. A one-finger / left drag anywhere
-    moves the ghost by the drag distance (getDragMode returns 'draw'); two fingers and
-    right-drag still pan/zoom. No hover-follow. Taps and long presses do nothing while placing.
-    Only ✓ / Enter places (disabled while red); ✗ / Escape cancels (a moved item goes back
-    exactly; an inventory item stays in the inventory). After placing the session ends. Shift
+  - Placing (step 4b; faster after 9e): tapping a hotbar or bag slot starts a placing session
+    for a NEW item (the ghost starts in the middle of the screen; build mode turns on). A tap on
+    the room puts it there at once when it fits (else the ghost goes there, red); a one-finger /
+    left drag anywhere moves the ghost by the drag distance and letting go places it when it
+    fits (getDragMode returns 'draw'); ✓ / Enter also places, ↻ / R rotates, ✗ / Escape cancels
+    (the item stays in the inventory). Moving a PLACED item: a drag that starts on it in build
+    mode (cameraControl passes the press target to getDragMode; main.ts calls placer.startMove;
+    the item and its riders are hidden while the ghost shows; no ✓ bar: Placer.moving), or a tap
+    on a free spot while it is selected (api.moveItem directly). Two fingers and right-drag still
+    pan/zoom. No hover-follow. After placing the session ends, and a moved item stays selected. Shift
     (held) turns the 4 px snap off. Items picked up go to the inventory (roomId null).
   - Item menu (build mode only, see INPUT RULE): a tap or long press (LONG_PRESS_MS, without
-    moving) on a placed item opens its menu; a tap on another item opens that one's, a tap
-    elsewhere closes it. Sitting is play mode only (no Sit button). Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
+    moving) on a placed item opens its menu (Rotate, Pick up); a tap on another item opens that
+    one's, a tap on the same item closes it, a tap on a free spot moves the item there. Sitting is play mode only (no Sit button). Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
     the place bar follow their target every frame.
   - Hit testing: cameraControl passes the Pixi event target to onPoint; item containers are
     eventMode 'static' and ItemViews.uidOf maps a target to an item. The cursor cross, the
@@ -1373,7 +1382,11 @@ Notes:
     GameAPI puts the avatar on the seat at once (it only tracks time for walking).
   - Depth: a sitting avatar sorts right after its seat (right before it when the seat faces
     up); a lying avatar always right after its bed, with the blanket inside the avatar sprite.
-  - Tapping the floor stands up and walks (the path leaves via the nearest free cell). Moving or
+  - Tapping the floor stands up and walks (the path leaves via the nearest free cell). Out of
+    bed (fix after 9e): LocalGameAPI.standingAvatar puts a lying avatar next to the bed at once
+    (standUpSpot, leaning to the side it is going to) before the path is made; before, the walk
+    started in the middle of the bed and the avatar was hidden behind the bed's drawing for about
+    a second. The client jumps to the path's first point as usual (more than 8 px off). Moving or
     picking up the item: the avatar stands at standUpSpot (where it is if that cell is free, else
     the nearest free cell center); LocalGameAPI and main.ts both do this with the same rule.
   - The bone chair (crypt furniture) does not exist yet; give it one 'sit' seat when it is added.
