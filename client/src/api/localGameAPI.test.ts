@@ -112,7 +112,7 @@ describe('LocalGameAPI', () => {
     await api.enterRoom(1);
     const rug = (await api.getInventory()).furniture.find((i) => i.typeId === 'rug')!;
     await api.placeItem(rug.uid, { center: { x: 120, y: 120 }, facing: 'down', snap: true });
-    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['counter', 'stall_table']);
+    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table']);
     expect((await api.enterRoom(1)).items.map((i) => i.uid)).toEqual([rug.uid]);
   });
 

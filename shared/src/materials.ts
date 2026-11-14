@@ -6,8 +6,9 @@
 import materialData from '../data/materials.json';
 import cropData from '../data/crops.json';
 import foodData from '../data/food.json';
+import drinkData from '../data/drinks.json';
 import { CATCH_TYPES } from './fish.ts';
-import type { CropId, FoodId, MaterialGroup, MaterialId, MaterialType, Rank, SeedId } from './types.ts';
+import type { CropId, DrinkId, FoodId, MaterialGroup, MaterialId, MaterialType, Rank, SeedId } from './types.ts';
 
 /** A crop (crops.json): its seed, grow time and value. A seed with seedPrice null is not sold. */
 export interface CropType {
@@ -44,7 +45,25 @@ export interface FoodType {
   rank: Rank;
 }
 
+/** A drink (drinks.json, step 9t): brewed in a brewing barrel from crops, in real time. */
+export interface DrinkType {
+  id: DrinkId;
+  name: string;
+  inputs: Partial<Record<MaterialId, number>>;
+  /** Brewing time in minutes of real time. */
+  minutes: number;
+  /** Mugs one brew gives. */
+  mugs: number;
+  /** The value of one mug. */
+  baseValue: number;
+  /** Extra coins a guest leaves, as a share of the price (the glowcap tonic). */
+  tip: number;
+  color: number;
+  rank: Rank;
+}
+
 export const CROP_TYPES = cropData as CropType[];
+export const DRINK_TYPES = drinkData as DrinkType[];
 export const FOOD_TYPES = foodData as FoodType[];
 
 const base = (materialData as Omit<MaterialType, 'group'>[]).map((m): MaterialType => ({ ...m, group: 'material' }));
@@ -54,6 +73,7 @@ export const MATERIAL_TYPES: MaterialType[] = [
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, rank: c.rank, group: 'seed' })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, rank: c.rank, group: 'crop' })),
   ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, rank: f.rank, group: 'food' })),
+  ...DRINK_TYPES.map((d): MaterialType => ({ id: d.id, name: d.name, baseValue: d.baseValue, color: d.color, rank: d.rank, group: 'drink' })),
   // The lakeside's catches (step 9f): fish and the things fished up.
   ...CATCH_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, rank: c.rank, group: c.kind })),
 ];
@@ -100,4 +120,14 @@ export function getFoodType(id: FoodId): FoodType {
   const f = FOOD_TYPES.find((x) => x.id === id);
   if (!f) throw new Error(`unknown food ${id}`);
   return f;
+}
+
+export function isDrinkId(id: string): id is DrinkId {
+  return materialGroup(id) === 'drink';
+}
+
+export function getDrinkType(id: DrinkId): DrinkType {
+  const d = DRINK_TYPES.find((x) => x.id === id);
+  if (!d) throw new Error(`unknown drink ${id}`);
+  return d;
 }

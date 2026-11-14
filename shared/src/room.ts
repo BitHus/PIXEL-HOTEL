@@ -54,7 +54,7 @@ export interface RoomShape {
   /** Levels 1, 2 and 3; each floor contains the one before. */
   levels: ShapeLevel[];
   /** Where a new shop's counter and stall_table stand (level 1), for shapes a shop can use. */
-  shopStart?: Record<'counter' | 'stall_table', Point>;
+  shopStart?: Record<'counter' | 'stall_table' | 'round_table' | 'stool_left' | 'stool_right' | 'brewing_barrel', Point>;
 }
 
 export const ROOM_SHAPES = roomShapeData as RoomShape[];

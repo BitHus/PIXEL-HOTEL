@@ -154,6 +154,10 @@ describe('save files', () => {
       rug: { count: 1, firstSeenAt: 0 },
       cloth: { count: 1, firstSeenAt: 0 },
       skull_lamp: { count: 1, firstSeenAt: 0 },
+      // The tavern's gift (migration 12, step 9t).
+      round_table: { count: 1, firstSeenAt: 0 },
+      bar_stool: { count: 2, firstSeenAt: 0 },
+      brewing_barrel: { count: 1, firstSeenAt: 0 },
     });
     expect(r.state.player.bookOpenedAt).toBe(0);
     expect(r.state.player.bookRewards).toEqual([]);
@@ -177,5 +181,36 @@ describe('save files', () => {
     // Nothing else changed.
     expect(r.state.rooms).toHaveLength(4);
     expect(r.state.player.seen).toEqual(v11.player.seen);
+  });
+  it('migrates a version 12 save (step 9t): the tavern, with a table, 2 stools and a barrel of root ale in the bag', () => {
+    const START = ['round_table', 'bar_stool', 'brewing_barrel'];
+    const { tavern: _t, ...rest } = state;
+    const v12 = {
+      ...rest,
+      items: rest.items.filter((i) => !START.includes(i.typeId)),
+      shop: { ...rest.shop, updatedAt: 5000 },
+      player: { ...rest.player, seen: Object.fromEntries(Object.entries(rest.player.seen).filter(([id]) => !START.includes(id))) },
+    };
+    const r = readSave(JSON.stringify({ version: 12, savedAt: 0, state: v12 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    const s = r.state;
+    // The gift is in the bag (not placed), through the ledger, with fresh uids.
+    const gift = s.items.filter((i) => START.includes(i.typeId));
+    expect(gift.map((i) => [i.typeId, i.roomId]).sort()).toEqual([['bar_stool', null], ['bar_stool', null], ['brewing_barrel', null], ['round_table', null]]);
+    expect(gift.map((i) => i.uid)).toEqual([state.nextUid, state.nextUid + 1, state.nextUid + 2, state.nextUid + 3]);
+    expect(s.nextUid).toBe(state.nextUid + 4);
+    expect(s.ledger.at(-1)).toMatchObject({ reason: 'tavern_gift', goldDelta: 0, furnitureUids: gift.map((i) => i.uid) });
+    expect(s.player.seen.bar_stool?.count).toBe(2);
+    // The tavern is the shop room, empty, and the game still has to explain it once.
+    const barrel = gift.find((i) => i.typeId === 'brewing_barrel')!;
+    expect(s.tavern).toMatchObject({ roomId: s.player.shopRoomId, guests: [], mess: [], menu: {}, serveQueue: [], holding: null, introSeen: false, updatedAt: 5000 });
+    expect(s.tavern.brews).toEqual([{ barrelUid: barrel.uid, drink: 'root_ale', readyAt: 5000 }]);
+    // Everything else is as it was.
+    expect(s.items.filter((i) => !START.includes(i.typeId))).toEqual(v12.items);
+    expect(s.player.wallet).toEqual(v12.player.wallet);
+    expect(s.shop).toEqual(v12.shop);
+    // A new game has seen the intro already.
+    expect(state.tavern.introSeen).toBe(true);
   });
 });

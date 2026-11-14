@@ -110,7 +110,7 @@ export function lootTypeId(loot: LootRef): string {
 export function lootCategory(loot: LootRef): ShopCategory {
   if (loot.kind === 'furniture') return getFurnitureType(loot.typeId).category as ShopCategory;
   const group = getMaterialType(loot.id).group;
-  return group === 'crop' || group === 'food' || group === 'fish' ? 'food' : 'materials';
+  return group === 'crop' || group === 'food' || group === 'fish' || group === 'drink' ? 'food' : 'materials';
 }
 
 export function lootBaseValue(loot: LootRef): number {

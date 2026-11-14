@@ -62,6 +62,7 @@ export function sourceOf(id: string): string {
   if (material?.group === 'seed' && id !== 'glowcap_spore') parts.push('Catalog');
   if (material?.group === 'crop') parts.push('Farm');
   if (material?.group === 'food') parts.push('Cooked');
+  if (material?.group === 'drink') parts.push('Brewed');
   const furniture = FURNITURE_TYPES.find((f) => f.id === id);
   if (furniture?.inCatalog) parts.push('Catalog');
   if (RECIPES.some((r) => r.makesKind === 'furniture' && r.makes === id)) parts.push('Crafted');
@@ -78,7 +79,7 @@ export function bookEntries(tab: BookTab): BookEntry[] {
   if (tab === 'fish') {
     return CATCH_TYPES.map((c) => ({ key: c.id, id: c.id, kind: 'material' as const, name: c.name, rank: c.rank, source: sourceOf(c.id), ...(c.kind === 'fish' ? { cm: { min: c.minCm ?? 0, max: c.maxCm ?? 0 } } : {}) }));
   }
-  return MATERIAL_TYPES.filter((m) => (tab === 'materials' ? m.group === 'material' : tab === 'food' && ['seed', 'crop', 'food'].includes(m.group))).map((m) => ({ key: m.id, id: m.id, kind: 'material' as const, name: m.name, rank: m.rank, source: sourceOf(m.id) }));
+  return MATERIAL_TYPES.filter((m) => (tab === 'materials' ? m.group === 'material' : tab === 'food' && ['seed', 'crop', 'food', 'drink'].includes(m.group))).map((m) => ({ key: m.id, id: m.id, kind: 'material' as const, name: m.name, rank: m.rank, source: sourceOf(m.id) }));
 }
 
 export interface BookProgress {

@@ -9,6 +9,7 @@ import type { FurnitureItem, LedgerEntry, Player } from './types.ts';
 import type { DungeonRun } from './dungeon/run.ts';
 import type { FarmState } from './farm.ts';
 import type { LakesideState } from './woodcut.ts';
+import type { TavernState } from './tavern.ts';
 
 export interface GameState {
   player: Player;
@@ -37,6 +38,8 @@ export interface GameState {
   farm: FarmState;
   /** The lakeside's trees (step 9f, woodcut.ts); the lakeside room itself is in rooms. */
   lakeside: LakesideState;
+  /** The tavern (step 9t, tavern.ts): the menu, guests, coins and dishes on the tables, brews. It is the shop room. */
+  tavern: TavernState;
 }
 
 /** One chat message (not saved). */
