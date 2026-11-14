@@ -459,10 +459,6 @@ async function start(): Promise<void> {
     onCancel: () => placer.cancel(),
   });
   const menu = createItemMenu(ui, {
-    onMove: (uid) => {
-      menu.close();
-      placer.startMove(uid);
-    },
     onRotate: (uid) => {
       void api.rotateItem(uid).then((next) => applyItems(next) || itemViews.shake(uid));
     },
@@ -1190,7 +1186,11 @@ async function start(): Promise<void> {
   }
 
   // Shift turns snapping off (desktop).
-  const onShift = (e: KeyboardEvent): void => placer.setShift(e.shiftKey);
+  let shiftHeld = false;
+  const onShift = (e: KeyboardEvent): void => {
+    shiftHeld = e.shiftKey;
+    placer.setShift(e.shiftKey);
+  };
   window.addEventListener('keydown', onShift);
   window.addEventListener('keyup', onShift);
   window.addEventListener('blur', () => placer.setShift(false));
@@ -1212,8 +1212,15 @@ async function start(): Promise<void> {
       marked = screenToWorld(screen, shown);
       cross.visible = label.visible;
       redraw();
-      // While placing, taps do nothing: only ✓ places (so nothing lands by accident).
-      if (kind === 'hover' || placer.active) return;
+      if (kind === 'hover') return;
+      if (placer.active) {
+        // Placing a new item: a tap on the room puts it there at once when it fits (else the ghost
+        // just goes there, red). No extra ✓ needed.
+        if (kind !== 'tap' || placer.moving) return;
+        placer.moveTo(marked);
+        if (placer.valid) void placer.place();
+        return;
+      }
       // The placed item under the pointer, found by Pixi's hit testing (item views are 'static').
       const hit = roomItem(itemViews.uidOf(target));
       if (build.on) {
@@ -1222,8 +1229,22 @@ async function start(): Promise<void> {
           panels.close();
           return;
         }
-        if (hit) openMenu(hit);
-        else menu.close();
+        // A tap on an item selects it (again: lets it go). With an item selected, a tap on a
+        // free spot moves it there at once; it shakes when it does not fit there.
+        if (hit) {
+          if (kind === 'tap' && menu.uid === hit.uid) menu.close();
+          else openMenu(hit);
+          return;
+        }
+        const chosen = roomItem(menu.uid);
+        if (kind !== 'tap' || !chosen) {
+          menu.close();
+          return;
+        }
+        void api.moveItem(chosen.uid, { center: marked, facing: chosen.facing, snap: !shiftHeld }).then((next) => {
+          if (applyItems(next)) sound.play('pop');
+          else itemViews.shake(chosen.uid);
+        });
         return;
       }
       // Play mode: a long press does nothing; a tap on the room first closes an open panel.
@@ -1261,11 +1282,35 @@ async function start(): Promise<void> {
       const to = marked;
       void walkTo(to);
     },
-    getDragMode: () => (dungeon.isActive || blockers.on || placer.active ? 'draw' : 'pan'),
+    getDragMode: (target) => {
+      if (dungeon.isActive || blockers.on || placer.active) return 'draw';
+      // Build mode: a drag that starts on an item moves that item (no Move button, no ✓).
+      const hit = build.on && panels.open === null ? roomItem(itemViews.uidOf(target)) : undefined;
+      if (!hit) return 'pan';
+      menu.close();
+      placer.startMove(hit.uid);
+      return placer.active ? 'draw' : 'pan';
+    },
     onDraw: (phase, screen) => {
       const world = screenToWorld(screen, shown);
-      if (placer.active) placer.drag(phase, world);
-      else if (blockers.on) blockers.draw(phase, world);
+      if (placer.active) {
+        const moved = placer.moving ? placer.uid : null;
+        placer.drag(phase, world);
+        if (phase !== 'end') return;
+        // Letting go puts it down. A moved item that does not fit goes back where it was (and
+        // shakes); a new item that does not fit stays in the hand.
+        if (placer.valid) {
+          void placer.place().then(() => {
+            // Refused after all (the room changed meanwhile): back where it was.
+            if (placer.active && placer.moving) placer.cancel();
+            const item = roomItem(moved);
+            if (item) openMenu(item); // still selected: Rotate and Pick up are right there
+          });
+        } else if (moved !== null) {
+          placer.cancel();
+          itemViews.shake(moved);
+        }
+      } else if (blockers.on) blockers.draw(phase, world);
     },
   });
 
@@ -1312,7 +1357,8 @@ async function start(): Promise<void> {
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));
     view.update();
     // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).
-    placeBar.update(placer.screenBounds(), placer.valid);
+    // The ✓ ↻ ✗ bar is only for a new item; an item being dragged is put down by letting go.
+    placeBar.update(placer.moving ? null : placer.screenBounds(), placer.valid);
     menu.follow(menu.uid === null ? null : itemViews.screenBounds(menu.uid));
     heads.clear();
     heads.set(avatar.id, worldToScreen({ x: avatar.x, y: avatar.y - AVATAR_H }, shown));

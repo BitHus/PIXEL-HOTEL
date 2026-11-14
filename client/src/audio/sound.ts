@@ -4,7 +4,7 @@
 export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt';
 
 /** The same sound is never started twice within this many ms. */
-const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 300, pop: 60, click: 40, hit: 50, hurt: 80 };
+const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80 };
 
 type Wave = OscillatorType;
 
@@ -81,9 +81,9 @@ export class Sound {
         this.tone('triangle', 1760, 1760, 0.12, 0.16, 0.07);
         break;
       case 'bell':
-        this.tone('sine', 1568, 1568, 0.7, 0.13);
-        this.tone('sine', 2349, 2349, 0.4, 0.05);
-        this.tone('sine', 1245, 1245, 0.8, 0.11, 0.2);
+        // A soft two-note door chime: low, quiet, with a slow start (the old bell was high and sharp).
+        this.tone('sine', 659, 659, 0.9, 0.045, 0, 0.06);
+        this.tone('sine', 880, 880, 1.1, 0.035, 0.16, 0.06);
         break;
       case 'pop':
         this.tone('sine', 280, 620, 0.1, 0.24);
@@ -103,7 +103,7 @@ export class Sound {
   }
 
   /** One note that fades out; the pitch slides from f0 to f1. */
-  private tone(wave: Wave, f0: number, f1: number, seconds: number, gain: number, delay = 0): void {
+  private tone(wave: Wave, f0: number, f1: number, seconds: number, gain: number, delay = 0, attack = 0.005): void {
     const ctx = this.ctx;
     if (!ctx || !this.master) return;
     const t = ctx.currentTime + delay;
@@ -113,7 +113,7 @@ export class Sound {
     osc.frequency.setValueAtTime(f0, t);
     if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(f1, t + seconds);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(gain, t + 0.005);
+    g.gain.linearRampToValueAtTime(gain, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
     osc.connect(g).connect(this.master);
     osc.start(t);

@@ -229,11 +229,14 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
 - **List panels (polish).** Workshop, Cooking, the shelf panel and the Map use the Map's card as
   the model: an icon, a title, one short line, and one action on the right.
 - **Placing furniture** (our own pattern, built in step 4b): the item appears as a ghost,
-  green if it fits and red if not. Drag the ghost. A small bar above it: ✓ Place, ↻ Rotate,
-  ✗ Cancel. Nothing is placed until ✓. Placed furniture comes out of the inventory; Pick up
+  green if it fits and red if not. Building is fast (owner's decision after step 9e): tap a
+  spot and the item lands there, or drag the ghost and let go. A small bar above a new item
+  still has ✓ Place, ↻ Rotate and ✗ Cancel. A placed item is moved by dragging it (letting go
+  puts it down; it goes back when it does not fit), or by tapping it and then tapping where it
+  should go. There is no Move button and no ✓ for moving. Placed furniture comes out of the inventory; Pick up
   puts it back.
 - **Item info, Habbo style (build mode):** tap a placed item and a small menu appears next to
-  it (Move, Rotate, Pick up), with a small card showing the item's name. Later the card can also show its value or rarity. A tap elsewhere closes it.
+  it (Rotate, Pick up), with a small card showing the item's name. Later the card can also show its value or rarity. The item is selected now: a tap on a free spot moves it there, a tap on the item again lets it go.
 - **Panels** (Bag, Catalog, Workshop, Settings and the rest) open as one panel at a time in the
   same frame style, with a close button (✗) on the top-right corner. Opening one closes the
   other. Where they sit: section 2.
