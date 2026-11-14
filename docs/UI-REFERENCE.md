@@ -90,6 +90,8 @@ screenshots of it in the repo.
   shows its count, small, in the slot's bottom-right corner (light digits with a dark outline);
   seeds show it from 1. On desktop the slots are numbered
   and the number keys 1 to 9 and 0 select them.
+- **Settings** also holds the device settings (atmosphere step): Sound on / off, a Volume
+  slider, and Lighting on / off (for slow phones). They are saved on the device, not in the save.
 - **Debug tools** (x/y/zoom label, Blockers) live in Settings behind a "Debug" toggle, off by
   default. They are never visible to a normal player.
 

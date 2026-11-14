@@ -5,6 +5,7 @@
 import { CUSTOMER_WALK_SPEED, customerAvatar, walkAvatar, type Avatar, type Customer, type Point } from '@pixel-hotel/shared';
 import { AvatarSprite } from './avatarSprite.ts';
 import { avatarDepthKey } from './depthOrder.ts';
+import { idleShift } from './atmosphere.ts';
 import type { RoomView } from './roomView.ts';
 
 interface Shown {
@@ -28,7 +29,7 @@ export class CustomerViews {
       const a = customerAvatar(c, roomId);
       const s = this.shown.get(c.id);
       if (!s) {
-        const sprite = new AvatarSprite(c.look);
+        const sprite = new AvatarSprite(c.look, false);
         sprite.container.eventMode = 'none';
         this.view.objects.add(sprite.container, avatarDepthKey(a));
         this.shown.set(c.id, { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite });
@@ -46,13 +47,20 @@ export class CustomerViews {
   }
 
   update(dtMs: number, timeMs: number): void {
-    for (const s of this.shown.values()) {
+    for (const [id, s] of this.shown) {
       const r = walkAvatar(s.avatar, s.path, dtMs, s.speed);
       s.avatar = r.avatar;
       s.path = r.path;
       s.sprite.update(s.avatar, timeMs);
+      // Standing customers shift a little now and then (atmosphere step).
+      s.sprite.setShift(s.path.length === 0 ? idleShift(id, timeMs) : 0);
       this.view.objects.setKey(s.sprite.container, avatarDepthKey(s.avatar));
     }
+  }
+
+  /** Adds every customer's feet (for the shadows). */
+  feet(out: Point[]): void {
+    for (const s of this.shown.values()) out.push(s.avatar);
   }
 
   /** World points above each customer's head (speech bubbles). */
