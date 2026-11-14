@@ -554,26 +554,32 @@ export const INTRO_COIN_EVERY_MS = 140;
 export const INTRO_COIN_FLY_MS = 600;
 
 // ---------- Atmosphere (lighting, shadows, dust, sound); drawing and sound only, no rules ----------
-/** The ambient shade per room kind: the room is multiplied toward this palette color by `strength` (0 = off). */
+/**
+ * The ambient shade per room kind: this palette color lies over the room with `strength` as its
+ * alpha (0 = off). Kept mild: the room stays bright and warm, the pools only stand out a little.
+ */
 export const AMBIENT_LIGHT = {
-  hotel: { color: 5, strength: 0.55 },
-  shop: { color: 5, strength: 0.52 },
-  farm: { color: 23, strength: 0.42 },
+  hotel: { color: 5, strength: 0.3 },
+  shop: { color: 5, strength: 0.28 },
+  farm: { color: 23, strength: 0.24 },
 } as const;
 /** The light map is drawn in blocks of this many art px (chunky pixel rings, and cheap). */
 export const LIGHT_PIXEL = 2;
-/** A light pool is this many stepped rings; the middle is LIGHT_STRENGTH bright. */
-export const LIGHT_RINGS = 4;
-export const LIGHT_STRENGTH = 0.8;
+/** A light pool is this many stepped rings (more rings = a softer pool, still without blur). */
+export const LIGHT_RINGS = 8;
+/** Every ring takes this part of the ambient shade away (the middle of a pool has almost none left). */
+export const LIGHT_CUT = 0.26;
+/** Every ring lays the light's own color over the room with this alpha: the warm glow. */
+export const LIGHT_GLOW = 0.07;
 /** The light map is redrawn this often (the candle flicker steps with it), ms. */
 export const LIGHT_STEP_MS = 120;
 /** A full flicker changes the radius and the brightness by at most these parts. */
 export const FLICKER_RADIUS = 0.07;
 export const FLICKER_BRIGHTNESS = 0.16;
-/** The daylight patch inside the door (hotel and shop): palette color, depth into the room in px, strength. */
-export const DOOR_LIGHT = { color: 2, depth: 112, strength: 0.45 } as const;
+/** The daylight patch inside the door (hotel and shop): palette color, depth into the room in px, and the alpha of the color at the door. */
+export const DOOR_LIGHT = { color: 2, depth: 112, strength: 0.12 } as const;
 /** The cooking pot's fire on the farm. */
-export const COOKING_POT_LIGHT = { radius: 80, color: 9, flicker: 1 } as const;
+export const COOKING_POT_LIGHT = { radius: 104, color: 9, flicker: 1 } as const;
 /** Dust specks per light pool, and the most on screen at once. */
 export const DUST_PER_LIGHT = 4;
 export const DUST_MAX = 28;

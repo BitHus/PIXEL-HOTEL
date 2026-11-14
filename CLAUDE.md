@@ -889,19 +889,24 @@ Conventions:
   - Light sources are data: FurnitureType.light = { radius (world px), color (palette index),
     flicker (0 steady .. 1 candle) } (types.ts LightSource). furniture.json: lamp (candle stand),
     counter (the till glow), skull_lamp, wall_torch. The cooking pot uses config COOKING_POT_LIGHT.
-  - Config (end of shared/config.ts): AMBIENT_LIGHT per room kind { color, strength } (the
-    darkness; the owner tunes it here), LIGHT_PIXEL 2, LIGHT_RINGS, LIGHT_STRENGTH, LIGHT_STEP_MS,
-    FLICKER_RADIUS / FLICKER_BRIGHTNESS, DOOR_LIGHT, DUST_PER_LIGHT, DUST_MAX, WALK_PUFF_MS,
-    IDLE_SHIFT_EVERY_MS / HOLD_MS, SOUND_DEFAULT_VOLUME, PREFS_KEY.
-  - client/src/render/atmosphere.ts (pure, tested): hash01, ambientColor, scaleColor, lightRings,
+  - Config (end of shared/config.ts): AMBIENT_LIGHT per room kind { color, strength } (a palette
+    colour laid over the room with that alpha; the owner tunes the darkness here), LIGHT_PIXEL 2,
+    LIGHT_RINGS 8, LIGHT_CUT (how much shade one ring takes away), LIGHT_GLOW (the alpha of the
+    light's colour per ring), LIGHT_STEP_MS, FLICKER_RADIUS / FLICKER_BRIGHTNESS, DOOR_LIGHT,
+    DUST_PER_LIGHT, DUST_MAX, WALK_PUFF_MS, IDLE_SHIFT_EVERY_MS / HOLD_MS, SOUND_DEFAULT_VOLUME,
+    PREFS_KEY.
+  - client/src/render/atmosphere.ts (pure, tested): hash01, lightRings,
     flickerAt (steps with LIGHT_STEP_MS, from a seed and the time), lightPoint, itemLights,
     ellipseRows (pixel ellipse), shadowSize, idleShift, dustLightCount, dustSpeck.
   - client/src/render/roomAtmosphere.ts (RoomAtmosphere; main.ts calls setRoom after every
     view.setRoom, setItems from syncItems (use syncItems, never itemViews.sync alone), update every
-    frame with the feet of standing / walking avatars, puff, setLighting). Lighting = a light map
-    RenderTexture (1 texel = LIGHT_PIXEL art px): white outside the room, the ambient colour on the
-    room, lights added as stepped rings (blend 'add'), plus the stepped daylight patch at the door
-    (hotel and shop); the map lies over the room with blend 'multiply' (RoomView.lightLayer). It is
+    frame with the feet of standing / walking avatars, puff, setLighting). Lighting (reworked after the owner's
+    playtest: brighter and warmer, glowing pools; general traits of cozy tavern games only) = a
+    light map RenderTexture (1 texel = LIGHT_PIXEL art px) shown as ONE normal layer
+    (RoomView.lightLayer): empty outside the room, the ambient shade on it; every light takes the
+    shade away in stepped rings (Graphics with blend 'erase') and then lays its own colour over the
+    room in the same rings with a small alpha (the warm glow); the door's daylight patch (hotel and
+    shop) works the same way. It is
     redrawn only every LIGHT_STEP_MS or when something changed. Shadows: two-shade pixel ellipses in
     RoomView.shadowLayer (under the objects) for blocking floor items, the pot and avatars
     (AvatarSprite(look, false) = no built-in shadow; the dungeon keeps the built-in one). Dust:

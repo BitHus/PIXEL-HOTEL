@@ -35,29 +35,6 @@ export function hash01(a: number, b: number): number {
   return (h >>> 0) / 4294967296;
 }
 
-function parse(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function toNumber(r: number, g: number, b: number): number {
-  const c = (v: number): number => Math.max(0, Math.min(255, Math.round(v)));
-  return (c(r) << 16) | (c(g) << 8) | c(b);
-}
-
-/** The colour the room is multiplied with: white moved toward `hex` by strength (0 = white). */
-export function ambientColor(hex: string, strength: number): number {
-  const s = Math.max(0, Math.min(1, strength));
-  const [r, g, b] = parse(hex);
-  return toNumber(255 + (r - 255) * s, 255 + (g - 255) * s, 255 + (b - 255) * s);
-}
-
-/** A colour made darker (factor 0..1), as a number for Pixi. */
-export function scaleColor(hex: string, factor: number): number {
-  const [r, g, b] = parse(hex);
-  return toNumber(r * factor, g * factor, b * factor);
-}
-
 /** The radii of a pool's stepped rings, largest first; every ring adds the same bit of light. */
 export function lightRings(radius: number, rings: number): number[] {
   const n = Math.max(1, Math.floor(rings));

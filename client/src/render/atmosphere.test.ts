@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DUST_MAX, DUST_PER_LIGHT, FLICKER_BRIGHTNESS, FLICKER_RADIUS, FURNITURE_TYPES, IDLE_SHIFT_EVERY_MS, LIGHT_STEP_MS, PALETTE, getFurnitureType, type FurnitureItem } from '@pixel-hotel/shared';
-import { ambientColor, dustLightCount, dustSpeck, ellipseRows, flickerAt, hash01, idleShift, itemLights, lightPoint, lightRings, scaleColor, shadowSize } from './atmosphere.ts';
+import { dustLightCount, dustSpeck, ellipseRows, flickerAt, hash01, idleShift, itemLights, lightPoint, lightRings, shadowSize } from './atmosphere.ts';
 
 const item = (uid: number, typeId: string, over: Partial<FurnitureItem> = {}): FurnitureItem => ({ uid, typeId, ownerId: 1, roomId: 1, x: 100, y: 200, facing: 'down', onItemUid: null, ...over });
 
@@ -12,17 +12,6 @@ describe('hash01', () => {
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThan(1);
     }
-  });
-});
-
-describe('colours', () => {
-  it('ambient: strength 0 is white, strength 1 is the colour', () => {
-    expect(ambientColor('#733e39', 0)).toBe(0xffffff);
-    expect(ambientColor('#733e39', 1)).toBe(0x733e39);
-  });
-  it('scaleColor darkens', () => {
-    expect(scaleColor('#ffffff', 0.5)).toBe(0x808080);
-    expect(scaleColor('#feae34', 0)).toBe(0);
   });
 });
 
