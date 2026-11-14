@@ -65,6 +65,7 @@ import {
   DUNGEON_HINT,
   MINE_HINT,
   xpForNextLevel,
+  newEntries,
 } from '@pixel-hotel/shared';
 import './ui/ui.css';
 import { LocalGameAPI } from './api/localGameAPI.ts';
@@ -115,6 +116,8 @@ import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from './ui/w
 import { DungeonScreen } from './dungeon/dungeonScreen.ts';
 import { FarmScreen } from './farm/farmScreen.ts';
 import { createCookingPanel } from './ui/cookingPanel.ts';
+import { createBookPanel } from './ui/bookPanel.ts';
+import { applyRankColors } from './ui/rank.ts';
 import { createTravelPanel, type PlaceCard, type Place } from './ui/travelPanel.ts';
 import { createLunchPicker } from './ui/lunchPicker.ts';
 import { ROOM_NAMES } from './ui/infoPanel.ts';
@@ -134,6 +137,7 @@ async function start(): Promise<void> {
   const ui = document.getElementById('ui');
   if (!host || !ui) throw new Error('#game or #ui element missing');
   const uiRoot: HTMLElement = ui;
+  applyRankColors(uiRoot);
 
   // Step 5: the game runs on LocalGameAPI (shared rules in the browser, saved in localStorage).
   const storage = browserStorage();
@@ -313,7 +317,8 @@ async function start(): Promise<void> {
   const dungeonBadge = document.createElement('span');
   dungeonBadge.className = 'btn-badge';
   dungeonButton.appendChild(dungeonBadge);
-  const sideButtons = createSideButtons(ui, panels, [build.button, dungeonButton]);
+  const side = createSideButtons(ui, panels, [build.button, dungeonButton]);
+  const sideButtons = side.col;
   // The quest button, at the top of the column: shows the current quest again. Hidden without a
   // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
   const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn room-only');
@@ -454,10 +459,6 @@ async function start(): Promise<void> {
     onCancel: () => placer.cancel(),
   });
   const menu = createItemMenu(ui, {
-    onMove: (uid) => {
-      menu.close();
-      placer.startMove(uid);
-    },
     onRotate: (uid) => {
       void api.rotateItem(uid).then((next) => applyItems(next) || itemViews.shake(uid));
     },
@@ -541,6 +542,7 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
+          backdrop.setOutdoor(room.kind === 'farm');
         }
         toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
         await refreshShop();
@@ -574,6 +576,7 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
+          backdrop.setOutdoor(room.kind === 'farm');
         }
         await refreshShop();
         await refreshInventory();
@@ -624,6 +627,24 @@ async function start(): Promise<void> {
     });
   });
   panels.add('cooking', cooking.el);
+  // ---------- The Book (step 9e) ----------
+  const book = createBookPanel(ui, (tab, percent) => {
+    void api.claimBookReward(tab, percent).then(async (gold) => {
+      if (gold !== null) {
+        sound.play('coin');
+        toast(`Book reward: +${gold} gold.`);
+      }
+      await refreshInventory();
+    });
+  });
+  panels.add('book', book.el, () => {
+    // What is new stays marked while the Book is open; opening it clears the button's dot.
+    void api.getPlayer().then(async (p) => {
+      book.refresh(p, true);
+      await api.bookOpened();
+      side.setBookDot(false);
+    });
+  });
   const farm = new FarmScreen(view, {
     api,
     toast,
@@ -868,6 +889,8 @@ async function start(): Promise<void> {
     onCarry: (on) => hotbar.setChoosing(on),
   });
   panels.add('bag', bag.el, undefined, () => bag.endCarry(), bag.frame);
+  // The Bag button sits at the right end of the hotbar (owner, after 9d).
+  hotbar.el.appendChild(side.bag);
   // Panels start under the info panel (phone) and end above the hotbar or the run bag.
   watchLayout(ui, info.panel, [hotbar.el, runBar.el]);
 
@@ -878,6 +901,8 @@ async function start(): Promise<void> {
     if (!dungeon.isActive) info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
     workshop.refresh(p);
     cooking.refresh(p);
+    if (panels.open === 'book') book.refresh(p);
+    else side.setBookDot(newEntries(p.seen, p.bookOpenedAt).length > 0);
     if (panels.open === 'travel') void refreshTravel();
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     dungeonBadge.textContent = free ? 'free' : String(DUNGEON_KEY_COST);
@@ -1125,6 +1150,7 @@ async function start(): Promise<void> {
     bounds = roomBoundsRect(room);
     view.setRoom(room);
     atmosphere.setRoom(room);
+    backdrop.setOutdoor(room.kind === 'farm');
     itemViews.setRoom(room.id);
     blockers.setRoom(room);
     items = await api.getItems();
@@ -1160,7 +1186,11 @@ async function start(): Promise<void> {
   }
 
   // Shift turns snapping off (desktop).
-  const onShift = (e: KeyboardEvent): void => placer.setShift(e.shiftKey);
+  let shiftHeld = false;
+  const onShift = (e: KeyboardEvent): void => {
+    shiftHeld = e.shiftKey;
+    placer.setShift(e.shiftKey);
+  };
   window.addEventListener('keydown', onShift);
   window.addEventListener('keyup', onShift);
   window.addEventListener('blur', () => placer.setShift(false));
@@ -1182,8 +1212,15 @@ async function start(): Promise<void> {
       marked = screenToWorld(screen, shown);
       cross.visible = label.visible;
       redraw();
-      // While placing, taps do nothing: only ✓ places (so nothing lands by accident).
-      if (kind === 'hover' || placer.active) return;
+      if (kind === 'hover') return;
+      if (placer.active) {
+        // Placing a new item: a tap on the room puts it there at once when it fits (else the ghost
+        // just goes there, red). No extra ✓ needed.
+        if (kind !== 'tap' || placer.moving) return;
+        placer.moveTo(marked);
+        if (placer.valid) void placer.place();
+        return;
+      }
       // The placed item under the pointer, found by Pixi's hit testing (item views are 'static').
       const hit = roomItem(itemViews.uidOf(target));
       if (build.on) {
@@ -1192,8 +1229,22 @@ async function start(): Promise<void> {
           panels.close();
           return;
         }
-        if (hit) openMenu(hit);
-        else menu.close();
+        // A tap on an item selects it (again: lets it go). With an item selected, a tap on a
+        // free spot moves it there at once; it shakes when it does not fit there.
+        if (hit) {
+          if (kind === 'tap' && menu.uid === hit.uid) menu.close();
+          else openMenu(hit);
+          return;
+        }
+        const chosen = roomItem(menu.uid);
+        if (kind !== 'tap' || !chosen) {
+          menu.close();
+          return;
+        }
+        void api.moveItem(chosen.uid, { center: marked, facing: chosen.facing, snap: !shiftHeld }).then((next) => {
+          if (applyItems(next)) sound.play('pop');
+          else itemViews.shake(chosen.uid);
+        });
         return;
       }
       // Play mode: a long press does nothing; a tap on the room first closes an open panel.
@@ -1231,11 +1282,35 @@ async function start(): Promise<void> {
       const to = marked;
       void walkTo(to);
     },
-    getDragMode: () => (dungeon.isActive || blockers.on || placer.active ? 'draw' : 'pan'),
+    getDragMode: (target) => {
+      if (dungeon.isActive || blockers.on || placer.active) return 'draw';
+      // Build mode: a drag that starts on an item moves that item (no Move button, no ✓).
+      const hit = build.on && panels.open === null ? roomItem(itemViews.uidOf(target)) : undefined;
+      if (!hit) return 'pan';
+      menu.close();
+      placer.startMove(hit.uid);
+      return placer.active ? 'draw' : 'pan';
+    },
     onDraw: (phase, screen) => {
       const world = screenToWorld(screen, shown);
-      if (placer.active) placer.drag(phase, world);
-      else if (blockers.on) blockers.draw(phase, world);
+      if (placer.active) {
+        const moved = placer.moving ? placer.uid : null;
+        placer.drag(phase, world);
+        if (phase !== 'end') return;
+        // Letting go puts it down. A moved item that does not fit goes back where it was (and
+        // shakes); a new item that does not fit stays in the hand.
+        if (placer.valid) {
+          void placer.place().then(() => {
+            // Refused after all (the room changed meanwhile): back where it was.
+            if (placer.active && placer.moving) placer.cancel();
+            const item = roomItem(moved);
+            if (item) openMenu(item); // still selected: Rotate and Pick up are right there
+          });
+        } else if (moved !== null) {
+          placer.cancel();
+          itemViews.shake(moved);
+        }
+      } else if (blockers.on) blockers.draw(phase, world);
     },
   });
 
@@ -1282,7 +1357,8 @@ async function start(): Promise<void> {
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));
     view.update();
     // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).
-    placeBar.update(placer.screenBounds(), placer.valid);
+    // The ✓ ↻ ✗ bar is only for a new item; an item being dragged is put down by letting go.
+    placeBar.update(placer.moving ? null : placer.screenBounds(), placer.valid);
     menu.follow(menu.uid === null ? null : itemViews.screenBounds(menu.uid));
     heads.clear();
     heads.set(avatar.id, worldToScreen({ x: avatar.x, y: avatar.y - AVATAR_H }, shown));

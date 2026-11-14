@@ -1,30 +1,29 @@
 // The room's atmosphere (atmosphere step): shadows under items and avatars, the dark warm
-// ambient with stepped light pools, slow dust in the pools and the puff of a first step. Drawing
+// ambient with soft light halos, slow dust near the lights and the puff of a first step. Drawing
 // only; the numbers come from atmosphere.ts (pure) and shared/config.ts.
 //
-// Lighting: a small light map (one texel = LIGHT_PIXEL art px) that lies over the room as ONE
-// normal layer. It is empty outside the room and holds the ambient shade (a dark warm colour with
-// a low alpha) on it. Every light first takes the shade away in stepped rings (blend 'erase'),
-// then lays its own warm colour over the room in the same rings with a small alpha: the glow.
-// So pools are hard pixel rings (no blur), brighter and warmer toward the flame.
+// Lighting: the room stays bright and warm; a light is a small soft halo, not a ringed pool.
+// A small light map (one texel = LIGHT_PIXEL art px) lies over the room as ONE normal layer: empty
+// outside the room, a mild ambient shade on it, and every light takes that shade away with a soft
+// round falloff (blend 'erase'). On top, every light adds its own warm colour with the same
+// falloff (one sprite per light, blend 'add'), so things near a flame get brighter, not flatter.
+// Outdoors (the farm) it is day: no shade and no pools from furniture, only the pot's small fire glow.
 
 import { Container, Graphics, RenderTexture, Sprite, Texture, type Renderer } from 'pixi.js';
 import {
   AMBIENT_LIGHT,
   COOKING_POT,
   COOKING_POT_LIGHT,
-  DOOR_LIGHT,
   DUST_PER_LIGHT,
   LIGHT_PIXEL,
-  LIGHT_RINGS,
   LIGHT_STEP_MS,
   LIGHT_CUT,
   LIGHT_GLOW,
+  OUTDOOR_KINDS,
   PALETTE,
   WALK_PUFF_MS,
   borderRects,
   doorRect,
-  doorZoneRect,
   floorRects,
   footprintRect,
   getFurnitureType,
@@ -36,7 +35,7 @@ import {
   type Room,
 } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
-import { dustLightCount, dustSpeck, ellipseRows, flickerAt, itemLights, lightRings, shadowSize, type RoomLight } from './atmosphere.ts';
+import { dustLightCount, dustSpeck, ellipseRows, flickerAt, itemLights, lightFalloff, shadowSize, type RoomLight } from './atmosphere.ts';
 import type { RoomView } from './roomView.ts';
 
 /** The shadow leans away from the light (top-left). */
@@ -49,6 +48,31 @@ const AVATAR_SHADOW = { rx: 10, ry: 4 };
 function drawShadow(g: Graphics, x: number, y: number, rx: number, ry: number): void {
   for (const r of ellipseRows(rx, ry)) g.rect(x - r.half, y + r.dy, r.half * 2, 1).fill({ color: DARK_WARM, alpha: SHADOW_OUTER });
   for (const r of ellipseRows(rx - 3, ry - 1)) g.rect(x - r.half, y + r.dy, r.half * 2, 1).fill({ color: DARK_WARM, alpha: SHADOW_INNER });
+}
+
+/** The halo picture: white, alpha = lightFalloff from the middle. Made once, tinted per light. */
+const HALO_PX = 64;
+let haloTexture: Texture | null = null;
+function halo(): Texture {
+  if (haloTexture) return haloTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = HALO_PX;
+  canvas.height = HALO_PX;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(HALO_PX, HALO_PX);
+  const mid = HALO_PX / 2;
+  for (let y = 0; y < HALO_PX; y++) {
+    for (let x = 0; x < HALO_PX; x++) {
+      const i = (y * HALO_PX + x) * 4;
+      const a = lightFalloff(Math.hypot(x + 0.5 - mid, y + 0.5 - mid) / mid);
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = 255;
+      img.data[i + 3] = Math.round(a * 255);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  haloTexture = Texture.from(canvas);
+  haloTexture.source.scaleMode = 'nearest';
+  return haloTexture;
 }
 
 function makeAvatarShadow(): Graphics {
@@ -77,9 +101,10 @@ export class RoomAtmosphere {
   // The light map.
   private readonly scene = new Container();
   private readonly base = new Graphics();
-  /** Takes the ambient shade away around lights (blend 'erase'). */
-  private readonly cut = new Graphics();
-  private readonly glow = new Graphics();
+  /** Halo sprites that take the ambient shade away around lights (blend 'erase'). */
+  private readonly cut = new Container();
+  /** Halo sprites that add the lights' colour to the room (blend 'add'), above the light map. */
+  private readonly glow = new Container();
   private map: RenderTexture | null = null;
   private readonly mapSprite = new Sprite();
   private lastStep = -1;
@@ -93,10 +118,9 @@ export class RoomAtmosphere {
     private readonly renderer: Renderer,
   ) {
     view.shadowLayer.addChild(this.itemShadows);
-    this.cut.blendMode = 'erase';
-    this.scene.addChild(this.base, this.cut, this.glow);
+    this.scene.addChild(this.base, this.cut);
     this.mapSprite.scale.set(LIGHT_PIXEL);
-    view.lightLayer.addChild(this.mapSprite);
+    view.lightLayer.addChild(this.mapSprite, this.glow);
   }
 
   /** Slow phones: no ambient, no pools, no dust (shadows stay: they cost nothing). */
@@ -123,7 +147,7 @@ export class RoomAtmosphere {
     const b = this.base.clear();
     const amb = AMBIENT_LIGHT[room.kind];
     for (const r of [...floorRects(room), doorRect(room), ...wallBands(room), ...borderRects(room)]) {
-      if (r.w > 0 && r.h > 0) b.rect(r.x, r.y, r.w, r.h).fill({ color: PALETTE[amb.color] ?? '#000000', alpha: amb.strength });
+      if (amb.strength > 0 && r.w > 0 && r.h > 0) b.rect(r.x, r.y, r.w, r.h).fill({ color: PALETTE[amb.color] ?? '#000000', alpha: amb.strength });
     }
     for (const p of this.puffs.splice(0)) p.c.destroy({ children: true });
     this.dirty = true;
@@ -142,11 +166,12 @@ export class RoomAtmosphere {
       const s = shadowSize(f.w, f.h);
       drawShadow(g, Math.round(item.x) + SHADOW_DX, Math.round(item.y), s.rx, s.ry);
     }
-    this.lights = itemLights(items, room.id, getFurnitureType, hidden);
+    // Daylight outdoors: furniture gives no light pools there (only the pot's fire, below).
+    this.lights = OUTDOOR_KINDS.includes(room.kind) ? [] : itemLights(items, room.id, getFurnitureType, hidden);
     if (room.kind === 'farm') {
       const s = shadowSize(COOKING_POT.w, COOKING_POT.d);
       drawShadow(g, COOKING_POT.x + SHADOW_DX, COOKING_POT.y, s.rx, s.ry);
-      this.lights.push({ x: COOKING_POT.x, y: COOKING_POT.y - COOKING_POT.d / 2, light: COOKING_POT_LIGHT, seed: -77 });
+      this.lights.push({ x: COOKING_POT.x, y: COOKING_POT.y - 2, light: COOKING_POT_LIGHT, seed: -77 });
     }
     this.syncSpecks();
     this.dirty = true;
@@ -215,37 +240,32 @@ export class RoomAtmosphere {
     if (step === this.lastStep && !this.dirty) return;
     this.lastStep = step;
     this.dirty = false;
-    const cut = this.cut.clear();
-    const g = this.glow.clear();
-    this.drawDoorLight(cut, g);
-    for (const l of this.lights) {
+    this.lights.forEach((l, i) => {
       const f = flickerAt(l.seed, timeMs, l.light.flicker);
-      const color = PALETTE[l.light.color] ?? '#ffffff';
-      for (const r of lightRings(l.light.radius * f.radius, LIGHT_RINGS)) {
-        cut.circle(l.x, l.y, r).fill({ color: 0xffffff, alpha: LIGHT_CUT });
-        g.circle(l.x, l.y, r).fill({ color, alpha: LIGHT_GLOW * f.brightness });
-      }
-    }
+      const size = Math.round(l.light.radius * f.radius) * 2;
+      const cut = this.haloAt(this.cut, i, 'erase');
+      cut.position.set(l.x, l.y);
+      cut.width = cut.height = size;
+      cut.alpha = LIGHT_CUT;
+      const g = this.haloAt(this.glow, i, 'add');
+      g.position.set(l.x, l.y);
+      g.width = g.height = size;
+      g.tint = PALETTE[l.light.color] ?? '#ffffff';
+      g.alpha = LIGHT_GLOW * f.brightness;
+    });
+    for (const layer of [this.cut, this.glow]) layer.children.forEach((c, i) => (c.visible = i < this.lights.length));
     this.renderer.render({ container: this.scene, target: this.map, clear: true, clearColor: [0, 0, 0, 0] });
   }
 
-  /** Daylight falling in through the door (hotel and shop): stepped, widest and faintest far in. */
-  private drawDoorLight(cut: Graphics, g: Graphics): void {
-    const room = this.room;
-    if (!room || room.kind === 'farm') return;
-    const z = doorZoneRect(room);
-    const door = doorRect(room);
-    const steps = 4;
-    const color = PALETTE[DOOR_LIGHT.color] ?? '#ffffff';
-    const bottom = z.y + z.h;
-    for (let k = 0; k < steps; k++) {
-      const depth = Math.round((DOOR_LIGHT.depth * (steps - k)) / steps);
-      const grow = (steps - 1 - k) * 12;
-      for (const r of [{ x: z.x - grow, y: bottom - depth, w: z.w + grow * 2, h: depth }, door]) {
-        cut.rect(r.x, r.y, r.w, r.h).fill({ color: 0xffffff, alpha: LIGHT_CUT });
-        g.rect(r.x, r.y, r.w, r.h).fill({ color, alpha: DOOR_LIGHT.strength / steps });
-      }
-    }
+  /** The i-th halo sprite of a layer (made when needed, reused). */
+  private haloAt(layer: Container, i: number, blend: 'erase' | 'add'): Sprite {
+    const have = layer.children[i] as Sprite | undefined;
+    if (have) return have;
+    const s = new Sprite(halo());
+    s.anchor.set(0.5);
+    s.blendMode = blend;
+    layer.addChild(s);
+    return s;
   }
 
   private syncSpecks(): void {

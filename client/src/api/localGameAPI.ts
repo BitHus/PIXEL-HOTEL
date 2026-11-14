@@ -24,6 +24,9 @@ import {
   MINE_UNLOCK_LEVEL,
   buySeeds,
   cook,
+  claimBookReward,
+  openBook,
+  type BookTab,
   harvestPlot,
   plantPlot,
   roomBlockers,
@@ -45,6 +48,7 @@ import {
   type ShopGearId,
   PALETTE,
   SHOP_CATCH_UP_GAP_MS,
+  NAV_CELL,
   SHOP_TICK_MS,
   applyStyle,
   buyCatalog,
@@ -292,7 +296,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
 
   async walk(to: Point): Promise<Point[] | null> {
     if (!finitePoint(to)) return null;
-    const avatar = this.avatarNow();
+    const avatar = this.standingAvatar(to);
     const path = findPath(this.grid, avatar, to);
     if (!path) return null;
     this.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seated: null };
@@ -303,7 +307,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const item = this.roomItem(uid);
     if (!item || (tap !== undefined && !finitePoint(tap))) return null;
     const type = getFurnitureType(item.typeId);
-    const avatar = this.avatarNow();
+    const avatar = this.standingAvatar(item);
     // Seats taken by others: shop customers waiting on a seat (other players come in step 10).
     const taken = this.state.currentRoomId === this.state.shop.roomId ? this.state.shop.customers.flatMap((c) => (c.seat?.uid === uid ? [c.seat.index] : [])) : [];
     const plan = planSit(this.grid, avatar, item, type, tap ?? null, taken);
@@ -318,7 +322,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!counter) return null;
     const type = getFurnitureType(counter.typeId);
     if (!type.servedFromBehind) return null;
-    const avatar = this.avatarNow();
+    const avatar = this.standingAvatar(counter);
     const spot = behindPoint(counter, type);
     const path = findPath(this.grid, avatar, spot);
     const end = path?.[path.length - 1];
@@ -602,6 +606,18 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return true;
   }
 
+  async bookOpened(): Promise<void> {
+    this.commit(openBook(this.state, this.now()));
+  }
+
+  async claimBookReward(tab: BookTab, percent: number): Promise<number | null> {
+    const next = claimBookReward(this.state, tab, percent, this.now());
+    if (!next) return null;
+    const gold = next.player.wallet.gold - this.state.player.wallet.gold;
+    this.commit(next);
+    return gold;
+  }
+
   async cook(food: FoodId): Promise<boolean> {
     const next = cook(this.state, food, this.now());
     if (!next) return false;
@@ -870,6 +886,23 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   /** Where the own avatar is now (it walks by time), and sits down when it reached a seat. */
+  /**
+   * The avatar ready to walk. Out of bed (fix after 9e): a lying avatar is in the middle of the
+   * bed, so a walk that started there went on under the bed's drawing and the avatar was gone for
+   * a second. It now stands up next to the bed at once: on the free spot nearest the bed, on the
+   * side it is going to (`toward`).
+   */
+  private standingAvatar(toward: Point): Avatar {
+    const a = this.avatarNow();
+    if (a.state !== 'lie') return a;
+    const d = Math.hypot(toward.x - a.x, toward.y - a.y) || 1;
+    const lean = { x: a.x + ((toward.x - a.x) / d) * NAV_CELL, y: a.y + ((toward.y - a.y) / d) * NAV_CELL };
+    const spot = standUpSpot(this.grid, lean);
+    const standing: Avatar = { ...a, ...spot, state: 'idle' };
+    this.walkState = { ...this.walkState, avatar: standing, path: [], at: this.now(), sitOn: null, seated: null };
+    return standing;
+  }
+
   private avatarNow(): Avatar {
     const w = this.walkState;
     const now = this.now();

@@ -49,8 +49,8 @@ export interface CameraControlHooks {
    * hit testing found under the pointer (the event target), if anything.
    */
   onPoint(screen: Point, kind: 'hover' | 'tap' | 'longpress', target: Container | null): void;
-  /** What a one-finger / left drag does. Default 'pan'. */
-  getDragMode?(): DragMode;
+  /** What a one-finger / left drag does. Default 'pan'. `target`: what was under the pointer when it went down. */
+  getDragMode?(target: Container | null, start: Point): DragMode;
   /** Called for drags while the drag mode is 'draw'. */
   onDraw?(phase: DrawPhase, screen: Point): void;
   /** Any press or wheel on the room started (the camera intro stops). */
@@ -132,7 +132,7 @@ export function attachCameraControl(
     if (!press) return;
     if (!press.drag) {
       if (Math.hypot(p.x - press.start.x, p.y - press.start.y) < TAP_MAX_MOVE_PX) return;
-      press.drag = hooks.getDragMode?.() ?? 'pan';
+      press.drag = hooks.getDragMode?.(press.target, press.start) ?? 'pan';
       if (press.drag === 'draw') hooks.onDraw?.('start', press.start);
     }
     if (press.drag === 'pan') hooks.setCamera(panBy(hooks.getCamera(), p.x - press.last.x, p.y - press.last.y));

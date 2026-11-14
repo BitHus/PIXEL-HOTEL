@@ -3,6 +3,7 @@
 // furniture in the inventory. The shop starts with the counter and one stall_table at fixed
 // positions (config SHOP_START_ITEMS); the hotel room is empty.
 
+import { addSeen } from './seen.ts';
 import {
   HOTBAR_SLOTS,
   LOCAL_PLAYER_ID,
@@ -100,6 +101,9 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       shopRoomId: config.shopRoomId,
       farmRoomId: config.farmRoomId,
       mineVisits: 0,
+      seen: {},
+      bookOpenedAt: at,
+      bookRewards: [],
     },
     look: { ...config.look },
     rooms: [
@@ -130,7 +134,10 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);
   if (!state) throw new Error('bad new player config');
-  return arrangeState(state);
+  // The start furniture (counter, stall table) is in the Book from the start.
+  let seen = state.player.seen;
+  for (const item of state.items) seen = addSeen(seen, item.typeId, 1, at);
+  return arrangeState({ ...state, player: { ...state.player, seen } });
 }
 
 /**

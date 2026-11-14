@@ -4,6 +4,7 @@
 // holds (materials and furniture) to choose from; the price starts at the last sale price of that
 // type, else its base value.
 
+import { rankName } from './rank.ts';
 import {
   getFurnitureType,
   isMaterialId,
@@ -78,7 +79,7 @@ export function createShelfPanel(parent: HTMLElement, hooks: ShelfHooks): ShelfP
         const id = lootTypeId(slot.loot);
         box.appendChild(icon(id));
         const history = shop.saleHistory[id] ?? [];
-        const name = el('div', 'shelf-name', typeName(id));
+        const name = rankName('div', 'shelf-name', typeName(id), id);
         const hist = el('div', 'shelf-history', history.length ? `Sold for ${history.join(', ')}` : 'Not sold yet');
         const take = textButton('Take', () => hooks.take(ref), 'shelf-take');
         take.title = 'Take it back to the bag';

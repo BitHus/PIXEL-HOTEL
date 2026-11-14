@@ -3,6 +3,7 @@
 
 import type { GameState } from './gameState.ts';
 import { getFurnitureType } from './furniture.ts';
+import { addSeen } from './seen.ts';
 import type { FurnitureItem, LedgerReason, MaterialId } from './types.ts';
 
 export interface Change {
@@ -17,8 +18,16 @@ export interface Change {
   removeFurniture?: number[];
   /** Furniture items put back into the inventory with their old uid (taken off a shop slot). */
   returnFurniture?: { uid: number; typeId: string }[];
+  /**
+   * Of the materials added: how many are NOT new finds (things that only come back: food brought
+   * home from a run). Everything else the player gains counts as found in the Book (Player.seen).
+   */
+  notFound?: Partial<Record<MaterialId, number>>;
   note?: string;
 }
+
+/** Changes with these reasons only move things the player already has (off a shop slot): no finds. */
+const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf'];
 
 /**
  * Applies a change and writes it to the ledger. Null if gold or a material would go below 0, or a
@@ -75,9 +84,18 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
     ...(remove.size > 0 ? { removedUids: [...remove] } : {}),
     ...(change.note ? { note: change.note } : {}),
   };
+  // The Book (step 9e): every gain is a find.
+  let seen = p.seen;
+  if (!NO_FIND_REASONS.includes(change.reason)) {
+    for (const [id, n] of Object.entries(change.materials ?? {}) as [MaterialId, number][]) {
+      const found = n - (change.notFound?.[id] ?? 0);
+      if (found > 0) seen = addSeen(seen, id, found, at);
+    }
+    for (const item of added) seen = addSeen(seen, item.typeId, 1, at);
+  }
   return {
     ...state,
-    player: { ...p, wallet: { gold }, materials },
+    player: { ...p, wallet: { gold }, materials, seen },
     items: [...state.items.filter((i) => !remove.has(i.uid)), ...returned, ...added],
     nextUid,
     ledger: [...state.ledger, entry],

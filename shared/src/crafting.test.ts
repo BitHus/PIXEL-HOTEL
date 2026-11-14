@@ -1,3 +1,4 @@
+import { getMaterialType } from './materials.ts';
 import { describe, expect, it } from 'vitest';
 import { craft, getRecipe, RECIPES } from './crafting.ts';
 import { getFurnitureType } from './furniture.ts';
@@ -13,8 +14,8 @@ function withMaterials(m: Partial<Record<MaterialId, number>>): GameState {
 }
 
 describe('recipes (section 10)', () => {
-  it('has the 7 recipes with the ingredients of section 10', () => {
-    expect(RECIPES.map((r) => r.id)).toEqual(['bone_chair', 'skull_lamp', 'coffin_table', 'wall_torch', 'bone_throne', 'crypt_flagstones', 'bone_wall']);
+  it('has the 7 recipes with the ingredients of section 10, and one trophy per enemy type (step 9e)', () => {
+    expect(RECIPES.map((r) => r.id)).toEqual(['bone_chair', 'skull_lamp', 'coffin_table', 'wall_torch', 'bone_throne', 'crypt_flagstones', 'bone_wall', 'slime_jar', 'bat_wing_fan', 'skull_trophy', 'mimic_chest', 'kings_banner']);
     expect(getRecipe('coffin_table').inputs).toEqual({ bone: 12, wood: 4, cloth: 2 });
     expect(getRecipe('bone_throne').inputs).toEqual({ throne_piece: 5 });
     expect(getRecipe('crypt_flagstones')).toMatchObject({ makesKind: 'floor', inputs: { bone: 8, crystal: 2 } });
@@ -26,9 +27,8 @@ describe('recipes (section 10)', () => {
   });
 
   it('crafting costs more than the item sells for (not the throne: its pieces only come from the boss)', () => {
-    const value: Record<string, number> = { bone: 4, wood: 3, cloth: 6, crystal: 15, throne_piece: 10 };
     for (const r of RECIPES.filter((x) => x.makesKind === 'furniture' && x.id !== 'bone_throne')) {
-      const cost = Object.entries(r.inputs).reduce((a, [id, n]) => a + value[id]! * (n ?? 0), 0);
+      const cost = Object.entries(r.inputs).reduce((a, [id, n]) => a + getMaterialType(id as MaterialId).baseValue * (n ?? 0), 0);
       expect(cost).toBeGreaterThanOrEqual(getFurnitureType(r.makes).baseValue);
     }
   });

@@ -261,6 +261,23 @@ const ICONS = {
     ],
     colors: { o: O, a: PALETTE[7], b: PALETTE[10], c: PALETTE[2], d: PALETTE[3] },
   },
+  journal: {
+    rows: [
+      '............',
+      '.ooooo.ooooo',
+      'oaaaaaoaaaao',
+      'oabbbaoabbao',
+      'oaaaaaoaaaao',
+      'oabbbaoabbao',
+      'oaaaaaoaadao',
+      'oabbbaoaadao',
+      'oaaaaaoaadao',
+      'occcccocccdo',
+      '.ooooo.oooo.',
+      '............',
+    ],
+    colors: { o: O, a: PALETTE[2], b: PALETTE[4], c: PALETTE[27], d: PALETTE[8] },
+  },
   house: {
     rows: [
       '.....oo.....',

@@ -8,6 +8,7 @@
 //   current tier highlighted, the next one with its bars and a Forge button. On a phone the two
 //   parts stack.
 
+import { rankName } from './rank.ts';
 import {
   FORGE,
   GEAR_PIECES,
@@ -120,7 +121,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
       const part = el('span', have < n ? 'need short' : 'need', `${getMaterialType(id).name} ${have}/${n}`);
       needs.append(part);
     }
-    info.append(el('div', 'catalog-name', recipeName(r)), el('div', 'catalog-sub', kind), needs);
+    info.append(r.makesKind === 'furniture' ? rankName('div', 'catalog-name', recipeName(r), r.makes) : el('div', 'catalog-name', recipeName(r)), el('div', 'catalog-sub', kind), needs);
     const owned = r.makesKind !== 'furniture' && p.unlockedStyles.includes(styleKey(r.makesKind, r.makes));
     const b = textButton(owned ? 'Owned' : 'Craft', () => hooks.craft(r));
     b.disabled = owned || !ok;

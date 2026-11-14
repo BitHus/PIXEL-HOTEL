@@ -16,7 +16,7 @@ import {
 } from '../config.ts';
 import { ownedArmor, ownedPickaxe, ownedWeapon } from '../gear.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
-import type { FoodId, GearId, MaterialId, Point } from '../types.ts';
+import type { Rank, FoodId, GearId, MaterialId, Point } from '../types.ts';
 import { generateFloor, generateMine, type FloorPlan } from './generate.ts';
 
 export type DungeonBlock = 'floor' | 'wall';
@@ -152,9 +152,10 @@ export type RunEvent =
   | { t: 'windup'; enemyId: number }
   | { t: 'enemy_hit'; enemyId: number; damage: number }
   | { t: 'enemy_miss'; enemyId: number }
-  | { t: 'kill'; enemyId: number; kind: EnemyKind; xp: number }
+  | { t: 'kill'; enemyId: number; kind: EnemyKind; xp: number; mimic: boolean }
   | { t: 'level_up'; level: number }
-  | { t: 'loot'; item: string; qty: number }
+  /** rank: only for drops that rolled a rank above common (step 9e: the coloured, sparkling drop text). */
+  | { t: 'loot'; item: string; qty: number; rank?: Rank }
   | { t: 'left_behind'; item: BagItem }
   | { t: 'chest'; chestId: number }
   | { t: 'mimic'; enemyId: number; chestId: number }
@@ -193,6 +194,9 @@ export interface DungeonRun {
   /** Gold and items lost (death) or left behind (full bag). Kept for the run summary. */
   lost: RunBag;
   xpGained: number;
+  /** The Book (step 9e): kills per enemy type ('slime', 'mimic', ...) and the types met, kept after death like xp. */
+  kills: Partial<Record<string, number>>;
+  met: string[];
   bossDefeated: boolean;
   /** What dealt the last hit to the player: an enemy kind, or 'mimic' (for the death screen). */
   lastHitBy: string | null;
@@ -301,6 +305,8 @@ function runFrom(o: NewRunOptions, plan: FloorPlan, round: DungeonRoundId, place
     banked: emptyRunBag(),
     lost: emptyRunBag(),
     xpGained: 0,
+    kills: {},
+    met: [],
     bossDefeated: false,
     lastHitBy: null,
     status: 'active',

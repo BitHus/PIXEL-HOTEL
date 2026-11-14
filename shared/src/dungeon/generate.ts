@@ -40,12 +40,14 @@ import {
   ROCK_WEIGHTS,
   type RockKind,
   WOODEN_CHESTS_MAX,
+  CHEST_SPACING,
+  CHEST_SPAWN_ROOM_GAP,
   WOODEN_CHESTS_MIN,
   type EnemyKind,
 } from '../config.ts';
 import { rngInt, rngPick, seededRng } from '../rng.ts';
 import type { Rng } from '../types.ts';
-import { blockCenter, isFloorBlock } from './grid.ts';
+import { blockAt, blockCenter, isFloorBlock } from './grid.ts';
 import type { BlockRect, Chest, ChestKind, DungeonBlock, DungeonMap, DungeonRoundId, Enemy, Rock } from './run.ts';
 
 export interface FloorPlan {
@@ -273,15 +275,56 @@ function generateLayout(seed: number, n: number, round: DungeonRoundId, rules: L
     }
     return { map, enemies, chests, rocks };
   }
+  // Chests are spread (owner, after 9d): never close to the spawn room and never close together.
   const others = rooms.slice(1);
+  const chestBlocks: { c: number; r: number }[] = chests.map((c) => blockAt(c));
+  const chestSpot = (): { c: number; r: number } | null => {
+    const first = rngPick(rng, others);
+    for (const relax of [0, 1, 2]) {
+      for (const pool of [[first], others]) {
+        const free = pool.flatMap((room) => roomBlocks(room)).filter((b) => !used.has(b.r * cols + b.c) && chestSpotOk(b, rooms[0]!, chestBlocks, relax));
+        if (free.length === 0) continue;
+        const b = rngPick(rng, free);
+        used.add(b.r * cols + b.c);
+        chestBlocks.push(b);
+        return b;
+      }
+    }
+    return null;
+  };
   const wooden = rngInt(rng, WOODEN_CHESTS_MIN, WOODEN_CHESTS_MAX);
   for (let k = 0; k < wooden; k++) {
-    const b = freeBlock(rngPick(rng, others));
+    const b = chestSpot();
     if (b) addChest('wooden', b, rules.mimics && rng() < 1 / MIMIC_ONE_IN);
   }
   if (!bossFloor && rng() < GOLDEN_CHEST_CHANCE) {
-    const b = freeBlock(rngPick(rng, others));
+    const b = chestSpot();
     if (b) addChest('golden', b);
   }
   return { map, enemies, chests, rocks: [] };
+}
+
+function roomBlocks(room: BlockRect): { c: number; r: number }[] {
+  const out: { c: number; r: number }[] = [];
+  for (let r = room.y; r < room.y + room.h; r++) for (let c = room.x; c < room.x + room.w; c++) out.push({ c, r });
+  return out;
+}
+
+/** Blocks between a block and a rectangle of blocks (0 = inside, 1 = right next to it; diagonals count as 1). */
+export function blocksFromRect(b: { c: number; r: number }, rect: BlockRect): number {
+  const dc = Math.max(rect.x - b.c, 0, b.c - (rect.x + rect.w - 1));
+  const dr = Math.max(rect.y - b.r, 0, b.r - (rect.y + rect.h - 1));
+  return Math.max(dc, dr);
+}
+
+/**
+ * True if a chest may stand on this block: at least CHEST_SPAWN_ROOM_GAP blocks from the spawn room
+ * and at least CHEST_SPACING blocks from every other chest (both counted with diagonals as 1).
+ * `relax` lowers both by that many blocks (a floor too small for the rule still gets its chests),
+ * but a chest is never in or right next to the spawn room, and never touches another chest.
+ */
+export function chestSpotOk(b: { c: number; r: number }, spawnRoom: BlockRect, chests: readonly { c: number; r: number }[], relax = 0): boolean {
+  if (blocksFromRect(b, spawnRoom) < Math.max(2, CHEST_SPAWN_ROOM_GAP - relax)) return false;
+  const gap = Math.max(2, CHEST_SPACING - relax);
+  return chests.every((o) => Math.max(Math.abs(o.c - b.c), Math.abs(o.r - b.r)) >= gap);
 }

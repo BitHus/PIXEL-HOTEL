@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { BOSS_HP_FLOOR_SCALING, DUNGEON_BLOCKS_H, DUNGEON_BLOCKS_W, ENEMIES, WOODEN_CHESTS_MAX, WOODEN_CHESTS_MIN } from '../config.ts';
+import { BOSS_HP_FLOOR_SCALING, CHEST_SPACING, CHEST_SPAWN_ROOM_GAP, DUNGEON_BLOCKS_H, DUNGEON_BLOCKS_W, ENEMIES, WOODEN_CHESTS_MAX, WOODEN_CHESTS_MIN } from '../config.ts';
 import { findPath } from '../nav.ts';
-import { blockDistances, enemyHp, generateFloor } from './generate.ts';
+import { blockDistances, blocksFromRect, chestSpotOk, enemyHp, generateFloor } from './generate.ts';
 import { blockAt, blockCenter, dungeonNavGrid, isFloorBlock } from './grid.ts';
 import type { BlockRect } from './run.ts';
 
@@ -134,5 +134,42 @@ describe('generateFloor (section 10)', () => {
     expect(enemyHp('bat', 2)).toBe(Math.ceil(6 * 1.25));
     expect(enemyHp('bone_king', 3)).toBe(90);
     for (const e of generateFloor(5, 2, 2).enemies) expect(e.hp).toBe(Math.ceil(ENEMIES[e.kind].hp * 1.25));
+  });
+
+  it('spreads the chests: at least 3 blocks apart, never in or near the spawn room (owner, after 9d)', () => {
+    let tight = 0;
+    let total = 0;
+    for (const round of [1, 2] as const) {
+      for (let seed = 1; seed <= 150; seed++) {
+        for (let n = 1; n <= (round === 1 ? 1 : 3); n++) {
+          const plan = generateFloor(seed, n, round);
+          const blocks = plan.chests.map((c) => blockAt(c));
+          for (const b of blocks) expect(blocksFromRect(b, plan.map.rooms[0]!)).toBeGreaterThanOrEqual(2);
+          total++;
+          let ok = blocks.every((b) => blocksFromRect(b, plan.map.rooms[0]!) >= CHEST_SPAWN_ROOM_GAP);
+          for (let i = 0; i < blocks.length; i++) {
+            for (let j = i + 1; j < blocks.length; j++) {
+              const d = Math.max(Math.abs(blocks[i]!.c - blocks[j]!.c), Math.abs(blocks[i]!.r - blocks[j]!.r));
+              // The boss floor's golden chest stands next to the exit, wherever that is.
+              expect(d).toBeGreaterThanOrEqual(2);
+              if (d < CHEST_SPACING) ok = false;
+            }
+          }
+          if (!ok) tight++;
+        }
+      }
+    }
+    // Only a floor that is too small for the rule relaxes it.
+    expect(tight / total).toBeLessThan(0.02);
+  });
+
+  it('chestSpotOk follows the rule', () => {
+    const spawn = { x: 10, y: 10, w: 4, h: 4 };
+    expect(chestSpotOk({ c: 15, r: 12 }, spawn, [])).toBe(false); // 2 blocks from the spawn room
+    expect(chestSpotOk({ c: 16, r: 12 }, spawn, [])).toBe(true);
+    expect(chestSpotOk({ c: 20, r: 20 }, spawn, [{ c: 22, r: 21 }])).toBe(false);
+    expect(chestSpotOk({ c: 20, r: 20 }, spawn, [{ c: 23, r: 20 }])).toBe(true);
+    expect(chestSpotOk({ c: 20, r: 20 }, spawn, [{ c: 22, r: 21 }], 1)).toBe(true);
+    expect(chestSpotOk({ c: 20, r: 20 }, spawn, [{ c: 21, r: 20 }], 2)).toBe(false);
   });
 });

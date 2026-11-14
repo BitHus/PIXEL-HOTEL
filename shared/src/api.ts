@@ -2,6 +2,7 @@
 // LocalGameAPI (steps 2-9) runs the shared rules in the browser; RemoteGameAPI (step 10) talks to the server.
 // Methods are added in later steps as they are needed.
 
+import type { BookTab } from './book.ts';
 import type { BarId, CropId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
 import type { Plot } from './farm.ts';
 import type { RoomLevel } from './config.ts';
@@ -222,6 +223,11 @@ export interface GameAPI {
   buySeeds(seed: SeedId, qty: number): Promise<boolean>;
   /** Cooks one food at the pot. False without all ingredients. */
   cook(food: FoodId): Promise<boolean>;
+  // ---------- Step 9e: the collection book (what was found is Player.seen) ----------
+  /** The Book was opened: nothing is "New!" any more. */
+  bookOpened(): Promise<void>;
+  /** Takes a Book reward that is ready. Returns the gold, or null if it is not ready. */
+  claimBookReward(tab: BookTab, percent: number): Promise<number | null>;
   // ---------- Step 9c: the mine and the forge ----------
   /** Starts a mine visit (free; from player level 3). Null if locked or a run is already going.
    *  The visit runs through getRun / dungeonInput / dungeonAdvance like a dungeon run. */

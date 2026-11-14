@@ -30,15 +30,15 @@ screenshots of it in the repo.
 +--------------------------------------------------------------+
 | [INFO PANEL]                                    [quest/msg]  |
 |  gold, room name                                             |
-|                                                       [Bag]  |
+|                                                       [Map]  |
+|                                                   [Catalog]  |
 |                                                     [Build]  |
-|                                                    [Avatar]  |
-|                    the room (full screen)            [Chat]  |
-|                                                  [Settings]  |
+|                    the room (full screen)         [Dungeon]  |
+|                                                      [More]  |
 |                                                              |
 |          (popups appear next to their item)                  |
 |                                                              |
-|              [ hotbar: 6 slots, centered ]                   |
+|           [ hotbar: 6 slots, centered ][Bag]                 |
 +--------------------------------------------------------------+
 ```
 
@@ -50,8 +50,10 @@ screenshots of it in the repo.
   and fade after a few seconds. In Travellers Rest the top of the screen also shows what
   customers want; our shop can use the same spot for customer requests later.
 - **Right edge, stacked vertically: icon buttons (polish).** Square buttons, icons only, about
-  48 px on a phone. Always visible: Quest (while a quest is going), Map, Bag, Build and Dungeon.
-  Everything else (Catalog, Workshop, Room, Avatar, Chat, Settings) sits behind one "More"
+  48 px on a phone. Always visible: Quest (while a quest is going), Map, Catalog, Build and Dungeon
+  (owner's decision after step 9d: the Catalog is its own button again, and the Bag left the
+  column, see the hotbar below).
+  Everything else (Workshop, Book, Room, Avatar, Chat, Settings) sits behind one "More"
   button that opens a small grid of icons with labels; a tap elsewhere closes it. On a wide
   screen (900 px and up) all buttons stand in the column and there is no More button. New
   screens get a button here (in the More grid unless they are needed all the time).
@@ -87,10 +89,26 @@ screenshots of it in the repo.
   the run bag shows ore stacks. The Workshop gets a third tab, Forge, with smelting on the left
   and the gear upgrade tree (sword, armor, pickaxe; current tier highlighted, next tier with
   its cost) on the right.
+- **Ranks (step 9e).** Every item has one of four ranks with a colour (config RANK_COLORS:
+  common grey-brown, rare blue, ultra rare purple, legendary gold). Wherever an item is shown,
+  its slot border and its name use that colour (common keeps the plain wooden border; gold names
+  get a dark outline so they read on parchment). In the dungeon a drop above common floats up in
+  its rank colour, and ultra rare and legendary drops get a short sparkle (four small stars).
+- **The Book (step 9e).** A panel in the More grid (open-book icon, key J). Icon tabs Materials,
+  Furniture, Food and crops, Enemies. A header section shows the tab's name, "n / N found", the
+  whole book in percent and the four rewards (25 / 50 / 75 / 100%: a coin and the gold; a reward
+  that is ready is a warm button). Below it a grid of cards (2 columns on a phone, 3 on a wide
+  screen): never seen = a grey silhouette and "???"; seen = the icon in colour, the name in its
+  rank colour, the rank, "Found: n" (enemies: "Kills: n") and where it comes from; enemy cards
+  list their four drops (not found yet: grey "???"). A small "New!" plate marks what was first
+  seen since the Book was last opened, and a red dot sits on the Book button (and on More while
+  the Book is in its grid) until the Book is opened.
 - **Spending gold asks first** (after step 8): buying in the Catalog and upgrading a room open a
   small centered "Buy this?" panel (picture, name, price, Cancel / Buy for N).
 - **Bottom-center: the hotbar.** One row of 44 px slots in a frame, centered, 2 px apart (polish:
-  a bit smaller than before). Icons only, no text. The selected slot is warm orange. Every stack
+  a bit smaller than before). The **Bag button** is attached to the hotbar's right end, inside
+  the same frame and as tall as a slot (owner's decision after step 9d); it hides with the hotbar
+  (while placing, in the dungeon). Icons only, no text. The selected slot is warm orange. Every stack
   shows its count, small, in the slot's bottom-right corner (light digits with a dark outline);
   seeds show it from 1. On desktop the slots are numbered
   and the number keys 1 to 9 and 0 select them.
@@ -211,11 +229,14 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
 - **List panels (polish).** Workshop, Cooking, the shelf panel and the Map use the Map's card as
   the model: an icon, a title, one short line, and one action on the right.
 - **Placing furniture** (our own pattern, built in step 4b): the item appears as a ghost,
-  green if it fits and red if not. Drag the ghost. A small bar above it: ✓ Place, ↻ Rotate,
-  ✗ Cancel. Nothing is placed until ✓. Placed furniture comes out of the inventory; Pick up
+  green if it fits and red if not. Building is fast (owner's decision after step 9e): tap a
+  spot and the item lands there, or drag the ghost and let go. A small bar above a new item
+  still has ✓ Place, ↻ Rotate and ✗ Cancel. A placed item is moved by dragging it (letting go
+  puts it down; it goes back when it does not fit), or by tapping it and then tapping where it
+  should go. There is no Move button and no ✓ for moving. Placed furniture comes out of the inventory; Pick up
   puts it back.
 - **Item info, Habbo style (build mode):** tap a placed item and a small menu appears next to
-  it (Move, Rotate, Pick up), with a small card showing the item's name. Later the card can also show its value or rarity. A tap elsewhere closes it.
+  it (Rotate, Pick up), with a small card showing the item's name. Later the card can also show its value or rarity. The item is selected now: a tap on a free spot moves it there, a tap on the item again lets it go.
 - **Panels** (Bag, Catalog, Workshop, Settings and the rest) open as one panel at a time in the
   same frame style, with a close button (✗) on the top-right corner. Opening one closes the
   other. Where they sit: section 2.

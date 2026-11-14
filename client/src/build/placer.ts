@@ -1,7 +1,10 @@
-// Placing (step 4b, inventory in step 5): the ghost of one item that the player drags around (a
-// one-finger / left drag moves it by the drag distance), green if it fits and red if not. Only
-// inventory items can be placed. Nothing changes in the room until place() asks the GameAPI
-// (hooks.commit); cancel() just ends the session (a moved item was never moved, only hidden).
+// Placing (step 4b, inventory in step 5; faster after 9e, owner's decision): the ghost of one item,
+// green if it fits and red if not. A NEW item (from the hotbar or the bag) follows a one-finger /
+// left drag by the drag distance, or jumps to a tapped spot. A PLACED item is moved by dragging it
+// in build mode (main.ts starts the session when the drag begins): the ghost follows the finger
+// and letting go puts it down (or back where it was, when it does not fit there). Nothing changes
+// in the room until place() asks the GameAPI (hooks.commit); cancel() just ends the session (a
+// moved item was never moved, only hidden).
 // The rules live in shared/placing.ts; this file keeps the session and draws the ghost.
 
 import { Container, Graphics } from 'pixi.js';
@@ -89,6 +92,24 @@ export class Placer {
     if (!this.ghost.visible) return null;
     const b = this.ghost.getBounds();
     return { x: b.x, y: b.y, w: b.width, h: b.height };
+  }
+
+  /** True while a placed item is being moved (dragged in build mode); false for a new item. */
+  get moving(): boolean {
+    return (this.session?.origin ?? null) !== null;
+  }
+
+  /** The uid of the item of this session, or null. */
+  get uid(): number | null {
+    return this.session?.uid ?? null;
+  }
+
+  /** Puts the ghost's footprint center at a world point (a tap while placing a new item). */
+  moveTo(center: Point): void {
+    if (!this.session) return;
+    this.session = moveGhost(this.session, center);
+    this.dragFrom = null;
+    this.changed();
   }
 
   /** The furniture type being placed, or null. */

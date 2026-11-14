@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BROWSER_LOOKS_MAX,
   HURRIED_BROWSE_MAX_MS,
   HURRIED_BROWSE_MIN_MS,
   HURRIED_SPEED_BONUS,
@@ -13,11 +12,14 @@ import {
   HOTEL_WALK_SPEED,
   LOOK_COLORS,
   QUEUE_MAX,
+  QUEUE_MIN_GAP_PX,
   SHOP_TICK_MS,
 } from './config.ts';
-import { catchUpShop, customerLook, findCounter, queueSpots, stepShop, waitingCount, type ShopEvent, type ShopWorld } from './customers.ts';
+import { buyerCount, catchUpShop, customerLook, findCounter, queueSpots, stepShop, waitingCount, type Customer, type ShopEvent, type ShopWorld } from './customers.ts';
+import { inStaffZone, npcGrid, planKey, staffZones } from './customerPlan.ts';
+import { NPC_LINES } from './npcTalk.ts';
 import { selectableClothing } from './clothing.ts';
-import { behindPoint, behindReachable, canPlace, getFurnitureType, itemBlockers } from './furniture.ts';
+import { behindPoint, behindReachable, canPlace, getFurnitureType, itemBlockers, staffZone } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { buildNavGrid, cellAt, isCellFree } from './nav.ts';
 import { createNewPlayer } from './newPlayer.ts';
@@ -26,9 +28,26 @@ import { putOnShelf } from './shop.ts';
 import { applyChange } from './ledger.ts';
 import { ledgerGold } from './testState.ts';
 
+let gridFor: { items: GameState['items']; grid: ShopWorld['grid'] } | null = null;
+
+/** The shop world; the nav grid is only rebuilt when the items changed (like LocalGameAPI does). */
 function world(s: GameState, cashier = true): ShopWorld {
   const room = s.rooms.find((r) => r.id === s.shop.roomId)!;
-  return { room, items: s.items, grid: buildNavGrid(room, itemBlockers(s.items, room.id)), cashier };
+  if (gridFor?.items !== s.items) gridFor = { items: s.items, grid: buildNavGrid(room, itemBlockers(s.items, room.id)) };
+  return { room, items: s.items, grid: gridFor.grid, cashier };
+}
+
+/** Puts wood back on every empty slot of the stall table (price 1). */
+function restock(s: GameState, t: number): GameState {
+  const shelf = s.items.find((i) => i.typeId === 'stall_table')!;
+  for (let index = 0; index < 3; index++) {
+    if (!s.shop.slots.some((x) => x.shelfUid === shelf.uid && x.index === index)) s = putOnShelf(s, { shelfUid: shelf.uid, index }, { kind: 'material', id: 'wood' }, 1, t) ?? s;
+  }
+  return s;
+}
+
+function withItem(s: GameState, uid: number, typeId: string, x: number, y: number): GameState {
+  return { ...s, items: [...s.items, { uid, typeId, ownerId: 1, roomId: s.shop.roomId, x, y, facing: 'down', onItemUid: null }] };
 }
 
 /** A new player with n wood (n <= 3) on the stall_table at price 1 (everyone who wants materials buys). */
@@ -117,6 +136,8 @@ describe('walking customers', () => {
     const cells = spots.map((p) => cellAt(w.grid, p));
     for (const c of cells) expect(isCellFree(w.grid, c.c, c.r)).toBe(true);
     expect(new Set(cells.map((c) => `${c.c},${c.r}`)).size).toBe(8);
+    // With the fine nav grid two spots are still never on top of each other.
+    for (let i = 0; i < spots.length; i++) for (let j = i + 1; j < spots.length; j++) expect(Math.hypot(spots[i]!.x - spots[j]!.x, spots[i]!.y - spots[j]!.y)).toBeGreaterThanOrEqual(QUEUE_MIN_GAP_PX);
     // The paying spot is just in front of the counter.
     expect(spots[0]).toEqual({ x: counter.x, y: counter.y + 24 });
   });
@@ -164,7 +185,7 @@ describe('walking customers', () => {
     expect(r.state.player.wallet.gold).toBe(s.player.wallet.gold);
   });
 
-  it('a full line stays full without the player: nobody leaves, nobody new comes', () => {
+  it('a full line stays full without the player: nobody leaves, no new buyer comes', () => {
     let s = stocked(3, 30);
     const r = catchUpShop(s, world(s), 8 * 3600_000, seededRng(3));
     s = r.state;
@@ -173,7 +194,9 @@ describe('walking customers', () => {
     for (let index = 0; index < 3; index++) s = putOnShelf(s, { shelfUid: shelf.uid, index }, { kind: 'material', id: 'wood' }, 1, 0)!;
     const rng = seededRng(4);
     for (let t = 0; t < 30 * 60_000; t += SHOP_TICK_MS) s = stepShop(s, world(s, false), SHOP_TICK_MS, rng, 8 * 3600_000 + t).state;
-    expect(s.shop.customers.map((c) => c.id)).toEqual(ids);
+    // Window-shoppers may still walk in and out; the line is the same three.
+    expect(s.shop.customers.filter((c) => c.carrying !== null).map((c) => c.id)).toEqual(ids);
+    expect(buyerCount(s.shop.customers)).toBe(QUEUE_MAX);
     expect(s.shop.slots.filter((x) => x.loot)).toHaveLength(3);
     expect(s.player.wallet.gold).toBe(r.state.player.wallet.gold);
   });
@@ -263,6 +286,7 @@ describe('walking customers', () => {
       const r = stepShop(s, world(s, true), SHOP_TICK_MS, rng, t);
       s = r.state;
       for (const c of s.shop.customers) {
+        if (c.followId !== null) continue; // a friend walks at the speed of the one they came with
         const k = seen.get(c.id) ?? { speeds: c.speed, hurried: c.kind === 'hurried', enterMs: 0, thinking: [], paidMs: 0 };
         if (c.phase === 'enter' && c.path.length === 0) k.enterMs += SHOP_TICK_MS;
         if (c.phase === 'paid') k.paidMs += SHOP_TICK_MS;
@@ -290,7 +314,7 @@ describe('walking customers', () => {
         expect(ms).toBeGreaterThanOrEqual(k.hurried ? HURRIED_BROWSE_MIN_MS : CUSTOMER_BROWSE_MIN_MS);
         expect(ms).toBeLessThanOrEqual(k.hurried ? HURRIED_BROWSE_MAX_MS : CUSTOMER_BROWSE_MAX_MS);
       }
-      expect(k.thinking.length).toBeLessThanOrEqual(k.hurried ? 1 : BROWSER_LOOKS_MAX);
+      expect(k.thinking.length).toBeLessThanOrEqual(4);
     }
     // Every buyer waits a moment at the till after paying.
     const payers = [...seen.values()].filter((k) => k.paidMs > 0);
@@ -308,58 +332,160 @@ describe('walking customers', () => {
     expect(behindReachable(w.room, itemBlockers(s.items, w.room.id), spot)).toBe(true);
   });
 
-  it('with stock on two items, some customers look at the second one before deciding', () => {
-    let s = stocked(3, 40);
-    const room = s.rooms.find((r) => r.id === s.shop.roomId)!;
-    expect(canPlace(room, s.items, getFurnitureType('display_case'), 440, 184, 'down')).toBe(true);
-    s = { ...s, items: [...s.items, { uid: 99, typeId: 'display_case', ownerId: 1, roomId: room.id, x: 440, y: 184, facing: 'down', onItemUid: null }] };
-    const table = s.items.find((i) => i.typeId === 'stall_table')!;
-    const rng = seededRng(4);
-    const looks = new Map<number, number>();
-    for (let t = 0; t < 1_200_000 && looks.size < 30; t += SHOP_TICK_MS) {
-      for (const [uid, n] of [[table.uid, 3], [99, 4]] as const) {
-        const free = Array.from({ length: n }, (_, i) => i).find((index) => !s.shop.slots.some((x) => x.shelfUid === uid && x.index === index));
-        if (free !== undefined) s = putOnShelf(s, { shelfUid: uid, index: free }, { kind: 'material', id: 'wood' }, 1, t) ?? s;
-      }
-      s = stepShop(s, world(s, true), SHOP_TICK_MS, rng, t).state;
-      for (const c of s.shop.customers) looks.set(c.id, Math.max(looks.get(c.id) ?? 0, c.looks));
-    }
-    const counts = [...looks.values()];
-    expect(counts.some((n) => n >= 2)).toBe(true);
-    expect(counts.some((n) => n === 1)).toBe(true);
-    expect(counts.every((n) => n <= BROWSER_LOOKS_MAX)).toBe(true);
-  });
-
-  it('customers sometimes look at a decoration first, facing it', () => {
-    let s = stocked(3, 60);
-    const room = s.rooms.find((r) => r.id === s.shop.roomId)!;
-    expect(canPlace(room, s.items, getFurnitureType('plant'), 470, 250, 'down')).toBe(true);
-    s = { ...s, items: [...s.items, { uid: 77, typeId: 'plant', ownerId: 1, roomId: room.id, x: 470, y: 250, facing: 'down', onItemUid: null }] };
-    const shelf = s.items.find((i) => i.typeId === 'stall_table')!;
-    const rng = seededRng(8);
-    let admired = 0;
-    let facedRight = 0;
-    for (let t = 0; t < 1_500_000 && admired < 3; t += SHOP_TICK_MS) {
-      const free = [0, 1, 2].find((index) => !s.shop.slots.some((x) => x.index === index));
-      if (free !== undefined) s = putOnShelf(s, { shelfUid: shelf.uid, index: free }, { kind: 'material', id: 'wood' }, 1, t) ?? s;
-      const before = s.shop.customers;
-      s = stepShop(s, world(s, true), SHOP_TICK_MS, rng, t).state;
+  it('STAFF ONLY: customers never walk or stand behind the counter, also for a decoration there', () => {
+    let s = stocked(3, 200);
+    const counter = findCounter(s.items, s.shop.roomId)!;
+    const zone = staffZone(counter, getFurnitureType('counter'));
+    // The player's serving spot is in the zone; a plant stands right behind the counter, in it.
+    const serve = behindPoint(counter, getFurnitureType('counter'));
+    expect(inStaffZone([zone], serve)).toBe(true);
+    s = withItem(s, 77, 'plant', counter.x + 40, counter.y - 40);
+    expect(staffZones(s.items, s.shop.roomId)).toEqual([zone]);
+    const rng = seededRng(31);
+    let looked = 0;
+    let steps = 0;
+    for (let t = 0; t < 1_800_000; t += SHOP_TICK_MS) {
+      s = restock(s, t);
+      s = stepShop(s, world(s, t % 60_000 < 20_000), SHOP_TICK_MS, rng, t).state;
       for (const c of s.shop.customers) {
-        const was = before.find((b) => b.id === c.id);
-        if (c.phase === 'admire' && c.browsing && !was?.browsing) {
-          admired++;
-          expect(c.decorUid).toBe(77);
-          expect(c.kind).not.toBe('hurried');
-          // The plant is to the right of / below the stand point: they face toward it.
-          const dx = 470 - c.x;
-          const dy = 250 - 16 - c.y;
-          const want = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
-          if (c.facing === want) facedRight++;
+        steps++;
+        // Strictly inside the zone = behind the counter.
+        const inside = c.x > zone.x && c.x < zone.x + zone.w && c.y > zone.y && c.y < zone.y + zone.h;
+        expect(inside, `customer ${c.id} (${c.phase}) at ${c.x},${c.y}`).toBe(false);
+        if (c.phase === 'act' && c.doing === 'decor' && c.browsing && c.decorUid === 77) {
+          looked++;
+          // On the customer side, never on the serving spot.
+          expect(Math.hypot(c.x - serve.x, c.y - serve.y)).toBeGreaterThan(8);
         }
       }
     }
-    expect(admired).toBeGreaterThan(0);
-    expect(facedRight).toBe(admired);
+    expect(steps).toBeGreaterThan(1000);
+    expect(looked).toBeGreaterThan(0);
+    // The customers' grid has the zone blocked, the player's grid has not.
+    const w = world(s);
+    const g = npcGrid(w.grid, [zone]);
+    const cell = cellAt(w.grid, serve);
+    expect(isCellFree(w.grid, cell.c, cell.r)).toBe(true);
+    expect(isCellFree(g, cell.c, cell.r)).toBe(false);
+  });
+
+  it('natural customers: different plans, all the small behaviours, never the same plan twice in a row', () => {
+    let s = stocked(3, 400);
+    s = withItem(s, 77, 'plant', 470, 250);
+    s = withItem(s, 78, 'plant', 100, 250);
+    s = withItem(s, 88, 'bench', 420, 120);
+    const rng = seededRng(12);
+    const plans = new Map<number, string>();
+    const done = new Set<string>();
+    const decors = new Set<number>();
+    let t = 0;
+    for (; t < 3_600_000 && plans.size < 60; t += SHOP_TICK_MS) {
+      s = restock(s, t);
+      if (s.shop.nextCustomerInMs > 8000) s = { ...s, shop: { ...s.shop, nextCustomerInMs: 8000 } };
+      s = stepShop(s, world(s, true), SHOP_TICK_MS, rng, t).state;
+      expect(s.shop.customers.length).toBeLessThanOrEqual(CUSTOMER_MAX_IN_SHOP);
+      expect(buyerCount(s.shop.customers)).toBeLessThanOrEqual(QUEUE_MAX);
+      for (const c of s.shop.customers) {
+        if (c.followId === null && !plans.has(c.id)) plans.set(c.id, planKey(c.plan));
+        if (c.phase === 'act' && c.browsing && c.doing) {
+          done.add(c.doing);
+          if (c.doing === 'decor' && c.decorUid !== null) decors.add(c.decorUid);
+          if (c.doing === 'sit') expect(c.seat?.uid).toBe(88);
+        }
+      }
+    }
+    expect(plans.size).toBeGreaterThanOrEqual(40);
+    // Ids go down: in the order they came, no two in a row have the same plan.
+    const order = [...plans.entries()].sort((a, b) => b[0] - a[0]).map((e) => e[1]);
+    for (let i = 1; i < order.length; i++) expect(order[i], `visitor ${i}`).not.toBe(order[i - 1]);
+    expect(new Set(order).size).toBeGreaterThan(10);
+    // Everything happens some time, and not always the same decoration.
+    expect([...done].sort()).toEqual(['decor', 'goods', 'remark', 'sit', 'talk', 'wander']);
+    expect(decors).toEqual(new Set([77, 78]));
+  });
+
+  it('window-shoppers look around and leave: no reaction, nothing bought, not counted for the line', () => {
+    let s = stocked(3, 400);
+    const rng = seededRng(14);
+    const windowIds = new Set<number>();
+    const gone = new Set<number>();
+    const reacted = new Set<number>();
+    for (let t = 0; t < 2_400_000 && gone.size < 8; t += SHOP_TICK_MS) {
+      s = restock(s, t);
+      const before = s.shop.customers;
+      const r = stepShop(s, world(s, false), SHOP_TICK_MS, rng, t);
+      s = r.state;
+      for (const e of r.events) if (e.t === 'reaction') reacted.add(e.customerId);
+      for (const c of s.shop.customers) {
+        if (!c.buys) {
+          windowIds.add(c.id);
+          expect(c.carrying).toBeNull();
+          expect(['enter', 'act', 'follow', 'leave']).toContain(c.phase);
+        }
+      }
+      for (const b of before) if (!b.buys && !s.shop.customers.some((c) => c.id === b.id)) gone.add(b.id);
+      // Nobody serves: the line fills, and window-shoppers still come and go.
+      expect(waitingCount(s.shop.customers)).toBeLessThanOrEqual(QUEUE_MAX);
+      expect(s.shop.customers.length).toBeLessThanOrEqual(CUSTOMER_MAX_IN_SHOP);
+    }
+    expect(gone.size).toBeGreaterThanOrEqual(8);
+    for (const id of windowIds) expect(reacted.has(id)).toBe(false);
+    expect(waitingCount(s.shop.customers)).toBe(QUEUE_MAX);
+  });
+
+  it('two customers talk: they face each other and 2 to 3 bubbles go back and forth; pairs stay together', () => {
+    let s = stocked(3, 400);
+    const rng = seededRng(17);
+    const small = new Set([...NPC_LINES.smalltalk, ...NPC_LINES.smalltalk_reply, ...NPC_LINES.smalltalk_end]);
+    let talks = 0;
+    let pairs = 0;
+    let nearTicks = 0;
+    let pairTicks = 0;
+    const speakers = new Map<number, Set<number>>();
+    for (let t = 0; t < 3_600_000 && (talks < 6 || pairs < 3); t += SHOP_TICK_MS) {
+      s = restock(s, t);
+      if (s.shop.nextCustomerInMs > 6000) s = { ...s, shop: { ...s.shop, nextCustomerInMs: 6000 } };
+      const before = s.shop.customers;
+      const r = stepShop(s, world(s, true), SHOP_TICK_MS, rng, t);
+      s = r.state;
+      const byId = new Map<number, Customer>(s.shop.customers.map((c) => [c.id, c]));
+      for (const c of s.shop.customers) {
+        const was = before.find((b) => b.id === c.id);
+        if (c.talk && c.talk.left > 0 && !(was?.talk && was.talk.left > 0)) {
+          // The talk starts: 2 to 3 lines, the other one is held and they face each other.
+          talks++;
+          expect(c.talk.left).toBeGreaterThanOrEqual(2);
+          expect(c.talk.left).toBeLessThanOrEqual(3);
+          const o = byId.get(c.talk.withId)!;
+          expect(o.holdMs).toBeGreaterThan(0);
+          const opposite = { left: 'right', right: 'left', up: 'down', down: 'up' } as const;
+          if (Math.abs(o.x - c.x) < 1 || Math.abs(o.y - c.y) < 1) expect(o.facing).toBe(opposite[c.facing]);
+          speakers.set(c.id, new Set());
+        }
+        if (c.followId !== null) {
+          if (!before.some((b) => b.id === c.id)) pairs++;
+          const lead = byId.get(c.followId);
+          if (lead && c.path.length === 0 && lead.path.length === 0 && c.phase === 'follow' && lead.phase !== 'enter') {
+            pairTicks++;
+            if (Math.hypot(lead.x - c.x, lead.y - c.y) <= 48) nearTicks++;
+          }
+        }
+      }
+      for (const e of r.events) {
+        if (e.t !== 'say' || !small.has(e.text)) continue;
+        for (const [a, set] of speakers) {
+          const c = byId.get(a);
+          if (c?.talk && (e.customerId === a || e.customerId === c.talk.withId)) set.add(e.customerId);
+        }
+      }
+    }
+    expect(talks).toBeGreaterThanOrEqual(6);
+    expect(pairs).toBeGreaterThanOrEqual(3);
+    // Both sides speak in most talks.
+    expect([...speakers.values()].filter((set) => set.size === 2).length).toBeGreaterThan(talks / 2);
+    // A friend standing still is near the one they came with almost always.
+    expect(pairTicks).toBeGreaterThan(0);
+    expect(nearTicks / pairTicks).toBeGreaterThan(0.9);
   });
 
   it('a waiting customer may sit on a free seat near the line, and stands up for the till', () => {
@@ -379,9 +505,12 @@ describe('walking customers', () => {
       s = stepShop(s, world(s, serve), SHOP_TICK_MS, rng, t).state;
       for (const c of s.shop.customers) {
         if (c.seat && c.path.length === 0) {
-          sat = true;
-          sitter = c.id;
+          if (c.phase === 'queue') {
+            sat = true;
+            sitter = c.id;
+          }
           expect(c.seat.uid).toBe(88);
+          if (c.phase !== 'queue') continue; // a visitor sitting for a moment (the 'sit' behaviour)
           expect(c.queueSpot).toBeGreaterThan(0);
         }
         if (c.id === sitter && c.phase === 'pay' && !c.seat) stoodUpToPay = true;

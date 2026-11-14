@@ -32,7 +32,8 @@ export interface StyleType {
 
 // ---------- Furniture (section 7) ----------
 export type PlaceIn = 'hotel' | 'shop' | 'both';
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic';
+/** The four ranks of every item, material, crop, food, ore, gem and furniture type (step 9e). */
+export type Rank = 'common' | 'rare' | 'ultra_rare' | 'legendary';
 
 /**
  * A placeholder box, for the 'down' facing. (dx, dy) is the front-left corner of the box on the
@@ -80,7 +81,7 @@ export interface FurnitureType {
   /** Places to sit or lie (step 5b), relative to the anchor for the 'down' facing; turned with the item. */
   seats: Seat[];
   baseValue: number;
-  rarity: Rarity;
+  rank: Rank;
   inCatalog: boolean;
   /** True for the shop counter (step 7): it can be moved and rotated, never picked up or sold. */
   noPickup?: boolean;
@@ -137,10 +138,18 @@ export type BaseMaterialId =
   | 'crystal'
   | 'wood'
   | 'throne_piece'
+  // Enemy drops (step 9e): one per rank for every enemy type.
+  | EnemyDropId
   // The mine and the forge (section 10c, step 9c).
   | OreId
   | BarId
   | 'gem';
+export type EnemyDropId =
+  | 'slime_gel' | 'sticky_core' | 'royal_jelly' | 'slime_crown'
+  | 'bat_wing' | 'echo_fang' | 'moon_membrane' | 'night_pearl'
+  | 'bone_dust' | 'rusty_buckle' | 'grave_ring' | 'ancient_skull'
+  | 'chest_hinge' | 'mimic_tongue' | 'gilded_lock' | 'greedy_heart'
+  | 'royal_bone' | 'king_seal' | 'crown_shard' | 'kings_heart';
 export type OreId = 'copper_ore' | 'iron_ore' | 'mithril_ore';
 export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 /** Farm goods (section 10b, step 9b): seeds (crops.json), crops (crops.json) and food (food.json). */
@@ -161,6 +170,7 @@ export interface MaterialType {
   baseValue: number;
   /** Placeholder icon color (palette index) until real 32x32 icons exist. */
   color: number;
+  rank: Rank;
   group: MaterialGroup;
 }
 
@@ -215,6 +225,7 @@ export type LedgerReason =
   | 'smelt'
   | 'forge'
   | 'mine_bank'
+  | 'book_reward'
   | 'debug';
 
 export interface LedgerEntry {
@@ -255,7 +266,23 @@ export interface Player {
   farmRoomId: number;
   /** How many mine visits were started (step 9c; mithril rocks from visit MITHRIL_FROM_VISIT on). */
   mineVisits: number;
+  /**
+   * The collection book (step 9e): everything the player ever found, by id (a material id, a
+   * furniture type id, or 'enemy:<kind>' for enemies met; count = found in total / kills).
+   * Kept right by the ledger function (applyChange) and by the kills of a finished run.
+   */
+  seen: SeenMap;
+  /** When the Book was last opened (entries first seen after it show "New!"). */
+  bookOpenedAt: number;
+  /** Book rewards already taken, as '<tab>:<percent>'. */
+  bookRewards: string[];
 }
+
+export interface SeenEntry {
+  count: number;
+  firstSeenAt: number;
+}
+export type SeenMap = Record<string, SeenEntry>;
 
 // ---------- Dungeon (section 10) ----------
 // The dungeon types live in dungeon/run.ts; gear in gear.ts, recipes in crafting.ts, loot tables in

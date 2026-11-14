@@ -11,6 +11,7 @@
 //   Materials cannot be placed: a tap picks them up, then tap the target slot.
 //   Tap the picked-up slot again (or switch tabs, or close the bag) to put it back down.
 
+import { setRank } from './rank.ts';
 import {
   BAG_COLUMNS,
   BAG_COLUMNS_PHONE,
@@ -239,6 +240,7 @@ export function createBagPanel(parent: HTMLElement, hooks: BagHooks): BagPanel {
     s.replaceChildren();
     s.classList.toggle('empty', id === null);
     s.classList.remove('dim');
+    setRank(s, id);
     if (hotkey !== null) s.appendChild(el('span', 'slot-key', String(hotkey)));
     if (id === null || !contents) {
       s.title = 'Empty slot';

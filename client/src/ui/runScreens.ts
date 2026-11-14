@@ -2,6 +2,7 @@
 // hidden), the exit choice (Go deeper / Leave), and the death and leave summaries. All are
 // centered panels in the frame style over a dim shade (like "Buy this?").
 
+import { rankName } from './rank.ts';
 import { getFurnitureType, getMaterialType, type RunBag, type RunResult } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
@@ -75,27 +76,32 @@ const KILLER: Record<string, string> = {
 
 /** One line per bag slot kind: "7 Bone", "Skull lamp". */
 export function bagLines(bag: RunBag): string[] {
+  return bagItems(bag).map((l) => l.text);
+}
+
+/** The bag's lines with the item id of each (for its rank colour). */
+export function bagItems(bag: RunBag): { id: string; text: string }[] {
   const materials = new Map<string, number>();
   const furniture = new Map<string, number>();
   for (const s of bag.slots) {
     if (s.kind === 'material') materials.set(s.id, (materials.get(s.id) ?? 0) + s.qty);
     else furniture.set(s.typeId, (furniture.get(s.typeId) ?? 0) + 1);
   }
-  const lines = [...materials].map(([id, n]) => `${n} ${getMaterialType(id as never).name}`);
-  for (const [id, n] of furniture) lines.push(n > 1 ? `${n} x ${getFurnitureType(id).name}` : getFurnitureType(id).name);
+  const lines = [...materials].map(([id, n]) => ({ id, text: `${n} ${getMaterialType(id as never).name}` }));
+  for (const [id, n] of furniture) lines.push({ id, text: n > 1 ? `${n} x ${getFurnitureType(id).name}` : getFurnitureType(id).name });
   return lines;
 }
 
 function list(title: string, bag: RunBag): HTMLElement {
   const box = el('div', 'run-list');
   box.append(el('div', 'run-list-title', title));
-  const lines = bagLines(bag);
+  const lines = bagItems(bag);
   if (bag.gold > 0) {
     const g = el('div', 'away-total');
     g.append(pixelIcon('coin'), el('span', '', `${bag.gold} gold`));
     box.append(g);
   }
-  for (const l of lines) box.append(el('div', 'run-line', l));
+  for (const l of lines) box.append(rankName('div', 'run-line', l.text, l.id));
   if (lines.length === 0 && bag.gold === 0) box.append(el('div', 'run-line', 'Nothing.'));
   return box;
 }

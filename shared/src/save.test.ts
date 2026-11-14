@@ -114,4 +114,48 @@ describe('save files', () => {
     expect(r.state.shop.customers).toHaveLength(1);
     expect(r.state.shop.customers[0]).toMatchObject({ id: -2, kind: 'browser', phase: 'queue', path: [], seat: null, browsing: false });
   });
+
+  it('migrates a version 9 save (natural customers): the customers in the line get a plan and the new fields', () => {
+    const old = (id: number, carrying: unknown) => ({ id, kind: 'chatty', look: state.look, x: 1, y: 2, facing: 'up', path: [{ x: 5, y: 5 }], phase: 'admire', want: 'materials', tolerance: 1, waitMs: 0, speed: 72, shelfUid: null, browsing: true, looks: 1, looksMax: 2, decorLeft: 1, decorUid: null, carrying, reaction: null, queueSpot: 0, seat: null, sitChecked: false, callInMs: 100 });
+    const v9 = { ...state, shop: { ...state.shop, customers: [old(-1, null), old(-2, { loot: { kind: 'material', id: 'wood', qty: 1 }, price: 3 })] } };
+    const r = readSave(JSON.stringify({ version: 9, savedAt: 0, state: v9 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.shop.customers).toHaveLength(1);
+    const c = r.state.shop.customers[0]!;
+    expect(c).toMatchObject({ id: -2, kind: 'chatty', phase: 'queue', buys: true, plan: [], step: 0, doing: null, followId: null, talk: null, holdMs: 0, path: [] });
+    expect('looksMax' in c || 'decorLeft' in c || 'looks' in c).toBe(false);
+  });
+
+  it('migrates a version 10 save (step 9e): everything the player owns counts as seen', () => {
+    const { seen: _s, bookOpenedAt: _o, bookRewards: _r, ...player } = state.player;
+    const shelf = state.items.find((i) => i.typeId === 'stall_table')!;
+    const v10 = {
+      ...state,
+      player: { ...player, materials: { wood: 3, bone: 7 } },
+      items: [...state.items, { uid: 50, typeId: 'chair', ownerId: 1, roomId: null, x: 0, y: 0, facing: 'down', onItemUid: null }, { uid: 51, typeId: 'chair', ownerId: 1, roomId: 1, x: 100, y: 100, facing: 'down', onItemUid: null }],
+      shop: {
+        ...state.shop,
+        slots: [
+          { shelfUid: shelf.uid, index: 0, loot: { kind: 'material', id: 'cloth', qty: 1 }, price: 5 },
+          { shelfUid: shelf.uid, index: 1, loot: { kind: 'furniture', uid: 60, typeId: 'skull_lamp' }, price: 30 },
+        ],
+      },
+    };
+    const r = readSave(JSON.stringify({ version: 10, savedAt: 0, state: v10 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.player.seen).toEqual({
+      wood: { count: 3, firstSeenAt: 0 },
+      bone: { count: 7, firstSeenAt: 0 },
+      counter: { count: 1, firstSeenAt: 0 },
+      stall_table: { count: 1, firstSeenAt: 0 },
+      chair: { count: 3, firstSeenAt: 0 },
+      rug: { count: 1, firstSeenAt: 0 },
+      cloth: { count: 1, firstSeenAt: 0 },
+      skull_lamp: { count: 1, firstSeenAt: 0 },
+    });
+    expect(r.state.player.bookOpenedAt).toBe(0);
+    expect(r.state.player.bookRewards).toEqual([]);
+  });
 });

@@ -4,6 +4,7 @@
 // button (also the E key) next to it eats from the lunch box, with how many are left. In the mine
 // (step 9c) the food button is a Leave button (walk out now with everything); ore stacks in the bag.
 
+import { setRank } from './rank.ts';
 import { RUN_BAG_SLOTS, getFoodType, getFurnitureType, getMaterialType, type DungeonRun } from '@pixel-hotel/shared';
 import { el, iconButton, textButton, typing } from './dom.ts';
 import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
@@ -62,6 +63,7 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
       slots.forEach((s, i) => {
         const item = run.bag.slots[i];
         s.root.classList.toggle('empty', !item);
+        setRank(s.root, !item ? null : item.kind === 'material' ? item.id : item.typeId);
         s.img.hidden = !item;
         if (!item) {
           s.count.textContent = '';

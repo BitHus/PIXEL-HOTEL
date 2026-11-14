@@ -66,7 +66,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   pixel (INTRO_DEVICE_PX_PER_ART_PX), ending centered on the avatar. A tap, a drag, a pinch or
   the wheel during the intro skips it (the camera stays where it is).
 - The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
-  grids exist only inside the code and are never shown: the navigation grid (16 px cells,
+  grids exist only inside the code and are never shown: the navigation grid (8 px cells,
   section 6) and the dungeon's 32 px blocks (section 10).
 - Pixel-perfect: no texture smoothing, and sprites are drawn at whole world pixels. At a zoom
   that is not a whole number some art pixels are 1 screen px wider than others, and below
@@ -119,9 +119,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 6. MOVEMENT
 - Click the floor: the avatar walks there. Click a sittable item: it walks to the front of
   the item and sits.
-- Navigation uses an internal grid of 16 px cells (NAV_CELL), rebuilt when furniture changes.
+- Navigation uses an internal grid of 8 px cells (NAV_CELL), rebuilt when furniture changes.
   A cell is blocked if it is outside the floor or inside the footprint of an item with
-  blocks = true, with the footprint made bigger by the avatar radius (12 px). A* with 8
+  blocks = true, with the footprint made bigger by the avatar radius (AVATAR_RADIUS 4 px;
+  owner's decision after 9d: a gap of 24 px between two items is always walkable, and the
+  avatar may overlap furniture edges a little). A* with 8
   directions and no corner cutting finds a cell path. Then the path is smoothed: a waypoint
   is removed when a straight line between its neighbours does not touch a blocked cell. The
   result is a list of world points, so avatars walk in straight lines, not in grid zigzags.
@@ -139,8 +141,8 @@ how many items it holds, else 0), appeal (shop decoration value, else 0), w, d (
 the floor in px), height (px, for drawing only), blocks (blocks walking), sittable, surface
 (true if small items can stand on top), onSurface (true if it can stand on a surface), wall
 (hangs on the back wall), facings: ('down'|'right'|'up'|'left')[], standPoint: { dx, dy }
-(where a customer stands, relative to the item's anchor, default 0, 24), baseValue, rarity:
-'common'|'uncommon'|'rare'|'epic', inCatalog: boolean, art: { boxes: [{ dx, dy, w, h,
+(where a customer stands, relative to the item's anchor, default 0, 24), baseValue, rank:
+'common'|'rare'|'ultra_rare'|'legendary' (step 9e, see RANKS below), inCatalog: boolean, art: { boxes: [{ dx, dy, w, h,
 color }] } or { sprite: string } }
 FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facing, onItemUid
 (null, or the uid of the surface item it stands on) }
@@ -161,6 +163,11 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - Rotation cycles through the type's facings. A left facing is the right sprite mirrored.
 - Placeholder boxes: every box is drawn as a front face (w by h, darker) with a top face (w
   by d, lighter) above it, offset by dx and dy from the anchor.
+- RANKS (owner's decision, step 9e): every item, material, crop, food, ore, gem and furniture
+  type has one of four ranks: common, rare, ultra_rare, legendary (they replace common /
+  uncommon / rare / epic). Each rank has a colour (config RANK_COLORS, palette indices:
+  grey-brown, blue, purple, gold) used as the slot border and the name colour everywhere an item
+  is shown; ultra_rare and legendary drops sparkle.
 - Catalog: home items and shop items. Catalog price = baseValue * 3 gold. Items with
   inCatalog = false only come from the dungeon. An item can only be placed in a room that
   matches its placeIn. Step 4 builds 12 home items. Shop items arrive in step 7.
@@ -231,7 +238,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   customers stand at their queue spots. Waiting customers never leave on their own (v1). There
   is no "while you were away" summary. The Map button and the Map's Shop card show "n waiting".
 - Customer flow (step 7, paced after 7b): customers walk calmer than the player (72 px/s, each
-  one up to 10% faster or slower) and at most 3 are in the shop at once. A customer enters at
+  one up to 10% faster or slower) and at most 5 NPCs are in the shop at once (at most 3 of them
+  buyers; see NATURAL CUSTOMERS in the notes: no fixed route, window-shoppers, pairs, and the
+  area behind the counter is staff only). A customer enters at
   the door and stops just inside it for a moment, walks to the table, shelf or case with stock,
   looks at it for 2 to 5 s (a "..." thought bubble; sometimes at a second item too), decides
   there (the reaction bubble below), and if buying takes the item (it
@@ -246,7 +255,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   While QUEUE_MAX (3, step 9d) customers carry something to the till, no new customers come in. A
   customer who refuses just leaves. Offline catch-up (and a long gap) skips the walking and only
   fills the queue (see NO AUTO-SELLING).
-- Natural customers (step 9d): each customer gets a random look from the free clothing and
+- Natural customers (step 9d; reworked after 9d, see NATURAL CUSTOMERS in the notes): each customer gets a random look from the free clothing and
   LOOK_COLORS (seeded by its id) and a kind: 'hurried' (walks 20% faster, short browse),
   'browser' (looks at 2 to 3 things, decorations too), 'chatty' (talks more). Some stop at a
   decoration (a plant, a rug, a banner) first and face what they look at; standing customers
@@ -326,14 +335,27 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   the reward.
 - Loot tables are data in shared/data/loot.json: { id, rolls, drops: [{ item, min, max,
   weight }] }. Rolls use an rng that is passed in.
-- Loot: wooden chests roll 2 drops each (mostly gold, then materials, a 3% chance of a crypt
-  furniture item). A golden chest rolls 3 drops with better odds (more crystal, 10% crypt
-  furniture). 1 in 8 wooden chests is a mimic: it looks like a normal chest, but when walked
+- DROPS BY RANK (owner's decision, step 9e): every drop row in a loot table has a rank. A roll
+  first picks a rank (config RANK_WEIGHTS: common 75%, rare 20%, ultra_rare 4.5%, legendary
+  0.5%, times the table's rankMultiplier: golden chests, mimics and bosses shift the odds up),
+  then one of the table's drops of that rank by weight. A rank a table does not have falls to
+  the next lower one.
+- Loot: wooden chests roll 2 drops each (mostly gold, then materials; rare: a bigger pile of
+  gold or a crystal; ultra rare: a crypt furniture item, 5%). A golden chest rolls 3 drops with
+  better odds (more crystal, about 11% crypt furniture). 1 in 8 wooden chests is a mimic: it looks like a normal chest, but when walked
   onto it turns into a skeleton, and when it dies it drops a golden chest's loot. The boss
   floor always ends with a golden chest next to the exit, and the Bone King also drops 1 to
-  2 throne_piece. Normal enemies drop no materials. Each kill gives xp (slime 3, bat 4,
-  skeleton 5, mimic 8, Bone King 40) and has a 10% chance of one rare drop: 70% a crystal,
-  30% a random crypt furniture item (about 3% per kill).
+  2 throne_piece. Each kill gives xp (slime 3, bat 4,
+  skeleton 5, mimic 8, Bone King 40) and has a 10% chance (RARE_DROP_CHANCE) of one drop from
+  the enemy's own table (step 9e; the Bone King always drops): one new material per rank.
+  Slime: slime gel, sticky core, royal jelly, slime crown. Bat: bat wing, echo fang, moon
+  membrane, night pearl. Skeleton: bone dust, rusty buckle, grave ring, ancient skull. Mimic:
+  chest hinge, mimic tongue, gilded lock, greedy heart. Bone King: royal bone, king's seal,
+  crown shard, king's heart. They sell in the shop, and each enemy has a trophy recipe: slime
+  jar, bat wing fan, skull trophy, toothy chest, king's banner.
+- THE BOOK (owner's decision, step 9e): a collection book of everything the player ever found
+  (tabs Materials, Furniture, Food and crops, Enemies). Never seen = a grey silhouette and
+  "???". Filling 25 / 50 / 75 / 100% of a tab gives gold (and later a hat, step 9g).
 - XP and levels: levels 1 to 8, thresholds in shared/data/levels.json (total xp for level 2
   to 8: 15, 40, 80, 140, 220, 320, 450). Every level gives +3 max hp, and every even level
   gives +1 attack (added to both ends of the damage range). Xp counts the moment an enemy
@@ -497,8 +519,9 @@ it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic)
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
 (mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). The atmosphere
 step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE), the logo splash and step 9d (shop
-life, see STEP 9d) are done too. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
-9e (ranks and the Book), 9f (lakeside), 9g (livelier hotel), 9h (dungeon
+life, see STEP 9d) are done too, and so are the fix list after 9d (see FIX LIST AFTER 9d) and step 9e
+(ranks and the Book, see STEP 9e). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+9f (lakeside), 9g (livelier hotel), 9h (dungeon
 types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 Layout:
@@ -777,7 +800,7 @@ Layout:
   - shared/src/dungeon (exported from the shared index): run.ts (DungeonMap, Enemy, Chest,
     BagItem, RunBag, RunPlayer, RunEvent, DungeonRun, DungeonInput, combatStats, newRun), grid.ts
     (isFloorBlock, blockCenter, blockAt, onFloor, dungeonNavGrid: the shared NavGrid with 16 px
-    cells, a cell is blocked on a wall block, NO avatar radius because corridors are 1 block wide;
+    cells (DUNGEON_NAV_CELL, its own number), a cell is blocked on a wall block, NO avatar radius because corridors are 1 block wide;
     cached per map), generate.ts (floorRng(seed, n), enemyHp, makeEnemy, blockDistances,
     generateFloor(seed, n, round) -> { map, enemies, chests }), loot.ts (LOOT_TABLES, getLootTable,
     rollDrop, rollLoot), runBag.ts (addToBag (12 slots, materials stack to 10, gold no slot, the
@@ -796,8 +819,10 @@ Conventions:
   pixel font, at least 44 px touch size, no default browser buttons. Places:
   - Top-left: the info panel, two short lines: coin + gold, then room name, level and a thin xp
     bar (hp and lantern bars under it in the dungeon and the mine).
-  - Right edge: one column of square icon buttons: Quest, Map, Bag, Build, Dungeon, then More
-    (a small grid with labels: Catalog, Workshop, Room, Avatar, Chat, Settings). From 900 px wide
+  - Right edge: one column of square icon buttons: Quest, Map, Catalog, Build, Dungeon, then More
+    (a small grid with labels: Workshop, Room, Avatar, Chat, Settings). The Bag button is not in
+    the column (owner's decision after 9d): it sits at the right end of the hotbar, inside its
+    frame, as tall as a slot (sideButtons.ts makes it, main.ts appends it to hotbar.el). From 900 px wide
     every button stands in the column. New screens add a button in sideButtons.ts (with a label
     = in the More grid) and a panel.
   - Panels: built with panelShell.ts; left of that column, always ending above the hotbar and
@@ -876,6 +901,90 @@ Conventions:
     min over 8 h; gold, sold, minutes lost to a full line).
   - Tests: npcTalk.test.ts, customers.test.ts (catch-up, full line, looks, talk, decorations,
     sitting), shop.test.ts (fillQueueMath), save.test.ts (migration 8), localGameAPI.test.ts.
+- FIX LIST AFTER 9d (owner's playtest):
+  - Nav: NAV_CELL 8, AVATAR_RADIUS 4 (see NAVIGATION). queueSpots keeps spots QUEUE_MIN_GAP_PX
+    apart (cells are small now) and is cached per grid.
+  - NATURAL CUSTOMERS (shared/src/customerPlan.ts + customers.ts): no fixed route. Every visitor
+    gets a plan (Customer.plan, step, doing) from planVisit(rng, kind, buys, lastPlan): small
+    behaviours picked by weight (config ACT_WEIGHTS x ACT_KIND_BONUS per kind; how many:
+    BUYER_ACTS / WINDOW_ACTS): wander (a random free spot, stand a moment), decor (a random
+    decoration, never the one before), goods (a look at a stocked table / shelf / case), talk (walk
+    next to another standing customer; they face each other, 2 to 3 bubbles in turns: lines
+    smalltalk, smalltalk_reply, smalltalk_end; the other one is held with holdMs), remark (a
+    'remark' line to nobody), sit (a free seat for 3 to 6 s). Never the same behaviour twice in a
+    row, and never the same plan as the visitor before (ShopState.lastPlan). A buyer's plan ends
+    with 'goods' = the look they decide at (phase 'browse' -> 'decide' as before); what cannot be
+    done now becomes a remark or a wander. Phases: enter, act, follow, browse, decide, queue, pay,
+    paid, leave ('admire' and looks / looksMax / decorLeft are gone).
+  - Window-shoppers (Customer.buys false; WINDOW_SHOPPER_CHANCE): only small behaviours, maybe a
+    'window' line, then out; no decision, no reaction face, nothing counted. Pairs (PAIR_CHANCE):
+    a friend (followId, phase 'follow', buys false) comes in behind the other, stays PAIR_NEAR_PX
+    beside where they go, and their plan gets a 'talk' (with the friend first). Limits:
+    CUSTOMER_MAX_IN_SHOP 5 NPCs; a buyer only comes while buyerCount (buyers not yet paid) <
+    QUEUE_MAX, so at most 3 wait at the till; with a full line only window-shoppers come
+    (WINDOW_SHOPPER_WHEN_FULL_CHANCE). The first visitor of a game is always a buyer.
+  - STAFF ONLY: furniture.ts staffZone (the strip behind the counter, STAFF_ZONE_DEPTH_PX deep,
+    STAFF_ZONE_SIDE_PX wider on each side). customerPlan.ts npcGrid = the room's grid with those
+    cells blocked (cached); EVERY customer path, wander spot, queue spot and seat uses it
+    (npcPath: a blocked or unreachable goal ends at the nearest free cell they can reach, so a
+    decoration behind the counter is looked at from the customer side). The player's grid is
+    unchanged.
+  - npcLines.json gained smalltalk, smalltalk_reply, smalltalk_end, remark, window.
+  - Lighting: the indoor look stays as it was (owner: "keep it"); outdoors has daylight (see
+    ATMOSPHERE). Backdrop: grass and trees outdoors, calmer planks indoors.
+  - UI: Catalog in the column, Bag at the hotbar (see UI LAYOUT RULE; docs/UI-REFERENCE.md).
+  - Dungeon chests are spread (generate.ts chestSpotOk, blocksFromRect; config CHEST_SPACING 3,
+    CHEST_SPAWN_ROOM_GAP 3, diagonals count as 1): at least 3 blocks from the spawn room and from
+    each other; a floor too small for that relaxes it by 1 or 2 blocks (never under 2).
+  - Tests: nav.test.ts (24 px gap, 12 px gap, speed), customerPlan.test.ts (the picker, the staff
+    grid), customers.test.ts (staff only, natural customers, window-shoppers, talk and pairs),
+    generate.test.ts (chest spread), save.test.ts (migration 9).
+- STEP 9e (ranks and the collection book; owner's decisions in sections 7 and 10):
+  - Ranks: types.ts Rank ('common' | 'rare' | 'ultra_rare' | 'legendary'; Rarity is gone).
+    FurnitureType.rank and MaterialType.rank; the data files carry `rank` (furniture.json,
+    materials.json, crops.json (crop and seed share it), food.json). The crypt furniture is
+    ultra_rare (it comes from the ultra rare chest rows), the bone throne legendary; the ranks of
+    materials, ores, bars, crops and food were chosen by the AI (the owner may tune them).
+    shared/src/ranks.ts: RANKS, RANK_NAMES, rankOf(id), sparkles, rankWeights, rollRank (a rank
+    that cannot come falls to the next lower one). Config: RANK_COLORS, RANK_WEIGHTS, SPARKLE_MS,
+    BOOK_REWARD_STEPS.
+  - Loot (dungeon/loot.ts, loot.json): LootDrop.rank, LootTable.rankMultiplier, tableRanks,
+    rankChances, rollDrop (rank first, then a weighted pick in that rank; returns the rank).
+    Tables: wooden_chest, golden_chest, boss, and one per enemy type (ENEMY_TABLES: slime, bat,
+    skeleton, mimic, bone_king; the old enemy_rare table is gone). step.ts enemyTypeOf (the kind,
+    or 'mimic'); a kill rolls RARE_DROP_CHANCE for the enemy's table (the Bone King always; not
+    in the mine). The 'loot' event carries `rank` when above common; the 'kill' event `mimic`.
+    20 new materials (types.ts EnemyDropId) and 5 new crypt furniture types with recipes
+    (slime_jar, bat_wing_fan, skull_trophy, mimic_chest "Toothy chest", kings_banner).
+  - The seen list: Player.seen (SeenMap: id -> { count, firstSeenAt }), kept right in two places
+    only: ledger.ts applyChange (every material or furniture gained; not reason 'shelf', and not
+    Change.notFound = food brought home from a run) and bank.ts finishRun (DungeonRun.kills and
+    .met, keys 'enemy:<type>', count = kills; kept after death like xp). An enemy is met when it
+    notices the player (chase range) or is killed. shared/src/seen.ts: enemyKey, addSeen,
+    addSeenAll, isSeen, seenCount, ownedFinds. createNewPlayer marks the start items.
+  - The Book: shared/src/book.ts (BOOK_TABS, bookEntries(tab), sourceOf(id) ("Drops from: Slime",
+    "Dungeon chests", "Catalog", "Crafted", "Farm", "Cooked", "Mine", "Forge", "Your shop"),
+    bookProgress, bookTotal, newEntries, BOOK_REWARDS (shared/data/bookRewards.json: per tab
+    { percent, gold, hat: null }; step 9g fills in the hats), bookRewards (locked / ready /
+    taken), claimBookReward (ledger reason 'book_reward'; Player.bookRewards '<tab>:<percent>'),
+    openBook (Player.bookOpenedAt)). GameAPI: bookOpened, claimBookReward; the panel reads
+    Player from getPlayer.
+  - client: ui/bookPanel.ts (the panel; enemy pictures are small pixel maps in code), ui/rank.ts
+    (applyRankColors puts --rank-* on the UI root; setRank, rankName), the rank classes in ui.css
+    (.rank-<rank>, .rank-name, .slot.rank-*), used by the hotbar, bag, run bag, catalog cards,
+    shelf panel, crafting, cooking and the run result lists. floatTexts.add(..., rank): rank
+    colour and the sparkle. pixelIcons 'journal'; PanelName 'book'; sideButtons: Book in the More
+    grid, key J, setBookDot (the red .new-dot on Book and More).
+  - tools/simulate-dungeon.ts prints the average kills per drop of each rank per enemy (step 9e):
+    slime / bat / skeleton about 13 (common), 50 (rare), 220 (ultra rare), 1900 to 2000
+    (legendary); mimic 22 / 25 / 75 / 470; Bone King 3.6 / 2.1 / 4.8 / 21.5. The 500 ms bot with
+    iron gear kills about 4 to 5 of each normal enemy per round 2 run.
+  - Chat bubbles (fix found while testing): a bubble's age is real time, nothing is added while
+    the page is hidden, and one avatar shows at most CHAT_BUBBLES_PER_AVATAR (3). Before, bubbles
+    aged per drawn frame and piled up above a waiting customer while the page was in the
+    background.
+  - Tests: ranks.test.ts, book.test.ts (the seen list and the Book), dungeon/loot.test.ts (rank
+    rolls), save.test.ts (migration 10).
 - LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
   logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
   client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts
@@ -890,32 +999,37 @@ Conventions:
     flicker (0 steady .. 1 candle) } (types.ts LightSource). furniture.json: lamp (candle stand),
     counter (the till glow), skull_lamp, wall_torch. The cooking pot uses config COOKING_POT_LIGHT.
   - Config (end of shared/config.ts): AMBIENT_LIGHT per room kind { color, strength } (a palette
-    colour laid over the room with that alpha; the owner tunes the darkness here), LIGHT_PIXEL 2,
-    LIGHT_RINGS 8, LIGHT_CUT (how much shade one ring takes away), LIGHT_GLOW (the alpha of the
-    light's colour per ring), LIGHT_STEP_MS, FLICKER_RADIUS / FLICKER_BRIGHTNESS, DOOR_LIGHT,
-    DUST_PER_LIGHT, DUST_MAX, WALK_PUFF_MS, IDLE_SHIFT_EVERY_MS / HOLD_MS, SOUND_DEFAULT_VOLUME,
-    PREFS_KEY.
-  - client/src/render/atmosphere.ts (pure, tested): hash01, lightRings,
-    flickerAt (steps with LIGHT_STEP_MS, from a seed and the time), lightPoint, itemLights,
-    ellipseRows (pixel ellipse), shadowSize, idleShift, dustLightCount, dustSpeck.
+    colour laid over the room with that alpha; kept low, the owner tunes the darkness here; the farm has 0), OUTDOOR_KINDS (the farm: daylight, no
+    shade and no light pools from furniture, only the small glow of the pot's fire),
+    LIGHT_PIXEL 2, LIGHT_CUT (the part of the shade a light takes away at the flame), LIGHT_GLOW
+    (how much of its colour a light adds at the flame), LIGHT_STEP_MS, FLICKER_RADIUS /
+    FLICKER_BRIGHTNESS, DUST_PER_LIGHT, DUST_MAX, WALK_PUFF_MS, IDLE_SHIFT_EVERY_MS / HOLD_MS,
+    SOUND_DEFAULT_VOLUME, PREFS_KEY.
+  - client/src/render/atmosphere.ts (pure, tested): hash01, lightFalloff (1 at the flame, smooth
+    to 0 at the radius), flickerAt (steps with LIGHT_STEP_MS, from a seed and the time),
+    lightPoint, itemLights, ellipseRows (pixel ellipse), shadowSize, idleShift, dustLightCount,
+    dustSpeck.
   - client/src/render/roomAtmosphere.ts (RoomAtmosphere; main.ts calls setRoom after every
     view.setRoom, setItems from syncItems (use syncItems, never itemViews.sync alone), update every
-    frame with the feet of standing / walking avatars, puff, setLighting). Lighting (reworked after the owner's
-    playtest: brighter and warmer, glowing pools; general traits of cozy tavern games only) = a
-    light map RenderTexture (1 texel = LIGHT_PIXEL art px) shown as ONE normal layer
-    (RoomView.lightLayer): empty outside the room, the ambient shade on it; every light takes the
-    shade away in stepped rings (Graphics with blend 'erase') and then lays its own colour over the
-    room in the same rings with a small alpha (the warm glow); the door's daylight patch (hotel and
-    shop) works the same way. It is
-    redrawn only every LIGHT_STEP_MS or when something changed. Shadows: two-shade pixel ellipses in
+    frame with the feet of standing / walking avatars, puff, setLighting). Lighting (reworked twice
+    after the owner's playtests; now: a bright warm room with small soft halos, no ringed pools, no
+    door daylight patch; the owner approved this indoor look after 9d: KEEP IT, do not rework it; general traits of cozy tavern games only) = a light map RenderTexture
+    (1 texel = LIGHT_PIXEL art px) shown as ONE normal layer (RoomView.lightLayer): empty outside
+    the room, the mild ambient shade on it; every light takes the shade away with a halo sprite
+    (one 64 px white texture with lightFalloff alpha, blend 'erase'). Above the map every light has
+    a second halo sprite, tinted with its colour, blend 'add' (the warm glow). Both are updated
+    only every LIGHT_STEP_MS or when something changed. Shadows: two-shade pixel ellipses in
     RoomView.shadowLayer (under the objects) for blocking floor items, the pot and avatars
     (AvatarSprite(look, false) = no built-in shadow; the dungeon keeps the built-in one). Dust:
     1 px specks in RoomView.airLayer, the walk puff in shadowLayer.
-  - client/src/render/backdrop.ts (Backdrop): dark planks that move with the camera plus a stepped
-    vignette, baked into ONE opaque screen picture that is redrawn only when the camera moves. Under
+  - client/src/render/backdrop.ts (Backdrop): indoors calm dark planks (low contrast), outdoors
+    (setOutdoor(true), the farm: main.ts calls it after every atmosphere.setRoom) darker grass
+    with code-drawn tree crowns and bushes on a seamless 256 px tile; it moves with the camera,
+    plus a stepped vignette (lighter outdoors), baked into ONE opaque screen picture that is redrawn only when the camera moves. Under
     view.world on the stage; hidden in the dungeon / mine (they keep their own look).
   - CustomerViews: standing customers shift 1 px sideways now and then (AvatarSprite.setShift).
-  - Sound: client/src/audio/sound.ts (Sound; Web Audio, no files): step, coin, bell, pop, click,
+  - Sound: client/src/audio/sound.ts (Sound; Web Audio, no files): step, coin, bell (a soft
+    two-note door chime, at most once per 6 s; the owner found the first bell irritating), pop, click,
     hit, hurt. The context is made on the first tap or key. main.ts: a step per walk bob, coin at a
     'sale' event, bell when a new customer id appears, pop when a placement is accepted, click for
     every <button> inside the UI root, hit / hurt from DungeonContext.sound (mine swings use hit).
@@ -980,8 +1094,13 @@ Conventions:
     item with seats walks to its nearest free side and sits or lies (step 5b; the item shakes if
     no seat can be reached). A long press does nothing. No item menu.
   - BUILD MODE: the Build button (hammer, right-edge column, right after Bag) or the B key
-    toggles it; placing from the hotbar or the bag turns it on. Taps never walk. A tap or long
-    press on an item opens its menu (Move, Rotate, Pick up); a tap elsewhere closes it. The
+    toggles it; placing from the hotbar or the bag turns it on. Taps never walk. Building is
+    fast (owner's decision after 9e; like other building games): a DRAG that starts on an item
+    moves it (the ghost follows the finger; letting go puts it down, or back where it was with a
+    shake when it does not fit); a drag on the floor pans. A tap or long press on an item
+    selects it and opens its menu (Rotate, Pick up; no Move button); with an item selected a tap
+    on a free spot moves it there at once (a shake when it does not fit), a tap on the item again
+    lets it go. The
     Build button is highlighted and a thin warm border (.build-frame) runs around the screen
     edge. Build again, or Escape (when no panel is open and nothing is being placed), returns
     to play mode, closes the menu and cancels a placing session.
@@ -1000,10 +1119,15 @@ Conventions:
   - Blockers mode (debug, step 3; key K, button "Blockers (K)"): while it is on, a one-finger / left drag draws a blocking
     rectangle instead of panning (getDragMode() returns 'draw', drags go to onDraw). Two
     fingers and right-drag still pan/zoom. Taps still walk.
-- NAVIGATION (shared/nav.ts): a cell is blocked if ANY part of it is outside the floor or
-  overlaps a blocker grown by AVATAR_RADIUS, so every point in a free cell is at least the
-  radius away from every blocker, and gaps narrower than the avatar (24 px) are never
-  passable (a gap needs about 24 + 16 px to open a free cell). Line of sight fails if the
+- NAVIGATION (shared/nav.ts): NAV_CELL 8 px, AVATAR_RADIUS 4 px (owner's decision after 9d; it
+  was 16 and 12). A cell is blocked if ANY part of it is outside the floor or overlaps a blocker
+  grown by AVATAR_RADIUS, so every point in a free cell is at least the radius away from every
+  blocker. A gap between two items of 24 px or more is always walkable (it keeps 16 px, so a
+  whole free cell at every 4 px alignment), 16 to 24 px depends on the alignment, under 16 px
+  never (tested). The owner asked for a radius of about 6; with 8 px cells that would need 28 px
+  for a gap, so it is 4. The avatar may overlap furniture edges a little. The biggest room is
+  104 x 72 cells; a path takes a few ms (tested). The dungeon keeps its own cells
+  (DUNGEON_NAV_CELL 16, no radius). Line of sight fails if the
   segment touches a blocked cell (edges count). findPath returns points starting with the
   avatar's position; the client walks path.slice(1). A free but unreachable target gives
   null; a blocked target walks to the nearest reachable free cell center. If the avatar
@@ -1024,17 +1148,20 @@ Conventions:
     never block the floor. doorReachesMiddle: the free cell nearest the room middle must be
     reachable from the door point.
   - Nav blockers = debug rects + itemBlockers(items, roomId) (blocking items on the floor).
-  - Placing (step 4b): tapping a hotbar or bag slot (the ghost starts in the middle of the
-    screen; build mode turns on) or Move in the item menu (the ghost starts where the item is; the item and its
-    riders are hidden until done) starts a placing session. A one-finger / left drag anywhere
-    moves the ghost by the drag distance (getDragMode returns 'draw'); two fingers and
-    right-drag still pan/zoom. No hover-follow. Taps and long presses do nothing while placing.
-    Only ✓ / Enter places (disabled while red); ✗ / Escape cancels (a moved item goes back
-    exactly; an inventory item stays in the inventory). After placing the session ends. Shift
+  - Placing (step 4b; faster after 9e): tapping a hotbar or bag slot starts a placing session
+    for a NEW item (the ghost starts in the middle of the screen; build mode turns on). A tap on
+    the room puts it there at once when it fits (else the ghost goes there, red); a one-finger /
+    left drag anywhere moves the ghost by the drag distance and letting go places it when it
+    fits (getDragMode returns 'draw'); ✓ / Enter also places, ↻ / R rotates, ✗ / Escape cancels
+    (the item stays in the inventory). Moving a PLACED item: a drag that starts on it in build
+    mode (cameraControl passes the press target to getDragMode; main.ts calls placer.startMove;
+    the item and its riders are hidden while the ghost shows; no ✓ bar: Placer.moving), or a tap
+    on a free spot while it is selected (api.moveItem directly). Two fingers and right-drag still
+    pan/zoom. No hover-follow. After placing the session ends, and a moved item stays selected. Shift
     (held) turns the 4 px snap off. Items picked up go to the inventory (roomId null).
   - Item menu (build mode only, see INPUT RULE): a tap or long press (LONG_PRESS_MS, without
-    moving) on a placed item opens its menu; a tap on another item opens that one's, a tap
-    elsewhere closes it. Sitting is play mode only (no Sit button). Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
+    moving) on a placed item opens its menu (Rotate, Pick up); a tap on another item opens that
+    one's, a tap on the same item closes it, a tap on a free spot moves the item there. Sitting is play mode only (no Sit button). Rotate turns in place (rotateInPlace) or shakes the item when it does not fit. The menu and
     the place bar follow their target every frame.
   - Hit testing: cameraControl passes the Pixi event target to onPoint; item containers are
     eventMode 'static' and ItemViews.uidOf maps a target to an item. The cursor cross, the
@@ -1195,7 +1322,11 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 9: MIGRATIONS[8] (step 9d) adds ShopState.lastLines {} and keeps only the
+- SAVE_VERSION is 11: MIGRATIONS[10] (step 9e) adds Player.seen (everything owned now counts as
+  seen, first seen at 0), bookOpenedAt 0, bookRewards [], and kills {} / met [] on a saved run.
+- (Before 11:) SAVE_VERSION 10: MIGRATIONS[9] (fix list after 9d) gives the customers in the line the new
+  fields (buys, plan, step, doing, followId, talk, holdMs) and drops looks / looksMax / decorLeft.
+- (Before 10:) SAVE_VERSION 9: MIGRATIONS[8] (step 9d) adds ShopState.lastLines {} and keeps only the
   customers carrying an item (with the new Customer fields; the catch-up puts them on their spots).
 - (Before 9:) SAVE_VERSION 8: MIGRATIONS[7] (step 9c) adds Player.mineVisits 0 and turns a saved run into
   a crypt run (place 'crypt', no rocks, no lantern, basic pickaxe). Gear ids are unchanged.
@@ -1240,9 +1371,9 @@ Notes:
     the shortest are equal, and then the one ending nearest the tap wins. Approach points: below,
     left, right and above the footprint, AVATAR_RADIUS outside it, level with the seat; the
     point's own cell is usually blocked, so one counts as reached when the walk ends within
-    APPROACH_REACH_PX (28) of it. A side next to other furniture counts exactly when the gap has a
+    APPROACH_REACH_PX (16) of it. A side next to other furniture counts exactly when the gap has a
     free nav cell for the avatar (tested at every 4 px alignment; depending on alignment a gap
-    needs 40 to 56 px). If that seat cannot be reached the next free seat is tried; nothing
+    needs 16 to 24 px). If that seat cannot be reached the next free seat is tried; nothing
     reachable = the item shakes.
   - On arrival the client slides the avatar onto a sit seat in SEAT_SLIDE_MS (150 ms, straight
     line, may cross the footprint) and shows the pose. Sitting faces the item's facing. Lying
@@ -1251,7 +1382,11 @@ Notes:
     GameAPI puts the avatar on the seat at once (it only tracks time for walking).
   - Depth: a sitting avatar sorts right after its seat (right before it when the seat faces
     up); a lying avatar always right after its bed, with the blanket inside the avatar sprite.
-  - Tapping the floor stands up and walks (the path leaves via the nearest free cell). Moving or
+  - Tapping the floor stands up and walks (the path leaves via the nearest free cell). Out of
+    bed (fix after 9e): LocalGameAPI.standingAvatar puts a lying avatar next to the bed at once
+    (standUpSpot, leaning to the side it is going to) before the path is made; before, the walk
+    started in the middle of the bed and the avatar was hidden behind the bed's drawing for about
+    a second. The client jumps to the path's first point as usual (more than 8 px off). Moving or
     picking up the item: the avatar stands at standUpSpot (where it is if that cell is free, else
     the nearest free cell center); LocalGameAPI and main.ts both do this with the same rule.
   - The bone chair (crypt furniture) does not exist yet; give it one 'sit' seat when it is added.

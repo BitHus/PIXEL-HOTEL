@@ -136,6 +136,51 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       }));
     return { ...state, shop: { lastLines: {}, ...state.shop, customers } };
   },
+  // 9 -> 10 (natural customers, after 9d): a customer has a plan of small behaviours, may be a
+  // window-shopper or a friend, and can talk. Only customers carrying an item stay (as before: the
+  // catch-up when the game opens puts them on their queue spots); they get the new fields.
+  9: (state) => {
+    if (!isObject(state) || !isObject(state.shop)) return state;
+    const old = Array.isArray(state.shop.customers) ? state.shop.customers : [];
+    const customers = old
+      .filter((c): c is Record<string, unknown> => isObject(c) && c.carrying !== null && c.carrying !== undefined)
+      .map(({ looks: _looks, looksMax: _max, decorLeft: _left, ...c }) => ({
+        ...c,
+        buys: true,
+        plan: [],
+        step: 0,
+        doing: null,
+        followId: null,
+        talk: null,
+        holdMs: 0,
+        phase: 'queue',
+        path: [],
+        browsing: false,
+      }));
+    return { ...state, shop: { ...state.shop, customers } };
+  },
+  // 10 -> 11 (step 9e, ranks and the Book): Player.seen, bookOpenedAt and bookRewards. Everything
+  // the player owns now counts as seen (first seen at time 0, so nothing shows "New!"). A saved
+  // run gets its kill and met lists.
+  10: (state) => {
+    if (!isObject(state) || !isObject(state.player)) return state;
+    const player = state.player;
+    const seen: Record<string, { count: number; firstSeenAt: number }> = {};
+    const add = (id: unknown, n: unknown): void => {
+      if (typeof id !== 'string' || typeof n !== 'number' || n <= 0) return;
+      seen[id] = { count: (seen[id]?.count ?? 0) + n, firstSeenAt: 0 };
+    };
+    if (isObject(player.materials)) for (const [id, n] of Object.entries(player.materials)) add(id, n);
+    if (Array.isArray(state.items)) for (const item of state.items) if (isObject(item)) add(item.typeId, 1);
+    const slots = isObject(state.shop) && Array.isArray(state.shop.slots) ? state.shop.slots : [];
+    for (const slot of slots) {
+      const loot = isObject(slot) && isObject(slot.loot) ? slot.loot : null;
+      if (loot?.kind === 'material') add(loot.id, typeof loot.qty === 'number' ? loot.qty : 1);
+      else if (loot?.kind === 'furniture') add(loot.typeId, 1);
+    }
+    const run = isObject(state.run) ? { kills: {}, met: [], ...state.run } : state.run;
+    return { ...state, run, player: { seen, bookOpenedAt: 0, bookRewards: [], ...player } };
+  },
 };
 
 /** The storage key for a save version. */

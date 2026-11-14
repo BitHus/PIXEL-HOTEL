@@ -10,7 +10,9 @@
 // - Functions that need other items' types take a lookup (default: shared/data/furniture.json).
 
 import furnitureData from '../data/furniture.json';
-import { APPROACH_REACH_PX, CASHIER_BEHIND_PX, DOOR_ZONE_H, SNAP } from './config.ts';
+import { APPROACH_REACH_PX, CASHIER_BEHIND_PX,
+  STAFF_ZONE_DEPTH_PX,
+  STAFF_ZONE_SIDE_PX, DOOR_ZONE_H, SNAP } from './config.ts';
 import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
 import { doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, rectsTouch, wallBands, type Room } from './room.ts';
@@ -172,6 +174,23 @@ export function behindPoint(item: Pose, type: FurnitureType): Point {
   const c = footprintCenter(item, type);
   const off = rotateQuarter({ x: 0, y: -(type.d / 2 + CASHIER_BEHIND_PX) }, turns);
   return { x: c.x + off.x, y: c.y + off.y };
+}
+
+/**
+ * Staff only (owner, after 9d): the strip behind an item that is served from behind (the counter),
+ * STAFF_ZONE_DEPTH_PX deep and STAFF_ZONE_SIDE_PX wider than the item on each side. Customers never
+ * walk or stand there; the player does.
+ */
+export function staffZone(item: Pose, type: FurnitureType): Rect {
+  const f = footprintRect(item, type);
+  const b = behindPoint(item, type);
+  const c = footprintCenter(item, type);
+  const side = STAFF_ZONE_SIDE_PX;
+  const depth = STAFF_ZONE_DEPTH_PX;
+  if (Math.abs(b.y - c.y) >= Math.abs(b.x - c.x)) {
+    return { x: f.x - side, y: b.y < c.y ? f.y - depth : f.y + f.h, w: f.w + 2 * side, h: depth };
+  }
+  return { x: b.x < c.x ? f.x - depth : f.x + f.w, y: f.y - side, w: depth, h: f.h + 2 * side };
 }
 
 /** True if a free nav cell close to p (within APPROACH_REACH_PX) can be reached from the door. */

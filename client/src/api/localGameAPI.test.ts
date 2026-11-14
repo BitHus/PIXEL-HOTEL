@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FURNITURE_TYPES, SAVE_BACKUP_KEY, countInInventory, saveKey, toSaveText, createNewPlayer } from '@pixel-hotel/shared';
+import { FURNITURE_TYPES, footprintRect, getFurnitureType, SAVE_BACKUP_KEY, countInInventory, saveKey, toSaveText, createNewPlayer } from '@pixel-hotel/shared';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
 
@@ -56,9 +56,13 @@ describe('LocalGameAPI', () => {
     const r = await api.sit(bed.uid);
     expect(r?.seat.pose).toBe('lie');
     t += 60_000; // long arrived
-    // The next walk starts on the bed (the avatar was lying there).
+    // Out of bed (fix after 9e): the next walk starts NEXT to the bed, on the side it goes to,
+    // not in the middle of the bed (the avatar walked on under the bed's drawing and was gone).
     const from = (await api.walk({ x: 400, y: 200 }))![0]!;
-    expect(from).toEqual({ x: r!.seat.x, y: r!.seat.y });
+    const fp = footprintRect({ x: 160, y: 200, facing: 'down' }, getFurnitureType('bed'));
+    expect(from.x >= fp.x && from.x <= fp.x + fp.w && from.y >= fp.y && from.y <= fp.y + fp.h).toBe(false);
+    expect(from.x).toBeGreaterThan(fp.x + fp.w); // to the right, where it is going
+    expect(Math.hypot(from.x - r!.seat.x, from.y - r!.seat.y)).toBeLessThan(64);
     // Lie down again, then nudge the bed: the avatar stands next to it on a free spot.
     await api.sit(bed.uid);
     t += 60_000;
@@ -203,7 +207,7 @@ describe('LocalGameAPI shop (step 7)', () => {
     const events: string[] = [];
     api.onShop((e) => events.push(e.t));
     // Nobody pays while the player is not behind the counter.
-    for (; now < 120_000; now += 100) api.update();
+    for (; now < 240_000; now += 100) api.update();
     expect(events).toContain('reaction');
     expect(events).not.toContain('sale');
     expect((await api.getPlayer()).wallet.gold).toBe(100);
@@ -211,7 +215,7 @@ describe('LocalGameAPI shop (step 7)', () => {
     const counter = (await api.getItems()).find((i) => i.typeId === 'counter')!;
     const serve = await api.serve(counter.uid);
     expect(serve?.facing).toBe('down');
-    for (; now < 180_000; now += 100) api.update();
+    for (; now < 300_000; now += 100) api.update();
     expect(api.isServing()).toBe(true);
     expect(events).toContain('paying');
     expect(events).toContain('sale');
