@@ -102,4 +102,16 @@ describe('save files', () => {
     expect(r.state.player.gear).toEqual(['iron_sword', 'leather_armor']);
     expect(r.state.run).toMatchObject({ place: 'crypt', rocks: [], lanternEndsAt: null, player: { hp: 5, hitsPerSwing: 1, minesMithril: false } });
   });
+
+  it('migrates a version 8 save (step 9d): talk memory, and only customers carrying an item stay', () => {
+    const { lastLines: _l, ...shop } = state.shop;
+    const old = (id: number, carrying: unknown) => ({ id, look: state.look, x: 1, y: 2, facing: 'up', path: [{ x: 5, y: 5 }], phase: 'browse', want: 'materials', tolerance: 1, waitMs: 0, speed: 72, shelfUid: null, browsing: true, looks: 1, carrying, reaction: null, queueSpot: -1 });
+    const v8 = { ...state, shop: { ...shop, customers: [old(-1, null), old(-2, { loot: { kind: 'material', id: 'wood', qty: 1 }, price: 3 })] } };
+    const r = readSave(JSON.stringify({ version: 8, savedAt: 0, state: v8 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.shop.lastLines).toEqual({});
+    expect(r.state.shop.customers).toHaveLength(1);
+    expect(r.state.shop.customers[0]).toMatchObject({ id: -2, kind: 'browser', phase: 'queue', path: [], seat: null, browsing: false });
+  });
 });

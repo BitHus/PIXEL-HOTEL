@@ -8,8 +8,9 @@
 // - Customers: one every CUSTOMER_BASE_INTERVAL_MS * 100 / (100 + appeal) while the shop has
 //   stock (the timer pauses while it is empty). Each wants one category, has a tolerance, looks
 //   at the cheapest item in that category and buys it if price <= baseValue * tolerance.
-// - The walking customers live in customers.ts. Offline (and long gaps) only do the maths:
-//   simulateShop, capped at OFFLINE_MAX_MS.
+// - The walking customers live in customers.ts. Nothing is ever sold without the player at the
+//   till (step 9d). After a break (closed game, long gap) fillQueueMath does the maths only: the
+//   customers who would have come take their item and wait in the queue (at most QUEUE_MAX).
 
 import {
   APPEAL_MAX_PER_TYPE,
@@ -21,6 +22,7 @@ import {
   CUSTOMER_TOLERANCE_MIN,
   FIRST_CUSTOMER_DELAY_MS,
   OFFLINE_MAX_MS,
+  QUEUE_MAX,
   REACTION_BIG_SMILE_MAX,
   REACTION_SHRUG_MAX,
   SALE_HISTORY_LENGTH,
@@ -35,7 +37,8 @@ import { applyChange, type Change } from './ledger.ts';
 import { getMaterialType, isMaterialId } from './materials.ts';
 import type { Room } from './room.ts';
 import { styleAppeal } from './styles.ts';
-import type { FurnitureItem, LootRef, MaterialId, Reaction, Rng, SaleRecord, ShopCategory, ShopSlot } from './types.ts';
+import type { NpcMoment } from './npcTalk.ts';
+import type { FurnitureItem, LootRef, MaterialId, Reaction, Rng, ShopCategory, ShopSlot } from './types.ts';
 
 /** 'food' (step 9b): crops and cooked food. Seeds count as materials. */
 export const SHOP_CATEGORIES: readonly ShopCategory[] = ['materials', 'home_furniture', 'shop_furniture', 'crypt_furniture', 'food'];
@@ -53,6 +56,8 @@ export interface ShopState {
   nextCustomerId: number;
   /** The time (ms) the shop was simulated up to. */
   updatedAt: number;
+  /** The index of the last line said per talk moment (step 9d: never the same line twice in a row). */
+  lastLines: Partial<Record<NpcMoment, number>>;
 }
 
 export interface ShelfSlotRef {
@@ -73,6 +78,7 @@ export function emptyShop(roomId: number, at: number): ShopState {
     customers: [],
     nextCustomerId: CUSTOMER_FIRST_ID,
     updatedAt: at,
+    lastLines: {},
   };
 }
 
@@ -297,24 +303,30 @@ export function removeSlot(shop: ShopState, slot: ShopSlot): ShopState {
   return { ...shop, slots: shop.slots.filter((s) => !(s.shelfUid === slot.shelfUid && s.index === slot.index)) };
 }
 
-export interface SimResult {
-  shop: ShopState;
-  /** What sold, in order, with the time it sold (ms, the shop's clock). Gold is NOT added here. */
-  sales: SaleRecord[];
+/** A customer who came during a break and took an item (maths only, no walking). */
+export interface Arrival {
+  want: ShopCategory;
+  tolerance: number;
+  loot: LootRef;
+  price: number;
+  /** ms after the shop's clock (updatedAt) when they came. */
+  afterMs: number;
 }
 
 /**
- * Offline customers (maths only, no walking): customers arrive every customerIntervalMs(appeal)
- * while the shop has stock and decide at once. elapsedMs is capped at OFFLINE_MAX_MS. Returns the
- * shop (sold slots emptied, sale history and timer updated, clock moved by the real elapsedMs) and
- * the sales; the caller adds the gold through the ledger (catchUpShop in economy.ts).
+ * The catch-up after a break (step 9d, maths only, no gold): customers arrive every
+ * customerIntervalMs(appeal) while the shop has stock (the timer pauses while it is empty). Each
+ * decides at once: a buyer takes the item (the slot empties) and joins the queue; one who refuses
+ * just leaves. While QUEUE_MAX wait (counting `waiting`, those already in the line), nobody new
+ * comes in and the timer starts again. elapsedMs is capped at OFFLINE_MAX_MS for the maths; the
+ * clock moves by the real elapsedMs. The caller turns the arrivals into waiting customers.
  */
-export function simulateShop(shop: ShopState, appeal: number, elapsedMs: number, rng: Rng): SimResult {
+export function fillQueueMath(shop: ShopState, appeal: number, waiting: number, elapsedMs: number, rng: Rng): { shop: ShopState; arrivals: Arrival[] } {
   const elapsed = Math.max(0, elapsedMs);
   const span = Math.min(elapsed, OFFLINE_MAX_MS);
   const interval = customerIntervalMs(appeal);
   let s = shop;
-  const sales: SaleRecord[] = [];
+  const arrivals: Arrival[] = [];
   let t = 0;
   let wait = s.nextCustomerInMs;
   while (hasStock(s)) {
@@ -324,12 +336,15 @@ export function simulateShop(shop: ShopState, appeal: number, elapsedMs: number,
     }
     t += wait;
     wait = interval;
-    const v = visit(s, chooseCategory(s, rng), rollTolerance(rng));
+    // A full line: nobody comes in (the timer just starts again).
+    if (waiting + arrivals.length >= QUEUE_MAX) continue;
+    const want = chooseCategory(s, rng);
+    const tolerance = rollTolerance(rng);
+    const v = visit(s, want, tolerance);
     if (v.slot?.loot && v.decision?.buy) {
-      const typeId = lootTypeId(v.slot.loot);
-      sales.push({ typeId, price: v.slot.price, at: shop.updatedAt + t });
-      s = { ...removeSlot(s, v.slot), saleHistory: recordSale(s.saleHistory, typeId, v.slot.price) };
+      arrivals.push({ want, tolerance, loot: v.slot.loot, price: v.slot.price, afterMs: t });
+      s = removeSlot(s, v.slot);
     }
   }
-  return { shop: { ...s, nextCustomerInMs: wait, updatedAt: shop.updatedAt + elapsed }, sales };
+  return { shop: { ...s, nextCustomerInMs: wait, updatedAt: shop.updatedAt + elapsed }, arrivals };
 }

@@ -60,7 +60,9 @@ screenshots of it in the repo.
   blinks warm when the quest card is closed, so the player always knows where to find it. A tap
   shows or hides the quest card: "Quest n of 3", the task, "tap to hide". On a wide screen the
   card opens to the left of the button with a small tail; on a phone it sits under the info
-  panel, so it never covers the gold or the room switcher. It hides while a panel is open.
+  panel, so it never covers the gold or the room switcher. It hides while a panel is open. It
+  pops in and out like a panel (scale 0.95 <-> 1 with a fade, about 120 ms, smooth, from its own
+  corner: no jump in position or size; no animation with prefers-reduced-motion).
 - **Dungeon** (step 9): a Dungeon button (an arched door) right after Build, with a small badge
   for the key cost (10) or 'free'. In the dungeon the right column keeps only Chat and Settings;
   the info panel shows the floor, an hp bar and the level with its xp bar (the level and xp bar
@@ -75,6 +77,8 @@ screenshots of it in the repo.
   with a card per place (icon, name, and a short status: "3 crops ripe", "2 items for sale",
   "Mine opens at level 3", "Dungeon: 10 gold"). Tap a card to go there. The Dungeon button can
   stay in the column as a shortcut. Locked places show greyed out with the reason.
+  Step 9d: while customers wait at the till, the Map button carries a small "n waiting" badge
+  and the Shop card shows the same badge.
 - **Farm** (step 9b): in play mode the hotbar holds seeds too. A ripe plot shows a small
   bouncing marker so the player sees it from far away. The cooking pot opens the Cooking
   panel (same style as Crafting). In the dungeon the run HUD gets a food button next to the
@@ -103,6 +107,16 @@ inside; its last row is never cut off by the hotbar. A panel never half-covers t
 on a wide screen it sits at the right, fully clear of it; on a phone it starts under the info
 panel and spans from the left edge to the button column, so the gold stays readable while
 shopping. The bag is a bottom sheet just above the hotbar on a phone.
+
+**Logo splash (every page load).** The owner's logo (client/src/assets/logo.gif; never redrawn)
+in the middle of a dark warm screen (palette #3e2731) that covers the game while it loads. It
+pops in (0.8 -> 1 with a small bounce), stays, then the logo and the background fade out (times
+SPLASH_* in config); with prefers-reduced-motion it only fades. Pixelated, at a whole multiple of
+its size: x1 on a phone, x2 when it fits with 16 px to spare (ui/splash.ts splashBox; on a
+fractional devicePixelRatio it rounds to whole device px per art px). A tap or a key skips it at
+once (that tap or key does nothing else), and the element is removed. Character creation and the
+room's camera intro start only after it. The logo is also the favicon and sits small (128 px) at
+the top of the Settings panel.
 
 ## 3. Visual style of UI elements
 
@@ -149,7 +163,8 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   buttons or inputs. Inputs (chat, price) use the same inset look.
 - **Motion.** Panels open with a short pop (scale 0.95 to 1, about 120 ms). Nothing moves when
   the device asks for reduced motion.
-- **Speech bubbles:** light cream fill, 1 px dark outline, a small tail pointing at the
+- **Speech bubbles:** (step 9d: customers talk in the same bubbles; a reaction line shows the
+  face icon before the words) light cream fill, 1 px dark outline, a small tail pointing at the
   speaker, pixel font. Short, and they fade after a few seconds.
 - **Sizes:** every touch target is at least 44 px. Overall the UI is smaller, denser and
   crisper than before the polish step.

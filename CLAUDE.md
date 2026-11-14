@@ -221,8 +221,15 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   [0.8, 1.4]. The customer looks at the cheapest item in that category and buys it if price
   <= baseValue * tolerance. Otherwise the customer leaves. The reaction below is based on
   that cheapest item. There is no sales cap: sales are limited by the number of customers,
-  by slots, and by the stock the player brings back from the dungeon. Offline: when the
-  player returns, simulate customers for up to 8 hours and show a summary of what sold.
+  by slots, and by the stock the player brings back from the dungeon.
+- NO AUTO-SELLING (owner's decision, step 9d): nothing is ever sold without the player at the
+  till. Customers keep coming at the normal rate while the player is elsewhere or the game is
+  closed; each takes an item and joins the queue, but at most QUEUE_MAX (3) wait. While 3 wait,
+  no new customers come. Gold only comes in when the player stands behind the counter and
+  serves. When the game opens after a break, the queue is filled with what would have arrived
+  (at most 3, maths only, no walking; the catch-up looks back at most 8 hours) and those
+  customers stand at their queue spots. Waiting customers never leave on their own (v1). There
+  is no "while you were away" summary. The Map button and the Map's Shop card show "n waiting".
 - Customer flow (step 7, paced after 7b): customers walk calmer than the player (72 px/s, each
   one up to 10% faster or slower) and at most 3 are in the shop at once. A customer enters at
   the door and stops just inside it for a moment, walks to the table, shelf or case with stock,
@@ -236,9 +243,26 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   there, the waiting customers pay one by one (coins hop out of the till for CUSTOMER_PAY_MS, then
   a floating "+12 gold"; a coin sound later; gold goes up only now), wait 1 s, then leave through
   the door at the same calm pace.
-  While QUEUE_MAX (5) customers carry something to the till, no new customers come in. A
-  customer who refuses just leaves. Offline catch-up (and a long gap) skips the walking and the
-  serving and only does the maths.
+  While QUEUE_MAX (3, step 9d) customers carry something to the till, no new customers come in. A
+  customer who refuses just leaves. Offline catch-up (and a long gap) skips the walking and only
+  fills the queue (see NO AUTO-SELLING).
+- Natural customers (step 9d): each customer gets a random look from the free clothing and
+  LOOK_COLORS (seeded by its id) and a kind: 'hurried' (walks 20% faster, short browse),
+  'browser' (looks at 2 to 3 things, decorations too), 'chatty' (talks more). Some stop at a
+  decoration (a plant, a rug, a banner) first and face what they look at; standing customers
+  shift their weight; in the queue they face the counter, and a waiting customer may sit on a
+  free seat next to the queue (they stand up when it is their turn at the till).
+- Talk (step 9d): speech bubbles with short original lines from shared/data/npcLines.json by
+  moment: enter, browse, the reaction (cheap / fair / a bit high / too high, shown with the face),
+  queue ("Hello? Anyone here?" after a while at the till), pay, leave, and remarks about the shop
+  (high appeal: "What a lovely shop!", empty shelves: "Not much left..."). At least 6 lines per
+  moment, at most 40 characters, picked with the rng passed in, never the same line twice in a
+  row per moment. A chance per moment (config TALK_CHANCE; chatty more, hurried less). Bubbles
+  follow the reading-pace rule.
+- Take and give (step 9d, client only): taking, the customer reaches and the item hops from the
+  slot into their hands in an arc (ITEM_HOP_MS) and is carried as the held-item layer (section 8).
+  Paying, they put it on the counter (hop), the coins hop to the till, the item hops back, they
+  nod and leave carrying it. The player's avatar makes a small hand-over move.
 - Price feedback (this is how the player learns pricing): after each customer decision a
   bubble shows a reaction. Bought at price <= 0.7 * baseValue * tolerance: big smile (too
   cheap). Bought at a higher price: smile (fair). Refused at price <= 1.15 * baseValue *
@@ -472,8 +496,10 @@ docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying
 it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
 (mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). The atmosphere
-step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE) is done too. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
-turn on dungeon round 2 and tune it with the simulation, then step 6 (art), then step 10.
+step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE), the logo splash and step 9d (shop
+life, see STEP 9d) are done too. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+9e (ranks and the Book), 9f (lakeside), 9g (livelier hotel), 9h (dungeon
+types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 Layout:
 - package.json: npm workspaces (shared, client, server). Root scripts: dev (client Vite dev
@@ -587,12 +613,12 @@ Layout:
     (seededRng (mulberry32), rngInt, rngPick; for tests, tools and LocalGameAPI's debug loot),
     shop.ts (ShopState, emptyShop, slotItems, allSlots, slotAt, putOnShelf, takeFromShelf,
     setPrice, returnOrphanLoot, shopAppeal, customerIntervalMs, chooseCategory, rollTolerance,
-    cheapestIn, decide, visit, recordSale, simulateShop (maths only, capped at 8 h), lootTypeId,
+    cheapestIn, decide, visit, recordSale, fillQueueMath (step 9d; was simulateShop), lootTypeId,
     lootCategory, lootBaseValue, typeName, typeBaseValue, validPrice), customers.ts (Customer,
     ShopEvent, stepShop (the live customers: timer, walk, decide, queue, pay), queueSpots,
-    findCounter, tillPoint, repathCustomers, settleCustomers, customerLook), economy.ts
+    findCounter, tillPoint, repathCustomers, catchUpShop (step 9d), customerLook), economy.ts
     (catalogPrice, catalogTypes, buyCatalog, unlockStyle, applyStyle, isStyleUnlocked,
-    upgradeCost, upgradeRoom, catchUpShop), testState.ts (test helpers: ledgerGold,
+    upgradeCost, upgradeRoom), testState.ts (test helpers: ledgerGold,
     ledgerMaterials; not exported). furniture.ts gained canPickUp. newPlayer.ts gained
     addShopStartItems (save migration 2 -> 3).
   - client/src/render: styleArt.ts (floorTexture, wallTexture, stylePreviewUrl: code-drawn
@@ -601,7 +627,7 @@ Layout:
     customerViews.ts (CustomerViews: customers animated along their paths), lieArt.ts.
     ItemViews.setGoods draws the goods; wall items are in the objects layer.
   - client/src/ui: shelfPanel.ts, catalogPanel.ts, roomPanel.ts, shopFeedback.ts (sale floats,
-    the away summary, the hint box). pixelIcons gained book, house and the reaction faces
+    the hint box; the away summary is gone since step 9d). pixelIcons gained book, house and the reaction faces
     (big_smile, smile, shrug, frown). chatBubbles.addNode shows a reaction bubble.
   - tools/simulate-economy.ts (npm run simulate, uses tsx): cheap / fair / greedy prices, appeal
     0 and 60, 6 items, 1 h and 8 h; prints gold, items sold, time on the slot, blocked slot time.
@@ -819,6 +845,46 @@ Conventions:
   - Panels pop in (scale 0.95 -> 1, 120 ms), off with prefers-reduced-motion.
   - Checked with a headless browser at 360 x 740 and 1280 x 800 (all panels, confirm panels,
     character creation, shop, farm, mine, dungeon).
+- STEP 9d (shop life; owner's decisions in section 9: NO AUTO-SELLING, natural customers, talk,
+  take and give):
+  - Data: shared/data/npcLines.json (moments enter, browse, cheap, fair, high, too_high, queue,
+    pay, leave, lovely, empty; 6+ original lines each, <= NPC_LINE_MAX 40 characters; tested).
+  - shared/src/npcTalk.ts: NPC_LINES, NpcMoment, CustomerKind, reactionMoment, pickLine (never the
+    last index), talkChance (TALK_CHANCE x CHATTY_TALK / HURRIED_TALK), maybeSay. ShopState.lastLines.
+  - shop.ts: fillQueueMath(shop, appeal, waiting, elapsedMs, rng) -> { shop, arrivals } replaces
+    simulateShop (no gold; at most QUEUE_MAX wait). economy.ts lost catchUpShop; customers.ts has
+    catchUpShop(state, world, at, rng) (no settleCustomers any more: nobody pays without the player).
+  - customers.ts: Customer gained kind, looksMax, decorLeft, decorUid, seat, sitChecked, callInMs;
+    phase 'admire' (looking at a decoration: shopDecorations = shop items with appeal, no slots,
+    not the counter); customerLook(id) (seeded, free clothing + LOOK_COLORS; CUSTOMER_LOOKS is gone),
+    rollKind, waitingCount, customerAvatar state 'sit'. In the line customers face the counter;
+    from spot 1 on one may sit (CUSTOMER_SIT_CHANCE, a free 'sit' seat within CUSTOMER_SEAT_NEAR_PX,
+    not the player's: ShopWorld.seatsTaken; LocalGameAPI.sit counts customer seats as taken) and
+    stands up for spot 0. The payer waits forever and calls out (CUSTOMER_CALL_AFTER_MS, then every
+    CUSTOMER_CALL_EVERY_MS). After paying `carrying` is null (the client keeps the item in their
+    hands). Events: 'say' { customerId, text }; 'reaction' gained line? and took? { shelfUid, index,
+    loot }. Config section "Shop life (step 9d)".
+  - client: render/itemHops.ts (ItemHops in RoomView.markerLayer: arc hops, `stay` for the item on
+    the counter, hopPoint), render/avatarSprite.ts (held-item layer: setHeld, handOffset; gestures
+    reach / nod / hand: gesture(), gestureOffset), render/customerViews.ts (sitting on seats with the
+    seat's depth, held items, hold(), gesture(), handPoint(), heldOf()), render/slotGoods.ts drawGood.
+    main.ts: 'say' and reaction lines as bubbles (.npc-line), the take / pay / give hops, the
+    player's hand-over at a sale, the "n waiting" badge on the Map button (.map-badge) and the
+    Shop card (PlaceCard.badge). The "while you were away" summary is gone (GameAPI
+    takeAwaySummary, AwaySummary, showAwaySummary, .away-panel removed).
+  - tools/simulate-economy.ts: the new rule (the player serves the line every 5 / 30 / 120 / 480
+    min over 8 h; gold, sold, minutes lost to a full line).
+  - Tests: npcTalk.test.ts, customers.test.ts (catch-up, full line, looks, talk, decorations,
+    sitting), shop.test.ts (fillQueueMath), save.test.ts (migration 8), localGameAPI.test.ts.
+- LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
+  logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
+  client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts
+  runSplash() pops, holds and fades it (config SPLASH_POP_MS 400, SPLASH_POP_FROM, SPLASH_HOLD_MS
+  1500, SPLASH_FADE_MS 500, SPLASH_LOGO_PX, SPLASH_MARGIN_PX; reduced motion = fade only), a tap or
+  key skips it (the event is swallowed), then the element is removed. splashBox (tested) picks x1 /
+  x2 and whole device px. main.ts awaits it before character creation and before the first
+  openRoom (so the camera intro starts after it). The logo is also the favicon (index.html) and the
+  128 px picture at the top of Settings (settingsPanel.ts, .settings-logo).
 - ATMOSPHERE (owner's request after the UI polish; rendering, sound and data only, no rules):
   - Light sources are data: FurnitureType.light = { radius (world px), color (palette index),
     flicker (0 steady .. 1 candle) } (types.ts LightSource). furniture.json: lamp (candle stand),
@@ -990,9 +1056,9 @@ Conventions:
   - LocalGameAPI runs the shop: startClock() calls update() every SHOP_TICK_MS (100 ms); update
     steps stepShop to now and sends ShopEvents (customers, reaction, sale, slots) to onShop
     listeners. It saves when an event happened (not every step). A gap over
-    SHOP_CATCH_UP_GAP_MS (10 s; also always when the game opens) uses catchUpShop: customers in
-    the shop pay at once (or leave), then simulateShop for at most 8 hours; the sales become the
-    "while you were away" summary (takeAwaySummary, shown once).
+    SHOP_CATCH_UP_GAP_MS (10 s; also always when the game opens) uses catchUpShop (step 9d):
+    nothing is sold; customers carrying an item stay, the others are gone, the queue fills up with
+    fillQueueMath (at most QUEUE_MAX), and everyone in the line stands at their queue spot.
   - The shop is simulated wherever the player is; customers are only drawn in the shop room. A
     sale while in the hotel shows a toast.
   - Play mode: a tap on a table, shelf or case in the shop opens the shelf panel (no walking).
@@ -1023,7 +1089,10 @@ Conventions:
   The quest card (.quest-card) says "Quest n of N" (N = HINTS.length, 5 since step 9b: the farm quest "plant your first turnip" is number 5), the task and "tap to hide". It opens to the
   left of the quest button with a small tail pointing at it; when that would overlap the
   top-left info column (phones) it goes under that column instead, without the tail. It steps
-  aside while a side panel is open (setCovered). 1 is done by the first buy (a style as the first
+  aside while a side panel is open (setCovered). It pops in and out smoothly like the panels
+  (.opening / .closing: scale 0.95 <-> 1 with a fade, QUEST_CARD_POP_MS 120 ms, off with
+  prefers-reduced-motion; step 9d fixed the stutter: it grew from scale 0.6 in 4 big steps over
+  350 ms, about 30 px per frame, and faded out over 900 ms). 1 is done by the first buy (a style as the first
   buy also skips 2), 2 by placing an inventory item, 3 by putting an item on a slot.
 - STEP 7b (room shapes, character creation, intro):
   - shared/data/roomShapes.json, shared/data/clothing.json. room.ts now: ROOM_SHAPES,
@@ -1121,7 +1190,9 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 8: MIGRATIONS[7] (step 9c) adds Player.mineVisits 0 and turns a saved run into
+- SAVE_VERSION is 9: MIGRATIONS[8] (step 9d) adds ShopState.lastLines {} and keeps only the
+  customers carrying an item (with the new Customer fields; the catch-up puts them on their spots).
+- (Before 9:) SAVE_VERSION 8: MIGRATIONS[7] (step 9c) adds Player.mineVisits 0 and turns a saved run into
   a crypt run (place 'crypt', no rocks, no lantern, basic pickaxe). Gear ids are unchanged.
 - (Before 8:) MIGRATIONS[6] (step 9b) adds a level 1 farm room (the next free room id) with
   empty plots, Player.farmRoomId, and gives a saved run's player food [], buffs [] and

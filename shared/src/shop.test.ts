@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIRST_CUSTOMER_DELAY_MS, OFFLINE_MAX_MS } from './config.ts';
+import { FIRST_CUSTOMER_DELAY_MS, OFFLINE_MAX_MS, QUEUE_MAX } from './config.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { seededRng } from './rng.ts';
@@ -17,7 +17,7 @@ import {
   rollTolerance,
   setPrice,
   shopAppeal,
-  simulateShop,
+  fillQueueMath,
   takeFromShelf,
   visit,
   type ShopState,
@@ -161,31 +161,35 @@ describe('appeal and customers (section 9)', () => {
   });
 });
 
-describe('simulateShop (offline, maths only)', () => {
+describe('fillQueueMath (the catch-up after a break, maths only)', () => {
   const stocked = (): ShopState => ({
     ...emptyShop(2, 1000),
     slots: Array.from({ length: 6 }, (_, index) => ({ shelfUid: 1, index, loot: { kind: 'material', id: 'wood', qty: 1 } as const, price: 3 })),
   });
 
-  it('the first customer comes after 10 s, then one per interval, with no sales cap', () => {
-    const r = simulateShop(stocked(), 0, 24 * 3600 * 1000, seededRng(1));
-    expect(r.sales.length).toBeGreaterThan(0);
-    expect(r.sales[0]!.at).toBeGreaterThanOrEqual(1000 + FIRST_CUSTOMER_DELAY_MS);
-    for (const s of r.sales) expect((s.at - 1000 - FIRST_CUSTOMER_DELAY_MS) % 60_000).toBe(0);
+  it('the first customer comes after 10 s, then one per interval; at most QUEUE_MAX take an item', () => {
+    const r = fillQueueMath(stocked(), 0, 0, 24 * 3600 * 1000, seededRng(1));
+    expect(r.arrivals.length).toBe(QUEUE_MAX);
+    expect(r.arrivals[0]!.afterMs).toBeGreaterThanOrEqual(FIRST_CUSTOMER_DELAY_MS);
+    for (const a of r.arrivals) expect((a.afterMs - FIRST_CUSTOMER_DELAY_MS) % 60_000).toBe(0);
+    expect(r.shop.slots).toHaveLength(6 - QUEUE_MAX);
+    expect(r.shop.updatedAt).toBe(1000 + 24 * 3600 * 1000);
   });
 
-  it('never simulates more than 8 hours', () => {
-    // Nothing sells (too expensive): the timer runs the whole span.
+  it('counts the customers already waiting', () => {
+    expect(fillQueueMath(stocked(), 0, QUEUE_MAX - 1, 24 * 3600 * 1000, seededRng(1)).arrivals).toHaveLength(1);
+    expect(fillQueueMath(stocked(), 0, QUEUE_MAX, 24 * 3600 * 1000, seededRng(1)).arrivals).toHaveLength(0);
+  });
+
+  it('nothing too expensive is taken; nobody comes for a gap shorter than the timer', () => {
     const shop = { ...stocked(), slots: stocked().slots.map((s) => ({ ...s, price: 999 })) };
-    const r = simulateShop(shop, 0, 30 * 3600 * 1000, seededRng(2));
-    expect(r.sales).toEqual([]);
-    const cheap = simulateShop({ ...stocked(), slots: Array.from({ length: 1000 }, (_, index) => ({ shelfUid: 1, index, loot: { kind: 'material' as const, id: 'wood' as const, qty: 1 }, price: 1 })) }, 100, 30 * 3600 * 1000, seededRng(4));
-    for (const s of cheap.sales) expect(s.at - 1000).toBeLessThanOrEqual(OFFLINE_MAX_MS);
-    expect(cheap.sales.length).toBeLessThanOrEqual(OFFLINE_MAX_MS / customerIntervalMs(100) + 1);
+    expect(fillQueueMath(shop, 0, 0, 30 * 3600 * 1000, seededRng(2)).arrivals).toEqual([]);
+    expect(fillQueueMath(stocked(), 0, 0, FIRST_CUSTOMER_DELAY_MS - 1, seededRng(2)).arrivals).toEqual([]);
+    expect(OFFLINE_MAX_MS).toBe(8 * 3600_000);
   });
 
   it('the timer pauses while the shop is empty', () => {
-    const r = simulateShop(emptyShop(2, 0), 0, 3600_000, seededRng(1));
+    const r = fillQueueMath(emptyShop(2, 0), 0, 0, 3600_000, seededRng(1));
     expect(r.shop.nextCustomerInMs).toBe(FIRST_CUSTOMER_DELAY_MS);
   });
 });

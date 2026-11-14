@@ -4,6 +4,10 @@ import {
   WALK_BOB_MS,
   INTRO_DEVICE_PX_PER_ART_PX,
   REACTION_BUBBLE_MS,
+  CHAT_BUBBLE_FADE_MS,
+  readingMs,
+  waitingCount,
+  type Customer,
   INTRO_COINS,
   doorY,
   INTRO_COIN_EVERY_MS,
@@ -95,6 +99,8 @@ import { confirmBuy } from './ui/confirmBuy.ts';
 import { furnitureIconUrl, materialIconUrl } from './ui/itemIcon.ts';
 import { stylePreviewUrl } from './render/styleArt.ts';
 import { CustomerViews } from './render/customerViews.ts';
+import { ItemHops } from './render/itemHops.ts';
+import { goodSpot } from './render/slotGoods.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
 import { WHERE, createCatalogPanel, growText } from './ui/catalogPanel.ts';
 import { SEED_PACK } from '@pixel-hotel/shared';
@@ -102,7 +108,7 @@ import { watchLayout } from './ui/layoutVars.ts';
 import { createRoomPanel } from './ui/roomPanel.ts';
 import { flyCoin } from './ui/coinFly.ts';
 import { runNewGameSetup } from './ui/newGame.ts';
-import { createHintBox, createSaleFloats, createTillCoins, showAwaySummary } from './ui/shopFeedback.ts';
+import { createHintBox, createSaleFloats, createTillCoins } from './ui/shopFeedback.ts';
 import { pixelIcon } from './ui/pixelIcons.ts';
 import { createRunBar } from './ui/runBar.ts';
 import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from './ui/workshopPanel.ts';
@@ -116,11 +122,14 @@ import { RoomAtmosphere } from './render/roomAtmosphere.ts';
 import { Backdrop } from './render/backdrop.ts';
 import { Sound } from './audio/sound.ts';
 import { loadPrefs, savePrefs } from './api/prefs.ts';
+import { runSplash } from './ui/splash.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
 
 async function start(): Promise<void> {
+  // The logo splash runs while the game loads; character creation and the camera intro wait for it.
+  const splashGone = runSplash();
   const host = document.getElementById('game');
   const ui = document.getElementById('ui');
   if (!host || !ui) throw new Error('#game or #ui element missing');
@@ -140,6 +149,7 @@ async function start(): Promise<void> {
   // the intro in the shop. A save that already has a player skips all of this.
   let introPending = false;
   if (await api.needsNewPlayer()) {
+    await splashGone;
     for (;;) {
       const choice = await runNewGameSetup(ui);
       if (await api.createPlayer(choice)) break;
@@ -243,6 +253,8 @@ async function start(): Promise<void> {
   /** The shop (goods on the slots, prices, sale history, customers). */
   let shop: ShopView = await api.getShop();
   const customers = new CustomerViews(view);
+  // Step 9d: items hopping from a slot to a customer's hands, onto the counter and back.
+  const hops = new ItemHops(view.markerLayer);
   const roomItem = (uid: number | null): FurnitureItem | undefined =>
     uid === null ? undefined : items.find((i) => i.uid === uid && i.roomId === room.id);
 
@@ -636,13 +648,20 @@ async function start(): Promise<void> {
     const f = await api.getFarm();
     const s = await api.getShop();
     const forSale = s.slots.filter((x) => x.loot).length;
+    const waiting = waitingCount(s.customers);
     const c = farmCounts(f, f.at);
     const farmStatus =
       c.ripe > 0 ? `${c.ripe} ${c.ripe === 1 ? 'crop' : 'crops'} ripe` : c.growing > 0 ? `${c.growing} growing` : `${c.empty} empty plots`;
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     const cards: PlaceCard[] = [
       { place: 'hotel', status: `Your room, level ${roomLevel(p.hotelRoomId)}`, locked: null, here: room.id === p.hotelRoomId },
-      { place: 'shop', status: forSale > 0 ? `${forSale} ${forSale === 1 ? 'item' : 'items'} for sale` : 'Nothing for sale', locked: null, here: room.id === p.shopRoomId },
+      {
+        place: 'shop',
+        status: forSale > 0 ? `${forSale} ${forSale === 1 ? 'item' : 'items'} for sale` : 'Nothing for sale',
+        badge: waiting > 0 ? `${waiting} waiting` : undefined,
+        locked: null,
+        here: room.id === p.shopRoomId,
+      },
       { place: 'farm', status: farmStatus, locked: null, here: room.id === p.farmRoomId },
       { place: 'mine', status: `Free. Lantern: ${MINE_LANTERN_MS / 60_000} minutes`, locked: p.level < MINE_UNLOCK_LEVEL ? `Opens at level ${MINE_UNLOCK_LEVEL}` : null, here: false },
       { place: 'dungeon', status: free ? 'A free run' : `Key: ${DUNGEON_KEY_COST} gold`, locked: null, here: false },
@@ -668,9 +687,38 @@ async function start(): Promise<void> {
   async function refreshHint(): Promise<void> {
     hint.set(newIntro.running ? null : await api.currentHint());
   }
-  const showAway = async (): Promise<void> => {
-    const away = await api.takeAwaySummary();
-    if (away) showAwaySummary(ui, away);
+  /** Step 9d: "n waiting" on the Map button while customers wait at the till. */
+  const mapBadge = document.createElement('span');
+  mapBadge.className = 'btn-badge map-badge';
+  mapButton.appendChild(mapBadge);
+  const showWaiting = (list: readonly Customer[]): void => {
+    const n = waitingCount(list);
+    mapBadge.hidden = n === 0;
+    mapBadge.textContent = `${n} waiting`;
+    mapButton.title = n > 0 ? `Map: travel (${n} waiting in your shop)` : 'Map: travel';
+  };
+  /** A world point on a placed item: slot `index` of its goods (bottom middle). */
+  const slotPoint = (shelfUid: number, index: number): Point | null => {
+    const item = items.find((i) => i.uid === shelfUid && i.roomId === room.id);
+    if (!item) return null;
+    const t = getFurnitureType(item.typeId);
+    const at = goodSpot(t, item.facing, index, t.slots);
+    return { x: item.x + at.x, y: item.y + at.y };
+  };
+  /** Where a customer puts the item down on the counter while paying (left of the till). */
+  const counterTop = (): Point | null => {
+    const c = items.find((i) => i.roomId === room.id && getFurnitureType(i.typeId).servedFromBehind);
+    if (!c) return null;
+    const at = goodSpot(getFurnitureType(c.typeId), c.facing, 0, 2);
+    return { x: c.x + at.x, y: c.y + at.y };
+  };
+  /** A customer's line (and a reaction face with it) in a bubble at reading pace. */
+  const sayBubble = (customerId: number, text: string, icon?: Node): void => {
+    const node = document.createElement('span');
+    node.className = 'npc-line';
+    if (icon) node.appendChild(icon);
+    node.appendChild(document.createTextNode(text));
+    bubbles.addNode(customerId, node, readingMs(text, REACTION_BUBBLE_MS) + CHAT_BUBBLE_FADE_MS);
   };
   /** The latest customers (to know when someone waits at the till). */
   let shopCustomers = shop.customers;
@@ -682,29 +730,70 @@ async function start(): Promise<void> {
         if (here) bubbles.addNode(e.customerId, document.createTextNode('...'), e.ms);
         break;
       }
-      case 'paying':
-        if (here) tillCoins.add(e.till);
+      case 'paying': {
+        if (!here) break;
+        tillCoins.add(e.till);
+        // The customer puts the item on the counter (it hops there and waits).
+        const loot = customers.heldOf(e.customerId);
+        const from = customers.handPoint(e.customerId);
+        const to = counterTop();
+        if (loot && from && to) {
+          customers.gesture(e.customerId, 'reach');
+          customers.hold(e.customerId, null);
+          hops.add(e.customerId, loot, from, () => to, { stay: true });
+        }
+        break;
+      }
+      case 'say':
+        if (here) sayBubble(e.customerId, e.text);
         break;
       case 'customers':
         // The door bell: someone new came in.
         if (here && e.customers.some((c) => !shopCustomers.some((o) => o.id === c.id))) sound.play('bell');
         shopCustomers = e.customers;
-        customers.sync(here ? e.customers : [], room.id);
+        showWaiting(e.customers);
+        customers.sync(here ? e.customers : [], room.id, items);
         break;
-      case 'reaction':
-        if (here) bubbles.addNode(e.customerId, pixelIcon(e.reaction), REACTION_BUBBLE_MS);
+      case 'reaction': {
+        if (!here) break;
+        if (e.line) sayBubble(e.customerId, e.line, pixelIcon(e.reaction));
+        else bubbles.addNode(e.customerId, pixelIcon(e.reaction), REACTION_BUBBLE_MS);
+        // Taking: a reach, and the item hops from the slot into their hands.
+        const from = e.took ? slotPoint(e.took.shelfUid, e.took.index) : null;
+        if (e.took && from) {
+          const loot = e.took.loot;
+          const id = e.customerId;
+          customers.gesture(id, 'reach');
+          customers.hold(id, null);
+          hops.add(id, loot, from, () => customers.handPoint(id), { done: () => customers.hold(id, loot) });
+        }
         break;
-      case 'sale':
+      }
+      case 'sale': {
         sound.play('coin');
-        if (here) floats.add(e.till, e.price);
-        else toast(`Sold for ${e.price} gold in your shop.`);
+        if (here) {
+          floats.add(e.till, e.price);
+          // The shopkeeper hands it back: the item hops from the counter to the customer, who nods.
+          sprite.gesture('hand');
+          const id = e.customerId;
+          const from = counterTop();
+          const loot = hops.lootOf(id) ?? customers.heldOf(id);
+          if (from && loot) {
+            hops.add(id, loot, from, () => customers.handPoint(id), {
+              done: () => {
+                customers.hold(id, loot, true);
+                customers.gesture(id, 'nod');
+              },
+            });
+          }
+        } else toast(`Sold for ${e.price} gold in your shop.`);
         void refreshInventory();
         void refreshShop();
         break;
+      }
       case 'slots':
         void refreshShop();
         void refreshInventory();
-        void showAway();
         break;
     }
   });
@@ -1053,9 +1142,11 @@ async function start(): Promise<void> {
     floats.clear();
     shop = await api.getShop();
     customers.clear();
+    hops.clear();
     shopCustomers = shop.customers;
+    showWaiting(shop.customers);
     serving = null;
-    customers.sync(room.id === shop.roomId ? shop.customers : [], room.id);
+    customers.sync(room.id === shop.roomId ? shop.customers : [], room.id, items);
     await refreshShop();
     await refreshInventory();
     await refreshHint();
@@ -1175,6 +1266,7 @@ async function start(): Promise<void> {
     avatar = seating.update(avatar, ticker.deltaMS);
     itemViews.update(ticker.deltaMS);
     customers.update(ticker.deltaMS, clockMs);
+    hops.update(ticker.deltaMS);
     farm.update(clockMs);
     if (path.length === 0 && avatar.state !== 'walk') farm.arrived();
     placer.tick(ticker.deltaMS);
@@ -1209,6 +1301,7 @@ async function start(): Promise<void> {
     tillCoins.update(ticker.deltaMS, (p) => worldToScreen(p, shown), waiting && counterItem ? tillPoint(counterItem) : null);
   });
 
+  await splashGone;
   await openRoom(room.id, !introPending);
   if (introPending) await playNewGameIntro();
   // A run in the save (step 9): back into the dungeon, paused until Resume.
@@ -1218,7 +1311,6 @@ async function start(): Promise<void> {
     void dungeon.enter(saved.run, saved.paused);
   }
   if (notice) toast(notice);
-  await showAway();
 }
 
 void start();

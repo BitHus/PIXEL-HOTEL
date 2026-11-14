@@ -105,7 +105,7 @@ export const REACTION_BIG_SMILE_MAX = 0.7;
 export const REACTION_SHRUG_MAX = 1.15;
 /** The shop panel shows this many last sale prices per item type. */
 export const SALE_HISTORY_LENGTH = 5;
-/** Offline customer simulation is capped at this many hours. */
+/** The catch-up after a break (step 9d: it only fills the queue) looks back at most this many hours. */
 export const OFFLINE_MAX_HOURS = 8;
 export const OFFLINE_MAX_MS = OFFLINE_MAX_HOURS * 60 * 60 * 1000;
 
@@ -120,8 +120,9 @@ export const CUSTOMER_DECIDE_MS = 1200;
 export const CUSTOMER_PAY_MS = 900;
 /** The shopkeeper's spot is this far behind the counter's back edge, px. */
 export const CASHIER_BEHIND_PX = 20;
-/** No new customers come while this many are carrying something to the till. */
-export const QUEUE_MAX = 5;
+/** At most this many customers wait with an item for the till (step 9d: was 5). While this many
+ *  wait, no new customers come. They never leave on their own. */
+export const QUEUE_MAX = 3;
 /** At most this many customers are in the shop at the same time (fix after 7b). */
 export const CUSTOMER_MAX_IN_SHOP = 3;
 /** Customers walk calmer than the player: this many px per second, each one up to
@@ -143,18 +144,59 @@ export const QUEUE_SPACING_PX = 24;
 export const CUSTOMER_OUTSIDE_PX = 24;
 /** Customer ids count down from -1 (players have positive ids). */
 export const CUSTOMER_FIRST_ID = -1;
-/** Customer looks are picked from these palette indices. */
-export const CUSTOMER_LOOKS = {
-  skin: [30, 31, 3, 4, 5],
-  hair: [5, 6, 0, 1, 10, 2, 24],
-  shirt: [13, 7, 16, 27, 0, 14, 9, 22],
-  legs: [23, 5, 24, 15, 6],
-  shoes: [6, 5, 25],
-} as const;
 /** The floating "+12 gold" above the till rises and fades over this many ms. */
 export const SALE_FLOAT_MS = 1400;
 /** A customer's reaction bubble shows this long, ms. */
 export const REACTION_BUBBLE_MS = 1800;
+
+// ---------- Shop life (step 9d) ----------
+/** Customer kinds and how often each comes (weights). */
+export const CUSTOMER_KIND_WEIGHTS = { hurried: 3, browser: 4, chatty: 3 } as const;
+/** A hurried customer walks this much faster and looks at an item only this long, ms. */
+export const HURRIED_SPEED_BONUS = 0.2;
+export const HURRIED_BROWSE_MIN_MS = 900;
+export const HURRIED_BROWSE_MAX_MS = 1600;
+/** A browser looks at this many things (decorations and tables, shelves or cases) in all. */
+export const BROWSER_LOOKS_MIN = 2;
+export const BROWSER_LOOKS_MAX = 3;
+/** Chance that a customer (not hurried, not a browser) first stops at a decoration. */
+export const CUSTOMER_DECOR_CHANCE = 0.35;
+/** How long a customer looks at a decoration, ms. */
+export const DECOR_LOOK_MIN_MS = 1500;
+export const DECOR_LOOK_MAX_MS = 3000;
+/** Chance that a waiting customer (not the one paying) sits on a free seat near their queue spot. */
+export const CUSTOMER_SIT_CHANCE = 0.6;
+/** A seat counts as near the queue spot within this many px. */
+export const CUSTOMER_SEAT_NEAR_PX = 72;
+/** The customer at the till calls out the first time after this long without service, then again
+ *  every CUSTOMER_CALL_EVERY_MS (with the 'queue' talk chance). */
+export const CUSTOMER_CALL_AFTER_MS = 12_000;
+export const CUSTOMER_CALL_EVERY_MS = 30_000;
+/** Chance per moment that a customer says a line (shared/data/npcLines.json). Chatty customers
+ *  multiply it by CHATTY_TALK, hurried ones by HURRIED_TALK (at most 1). */
+export const TALK_CHANCE = {
+  enter: 0.3,
+  browse: 0.2,
+  reaction: 0.45,
+  queue: 0.6,
+  pay: 0.35,
+  leave: 0.3,
+  remark: 0.6,
+} as const;
+export const CHATTY_TALK = 2;
+export const HURRIED_TALK = 0.5;
+/** On the way in, a shop with at least this much appeal gets "What a lovely shop!" remarks. */
+export const REMARK_APPEAL_MIN = 40;
+/** On the way in, a shop with at most this part of its slots filled gets "Not much left..." remarks. */
+export const REMARK_EMPTY_SHARE = 0.25;
+/** Talk lines are at most this many characters (tested). */
+export const NPC_LINE_MAX = 40;
+/** Client only: the item hops from the slot to the hands (and to the counter and back) this long, ms. */
+export const ITEM_HOP_MS = 300;
+/** Client only: the quest card pops in and out this long (like the panels), ms. */
+export const QUEST_CARD_POP_MS = 120;
+/** Client only: a reach, a nod and the shopkeeper's hand-over move last this long, ms. */
+export const GESTURE_MS = 280;
 
 // ---------- Dungeon (section 10) ----------
 /** 1 = small first round, 2 = the full dungeon. */
@@ -459,7 +501,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -544,3 +586,14 @@ export const IDLE_SHIFT_HOLD_MS = 700;
 export const SOUND_DEFAULT_VOLUME = 0.35;
 /** Where the device settings (sound, volume, lighting) are stored. */
 export const PREFS_KEY = 'pixel-hotel.prefs';
+
+// ---------- Logo splash on every page load (client only) ----------
+/** The logo pops in (scale SPLASH_POP_FROM -> 1 with a small bounce) over this many ms. */
+export const SPLASH_POP_MS = 400;
+export const SPLASH_POP_FROM = 0.8;
+/** It stays this long after the pop, then the logo and the background fade out over SPLASH_FADE_MS. */
+export const SPLASH_HOLD_MS = 1500;
+export const SPLASH_FADE_MS = 500;
+/** The logo art is SPLASH_LOGO_PX square; it is shown x2 when that fits with SPLASH_MARGIN_PX free on each side. */
+export const SPLASH_LOGO_PX = 256;
+export const SPLASH_MARGIN_PX = 16;

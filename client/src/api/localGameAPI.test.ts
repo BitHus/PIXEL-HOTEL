@@ -220,7 +220,7 @@ describe('LocalGameAPI shop (step 7)', () => {
     expect(sold.length).toBeGreaterThan(0);
   });
 
-  it('a closed game catches up with maths only and gives a summary once', async () => {
+  it('a closed game sells nothing: the customers who came wait at the till until the player serves', async () => {
     let now = 0;
     const storage = memoryStorage();
     const { api } = LocalGameAPI.open(storage, () => now, seq());
@@ -228,10 +228,17 @@ describe('LocalGameAPI shop (step 7)', () => {
     await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 1);
     now = 20 * 3600_000;
     const again = LocalGameAPI.open(storage, () => now, seq()).api;
-    const away = await again.takeAwaySummary();
-    expect(away?.sales).toHaveLength(1);
-    expect(away?.simulatedMs).toBe(8 * 3600_000);
-    expect(await again.takeAwaySummary()).toBeNull();
+    expect((await again.getPlayer()).wallet.gold).toBe(100);
+    const shop = await again.getShop();
+    expect(shop.slots).toEqual([]);
+    expect(shop.customers).toHaveLength(1);
+    expect(shop.customers[0]).toMatchObject({ phase: 'pay', queueSpot: 0, path: [] });
+    // Serve: the gold comes in now.
+    await again.enterRoom(2);
+    const counter = (await again.getItems()).find((i) => i.typeId === 'counter')!;
+    expect(await again.serve(counter.uid)).not.toBeNull();
+    const end = now + 30_000;
+    for (; now < end; now += 100) again.update();
     expect((await again.getPlayer()).wallet.gold).toBe(101);
   });
 

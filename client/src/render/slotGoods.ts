@@ -49,3 +49,15 @@ export function drawGoods(type: FurnitureType, facing: Facing, slots: readonly (
   });
   return g;
 }
+
+/** One good on its own (the item a customer carries or that hops), bottom middle at (0, 0). */
+export function drawGood(loot: LootRef): Graphics {
+  const g = new Graphics();
+  const rects = goodRects(loot);
+  const minX = Math.min(...rects.map((r) => r[0]));
+  const maxX = Math.max(...rects.map((r) => r[0] + r[2]));
+  const maxY = Math.max(...rects.map((r) => r[1] + r[3]));
+  const ox = -Math.round((minX + maxX) / 2);
+  for (const [x, y, w, h, c] of rects) g.rect(x + ox, y - maxY, w, h).fill(c);
+  return g;
+}

@@ -1,9 +1,9 @@
 // Shop feedback in the HTML overlay (step 7): the floating "+12 gold" with a coin above the till
-// when a customer pays (it rises and fades over SALE_FLOAT_MS), the "while you were away" summary,
-// and the first-run hint under the info panel.
+// when a customer pays (it rises and fades over SALE_FLOAT_MS), the coins at the till, and the
+// quest card. (The "while you were away" summary is gone since step 9d: nothing sells offline.)
 
-import { CUSTOMER_PAY_MS, HINTS, SALE_FLOAT_MS, TEXT_FADE_MS, typeName, type AwaySummary, type Point } from '@pixel-hotel/shared';
-import { el, textButton } from './dom.ts';
+import { CUSTOMER_PAY_MS, HINTS, QUEST_CARD_POP_MS, SALE_FLOAT_MS, type Point } from '@pixel-hotel/shared';
+import { el } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
 interface Float {
@@ -98,30 +98,6 @@ export function createTillCoins(parent: HTMLElement): TillCoins {
   };
 }
 
-/** The "while you were away" summary: a frame in the middle with what sold and the total. */
-export function showAwaySummary(parent: HTMLElement, a: AwaySummary): void {
-  const box = el('div', 'frame away-panel');
-  box.setAttribute('role', 'dialog');
-  const hours = Math.floor(a.simulatedMs / 3_600_000);
-  const minutes = Math.round((a.simulatedMs % 3_600_000) / 60_000);
-  const span = hours > 0 ? `${hours} h ${minutes} min` : `${Math.max(1, minutes)} min`;
-  const byType = new Map<string, number[]>();
-  for (const s of a.sales) byType.set(s.typeId, [...(byType.get(s.typeId) ?? []), s.price]);
-  const list = el('div', 'away-list');
-  for (const [typeId, prices] of byType) {
-    const sum = prices.reduce((x, y) => x + y, 0);
-    const r = el('div', 'away-row');
-    r.append(el('span', '', `${prices.length} x ${typeName(typeId)}`), el('span', '', `${prices.join(', ')} = ${sum} gold`));
-    list.appendChild(r);
-  }
-  const total = el('div', 'away-total');
-  total.append(pixelIcon('coin'), el('span', '', `Total: ${a.total} gold`));
-  const ok = textButton('Nice!', () => box.remove());
-  box.append(el('h2', 'panel-title plate', 'While you were away'), el('div', 'panel-info', `Your shop was open for ${span}. Sold:`), list, total, ok);
-  parent.appendChild(box);
-  ok.focus();
-}
-
 export interface HintBox {
   /** The current quest (null = none). A new one shows at once. */
   set(text: string | null): void;
@@ -138,13 +114,15 @@ export interface HintBox {
  * right-edge column, to its left, with a small tail pointing at the button. It shows "Quest 1 of
  * 3", the task, and "tap to hide". It stays until the player taps it; a hidden quest comes back
  * with the quest button (which blinks while a quest is going and its card is hidden) or when the
- * next quest comes. It fades in and out slowly (TEXT_FADE_MS). When the screen is too narrow
+ * next quest comes. It pops in and out like the panels (scale 0.95 <-> 1 with a fade, QUEST_CARD_POP_MS,
+ * smooth, from its own corner, so it never jumps; step 9d: it used to grow from 0.6 in 4 big steps
+ * and fade out slowly, which stuttered). When the screen is too narrow
  * for it next to `avoid` (the top-left info column), it goes under that column instead (no tail).
  */
 export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox {
   const box = el('div', 'frame quest-card');
   box.setAttribute('role', 'status');
-  box.style.setProperty('--fade-ms', `${TEXT_FADE_MS}ms`);
+  box.style.setProperty('--pop-ms', `${QUEST_CARD_POP_MS}ms`);
   const head = el('div', 'quest-head');
   const step = el('span', '', '');
   head.append(pixelIcon('quest'), step);
@@ -185,22 +163,30 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
     const n = HINTS.indexOf(quest as (typeof HINTS)[number]);
     step.textContent = n >= 0 ? `Quest ${n + 1} of ${HINTS.length}` : 'Quest';
     text.textContent = quest ?? '';
-    box.classList.remove('fading');
-    // Restart the pop-in animation.
-    box.hidden = true;
-    void box.offsetWidth;
+    const wasOpen = !box.hidden && !box.classList.contains('closing');
+    box.classList.remove('closing');
     box.hidden = false;
     showing = true;
+    // Place it first (same frame), then pop in from its corner; an open card just changes its text.
     draw();
+    if (!wasOpen) {
+      box.classList.remove('opening');
+      void box.offsetWidth;
+      box.classList.add('opening');
+    }
     changed();
   };
   const hide = (): void => {
     if (quest !== null) dismissed.add(quest);
     showing = false;
-    box.classList.add('fading');
+    box.classList.remove('opening');
+    box.classList.add('closing');
     window.setTimeout(() => {
-      if (box.classList.contains('fading')) box.hidden = true;
-    }, TEXT_FADE_MS);
+      if (box.classList.contains('closing')) {
+        box.classList.remove('closing');
+        box.hidden = true;
+      }
+    }, QUEST_CARD_POP_MS);
     changed();
   };
   box.addEventListener('click', () => {
@@ -215,7 +201,7 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
         return;
       }
       showing = false;
-      box.classList.remove('fading');
+      box.classList.remove('closing', 'opening');
       box.hidden = true;
       changed();
     },
