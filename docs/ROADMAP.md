@@ -23,10 +23,13 @@ The loops that are planned must all exist before anything else is added.
 1.0 Housekeeping: shorten CLAUDE.md (move the long per-step notes to docs/NOTES.md, keep the
     brief, the conventions and a short current state). Saves usage in every session.
 1.1 Step 9f - Lakeside: fishing and woodcutting. [prompt ready]
-1.2 Step 9g - Livelier hotel: hats, emotes, usable furniture, the cat, room stars, visitors.
+1.2 Step 9t - The tavern: the shop becomes a tavern (owner's decision, 14 Nov). Guests sit, order
+    drinks and dishes, the player serves and collects the coins; brewing; the loot stall stays as
+    a market corner. [prompt ready]
+1.3 Step 9g - Livelier hotel: hats, emotes, usable furniture, the cat, room stars, visitors.
     [prompt ready]
-1.3 Step 9h - Dungeon round 2 (3 floors, boss) and two more dungeon types. [prompt ready]
-1.4 Step 9i - The questline: chapters, progress, rewards, daily tasks. [prompt ready]
+1.4 Step 9h - Dungeon round 2 (3 floors, boss) and two more dungeon types. [prompt ready]
+1.5 Step 9i - The questline: chapters, progress, rewards, daily tasks. [prompt ready]
 
 ## PHASE 2 - Playtest and balance
 No new features. Make what exists fun.
@@ -57,35 +60,36 @@ The look and feel wanted: rooms packed with small props; warm, soft light close 
 many people doing different things; outdoor places that are full (trees, bushes, flowers, paths).
 Never copy another game; no screenshots of other games in the repo.
 
-## PHASE 5 - Online (step 10 and on)
-The long-term goal: a real online hotel.
-5.1 Server, accounts (username + password), saves on the server, RemoteGameAPI.
-5.2 Visiting rooms: see other players walk, sit, emote; public room chat with the filter, report
-    and mute (section 13).
-5.3 A lobby / town square as the shared place to meet; a room list.
-5.4 Room ratings, room contests, leaderboards, profiles with showcases, titles and badges.
-5.5 A small private test with friends; fix list.
-
-## PHASE 6 - Depth (pick in this order; each is its own step)
-6.1 Pets: companions that follow the player, found as rare drops or boss rewards, named and fed,
+## PHASE 5 - Depth (pick in this order; each is its own step)
+5.1 Pets: companions that follow the player, found as rare drops or boss rewards, named and fed,
     with funny idle moves and a page in the Book.
-6.2 Potions with timed effects (speed, luck, mining, fishing, xp, night vision) and accessories:
+5.2 Potions with timed effects (speed, luck, mining, fishing, xp, night vision) and accessories:
     equipment slots, lucky ring, mining helmet, boots, a backpack for more bag slots; gear that
     changes how the avatar looks.
-6.3 Farm 2: more crops, crop quality (normal, good, excellent, golden), scarecrow, greenhouse,
+5.3 Farm 2: more crops, crop quality (normal, good, excellent, golden), scarecrow, greenhouse,
     fruit trees, beehive; then animals (chickens, cows, sheep).
-6.4 Mine 2: floors that go deeper with rarer ore (silver, gold, crystal, obsidian, starstone),
+5.4 Mine 2: floors that go deeper with rarer ore (silver, gold, crystal, obsidian, starstone),
     hidden rooms and treasure rooms.
-6.5 Dungeon 2: mini-bosses, difficulty levels, more themes (spider cave, ice, lava, void), each
+5.5 Dungeon 2: mini-bosses, difficulty levels, more themes (spider cave, ice, lava, void), each
     with a boss and a special reward.
-6.6 Shop 2: more displays (potion display, rare item display), a bigger counter, a travelling
+5.6 Tavern and market 2: more displays (potion display, rare item display), a longer bar, a travelling
     merchant with a small changing stock.
-6.7 Hotel 2: more rooms (kitchen, bathroom, balcony, a cellar), more furniture sets (royal,
+5.7 Hotel 2: more rooms (kitchen, bathroom, balcony, a cellar), more furniture sets (royal,
     crystal, mushroom, pumpkin, cloud, ghost), an aquarium, instruments.
-6.8 World life: day and night, rain and snow, birds, a notice board, a calendar, small secrets.
+5.8 World life: day and night, rain and snow, birds, a notice board, a calendar, small secrets.
+
+## PHASE 6 - Online (step 10 and on; after depth, owner's decision)
+The long-term goal: a real online hotel.
+6.1 Server, accounts (username + password), saves on the server, RemoteGameAPI.
+6.2 Visiting rooms: see other players walk, sit, emote; public room chat with the filter, report
+    and mute (section 13).
+6.3 A lobby / town square as the shared place to meet; a room list.
+6.4 Room ratings, room contests, leaderboards, profiles with showcases, titles and badges.
+6.5 A small private test with friends; fix list.
 
 ## PHASE 7 - A bigger world
-7.1 Restaurant / tavern: guests order dishes cooked from the farm and pay; guest rooms.
+7.1 Tavern 2: guest rooms to rent, staff to hire (a barkeep, a waiter), a bigger menu, a
+    bakery oven, tavern events (a bard, a feast night).
 7.2 New areas on the Map, one per step, unlocked by level: Enchanted Forest, Crystal Cavern,
     Snow Mountain, Tropical Island, Haunted Graveyard, Desert Ruins.
 7.3 Random events (gold rush, meteor shower, ghost night, lucky day, fishing frenzy, a mystery
@@ -100,7 +104,7 @@ The long-term goal: a real online hotel.
 ## NEEDS THE OWNER'S DECISION (conflicts with CLAUDE.md; do not build until decided)
 - Mystery boxes: section 13 says no loot boxes. Only as a free reward with visible odds, or not.
 - Trading, a player marketplace, player shops, a friends list: section 9 and 13 say not in v1.
-  Only after phase 5, with new safety rules.
+  Only after phase 6 (online), with new safety rules.
 
 ## IDEA POOL (not planned yet)
 Item descriptions and comparison, favourites, search in the bag, a pet that sits on your head,
