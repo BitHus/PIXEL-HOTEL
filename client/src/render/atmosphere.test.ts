@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DUST_MAX, DUST_PER_LIGHT, FLICKER_BRIGHTNESS, FLICKER_RADIUS, FURNITURE_TYPES, IDLE_SHIFT_EVERY_MS, LIGHT_STEP_MS, PALETTE, getFurnitureType, type FurnitureItem } from '@pixel-hotel/shared';
-import { dustLightCount, dustSpeck, ellipseRows, flickerAt, hash01, idleShift, itemLights, lightPoint, lightRings, shadowSize } from './atmosphere.ts';
+import { dustLightCount, dustSpeck, ellipseRows, flickerAt, hash01, idleShift, itemLights, lightFalloff, lightPoint, shadowSize } from './atmosphere.ts';
 
 const item = (uid: number, typeId: string, over: Partial<FurnitureItem> = {}): FurnitureItem => ({ uid, typeId, ownerId: 1, roomId: 1, x: 100, y: 200, facing: 'down', onItemUid: null, ...over });
 
@@ -15,10 +15,20 @@ describe('hash01', () => {
   });
 });
 
-describe('lightRings', () => {
-  it('gives stepped radii, largest first, ending above 0', () => {
-    expect(lightRings(96, 4)).toEqual([96, 72, 48, 24]);
-    expect(lightRings(50, 1)).toEqual([50]);
+describe('lightFalloff', () => {
+  it('is 1 at the flame, 0 at the edge and beyond, and only gets weaker on the way', () => {
+    expect(lightFalloff(0)).toBe(1);
+    expect(lightFalloff(1)).toBe(0);
+    expect(lightFalloff(2)).toBe(0);
+    expect(lightFalloff(-1)).toBe(1);
+    let last = 1;
+    for (let d = 0.1; d <= 1; d += 0.1) {
+      const v = lightFalloff(d);
+      expect(v).toBeLessThan(last);
+      last = v;
+    }
+    // Most of the light is near the flame.
+    expect(lightFalloff(0.5)).toBeLessThan(0.5);
   });
 });
 

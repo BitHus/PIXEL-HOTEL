@@ -35,10 +35,13 @@ export function hash01(a: number, b: number): number {
   return (h >>> 0) / 4294967296;
 }
 
-/** The radii of a pool's stepped rings, largest first; every ring adds the same bit of light. */
-export function lightRings(radius: number, rings: number): number[] {
-  const n = Math.max(1, Math.floor(rings));
-  return Array.from({ length: n }, (_, i) => Math.round((radius * (n - i)) / n));
+/**
+ * How strong a light is at a distance from its middle (d = distance / radius): 1 at the flame,
+ * fading smoothly to 0 at the edge, most of it close to the flame (a soft halo, no hard rim).
+ */
+export function lightFalloff(d: number): number {
+  const k = 1 - Math.max(0, Math.min(1, d));
+  return k * k;
 }
 
 /**
