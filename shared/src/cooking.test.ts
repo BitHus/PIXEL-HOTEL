@@ -9,13 +9,16 @@ import type { MaterialId } from './types.ts';
 const withGoods = (m: Partial<Record<MaterialId, number>>) => applyChange(createNewPlayer(undefined, 0), { reason: 'debug', materials: m }, 0)!;
 
 describe('cooking (section 10b)', () => {
-  it('has the five recipes from food.json', () => {
+  it('has the eight recipes from food.json (the last three use fish, step 9f)', () => {
     expect(FOOD_TYPES.map((f) => [f.id, f.inputs, f.effect])).toEqual([
       ['roasted_turnip', { turnip: 1 }, { kind: 'heal', amount: 8 }],
       ['potato_stew', { potato: 2, turnip: 1 }, { kind: 'heal', amount: 15 }],
       ['carrot_soup', { carrot: 2, potato: 1 }, { kind: 'attack', amount: 1 }],
       ['pumpkin_pie', { pumpkin: 1, carrot: 1 }, { kind: 'max_hp', amount: 10 }],
       ['glowcap_broth', { glowcap: 1, potato: 1 }, { kind: 'attack_cooldown', amount: 300 }],
+      ['grilled_perch', { pebble_perch: 1, turnip: 1 }, { kind: 'heal', amount: 12 }],
+      ['carp_stew', { lantern_carp: 1, potato: 1 }, { kind: 'attack', amount: 1 }],
+      ['eel_pie', { moonscale_eel: 1, pumpkin: 1 }, { kind: 'max_hp', amount: 10 }],
     ]);
   });
 

@@ -1,6 +1,6 @@
 // The travel panel (step 9b, docs/UI-REFERENCE.md "Travel / Map"): the Map button at the top of the
-// right column (under the quest button) opens it. One card per place: Hotel, Shop, Farm, Mine and
-// the Dungeon, each with an icon, the name and a short status ("3 crops ripe", "2 items for sale",
+// right column (under the quest button) opens it. One card per place: Hotel, Shop, Farm, Lakeside
+// (step 9f), Mine and the Dungeon, each with an icon, the name and a short status ("3 crops ripe", "2 items for sale",
 // "Opens at level 3", "Key: 10 gold"). A tap on a card goes there. A locked place is greyed out
 // with the reason. It replaces the old Hotel / Shop switcher under the info panel.
 
@@ -8,7 +8,7 @@ import { el } from './dom.ts';
 import { iconBox, panelShell } from './panelShell.ts';
 import { pixelIcon, type IconName } from './pixelIcons.ts';
 
-export type Place = 'hotel' | 'shop' | 'farm' | 'mine' | 'dungeon';
+export type Place = 'hotel' | 'shop' | 'farm' | 'lakeside' | 'mine' | 'dungeon';
 
 export interface PlaceCard {
   place: Place;
@@ -30,6 +30,7 @@ const NAMES: Record<Place, [string, IconName]> = {
   hotel: ['Hotel room', 'house'],
   shop: ['Shop', 'coin'],
   farm: ['Farm', 'sprout'],
+  lakeside: ['Lakeside', 'fish'],
   mine: ['Mine', 'hammer'],
   dungeon: ['Dungeon', 'dungeon'],
 };

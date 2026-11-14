@@ -61,14 +61,15 @@ export function unlockStyle(state: GameState, kind: StyleKind, id: string, at: n
 export function applyStyle(state: GameState, roomId: number, kind: StyleKind, id: string): GameState | null {
   if (!isStyleUnlocked(state, kind, id)) return null;
   const room = state.rooms.find((r) => r.id === roomId);
-  if (!room) return null;
+  if (!room || room.kind === 'lakeside') return null;
   const changed: Room = kind === 'floor' ? { ...room, floorStyle: id } : { ...room, wallStyle: id };
   return { ...state, rooms: state.rooms.map((r) => (r.id === roomId ? changed : r)) };
 }
 
 /** The gold the next upgrade of this room costs, or null at the top level. */
 export function upgradeCost(room: Room): number | null {
-  if (room.level >= ROOM_MAX_LEVEL) return null;
+  // The lakeside is not upgradeable (step 9f).
+  if (room.kind === 'lakeside' || room.level >= ROOM_MAX_LEVEL) return null;
   const to = (room.level + 1) as 2 | 3;
   return room.kind === 'farm' ? FARM_UPGRADE_COST[to] : ROOM_UPGRADE_COST[to];
 }

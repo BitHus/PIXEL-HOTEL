@@ -15,7 +15,7 @@ function withMaterials(m: Partial<Record<MaterialId, number>>): GameState {
 
 describe('recipes (section 10)', () => {
   it('has the 7 recipes with the ingredients of section 10, and one trophy per enemy type (step 9e)', () => {
-    expect(RECIPES.map((r) => r.id)).toEqual(['bone_chair', 'skull_lamp', 'coffin_table', 'wall_torch', 'bone_throne', 'crypt_flagstones', 'bone_wall', 'slime_jar', 'bat_wing_fan', 'skull_trophy', 'mimic_chest', 'kings_banner']);
+    expect(RECIPES.map((r) => r.id)).toEqual(['bone_chair', 'skull_lamp', 'coffin_table', 'wall_torch', 'bone_throne', 'crypt_flagstones', 'bone_wall', 'slime_jar', 'bat_wing_fan', 'skull_trophy', 'mimic_chest', 'kings_banner', 'fish_tank', 'mounted_fish', 'fishing_net', 'shell_lamp', 'driftwood_bench', 'anchor', 'pearl_chandelier', 'sunken_throne', 'lake_pebbles', 'reed_wall']);
     expect(getRecipe('coffin_table').inputs).toEqual({ bone: 12, wood: 4, cloth: 2 });
     expect(getRecipe('bone_throne').inputs).toEqual({ throne_piece: 5 });
     expect(getRecipe('crypt_flagstones')).toMatchObject({ makesKind: 'floor', inputs: { bone: 8, crystal: 2 } });

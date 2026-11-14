@@ -63,6 +63,8 @@ export function nextFacing(type: FurnitureType, facing: Facing): Facing {
 
 /** True if the type may be placed in this kind of room (placeIn). */
 export function fitsRoomKind(type: FurnitureType, room: Room): boolean {
+  // The lakeside (step 9f) is not buildable in v1.
+  if (room.kind === 'lakeside') return false;
   // The farm (step 9b) takes home decorations: everything that may go in the hotel room.
   if (room.kind === 'farm') return type.placeIn === 'both' || type.placeIn === 'hotel';
   return type.placeIn === 'both' || type.placeIn === room.kind;

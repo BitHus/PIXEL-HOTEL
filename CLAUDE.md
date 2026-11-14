@@ -16,6 +16,8 @@ A browser game with three parts:
   cooks them into food that heals or buffs them in the dungeon.
 - Mine (section 10c, step 9c): a short click-to-mine trip for ore. Ore is smelted into bars
   at the forge, and bars upgrade weapons, armor and the pickaxe.
+- Lakeside (section 10d, step 9f): an outdoor place with a lake: chop trees for wood and fish
+  in the lake. Fish are food for the shop and the pot; bars also make an axe and fishing rods.
 The loop: dungeon (loot) -> shop (gold) -> furniture; farm (food) -> stronger dungeon runs;
 mine (ore) -> better gear -> deeper dungeon runs.
 Every player starts with two small, basic rooms: a hotel room and a shop. They sell loot in
@@ -429,6 +431,43 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - After step 9c the dungeon simulation is run again with the gear tiers and food, and the
   survival targets per tier are checked.
 
+10d. LAKESIDE (step 9f)
+- A fifth place on the Map, open from the start: an outdoor room (kind 'lakeside', 576x384, one
+  level) with grass and a hedge like the farm, a lake taking up about a third, a short wooden pier
+  (walkable) reaching into it, 8 trees and some bushes. Daylight (no shade, no light pools). Not
+  buildable in v1 (no furniture, no upgrade, no styles).
+- WOODCUTTING: tap a tree: the avatar walks next to it and swings; each tap is one swing, with a
+  400 ms axe cooldown (tapping is the game; taps during the cooldown are ignored). A tree falls
+  after 5 hits and gives 2 to 3 wood plus, by a rolled rank (RANK_WEIGHTS): resin (rare), amber
+  (ultra_rare), golden acorn (legendary). A stump is left; the tree grows back after 5 minutes of
+  real time (time passed in, also while the game is closed). Wood stays a dungeon drop too. Axe
+  tiers at the forge: basic axe (start), steel axe (5 iron bars + 2 copper bars; each hit counts
+  double).
+- FISHING: tap the water (from the shore or the pier): the avatar walks to the nearest shore spot
+  and casts. The bobber floats 2 to 8 s (rng), then dips with a "!" for 700 ms (shorter for rarer
+  fish): tap in time to hook. THE REEL (owner's change after the first playtest, like Stardew
+  Valley and Pixel Worlds): a bar with a fish swimming back and forth and a green catch box.
+  HOLD (the button, the bar or Space) pushes the box to the right, a tap kicks it, and it falls
+  back to the left by itself. While the fish is inside the box the catch bar fills; outside it
+  drains. Full = caught, empty = it escapes. Rank sets the strength: a common fish is slow and
+  forgiving, a legendary one swims fast, turns often and darts, and drains the bar faster. Missing
+  loses nothing. All timing is in one pure function, step(session, inputs, dtMs, rng), in 50 ms
+  ticks (shared/src/fishing.ts).
+- RODS (forge): basic rod (start), copper-reel rod (4 copper bars), mithril rod (4 mithril bars,
+  after the copper-reel rod). A better rod makes the catch box wider and lets it fall slower, and
+  shifts the rank odds toward rare, ultra rare and legendary catches.
+- CATCHES (shared/data/fish.json): 12 fish (5 common, 4 rare, 2 ultra_rare, 1 legendary) and 6
+  fished-up things: old boot and driftwood (common), shell and glass bottle (rare), pearl
+  (ultra_rare), sunken crown (legendary). Fish have a size in cm; the Book keeps the biggest.
+- Fish are shop goods (category 'food'); three more recipes at the cooking pot use them: grilled
+  perch (heals 12), carp stew (+1 attack), eel pie (+10 max hp).
+- LAKE FURNITURE (crafted, not in the catalog, theme 'lake', category 'lake_furniture'): fish
+  tank (stands on a surface, a fish swims in it), mounted fish and fishing net (wall), shell lamp
+  (a light), driftwood bench (2 seats), anchor, pearl chandelier (a light), the sunken throne (needs
+  the sunken crown), and a lake floor (lake_pebbles) and wall (reed_wall).
+- The Book has a Fish tab (fish and fished-up things, grey until caught), and the trees' drops
+  are under Materials.
+
 11. NETWORK (step 10 onward)
 - WebSocket, JSON messages { t: string, ... }.
 - Client to server: auth, enter_room, walk, chat, place_item, move_item, pickup_item,
@@ -519,9 +558,9 @@ it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic)
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
 (mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). The atmosphere
 step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE), the logo splash and step 9d (shop
-life, see STEP 9d) are done too, and so are the fix list after 9d (see FIX LIST AFTER 9d) and step 9e
-(ranks and the Book, see STEP 9e). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
-9f (lakeside), 9g (livelier hotel), 9h (dungeon
+life, see STEP 9d) are done too, and so are the fix list after 9d (see FIX LIST AFTER 9d), step 9e
+(ranks and the Book, see STEP 9e) and step 9f (the lakeside, see STEP 9f). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+9g (livelier hotel), 9h (dungeon
 types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 Layout:
@@ -985,6 +1024,47 @@ Conventions:
     background.
   - Tests: ranks.test.ts, book.test.ts (the seen list and the Book), dungeon/loot.test.ts (rank
     rolls), save.test.ts (migration 10).
+- STEP 9f (the lakeside: woodcutting and fishing; section 10d):
+  - Data: shared/data/fish.json (CATCH_TYPES: id, name, kind 'fish' | 'thing', rank, baseValue,
+    colour, minCm / maxCm, weight 3 for fish and 1 for things), forge.json gained steel_axe (slot
+    'axe', hitsPerSwing 2), copper_reel_rod and mithril_rod (slot 'rod': rankMultiplier, boxBonus,
+    gravityScale), materials.json gained resin, amber, golden_acorn, food.json grilled_perch,
+    carp_stew, eel_pie, furniture.json the 8 lake pieces (theme 'lake'; FurnitureType.swim for the
+    fish tank), recipes.json their recipes plus lake_pebbles and reed_wall, styles.json the two
+    styles, roomShapes.json the 'lakeside' shape, bookRewards.json the 'fish' rewards. The
+    catches and tree drops were valued and ranked by the AI (the owner may tune them).
+  - Types: RoomKind 'lakeside', FishId / ThingId / TreeDropId in MaterialId, MaterialGroup 'fish'
+    | 'thing' (fish are shop category 'food', things 'materials'), ShopCategory 'lake_furniture'
+    (customers want it too), GearSlot 'axe' | 'rod' (gear.ts ownedAxe, ownedRod), LedgerReason
+    'chop' and 'fish', Player.lakesideRoomId and Player.biggest, GameState.lakeside.
+  - shared/src: lakeLayout.ts (config LAKE_WATER, LAKE_PIER, LAKE_TREES, LAKE_BUSHES: waterRects,
+    pierRect, treeAnchor / treeRect / treeStand / treeAt, isWater, lakeBlockers (the water and
+    the trunks block walking; farmLayout fixedBlockers uses them), castSpots, nearestCastSpot,
+    nearestWaterPoint, bobberPoint (at least CAST_MIN_PX from the avatar)), woodcut.ts (TreeState
+    { hits, felledAt }, LakesideState { roomId, trees, axeReadyAt }, chop(state, index, now, rng),
+    fellLoot, isStump, regrowInMs, growTrees), fish.ts (the data only), fishing.ts (FishSession,
+    newFishSession(rng, gear), step (exported from the index as fishStep, the dungeon has its own
+    step), FishInput press / release / tap / cancel, fishInBox, rollCatch, bankCatch). furniture.ts
+    fitsRoomKind refuses everything on the lakeside; economy upgradeCost / applyStyle refuse it.
+  - The reel numbers are in config (FISH_BAR, FISH_THRUST, FISH_GRAVITY, FISH_TAP_KICK,
+    FISH_BOX_*, FISH_REEL per rank, FISH_BITE_MS per rank). Calibrated with a bot that reacts
+    every 0.1 / 0.25 / 0.4 s: a common fish is landed by everyone, a legendary one with the basic
+    rod by about 40% of sharp players and almost nobody slow; the mithril rod makes a legendary
+    about as easy as an ultra rare one with the basic rod (tested).
+  - GameAPI: getLakeside, chopTree (the avatar must stand within CHOP_REACH_PX), castAt (the cast
+    plan: path, spot, bobber), fishStart, fishStep(inputs, dtMs) (a catch is banked at once),
+    fishStop. A cast line is not saved (a reload loses it, nothing is lost with it).
+  - client: lakeside/lakesideScreen.ts (the screen: trees, bushes, water, pier, bobber, the taps,
+    the fishing loop; walks first and acts in arrived()), lakeside/lakesideArt.ts (placeholder art
+    in code), ui/fishBar.ts (the bar above the hotbar: text, the reel track with the fish and the
+    catch box, the catch bar, the Hold button; Space holds, Escape stops), FurnitureSprite swim
+    (the fish tank), styleArt lake_pebbles / reed_wall, pixel icons fish / axe / rod, the Map's
+    Lakeside card, the Workshop's Forge gets Axe and Fishing rod, the Book's Fish tab (with the
+    biggest catch), room panel text, main.ts (roomFloats = a FloatTexts for what a tree or a fish
+    gave, in its rank colour; OUTDOOR_KINDS in shared config: farm and lakeside get the grass
+    backdrop and no shade). While the line is out every tap on the room is a fishing tap.
+  - Tests: woodcut.test.ts, fishing.test.ts, lakeLayout.test.ts, save.test.ts (migration 11),
+    book.test.ts (Fish tab), client/src/api/lakesideAPI.test.ts (the loop through the API).
 - LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
   logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
   client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts
@@ -1322,7 +1402,9 @@ Conventions:
     startRun come back at finishRun (unused ones; also after death).
   - Every kill rolls RARE_DROP_CHANCE for enemy_rare; the boss also rolls 'boss'; a mimic gives a
     golden chest's loot.
-- SAVE_VERSION is 11: MIGRATIONS[10] (step 9e) adds Player.seen (everything owned now counts as
+- SAVE_VERSION is 12: MIGRATIONS[11] (step 9f) adds a level 1 lakeside room (the next free room id)
+  with 8 whole trees (GameState.lakeside), Player.lakesideRoomId and Player.biggest {}.
+- (Before 12:) SAVE_VERSION 11: MIGRATIONS[10] (step 9e) adds Player.seen (everything owned now counts as
   seen, first seen at 0), bookOpenedAt 0, bookRewards [], and kills {} / met [] on a saved run.
 - (Before 11:) SAVE_VERSION 10: MIGRATIONS[9] (fix list after 9d) gives the customers in the line the new
   fields (buys, plan, step, doing, followId, talk, holdMs) and drops looks / looksMax / decorLeft.

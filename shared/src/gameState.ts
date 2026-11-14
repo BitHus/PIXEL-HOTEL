@@ -8,6 +8,7 @@ import type { ShopState } from './shop.ts';
 import type { FurnitureItem, LedgerEntry, Player } from './types.ts';
 import type { DungeonRun } from './dungeon/run.ts';
 import type { FarmState } from './farm.ts';
+import type { LakesideState } from './woodcut.ts';
 
 export interface GameState {
   player: Player;
@@ -34,6 +35,8 @@ export interface GameState {
   run: DungeonRun | null;
   /** The farm's plots (step 9b, farm.ts); the farm room itself is in rooms. */
   farm: FarmState;
+  /** The lakeside's trees (step 9f, woodcut.ts); the lakeside room itself is in rooms. */
+  lakeside: LakesideState;
 }
 
 /** One chat message (not saved). */

@@ -26,6 +26,24 @@ import {
   cook,
   claimBookReward,
   openBook,
+  CHOP_REACH_PX,
+  bankCatch,
+  chop,
+  fishDone,
+  fishStep,
+  growTrees,
+  isStump,
+  nearestCastSpot,
+  bobberPoint,
+  newFishSession,
+  regrowInMs,
+  treeAnchor,
+  type CastPlan,
+  type ChopUpdate,
+  type FishInput,
+  type FishSession,
+  type FishUpdate,
+  type LakesideView,
   type BookTab,
   harvestPlot,
   plantPlot,
@@ -285,6 +303,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!room) throw new Error(`no room ${roomId}`);
     if (this.state.currentRoomId !== roomId) this.commit({ ...this.state, currentRoomId: roomId });
     this.debugRects = [];
+    this.fish = null;
     this.walkState = this.doorWalk();
     this.grid = this.buildGrid();
     return {
@@ -606,6 +625,71 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return true;
   }
 
+  async getLakeside(): Promise<LakesideView> {
+    return this.lakesideView();
+  }
+
+  async chopTree(index: number): Promise<ChopUpdate | null> {
+    if (this.room().kind !== 'lakeside') return null;
+    const tree = (() => {
+      try {
+        return treeAnchor(index);
+      } catch {
+        return null;
+      }
+    })();
+    if (!tree) return null;
+    // The avatar must stand next to the tree.
+    const me = this.avatarNow();
+    if (Math.hypot(me.x - tree.x, me.y - tree.y) > CHOP_REACH_PX) return null;
+    const r = chop(this.state, index, this.now(), this.rng);
+    if (!r) return null;
+    if (r.state !== this.state) this.commit(r.state);
+    return { kind: r.result.kind, hits: r.result.hits, ...(r.result.loot ? { loot: r.result.loot } : {}), lakeside: this.lakesideView() };
+  }
+
+  async castAt(target: Point): Promise<CastPlan | null> {
+    if (this.room().kind !== 'lakeside' || !finitePoint(target)) return null;
+    const avatar = this.standingAvatar(target);
+    const spot = nearestCastSpot(this.grid, avatar, target);
+    if (!spot) return null;
+    const path = findPath(this.grid, avatar, spot);
+    if (!path) return null;
+    this.fish = null;
+    this.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seated: null };
+    return { path, spot, bobber: bobberPoint(spot, target) };
+  }
+
+  async fishStart(): Promise<FishSession | null> {
+    if (this.room().kind !== 'lakeside') return null;
+    if (this.fish && !fishDone(this.fish)) return structuredClone(this.fish);
+    this.fish = newFishSession(this.rng, this.state.player.gear);
+    return structuredClone(this.fish);
+  }
+
+  async fishStep(inputs: readonly FishInput[], dtMs: number): Promise<FishUpdate | null> {
+    if (!this.fish) return null;
+    const next = fishStep(this.fish, inputs, dtMs, this.rng);
+    this.fish = next;
+    let caught: FishUpdate['caught'] = null;
+    if (next.phase === 'done') {
+      this.fish = null;
+      if (next.outcome === 'caught') {
+        const before = this.state.player.biggest[next.catchId] ?? 0;
+        const banked = bankCatch(this.state, next, this.now());
+        if (banked) {
+          this.commit(banked);
+          caught = { id: next.catchId, rank: next.rank, cm: next.cm, record: next.cm !== null && next.cm > before };
+        }
+      }
+    }
+    return { session: structuredClone(next), caught };
+  }
+
+  async fishStop(): Promise<void> {
+    this.fish = null;
+  }
+
   async bookOpened(): Promise<void> {
     this.commit(openBook(this.state, this.now()));
   }
@@ -623,6 +707,19 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!next) return false;
     this.commit(next);
     return true;
+  }
+
+  /** A fishing line that is cast (not saved: a reload loses it, and nothing is lost with it). */
+  private fish: FishSession | null = null;
+
+  private lakesideView(): LakesideView {
+    const now = this.now();
+    const lake = growTrees(this.state.lakeside, now);
+    return {
+      roomId: lake.roomId,
+      trees: lake.trees.map((t) => ({ hits: t.hits, regrowInMs: isStump(t, now) ? regrowInMs(t, now) : null })),
+      at: now,
+    };
   }
 
   private farmView(): FarmView {

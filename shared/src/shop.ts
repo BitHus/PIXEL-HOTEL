@@ -41,7 +41,7 @@ import type { NpcMoment } from './npcTalk.ts';
 import type { FurnitureItem, LootRef, MaterialId, Reaction, Rng, ShopCategory, ShopSlot } from './types.ts';
 
 /** 'food' (step 9b): crops and cooked food. Seeds count as materials. */
-export const SHOP_CATEGORIES: readonly ShopCategory[] = ['materials', 'home_furniture', 'shop_furniture', 'crypt_furniture', 'food'];
+export const SHOP_CATEGORIES: readonly ShopCategory[] = ['materials', 'home_furniture', 'shop_furniture', 'crypt_furniture', 'lake_furniture', 'food'];
 
 export interface ShopState {
   roomId: number;
@@ -110,7 +110,7 @@ export function lootTypeId(loot: LootRef): string {
 export function lootCategory(loot: LootRef): ShopCategory {
   if (loot.kind === 'furniture') return getFurnitureType(loot.typeId).category as ShopCategory;
   const group = getMaterialType(loot.id).group;
-  return group === 'crop' || group === 'food' ? 'food' : 'materials';
+  return group === 'crop' || group === 'food' || group === 'fish' ? 'food' : 'materials';
 }
 
 export function lootBaseValue(loot: LootRef): number {

@@ -4,7 +4,7 @@
 //   Furniture goes into the bag; a floor or wall is unlocked forever (then it shows "Owned").
 // - Blacksmith: health potions (carry at most 3). Buying asks first (confirmBuy, in main.ts).
 // - Forge (step 9c, docs/UI-REFERENCE.md "Mine"): smelting on the left (3 ore + a small fee -> 1
-//   bar), the gear upgrade tree on the right: Sword, Armor and Pickaxe, each tier in a row, the
+//   bar), the gear upgrade tree on the right: Sword, Armor, Pickaxe, Axe and Fishing rod (steps 9c and 9f), each tier in a row, the
 //   current tier highlighted, the next one with its bars and a Forge button. On a phone the two
 //   parts stack.
 
@@ -26,7 +26,9 @@ import {
   type GearType,
   type MaterialId,
   type Player,
+  type Rank,
   type Recipe,
+  RANK_NAMES,
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
@@ -48,13 +50,15 @@ export interface WorkshopPanel {
   refresh(player: Player): void;
 }
 
-const SLOT_ICON: Record<GearSlot, IconName> = { weapon: 'sword', armor: 'armor', pickaxe: 'hammer' };
-const SLOT_NAME: Record<GearSlot, string> = { weapon: 'Sword', armor: 'Armor', pickaxe: 'Pickaxe' };
+const SLOT_ICON: Record<GearSlot, IconName> = { weapon: 'sword', armor: 'armor', pickaxe: 'hammer', axe: 'axe', rod: 'rod' };
+const SLOT_NAME: Record<GearSlot, string> = { weapon: 'Sword', armor: 'Armor', pickaxe: 'Pickaxe', axe: 'Axe', rod: 'Fishing rod' };
 /** What you have before the first tier of each slot. */
 const START_PIECE: Record<GearSlot, [string, string]> = {
   weapon: ['Starting sword', 'Hits for 4 to 6.'],
   armor: ['No armor', 'Every hit counts in full.'],
   pickaxe: ['Basic pickaxe', 'Mines copper and iron.'],
+  axe: ['Basic axe', 'Each swing counts 1.'],
+  rod: ['Basic rod', 'The normal catch box and the base odds for rare fish.'],
 };
 
 export function recipeName(r: Recipe): string {
@@ -70,7 +74,14 @@ export function gearEffect(g: GearType): string {
 export function pieceEffect(g: GearPiece): string {
   if (g.slot === 'weapon') return `Hits for ${g.attackMin} to ${g.attackMax}.`;
   if (g.slot === 'armor') return `Every hit you take does ${g.damageReduction} less (at least ${g.minDamage}).`;
+  if (g.slot === 'axe') return `Each swing counts ${g.hitsPerSwing}: trees fall faster.`;
+  if (g.slot === 'rod') return `The catch box is ${g.boxBonus} wider and falls ${Math.round((1 - g.gravityScale) * 100)}% slower. Better odds for rare fish: ${rodOdds(g.rankMultiplier)}.`;
   return `Each swing counts ${g.hitsPerSwing}.${g.minesMithril ? ' Mines mithril.' : ''}`;
+}
+
+/** The rod's shifted odds in words: how much more often each rank above common comes (x1.5 ...). */
+function rodOdds(m: Partial<Record<Rank, number>>): string {
+  return (['rare', 'ultra_rare', 'legendary'] as const).map((r) => `${RANK_NAMES[r].toLowerCase()} x${m[r] ?? 1}`).join(', ');
 }
 
 const barsText = (bars: GearPiece['bars']): [BarId, number][] => Object.entries(bars) as [BarId, number][];
@@ -206,7 +217,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
     const p = player;
     if (!p) return;
     if (tab === 'crafting') {
-      list.append(el('div', 'panel-info', 'Make crypt furniture and styles from the materials you bring back.'));
+      list.append(el('div', 'panel-info', 'Make crypt and lake furniture and styles from the materials you bring back.'));
       for (const r of RECIPES) list.append(recipeRow(r, p));
     } else if (tab === 'blacksmith') {
       list.append(el('div', 'panel-info', 'Potions go with you into the dungeon and the mine. Swords and armor are made at the Forge.'));
@@ -218,7 +229,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
       for (const r of FORGE.smelting) smelting.append(smeltRow(r.bar, p));
       const upgrades = el('div', 'forge-upgrades');
       upgrades.append(el('h3', '', 'Gear'), el('div', 'panel-info', 'Each piece replaces the one before it. Gear is yours forever.'));
-      for (const slot of ['weapon', 'armor', 'pickaxe'] as const) upgrades.append(tree(slot, p));
+      for (const slot of ['weapon', 'armor', 'pickaxe', 'axe', 'rod'] as const) upgrades.append(tree(slot, p));
       grid.append(smelting, upgrades);
       list.append(grid);
     }

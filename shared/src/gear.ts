@@ -7,9 +7,9 @@
 
 import gearData from '../data/gear.json';
 import forgeData from '../data/forge.json';
-import type { BarId, GearId } from './types.ts';
+import type { BarId, GearId, Rank } from './types.ts';
 
-export type GearSlot = 'weapon' | 'armor' | 'pickaxe';
+export type GearSlot = 'weapon' | 'armor' | 'pickaxe' | 'axe' | 'rod';
 
 interface PieceBase {
   id: GearId;
@@ -38,7 +38,21 @@ export interface PickaxeType extends PieceBase {
   hitsPerSwing: number;
   minesMithril: boolean;
 }
-export type GearPiece = WeaponType | ArmorType | PickaxeType;
+export interface AxeType extends PieceBase {
+  slot: 'axe';
+  /** Each swing counts this many hits on a tree (the steel axe: 2). */
+  hitsPerSwing: number;
+}
+export interface RodType extends PieceBase {
+  slot: 'rod';
+  /** Multiplies the rank odds of a cast (RANK_WEIGHTS): a better rod shifts them toward the higher ranks. */
+  rankMultiplier: Partial<Record<Rank, number>>;
+  /** The reel (step 9f): the catch box is this much wider (bar units)... */
+  boxBonus: number;
+  /** ...and falls this much as fast (1 = the basic rod; less = a better drag). */
+  gravityScale: number;
+}
+export type GearPiece = WeaponType | ArmorType | PickaxeType | AxeType | RodType;
 
 export interface PotionType {
   id: 'health_potion';
@@ -90,4 +104,14 @@ export function ownedArmor(gear: readonly GearId[]): ArmorType | null {
 /** The pickaxe the player owns, or null (the basic pickaxe: 1 hit per swing, no mithril). */
 export function ownedPickaxe(gear: readonly GearId[]): PickaxeType | null {
   return ownedPiece(gear, 'pickaxe') as PickaxeType | null;
+}
+
+/** The axe the player owns, or null (the basic axe: 1 hit per swing). */
+export function ownedAxe(gear: readonly GearId[]): AxeType | null {
+  return ownedPiece(gear, 'axe') as AxeType | null;
+}
+
+/** The rod the player owns, or null (the basic rod: the base rank odds). */
+export function ownedRod(gear: readonly GearId[]): RodType | null {
+  return ownedPiece(gear, 'rod') as RodType | null;
 }

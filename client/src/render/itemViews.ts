@@ -129,7 +129,12 @@ export class ItemViews {
     this.puffs.push({ g, age: 0 });
   }
 
+  private clockMs = 0;
+
   update(dtMs: number): void {
+    // The fish in a fish tank swim (step 9f).
+    this.clockMs += dtMs;
+    for (const sprite of this.sprites.values()) if (sprite.type.swim) sprite.animate(this.clockMs);
     for (const [uid, t] of this.pops) {
       const c = this.sprites.get(uid)?.container;
       const next = t + dtMs;

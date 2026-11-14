@@ -58,28 +58,28 @@ describe('save files', () => {
   });
 
   it('migrates a version 4 save: square rooms, the old look as clothing, and no character creation', () => {
-    const { playerCreated: _p, farm: _f, ...rest } = state;
+    const { playerCreated: _p, farm: _f, lakeside: _l, ...rest } = state;
     const v4 = {
       ...rest,
-      rooms: rest.rooms.filter((r) => r.kind !== 'farm').map(({ shape: _s, ...r }) => r),
+      rooms: rest.rooms.filter((r) => r.kind !== 'farm' && r.kind !== 'lakeside').map(({ shape: _s, ...r }) => r),
       look: { skin: 30, hair: 5, hairStyle: 0, shirt: 7, legs: 23, shoes: 6 },
-      player: (({ unlockedClothing: _u, ...p }) => p)(rest.player),
+      player: (({ unlockedClothing: _u, lakesideRoomId: _lid, biggest: _b, ...p }) => p)(rest.player),
     };
     const r = readSave(JSON.stringify({ version: 4, savedAt: 0, state: v4 }));
     expect(r).toMatchObject({ ok: true, migrated: true });
     if (!r.ok) return;
-    expect(r.state.rooms.map((x) => x.shape)).toEqual(['square', 'square_shop', 'farm']);
+    expect(r.state.rooms.map((x) => x.shape)).toEqual(['square', 'square_shop', 'farm', 'lakeside']);
     expect(r.state.look).toEqual({ skin: 30, hair: 5, hairStyle: 'short', top: 'long_sleeve', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 });
     expect(r.state.player.unlockedClothing).toEqual([]);
     expect(r.state.playerCreated).toBe(true);
   });
 
   it('migrates a version 6 save (step 9b): a level 1 farm with empty plots, and the run gets a lunch box', () => {
-    const { farm: _f, ...rest } = state;
+    const { farm: _f, lakeside: _l, ...rest } = state;
     const v6 = {
       ...rest,
-      rooms: rest.rooms.filter((r) => r.kind !== 'farm'),
-      player: (({ farmRoomId: _id, ...p }) => p)(rest.player),
+      rooms: rest.rooms.filter((r) => r.kind !== 'farm' && r.kind !== 'lakeside'),
+      player: (({ farmRoomId: _id, lakesideRoomId: _lid, biggest: _b, ...p }) => p)(rest.player),
       run: { map: {}, enemies: [], player: { hp: 5, potions: 1 } },
     };
     const r = readSave(JSON.stringify({ version: 6, savedAt: 0, state: v6 }));
@@ -157,5 +157,25 @@ describe('save files', () => {
     });
     expect(r.state.player.bookOpenedAt).toBe(0);
     expect(r.state.player.bookRewards).toEqual([]);
+  });
+
+  it('migrates a version 11 save (step 9f): a level 1 lakeside with 8 whole trees and no records', () => {
+    const { lakeside: _l, ...rest } = state;
+    const v11 = {
+      ...rest,
+      rooms: rest.rooms.filter((r) => r.kind !== 'lakeside'),
+      player: (({ lakesideRoomId: _id, biggest: _b, ...p }) => p)(rest.player),
+    };
+    const r = readSave(JSON.stringify({ version: 11, savedAt: 0, state: v11 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    const lake = r.state.rooms.find((x) => x.kind === 'lakeside');
+    expect(lake).toMatchObject({ id: 4, level: 1, shape: 'lakeside', floorStyle: 'grass', wallStyle: 'hedge', w: 576, h: 384 });
+    expect(r.state.player.lakesideRoomId).toBe(4);
+    expect(r.state.player.biggest).toEqual({});
+    expect(r.state.lakeside).toEqual({ roomId: 4, trees: Array.from({ length: 8 }, () => ({ hits: 0, felledAt: null })), axeReadyAt: 0 });
+    // Nothing else changed.
+    expect(r.state.rooms).toHaveLength(4);
+    expect(r.state.player.seen).toEqual(v11.player.seen);
   });
 });

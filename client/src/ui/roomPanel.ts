@@ -53,6 +53,11 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       up.disabled = cost === null;
       up.classList.toggle('poor', cost !== null && gold < cost);
       if (cost !== null) up.title = `Level ${room.level + 1}: the room grows to the right and down.`;
+      if (room.kind === 'lakeside') {
+        // The lakeside is not buildable in v1: no upgrade, no styles, no furniture.
+        body.replaceChildren(el('div', 'room-facts inset', `Size ${room.w} x ${room.h}`), el('div', 'panel-info', 'Chop the trees for wood and fish in the lake. You cannot build here.'));
+        return;
+      }
       if (room.kind === 'farm') {
         // The farm keeps its grass and hedge; an upgrade adds plots.
         facts.append(el('div', '', `Plots ${farmPlotCount(room.level)}`));

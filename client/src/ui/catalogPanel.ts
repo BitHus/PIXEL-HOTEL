@@ -92,7 +92,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   };
 
   const styleCard = (s: StyleType): HTMLElement =>
-    card(stylePreviewUrl(s.kind, s.id), s.name, stylePrice(s), room?.kind === 'farm' ? 'Not here' : s.kind === 'floor' ? 'Floor' : 'Wall', unlocked.includes(styleKey(s.kind, s.id)), () =>
+    card(stylePreviewUrl(s.kind, s.id), s.name, stylePrice(s), room?.kind === 'farm' || room?.kind === 'lakeside' ? 'Not here' : s.kind === 'floor' ? 'Floor' : 'Wall', unlocked.includes(styleKey(s.kind, s.id)), () =>
       hooks.buyStyle(s.kind, s.id),
     );
 

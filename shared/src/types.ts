@@ -94,6 +94,8 @@ export interface FurnitureType {
   slotSpots?: { dx: number; dy: number }[];
   /** A light source (atmosphere step): the client draws a warm pool around the item. Drawing only. */
   light?: LightSource;
+  /** A small fish swimming in the item (the fish tank; step 9f). Drawing only: dx and z (px) of its start, size, how far it swims, colour. */
+  swim?: { dx: number; z: number; w: number; h: number; range: number; color: number };
   art: FurnitureArt;
 }
 
@@ -155,14 +157,21 @@ export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 /** Farm goods (section 10b, step 9b): seeds (crops.json), crops (crops.json) and food (food.json). */
 export type SeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
 export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
-export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth';
+export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth' | 'grilled_perch' | 'carp_stew' | 'eel_pie';
+/** The lakeside (section 10d, step 9f): fish (fish.json) and the things fished up (also fish.json), and what trees give besides wood. */
+export type FishId =
+  | 'mudfin' | 'reed_minnow' | 'pebble_perch' | 'silver_dace' | 'pond_loach'
+  | 'lantern_carp' | 'stripe_pike' | 'moss_catfish' | 'copper_trout'
+  | 'moonscale_eel' | 'glass_sturgeon' | 'old_king_barbel';
+export type ThingId = 'old_boot' | 'driftwood' | 'shell' | 'glass_bottle' | 'pearl' | 'sunken_crown';
+export type TreeDropId = 'resin' | 'amber' | 'golden_acorn';
 /**
  * Every stackable good: the dungeon materials plus the farm's seeds, crops and food (step 9b). They
  * all live in Player.materials, stack in the bag's Materials tab and go through the ledger.
  */
-export type MaterialId = BaseMaterialId | SeedId | CropId | FoodId;
+export type MaterialId = BaseMaterialId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId;
 /** What kind of stackable good it is. */
-export type MaterialGroup = 'material' | 'seed' | 'crop' | 'food';
+export type MaterialGroup = 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing';
 
 export interface MaterialType {
   id: MaterialId;
@@ -175,7 +184,7 @@ export interface MaterialType {
 }
 
 /** What a customer can want. */
-export type ShopCategory = 'materials' | 'home_furniture' | 'shop_furniture' | 'crypt_furniture' | 'food';
+export type ShopCategory = 'materials' | 'home_furniture' | 'shop_furniture' | 'crypt_furniture' | 'lake_furniture' | 'food';
 
 /** A thing for sale on a shop slot: one unit of a material, or one furniture item (taken out of
  *  GameState.items while it is on the slot, and put back when taken off). */
@@ -226,6 +235,8 @@ export type LedgerReason =
   | 'forge'
   | 'mine_bank'
   | 'book_reward'
+  | 'chop'
+  | 'fish'
   | 'debug';
 
 export interface LedgerEntry {
@@ -244,7 +255,7 @@ export interface LedgerEntry {
 
 /** Gear made at the forge (section 10c, shared/data/forge.json). Player.gear holds at most one
  *  piece per slot (weapon, armor, pickaxe): an upgrade replaces the piece before it. */
-export type GearId = 'copper_sword' | 'iron_sword' | 'mithril_sword' | 'leather_armor' | 'iron_armor' | 'mithril_armor' | 'steel_pickaxe';
+export type GearId = 'copper_sword' | 'iron_sword' | 'mithril_sword' | 'leather_armor' | 'iron_armor' | 'mithril_armor' | 'steel_pickaxe' | 'steel_axe' | 'copper_reel_rod' | 'mithril_rod';
 
 export interface Player {
   id: number;
@@ -264,6 +275,10 @@ export interface Player {
   shopRoomId: number;
   /** The farm (step 9b). */
   farmRoomId: number;
+  /** The lakeside (step 9f). */
+  lakesideRoomId: number;
+  /** The biggest catch of each fish in cm (step 9f; the Book shows it). */
+  biggest: Record<string, number>;
   /** How many mine visits were started (step 9c; mithril rocks from visit MITHRIL_FROM_VISIT on). */
   mineVisits: number;
   /**

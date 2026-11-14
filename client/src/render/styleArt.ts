@@ -57,6 +57,20 @@ const FLOORS: Record<string, Paint> = {
     }
     rect(ctx, 0, 0, n, 1, shade(base, 1.08));
   },
+  // The lake floor (step 9f, crafted): pale pebbles and a few shells on sand, seamless.
+  lake_pebbles: (ctx, n) => {
+    const sand = PALETTE[2];
+    rect(ctx, 0, 0, n, n, shade(sand, 0.96));
+    const pebbles: [number, number, number, number][] = [[4, 6, 6, 4], [22, 3, 5, 3], [40, 10, 7, 4], [54, 4, 5, 4], [10, 22, 5, 4], [30, 26, 7, 4], [48, 30, 6, 4], [4, 42, 7, 4], [24, 46, 5, 3], [38, 52, 6, 4], [54, 48, 6, 4], [14, 58, 5, 3]];
+    pebbles.forEach(([x, y, w, h], i) => {
+      const c = i % 3 === 0 ? PALETTE[20] : i % 3 === 1 ? PALETTE[3] : PALETTE[21];
+      rect(ctx, x, y, w, h, shade(c, 0.78));
+      rect(ctx, x, y, w - 1, h - 1, c);
+      rect(ctx, x + 1, y, 2, 1, shade(c, 1.15));
+    });
+    rect(ctx, 33, 40, 3, 2, PALETTE[29]);
+    rect(ctx, 9, 36, 2, 2, PALETTE[29]);
+  },
   // The farm's ground (step 9b): soft green with tufts and a few flowers, seamless.
   grass: (ctx, n) => {
     const base = PALETTE[13];
@@ -93,6 +107,20 @@ const WALLS: Record<string, Paint> = {
       rect(ctx, x, WALL_BAND - 32, 4, 26, shade(wood, 1.05));
       rect(ctx, x + 3, WALL_BAND - 32, 1, 26, shade(wood, 0.65));
     }
+  },
+  // The lake wall (step 9f, crafted): standing reeds on a pale wooden fence.
+  reed_wall: (ctx, n) => {
+    const base = shade(PALETTE[3], 0.9);
+    rect(ctx, 0, 0, n, WALL_BAND, base);
+    for (let x = 0; x < n; x += 4) {
+      const h = 22 + ((x * 7) % 18);
+      rect(ctx, x, WALL_BAND - h - 6, 2, h, shade(PALETTE[12], 0.85 + ((x / 4) % 3) * 0.1));
+      rect(ctx, x + 2, WALL_BAND - h - 2, 1, h - 6, shade(PALETTE[13], 0.9));
+    }
+    rect(ctx, 0, WALL_BAND - 14, n, 3, PALETTE[31]);
+    rect(ctx, 0, WALL_BAND - 11, n, 1, shade(PALETTE[31], 0.65));
+    rect(ctx, 0, WALL_BAND - 10, n, 10, PALETTE[5]);
+    rect(ctx, 0, WALL_BAND - 10, n, 1, PALETTE[4]);
   },
   plaster: (ctx, n) => {
     const base = shade(PALETTE[2], 0.92);

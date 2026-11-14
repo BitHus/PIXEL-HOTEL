@@ -35,7 +35,7 @@ export interface BookPanel {
   refresh(player: Player, fresh?: boolean): void;
 }
 
-const TAB_ICONS: Record<BookTab, IconName> = { materials: 'wood', furniture: 'chair', food: 'food', enemies: 'sword' };
+const TAB_ICONS: Record<BookTab, IconName> = { materials: 'wood', furniture: 'chair', food: 'food', fish: 'fish', enemies: 'sword' };
 
 /** Enemy pictures, drawn in code (placeholders): rows of palette letters, '.' = empty. */
 const ENEMY_ART: Record<string, { rows: string[]; colors: Record<string, number> }> = {
@@ -111,7 +111,10 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
     const name = rankName('div', 'book-name', e.name, e.id);
     setRank(name, e.id, e.rank);
     c.append(name, el('div', 'book-sub', RANK_NAMES[e.rank]));
-    c.append(el('div', 'book-count', e.kind === 'enemy' ? `Kills: ${seen.count}` : `Found: ${seen.count}`), el('div', 'book-sub', e.source));
+    c.append(el('div', 'book-count', e.kind === 'enemy' ? `Kills: ${seen.count}` : `Found: ${seen.count}`));
+    // A fish: the biggest one caught so far, and the size range it comes in.
+    if (e.cm) c.append(el('div', 'book-count', `Biggest: ${p.biggest[e.id] ?? '?'} cm`), el('div', 'book-sub', `${e.cm.min} to ${e.cm.max} cm`));
+    c.append(el('div', 'book-sub', e.source));
     if (e.drops) {
       const drops = el('div', 'book-drops');
       for (const id of e.drops) {

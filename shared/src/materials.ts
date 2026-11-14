@@ -6,6 +6,7 @@
 import materialData from '../data/materials.json';
 import cropData from '../data/crops.json';
 import foodData from '../data/food.json';
+import { CATCH_TYPES } from './fish.ts';
 import type { CropId, FoodId, MaterialGroup, MaterialId, MaterialType, Rank, SeedId } from './types.ts';
 
 /** A crop (crops.json): its seed, grow time and value. A seed with seedPrice null is not sold. */
@@ -53,6 +54,8 @@ export const MATERIAL_TYPES: MaterialType[] = [
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, rank: c.rank, group: 'seed' })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, rank: c.rank, group: 'crop' })),
   ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, rank: f.rank, group: 'food' })),
+  // The lakeside's catches (step 9f): fish and the things fished up.
+  ...CATCH_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, rank: c.rank, group: c.kind })),
 ];
 
 const BY_ID = new Map(MATERIAL_TYPES.map((m) => [m.id, m]));
