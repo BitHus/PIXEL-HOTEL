@@ -5,6 +5,7 @@
 // Step 9b: the lunch box. startRun takes up to LUNCH_BOX_MAX food items out of the bag (ledger
 // 'lunch_box'); finishRun gives back the food not eaten (after death the box is lost: step.ts empties it).
 
+import { addSeen, enemyKey } from '../seen.ts';
 import { DUNGEON_KEY_COST, LUNCH_BOX_MAX, MINE_UNLOCK_LEVEL } from '../config.ts';
 import { isFoodId } from '../materials.ts';
 import type { GameState } from '../gameState.ts';
@@ -74,14 +75,22 @@ export function finishRun(state: GameState, run: DungeonRun, at: number): GameSt
     if (s.kind === 'material') materials[s.id] = (materials[s.id] ?? 0) + s.qty;
     else furniture.push(s.typeId);
   }
-  // The food not eaten comes home (empty after death).
-  for (const id of run.player.food) materials[id] = (materials[id] ?? 0) + 1;
+  // The food not eaten comes home (empty after death): not a new find for the Book.
+  const broughtBack: Partial<Record<MaterialId, number>> = {};
+  for (const id of run.player.food) {
+    materials[id] = (materials[id] ?? 0) + 1;
+    broughtBack[id] = (broughtBack[id] ?? 0) + 1;
+  }
   const banked =
     applyChange(
       state,
-      { reason: run.place === 'mine' ? 'mine_bank' : 'dungeon_bank', gold: run.banked.gold, materials, addFurniture: furniture, note: `${run.place === 'mine' ? 'mine visit' : 'dungeon run'} ${run.status}` },
+      { reason: run.place === 'mine' ? 'mine_bank' : 'dungeon_bank', gold: run.banked.gold, materials, notFound: broughtBack, addFurniture: furniture, note: `${run.place === 'mine' ? 'mine visit' : 'dungeon run'} ${run.status}` },
       at,
     ) ?? state;
   const player = addXp(banked.player, run.xpGained);
-  return { ...banked, player: { ...player, potions: player.potions + run.player.potions } };
+  // The Book (step 9e): the enemies met and killed count even after death, like xp.
+  let seen = player.seen;
+  for (const type of run.met) seen = addSeen(seen, enemyKey(type), 0, at);
+  for (const [type, n] of Object.entries(run.kills)) seen = addSeen(seen, enemyKey(type), n ?? 0, at);
+  return { ...banked, player: { ...player, seen, potions: player.potions + run.player.potions } };
 }

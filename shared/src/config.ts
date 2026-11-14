@@ -236,6 +236,16 @@ export const QUEST_CARD_POP_MS = 120;
 /** Client only: a reach, a nod and the shopkeeper's hand-over move last this long, ms. */
 export const GESTURE_MS = 280;
 
+// ---------- Ranks and the collection book (step 9e) ----------
+/** The colour of each rank (palette indices: grey-brown, blue, purple, gold): slot borders and names. */
+export const RANK_COLORS = { common: 5, rare: 16, ultra_rare: 27, legendary: 10 } as const;
+/** The base odds when a loot table rolls a rank (a table's rankMultiplier shifts them). */
+export const RANK_WEIGHTS = { common: 75, rare: 20, ultra_rare: 4.5, legendary: 0.5 } as const;
+/** The sparkle on the drop text of an ultra_rare or legendary drop lasts this long, ms (client only). */
+export const SPARKLE_MS = 900;
+/** The Book's reward steps: this part of a tab found (percent). The gold is in shared/data/bookRewards.json. */
+export const BOOK_REWARD_STEPS = [25, 50, 75, 100] as const;
+
 // ---------- Dungeon (section 10) ----------
 /** 1 = small first round, 2 = the full dungeon. */
 export const DUNGEON_ROUND: 1 | 2 = 1;
@@ -372,10 +382,8 @@ export const GOLDEN_CHEST_ROLLS = 3;
 export const MIMIC_ONE_IN = 8;
 export const BOSS_THRONE_PIECE_MIN = 1;
 export const BOSS_THRONE_PIECE_MAX = 2;
-/** Chance per kill of one rare drop. */
+/** Chance per kill of one drop from the enemy's own table (step 9e: the table decides the rank). */
 export const RARE_DROP_CHANCE = 0.1;
-/** Of a rare drop: chance it is a crystal (else a random crypt furniture item). */
-export const RARE_DROP_CRYSTAL_CHANCE = 0.7;
 
 // ---------- Farm and cooking (section 10b, step 9b) ----------
 /** Gold cost to upgrade the farm TO this level (rooms use ROOM_UPGRADE_COST). */
@@ -544,7 +552,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -557,6 +565,8 @@ export const CHAT_BUBBLE_MS = 6000;
 export const CHAT_BUBBLE_FADE_MS = 900;
 /** Gap between stacked bubbles and above the head, screen px. */
 export const CHAT_BUBBLE_GAP_PX = 4;
+/** One avatar shows at most this many bubbles at once (the oldest goes). */
+export const CHAT_BUBBLES_PER_AVATAR = 3;
 /** The chat log keeps this many lines. */
 export const CHAT_LOG_MAX = 100;
 /** Reading pace (fix after 7b): every text on screen (toasts, chat bubbles) stays at least

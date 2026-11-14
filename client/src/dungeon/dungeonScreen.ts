@@ -13,6 +13,7 @@
 
 import type { Application } from 'pixi.js';
 import {
+  rankOf,
   CHEST_OPEN_MS,
   HIT_SHAKE_PX,
   HURT_SHAKE_PX,
@@ -297,7 +298,9 @@ export class DungeonScreen {
         }
         case 'loot': {
           const name = e.item === 'gold' ? `+${e.qty} gold` : isMaterialId(e.item) ? `+${e.qty} ${getMaterialType(e.item).name}` : `${getFurnitureType(e.item).name}!`;
-          this.floats.add(lootAt, name, 'loot', FLOAT_STAGGER_MS * stagger++);
+          // Its rank colour (a rare pile of gold too); common drops keep the plain loot colour.
+          const rank = e.rank ?? (e.item === 'gold' ? 'common' : rankOf(e.item));
+          this.floats.add(lootAt, name, 'loot', FLOAT_STAGGER_MS * stagger++, rank === 'common' ? null : rank);
           break;
         }
         case 'left_behind':

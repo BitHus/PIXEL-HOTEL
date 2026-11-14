@@ -65,6 +65,7 @@ import {
   DUNGEON_HINT,
   MINE_HINT,
   xpForNextLevel,
+  newEntries,
 } from '@pixel-hotel/shared';
 import './ui/ui.css';
 import { LocalGameAPI } from './api/localGameAPI.ts';
@@ -115,6 +116,8 @@ import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from './ui/w
 import { DungeonScreen } from './dungeon/dungeonScreen.ts';
 import { FarmScreen } from './farm/farmScreen.ts';
 import { createCookingPanel } from './ui/cookingPanel.ts';
+import { createBookPanel } from './ui/bookPanel.ts';
+import { applyRankColors } from './ui/rank.ts';
 import { createTravelPanel, type PlaceCard, type Place } from './ui/travelPanel.ts';
 import { createLunchPicker } from './ui/lunchPicker.ts';
 import { ROOM_NAMES } from './ui/infoPanel.ts';
@@ -134,6 +137,7 @@ async function start(): Promise<void> {
   const ui = document.getElementById('ui');
   if (!host || !ui) throw new Error('#game or #ui element missing');
   const uiRoot: HTMLElement = ui;
+  applyRankColors(uiRoot);
 
   // Step 5: the game runs on LocalGameAPI (shared rules in the browser, saved in localStorage).
   const storage = browserStorage();
@@ -627,6 +631,24 @@ async function start(): Promise<void> {
     });
   });
   panels.add('cooking', cooking.el);
+  // ---------- The Book (step 9e) ----------
+  const book = createBookPanel(ui, (tab, percent) => {
+    void api.claimBookReward(tab, percent).then(async (gold) => {
+      if (gold !== null) {
+        sound.play('coin');
+        toast(`Book reward: +${gold} gold.`);
+      }
+      await refreshInventory();
+    });
+  });
+  panels.add('book', book.el, () => {
+    // What is new stays marked while the Book is open; opening it clears the button's dot.
+    void api.getPlayer().then(async (p) => {
+      book.refresh(p, true);
+      await api.bookOpened();
+      side.setBookDot(false);
+    });
+  });
   const farm = new FarmScreen(view, {
     api,
     toast,
@@ -883,6 +905,8 @@ async function start(): Promise<void> {
     if (!dungeon.isActive) info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
     workshop.refresh(p);
     cooking.refresh(p);
+    if (panels.open === 'book') book.refresh(p);
+    else side.setBookDot(newEntries(p.seen, p.bookOpenedAt).length > 0);
     if (panels.open === 'travel') void refreshTravel();
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     dungeonBadge.textContent = free ? 'free' : String(DUNGEON_KEY_COST);

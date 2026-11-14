@@ -30,7 +30,7 @@ describe('furniture data', () => {
     expect(home).toHaveLength(12);
     for (const t of home) {
       expect(t.inCatalog).toBe(true);
-      expect(t.rarity).toBe('common');
+      expect(t.rank).toBe('common');
       expect(t.blocks).toBe(t.id !== 'rug');
       expect(t.facings.length).toBeGreaterThan(0);
     }

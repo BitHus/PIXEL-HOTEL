@@ -1,9 +1,14 @@
 [
-  { "id": "bone_chair", "makes": "bone_chair", "makesKind": "furniture", "inputs": { "bone": 6, "wood": 2 } },
-  { "id": "skull_lamp", "makes": "skull_lamp", "makesKind": "furniture", "inputs": { "bone": 5, "crystal": 1 } },
-  { "id": "coffin_table", "makes": "coffin_table", "makesKind": "furniture", "inputs": { "bone": 12, "wood": 4, "cloth": 2 } },
-  { "id": "wall_torch", "makes": "wall_torch", "makesKind": "furniture", "inputs": { "wood": 3, "crystal": 1 } },
-  { "id": "bone_throne", "makes": "bone_throne", "makesKind": "furniture", "inputs": { "throne_piece": 5 } },
-  { "id": "crypt_flagstones", "makes": "crypt_flagstones", "makesKind": "floor", "inputs": { "bone": 8, "crystal": 2 } },
-  { "id": "bone_wall", "makes": "bone_wall", "makesKind": "wall", "inputs": { "bone": 10, "cloth": 4 } }
+  {"id": "bone_chair", "makes": "bone_chair", "makesKind": "furniture", "inputs": {"bone": 6, "wood": 2}},
+  {"id": "skull_lamp", "makes": "skull_lamp", "makesKind": "furniture", "inputs": {"bone": 5, "crystal": 1}},
+  {"id": "coffin_table", "makes": "coffin_table", "makesKind": "furniture", "inputs": {"bone": 12, "wood": 4, "cloth": 2}},
+  {"id": "wall_torch", "makes": "wall_torch", "makesKind": "furniture", "inputs": {"wood": 3, "crystal": 1}},
+  {"id": "bone_throne", "makes": "bone_throne", "makesKind": "furniture", "inputs": {"throne_piece": 5}},
+  {"id": "crypt_flagstones", "makes": "crypt_flagstones", "makesKind": "floor", "inputs": {"bone": 8, "crystal": 2}},
+  {"id": "bone_wall", "makes": "bone_wall", "makesKind": "wall", "inputs": {"bone": 10, "cloth": 4}},
+  {"id": "slime_jar", "makes": "slime_jar", "makesKind": "furniture", "inputs": {"slime_gel": 6, "sticky_core": 1}},
+  {"id": "bat_wing_fan", "makes": "bat_wing_fan", "makesKind": "furniture", "inputs": {"bat_wing": 5, "echo_fang": 1}},
+  {"id": "skull_trophy", "makes": "skull_trophy", "makesKind": "furniture", "inputs": {"bone_dust": 8, "rusty_buckle": 1}},
+  {"id": "mimic_chest", "makes": "mimic_chest", "makesKind": "furniture", "inputs": {"chest_hinge": 3, "mimic_tongue": 1, "wood": 4}},
+  {"id": "kings_banner", "makes": "kings_banner", "makesKind": "furniture", "inputs": {"king_seal": 2, "crown_shard": 1, "cloth": 4}}
 ]

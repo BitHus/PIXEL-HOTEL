@@ -171,7 +171,7 @@ describe('step: enemies', () => {
     expect(m).toMatchObject({ kind: 'skeleton', mimic: true, hp: 12 });
     r = { ...r, enemies: [{ ...m, hp: 1 }] };
     r = step(r, [{ t: 'click_enemy', id: m.id }], 0, seededRng(4));
-    expect(r.events).toContainEqual({ t: 'kill', enemyId: m.id, kind: 'skeleton', xp: 8 });
+    expect(r.events).toContainEqual({ t: 'kill', enemyId: m.id, kind: 'skeleton', xp: 8, mimic: true });
     expect(r.events.filter((e) => e.t === 'loot').length).toBeGreaterThanOrEqual(3);
   });
 });

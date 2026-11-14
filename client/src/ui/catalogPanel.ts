@@ -5,6 +5,7 @@
 // SEED_PACK). A card whose price is too high is dimmed with the price in red. A small tag shows
 // only when the thing cannot go in the room the player is in, or when a style is already owned.
 
+import { rankName } from './rank.ts';
 import {
   STYLE_TYPES,
   getCropType,
@@ -71,14 +72,14 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   });
 
   /** One card: tag (or none), big icon, name, price. `owned` cards cannot be bought. */
-  const card = (img: string, name: string, price: number, tag: string | null, owned: boolean, buy: () => void): HTMLElement => {
+  const card = (img: string, name: string, price: number, tag: string | null, owned: boolean, buy: () => void, rankId: string | null = null): HTMLElement => {
     const c = el('button', `shop-card${owned ? ' owned' : gold < price ? ' poor' : ''}`);
     c.type = 'button';
     const icon = el('img', 'shop-card-icon');
     icon.src = img;
     icon.alt = '';
     icon.draggable = false;
-    c.append(icon, el('span', 'shop-card-name', name), owned ? el('span', 'shop-card-owned', 'Owned') : priceTag(price, gold));
+    c.append(icon, rankId === null ? el('span', 'shop-card-name', name) : rankName('span', 'shop-card-name', name, rankId), owned ? el('span', 'shop-card-owned', 'Owned') : priceTag(price, gold));
     if (tag) c.appendChild(el('span', 'shop-card-tag plate', tag));
     c.disabled = owned;
     c.addEventListener('click', buy);
@@ -87,7 +88,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   const furnitureCard = (t: FurnitureType): HTMLElement => {
     const fits = room === null || fitsRoomKind(t, room);
-    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Shop only' : 'Not here', false, () => hooks.buyItem(t.id));
+    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Shop only' : 'Not here', false, () => hooks.buyItem(t.id), t.id);
   };
 
   const styleCard = (s: StyleType): HTMLElement =>
@@ -95,7 +96,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
       hooks.buyStyle(s.kind, s.id),
     );
 
-  const seedCard = (c: CropType): HTMLElement => card(materialIconUrl(c.seed), c.seedName, c.seedPrice ?? 0, null, false, () => hooks.buySeeds(c.seed));
+  const seedCard = (c: CropType): HTMLElement => card(materialIconUrl(c.seed), c.seedName, c.seedPrice ?? 0, null, false, () => hooks.buySeeds(c.seed), c.seed);
 
   const draw = (): void => {
     markTab(tab);

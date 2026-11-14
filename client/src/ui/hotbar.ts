@@ -4,6 +4,7 @@
 // Tap a slot: place that item, or (step 9b) pick that seed for planting (main.ts). Long-press a slot: move it back to the bag. Keys 1-6
 // tap a slot. Slots carry data-area="hotbar" so a stack dragged from the bag can drop on them.
 
+import { setRank } from './rank.ts';
 import { HOTBAR_SLOTS, isMaterialId } from '@pixel-hotel/shared';
 import { el, typing } from './dom.ts';
 import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
@@ -67,6 +68,7 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
         // Every stack shows its count: seeds always (also 1), furniture from 2.
         s.count.textContent = v.typeId !== null && (v.count > 1 || (isMaterialId(v.typeId) && v.count > 0)) ? String(v.count) : '';
         s.root.classList.toggle('dim', v.typeId !== null && !v.usable);
+        setRank(s.root, v.typeId);
         s.root.title = v.typeId === null ? 'Empty slot' : `${v.name} (${v.count})`;
       });
     },
