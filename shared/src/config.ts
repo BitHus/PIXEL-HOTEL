@@ -46,9 +46,14 @@ export const SHOP_START_ITEMS = [
 
 // ---------- Movement (section 6) ----------
 /** Internal navigation grid cell size, in px. Never shown. */
-export const NAV_CELL = 16;
-/** Footprints are made bigger by this radius when building the nav grid. */
-export const AVATAR_RADIUS = 12;
+export const NAV_CELL = 8;
+/**
+ * Footprints are made bigger by this radius when building the nav grid. Small on purpose (owner's
+ * decision after playtesting): with 8 px cells a gap of 24 px between two items is always walkable
+ * (the gap keeps 16 px, so a whole free cell at every 4 px alignment); the avatar may overlap
+ * furniture edges a little.
+ */
+export const AVATAR_RADIUS = 4;
 /** Walking speed in the hotel and the shop, px per second. */
 export const HOTEL_WALK_SPEED = 128;
 
@@ -124,7 +129,7 @@ export const CASHIER_BEHIND_PX = 20;
  *  wait, no new customers come. They never leave on their own. */
 export const QUEUE_MAX = 3;
 /** At most this many customers are in the shop at the same time (fix after 7b). */
-export const CUSTOMER_MAX_IN_SHOP = 3;
+export const CUSTOMER_MAX_IN_SHOP = 5;
 /** Customers walk calmer than the player: this many px per second, each one up to
  *  CUSTOMER_SPEED_VARIATION faster or slower (fix after 7b). */
 export const CUSTOMER_WALK_SPEED = 72;
@@ -134,8 +139,6 @@ export const CUSTOMER_ENTER_PAUSE_MS = 900;
 /** A customer looks at an item (the "..." thought bubble) between these times, ms. */
 export const CUSTOMER_BROWSE_MIN_MS = 2000;
 export const CUSTOMER_BROWSE_MAX_MS = 5000;
-/** Chance that a customer also looks at a second table, shelf or case before deciding. */
-export const CUSTOMER_SECOND_LOOK_CHANCE = 0.35;
 /** After paying, a customer waits this long at the till before walking out, ms. */
 export const CUSTOMER_AFTER_PAY_MS = 1000;
 /** Queue spots behind the paying spot are this far apart, px. */
@@ -156,11 +159,6 @@ export const CUSTOMER_KIND_WEIGHTS = { hurried: 3, browser: 4, chatty: 3 } as co
 export const HURRIED_SPEED_BONUS = 0.2;
 export const HURRIED_BROWSE_MIN_MS = 900;
 export const HURRIED_BROWSE_MAX_MS = 1600;
-/** A browser looks at this many things (decorations and tables, shelves or cases) in all. */
-export const BROWSER_LOOKS_MIN = 2;
-export const BROWSER_LOOKS_MAX = 3;
-/** Chance that a customer (not hurried, not a browser) first stops at a decoration. */
-export const CUSTOMER_DECOR_CHANCE = 0.35;
 /** How long a customer looks at a decoration, ms. */
 export const DECOR_LOOK_MIN_MS = 1500;
 export const DECOR_LOOK_MAX_MS = 3000;
@@ -189,6 +187,46 @@ export const HURRIED_TALK = 0.5;
 export const REMARK_APPEAL_MIN = 40;
 /** On the way in, a shop with at most this part of its slots filled gets "Not much left..." remarks. */
 export const REMARK_EMPTY_SHARE = 0.25;
+
+// ---------- Natural customers (owner, after 9d): small behaviours instead of one fixed route ----------
+/** The small things a visitor can do, with how often each is picked (weights). */
+export const ACT_WEIGHTS = { wander: 3, decor: 3, goods: 3, talk: 2, remark: 2, sit: 1 } as const;
+/** A kind likes some things more: its weight is multiplied by this (0 = never). */
+export const ACT_KIND_BONUS = {
+  hurried: { goods: 2, sit: 0, decor: 0.5 },
+  browser: { decor: 2, goods: 2 },
+  chatty: { talk: 2.5, remark: 2 },
+} as const;
+/** How many small things a buyer does before the goods they came for, per kind (min, max). */
+export const BUYER_ACTS = { hurried: [0, 1], browser: [2, 3], chatty: [1, 3] } as const;
+/** How many small things a window-shopper does before leaving, per kind (min, max). */
+export const WINDOW_ACTS = { hurried: [1, 2], browser: [3, 4], chatty: [2, 4] } as const;
+/** Chance that a visitor is a window-shopper: looks around and leaves without wanting anything. */
+export const WINDOW_SHOPPER_CHANCE = 0.25;
+/** While QUEUE_MAX buyers are in the shop, a visitor that comes is a window-shopper with this chance (else nobody comes). */
+export const WINDOW_SHOPPER_WHEN_FULL_CHANCE = 0.5;
+/** Chance that a visitor brings a friend (they walk near each other and talk). */
+export const PAIR_CHANCE = 0.2;
+/** A friend stands this far from the one they follow, px. */
+export const PAIR_NEAR_PX = 20;
+/** A wanderer stands at their spot this long, ms. */
+export const WANDER_STAND_MIN_MS = 800;
+export const WANDER_STAND_MAX_MS = 2500;
+/** A visitor sits on a free seat this long, ms. */
+export const VISIT_SIT_MIN_MS = 3000;
+export const VISIT_SIT_MAX_MS = 6000;
+/** A random remark: the visitor stands this long while saying it, ms. */
+export const REMARK_STAND_MS = 1800;
+/** Two customers talking: this many bubbles back and forth, one every TALK_GAP_MS, standing TALK_NEAR_PX apart. */
+export const TALK_LINES_MIN = 2;
+export const TALK_LINES_MAX = 3;
+export const TALK_GAP_MS = 2200;
+export const TALK_NEAR_PX = 20;
+/** Staff only: customers never enter the strip behind the counter, this deep and this much wider than the counter on each side, px. */
+export const STAFF_ZONE_DEPTH_PX = 40;
+export const STAFF_ZONE_SIDE_PX = 8;
+/** Two queue spots are never closer than this, px. */
+export const QUEUE_MIN_GAP_PX = 16;
 /** Talk lines are at most this many characters (tested). */
 export const NPC_LINE_MAX = 40;
 /** Client only: the item hops from the slot to the hands (and to the counter and back) this long, ms. */
@@ -220,6 +258,8 @@ export const DUNGEON_ROUNDS: Record<1 | 2, DungeonRoundRules> = {
 
 export const DUNGEON_TICK_MS = 100;
 export const DUNGEON_BLOCK = 32;
+/** The dungeon keeps its own nav cells (2 per block side), whatever the rooms use. */
+export const DUNGEON_NAV_CELL = 16;
 export const DUNGEON_BLOCKS_W = 40;
 export const DUNGEON_BLOCKS_H = 40;
 export const DUNGEON_ROOM_BLOCKS_MIN = 4;
@@ -320,6 +360,9 @@ export const ENEMY_STOP_PX = 24;
 /** A chasing enemy without line of sight finds a new path this often (ms). */
 export const ENEMY_REPATH_MS = 500;
 
+/** Chests are spread: at least this many blocks from every other chest, and from the spawn room (diagonals count as 1). */
+export const CHEST_SPACING = 3;
+export const CHEST_SPAWN_ROOM_GAP = 3;
 export const WOODEN_CHESTS_MIN = 3;
 export const WOODEN_CHESTS_MAX = 5;
 export const GOLDEN_CHEST_CHANCE = 0.4;
@@ -446,7 +489,7 @@ export const GHOST_ALPHA = 0.75;
 
 // ---------- Sitting and lying (step 5b) ----------
 /** A seat's approach point counts as reached if the walk ends this close (px) to it. */
-export const APPROACH_REACH_PX = 28;
+export const APPROACH_REACH_PX = 16;
 /** Two approach routes within this many px of each other count as equal: the one nearer the tap wins. */
 export const APPROACH_TIE_PX = 8;
 /** On arrival the avatar slides onto the seat in this many ms (no pathfinding). */
@@ -501,7 +544,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -556,13 +599,17 @@ export const INTRO_COIN_FLY_MS = 600;
 // ---------- Atmosphere (lighting, shadows, dust, sound); drawing and sound only, no rules ----------
 /**
  * The ambient shade per room kind: this palette color lies over the room with `strength` as its
- * alpha (0 = off). Kept low: the room is bright and warm everywhere, lights only add a soft halo.
+ * alpha (0 = off). Kept low: the room is bright and warm everywhere, lights only add a soft halo
+ * (the owner approved this indoor look after 9d: keep it). Outdoors (OUTDOOR_KINDS: the farm,
+ * later the lakeside) it is day: no shade and no light pools from furniture, only a tiny glow on
+ * the fire under the pot.
  */
 export const AMBIENT_LIGHT = {
   hotel: { color: 5, strength: 0.14 },
   shop: { color: 5, strength: 0.14 },
-  farm: { color: 23, strength: 0.1 },
+  farm: { color: 23, strength: 0 },
 } as const;
+export const OUTDOOR_KINDS: readonly string[] = ['farm'];
 /** The light map is drawn in blocks of this many art px (cheap, and the halos stay a bit chunky). */
 export const LIGHT_PIXEL = 2;
 /** At the flame a light takes this part of the ambient shade away (fading smoothly to the edge). */
@@ -575,7 +622,7 @@ export const LIGHT_STEP_MS = 120;
 export const FLICKER_RADIUS = 0.07;
 export const FLICKER_BRIGHTNESS = 0.16;
 /** The cooking pot's fire on the farm. */
-export const COOKING_POT_LIGHT = { radius: 88, color: 9, flicker: 1 } as const;
+export const COOKING_POT_LIGHT = { radius: 26, color: 9, flicker: 1 } as const;
 /** Dust specks per light pool, and the most on screen at once. */
 export const DUST_PER_LIGHT = 4;
 export const DUST_MAX = 28;

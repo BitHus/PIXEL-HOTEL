@@ -313,7 +313,8 @@ async function start(): Promise<void> {
   const dungeonBadge = document.createElement('span');
   dungeonBadge.className = 'btn-badge';
   dungeonButton.appendChild(dungeonBadge);
-  const sideButtons = createSideButtons(ui, panels, [build.button, dungeonButton]);
+  const side = createSideButtons(ui, panels, [build.button, dungeonButton]);
+  const sideButtons = side.col;
   // The quest button, at the top of the column: shows the current quest again. Hidden without a
   // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
   const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn room-only');
@@ -541,6 +542,7 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
+          backdrop.setOutdoor(room.kind === 'farm');
         }
         toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
         await refreshShop();
@@ -574,6 +576,7 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
+          backdrop.setOutdoor(room.kind === 'farm');
         }
         await refreshShop();
         await refreshInventory();
@@ -868,6 +871,8 @@ async function start(): Promise<void> {
     onCarry: (on) => hotbar.setChoosing(on),
   });
   panels.add('bag', bag.el, undefined, () => bag.endCarry(), bag.frame);
+  // The Bag button sits at the right end of the hotbar (owner, after 9d).
+  hotbar.el.appendChild(side.bag);
   // Panels start under the info panel (phone) and end above the hotbar or the run bag.
   watchLayout(ui, info.panel, [hotbar.el, runBar.el]);
 
@@ -1125,6 +1130,7 @@ async function start(): Promise<void> {
     bounds = roomBoundsRect(room);
     view.setRoom(room);
     atmosphere.setRoom(room);
+    backdrop.setOutdoor(room.kind === 'farm');
     itemViews.setRoom(room.id);
     blockers.setRoom(room);
     items = await api.getItems();

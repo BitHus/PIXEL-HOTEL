@@ -58,6 +58,8 @@ export interface ShopState {
   updatedAt: number;
   /** The index of the last line said per talk moment (step 9d: never the same line twice in a row). */
   lastLines: Partial<Record<NpcMoment, number>>;
+  /** The plan of the visitor who came in last (customerPlan.ts planKey): the next one gets another. */
+  lastPlan?: string;
 }
 
 export interface ShelfSlotRef {

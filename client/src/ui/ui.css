@@ -487,6 +487,14 @@
   background: var(--wood-mid);
 }
 
+/* The Bag button: attached to the hotbar's right end, as tall as a slot (owner, after 9d). */
+.hotbar .hotbar-bag {
+  flex: none;
+  width: var(--slot);
+  height: var(--slot);
+  margin-left: 4px;
+}
+
 .hotbar.choosing .slot {
   animation: choose 0.8s steps(2) infinite;
 }

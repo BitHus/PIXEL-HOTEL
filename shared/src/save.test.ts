@@ -114,4 +114,16 @@ describe('save files', () => {
     expect(r.state.shop.customers).toHaveLength(1);
     expect(r.state.shop.customers[0]).toMatchObject({ id: -2, kind: 'browser', phase: 'queue', path: [], seat: null, browsing: false });
   });
+
+  it('migrates a version 9 save (natural customers): the customers in the line get a plan and the new fields', () => {
+    const old = (id: number, carrying: unknown) => ({ id, kind: 'chatty', look: state.look, x: 1, y: 2, facing: 'up', path: [{ x: 5, y: 5 }], phase: 'admire', want: 'materials', tolerance: 1, waitMs: 0, speed: 72, shelfUid: null, browsing: true, looks: 1, looksMax: 2, decorLeft: 1, decorUid: null, carrying, reaction: null, queueSpot: 0, seat: null, sitChecked: false, callInMs: 100 });
+    const v9 = { ...state, shop: { ...state.shop, customers: [old(-1, null), old(-2, { loot: { kind: 'material', id: 'wood', qty: 1 }, price: 3 })] } };
+    const r = readSave(JSON.stringify({ version: 9, savedAt: 0, state: v9 }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.shop.customers).toHaveLength(1);
+    const c = r.state.shop.customers[0]!;
+    expect(c).toMatchObject({ id: -2, kind: 'chatty', phase: 'queue', buys: true, plan: [], step: 0, doing: null, followId: null, talk: null, holdMs: 0, path: [] });
+    expect('looksMax' in c || 'decorLeft' in c || 'looks' in c).toBe(false);
+  });
 });

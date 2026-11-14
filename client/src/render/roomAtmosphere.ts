@@ -7,6 +7,7 @@
 // outside the room, a mild ambient shade on it, and every light takes that shade away with a soft
 // round falloff (blend 'erase'). On top, every light adds its own warm colour with the same
 // falloff (one sprite per light, blend 'add'), so things near a flame get brighter, not flatter.
+// Outdoors (the farm) it is day: no shade and no pools from furniture, only the pot's small fire glow.
 
 import { Container, Graphics, RenderTexture, Sprite, Texture, type Renderer } from 'pixi.js';
 import {
@@ -18,6 +19,7 @@ import {
   LIGHT_STEP_MS,
   LIGHT_CUT,
   LIGHT_GLOW,
+  OUTDOOR_KINDS,
   PALETTE,
   WALK_PUFF_MS,
   borderRects,
@@ -145,7 +147,7 @@ export class RoomAtmosphere {
     const b = this.base.clear();
     const amb = AMBIENT_LIGHT[room.kind];
     for (const r of [...floorRects(room), doorRect(room), ...wallBands(room), ...borderRects(room)]) {
-      if (r.w > 0 && r.h > 0) b.rect(r.x, r.y, r.w, r.h).fill({ color: PALETTE[amb.color] ?? '#000000', alpha: amb.strength });
+      if (amb.strength > 0 && r.w > 0 && r.h > 0) b.rect(r.x, r.y, r.w, r.h).fill({ color: PALETTE[amb.color] ?? '#000000', alpha: amb.strength });
     }
     for (const p of this.puffs.splice(0)) p.c.destroy({ children: true });
     this.dirty = true;
@@ -164,11 +166,12 @@ export class RoomAtmosphere {
       const s = shadowSize(f.w, f.h);
       drawShadow(g, Math.round(item.x) + SHADOW_DX, Math.round(item.y), s.rx, s.ry);
     }
-    this.lights = itemLights(items, room.id, getFurnitureType, hidden);
+    // Daylight outdoors: furniture gives no light pools there (only the pot's fire, below).
+    this.lights = OUTDOOR_KINDS.includes(room.kind) ? [] : itemLights(items, room.id, getFurnitureType, hidden);
     if (room.kind === 'farm') {
       const s = shadowSize(COOKING_POT.w, COOKING_POT.d);
       drawShadow(g, COOKING_POT.x + SHADOW_DX, COOKING_POT.y, s.rx, s.ry);
-      this.lights.push({ x: COOKING_POT.x, y: COOKING_POT.y - COOKING_POT.d / 2, light: COOKING_POT_LIGHT, seed: -77 });
+      this.lights.push({ x: COOKING_POT.x, y: COOKING_POT.y - 2, light: COOKING_POT_LIGHT, seed: -77 });
     }
     this.syncSpecks();
     this.dirty = true;

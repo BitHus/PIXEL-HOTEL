@@ -41,12 +41,12 @@ describe('buildNavGrid', () => {
 
   it('blocks cells that overlap a blocker grown by the avatar radius', () => {
     const grid = buildNavGrid(room, [{ x: 100, y: 100, w: 20, h: 20 }]);
-    // Grown rect runs 88..132: cells 5..8 are blocked, 4 and 9 are free.
-    expect(isCellFree(grid, 6, 6)).toBe(false);
-    expect(isCellFree(grid, 5, 6)).toBe(false);
-    expect(isCellFree(grid, 8, 6)).toBe(false);
-    expect(isCellFree(grid, 4, 6)).toBe(true);
-    expect(isCellFree(grid, 9, 6)).toBe(true);
+    // Grown rect runs 96..124: cells 12..15 (96..128) are blocked, 11 and 16 are free.
+    expect(isCellFree(grid, 13, 13)).toBe(false);
+    expect(isCellFree(grid, 12, 13)).toBe(false);
+    expect(isCellFree(grid, 15, 13)).toBe(false);
+    expect(isCellFree(grid, 11, 13)).toBe(true);
+    expect(isCellFree(grid, 16, 13)).toBe(true);
   });
 });
 
@@ -89,13 +89,37 @@ describe('findPath', () => {
     }
   });
 
-  it('never squeezes through a gap smaller than the avatar', () => {
-    // Two bars with a 20 px gap (< 24 px avatar width) between them, across the whole room.
-    const blockers = [
-      { x: 280, y: 0, w: 16, h: 180 },
-      { x: 280, y: 200, w: 16, h: 184 },
-    ];
-    expect(findPath(buildNavGrid(room, blockers), from, to)).toBeNull();
+  it('never squeezes through a gap of 12 px', () => {
+    // Two bars with a 12 px gap between them, across the whole room, at every alignment.
+    for (let y = 176; y < 184; y++) {
+      const blockers = [
+        { x: 280, y: 0, w: 16, h: y },
+        { x: 280, y: y + 12, w: 16, h: 384 - y - 12 },
+      ];
+      expect(findPath(buildNavGrid(room, blockers), from, to), `gap at ${y}`).toBeNull();
+    }
+  });
+
+  it('a gap of 24 px between two items is walkable at every 4 px alignment (owner, after 9d)', () => {
+    for (let y = 160; y <= 192; y += 4) {
+      const blockers = [
+        { x: 280, y: 0, w: 16, h: y },
+        { x: 280, y: y + 24, w: 16, h: 384 - y - 24 },
+      ];
+      const path = findPath(buildNavGrid(room, blockers), from, to);
+      expect(path, `gap at ${y}`).not.toBeNull();
+      // And it really goes through the gap.
+      expect(samples(path!).some((p) => p.x > 280 && p.x < 296 && p.y > y && p.y < y + 24)).toBe(true);
+    }
+  });
+
+  it('finds a path across the biggest room quickly', () => {
+    const big = createRoom(2, 'hotel', 3, 1); // 832 x 576: 104 x 72 cells
+    const blockers = Array.from({ length: 12 }, (_, i) => ({ x: 60 + i * 60, y: i % 2 ? 0 : 120, w: 20, h: 440 }));
+    const grid = buildNavGrid(big, blockers);
+    const t0 = Date.now();
+    for (let i = 0; i < 20; i++) expect(findPath(grid, { x: 20, y: 300 }, { x: 810, y: 300 })).not.toBeNull();
+    expect((Date.now() - t0) / 20).toBeLessThan(50);
   });
 
   it('an unreachable target returns null', () => {
@@ -115,6 +139,6 @@ describe('findPath', () => {
 
   it('a tap outside the floor walks to the nearest free spot on the floor', () => {
     const path = findPath(buildNavGrid(room, []), from, { x: 100, y: -40 })!;
-    expect(path[path.length - 1]).toEqual({ x: 104, y: 8 });
+    expect(path[path.length - 1]).toEqual({ x: 100, y: 4 });
   });
 });

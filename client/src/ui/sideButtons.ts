@@ -1,19 +1,21 @@
-// Right edge: square icon buttons stacked vertically. Always there: (Quest), Map, Bag, Build,
-// Dungeon (main.ts adds Quest, Map, Build and Dungeon). The rest (Catalog, Workshop, Room, Avatar,
-// Chat, Settings) sits behind one "More" button that opens a small grid of icons with labels (UI
+// Right edge: square icon buttons stacked vertically. Always there: (Quest), Map, Catalog, Build,
+// Dungeon (main.ts adds Quest, Map, Build and Dungeon). The rest (Workshop, Room, Avatar, Chat,
+// Settings) sits behind one "More" button that opens a small grid of icons with labels (UI
 // polish step); on a wide screen (>= 900 px, ui.css) the grid dissolves and every button stands
 // in the column. In the dungeon only Chat and Settings stay (CSS .in-dungeon hides the buttons
 // marked room-only).
+// The Bag button is NOT in the column (owner, after 9d): it is made here (`bag`) and main.ts puts
+// it at the right end of the hotbar.
 // Each panel button toggles its panel (Build toggles build mode, buildMode.ts). Keys: I (bag), C (catalog), Enter (chat), Escape closes the open panel.
 
 import { el, iconButton, typing } from './dom.ts';
 import type { PanelName, Panels } from './panels.ts';
 import type { IconName } from './pixelIcons.ts';
 
-/** [panel, icon, tooltip, short label in the More grid (null = always in the column)]. */
+/** [panel, icon, tooltip, short label in the More grid (null = always in the column, 'hotbar' = next to the hotbar)]. */
 const BUTTONS: [PanelName, IconName, string, string | null][] = [
-  ['bag', 'bag', 'Bag (I)', null],
-  ['catalog', 'book', 'Catalog (C)', 'Catalog'],
+  ['bag', 'bag', 'Bag (I)', 'hotbar'],
+  ['catalog', 'book', 'Catalog (C)', null],
   ['workshop', 'workshop', 'Workshop: crafting and the Blacksmith', 'Workshop'],
   ['room', 'house', 'Room', 'Room'],
   ['avatar', 'avatar', 'Avatar', 'Avatar'],
@@ -23,9 +25,9 @@ const BUTTONS: [PanelName, IconName, string, string | null][] = [
 
 /**
  * The right-edge column. Later steps add their buttons here (see CLAUDE.md, UI layout rule).
- * `extra` buttons (Build, Dungeon) go right after the Bag button.
+ * `extra` buttons (Build, Dungeon) go right after the Catalog button. `bag` is the Bag button for the hotbar.
  */
-export function createSideButtons(parent: HTMLElement, panels: Panels, extra: readonly HTMLElement[] = []): HTMLElement {
+export function createSideButtons(parent: HTMLElement, panels: Panels, extra: readonly HTMLElement[] = []): { col: HTMLElement; bag: HTMLButtonElement } {
   const col = el('div', 'side-buttons');
   const buttons = new Map<PanelName, HTMLButtonElement>();
   const wrap = el('div', 'more-wrap');
@@ -51,7 +53,9 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
       panels.toggle(name);
     }, name === 'chat' || name === 'settings' ? '' : 'room-only');
     buttons.set(name, b);
-    if (label === null) {
+    if (label === 'hotbar') {
+      b.classList.add('hotbar-bag');
+    } else if (label === null) {
       col.appendChild(b);
       col.append(...extra);
     } else {
@@ -79,5 +83,5 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
     else return;
     e.preventDefault();
   });
-  return col;
+  return { col, bag: buttons.get('bag')! };
 }
