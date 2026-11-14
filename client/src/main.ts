@@ -1,6 +1,7 @@
 import { Application, TextureSource } from 'pixi.js';
 import {
   AVATAR_H,
+  WALK_BOB_MS,
   INTRO_DEVICE_PX_PER_ART_PX,
   REACTION_BUBBLE_MS,
   INTRO_COINS,
@@ -111,6 +112,10 @@ import { createCookingPanel } from './ui/cookingPanel.ts';
 import { createTravelPanel, type PlaceCard, type Place } from './ui/travelPanel.ts';
 import { createLunchPicker } from './ui/lunchPicker.ts';
 import { ROOM_NAMES } from './ui/infoPanel.ts';
+import { RoomAtmosphere } from './render/roomAtmosphere.ts';
+import { Backdrop } from './render/backdrop.ts';
+import { Sound } from './audio/sound.ts';
+import { loadPrefs, savePrefs } from './api/prefs.ts';
 
 // Pixel-perfect: no texture smoothing anywhere.
 TextureSource.defaultOptions.scaleMode = 'nearest';
@@ -122,7 +127,15 @@ async function start(): Promise<void> {
   const uiRoot: HTMLElement = ui;
 
   // Step 5: the game runs on LocalGameAPI (shared rules in the browser, saved in localStorage).
-  const { api, notice } = LocalGameAPI.open(browserStorage());
+  const storage = browserStorage();
+  const { api, notice } = LocalGameAPI.open(storage);
+  // Atmosphere step: the device settings, and sound (it wakes on the first tap; every UI button clicks).
+  const prefs = loadPrefs(storage);
+  const sound = new Sound(prefs.sound, prefs.volume);
+  sound.listenForFirstTap();
+  uiRoot.addEventListener('click', (e) => {
+    if (e.target instanceof Element && e.target.closest('button')) sound.play('click');
+  });
   // Step 7b: a brand new game first makes the character and picks the room shapes, then plays
   // the intro in the shop. A save that already has a player skips all of this.
   let introPending = false;
@@ -155,7 +168,14 @@ async function start(): Promise<void> {
   let room: Room = first.room;
   let bounds: Rect = roomBoundsRect(room);
   const view = new RoomView();
-  app.stage.addChild(view.world);
+  // Atmosphere step: the dark planks outside the room, then the room with its shadows and light.
+  const backdrop = new Backdrop(app.renderer);
+  app.stage.addChild(backdrop.container, view.world);
+  const atmosphere = new RoomAtmosphere(view, app.renderer);
+  atmosphere.setLighting(prefs.lighting);
+  // Lighting off (slow phones): no backdrop either, so nothing extra is drawn.
+  let lightingOn = prefs.lighting;
+  backdrop.container.visible = lightingOn;
 
   // ---------- The own avatar (paths come from the GameAPI; the client animates them) ----------
   const me = first.avatars[0];
@@ -164,7 +184,7 @@ async function start(): Promise<void> {
   /** Points the avatar still has to walk to, and where it was sent (to re-path when the room changes). */
   let path: Point[] = [];
   let goal: Point | null = null;
-  const sprite = new AvatarSprite(avatar.look);
+  const sprite = new AvatarSprite(avatar.look, false);
   /** The seat the avatar walks to, slides onto, and sits or lies on. */
   const seating = new Seating(sprite);
   view.objects.add(sprite.container, avatarDepthKey(avatar));
@@ -177,6 +197,8 @@ async function start(): Promise<void> {
     path = p.slice(1);
     seating.clear();
     serving = null;
+    // A first step kicks up a little dust.
+    if (path.length > 0 && avatar.state !== 'walk') atmosphere.puff(avatar);
     avatar = { ...avatar, state: path.length > 0 ? 'walk' : 'idle' };
   };
   /** Walks to a world point (the nearest free spot if it is blocked). False if unreachable. */
@@ -314,6 +336,7 @@ async function start(): Promise<void> {
       info,
       runBar,
       toast,
+      sound: (name) => sound.play(name),
       dpr,
       backTo: () => ROOM_NAMES[room.kind].toLowerCase(),
       onDone: async () => {
@@ -335,6 +358,7 @@ async function start(): Promise<void> {
 
   const redraw = (): void => {
     shown = snapCamera(camera, dpr());
+    backdrop.update(shown, app.screen.width, app.screen.height);
     view.world.scale.set(shown.zoom);
     view.world.position.set(-shown.x * shown.zoom, -shown.y * shown.zoom);
     let text = `zoom ${shown.zoom.toFixed(2)}x  dpr ${dpr()}`;
@@ -376,13 +400,19 @@ async function start(): Promise<void> {
   const newIntro = { running: false, hidden: new Set<number>() };
   /** Items not drawn now: a moved item (and its riders) while placing, and the intro's items. */
   const hiddenUids = (): Set<number> => new Set([...placer.hiddenUids(), ...newIntro.hidden]);
+  /** Draws the items, and their shadows and lights. */
+  const syncItems = (): void => {
+    const hidden = hiddenUids();
+    itemViews.sync(items, hidden);
+    atmosphere.setItems(items, hidden);
+  };
   /** What is on screen now (for the intro's coins). */
   const shown0 = (): Camera => shown;
   /** Applies items from the GameAPI (null = refused). */
   const applyItems = (next: ItemsResult): boolean => {
     if (!next) return false;
     items = next;
-    itemViews.sync(items, hiddenUids());
+    syncItems();
     roomChanged();
     void refreshInventory().then(refreshShop).then(refreshHint);
     return true;
@@ -394,10 +424,12 @@ async function start(): Promise<void> {
       commit: async (s, snap) => {
         if (s.uid === null) return false;
         const at = { center: s.center, facing: s.facing, snap };
-        return applyItems(s.origin ? await api.moveItem(s.uid, at) : await api.placeItem(s.uid, at));
+        const ok = applyItems(s.origin ? await api.moveItem(s.uid, at) : await api.placeItem(s.uid, at));
+        if (ok) sound.play('pop');
+        return ok;
       },
       onChange: () => {
-        itemViews.sync(items, hiddenUids());
+        syncItems();
         hotbar.setHidden(placer.active);
       },
     },
@@ -496,6 +528,7 @@ async function start(): Promise<void> {
         if (next && next.id === room.id) {
           room = next;
           view.setRoom(room);
+          atmosphere.setRoom(room);
         }
         toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
         await refreshShop();
@@ -528,6 +561,7 @@ async function start(): Promise<void> {
         if (next.id === room.id) {
           room = next;
           view.setRoom(room);
+          atmosphere.setRoom(room);
         }
         await refreshShop();
         await refreshInventory();
@@ -652,6 +686,8 @@ async function start(): Promise<void> {
         if (here) tillCoins.add(e.till);
         break;
       case 'customers':
+        // The door bell: someone new came in.
+        if (here && e.customers.some((c) => !shopCustomers.some((o) => o.id === c.id))) sound.play('bell');
         shopCustomers = e.customers;
         customers.sync(here ? e.customers : [], room.id);
         break;
@@ -659,6 +695,7 @@ async function start(): Promise<void> {
         if (here) bubbles.addNode(e.customerId, pixelIcon(e.reaction), REACTION_BUBBLE_MS);
         break;
       case 'sale':
+        sound.play('coin');
         if (here) floats.add(e.till, e.price);
         else toast(`Sold for ${e.price} gold in your shop.`);
         void refreshInventory();
@@ -822,6 +859,26 @@ async function start(): Promise<void> {
       api.newGame();
       window.location.reload();
     },
+    prefs,
+    onSound: (on) => {
+      prefs.sound = on;
+      sound.setEnabled(on);
+      savePrefs(storage, prefs);
+    },
+    onVolume: (v) => {
+      prefs.volume = v;
+      sound.setVolume(v);
+      savePrefs(storage, prefs);
+    },
+    onLighting: (on) => {
+      prefs.lighting = on;
+      atmosphere.setLighting(on);
+      lightingOn = on;
+      backdrop.container.visible = on && !dungeon.isActive;
+      backdrop.refresh();
+      redraw();
+      savePrefs(storage, prefs);
+    },
     onDebug: (on) => {
       label.setVisible(on);
       blockerButtons.setVisible(on);
@@ -837,6 +894,8 @@ async function start(): Promise<void> {
   function setDungeonMode(on: boolean): void {
     uiRoot.classList.toggle('in-dungeon', on);
     view.world.visible = !on;
+    backdrop.container.visible = !on && lightingOn;
+    backdrop.refresh();
     sprite.container.visible = !on;
     hotbar.setHidden(on);
     runBar.setHidden(!on);
@@ -897,7 +956,7 @@ async function start(): Promise<void> {
     const gold = (await api.getPlayer()).wallet.gold;
     newIntro.running = true;
     newIntro.hidden = new Set(startItems.map((i) => i.uid));
-    itemViews.sync(items, hiddenUids());
+    syncItems();
     hint.set(null);
     info.setGold(0);
     const home = { x: avatar.x, y: avatar.y };
@@ -923,7 +982,7 @@ async function start(): Promise<void> {
     for (const item of [counter, ...startItems.filter((i) => i !== counter)]) {
       if (skipped || !item) break;
       newIntro.hidden.delete(item.uid);
-      itemViews.sync(items, hiddenUids());
+      syncItems();
       itemViews.pop(item.uid);
       await wait(INTRO_STEP_MS);
     }
@@ -955,7 +1014,7 @@ async function start(): Promise<void> {
     skip.remove();
     newIntro.running = false;
     newIntro.hidden.clear();
-    itemViews.sync(items, hiddenUids());
+    syncItems();
     sprite.container.visible = true;
     if (skipped) {
       path = [];
@@ -976,6 +1035,7 @@ async function start(): Promise<void> {
     room = state.room;
     bounds = roomBoundsRect(room);
     view.setRoom(room);
+    atmosphere.setRoom(room);
     itemViews.setRoom(room.id);
     blockers.setRoom(room);
     items = await api.getItems();
@@ -985,7 +1045,7 @@ async function start(): Promise<void> {
     goal = null;
     seating.clear();
     marked = null;
-    itemViews.sync(items, hiddenUids());
+    syncItems();
     roomChanged();
     info.setRoom(room.kind);
     roomLevels.set(room.id, room.level);
@@ -1096,6 +1156,9 @@ async function start(): Promise<void> {
   });
   let clockMs = 0;
   const heads = new Map<number, Point>();
+  /** The avatars that stand or walk on the floor (their shadows). */
+  const feet: Point[] = [];
+  let lastStepBeat = 0;
   app.ticker.add((ticker) => {
     if (dungeon.isActive) {
       control.update(ticker.deltaMS);
@@ -1116,6 +1179,14 @@ async function start(): Promise<void> {
     if (path.length === 0 && avatar.state !== 'walk') farm.arrived();
     placer.tick(ticker.deltaMS);
     sprite.update(avatar, clockMs);
+    // Soft footsteps, one per bob of the walk.
+    const beat = Math.floor(clockMs / (WALK_BOB_MS * 2));
+    if (avatar.state === 'walk' && beat !== lastStepBeat && sprite.container.visible) sound.play('step');
+    lastStepBeat = beat;
+    feet.length = 0;
+    if (sprite.container.visible && (avatar.state === 'walk' || avatar.state === 'idle')) feet.push(avatar);
+    customers.feet(feet);
+    atmosphere.update(ticker.deltaMS, clockMs, feet);
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));
     view.update();
     // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).

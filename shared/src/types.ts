@@ -91,7 +91,16 @@ export interface FurnitureType {
    *  from the anchor: on a shelf board, inside a case). Other facings and types without it: spread
    *  along the top. */
   slotSpots?: { dx: number; dy: number }[];
+  /** A light source (atmosphere step): the client draws a warm pool around the item. Drawing only. */
+  light?: LightSource;
   art: FurnitureArt;
+}
+
+/** A light pool: radius in world px, color a palette index, flicker 0 (steady) to 1 (a candle). */
+export interface LightSource {
+  radius: number;
+  color: number;
+  flicker: number;
 }
 
 export type SeatPoseKind = 'sit' | 'lie';

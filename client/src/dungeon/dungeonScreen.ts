@@ -56,6 +56,8 @@ export interface DungeonContext {
   info: InfoPanel;
   runBar: RunBar;
   toast: Toast;
+  /** Plays a sound (atmosphere step). */
+  sound(name: 'hit' | 'hurt' | 'coin'): void;
   dpr(): number;
   /** The run ended and its screen was closed: back to the room the player came from. */
   onDone(result: RunResult): Promise<void>;
@@ -267,12 +269,14 @@ export class DungeonScreen {
           v.flashEnemy(e.enemyId);
           this.floats.add(v.enemyPoint(e.enemyId) ?? head(), `-${e.damage}`, 'damage');
           this.shakeBy(HIT_SHAKE_PX);
+          this.ctx.sound('hit');
           break;
         }
         case 'enemy_hit':
           v.hurtPlayer();
           this.floats.add(head(), `-${e.damage}`, 'hurt');
           this.shakeBy(HURT_SHAKE_PX);
+          this.ctx.sound('hurt');
           break;
         case 'enemy_miss':
           this.floats.add(head(), 'dodged!', 'info');
@@ -321,6 +325,7 @@ export class DungeonScreen {
         case 'swing':
           v.shakeRock(e.rockId);
           this.shakeBy(HIT_SHAKE_PX / 2);
+          this.ctx.sound('hit');
           break;
         case 'too_hard': {
           const rk = run.rocks.find((x) => x.id === e.rockId);

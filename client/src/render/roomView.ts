@@ -18,7 +18,13 @@ export class RoomView {
   /** Debug drawings on the floor (Blockers mode), above rugs and below the wall. */
   readonly debugLayer = new Container();
   readonly wallLayer = new Container();
+  /** Shadows and ground dust (atmosphere step): on the floor, under the depth-sorted objects. */
+  readonly shadowLayer = new Container({ eventMode: 'none' });
   readonly objects = new DepthLayer();
+  /** The light map (ambient and light pools), over the room and under the markers. */
+  readonly lightLayer = new Container({ eventMode: 'none' });
+  /** Dust specks floating in the light pools. */
+  readonly airLayer = new Container({ eventMode: 'none' });
   /** Markers above everything in the room (the farm's ripe markers, step 9b). */
   readonly markerLayer = new Container({ eventMode: 'none' });
   /** Build mode ghost, above everything. */
@@ -31,7 +37,10 @@ export class RoomView {
       this.rugLayer,
       this.debugLayer,
       this.wallLayer,
+      this.shadowLayer,
       this.objects.container,
+      this.lightLayer,
+      this.airLayer,
       this.markerLayer,
       this.ghostLayer,
     );

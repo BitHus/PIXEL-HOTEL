@@ -220,6 +220,7 @@
   },
   {
     "id": "lamp",
+    "light": { "radius": 96, "color": 10, "flicker": 1 },
     "name": "Candle stand",
     "category": "home_furniture",
     "theme": "tavern",
@@ -812,6 +813,7 @@
   },
   {
     "id": "counter",
+    "light": { "radius": 56, "color": 11, "flicker": 0.3 },
     "name": "Counter",
     "category": "shop_furniture",
     "theme": "tavern",
@@ -1410,6 +1412,7 @@
   },
   {
     "id": "skull_lamp",
+    "light": { "radius": 72, "color": 18, "flicker": 0.6 },
     "name": "Skull lamp",
     "category": "crypt_furniture",
     "theme": "crypt",
@@ -1520,6 +1523,7 @@
   },
   {
     "id": "wall_torch",
+    "light": { "radius": 88, "color": 9, "flicker": 1 },
     "name": "Wall torch",
     "category": "crypt_furniture",
     "theme": "crypt",

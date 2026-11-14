@@ -12,6 +12,11 @@ export interface SettingsHooks {
   restoreBackup(): void;
   newGame(): void;
   onDebug(on: boolean): void;
+  /** The device settings as stored (atmosphere step), and what happens when they change. */
+  prefs: { sound: boolean; volume: number; lighting: boolean };
+  onSound(on: boolean): void;
+  onVolume(volume: number): void;
+  onLighting(on: boolean): void;
 }
 
 export interface SettingsPanel {
@@ -56,11 +61,44 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
     hooks.onDebug(debug);
   });
 
+  // Sound and lighting (atmosphere step); saved on this device.
+  let sound = hooks.prefs.sound;
+  const soundBtn = textButton(`Sound: ${sound ? 'on' : 'off'}`, () => {
+    sound = !sound;
+    soundBtn.textContent = `Sound: ${sound ? 'on' : 'off'}`;
+    soundBtn.classList.toggle('on', sound);
+    hooks.onSound(sound);
+  });
+  soundBtn.classList.toggle('on', sound);
+  const volume = el('input', 'volume-slider');
+  volume.type = 'range';
+  volume.min = '0';
+  volume.max = '100';
+  volume.step = '5';
+  volume.value = String(Math.round(hooks.prefs.volume * 100));
+  volume.setAttribute('aria-label', 'Volume');
+  const volumeText = el('span', 'volume-value', volume.value);
+  volume.addEventListener('input', () => {
+    volumeText.textContent = volume.value;
+    hooks.onVolume(Number(volume.value) / 100);
+  });
+  const volumeRow = el('label', 'volume-row');
+  volumeRow.append(el('span', '', 'Volume'), volume, volumeText);
+  let lighting = hooks.prefs.lighting;
+  const lightBtn = textButton(`Lighting: ${lighting ? 'on' : 'off'}`, () => {
+    lighting = !lighting;
+    lightBtn.textContent = `Lighting: ${lighting ? 'on' : 'off'}`;
+    lightBtn.classList.toggle('on', lighting);
+    hooks.onLighting(lighting);
+  });
+  lightBtn.classList.toggle('on', lighting);
+  const lightNote = el('p', 'panel-note', 'Turn lighting off if the game feels slow.');
+
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section');
     s.append(el('h3', '', title), ...buttons);
     return s;
   };
-  shell.body.append(section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

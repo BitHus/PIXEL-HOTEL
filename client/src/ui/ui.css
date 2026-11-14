@@ -2485,3 +2485,64 @@
 .confirm-short {
   font-size: 14px;
 }
+
+/* ---------- Settings: sound and lighting (atmosphere step) ---------- */
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-family: var(--font);
+  color: var(--wood);
+}
+
+.volume-value {
+  min-width: 28px;
+  text-align: right;
+}
+
+.volume-slider {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.volume-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  background: var(--wood);
+  border: 2px solid #3e2731;
+}
+
+.volume-slider::-moz-range-track {
+  height: 4px;
+  background: var(--wood);
+  border: 2px solid #3e2731;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 24px;
+  margin-top: -10px;
+  background: #feae34;
+  border: 2px solid #3e2731;
+  border-radius: 0;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 20px;
+  background: #feae34;
+  border: 2px solid #3e2731;
+  border-radius: 0;
+}
+
+.panel-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--wood);
+}

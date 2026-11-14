@@ -471,7 +471,8 @@ docs/UI-REFERENCE.md layout with parchment panels), 5b (sitting and lying; lying
 5b: drawn inside the bed only), 7 (shop, gold and upgrades; serving at the counter added after
 it), 7b (room shapes, character creation, the new-game intro), 8 (dungeon logic) and 9 (the
 dungeon in the game: view, HUD, screens, crafting, the Blacksmith), 9b (farm and cooking) and 9c
-(mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
+(mine and forge) are done, and so is the UI polish step (after 9c, see UI POLISH). The atmosphere
+step (lighting, shadows, backdrop, dust, sound; see ATMOSPHERE) is done too. Step 6 (docs/STYLE.md) has not been done yet. Next (docs/NEXT-STEPS.md):
 turn on dungeon round 2 and tune it with the simulation, then step 6 (art), then step 10.
 
 Layout:
@@ -818,6 +819,43 @@ Conventions:
   - Panels pop in (scale 0.95 -> 1, 120 ms), off with prefers-reduced-motion.
   - Checked with a headless browser at 360 x 740 and 1280 x 800 (all panels, confirm panels,
     character creation, shop, farm, mine, dungeon).
+- ATMOSPHERE (owner's request after the UI polish; rendering, sound and data only, no rules):
+  - Light sources are data: FurnitureType.light = { radius (world px), color (palette index),
+    flicker (0 steady .. 1 candle) } (types.ts LightSource). furniture.json: lamp (candle stand),
+    counter (the till glow), skull_lamp, wall_torch. The cooking pot uses config COOKING_POT_LIGHT.
+  - Config (end of shared/config.ts): AMBIENT_LIGHT per room kind { color, strength } (the
+    darkness; the owner tunes it here), LIGHT_PIXEL 2, LIGHT_RINGS, LIGHT_STRENGTH, LIGHT_STEP_MS,
+    FLICKER_RADIUS / FLICKER_BRIGHTNESS, DOOR_LIGHT, DUST_PER_LIGHT, DUST_MAX, WALK_PUFF_MS,
+    IDLE_SHIFT_EVERY_MS / HOLD_MS, SOUND_DEFAULT_VOLUME, PREFS_KEY.
+  - client/src/render/atmosphere.ts (pure, tested): hash01, ambientColor, scaleColor, lightRings,
+    flickerAt (steps with LIGHT_STEP_MS, from a seed and the time), lightPoint, itemLights,
+    ellipseRows (pixel ellipse), shadowSize, idleShift, dustLightCount, dustSpeck.
+  - client/src/render/roomAtmosphere.ts (RoomAtmosphere; main.ts calls setRoom after every
+    view.setRoom, setItems from syncItems (use syncItems, never itemViews.sync alone), update every
+    frame with the feet of standing / walking avatars, puff, setLighting). Lighting = a light map
+    RenderTexture (1 texel = LIGHT_PIXEL art px): white outside the room, the ambient colour on the
+    room, lights added as stepped rings (blend 'add'), plus the stepped daylight patch at the door
+    (hotel and shop); the map lies over the room with blend 'multiply' (RoomView.lightLayer). It is
+    redrawn only every LIGHT_STEP_MS or when something changed. Shadows: two-shade pixel ellipses in
+    RoomView.shadowLayer (under the objects) for blocking floor items, the pot and avatars
+    (AvatarSprite(look, false) = no built-in shadow; the dungeon keeps the built-in one). Dust:
+    1 px specks in RoomView.airLayer, the walk puff in shadowLayer.
+  - client/src/render/backdrop.ts (Backdrop): dark planks that move with the camera plus a stepped
+    vignette, baked into ONE opaque screen picture that is redrawn only when the camera moves. Under
+    view.world on the stage; hidden in the dungeon / mine (they keep their own look).
+  - CustomerViews: standing customers shift 1 px sideways now and then (AvatarSprite.setShift).
+  - Sound: client/src/audio/sound.ts (Sound; Web Audio, no files): step, coin, bell, pop, click,
+    hit, hurt. The context is made on the first tap or key. main.ts: a step per walk bob, coin at a
+    'sale' event, bell when a new customer id appears, pop when a placement is accepted, click for
+    every <button> inside the UI root, hit / hurt from DungeonContext.sound (mine swings use hit).
+  - Device settings: client/src/api/prefs.ts (Prefs { sound, volume, lighting }, parsePrefs,
+    loadPrefs, savePrefs; tested) in SaveStorage under PREFS_KEY, NOT in the GameState (no save
+    version change). Settings panel: Sound on / off, Volume slider, Lighting on / off. Lighting off
+    hides the light map, the dust and the backdrop (the void is the old flat colour), so the game
+    draws exactly what it drew before this step.
+  - Frame time, headless software renderer at 360 x 740, dpr 2 (not a real phone; only the
+    relation counts): before 27 ms, lighting off 26 ms, lighting on 63 ms (two extra full-screen
+    layers). Not measured on a real phone.
 - GAME API (step 5): the client changes nothing itself. Walking, sitting, placing (only
   inventory items: placeItem), moving, rotating, picking up, the hotbar, the look and chat all
   go through GameAPI; item calls return the current room's items + the inventory furniture

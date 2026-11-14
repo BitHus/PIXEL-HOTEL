@@ -31,11 +31,11 @@ function drawParts(ps: Part[], shadow: boolean): Graphics {
 
 type View = 'down' | 'up' | 'right' | 'sit-down' | 'sit-up' | 'sit-right';
 
-function drawViews(look: AvatarLook): Record<View, Graphics> {
+function drawViews(look: AvatarLook, shadow: boolean): Record<View, Graphics> {
   return {
-    down: drawParts(avatarParts(look, 'down'), true),
-    up: drawParts(avatarParts(look, 'up'), true),
-    right: drawParts(avatarParts(look, 'right'), true),
+    down: drawParts(avatarParts(look, 'down'), shadow),
+    up: drawParts(avatarParts(look, 'up'), shadow),
+    right: drawParts(avatarParts(look, 'right'), shadow),
     'sit-down': drawParts(sitParts(look, 'down'), false),
     'sit-up': drawParts(sitParts(look, 'up'), false),
     'sit-right': drawParts(sitParts(look, 'right'), false),
@@ -52,7 +52,11 @@ export class AvatarSprite {
   private lying: { g: Graphics; bed: FurnitureType; facing: Facing; dx: number; dy: number } | null = null;
   private last: Pick<Avatar, 'facing' | 'state'> = { facing: 'down', state: 'idle' };
 
-  constructor(look: AvatarLook) {
+  /** `shadow` false: the room draws the shadow itself, under everything (atmosphere step). */
+  constructor(
+    look: AvatarLook,
+    private readonly shadow = true,
+  ) {
     this.look = look;
     this.views = this.draw(look);
     this.container.addChild(this.body);
@@ -88,7 +92,7 @@ export class AvatarSprite {
   }
 
   private draw(look: AvatarLook): Record<View, Graphics> {
-    const views = drawViews(look);
+    const views = drawViews(look, this.shadow);
     this.body.addChild(...Object.values(views));
     return views;
   }
@@ -99,6 +103,11 @@ export class AvatarSprite {
     this.show(avatar);
     const up = avatar.state === 'walk' && Math.floor(timeMs / WALK_BOB_MS) % 2 === 1;
     this.body.y = up ? -WALK_BOB_PX : 0;
+  }
+
+  /** A small sideways shift of the body in whole px (idle customers; 0 = none). */
+  setShift(px: number): void {
+    this.body.x = px;
   }
 
   private show({ facing, state }: Pick<Avatar, 'facing' | 'state'>): void {
