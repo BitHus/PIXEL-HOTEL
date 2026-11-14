@@ -1382,7 +1382,11 @@ Notes:
     GameAPI puts the avatar on the seat at once (it only tracks time for walking).
   - Depth: a sitting avatar sorts right after its seat (right before it when the seat faces
     up); a lying avatar always right after its bed, with the blanket inside the avatar sprite.
-  - Tapping the floor stands up and walks (the path leaves via the nearest free cell). Moving or
+  - Tapping the floor stands up and walks (the path leaves via the nearest free cell). Out of
+    bed (fix after 9e): LocalGameAPI.standingAvatar puts a lying avatar next to the bed at once
+    (standUpSpot, leaning to the side it is going to) before the path is made; before, the walk
+    started in the middle of the bed and the avatar was hidden behind the bed's drawing for about
+    a second. The client jumps to the path's first point as usual (more than 8 px off). Moving or
     picking up the item: the avatar stands at standUpSpot (where it is if that cell is free, else
     the nearest free cell center); LocalGameAPI and main.ts both do this with the same rule.
   - The bone chair (crypt furniture) does not exist yet; give it one 'sit' seat when it is added.
