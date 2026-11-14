@@ -2,10 +2,11 @@
 // ambient with stepped light pools, slow dust in the pools and the puff of a first step. Drawing
 // only; the numbers come from atmosphere.ts (pure) and shared/config.ts.
 //
-// Lighting: a small light map (one texel = LIGHT_PIXEL art px) starts white outside the room,
-// gets the ambient colour on the room, and every light adds stepped rings on top (additive).
-// The map is drawn over the room with the 'multiply' blend mode, so pools are hard pixel rings
-// (no blur) and lit places keep their true colours.
+// Lighting: a small light map (one texel = LIGHT_PIXEL art px) that lies over the room as ONE
+// normal layer. It is empty outside the room and holds the ambient shade (a dark warm colour with
+// a low alpha) on it. Every light first takes the shade away in stepped rings (blend 'erase'),
+// then lays its own warm colour over the room in the same rings with a small alpha: the glow.
+// So pools are hard pixel rings (no blur), brighter and warmer toward the flame.
 
 import { Container, Graphics, RenderTexture, Sprite, Texture, type Renderer } from 'pixi.js';
 import {
@@ -17,7 +18,8 @@ import {
   LIGHT_PIXEL,
   LIGHT_RINGS,
   LIGHT_STEP_MS,
-  LIGHT_STRENGTH,
+  LIGHT_CUT,
+  LIGHT_GLOW,
   PALETTE,
   WALK_PUFF_MS,
   borderRects,
@@ -34,7 +36,7 @@ import {
   type Room,
 } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
-import { ambientColor, dustLightCount, dustSpeck, ellipseRows, flickerAt, itemLights, lightRings, scaleColor, shadowSize, type RoomLight } from './atmosphere.ts';
+import { dustLightCount, dustSpeck, ellipseRows, flickerAt, itemLights, lightRings, shadowSize, type RoomLight } from './atmosphere.ts';
 import type { RoomView } from './roomView.ts';
 
 /** The shadow leans away from the light (top-left). */
@@ -75,6 +77,8 @@ export class RoomAtmosphere {
   // The light map.
   private readonly scene = new Container();
   private readonly base = new Graphics();
+  /** Takes the ambient shade away around lights (blend 'erase'). */
+  private readonly cut = new Graphics();
   private readonly glow = new Graphics();
   private map: RenderTexture | null = null;
   private readonly mapSprite = new Sprite();
@@ -89,9 +93,8 @@ export class RoomAtmosphere {
     private readonly renderer: Renderer,
   ) {
     view.shadowLayer.addChild(this.itemShadows);
-    this.glow.blendMode = 'add';
-    this.scene.addChild(this.base, this.glow);
-    this.mapSprite.blendMode = 'multiply';
+    this.cut.blendMode = 'erase';
+    this.scene.addChild(this.base, this.cut, this.glow);
     this.mapSprite.scale.set(LIGHT_PIXEL);
     view.lightLayer.addChild(this.mapSprite);
   }
@@ -116,13 +119,11 @@ export class RoomAtmosphere {
     this.scene.scale.set(1 / LIGHT_PIXEL);
     this.scene.position.set(-this.bounds.x / LIGHT_PIXEL, -this.bounds.y / LIGHT_PIXEL);
 
-    // White (no change) outside the room, the ambient colour on it, then the door's daylight.
+    // Nothing outside the room; the ambient shade on it.
     const b = this.base.clear();
-    b.rect(this.bounds.x, this.bounds.y, w * LIGHT_PIXEL, h * LIGHT_PIXEL).fill(0xffffff);
     const amb = AMBIENT_LIGHT[room.kind];
-    const dark = ambientColor(PALETTE[amb.color] ?? '#000000', amb.strength);
     for (const r of [...floorRects(room), doorRect(room), ...wallBands(room), ...borderRects(room)]) {
-      if (r.w > 0 && r.h > 0) b.rect(r.x, r.y, r.w, r.h).fill(dark);
+      if (r.w > 0 && r.h > 0) b.rect(r.x, r.y, r.w, r.h).fill({ color: PALETTE[amb.color] ?? '#000000', alpha: amb.strength });
     }
     for (const p of this.puffs.splice(0)) p.c.destroy({ children: true });
     this.dirty = true;
@@ -214,30 +215,36 @@ export class RoomAtmosphere {
     if (step === this.lastStep && !this.dirty) return;
     this.lastStep = step;
     this.dirty = false;
+    const cut = this.cut.clear();
     const g = this.glow.clear();
-    this.drawDoorLight(g);
+    this.drawDoorLight(cut, g);
     for (const l of this.lights) {
       const f = flickerAt(l.seed, timeMs, l.light.flicker);
-      const color = scaleColor(PALETTE[l.light.color] ?? '#ffffff', (LIGHT_STRENGTH * f.brightness) / LIGHT_RINGS);
-      for (const r of lightRings(l.light.radius * f.radius, LIGHT_RINGS)) g.circle(l.x, l.y, r).fill(color);
+      const color = PALETTE[l.light.color] ?? '#ffffff';
+      for (const r of lightRings(l.light.radius * f.radius, LIGHT_RINGS)) {
+        cut.circle(l.x, l.y, r).fill({ color: 0xffffff, alpha: LIGHT_CUT });
+        g.circle(l.x, l.y, r).fill({ color, alpha: LIGHT_GLOW * f.brightness });
+      }
     }
-    this.renderer.render({ container: this.scene, target: this.map, clear: true });
+    this.renderer.render({ container: this.scene, target: this.map, clear: true, clearColor: [0, 0, 0, 0] });
   }
 
   /** Daylight falling in through the door (hotel and shop): stepped, widest and faintest far in. */
-  private drawDoorLight(g: Graphics): void {
+  private drawDoorLight(cut: Graphics, g: Graphics): void {
     const room = this.room;
     if (!room || room.kind === 'farm') return;
     const z = doorZoneRect(room);
     const door = doorRect(room);
     const steps = 4;
-    const color = scaleColor(PALETTE[DOOR_LIGHT.color] ?? '#ffffff', DOOR_LIGHT.strength / steps);
+    const color = PALETTE[DOOR_LIGHT.color] ?? '#ffffff';
     const bottom = z.y + z.h;
     for (let k = 0; k < steps; k++) {
       const depth = Math.round((DOOR_LIGHT.depth * (steps - k)) / steps);
       const grow = (steps - 1 - k) * 12;
-      g.rect(z.x - grow, bottom - depth, z.w + grow * 2, depth).fill(color);
-      g.rect(door.x, door.y, door.w, door.h).fill(color);
+      for (const r of [{ x: z.x - grow, y: bottom - depth, w: z.w + grow * 2, h: depth }, door]) {
+        cut.rect(r.x, r.y, r.w, r.h).fill({ color: 0xffffff, alpha: LIGHT_CUT });
+        g.rect(r.x, r.y, r.w, r.h).fill({ color, alpha: DOOR_LIGHT.strength / steps });
+      }
     }
   }
 
