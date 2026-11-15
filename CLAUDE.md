@@ -209,6 +209,8 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   data, drawn by render/drawIcon.ts; NOTES BG2).
 - Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
   texts) next, on the cell grid.
+- Step BG3 is HALF done: A (gains lists in every GameAPI result, shared/src/gains.ts; NOTES Gains) done;
+  B (popups above the head, queue, Settings toggle) next.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder). Next (docs/ROADMAP.md): BG3-BG9
   (block world, docs/BLOCKS-PLAN.md), then 9t B/C, 9g, 9h, 9i.
 - DUNGEON_ROUND is 1. SAVE_VERSION is 14. LocalGameAPI only. All art is placeholder shapes and boxes

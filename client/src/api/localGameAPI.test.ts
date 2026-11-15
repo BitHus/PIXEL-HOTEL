@@ -264,6 +264,7 @@ describe('LocalGameAPI shop (step 7)', () => {
     expect(await api.currentHint()).toMatch(/Catalog/);
     const first = await api.buyCatalog('chair');
     expect(first?.first).toBe(true);
+    expect(first?.gains).toEqual([{ itemId: 'chair', count: 1, rank: 'common' }]);
     expect(await api.currentHint()).toMatch(/Place/);
     expect((await api.buyCatalog('chair'))?.first).toBe(false);
     expect(await api.buyCatalog('counter')).toBeNull();

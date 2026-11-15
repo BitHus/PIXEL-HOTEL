@@ -18,6 +18,7 @@ import type { SeatSpot } from './seats.ts';
 import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
 import type { DungeonInput, DungeonRun, RunBag, RunPlace } from './dungeon/run.ts';
 import type { ShopGearId } from './gear.ts';
+import type { GainList } from './gains.ts';
 
 export interface RoomState {
   room: Room;
@@ -82,6 +83,8 @@ export interface BuyResult {
   uid: number;
   /** True for the first catalog purchase of the game (it goes straight into placing). */
   first: boolean;
+  /** What the buy gave (step BG3). */
+  gains: GainList;
 }
 
 /** The run in progress (step 9). `paused` after a reload until dungeonResume. */
@@ -114,6 +117,8 @@ export interface RunResult {
 export interface RunUpdate {
   run: DungeonRun;
   result: RunResult | null;
+  /** What this call put in the run bag (chest, kill drop, mimic, rock), not what did not fit (step BG3). */
+  gains: GainList;
 }
 
 /** The farm as the client sees it (step 9b). `at` is the API's clock when it was read: stages are
@@ -129,6 +134,7 @@ export interface HarvestResult {
   farm: FarmView;
   crop: CropId;
   qty: number;
+  gains: GainList;
 }
 
 /** One tree as the client sees it (step 9f). */
@@ -151,6 +157,8 @@ export interface ChopUpdate {
   hits: number;
   /** What a felled tree gave. */
   loot?: Partial<Record<MaterialId, number>>;
+  /** The same as loot, as a gains list (empty unless the tree fell; step BG3). */
+  gains: GainList;
   lakeside: LakesideView;
 }
 
@@ -165,6 +173,8 @@ export interface CastPlan {
 export interface FishUpdate {
   session: FishSession;
   caught: { id: string; rank: Rank; cm: number | null; record: boolean } | null;
+  /** What the catch put in the bag: the fish or the fished-up thing (empty without a catch; step BG3). */
+  gains: GainList;
 }
 
 export interface GameAPI {
@@ -249,20 +259,20 @@ export interface GameAPI {
   /** Pauses the run (the tab was hidden); dungeonResume goes on. */
   dungeonPause(): Promise<void>;
   dungeonResume(): Promise<void>;
-  /** Crafts a recipe (shared/data/recipes.json). False without all ingredients. */
-  craft(recipeId: string): Promise<boolean>;
-  /** Buys gear or a potion in the Blacksmith. False if owned, at the potion limit, or gold is short. */
-  buyGear(id: ShopGearId): Promise<boolean>;
+  /** Crafts a recipe (shared/data/recipes.json). Null without all ingredients; else what it made (a style recipe: empty list). */
+  craft(recipeId: string): Promise<GainList | null>;
+  /** Buys gear or a potion in the Blacksmith. Null if owned, at the potion limit, or gold is short. */
+  buyGear(id: ShopGearId): Promise<GainList | null>;
   // ---------- Step 9b: the farm and cooking ----------
   getFarm(): Promise<FarmView>;
   /** Plants one seed from the bag on an empty plot. Null = refused (not empty, no seed). */
   plant(plot: number, seed: SeedId): Promise<FarmView | null>;
   /** Harvests a ripe plot into the bag (1 to 2 crops). Null = not ripe. */
   harvest(plot: number): Promise<HarvestResult | null>;
-  /** Buys seeds from the catalog. False = not for sale or not enough gold. */
-  buySeeds(seed: SeedId, qty: number): Promise<boolean>;
-  /** Cooks one food at the pot. False without all ingredients. */
-  cook(food: FoodId): Promise<boolean>;
+  /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
+  buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
+  /** Cooks one food at the pot. Null without all ingredients. */
+  cook(food: FoodId): Promise<GainList | null>;
   // ---------- Step 9f: the lakeside (woodcutting and fishing) ----------
   getLakeside(): Promise<LakesideView>;
   /** One swing at a tree (the avatar must stand next to it, else null). 'cooldown' and 'regrowing' change nothing. */
@@ -284,8 +294,8 @@ export interface GameAPI {
   /** Starts a mine visit (free; from player level 3). Null if locked or a run is already going.
    *  The visit runs through getRun / dungeonInput / dungeonAdvance like a dungeon run. */
   mineStart(): Promise<DungeonRun | null>;
-  /** Smelts one bar (3 ore + the fee). False without the ore or the gold. */
-  smelt(bar: BarId): Promise<boolean>;
-  /** Makes the next gear piece at the forge (it replaces the one before). False if it cannot. */
-  forge(piece: GearId): Promise<boolean>;
+  /** Smelts one bar (3 ore + the fee). Null without the ore or the gold. */
+  smelt(bar: BarId): Promise<GainList | null>;
+  /** Makes the next gear piece at the forge (it replaces the one before). Null if it cannot. */
+  forge(piece: GearId): Promise<GainList | null>;
 }

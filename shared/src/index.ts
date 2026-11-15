@@ -24,6 +24,7 @@ export * from './rng.ts';
 export * from './shop.ts';
 export * from './customers.ts';
 export * from './ranks.ts';
+export * from './gains.ts';
 export * from './seen.ts';
 export * from './fish.ts';
 export * from './lakeLayout.ts';

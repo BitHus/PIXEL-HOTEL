@@ -10,6 +10,10 @@
 
 import {
   AVATAR_START_FROM_BOTTOM,
+  gain,
+  gainsFromRunEvents,
+  gainsSince,
+  type GainList,
   DUNGEON_HINT,
   HINTS,
   RECIPES,
@@ -480,8 +484,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!next) return null;
     const uid = next.ledger.at(-1)?.furnitureUids?.[0];
     if (uid === undefined) return null;
+    const gains = gainsSince(this.state, next);
     this.commit(this.hintDone(next, 0));
-    return { uid, first };
+    return { uid, first, gains };
   }
 
   async buyStyle(kind: StyleKind, id: string): Promise<boolean> {
@@ -555,7 +560,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async dungeonAdvance(dtMs: number): Promise<RunUpdate | null> {
     const run = this.state.run;
     if (!run) return null;
-    if (this.runPaused || !(dtMs > 0)) return { run, result: null };
+    if (this.runPaused || !(dtMs > 0)) return { run, result: null, gains: [] };
     return this.applyRun(step(run, [], dtMs, this.rng));
   }
 
@@ -567,19 +572,18 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.runPaused = false;
   }
 
-  async craft(recipeId: string): Promise<boolean> {
+  async craft(recipeId: string): Promise<GainList | null> {
     const recipe = RECIPES.find((r) => r.id === recipeId);
     const next = recipe ? craftRecipe(recipe, this.state, this.now()) : null;
-    if (!next) return false;
-    this.commit(next);
-    return true;
+    return next ? this.commitGains(next) : null;
   }
 
-  async buyGear(id: ShopGearId): Promise<boolean> {
+  async buyGear(id: ShopGearId): Promise<GainList | null> {
     const next = buyGear(this.state, id, this.now());
-    if (!next) return false;
+    if (!next) return null;
     this.commit(next);
-    return true;
+    // Gear and potions are not in the ledger's materials: the piece itself is the gain.
+    return [gain(id)];
   }
 
   // ---------- The mine and the forge (step 9c) ----------
@@ -595,18 +599,16 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return r.run;
   }
 
-  async smelt(bar: BarId): Promise<boolean> {
+  async smelt(bar: BarId): Promise<GainList | null> {
     const next = smelt(this.state, bar, this.now());
-    if (!next) return false;
-    this.commit(next);
-    return true;
+    return next ? this.commitGains(next) : null;
   }
 
-  async forge(piece: GearId): Promise<boolean> {
+  async forge(piece: GearId): Promise<GainList | null> {
     const next = forgePiece(this.state, piece, this.now());
-    if (!next) return false;
+    if (!next) return null;
     this.commit(next);
-    return true;
+    return [gain(piece)];
   }
 
   // ---------- The farm and cooking (step 9b) ----------
@@ -626,15 +628,14 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async harvest(plot: number): Promise<HarvestResult | null> {
     const r = harvestPlot(this.state, plot, this.now(), this.rng);
     if (!r) return null;
+    const gains = gainsSince(this.state, r.state);
     this.commit(r.state);
-    return { farm: this.farmView(), crop: r.harvest.crop, qty: r.harvest.qty };
+    return { farm: this.farmView(), crop: r.harvest.crop, qty: r.harvest.qty, gains };
   }
 
-  async buySeeds(seed: SeedId, qty: number): Promise<boolean> {
+  async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> {
     const next = buySeeds(this.state, seed, qty, this.now());
-    if (!next) return false;
-    this.commit(next);
-    return true;
+    return next ? this.commitGains(next) : null;
   }
 
   async getLakeside(): Promise<LakesideView> {
@@ -656,8 +657,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (Math.hypot(me.x - tree.x, me.y - tree.y) > CHOP_REACH_PX) return null;
     const r = chop(this.state, index, this.now(), this.rng);
     if (!r) return null;
+    const gains = gainsSince(this.state, r.state);
     if (r.state !== this.state) this.commit(r.state);
-    return { kind: r.result.kind, hits: r.result.hits, ...(r.result.loot ? { loot: r.result.loot } : {}), lakeside: this.lakesideView() };
+    return { kind: r.result.kind, hits: r.result.hits, ...(r.result.loot ? { loot: r.result.loot } : {}), gains, lakeside: this.lakesideView() };
   }
 
   async castAt(target: Point): Promise<CastPlan | null> {
@@ -684,18 +686,20 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const next = fishStep(this.fish, inputs, dtMs, this.rng);
     this.fish = next;
     let caught: FishUpdate['caught'] = null;
+    let gains: GainList = [];
     if (next.phase === 'done') {
       this.fish = null;
       if (next.outcome === 'caught') {
         const before = this.state.player.biggest[next.catchId] ?? 0;
         const banked = bankCatch(this.state, next, this.now());
         if (banked) {
+          gains = gainsSince(this.state, banked);
           this.commit(banked);
           caught = { id: next.catchId, rank: next.rank, cm: next.cm, record: next.cm !== null && next.cm > before };
         }
       }
     }
-    return { session: structuredClone(next), caught };
+    return { session: structuredClone(next), caught, gains };
   }
 
   async fishStop(): Promise<void> {
@@ -714,11 +718,16 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return gold;
   }
 
-  async cook(food: FoodId): Promise<boolean> {
+  async cook(food: FoodId): Promise<GainList | null> {
     const next = cook(this.state, food, this.now());
-    if (!next) return false;
+    return next ? this.commitGains(next) : null;
+  }
+
+  /** Saves a new state and returns what it gave (the items the ledger wrote since the old state). */
+  private commitGains(next: GameState): GainList {
+    const gains = gainsSince(this.state, next);
     this.commit(next);
-    return true;
+    return gains;
   }
 
   /** A fishing line that is cast (not saved: a reload loses it, and nothing is lost with it). */
@@ -762,7 +771,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
         floor: next.floor,
         lastHitBy: next.lastHitBy,
       };
-      return { run: next, result };
+      return { run: next, result, gains: gainsFromRunEvents(next.events) };
     }
     const worth = next.events.some((e) => e.t !== 'windup') || next.status !== this.state.run?.status;
     if (worth || next.timeMs - this.runSavedAt >= RUN_SAVE_EVERY_MS) {
@@ -771,7 +780,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     } else {
       this.state = { ...this.state, run: next };
     }
-    return { run: next, result: null };
+    return { run: next, result: null, gains: gainsFromRunEvents(next.events) };
   }
 
   /** Tests only: furniture of these types into the bag (ledger reason 'debug'). */
