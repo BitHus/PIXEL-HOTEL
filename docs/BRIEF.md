@@ -713,3 +713,6 @@ changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as writ
   for use (cook, brew, craft, gear, build, plant, splice); surplus is sold by tapping at the trader (Sell tab on
   the bar, low rate). Gold comes from guests, dungeon run gold and the trader; gems from play and a small tavern tip.
   (Steps S1 to S3, after 9t C.)
+- THE BAR AND THE KITCHEN (owner, 15 Nov): the bar carries a REGISTER and TAP STANDS (2 taps each, 12 mugs per tap, loaded
+  from the bag; drinks are served by pouring); the KITCHEN is a staff-only zone with prep tables that enlarge stove batches.
+  (Step T1, after S1 to S3.)
