@@ -50,7 +50,7 @@ describe('icon style (room art looks like the item icon)', () => {
     const out = iconStylePixels([[0, 0, 4, 4, '#808080']]);
     const px = new Map<string, string>();
     for (const [x, y, w, h, c] of out) for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) px.set(`${x + i},${y + j}`, c);
-    expect(px.size).toBe(6 * 6); // 4x4 plus a 1 px outline all round
+    expect(px.size).toBe(4 * 4 + 4 * 4); // 4x4 plus a 1 px outline on the four sides (no corners)
     expect(px.get('-1,-1')).toBeUndefined(); // no corner pixel in the outline
     expect(px.get('-1,0')).toBe(px.get('0,-1')); // outline colour
     expect(px.get('0,0')).not.toBe('#808080'); // lighter top-left edge
