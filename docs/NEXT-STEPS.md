@@ -249,7 +249,7 @@ docs/BRIEF.md, docs/NOTES.md, tick docs/ROADMAP.md; commit and push; tell me wha
 
 ```
 Step BG1: building goes per cell (owner's decision; this changes CLAUDE.md sections 4, 5, 6, 7: update them and docs/BRIEF.md). BUILD_CELL = 32 px in config.
-1. shared: room shapes in cells (convert roomShapes.json; round up to whole cells; keep levels containing the previous one). Furniture footprints in whole cells (w x d), anchor = bottom-centre cell, rotation swaps w and d. Validity: fully on floor cells, no overlap with another blocking item (rugs and floor decor = background layer, overlap anything), not on the 2x2 door zone, door still reaches the middle, wall items in wall cells, onSurface on a surface item. Remove the 4 px snap and the Shift no-snap.
+1. shared: room shapes in cells (convert roomShapes.json; round up to whole cells; keep levels containing the previous one). Furniture footprints in whole cells (w x d), anchor = bottom-centre cell, rotation swaps w and d. Validity: fully on floor cells, no overlap with another blocking item (rugs and floor decor = background layer, overlap anything), not on the 2x2 door zone, door still reaches the middle, onSurface on a surface item. WALL ITEMS STAY FREE (owner 15 Nov): they keep sliding along the back wall band at any x and y inside it, 4 px snap, Shift = no snap, not on the door; only floor items go per cell, so keep the 4 px snap code for wall items.
 2. Floors and wall styles per cell: paint a cell or a dragged rectangle (the Styles panel keeps unlocked-forever rules). Walls per segment. Back wall band = 2 cells.
 3. Navigation: the nav grid is the build grid (32 px cells, 8 directions, no corner cutting, smoothing). Remove the AVATAR_RADIUS growing for rooms (blockers are whole cells). The dungeon keeps its own grid. Seats, the counter-behind rule and customer npcGrid keep working.
 4. Client: draw a faint cell grid while placing or painting (toggle), ghost snaps to cells, tap-to-walk unchanged. Placer, picking and the hotbar keep their flow.
@@ -282,10 +282,33 @@ Step BG4: gems, the second currency (owner's request; update CLAUDE.md section 9
 Step BG5: blocks (owner's request; read BLOCKS-PLAN 3.5 and ask me its open questions b, c, d before building). shared/data/blocks.json: { id, name, hardness (hits), rank, drops, seedId, placeIn, icon }. Foreground layer, one block per cell. Place: select in the hotbar, tap a free cell within reach (config, 3 cells). Break: tap a block, one hit per tap, 250 ms cooldown, hardness taps, then it drops itself, sometimes a seed, sometimes gems; hit cracks drawn in code. Only the owner changes a room. Blocks block navigation (rebuild the grid, re-path). A starter set of 10 blocks with original names (dirt, stone, planks, glass...). The catalog sells a few for gold, the rest come from drops and splicing. Tests: hits to break, drops with a fixed rng, placement rules, nav after change, migration. Build mode vs direct placing as I decide.
 ```
 
+## Step BG5b - Hold to punch (owner's request, 15 Nov)
+
+```
+Step BG5b: hold to repeat instead of clicking all the time (docs/BLOCKS-PLAN.md section 3.5, HOLD TO REPEAT). This changes the INPUT convention in CLAUDE.md: update it and docs/BRIEF.md. Read CLAUDE.md, docs/NOTES.md (input, tap rules, mining, woodcutting) first. Plan first (max 8 lines); no art tools.
+1. Press and hold on a block, a grown plant, a mine rock or a tree keeps hitting at that thing's cooldown rate (blocks 250 ms, rock 400 ms, tree 400 ms) until it breaks, the press ends, or the avatar is out of reach (then it walks closer and goes on). Works with mouse hold on PC and finger hold on a phone and the touch screen. The first hit happens on press, not after a delay.
+2. Hold with a block selected on free cells places blocks; dragging along cells places a line (one per cell, within reach, same placement rules).
+3. A press that moves over 8 px is a drag = camera pan; it never punches or places. A short tap still works as one hit as now. Two-finger pinch never punches.
+4. NOT for the dungeon fight (one hit per tap, no auto-attack) and NOT for fishing: say so in the docs.
+5. The hold logic is a pure helper (holdTick(state, nowMs, cooldownMs) -> hit or not) with tests: first hit on press, rate follows the cooldown, stops on release or pan, no double hits per tick. The client only feeds pointer events into it.
+6. Hit feedback: crack stages and a small pop per hit as in BG5; popups and gems come through the same API calls as before (one request per hit).
+Tests: the helper, plus API paths still refusing out-of-reach and non-owner. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE, INPUT), docs/NOTES.md, tick BG5b in docs/ROADMAP.md, commit and push. Tell me what to try on PC (mouse hold) and phone (finger hold, drag to pan, hold on a rock and a tree).
+```
+
 ## Step BG6 - Seeds and the free-form farm
 
 ```
 Step BG6: seeds and farming by punching (owner's request; read BLOCKS-PLAN 3.6). Every block and crop can have a seed item. Plant a seed in a free soil cell of a farm room (not only fixed plots). 3 growth stages in real time, also while closed (time passed in); time by rank (config SEED_GROW_MS). Harvest = punch the grown tree: 1 to 4 blocks or crops, a chance for a seed, a chance for gems (BG4). Unharvested trees stay ready; no watering. The farm room becomes free-form (paths and fences from blocks). Migrate the old plots: crops.json become seeds, planted crops keep their progress, soil cells replace plots, the cooking pot stays. Food, cooking and brewing still use crops. Quests, hints and texts updated. Tests: growth over real time and a reload, harvest rolls with a fixed rng, the migration, ledger.
+```
+
+## Step BG3b+4b - Finish popups and gems (planner's catch-up, 15 Nov)
+
+```
+Step BG3b+4b: finish what BG3 and BG4 left open (CLAUDE.md CURRENT STATE: popups are wired for blocks only; gems only drop from blocks). Read CLAUDE.md, docs/BLOCKS-PLAN.md sections 3.3 and 3.4, docs/NOTES.md (BG3, BG5, BG6) first. Plan first (max 8 lines); tests first; no art tools.
+1. POPUPS (BG3 B): wire ui/gainPopups.ts to every source that already returns a gains list: dungeon chest, enemy kill, mimic and boss, bank at the exit, fish catch and fished-up things, tree chop, mined ore, farm harvest (BG6), forge and crafting output, buying, quest or Book reward, and later pack opening. Works in rooms, the dungeon and the mine, readable at every zoom on a phone. Rendering only.
+2. GEMS (BG4): add the remaining sources to config GEMS and gemDrop(source, rank, rng): chest, kill, mimic and boss, mined rock, tree chop, fish catch, harvest, quest, Book reward. Small amounts; tuned later in BG9. Gem pickups (floor gems that fly to the avatar when near or tapped) for dungeon and mine and rooms; in the dungeon gems belong to the run (kept on Leave, half lost on death like gold). Everything through ledger.applyChange. Gains lists carry the gems so the popup shows them.
+3. tools/simulate-economy.ts prints gems per hour per source.
+Tests: gemDrop per source and rank with a fixed rng, the dungeon death rule for gems, every API path that gives items also returns its gems, the ledger adds up. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE: BG3 and BG4 done), docs/NOTES.md, tick BG3 and BG4 in docs/ROADMAP.md, commit and push. Tell me what to try on my phone (chest, kill, fish, chop, mine, harvest, craft, die and check the gems).
 ```
 
 ## Step BG7 - Splicing
@@ -297,11 +320,68 @@ Step BG7: splicing (owner's request; read BLOCKS-PLAN 3.7). Plant two different 
 ## Step BG8 - Packs
 
 ```
-Step BG8: packs bought with gems (owner's request; ASK me to confirm the fairness rules in BLOCKS-PLAN 3.8 and update CLAUDE.md section 13 in the same step). shared/data/packs.json: { id, name, gemPrice, rolls, pool, rankWeights }. Packs: Random Blocks Pack, Basic Seeds Pack, Common Clothes Pack, Rare Clothes Pack. Pure openPack(state, packId, rng): rank first (RANK_WEIGHTS times the pack's multiplier), then an item; clothes packs roll only pieces not owned yet until the category is complete, then they return gems. A Packs panel (a tab in the Catalog or a button in the right column per docs/UI-REFERENCE.md): each card shows price, possible contents and the odds. Every buy asks first (ui/confirmBuy.ts). Opening: a short pop, items float above the head (BG3), land in the bag. Ledger for everything. Tests: odds with a fixed rng across many rolls, no repeats of owned clothes, gems back at completion, ledger, a refused buy without enough gems.
+Step BG8: packs bought with gems (owner's request; docs/BLOCKS-PLAN.md section 3.8). Read CLAUDE.md, docs/BLOCKS-PLAN.md, docs/NOTES.md (gems, ledger, clothing, blocks, seeds, gain popups, confirmBuy) and docs/UI-REFERENCE.md first. This touches CLAUDE.md section 13 ("No loot boxes") and section 9 (a gem sink): update both and docs/BRIEF.md in this step and state the fairness rules there. The owner accepts these rules: gems are earned in play only (never bought with money); the contents and odds are shown on the pack card before buying; DUPLICATES ARE ALLOWED (extra copies are spares, a reason to buy more packs and trade goods later); no timers or limited offers that push buying. Plan first (max 8 lines); tests first or together with the rules; no art tools; original names only.
+
+1. shared/data/packs.json: { id, name, gemPrice, rolls, pool, rankWeights, icon }. Packs in v1: Random Blocks Pack, Basic Seeds Pack, Common Clothes Pack, Rare Clothes Pack. Prices in config PACKS (starter numbers; BG9 tunes them: the first Common Clothes Pack about an hour of play). Pools are data: blocks (blocks.json), seeds (crop and block seeds), clothing by rank (clothing.json, only pieces that are hidden until unlocked).
+2. Pure openPack(state, packId, rng) in shared/: checks gems; per roll picks a rank first (RANK_WEIGHTS times the pack's multiplier, as everywhere), then an item of that rank in the pool. Clothes packs may give a piece already owned: the first copy unlocks it forever, extra copies stay in the bag as spares (x2, x3; clothing items get a count). Spares can be sold at the stall for gold (config SPARE_SELL = baseValue) until trading exists. Blocks and seeds stack as always. A refused buy (not enough gems, unknown pack, empty pool) returns null and changes nothing. Everything through ledger.applyChange (gems out, items in, clothing unlocked) and the gains list.
+3. Packs panel (a tab in the Catalog or a button in the right column per docs/UI-REFERENCE.md, built with ui/panelShell.ts): one card per pack with its icon, gem price, how many items it gives, the possible contents with the rank odds in percent, and for clothes packs how many pieces you still miss (duplicates are possible). Every buy asks first (ui/confirmBuy.ts). Not enough gems greys the button and says how many more.
+4. Opening: a short pop animation drawn in code, then the items float above the avatar's head (BG3 popups, rank colours, sparkle for ultra_rare and legendary) and land in the bag. A newly unlocked piece says "New!" with a "wear it" button in the toast; a duplicate says "Spare x2".
+5. The Book: pack finds count as found like any other item.
+6. SAVE_VERSION bump + MIGRATIONS entry if the state shape changes (spare counts for clothing, an opened-packs counter for later quests), with a test.
+7. tools/simulate-economy.ts: print gems needed per pack and the expected hours of play per pack at the current gem income.
+Tests: odds over many rolls with a fixed rng match the table, a duplicate gives a spare and never unlocks twice, selling a spare, gems out and items in add up in the ledger, a refused buy changes nothing, the Book. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE, sections 9 and 13), docs/BRIEF.md, docs/NOTES.md, tick BG8 in docs/ROADMAP.md, commit and push. Tell me how to run it and what to try on my phone (earn gems, open each pack, check the odds on the card, buy with too few gems, open clothes packs until you get a duplicate, sell a spare).
 ```
 
 ## Step BG9 - Balance
 
 ```
 Step BG9: balance the block world with tools/simulate-economy.ts (gems per hour from each source, pack prices, grow times, how fast the first clothes pack is reachable, no infinite loops like seed -> block -> seed with a net gain). Print a table; tune config only; keep the first hour feeling generous. Update the first-hour hints and the quests with the block world (planting, splicing, opening a pack). Tick everything in the ROADMAP.
+```
+
+# Inn steps (planner's merge proposal, 15 Nov; read docs/INN-PLAN.md first; owner confirms section 3)
+
+Every prompt: read CLAUDE.md, docs/INN-PLAN.md, docs/NOTES.md (the parts named), docs/UI-REFERENCE.md. Plan first (max 8 lines), tests first, SAVE_VERSION bump + migration test when state changes, typecheck + tests, update CLAUDE.md / BRIEF / NOTES, tick ROADMAP, commit and push, say what to try on my phone. No art tools; original names.
+
+## Step R1 - Refactor (no behaviour change)
+
+```
+Step R1: split the biggest files by part, with NO change in behaviour. Targets: client/src/main.ts (1 893 lines), client/src/api/localGameAPI.ts (1 181), shared/src/config.ts (931, split by topic into shared/src/config/*.ts re-exported from config.ts so imports keep working). Rules: no file over about 500 lines after; each new file one purpose; every existing test passes unchanged; no renames of exported names; no UI or rule changes. First write down the split in docs/NOTES.md (max 15 lines), then do it in small commits. Run the full tests and typecheck after every move and compare a save file before and after (same state in, same state out). Tell me what to try on my phone: play five minutes in every place and check nothing changed.
+```
+
+## Step M-A - Carpentry (blocks become furniture)
+
+```
+Step M-A: carpentry (INN-PLAN M-A). Add about 12 furniture types made from blocks and materials in shared/data/furniture.json (inCatalog false, placeIn by use, icon from BG2, colours from the block they are made of) and recipes in shared/data/recipes.json: for example planks + cloth -> plank bench, stone -> stone fireplace (a light), glass + planks -> glass lamp (a light), brick -> brick oven (decor for the tavern), thatch -> thatch rug, clay -> clay jug (on-surface), planks -> stool and a round table. Costs use blocks and a few materials and no gold; crafting needs no fee. A Carpentry tab in the existing Workshop panel (ui/workshopPanel.ts) listing recipes with the blocks you own (grey when missing). Crafting returns a gains list (popup), goes through the ledger, items show in the Book (furniture tab) and the Book rank rules. Appeal and baseValue for the new pieces follow the existing furniture scale. Tests: every recipe's inputs and output exist, recipes are not cheaper than catalog equivalents, the ledger, the Book. Do not touch the tavern rules or room rules.
+```
+
+## Step M-B - The connected Inn
+
+```
+Step M-B: one Inn with doors (INN-PLAN M-B). 1. An Inn name chosen in character creation (max 16, same character rules, default "The Inn"), saved in the state, shown in the info panel. 2. Doors between own zones: the hotel room (suite), the shop (tavern) and the farm (garden) each get a door spot to their neighbours (data: shared/data/innDoors.json, in cells on the room edge; door cells are blocked for items like the door zone today and never covered by blocks). Walking onto a door spot changes the room with a short fade (the existing room switch) and arrives at the matching door of the other room. The Map stays as fast travel and still lists dungeon, mine and lakeside. 3. A walking order suite - tavern - garden; the lakeside, mine and dungeon stay on the Map only. 4. Migration: existing rooms get door spots; items and blocks on them go to the bag with a toast. Tests: door spots valid per shape and level, nothing on them, travel keeps the avatar and run state rules (no door during a run), the migration. Customers, guests and blocks must not break (door_blocked rules still hold).
+```
+
+## Step K1 - The tavern kitchen (cooking moves from the farm to the tavern)
+
+```
+Step K1: you cook in the tavern (owner's decision 15 Nov; docs/INN-PLAN.md M-D). Do it AFTER 9t part B (guests and serving exist) and BEFORE 9t part C. This changes CLAUDE.md section 10b ("a fixed cooking pot" in the farm) and section 1 / 5 (tavern): update them and docs/BRIEF.md. Read CLAUDE.md, docs/INN-PLAN.md, docs/NOTES.md (Farm and cooking 9b, BG6, STEP 9t, brewing in the 9t prompt in docs/NEXT-STEPS.md), docs/UI-REFERENCE.md first. Plan first (max 8 lines); tests first; no art tools; original names.
+1. THE STOVE: a new furniture type 'stove' (cell footprint, a light source, placeIn 'shop', rank common, in the catalog; icon from BG2). The tavern has at least one: a new game starts with one placed in the tavern next to the bar spot; the cooking pot is removed from the farm (fixed blockers, noPlaceRects, farm art). Cooking panel opens from the stove (tap it in play mode; the avatar walks next to it first), no longer from the farm.
+2. COOKING IN REAL TIME: shared/data/food.json recipes get cookMs (config COOK_MS by rank: turnip roast about 20 s, stew 1 min, rarer ones up to 5 min; the first dish ready within 30 s for a new player). A stove holds one batch at a time (config STOVE_BATCH_MAX = 4 dishes of one recipe; more stoves = more batches in parallel). Put the inputs in (ledger), the batch cooks also while the game is closed (time passed in, same pattern as brewing), tap the stove to collect (a gains list -> popup). Nothing is collected automatically. A burnt-food rule is NOT added.
+3. WHAT DISHES DO: unchanged effects (heal, attack, max hp, attack cooldown) in the dungeon through the lunch box; dishes also appear on the tavern MENU (9t: guests order them) and can sit on the stall. Cooking never needs the garden room: crops come from the bag.
+4. MIGRATION: SAVE_VERSION bump + MIGRATIONS entry with a test: an old save gets one stove in the tavern (or in the bag if the spot is taken, with a toast that explains cooking has moved); the old pot spot in the farm is freed for soil/blocks; nothing is lost; planted crops are untouched.
+5. HINTS AND TEXTS: the farm hint "cook at the pot" becomes "cook in the tavern"; the Map card of the farm no longer mentions cooking; the quest hint chain still ends in a dish eaten in a run.
+6. tools/simulate-economy.ts: dishes per hour per stove and gold per dish through the menu.
+Tests: cooking over real time and across a reload, batch limits, two stoves in parallel, collecting, the ledger, the migration, the farm no longer has a pot, nav grids after the pot is gone. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE, 10b), docs/BRIEF.md, docs/UI-REFERENCE.md, docs/NOTES.md, tick K1 in docs/ROADMAP.md, commit and push. Tell me what to try on my phone (open an old save, find the stove, cook, close the game, come back and collect, eat a dish in a run).
+```
+
+## Step K2 - Ripening (aged drinks)
+
+```
+Step K2: drinks can ripen (owner's request 15 Nov; docs/INN-PLAN.md M-D2). Do it AFTER 9t part C (brewing and the Menu panel exist). Read CLAUDE.md, docs/INN-PLAN.md, docs/NOTES.md (STEP 9t, brewing, the Book, K1), shared/data/drinks.json and docs/UI-REFERENCE.md first. This changes CLAUDE.md section 1 / 5 (tavern): update it and docs/BRIEF.md. Plan first (max 8 lines); tests first; no art tools; original names.
+1. TIERS: config RIPEN = [{ tier: 'aged', afterMin, valueMult 1.6, tipMult }, { tier: 'vintage', afterMin, valueMult 3, tipMult }], with afterMin scaled by the drink's rank (common: aged after 30 min, vintage after 3 h; rare: 2 h / 8 h; longer for higher ranks). Per-drink overrides allowed in drinks.json (optional ripen field). Aged and vintage are separate item ids built from drinks.json (<id>_aged, <id>_vintage: materials group 'drink', name "Aged root ale", "Vintage root ale", the same icon with a coloured band: gold for aged, red for vintage), so stacks, ledger, Book, stall, menu and gains work unchanged. The tier items are Book finds (a Drinks tab if none exists); rank of the item = the base drink's rank, vintage drinks one step higher at most.
+2. CASKS: the keg rack (9t catalog furniture) holds CASK_SLOTS = 3 casks; a new furniture type 'cask' is not needed: a slot is data on the keg rack. Put a full batch of mugs from the bag into a free slot (a batch = the mugs of one brew, all of one drink, up to the brew size); it starts ripening (real time, closed game included; time passed in, no Date.now in shared/). Tap the rack to see each slot with its time bar and tier; collect at any moment: you get the drink at its CURRENT tier (fresh if too early). Nothing is collected automatically. A collected cask frees the slot.
+3. GUESTS: a taste trait in the guest rules (config TASTE_AGED_CHANCE about 25% of guests): a taste guest orders aged or vintage when the menu has it, accepts a price up to tolerance times the tier's value, and tips by tipMult. The Menu panel lists aged and vintage drinks like any other item with their own price; the price feedback rule of section 9 stays. Out of stock = off the menu.
+4. UI: a Cask panel from the keg rack (ui/panelShell.ts, UI-REFERENCE patterns; slot cards with icon, drink, time left, tier chip; Fill and Collect buttons); a small tier band on mug icons everywhere (drawIcon option). Reading pace on all texts.
+5. SAVE_VERSION bump + MIGRATIONS entry with a test (empty cask slots on existing keg racks).
+6. tools/simulate-economy.ts: gold per hour of play for fresh versus aged versus vintage at the current guest pace, so ripening is worth it but not required (target: aged about 1.4 to 1.7 times the gold of fresh for the same mugs, vintage about 2.5 to 3, with the waiting).
+Tests: ripening over real time and across a reload, tiers at the exact boundaries, collecting early, slot limits, the taste-guest order choice with a fixed rng, the menu price rule for tiers, the ledger, the Book, the migration. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE, sections 1 and 5), docs/BRIEF.md, docs/UI-REFERENCE.md, docs/NOTES.md, tick K2 in docs/ROADMAP.md, commit and push. Tell me what to try on my phone (brew, fill a cask, close the game, come back, collect aged, put it on the menu, watch a taste guest order it).
 ```
