@@ -244,13 +244,17 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, simulate, simulate:dungeon. Vite base stays './'.
-- shared/src: all rules (pure), config.ts (every constant), types.ts, api.ts (GameAPI),
+- shared/src: all rules (pure), config.ts (re-exports config/*.ts: the constants by topic; tavern numbers stay in config.ts), types.ts, api.ts (GameAPI),
   palette.ts, save.ts (migrations); shared/src/dungeon: run, step, generate, loot, bank.
 - shared/data: JSON data (furniture, materials, styles, roomShapes, clothing, loot, levels, gear,
   forge, recipes, crops, food, fish, npcLines, bookRewards).
-- client/src: main.ts (wires everything), api/ (LocalGameAPI, storage, prefs), render/ (room,
-  items, avatars, atmosphere), input/ (camera control, intro), ui/ (HTML panels, ui.css), build/
-  (placer), dungeon/, farm/, lakeside/, audio/, debug/, fonts/, assets/.
+- client/src: main.ts (only wiring: start() runs the parts in game/ in order), game/ (one part per area:
+  core, avatarWalk, roomItems, uiShell, cameraSetup, placing, shopPanels, craftPanels, shopLife, tavernLife,
+  hotbarBag, settingsPanels, dungeonMode, roomFlow, blockInput, pointerInput, gameLoop; ctx.ts = shared state
+  `st`, late-bound functions `late`, and the types), api/ (localGameAPI.ts = the class; walkApi, roomsApi, shopApi,
+  blocksFarmApi, dungeonApi, lakesideApi, packsApi, progressApi, tavernApi, savesApi = one area each; apiShared.ts;
+  storage, prefs), render/ (room, items, avatars, atmosphere), input/ (camera control, intro), ui/ (HTML panels,
+  ui.css), build/ (placer), dungeon/, farm/, lakeside/, audio/, debug/, fonts/, assets/.
 - tools/: simulate-economy.ts, simulate-dungeon.ts. docs/: BRIEF, NOTES, ROADMAP, NEXT-STEPS,
   UI-REFERENCE. Tests are *.test.ts next to the code. Imports use the .ts extension.
 

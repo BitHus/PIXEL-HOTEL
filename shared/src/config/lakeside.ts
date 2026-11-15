@@ -1,0 +1,77 @@
+// ---------- Lakeside: woodcutting and fishing (section 10d, step 9f) ----------
+/** The lake: three water rectangles around the pier (floor px). The lake is about a third of the 576 x 384 lakeside. */
+export const LAKE_WATER: readonly { x: number; y: number; w: number; h: number }[] = [
+  { x: 288, y: 32, w: 256, h: 128 },
+  { x: 288, y: 192, w: 256, h: 96 },
+  { x: 384, y: 160, w: 160, h: 32 },
+];
+/** The wooden pier (walkable) reaching into the lake from the shore. */
+export const LAKE_PIER = { x: 256, y: 160, w: 128, h: 32 } as const;
+/** The 8 trees: anchor = the bottom middle of the trunk. They stay (a stump) when felled. */
+export const LAKE_TREES: readonly { x: number; y: number }[] = [
+  { x: 48, y: 96 }, { x: 112, y: 64 }, { x: 176, y: 96 }, { x: 48, y: 224 },
+  { x: 144, y: 256 }, { x: 208, y: 288 }, { x: 432, y: 352 }, { x: 528, y: 320 },
+];
+/** A tree's trunk footprint (blocks walking), px: it sits in the bottom half of one cell (the anchors are on cell centres). */
+export const TREE_FOOTPRINT = { w: 24, d: 16 } as const;
+/** Bushes: decoration only (drawn, never in the way). */
+export const LAKE_BUSHES: readonly { x: number; y: number }[] = [
+  { x: 24, y: 160 }, { x: 96, y: 150 }, { x: 250, y: 60 }, { x: 310, y: 300 }, { x: 366, y: 312 },
+  { x: 470, y: 304 }, { x: 556, y: 352 }, { x: 24, y: 330 }, { x: 170, y: 330 },
+];
+/** A tree falls after this many hits (a swing counts hitsPerSwing hits: the steel axe 2). */
+export const TREE_HITS = 5;
+/** The axe cooldown, ms: each tap is one swing, taps during the cooldown are ignored. */
+export const AXE_COOLDOWN_MS = 400;
+/** A felled tree gives this much wood (both ends included), plus a rolled rank drop (resin, amber, golden acorn). */
+export const TREE_WOOD_MIN = 2;
+export const TREE_WOOD_MAX = 3;
+/** A felled tree grows back after this long of real time (also while the game is closed), ms. */
+export const TREE_REGROW_MS = 5 * 60_000;
+/** The avatar stands within this distance (feet to the tree's base) to swing, px. */
+export const CHOP_REACH_PX = 40;
+/** The avatar casts from a free spot within this distance of the water, px. */
+export const CAST_REACH_PX = 24;
+/** The bobber lands at least this far from the avatar (a cast goes out into the lake; more than the avatar is tall, so it is not hidden behind it), px. */
+export const CAST_MIN_PX = 80;
+/** The fishing session runs in fixed ticks, like the dungeon, ms (finer than the dungeon's 100: the reel is a moving bar). */
+export const FISH_TICK_MS = 50;
+/** The bobber floats this long before a bite (random between), ms. */
+export const FISH_WAIT_MIN_MS = 2000;
+export const FISH_WAIT_MAX_MS = 8000;
+/** The "!" stays this long (tap in time to hook), by the rank of the fish: the rarer, the shorter. */
+export const FISH_BITE_MS = { common: 700, rare: 650, ultra_rare: 550, legendary: 450 } as const;
+/**
+ * THE REEL (owner's change after the first playtest, like Stardew Valley's bar): a bar from 0 to
+ * FISH_BAR (positions are in bar units). A fish swims back and forth in it; the player moves a
+ * green catch box that follows the fish: HOLD (or tap) pushes the box to the right, and it falls
+ * back to the left by itself. While the fish is inside the box the catch bar fills; outside it
+ * drains. Full = caught, empty = it escapes.
+ */
+export const FISH_BAR = 100;
+/** The catch bar (0 to FISH_REEL_FULL) starts here when the fish is hooked. */
+export const FISH_REEL_START = 30;
+export const FISH_REEL_FULL = 100;
+/** The box: how hard holding pushes it right and how hard it falls left (units/s^2), a tap's kick (units/s), the slowdown per second, the top speed (units/s) and how much of its speed a wall gives back. */
+export const FISH_THRUST = 300;
+export const FISH_GRAVITY = 170;
+export const FISH_TAP_KICK = 24;
+export const FISH_BOX_DRAG = 1.1;
+export const FISH_BOX_MAX_SPEED = 80;
+export const FISH_BOX_BOUNCE = 0.25;
+/** The width of the catch box with the basic rod, bar units (a better rod adds boxBonus and makes it fall slower: gravityScale). */
+export const FISH_BOX_BASE = 26;
+/**
+ * By rank (the rarer, the harder): how fast the fish swims (units/s), how long it keeps one
+ * direction (ms, min and max), the chance that it darts (suddenly 2.4 x as fast) at a new
+ * direction, how fast the catch bar fills while the fish is in the box and how fast it drains
+ * while it is out (per second).
+ */
+export const FISH_REEL = {
+  common: { speed: 16, turnMin: 1600, turnMax: 3000, dart: 0, gain: 22, drain: 9 },
+  rare: { speed: 24, turnMin: 1300, turnMax: 2500, dart: 0.08, gain: 20, drain: 12 },
+  ultra_rare: { speed: 31, turnMin: 1000, turnMax: 2100, dart: 0.15, gain: 19, drain: 14 },
+  legendary: { speed: 38, turnMin: 800, turnMax: 1700, dart: 0.25, gain: 17, drain: 17 },
+} as const;
+/** A reel that lasts longer than this is lost (the fish gets away), ms. A safety limit. */
+export const FISH_REEL_MAX_MS = 45_000;

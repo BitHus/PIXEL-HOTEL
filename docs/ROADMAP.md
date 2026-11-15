@@ -41,7 +41,7 @@ BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools
 Merge the block world, the tavern and the personal room into one flow: a garden, a tavern and a
 private suite connected by doors, with expeditions out of the inn. Proposed order:
 0.1 PLAYTEST (phase 2.1 brought forward): one full hour from a new game, one fix list, fix it.
-0.2 R1 Refactor: split main.ts, localGameAPI.ts and config.ts; no behaviour change. [prompt ready]
+0.2 [x] R1 Refactor: split main.ts, localGameAPI.ts and config.ts; no behaviour change (NOTES R1).
 0.3 9t B (guests and serving), K1 Tavern kitchen: cooking moves from the farm to the tavern
     [prompt ready], 9t C (brewing, Menu), K2 Ripening: aged and vintage
     drinks in casks, real time [prompt ready], then M-A Carpentry (blocks -> furniture) [prompt ready],
