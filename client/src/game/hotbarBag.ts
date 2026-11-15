@@ -15,7 +15,7 @@ export async function setupHotbarBag(g: G10) {
   const {
     toast, menu, placer, viewCenter, build, blockViews, plantViews, syncGrid, ui, panels, api, side, info,
     runBar, newIntro, dungeon, workshop, cooking, brewing, book, refreshTravel, dungeonBadge, dungeonButton, paintBar,
-    paint, paintableStyles, prefs, catalog, roomPanel, shelfPanel, st, late,
+    paint, paintableStyles, prefs, catalog, roomPanel, st, late,
   } = g;
   late.refreshInventory = refreshInventory;
 
@@ -137,6 +137,7 @@ late.hotbar = hotbar;
   async function refreshInventory(): Promise<void> {
     st.inventory = await api.getInventory();
     const p = await api.getPlayer();
+    st.tavern = { ...st.tavern, appeal: (await api.getTavern()).appeal };
     if (!newIntro.running) {
       info.setGold(p.wallet.gold);
       info.setGems(p.wallet.gems);
@@ -159,8 +160,7 @@ late.hotbar = hotbar;
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares });
-    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.shop.appeal : null);
-    shelfPanel.refresh(st.shop, st.inventory);
+    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null);
     const materials = st.inventory.materials;
     const usable = (typeId: string): boolean =>
       countInInventory(st.inventory.furniture, typeId) > 0 && fitsRoomKind(getFurnitureType(typeId), st.room);

@@ -2,16 +2,16 @@
 // storage and used for Export / Import. Old versions are migrated step by step with MIGRATIONS;
 // a version without a migration path is refused ('too_old'), and the caller resets with a message.
 
-import { CUSTOMER_CALL_AFTER_MS, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
+import { CUSTOMER_FIRST_ID, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
 import { addShopStartItems, addStove, addTavern } from './newPlayer.ts';
 import { placedCount, snapItemsToGrid } from './gridMigration.ts';
-import { emptyShop } from './shop.ts';
 import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
-import type { Player } from './types.ts';
+import { applyChange, type Change } from './ledger.ts';
+import type { LootRef, Player } from './types.ts';
 import type { GameState } from './gameState.ts';
 
 export interface SaveFile {
@@ -23,7 +23,7 @@ export interface SaveFile {
 export type SaveProblem = 'bad_json' | 'not_a_save' | 'too_old' | 'too_new' | 'invalid';
 
 export type LoadResult =
-  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean; kitchenChanged: boolean }
+  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean; kitchenChanged: boolean; shopClosed: boolean }
   | { ok: false; problem: SaveProblem; version?: number };
 
 /**
@@ -38,7 +38,7 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
   2: (state) => {
     if (!isObject(state) || !isObject(state.player) || !Array.isArray(state.items) || !Array.isArray(state.rooms)) return state;
     const player = state.player as unknown as Player;
-    const s = { ...state, shop: emptyShop(player.shopRoomId, 0), hintsDone: 0 } as unknown as GameState;
+    const s = { ...state, shop: { roomId: player.shopRoomId, slots: [], nextCustomerInMs: 10_000, saleHistory: {}, customers: [], nextCustomerId: -1, updatedAt: 0, lastLines: {} }, hintsDone: 0 } as unknown as GameState;
     try {
       return addShopStartItems(s);
     } catch {
@@ -130,7 +130,7 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
         decorUid: null,
         seat: null,
         sitChecked: false,
-        callInMs: CUSTOMER_CALL_AFTER_MS,
+        callInMs: 0,
         ...c,
         phase: 'queue',
         path: [],
@@ -278,6 +278,29 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       return { ...state, tavern: { ...state.tavern, cooks: [] } };
     }
   },
+  // 21 -> 22 (step S1, the shop is the tavern): loot customers are gone. Every good on a slot goes back to the bag (ledger
+  // 'shop_closed': same uids, no finds, no gain popup); stall tables, shelves and cases stay where they are as plain decor.
+  // GameState.shop is dropped (slots, prices, sale history, customers, the line, the shop clock); the guests keep their id
+  // counter (TavernState.nextGuestId). Nothing is lost.
+  21: (state) => {
+    if (!isObject(state) || !isObject(state.tavern) || !Array.isArray(state.items) || !Array.isArray(state.ledger) || !isObject(state.player)) return state;
+    const { shop, ...rest } = state;
+    const old = isObject(shop) ? shop : {};
+    const at = typeof old.updatedAt === 'number' ? old.updatedAt : 0;
+    const nextGuestId = typeof old.nextCustomerId === 'number' && Number.isInteger(old.nextCustomerId) ? old.nextCustomerId : CUSTOMER_FIRST_ID;
+    let next = { ...rest, tavern: { ...state.tavern, nextGuestId } } as unknown as GameState;
+    const slots = Array.isArray(old.slots) ? old.slots : [];
+    for (const slot of slots) {
+      const loot = isObject(slot) && isObject(slot.loot) ? (slot.loot as unknown as LootRef) : null;
+      if (!loot) continue;
+      const back: Change =
+        loot.kind === 'material'
+          ? { reason: 'shop_closed', materials: { [loot.id]: Math.max(1, loot.qty ?? 1) }, note: `off the stall: ${loot.id}` }
+          : { reason: 'shop_closed', returnFurniture: [{ uid: loot.uid, typeId: loot.typeId }], note: `off the stall: ${loot.typeId}` };
+      next = applyChange(next, back, at) ?? next;
+    }
+    return next;
+  },
 };
 
 /** The storage key for a save version. */
@@ -314,7 +337,7 @@ export function readSave(text: string): LoadResult {
     if (v === 13 && isObject(state) && Array.isArray(state.items)) returnedToBag = Math.max(0, was - placedCount(state.items as GameState['items']));
   }
   if (!isGameState(state)) return { ok: false, problem: 'invalid', version };
-  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16, kitchenChanged: version < 21 };
+  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16, kitchenChanged: version < 21, shopClosed: version < 22 };
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {
@@ -338,12 +361,11 @@ export function isGameState(x: unknown): x is GameState {
   const bag = x.bag;
   if (!isObject(bag) || !isSlotList(bag.furniture) || !isSlotList(bag.materials)) return false;
   if (!isInt(x.currentRoomId) || !x.rooms.some((r) => isObject(r) && r.id === x.currentRoomId)) return false;
-  if (!isObject(x.shop) || !Array.isArray(x.shop.slots) || !Array.isArray(x.shop.customers) || !isObject(x.shop.saleHistory)) return false;
-  if (typeof x.shop.nextCustomerInMs !== 'number' || typeof x.shop.updatedAt !== 'number' || !isInt(x.hintsDone)) return false;
+  if (!isInt(x.hintsDone)) return false;
   if (!isInt(p.farmRoomId) || !x.rooms.every((r) => isObject(r) && isObject(r.plants) && isObject(r.blocks))) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   const t = x.tavern;
-  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.serveQueue)) return false;
+  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.serveQueue) || !isInt(t.nextGuestId)) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }

@@ -6,7 +6,6 @@ import { applyChange } from './ledger.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { dominantFloorStyle, doorRect, doorZoneRect, floorStyleAt, rectsOverlap } from './room.ts';
 import { seededRng } from './rng.ts';
-import { putOnShelf } from './shop.ts';
 import { ledgerGold } from './testState.ts';
 import type { GameState } from './gameState.ts';
 

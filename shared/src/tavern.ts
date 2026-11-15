@@ -14,18 +14,18 @@
 //   plate on the spot (a Mess) and goes. Coins are only ever collected by the player (ledger
 //   'tavern'); a spot with coins or a dish on it takes no new guest.
 
-import { GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TABLE_SPOT_INSET_PX } from './config.ts';
+import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TABLE_SPOT_INSET_PX } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
-import { inStaffZone, staffZones } from './customerPlan.ts';
+import { inStaffZone, staffZones } from './npcNav.ts';
 import { behindPoint, footprintRect, getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { getDrinkType, getMaterialType, isDrinkId, materialGroup, MATERIAL_TYPES } from './materials.ts';
 import type { CustomerKind, NpcMoment } from './npcTalk.ts';
 import { seatSpots } from './seats.ts';
-import { decide, validPrice } from './shop.ts';
+import { decide, validPrice } from './prices.ts';
 import type { Facing, FurnitureItem, FurnitureType, MaterialId, Point, Reaction, Rect, Rng } from './types.ts';
 
 /**
@@ -44,7 +44,7 @@ export interface GuestOrder {
 }
 
 export interface Guest {
-  /** Negative ids, from the same counter as the shop's customers (ShopState.nextCustomerId). */
+  /** Negative ids, counting down from TavernState.nextGuestId. */
   id: number;
   kind: CustomerKind;
   look: AvatarLook;
@@ -100,6 +100,8 @@ export interface TavernState {
   guests: Guest[];
   /** ms until the next guests come. */
   nextGuestInMs: number;
+  /** The id of the next guest (negative, counts down; kept from the old shop counter by migration 22). */
+  nextGuestId: number;
   mess: Mess[];
   nextMessId: number;
   brews: Brew[];
@@ -124,6 +126,7 @@ export function emptyTavern(roomId: number, at: number): TavernState {
     menu: {},
     guests: [],
     nextGuestInMs: FIRST_GUEST_DELAY_MS,
+    nextGuestId: CUSTOMER_FIRST_ID,
     mess: [],
     nextMessId: 1,
     brews: [],

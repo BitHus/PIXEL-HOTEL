@@ -3,7 +3,7 @@
 
 import {
   type Avatar, type Camera, type FurnitureItem, type Inventory, type Point, type Rect, type Room, type RoomKind,
-  type ShopView, type TavernView,
+  type TavernView,
 } from '@pixel-hotel/shared';
 import type { Placer } from '../build/placer.ts';
 import type { createItemMenu } from '../ui/itemMenu.ts';
@@ -19,7 +19,7 @@ import type { setupCameraSetup } from './cameraSetup.ts';
 import type { setupPlacing } from './placing.ts';
 import type { setupShopPanels } from './shopPanels.ts';
 import type { setupCraftPanels } from './craftPanels.ts';
-import type { setupShopLife } from './shopLife.ts';
+import type { setupPlaceLife } from './placeLife.ts';
 import type { setupTavernLife } from './tavernLife.ts';
 import type { setupHotbarBag } from './hotbarBag.ts';
 import type { setupSettingsPanels } from './settingsPanels.ts';
@@ -40,14 +40,12 @@ export interface State {
   serving: { state: 'walking' | 'there'; facing: Avatar['facing'] } | null;
   items: FurnitureItem[];
   inventory: Inventory;
-  shop: ShopView;
   walletGold: number;
   unlockedStyles: readonly string[];
   camera: Camera;
   shown: Camera;
   marked: Point | null;
   onItemsSynced: () => void;
-  shopCustomers: ShopView['customers'];
   tavern: TavernView;
   seatedGuests: number;
   selectedBlock: string | null;
@@ -67,7 +65,6 @@ export interface Late {
   menu: ReturnType<typeof createItemMenu>;
   roomLevel: (id: number) => number;
   travelTo: (place: Place) => Promise<void>;
-  refreshShop: () => Promise<void>;
   refreshHint: () => Promise<void>;
   startPlacing: (typeId: string) => boolean;
   hotbar: ReturnType<typeof createHotbar>;
@@ -93,7 +90,7 @@ export type G5 = G4 & Awaited<ReturnType<typeof setupCameraSetup>>;
 export type G6 = G5 & Awaited<ReturnType<typeof setupPlacing>>;
 export type G7 = G6 & Awaited<ReturnType<typeof setupShopPanels>>;
 export type G8 = G7 & Awaited<ReturnType<typeof setupCraftPanels>>;
-export type G9 = G8 & Awaited<ReturnType<typeof setupShopLife>>;
+export type G9 = G8 & Awaited<ReturnType<typeof setupPlaceLife>>;
 export type G10 = G9 & Awaited<ReturnType<typeof setupTavernLife>>;
 export type G11 = G10 & Awaited<ReturnType<typeof setupHotbarBag>>;
 export type G12 = G11 & Awaited<ReturnType<typeof setupSettingsPanels>>;

@@ -36,8 +36,8 @@ export const walkApi = {
     if (!item || (tap !== undefined && !finitePoint(tap))) return null;
     const type = getFurnitureType(item.typeId);
     const avatar = h.standingAvatar(item);
-    // Seats taken by others: shop customers waiting on a seat (other players come in step 10).
-    const taken = h.state.currentRoomId === h.state.shop.roomId ? [...h.state.shop.customers, ...h.state.tavern.guests].flatMap((c) => (c.seat?.uid === uid ? [c.seat.index] : [])) : [];
+    // Seats taken by others: the tavern's guests (other players come in step 10).
+    const taken = h.state.currentRoomId === h.state.tavern.roomId ? h.state.tavern.guests.flatMap((c) => (c.seat?.uid === uid ? [c.seat.index] : [])) : [];
     const plan = planSit(h.grid, avatar, item, type, tap ?? null, taken);
     if (!plan) return null;
     const { path, seat } = plan;
@@ -59,17 +59,6 @@ export const walkApi = {
     const at = { uid, x: counter.x, y: counter.y, facing };
     h.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: h.now(), sitOn: null, seated: null, serveAt: at };
     return { path, facing };
-  },
-
-  /** True while the own avatar stands behind the shop's counter (customers pay then). */
-  isServing(h: LocalGameAPI): boolean {
-    if (h.state.currentRoomId !== h.state.shop.roomId) return false;
-    h.avatarNow();
-    const sv = h.walkState.serving;
-    if (!sv) return false;
-    const c = h.roomItem(sv.uid);
-    // The counter was moved or turned: no longer behind it.
-    return !!c && c.x === sv.x && c.y === sv.y && c.facing === sv.facing;
   },
 
   /** Where the own avatar is now (it walks by time), and sits down when it reached a seat. */
@@ -125,12 +114,12 @@ export const walkApi = {
     return { avatar, path: [], at: h.now(), sitOn: null, seated: null };
   },
 
-  /** Where avatars stand still in the current room: the own avatar, and the shop's customers and guests. */
+  /** Where avatars stand still in the current room: the own avatar, and the tavern's guests. */
   standingPoints(h: LocalGameAPI): Point[] {
     const me = h.avatarNow();
     const out: Point[] = h.walkState.path.length === 0 ? [{ x: me.x, y: me.y }] : [];
-    if (h.state.currentRoomId === h.state.shop.roomId) {
-      for (const g of [...h.state.shop.customers, ...h.state.tavern.guests]) if (g.path.length === 0) out.push({ x: g.x, y: g.y });
+    if (h.state.currentRoomId === h.state.tavern.roomId) {
+      for (const g of h.state.tavern.guests) if (g.path.length === 0) out.push({ x: g.x, y: g.y });
     }
     return out;
   },

@@ -11,7 +11,7 @@ import { setupCameraSetup } from './game/cameraSetup.ts';
 import { setupPlacing } from './game/placing.ts';
 import { setupShopPanels } from './game/shopPanels.ts';
 import { setupCraftPanels } from './game/craftPanels.ts';
-import { setupShopLife } from './game/shopLife.ts';
+import { setupPlaceLife } from './game/placeLife.ts';
 import { setupTavernLife } from './game/tavernLife.ts';
 import { setupHotbarBag } from './game/hotbarBag.ts';
 import { setupSettingsPanels } from './game/settingsPanels.ts';
@@ -34,7 +34,7 @@ async function start(): Promise<void> {
   const g6 = { ...g5, ...(await setupPlacing(g5)) };
   const g7 = { ...g6, ...(await setupShopPanels(g6)) };
   const g8 = { ...g7, ...(await setupCraftPanels(g7)) };
-  const g9 = { ...g8, ...(await setupShopLife(g8)) };
+  const g9 = { ...g8, ...(await setupPlaceLife(g8)) };
   const g10 = { ...g9, ...(await setupTavernLife(g9)) };
   const g11 = { ...g10, ...(await setupHotbarBag(g10)) };
   const g12 = { ...g11, ...(await setupSettingsPanels(g11)) };

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { FURNITURE_TYPES, footprintRect, getFurnitureType, SAVE_BACKUP_KEY, countInInventory, saveKey, toSaveText, createNewPlayer } from '@pixel-hotel/shared';
+import { AWAY_ORDERS_MAX, FURNITURE_TYPES, footprintRect, getFurnitureType, SAVE_BACKUP_KEY, countInInventory, saveKey, toSaveText, createNewPlayer } from '@pixel-hotel/shared';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
+
+const openOrderCount = (t: { guests: readonly { phase: string; order: unknown }[] }): number => t.guests.filter((g) => g.phase === 'order' && g.order).length;
 
 let t = 1000;
 const clock = (): number => t;
@@ -188,75 +190,93 @@ describe('LocalGameAPI', () => {
   });
 });
 
-describe('LocalGameAPI shop (step 7)', () => {
+describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
   const seq = (): (() => number) => {
     let k = 0;
     return () => ((k++ * 0.6180339887) % 1);
   };
 
-  it('stocks the table, customers come, take the item, and pay at the till', async () => {
-    let now = 0;
-    const { api } = LocalGameAPI.open(memoryStorage(), () => now, seq());
-    const shop = await api.getShop();
+  it('nobody sells loot to customers any more: no goods calls, no customer events, and the stall is plain decor', async () => {
+    const { api } = LocalGameAPI.open(memoryStorage(), clock, seq());
+    for (const gone of ['getShop', 'putOnShelf', 'takeFromShelf', 'setPrice', 'onShop', 'isServing']) expect(gone in api, gone).toBe(false);
     const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'stall_table')!;
-    expect(shop.slots).toEqual([]);
-    expect(await api.serve(table.uid)).toBeNull();
-    expect(await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 1)).not.toBeNull();
-    expect(await api.putOnShelf({ shelfUid: table.uid, index: 1 }, { kind: 'material', id: 'cloth' }, 1)).not.toBeNull();
-    expect(await api.putOnShelf({ shelfUid: table.uid, index: 1 }, { kind: 'material', id: 'cloth' }, 1)).toBeNull();
-    const events: string[] = [];
-    api.onShop((e) => events.push(e.t));
-    // Nobody pays while the player is not behind the counter.
-    for (; now < 240_000; now += 100) api.update();
-    expect(events).toContain('reaction');
-    expect(events).not.toContain('sale');
-    expect((await api.getPlayer()).wallet.gold).toBe(100);
-    // Walk behind the counter: the waiting customers pay.
-    const counter = (await api.getItems()).find((i) => i.typeId === 'counter')!;
-    const serve = await api.serve(counter.uid);
-    expect(serve?.facing).toBe('down');
-    for (; now < 300_000; now += 100) api.update();
-    expect(api.isServing()).toBe(true);
-    expect(events).toContain('paying');
-    expect(events).toContain('sale');
-    expect((await api.getPlayer()).wallet.gold).toBeGreaterThan(100);
-    const sold = Object.values((await api.getShop()).saleHistory).flat();
-    expect(sold.length).toBeGreaterThan(0);
+    expect(getFurnitureType('stall_table')).not.toHaveProperty('slots');
+    expect(await api.serve(table.uid)).toBeNull(); // only the bar is served from behind
+    expect((await api.getTavern()).appeal).toBeGreaterThan(0);
   });
 
-  it('a closed game sells nothing: the customers who came wait at the till until the player serves', async () => {
+  it('gold comes from guests: a tavern left alone earns nothing, serving does', async () => {
+    let now = 0;
+    const { api } = LocalGameAPI.open(memoryStorage(), () => now, seq());
+    const p = await api.getPlayer();
+    await api.enterRoom(p.shopRoomId);
+    const barrel = (await api.getItems()).find((i) => i.typeId === 'brewing_barrel')!;
+    expect(await api.collectBrew(barrel.uid)).not.toBeNull();
+    // Guests come and order, but with nobody serving the gold does not move.
+    for (; now < 120_000; now += 100) api.update();
+    expect((await api.getPlayer()).wallet.gold).toBe(100);
+    const guest = (await api.getTavern()).guests.find((g) => g.phase === 'order');
+    expect(guest).toBeDefined();
+    expect(await api.serveGuest(guest!.id)).toBe(true);
+    for (let k = 0; k < 600 && (await api.getTavern()).mess.every((m) => m.coins === 0); k++, now += 100) api.update();
+    const mess = (await api.getTavern()).mess.find((m) => m.coins > 0)!;
+    expect(mess).toBeDefined();
+    expect(await api.tidyTable(mess.id, 'coins')).toBe(true);
+    for (let k = 0; k < 300; k++, now += 100) api.update();
+    expect((await api.getPlayer()).wallet.gold).toBeGreaterThan(100);
+  });
+
+  it('a closed game catches up the guests only: open orders wait, nothing is paid without the player', async () => {
     let now = 0;
     const storage = memoryStorage();
     const { api } = LocalGameAPI.open(storage, () => now, seq());
-    const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'stall_table')!;
-    await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 1);
+    const p = await api.getPlayer();
+    await api.enterRoom(p.shopRoomId);
     now = 20 * 3600_000;
     const again = LocalGameAPI.open(storage, () => now, seq()).api;
+    again.update();
     expect((await again.getPlayer()).wallet.gold).toBe(100);
-    const shop = await again.getShop();
-    expect(shop.slots).toEqual([]);
-    expect(shop.customers).toHaveLength(1);
-    expect(shop.customers[0]).toMatchObject({ phase: 'pay', queueSpot: 0, path: [] });
-    // Serve: the gold comes in now.
-    await again.enterRoom(2);
-    const counter = (await again.getItems()).find((i) => i.typeId === 'counter')!;
-    expect(await again.serve(counter.uid)).not.toBeNull();
-    const end = now + 30_000;
-    for (; now < end; now += 100) again.update();
-    expect((await again.getPlayer()).wallet.gold).toBe(101);
+    expect(openOrderCount(await again.getTavern())).toBeLessThanOrEqual(AWAY_ORDERS_MAX);
   });
 
-  it('the counter cannot be picked up; picking up the table returns its goods', async () => {
+  it('the counter cannot be picked up; the stall table can, and goes back to the bag as plain decor', async () => {
     const { api } = LocalGameAPI.open(memoryStorage(), clock);
     const items = (await api.enterRoom(2)).items;
     const counter = items.find((i) => i.typeId === 'counter')!;
     const table = items.find((i) => i.typeId === 'stall_table')!;
     expect(await api.pickUpItem(counter.uid)).toBeNull();
-    await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 3);
-    expect((await api.getInventory()).materials.wood).toBe(3);
     expect(await api.pickUpItem(table.uid)).not.toBeNull();
-    expect((await api.getInventory()).materials.wood).toBe(4);
-    expect((await api.getShop()).slots).toEqual([]);
+    expect((await api.getInventory()).materials.wood).toBe(4); // nothing was on it
+    expect((await api.getInventory()).furniture.some((f) => f.typeId === 'stall_table')).toBe(true);
+  });
+
+  it('an old save (version 21) with goods on the stall: they are back in the bag, with a notice, and nothing is lost', async () => {
+    const base = createNewPlayer(undefined, 5);
+    const { tavern, ...rest } = base;
+    const { nextGuestId: _n, ...oldTavern } = tavern;
+    const stall = base.items.find((i) => i.typeId === 'stall_table')!;
+    const old = {
+      ...rest,
+      tavern: oldTavern,
+      player: { ...rest.player, materials: { cloth: 2 } },
+      shop: {
+        roomId: tavern.roomId,
+        slots: [{ shelfUid: stall.uid, index: 0, loot: { kind: 'material', id: 'wood', qty: 1 }, price: 5 }],
+        nextCustomerInMs: 1000,
+        saleHistory: {},
+        customers: [],
+        nextCustomerId: -4,
+        updatedAt: 5,
+        lastLines: {},
+      },
+    };
+    const storage = memoryStorage();
+    storage.set(saveKey(21), JSON.stringify({ version: 21, savedAt: 5, state: old }));
+    const { api, notice } = LocalGameAPI.open(storage, clock);
+    expect(notice).toMatch(/back in your bag/);
+    const inv = await api.getInventory();
+    expect(inv.materials).toEqual({ wood: 1, cloth: 2 }); // the bag had 2 cloth; the wood came off the stall
+    expect((await api.getPlayer()).wallet.gold).toBe(100);
   });
 
   it('catalog, hints, styles and room upgrades', async () => {

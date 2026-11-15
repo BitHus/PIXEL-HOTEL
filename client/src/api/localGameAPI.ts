@@ -2,23 +2,22 @@
 // through a SaveStorage (localStorage) under a versioned key after every change. It also keeps
 // one automatic backup: the save as it was when the game was opened (or before an import).
 // Local-only save tools (export, import, restore backup, new game) are in LocalSaves.
-// Step 7: the shop runs here too. update() (main.ts calls it every SHOP_TICK_MS through
-// startClock) steps the walking customers in SHOP_TICK_MS steps with the shared rules; a gap
-// longer than SHOP_CATCH_UP_GAP_MS (and every time the game opens) is caught up with maths only
-// (catchUpShop, step 9d: nothing is sold; the customers who would have come wait in the line, at
-// most QUEUE_MAX, at their queue spots).
+// The tavern runs here too. update() (main.ts calls it every SHOP_TICK_MS through startClock)
+// steps the guests in SHOP_TICK_MS steps with the shared rules; a gap longer than
+// SHOP_CATCH_UP_GAP_MS (and every time the game opens) is caught up with maths only (catchUpTavern:
+// open orders wait, who was eating has paid). Step S1: nobody sells loot to customers any more.
 
 import {
   gainsSince, smelt, buySeeds, openPack, sellSpare, buyBlocks, placeBlock, hitBlock, claimBookReward, fishStep,
   hitPlant, plantSeed, spliceSeed, buyGear, SHOP_CATCH_UP_GAP_MS, SHOP_TICK_MS, applyStyle, paintFloor, buyCatalog,
-  catchUpShop, catchUpTavern, stepTavern, collectBrew, putOnShelf, setPrice, stepShop, takeFromShelf, upgradeRoom,
+  catchUpTavern, stepTavern, collectBrew, upgradeRoom,
   configForChoice, SAVE_BACKUP_KEY, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
   saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type GainList, type BarId, type GearId,
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
-  type TavernEvent, type TavernView, type TavernWorld, type DrinkId, type MenuRowView, type BuyResult, type ShelfSlotRef, type ShopEvent,
-  type ShopView, type ShopWorld, type StockPick, type StyleKind, type Rng, type NewPlayerChoice, type ServeResult,
+  type TavernEvent, type TavernView, type TavernWorld, type DrinkId, type MenuRowView, type BuyResult,
+  type StyleKind, type Rng, type NewPlayerChoice, type ServeResult,
   type Avatar, type AvatarLook, type BagTab, type SlotLayout, type SlotRef, type ChatLine, type FurnitureItem,
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
   type Player, type Point, type Rect, type Room, type RoomState, type SitResult,
@@ -27,7 +26,7 @@ import type { SaveStorage } from './saveStorage.ts';
 import { type SaveResult, type TavernTask, type WalkState } from './apiShared.ts';
 import { walkApi } from './walkApi.ts';
 import { roomsApi } from './roomsApi.ts';
-import { shopApi } from './shopApi.ts';
+import { catalogApi } from './catalogApi.ts';
 import { blocksFarmApi } from './blocksFarmApi.ts';
 import { dungeonApi } from './dungeonApi.ts';
 import { lakesideApi } from './lakesideApi.ts';
@@ -59,12 +58,11 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   debugRects: Rect[] = [];
   chatId = 0;
   readonly chatListeners = new Set<(line: ChatLine) => void>();
-  readonly shopListeners = new Set<(e: ShopEvent) => void>();
   readonly tavernListeners = new Set<(e: TavernClientEvent) => void>();
   /** True while the own avatar is on a tavern errand (walkState.task); a walk of any other kind ends it. */
   errand = false;
-  /** The shop room's navigation grid (customers), rebuilt when its furniture changes. */
-  shopGrid: NavGrid | null = null;
+  /** The tavern's navigation grid (guests), rebuilt when its furniture changes. */
+  tavernGrid: NavGrid | null = null;
   clock = 0;
   /** A run loaded from a save waits for dungeonResume (the player taps Resume). */
   runPaused: boolean;
@@ -128,7 +126,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
         const kitchen = r.kitchenChanged
           ? ` Cooking has moved: you cook on a stove in your tavern now (the farm has no pot any more).${r.state.items.some((i) => i.typeId === 'stove' && i.roomId === null) ? ' A stove is in your bag: place it in the tavern.' : ''}`
           : '';
-        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}${kitchen}`);
+        const closed = r.shopClosed ? ' Nobody buys loot at a stall any more: goods that were on your stall are back in your bag, and stalls, shelves and cases are decor. Earn gold by serving guests in your tavern.' : '';
+        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}${kitchen}${closed}`);
       }
       return start(
         createNewPlayer(undefined, now()),
@@ -149,7 +148,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.commit({ ...createNewPlayer(config, this.now()), playerCreated: true });
     this.walkState = this.doorWalk();
     this.grid = this.buildGrid();
-    this.shopGrid = null;
+    this.tavernGrid = null;
     return true;
   }
 
@@ -172,7 +171,6 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async walk(to: Point): Promise<Point[] | null> { return walkApi.walk(this, to); }
   async sit(uid: number, tap?: Point): Promise<SitResult | null> { return walkApi.sit(this, uid, tap); }
   async serve(uid: number): Promise<ServeResult | null> { return walkApi.serve(this, uid); }
-  isServing(): boolean { return walkApi.isServing(this); }
 
   async getItems(): Promise<FurnitureItem[]> { return roomsApi.getItems(this); }
   async placeItem(uid: number, at: PlaceAt): Promise<ItemsResult> { return roomsApi.placeItem(this, uid, at); }
@@ -199,15 +197,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return () => this.chatListeners.delete(listener);
   }
 
-  // ---------- Shop, catalog and rooms (step 7) ----------
+  // ---------- Catalog and rooms (step 7) ----------
 
-  async getShop(): Promise<ShopView> { return shopApi.getShop(this); }
-  async putOnShelf(slot: ShelfSlotRef, pick: StockPick, price: number): Promise<ShopView | null> { return shopApi.putOnShelf(this, slot, pick, price); }
-  async takeFromShelf(slot: ShelfSlotRef): Promise<ShopView | null> { return shopApi.takeFromShelf(this, slot); }
-  async setPrice(slot: ShelfSlotRef, price: number): Promise<ShopView | null> { return shopApi.setPrice(this, slot, price); }
-  onShop(listener: (e: ShopEvent) => void): () => void { return shopApi.onShop(this, listener); }
-
-  async buyCatalog(typeId: string): Promise<BuyResult | null> { return shopApi.buyCatalog(this, typeId); }
+  async buyCatalog(typeId: string): Promise<BuyResult | null> { return catalogApi.buyCatalog(this, typeId); }
   async buyStyle(kind: StyleKind, id: string): Promise<boolean> { return roomsApi.buyStyle(this, kind, id); }
   async applyStyle(roomId: number, kind: StyleKind, id: string): Promise<Room | null> { return roomsApi.applyStyle(this, roomId, kind, id); }
   async paintFloor(roomId: number, from: { c: number; r: number }, to: { c: number; r: number }, id: string): Promise<Room | null> { return roomsApi.paintFloor(this, roomId, from, to, id); }
@@ -313,24 +305,15 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   update(): void {
     const now = this.now();
     this.runErrand();
-    if (now - this.state.shop.updatedAt > SHOP_CATCH_UP_GAP_MS || now - this.state.tavern.updatedAt > SHOP_CATCH_UP_GAP_MS) {
+    if (now - this.state.tavern.updatedAt > SHOP_CATCH_UP_GAP_MS) {
       this.catchUp();
       this.save();
-      this.emit({ t: 'customers', customers: this.state.shop.customers });
-      this.emit({ t: 'slots' });
       this.emitTavern({ t: 'guests', guests: this.state.tavern.guests });
       return;
     }
-    const events: ShopEvent[] = [];
     const tavernEvents: TavernEvent[] = [];
     let s = this.state;
-    while (s.shop.updatedAt + SHOP_TICK_MS <= now) {
-      const at = s.shop.updatedAt + SHOP_TICK_MS;
-      const r = stepShop(s, this.shopWorld(s), SHOP_TICK_MS, this.rng, at);
-      s = { ...r.state, shop: { ...r.state.shop, updatedAt: at } };
-      events.push(...r.events);
-    }
-    // The guests (step 9t) step on the same clock.
+    // The guests (step 9t) step on the tavern's clock.
     while (s.tavern.updatedAt + SHOP_TICK_MS <= now) {
       const at = s.tavern.updatedAt + SHOP_TICK_MS;
       const r = stepTavern(s, this.tavernWorld(s), SHOP_TICK_MS, this.rng, at);
@@ -339,9 +322,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     }
     if (s === this.state) return;
     // Only events change what is worth saving; walking positions are not saved every step.
-    if (events.length > 0 || tavernEvents.length > 0) this.commit(s);
+    if (tavernEvents.length > 0) this.commit(s);
     else this.state = s;
-    for (const e of events) this.emit(e);
     for (const e of tavernEvents) this.emitTavern(e);
   }
 
@@ -374,10 +356,6 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.save();
   }
 
-  emit(e: ShopEvent): void {
-    for (const l of this.shopListeners) l(e);
-  }
-
   emitTavern(e: TavernClientEvent): void { return tavernApi.emitTavern(this, e); }
 
   hintDone(state: GameState, index: number): GameState { return progressApi.hintDone(this, state, index); }
@@ -388,22 +366,13 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async takeGains(): Promise<GainList> { return progressApi.takeGains(this); }
   roomById(roomId: number): Room | null { return roomsApi.roomById(this, roomId); }
 
-  shopView(): ShopView { return shopApi.shopView(this); }
-
-  shopWorld(state: GameState): ShopWorld { return shopApi.shopWorld(this, state); }
-
-  /** The gap is done with maths (catchUpShop): no sales; the line fills up (at most QUEUE_MAX). */
+  /** The gap is done with maths (catchUpTavern): open orders wait, who was eating has paid. */
   catchUp(): void {
-    this.state = catchUpShop(this.state, this.shopWorld(this.state), this.now(), this.rng).state;
-    // Step 9t: the guests too (maths only: open orders wait, who was eating has paid).
     this.state = catchUpTavern(this.state, this.tavernWorld(this.state), this.now(), this.rng).state;
     this.errand = false;
   }
 
-  tavernWorld(state: GameState): TavernWorld {
-    const w = this.shopWorld(state);
-    return { room: w.room, items: state.items, grid: w.grid, playerHere: state.currentRoomId === w.room.id, ...(w.seatsTaken ? { seatsTaken: w.seatsTaken } : {}) };
-  }
+  tavernWorld(state: GameState): TavernWorld { return tavernApi.tavernWorld(this, state); }
 
   layout(): SlotLayout { return roomsApi.layout(this); }
 

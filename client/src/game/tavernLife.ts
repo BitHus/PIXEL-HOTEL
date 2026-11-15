@@ -9,7 +9,7 @@ import {
 import { createBrewingPanel } from '../ui/brewingPanel.ts';
 import { createMenuPanel } from '../ui/menuPanel.ts';
 import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
-import { CustomerViews, type Walker } from '../render/customerViews.ts';
+import { GuestViews, type Walker } from '../render/guestViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
 import { createOrderBubbles, type OrderMark } from '../ui/orderBubbles.ts';
 import { drawGood } from '../render/slotGoods.ts';
@@ -18,12 +18,12 @@ import type { G9 } from './ctx.ts';
 
 export async function setupTavernLife(g: G9) {
   const {
-    api, view, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, customers, follow, sprite, st, late, panels, walkTo,
+    api, view, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, follow, sprite, st, late, panels, walkTo,
   } = g;
 
   // ---------- The tavern (step 9t): guests, orders, coins on the tables ----------
   st.tavern = await api.getTavern();
-  const guests = new CustomerViews(view);
+  const guests = new GuestViews(view);
   const tableMess = new TableMess(view);
   /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
   const walkers = (list: readonly Guest[]): Walker[] =>
@@ -273,14 +273,6 @@ export async function setupTavernLife(g: G9) {
         break;
       case 'coins':
         void refreshTavern();
-        break;
-      case 'to_stall':
-        // They walk on past the market stall as a shop customer.
-        void api.getShop().then((s) => {
-          st.shop = s;
-          st.shopCustomers = s.customers;
-          customers.sync(st.room.id === st.shop.roomId ? s.customers : [], st.room.id, st.items);
-        });
         break;
       case 'walk':
         follow(e.path);

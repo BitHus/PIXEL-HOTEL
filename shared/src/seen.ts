@@ -33,20 +33,15 @@ export function seenCount(seen: SeenMap, id: string): number {
 
 /**
  * Everything the player owns now, as finds: the materials, every furniture item (placed, in the
- * bag or on a shop slot) and the goods on the shop slots. For old saves (migration) and for a
+ * bag). For old saves (migration) and for a
  * new player's start items.
  */
-export function ownedFinds(state: Pick<GameState, 'player' | 'items' | 'shop'>): Record<string, number> {
+export function ownedFinds(state: Pick<GameState, 'player' | 'items'>): Record<string, number> {
   const out: Record<string, number> = {};
   const add = (id: string, n: number): void => {
     out[id] = (out[id] ?? 0) + n;
   };
   for (const [id, n] of Object.entries(state.player.materials)) if (n) add(id, n);
   for (const item of state.items) add(item.typeId, 1);
-  for (const slot of state.shop.slots) {
-    if (!slot.loot) continue;
-    if (slot.loot.kind === 'material') add(slot.loot.id, slot.loot.qty);
-    else add(slot.loot.typeId, 1);
-  }
   return out;
 }

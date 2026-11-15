@@ -80,8 +80,6 @@ export const GUEST_TALK_MAX_MS = 14_000;
 export const SERVE_QUEUE_MAX = 3;
 /** While the player is elsewhere (or the game is closed) at most this many guests sit with an open order. */
 export const AWAY_ORDERS_MAX = 3;
-/** Chance that a guest who finished looks at the market stall on the way out. */
-export const GUEST_BROWSE_STALL_CHANCE = 0.25;
 /** The menu panel shows this many last prices paid per drink or dish. */
 export const MENU_HISTORY_LENGTH = 5;
 /** The Menu panel's price stepper moves by this share of the item's baseValue (at least 1 gold). */

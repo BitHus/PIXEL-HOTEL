@@ -1,8 +1,8 @@
-// One side panel open at a time (Bag, Catalog, Room, the shelf panel, Avatar, Chat, Settings). Panels open to the left of the
+// One side panel open at a time (Bag, Catalog, Room, Avatar, Chat, Settings). Panels open to the left of the
 // right-edge button column and always end above the hotbar (ui.css). Panels are built with
 // panelShell.ts; the ✗ goes on the corner of the panel's frame.
 
-export type PanelName = 'bag' | 'catalog' | 'room' | 'shelf' | 'avatar' | 'chat' | 'settings' | 'workshop' | 'travel' | 'cooking' | 'brewing' | 'menu' | 'book';
+export type PanelName = 'bag' | 'catalog' | 'room' | 'avatar' | 'chat' | 'settings' | 'workshop' | 'travel' | 'cooking' | 'brewing' | 'menu' | 'book';
 
 export interface Panels {
   readonly open: PanelName | null;

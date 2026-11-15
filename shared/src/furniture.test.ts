@@ -69,14 +69,21 @@ describe('furniture data', () => {
     expect(T('banner').d).toBe(4);
   });
 
+  it('stall tables, shelves and display cases are plain decor since step S1: no slots, nothing to sell on them', () => {
+    for (const id of ['stall_table', 'shelf', 'display_case']) {
+      expect(T(id), id).not.toHaveProperty('slots');
+      expect(T(id).placeIn, id).toBe('shop');
+    }
+  });
+
   it('has the step 7 shop types (section 7, 9)', () => {
-    expect(T('shelf')).toMatchObject({ w: 64, d: 32, slots: 3, baseValue: 10, blocks: true, inCatalog: true, placeIn: 'shop' });
-    expect(T('display_case')).toMatchObject({ w: 64, d: 32, slots: 4, baseValue: 40, appeal: 6, inCatalog: true, placeIn: 'shop' });
+    expect(T('shelf')).toMatchObject({ w: 64, d: 32, baseValue: 10, blocks: true, inCatalog: true, placeIn: 'shop' });
+    expect(T('display_case')).toMatchObject({ w: 64, d: 32, baseValue: 40, appeal: 6, inCatalog: true, placeIn: 'shop' });
     expect(T('sign')).toMatchObject({ w: 40, wall: true, appeal: 10, baseValue: 25, inCatalog: true, placeIn: 'shop' });
     expect(T('banner')).toMatchObject({ w: 32, wall: true, appeal: 6, baseValue: 15, inCatalog: true, placeIn: 'shop' });
     expect(T('shop_rug')).toMatchObject({ w: 96, d: 64, blocks: false, appeal: 5, baseValue: 12, inCatalog: true, placeIn: 'shop' });
     expect(T('counter')).toMatchObject({ w: 96, d: 32, appeal: 8, inCatalog: false, noPickup: true });
-    expect(T('stall_table')).toMatchObject({ w: 96, d: 64, slots: 3, baseValue: 10, blocks: true, inCatalog: false });
+    expect(T('stall_table')).toMatchObject({ w: 96, d: 64, baseValue: 10, blocks: true, inCatalog: false });
     expect(T('lamp')).toMatchObject({ placeIn: 'both', appeal: 4 });
     expect(T('plant')).toMatchObject({ placeIn: 'both', appeal: 3 });
   });

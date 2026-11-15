@@ -10,7 +10,6 @@ import { MATERIAL_TYPES } from './materials.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { seededRng } from './rng.ts';
 import { addSeen, enemyKey, isSeen, ownedFinds, seenCount } from './seen.ts';
-import { putOnShelf, takeFromShelf } from './shop.ts';
 import { finishRun, startRun } from './dungeon/bank.ts';
 import { step } from './dungeon/step.ts';
 import { testRun } from './dungeon/testRun.ts';
@@ -41,18 +40,14 @@ describe('the seen list (Player.seen, step 9e)', () => {
     expect(bought.player.seen.chair).toEqual({ count: 1, firstSeenAt: 4000 });
   });
 
-  it('crafting counts what is made; a shop slot does not count again', () => {
+  it('crafting counts what is made', () => {
     let s = applyChange(fresh(), { reason: 'debug', materials: { bone: 6 } }, 2000)!;
     s = craft(getRecipe('bone_chair'), s, 5000)!;
     expect(s.player.seen.bone_chair).toEqual({ count: 1, firstSeenAt: 5000 });
-    const table = s.items.find((i) => i.typeId === 'stall_table')!;
+    // Things that only come back (step S1: goods taken off a stall by the old-save migration) are no new finds.
     const before = seenCount(s.player.seen, 'wood');
-    s = putOnShelf(s, { shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 3, 6000)!;
-    s = takeFromShelf(s, { shelfUid: table.uid, index: 0 }, 7000)!;
+    s = applyChange(s, { reason: 'shop_closed', materials: { wood: 1 } }, 6000)!;
     expect(seenCount(s.player.seen, 'wood')).toBe(before);
-    s = putOnShelf(s, { shelfUid: table.uid, index: 1 }, { kind: 'furniture', typeId: 'bone_chair' }, 30, 8000)!;
-    s = takeFromShelf(s, { shelfUid: table.uid, index: 1 }, 9000)!;
-    expect(seenCount(s.player.seen, 'bone_chair')).toBe(1);
   });
 
   it('a run: banked loot counts, food brought back does not, kills and enemies met do (also after death)', () => {
@@ -95,10 +90,8 @@ describe('the seen list (Player.seen, step 9e)', () => {
     expect(run.events.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('ownedFinds counts materials, furniture and what is on the shop slots', () => {
-    let s = fresh();
-    const table = s.items.find((i) => i.typeId === 'stall_table')!;
-    s = putOnShelf(s, { shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'wood' }, 3, 0)!;
+  it('ownedFinds counts materials and furniture', () => {
+    const s = fresh();
     expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, counter: 1, stall_table: 1, round_table: 1, bar_stool: 2, brewing_barrel: 1, stove: 1 });
   });
 

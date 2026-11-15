@@ -5,7 +5,6 @@ import { FORGE, canForge, forgePiece, nextPiece, smelt } from './forge.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { combatStats } from './dungeon/run.ts';
-import { lootCategory } from './shop.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
 import type { GameState } from './gameState.ts';
 import type { MaterialId } from './types.ts';
@@ -90,7 +89,4 @@ describe('the forge (section 10c)', () => {
     expect(combatStats(1, ['mithril_sword', 'mithril_armor'])).toMatchObject({ attackMin: 9, attackMax: 12, damageReduction: 3, minDamage: 1 });
   });
 
-  it('ore, bars and gems are shop goods in the materials category', () => {
-    for (const id of ['copper_ore', 'iron_bar', 'gem'] as const) expect(lootCategory({ kind: 'material', id, qty: 1 })).toBe('materials');
-  });
 });

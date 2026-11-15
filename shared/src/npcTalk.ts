@@ -1,6 +1,6 @@
-// What shop customers say (step 9d): short lines from shared/data/npcLines.json, by moment. Pure:
+// What the tavern's guests say (step 9d, kept by 9t and S1): short lines from shared/data/npcLines.json, by moment. Pure:
 // the rng is passed in. A line is never the same as the last line said for that moment
-// (ShopState.lastLines keeps the index per moment). Not every customer talks every time: the
+// (TavernState.lastLines keeps the index per moment). Not every guest talks every time: the
 // chance per moment is in config TALK_CHANCE, more for chatty customers, less for hurried ones.
 
 import linesData from '../data/npcLines.json';

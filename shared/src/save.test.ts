@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readSave, saveKey, toSaveText } from './save.ts';
+import { MIGRATIONS, readSave, saveKey, toSaveText } from './save.ts';
+import { ledgerGold, ledgerMaterials } from './testState.ts';
 import { arrangeState, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { FARM_HINT, HINTS, MINE_HINT, PACK_HINT, SAVE_VERSION, SPLICE_HINT } from './config.ts';
@@ -15,7 +16,7 @@ const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addF
 describe('save files', () => {
   it('saving then loading gives an identical state', () => {
     const loaded = readSave(toSaveText(state, 3));
-    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false, kitchenChanged: false });
+    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false, kitchenChanged: false, shopClosed: false });
   });
   it('uses a versioned key', () => {
     expect(saveKey()).toBe(`pixel-hotel.save.v${SAVE_VERSION}`);
@@ -32,7 +33,7 @@ describe('save files', () => {
     expect(readSave(JSON.stringify({ version: SAVE_VERSION, state: { ...state, bag: null } }))).toMatchObject({ problem: 'invalid' });
   });
   it('migrates a version 1 save (no bag layout) to an empty layout that arrangeState fills', () => {
-    const { bag: _bag, shop: _shop, hintsDone: _h, ...v1 } = state;
+    const { bag: _bag, hintsDone: _h, ...v1 } = state;
     const r = readSave(JSON.stringify({ version: 1, savedAt: 0, state: v1 }));
     expect(r).toMatchObject({ ok: true, version: 1, migrated: true });
     if (!r.ok) return;
@@ -42,14 +43,14 @@ describe('save files', () => {
     expect(arranged.bag.materials.slice(0, 2)).toEqual(['wood', 'cloth']);
   });
 
-  it('migrates a version 2 save: an empty shop, no hints done, and the counter and stall_table in the shop', () => {
-    const { shop: _shop, hintsDone: _h, ...rest } = state;
+  it('migrates a version 2 save: no hints done, and the counter and stall_table in the shop', () => {
+    const { hintsDone: _h, ...rest } = state;
     const v2 = { ...rest, items: rest.items.filter((i) => i.roomId === null) };
     const r = readSave(JSON.stringify({ version: 2, savedAt: 0, state: v2 }));
     expect(r).toMatchObject({ ok: true, version: 2, migrated: true });
     if (!r.ok) return;
     expect(r.state.hintsDone).toBe(0);
-    expect(r.state.shop.slots).toEqual([]);
+    expect('shop' in r.state).toBe(false); // dropped again by migration 21 -> 22 (step S1)
     const inShop = r.state.items.filter((i) => i.roomId === r.state.player.shopRoomId).map((i) => i.typeId);
     expect(inShop.sort()).toEqual(['counter', 'stall_table', 'stove']); // the stove comes with migration 20 -> 21 (step K1)
     expect(new Set(r.state.items.map((i) => i.uid)).size).toBe(r.state.items.length);
@@ -112,28 +113,31 @@ describe('save files', () => {
     expect(r.state.run).toMatchObject({ place: 'crypt', rocks: [], lanternEndsAt: null, player: { hp: 5, hitsPerSwing: 1, minesMithril: false } });
   });
 
-  it('migrates a version 8 save (step 9d): talk memory, and only customers carrying an item stay', () => {
-    const { lastLines: _l, ...shop } = state.shop;
+  // The old customer migrations are checked one step at a time: the shop state they work on is gone from GameState since step S1.
+  const shopOf = (extra: Record<string, unknown>) => ({ roomId: state.tavern.roomId, slots: [], nextCustomerInMs: 10_000, saleHistory: {}, customers: [], nextCustomerId: -1, updatedAt: 0, ...extra });
+
+  it('migrates a version 8 save (step 9d): talk memory, and only customers carrying an item stay (step 8 -> 9 itself)', () => {
     const old = (id: number, carrying: unknown) => ({ id, look: state.look, x: 1, y: 2, facing: 'up', path: [{ x: 5, y: 5 }], phase: 'browse', want: 'materials', tolerance: 1, waitMs: 0, speed: 72, shelfUid: null, browsing: true, looks: 1, carrying, reaction: null, queueSpot: -1 });
-    const v8 = { ...state, shop: { ...shop, customers: [old(-1, null), old(-2, { loot: { kind: 'material', id: 'wood', qty: 1 }, price: 3 })] } };
+    const v8 = { ...state, shop: shopOf({ customers: [old(-1, null), old(-2, { loot: { kind: 'material', id: 'wood', qty: 1 }, price: 3 })] }) };
+    const out = MIGRATIONS[8]!(v8) as { shop: { lastLines: unknown; customers: Record<string, unknown>[] } };
+    expect(out.shop.lastLines).toEqual({});
+    expect(out.shop.customers).toHaveLength(1);
+    expect(out.shop.customers[0]).toMatchObject({ id: -2, kind: 'browser', phase: 'queue', path: [], seat: null, browsing: false });
+    // The whole chain to today ends without any shop state.
     const r = readSave(JSON.stringify({ version: 8, savedAt: 0, state: v8 }));
     expect(r).toMatchObject({ ok: true, migrated: true });
-    if (!r.ok) return;
-    expect(r.state.shop.lastLines).toEqual({});
-    expect(r.state.shop.customers).toHaveLength(1);
-    expect(r.state.shop.customers[0]).toMatchObject({ id: -2, kind: 'browser', phase: 'queue', path: [], seat: null, browsing: false });
+    if (r.ok) expect('shop' in r.state).toBe(false);
   });
 
-  it('migrates a version 9 save (natural customers): the customers in the line get a plan and the new fields', () => {
+  it('migrates a version 9 save (natural customers): the customers in the line get a plan and the new fields (step 9 -> 10 itself)', () => {
     const old = (id: number, carrying: unknown) => ({ id, kind: 'chatty', look: state.look, x: 1, y: 2, facing: 'up', path: [{ x: 5, y: 5 }], phase: 'admire', want: 'materials', tolerance: 1, waitMs: 0, speed: 72, shelfUid: null, browsing: true, looks: 1, looksMax: 2, decorLeft: 1, decorUid: null, carrying, reaction: null, queueSpot: 0, seat: null, sitChecked: false, callInMs: 100 });
-    const v9 = { ...state, shop: { ...state.shop, customers: [old(-1, null), old(-2, { loot: { kind: 'material', id: 'wood', qty: 1 }, price: 3 })] } };
-    const r = readSave(JSON.stringify({ version: 9, savedAt: 0, state: v9 }));
-    expect(r).toMatchObject({ ok: true, migrated: true });
-    if (!r.ok) return;
-    expect(r.state.shop.customers).toHaveLength(1);
-    const c = r.state.shop.customers[0]!;
+    const v9 = { ...state, shop: shopOf({ customers: [old(-1, null), old(-2, { loot: { kind: 'material', id: 'wood', qty: 1 }, price: 3 })] }) };
+    const out = MIGRATIONS[9]!(v9) as { shop: { customers: Record<string, unknown>[] } };
+    expect(out.shop.customers).toHaveLength(1);
+    const c = out.shop.customers[0]!;
     expect(c).toMatchObject({ id: -2, kind: 'chatty', phase: 'queue', buys: true, plan: [], step: 0, doing: null, followId: null, talk: null, holdMs: 0, path: [] });
     expect('looksMax' in c || 'decorLeft' in c || 'looks' in c).toBe(false);
+    expect(readSave(JSON.stringify({ version: 9, savedAt: 0, state: v9 }))).toMatchObject({ ok: true, migrated: true });
   });
 
   it('migrates a version 10 save (step 9e): everything the player owns counts as seen', () => {
@@ -143,13 +147,12 @@ describe('save files', () => {
       ...state,
       player: { ...player, materials: { wood: 3, bone: 7 } },
       items: [...state.items, { uid: 50, typeId: 'chair', ownerId: 1, roomId: null, x: 0, y: 0, facing: 'down', onItemUid: null }, { uid: 51, typeId: 'chair', ownerId: 1, roomId: 1, x: 100, y: 100, facing: 'down', onItemUid: null }],
-      shop: {
-        ...state.shop,
+      shop: shopOf({
         slots: [
           { shelfUid: shelf.uid, index: 0, loot: { kind: 'material', id: 'cloth', qty: 1 }, price: 5 },
           { shelfUid: shelf.uid, index: 1, loot: { kind: 'furniture', uid: 60, typeId: 'skull_lamp' }, price: 30 },
         ],
-      },
+      }),
     };
     const r = readSave(JSON.stringify({ version: 10, savedAt: 0, state: v10 }));
     expect(r).toMatchObject({ ok: true, migrated: true });
@@ -198,7 +201,7 @@ describe('save files', () => {
     const v12 = {
       ...rest,
       items: rest.items.filter((i) => !START.includes(i.typeId)),
-      shop: { ...rest.shop, updatedAt: 5000 },
+      shop: shopOf({ updatedAt: 5000 }),
       player: { ...rest.player, seen: Object.fromEntries(Object.entries(rest.player.seen).filter(([id]) => !START.includes(id))) },
     };
     const r = readSave(JSON.stringify({ version: 12, savedAt: 0, state: v12 }));
@@ -219,7 +222,6 @@ describe('save files', () => {
     // Everything else is as it was.
     expect(s.items.filter((i) => !START.includes(i.typeId))).toEqual(v12.items);
     expect(s.player.wallet).toEqual(v12.player.wallet);
-    expect(s.shop).toEqual(v12.shop);
     // A new game has seen the intro already.
     expect(state.tavern.introSeen).toBe(true);
   });
@@ -518,5 +520,87 @@ describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
     const r = readSave(JSON.stringify({ version: 12, savedAt: 9, state: old }));
     expect(r).toMatchObject({ ok: true, kitchenChanged: true });
     if (r.ok) expect(r.state.items.filter((i) => i.typeId === 'stove')).toHaveLength(1);
+  });
+});
+
+describe('21 -> 22 (step S1: the shop is the tavern, nobody sells loot to customers any more)', () => {
+  /** What a version 21 save looked like: GameState.shop with goods on slots, a sale history and walking customers. */
+  const v21 = () => {
+    const base = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', materials: { wood: 5, cloth: 2 }, addFurniture: ['chair'], gold: 40 }, 2)!;
+    const chair = base.items.find((i) => i.typeId === 'chair')!;
+    // Two goods on the stall: one wood (a material) and the chair (furniture, out of the items list while it is on the slot).
+    const onStall = applyChange(base, { reason: 'shelf', materials: { wood: -1 }, removeFurniture: [chair.uid], note: 'on sale' }, 3)!;
+    const { tavern, ...rest } = onStall;
+    const { nextGuestId: _n, ...oldTavern } = tavern as typeof tavern & { nextGuestId?: number };
+    const shop = {
+      roomId: tavern.roomId,
+      slots: [
+        { shelfUid: 1, index: 0, loot: { kind: 'material', id: 'wood', qty: 1 }, price: 7 },
+        { shelfUid: 1, index: 1, loot: { kind: 'furniture', uid: chair.uid, typeId: 'chair' }, price: 30 },
+        { shelfUid: 1, index: 2, loot: null, price: 5 },
+      ],
+      nextCustomerInMs: 5000,
+      saleHistory: { wood: [4, 5] },
+      customers: [{ id: -3, phase: 'queue', carrying: { kind: 'material', id: 'wood', qty: 1 } }],
+      nextCustomerId: -7,
+      updatedAt: 1234,
+      lastLines: { enter: 2 },
+    };
+    return { before: onStall, old: { ...rest, tavern: oldTavern, shop } };
+  };
+  const load = (state: unknown) => readSave(JSON.stringify({ version: 21, savedAt: 9, state }));
+
+  it('all goods on slots go back to the bag, with the same furniture uid', () => {
+    const { before, old } = v21();
+    const r = load(old);
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 21 });
+    if (!r.ok) return;
+    expect(r.state.player.materials.wood).toBe(before.player.materials.wood! + 1);
+    const chair = r.state.items.find((i) => i.typeId === 'chair')!;
+    expect(chair.roomId).toBeNull();
+    expect(chair.uid).toBe(old.shop.slots[1]!.loot!.uid);
+    expect(r.state.items).toHaveLength(before.items.length + 1);
+  });
+
+  it('the customer state is dropped; the guest id counter carries on from the shop counter', () => {
+    const r = load(v21().old);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect('shop' in r.state).toBe(false);
+    expect(r.state.tavern.nextGuestId).toBe(-7);
+  });
+
+  it('stalls, shelves and cases stay where they are, and the ledger still adds up', () => {
+    const { before, old } = v21();
+    const r = load(old);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.state.items.filter((i) => i.typeId === 'stall_table')).toEqual(before.items.filter((i) => i.typeId === 'stall_table'));
+    expect(r.state.player.wallet).toEqual(before.player.wallet);
+    expect(r.state.ledger.slice(0, before.ledger.length)).toEqual(before.ledger);
+    const back = r.state.ledger.slice(before.ledger.length);
+    expect(back.length).toBeGreaterThan(0);
+    expect(back.every((e) => e.reason === 'shop_closed' && e.goldDelta === 0)).toBe(true);
+    // Replaying the ledger gives the wallet and the materials of the state: nothing was lost or made.
+    expect(ledgerGold(r.state)).toBe(r.state.player.wallet.gold);
+    expect(r.state.player.materials).toEqual(ledgerMaterials(r.state));
+  });
+
+  it('a save with no goods on the slots loses nothing and gets no ledger entry', () => {
+    const base = createNewPlayer(undefined, 1);
+    const { tavern, ...rest } = base;
+    const { nextGuestId: _n, ...oldTavern } = tavern as typeof tavern & { nextGuestId?: number };
+    const old = { ...rest, tavern: oldTavern, shop: { roomId: tavern.roomId, slots: [], nextCustomerInMs: 1, saleHistory: {}, customers: [], nextCustomerId: -1, updatedAt: 0, lastLines: {} } };
+    const r = load(old);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.state.ledger).toEqual(base.ledger);
+    expect(r.state.items).toEqual(base.items);
+  });
+
+  it('a new save does not migrate again', () => {
+    const r = load(v21().old);
+    if (!r.ok) throw new Error('load failed');
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
   });
 });

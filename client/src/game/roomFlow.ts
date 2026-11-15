@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  INTRO_COINS, doorY, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, tillPoint,
+  INTRO_COINS, doorY, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, barCoinPoint,
   roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, type RoomKind,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
@@ -12,7 +12,7 @@ export async function setupRoomFlow(g: G13) {
   const {
     api, newIntro, syncItems, hint, info, sprite, uiRoot, itemViews, shown0, refreshHint, placer, paint, menu,
     bubbles, chat, view, cellGrid, atmosphere, blockers, seating, roomChanged, roomLevels, roomFloats,
-    lakeside, floats, customers, hops, showWaiting, guests, tableMess, orders, syncTavern, refreshShop,
+    lakeside, guests, tableMess, orders, syncTavern,
     refreshInventory, startIntro, fit, st, late, toast,
   } = g;
   late.openRoom = openRoom;
@@ -20,8 +20,8 @@ export async function setupRoomFlow(g: G13) {
 
   // ---------- The new-game intro (step 7b) ----------
   /**
-   * The shop at the overview: the counter and then the stall_table pop in, the avatar walks in
-   * through the door, the start gold flies from the till to the gold counter coin by coin while the
+   * The tavern at the overview: the bar and then the other start items pop in, the avatar walks in
+   * through the door, the start gold flies from the bar to the gold counter coin by coin while the
    * number counts up, then the first hint shows. A tap anywhere skips to the end.
    */
   async function playNewGameIntro(): Promise<void> {
@@ -67,8 +67,8 @@ export async function setupRoomFlow(g: G13) {
       await wait(INTRO_STEP_MS * 2);
     }
     if (!skipped && counter) {
-      // The start gold flies from the till to the gold counter, coin by coin.
-      const till = tillPoint(counter);
+      // The start gold flies from the bar to the gold counter, coin by coin.
+      const till = barCoinPoint(counter);
       const target = info.coinTarget();
       let shown = 0;
       const per = Math.ceil(gold / INTRO_COINS);
@@ -127,14 +127,7 @@ export async function setupRoomFlow(g: G13) {
     roomLevels.set(st.room.id, st.room.level);
     roomFloats.clear();
     await lakeside.enter(st.room);
-    floats.clear();
-    st.shop = await api.getShop();
-    customers.clear();
-    hops.clear();
-    st.shopCustomers = st.shop.customers;
-    showWaiting(st.shop.customers);
     st.serving = null;
-    customers.sync(st.room.id === st.shop.roomId ? st.shop.customers : [], st.room.id, st.items);
     guests.clear();
     tableMess.clear();
     orders.clear();
@@ -142,7 +135,6 @@ export async function setupRoomFlow(g: G13) {
     st.seatedGuests = 0;
     st.tavern = await api.getTavern();
     syncTavern();
-    await refreshShop();
     await refreshInventory();
     await refreshHint();
     if (intro) startIntro();

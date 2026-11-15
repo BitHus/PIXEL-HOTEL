@@ -9,7 +9,7 @@ import type { G12 } from './ctx.ts';
 export async function setupDungeonMode(g: G12) {
   const {
     uiRoot, view, backdrop, sprite, paint, hotbar, runBar, info, lakeside, panels, placer, menu, build,
-    bubbles, floats, cross, dungeon, api, refreshInventory, refreshHint, toast, st, late,
+    bubbles, cross, dungeon, api, refreshInventory, refreshHint, toast, st, late,
   } = g;
   late.setDungeonMode = setDungeonMode;
   late.enterDungeonAsked = enterDungeonAsked;
@@ -34,7 +34,6 @@ export async function setupDungeonMode(g: G12) {
       menu.close();
       build.set(false);
       bubbles.clear();
-      floats.clear();
       cross.visible = false;
     }
   }

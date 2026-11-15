@@ -1,15 +1,13 @@
-// The shop's NPC customers on screen (step 7; shop life in step 9d): placeholder avatars in their
-// own looks. The GameAPI sends the customer list (with each one's path) whenever it changes; this
+// The tavern's guests on screen (step 7, shop life in step 9d, kept by 9t and S1): placeholder avatars in
+// their own looks. The GameAPI sends the guest list (with each one's path) whenever it changes; this
 // animates the paths locally with walkAvatar, like the own avatar, and keeps them in the
-// depth-sorted list. Step 9d: a waiting customer may sit (drawn right after the seat, like the own
-// avatar), customers carry what they bought in their hands (the held-item layer), and short
-// gestures (reach, nod) play when they take an item or pay.
+// depth-sorted list. A guest at a table sits (drawn right after the seat, like the own avatar), and
+// short gestures (a nod at a sip) play.
 
-import { CUSTOMER_WALK_SPEED, walkAvatar, type Avatar, type AvatarLook, type Facing, type FurnitureItem, type LootRef, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_WALK_SPEED, walkAvatar, type Avatar, type AvatarLook, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import { AvatarSprite, type Gesture } from './avatarSprite.ts';
 import { avatarDepthKey } from './depthOrder.ts';
 import { idleShift } from './atmosphere.ts';
-import { drawGood } from './slotGoods.ts';
 import type { RoomView } from './roomView.ts';
 
 interface Shown {
@@ -22,15 +20,10 @@ interface Shown {
   seat: FurnitureItem | null;
   /** The way they look while seated (guests), or null: the seat's way. */
   sitFacing: Facing | null;
-  /** What is drawn in their hands, and whether an animation decides that for now. */
-  held: LootRef | null;
-  heldByAnim: boolean;
-  /** Paid: they keep the item in their hands until they are gone. */
-  keepsHeld: boolean;
 }
 
 /**
- * What a shown walker needs: a shop customer or (step 9t) a tavern guest. `seat` is only set while
+ * What a shown walker needs: a tavern guest. `seat` is only set while
  * they sit (a guest who still walks to a reserved seat has none yet). `sitFacing`: the way they
  * look once seated (a guest looks at the table); without it they face the way the seat faces.
  */
@@ -43,28 +36,25 @@ export interface Walker {
   path: readonly Point[];
   speed?: number;
   seat: { uid: number } | null;
-  carrying?: { loot: LootRef } | null;
   sitFacing?: Facing;
 }
 
 function walkerAvatar(c: Walker, roomId: number): Avatar {
   const state = c.path.length > 0 ? 'walk' : c.seat ? 'sit' : 'idle';
-  return { id: c.id, name: 'Customer', look: c.look, roomId, x: c.x, y: c.y, facing: c.facing, state };
+  return { id: c.id, name: 'Guest', look: c.look, roomId, x: c.x, y: c.y, facing: c.facing, state };
 }
 
-const sameLoot = (a: LootRef | null, b: LootRef | null): boolean => JSON.stringify(a) === JSON.stringify(b);
-
-export class CustomerViews {
+export class GuestViews {
   private readonly shown = new Map<number, Shown>();
   private timeMs = 0;
 
   constructor(private readonly view: RoomView) {}
 
-  /** Shows these customers (an empty list or another room: none). `items`: the room's items (seats). */
-  sync(customers: readonly Walker[], roomId: number, items: readonly FurnitureItem[] = []): void {
-    const ids = new Set(customers.map((c) => c.id));
+  /** Shows these guests (an empty list or another room: none). `items`: the room's items (seats). */
+  sync(walkers: readonly Walker[], roomId: number, items: readonly FurnitureItem[] = []): void {
+    const ids = new Set(walkers.map((c) => c.id));
     for (const [id, s] of this.shown) if (!ids.has(id)) this.drop(id, s);
-    for (const c of customers) {
+    for (const c of walkers) {
       const a = walkerAvatar(c, roomId);
       const seat = c.seat ? (items.find((i) => i.uid === c.seat!.uid) ?? null) : null;
       let s = this.shown.get(c.id);
@@ -72,7 +62,7 @@ export class CustomerViews {
         const sprite = new AvatarSprite(c.look, false);
         sprite.container.eventMode = 'none';
         this.view.objects.add(sprite.container, avatarDepthKey(a));
-        s = { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite, seat, sitFacing: c.sitFacing ?? null, held: null, heldByAnim: false, keepsHeld: false };
+        s = { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite, seat, sitFacing: c.sitFacing ?? null };
         this.shown.set(c.id, s);
       } else {
         // Keep the shown position unless it is clearly off (tiny timing differences are walked off).
@@ -82,7 +72,6 @@ export class CustomerViews {
         s.seat = seat;
         s.sitFacing = c.sitFacing ?? null;
       }
-      if (!s.heldByAnim && !s.keepsHeld) this.setHeldLoot(s, c.carrying?.loot ?? null);
     }
   }
 
@@ -99,7 +88,7 @@ export class CustomerViews {
       const sitting = s.seat !== null && s.path.length === 0;
       if (sitting) s.avatar = { ...s.avatar, state: 'sit', facing: s.sitFacing ?? s.seat!.facing };
       s.sprite.update(s.avatar, timeMs);
-      // Standing customers shift a little now and then (atmosphere step).
+      // Standing guests shift a little now and then (atmosphere step).
       s.sprite.setShift(s.path.length === 0 && !sitting ? idleShift(id, timeMs) : 0);
       this.view.objects.setKey(s.sprite.container, avatarDepthKey(s.avatar, sitting ? s.seat! : undefined));
     }
@@ -121,49 +110,18 @@ export class CustomerViews {
     return best;
   }
 
-  /** The customer's hands in world px (where a carried item sits), or null when not shown. */
-  handPoint(id: number): Point | null {
-    const s = this.shown.get(id);
-    if (!s) return null;
-    const h = s.sprite.handOffset();
-    return { x: Math.round(s.avatar.x) + h.x, y: Math.round(s.avatar.y) + h.y };
-  }
-
-  /** What the customer holds right now (drawn), or null. */
-  heldOf(id: number): LootRef | null {
-    return this.shown.get(id)?.held ?? null;
-  }
-
-  /**
-   * An animation decides the held item: null = hands empty (the item is hopping), a loot = in the
-   * hands again. `keep`: they keep it until they are gone (after paying).
-   */
-  hold(id: number, loot: LootRef | null, keep = false): void {
-    const s = this.shown.get(id);
-    if (!s) return;
-    s.heldByAnim = loot === null;
-    s.keepsHeld = keep;
-    this.setHeldLoot(s, loot);
-  }
-
   gesture(id: number, kind: Gesture): void {
     this.shown.get(id)?.sprite.gesture(kind, this.timeMs);
   }
 
-  /** Adds every customer's feet (for the shadows). */
+  /** Adds every guest's feet (for the shadows). */
   feet(out: Point[]): void {
     for (const s of this.shown.values()) out.push(s.avatar);
   }
 
-  /** World points above each customer's head (speech bubbles). */
+  /** World points above each guest's head (speech bubbles). */
   heads(out: Map<number, Point>, headPx: number): void {
     for (const [id, s] of this.shown) out.set(id, { x: s.avatar.x, y: s.avatar.y - headPx });
-  }
-
-  private setHeldLoot(s: Shown, loot: LootRef | null): void {
-    if (sameLoot(s.held, loot)) return;
-    s.held = loot;
-    s.sprite.setHeld(loot ? drawGood(loot) : null);
   }
 
   private drop(id: number, s: Shown): void {

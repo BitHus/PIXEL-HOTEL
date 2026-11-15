@@ -8,9 +8,9 @@ A browser game. Parts:
   top and front of things). Walk as an avatar, chat in bubbles, build per cell (32 px build grid;
   wall items stay free along the back wall).
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
-- Tavern (the shop room, step 9t): guests sit, order drinks and dishes from your menu, you serve them and tap their coins; the
-  Market corner (stall, shelves) sells loot to NPC customers. Brewing barrel (crops -> mugs) and stove (crops -> dishes). Gold
-  buys furniture in the catalog.
+- Tavern (the shop room, step 9t; S1: nobody buys loot at a stall any more): guests sit, order drinks and dishes from your menu, you
+  serve them and tap their coins. Brewing barrel (crops -> mugs) and stove (crops -> dishes). Gold comes from guests and dungeon run
+  gold (the trader for surplus comes in S2) and buys furniture in the catalog. Items are for USE: cook, brew, craft, build, plant.
 - Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
 - Lakeside (10d): chop trees for wood, fish in the lake.
@@ -58,8 +58,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Floors and walls are unlockable styles (shared/data/styles.json). Rooms start 'bare'. A bought
   or crafted style is unlocked forever and applied to any own room for free. Price = baseValue * 3.
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
-- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a stall table, a round table with 2 stools, a brewing barrel (6 root ale ready) and one stove (K1: you cook there).
-- The counter: one per shop, movable, never picked up; the spot behind it must stay reachable.
+- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a stall table (decor), a round table with 2 stools, a brewing barrel (6 root ale ready) and one stove (K1: you cook there).
+- The counter (the bar): one per tavern, movable, never picked up; the spot behind it must stay reachable.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
 - BLOCKS (BG5): Room.blocks = a foreground layer, one block per cell (shared/data/blocks.json, items
@@ -104,23 +104,17 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 9. ECONOMY (all numbers in shared/config.ts)
 - One currency: gold (integer). Everything has a baseValue. New player (createNewPlayer): level
   1, 100 gold, bare styles, 4 wood and 2 cloth, no furniture in the inventory.
-- Goods sit on slots (stall_table 3, shelf 3, display case 4), one price per item.
-- TAVERN (9t, done): the shop room is the tavern (kind 'shop', same room id; the counter is the bar). GUESTS (alone, pairs, groups of 3,
-  every 45 s * 100 / (100 + appeal), never more than seats) sit at a table, order from the MENU (tap the bar: Serve and Menu tabs; each
-  drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest: the avatar
-  carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that you tap (nothing
+- TAVERN (9t, done; S1 retired the loot shop): the shop room is the tavern (kind 'shop', same room id; the counter is the bar). GUESTS (alone,
+  pairs, groups of 3, every 45 s * 100 / (100 + appeal), never more than seats) sit at a table, order from the MENU (tap the bar: Serve and
+  Menu tabs; each drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest:
+  the avatar carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that you tap (nothing
   automatic; unserved after 90 s = unhappy). Drinks: BREWING BARREL (tap it: Brewing panel, one brew at a time, real time, tap to
-  collect). Dishes: the stove (K1). Away: at most 3 seated orders. The Market corner (stall, shelves) and its queue of 3 stay as below.
-- shopAppeal = min(100, appeal of placed items (each type at most 3 times) + floor and wall
-  style). A customer comes every 60 s * 100 / (100 + appeal) while there is stock.
-- A customer wants one category (materials, home / shop / crypt / lake furniture, food), has a
-  tolerance in [0.8, 1.4], looks at the cheapest item there and buys if price <= baseValue *
-  tolerance. Reaction bubbles teach pricing (too cheap, fair, a bit high, too high).
-- NO AUTO-SELLING: gold only comes in while the player stands behind the counter and serves. At
-  most QUEUE_MAX (3) customers wait with an item; then no new buyers come. Offline catch-up only
-  fills the queue (looks back at most 8 h). No "while you were away" summary.
-- Customers walk 72 px/s (+-10%), at most 5 NPCs in the shop, no fixed route (window-shoppers,
-  pairs, talk lines from shared/data/npcLines.json); behind the counter is staff only.
+  collect). Dishes: the stove (K1). Away: at most 3 seated orders; offline catch-up only fills seats (looks back at most 8 h).
+- NO SELLING TO LOOT CUSTOMERS (S1, owner 15 Nov): window-shoppers, buyers, the till queue, prices on slots and the stall sales are gone.
+  Stall table, shelf and display case are plain DECOR (no slots, no prices); goods that were on them went back to the bag (ledger reason
+  'shop_closed'). GOLD sources: tavern guests (main), dungeon run gold, the trader (S2: tap-to-sell Sell tab on the bar; never automatic).
+- tavernAppeal = min(100, appeal of placed items, decor too (each type at most 3 times) + floor and wall style). It sets the guest rate.
+- Guests walk 72 px/s (+-10%), at most GUEST_MAX, talk lines from shared/data/npcLines.json; behind the bar is staff only.
 - Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
 - GEM SINK (BG8, numbers BG9): packs cost gems (config PACKS; shared/data/packs.json; pure openPack in shared/src/packs.ts):
   Random Blocks 40, Basic Seeds 30 (5 rolls each), Common Clothes 75, Rare Clothes 225 (3 rolls). Rank first (RANK_WEIGHTS times
@@ -175,7 +169,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   time also while the game is closed (TavernState.cooks, time passed in), and the player TAPS the stove to collect (a popup).
   Nothing is collected by itself, no burnt food. More stoves = more batches in parallel. Tap a stove in play mode: the avatar
   walks next to it, then a ready batch is collected, else the Cooking panel opens. Dishes: the lunch box (up to 3 into the
-  dungeon; lost on death), the tavern menu, the stall. Crops come from the bag.
+  dungeon; lost on death), the tavern menu. Crops come from the bag.
 
 10c. MINE
 - Opens at player level 3. A dungeon-code visit (place 'mine'): free, 4 minutes of lantern,
@@ -250,9 +244,10 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   intro toast, simulate-economy; NOTES 9t C). Tavern gold is brewing-limited at the start (0.1x to 0.25x of the old shop ceiling, NOTES 9t C).
 - BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
-  is done. Next: K2 (ripening), then 9g.
+  is done. S1 (the shop is the tavern: loot customers, slots and prices removed; stalls are decor; save v22; NOTES S1) is done.
+  Next: S2 (the trader), S3 (rebalance gold and gems), K2 (ripening), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 21. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 22. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -262,9 +257,9 @@ FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - shared/data: JSON data (furniture, materials, styles, roomShapes, clothing, loot, levels, gear,
   forge, recipes, crops, food, fish, npcLines, bookRewards).
 - client/src: main.ts (only wiring: start() runs the parts in game/ in order), game/ (one part per area:
-  core, avatarWalk, roomItems, uiShell, cameraSetup, placing, shopPanels, craftPanels, shopLife, tavernLife,
+  core, avatarWalk, roomItems, uiShell, cameraSetup, placing, shopPanels, craftPanels, placeLife, tavernLife,
   hotbarBag, settingsPanels, dungeonMode, roomFlow, blockInput, pointerInput, gameLoop; ctx.ts = shared state
-  `st`, late-bound functions `late`, and the types), api/ (localGameAPI.ts = the class; walkApi, roomsApi, shopApi,
+  `st`, late-bound functions `late`, and the types), api/ (localGameAPI.ts = the class; walkApi, roomsApi, catalogApi,
   blocksFarmApi, dungeonApi, lakesideApi, packsApi, progressApi, tavernApi, savesApi = one area each; apiShared.ts;
   storage, prefs), render/ (room, items, avatars, atmosphere), input/ (camera control, intro), ui/ (HTML panels,
   ui.css), build/ (placer), dungeon/, farm/, lakeside/, audio/, debug/, fonts/, assets/.
@@ -300,11 +295,11 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 21) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 22) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
-  on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers
-  use npcGrid (staff zone blocked; queue spots are cell centres). The dungeon has its own grid
+  on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests
+  use npcGrid (shared/src/npcNav.ts; staff zone blocked). The dungeon has its own grid
   (16 px cells, no radius). When blockers change, the grid is rebuilt and walkers re-path.
 - Camera state is unsnapped and clamped; drawing and hit testing use snapCamera(camera, dpr). In
   main.ts use syncItems (not itemViews.sync alone), so lights and shadows follow.

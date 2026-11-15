@@ -1,9 +1,6 @@
-// Economy simulation (step 7; new rule in step 9d): nothing sells without the player at the till.
-// Customers keep coming and take items, but at most QUEUE_MAX wait at the till; while the line is
-// full nobody new comes in. The player looks in every N minutes and serves the whole line. Three
-// pricing strategies (cheap, fair, greedy), appeal 0 and 60, 6 items in stock (no restocking),
-// over 8 hours. Uses the same rules as the game (shared/src/shop.ts fillQueueMath: the maths of the
-// catch-up). Averages over many seeds.
+// Economy simulation (step 7; BG9; 9t C; S1). Since step S1 nobody sells loot to customers: gold comes from tavern guests
+// (the 9t C table below, brewing- and seat-limited) and dungeon run gold (npm run simulate:dungeon). The old shop tables
+// (customers at the till, 9d) are gone; the old shop's ceiling is only kept as a reference column. The trader comes in S2.
 // Run: npm run simulate
 
 import {
@@ -24,7 +21,6 @@ import {
   BLOCK_TYPES,
   BALANCE_TARGETS,
   PACK_TYPES,
-  QUEUE_MAX,
   RANK_NAMES,
   SEED_BACK_CHANCE,
   SEED_GROW_MS,
@@ -37,10 +33,8 @@ import {
   blockLineage,
   chains,
   cheapestGoldPerGem,
-  emptyShop,
   expectedDistinct,
   expectedSpares,
-  fillQueueMath,
   focusedGems,
   gemsPerBoughtBlock,
   harvestYield,
@@ -48,7 +42,6 @@ import {
   itemChances,
   lineGemsPerEvent,
   lineGemsPerHour,
-  lootBaseValue,
   mixedBySource,
   mixedGemsPerHour,
   packGemReturn,
@@ -65,77 +58,13 @@ import {
   CATALOG_PRICE_MULT,
   CROP_TYPES,
   SPLICE_RECIPES,
-  type LootRef,
-  type ShopSlot,
-  type ShopState,
 } from '../shared/src/index.ts';
 
-const RUNS = 500;
-const HOURS = 8;
-const STOCK: LootRef[] = [
-  { kind: 'material', id: 'wood', qty: 1 },
-  { kind: 'material', id: 'wood', qty: 1 },
-  { kind: 'material', id: 'cloth', qty: 1 },
-  { kind: 'material', id: 'cloth', qty: 1 },
-  { kind: 'material', id: 'crystal', qty: 1 },
-  { kind: 'furniture', uid: 1, typeId: 'chair' },
-];
-const STRATEGIES: [string, number][] = [
-  ['cheap (0.7x)', 0.7],
-  ['fair (1.0x)', 1.0],
-  ['greedy (1.3x)', 1.3],
-];
-/** How often the player comes to the till, minutes. */
-const CHECK_EVERY = [5, 30, 120, 480];
 const MINUTE = 60_000;
-
-function stockedShop(mult: number): ShopState {
-  const slots: ShopSlot[] = STOCK.map((loot, i) => ({
-    shelfUid: 100 + Math.floor(i / 3),
-    index: i % 3,
-    loot,
-    price: Math.max(1, Math.round(lootBaseValue(loot) * mult)),
-  }));
-  return { ...emptyShop(2, 0), slots };
-}
-
 const pad = (s: string | number, n: number): string => String(s).padEnd(n);
-console.log(`Economy simulation (step 9d rule: no selling without the player, at most ${QUEUE_MAX} wait at the till).`);
-console.log(`6 items in stock (2 wood, 2 cloth, 1 crystal, 1 chair; worth ${STOCK.reduce((a, l) => a + lootBaseValue(l), 0)} gold at base value), no restocking, ${HOURS} hours, ${RUNS} runs each.`);
-console.log('"check" = the player serves the whole line every N minutes (also at the end).');
-console.log('"lost min" = minutes of customer time lost because the line was full (nobody could come in).\n');
-console.log(pad('strategy', 15) + pad('appeal', 8) + pad('check', 9) + pad('gold', 8) + pad('sold', 7) + 'lost min');
-for (const [name, mult] of STRATEGIES) {
-  for (const appeal of [0, 60]) {
-    for (const every of CHECK_EVERY) {
-      let gold = 0;
-      let sold = 0;
-      let lostMs = 0;
-      for (let seed = 1; seed <= RUNS; seed++) {
-        const rng = seededRng(seed);
-        let shop = stockedShop(mult);
-        let waiting: number[] = [];
-        for (let t = 0; t < HOURS * 60 * MINUTE; t += every * MINUTE) {
-          const span = Math.min(every * MINUTE, HOURS * 60 * MINUTE - t);
-          const r = fillQueueMath(shop, appeal, waiting.length, span, rng);
-          shop = r.shop;
-          waiting = [...waiting, ...r.arrivals.map((a) => a.price)];
-          // The line was full from the last arrival (or the start) to the end of the span.
-          if (waiting.length >= QUEUE_MAX && shop.slots.length > 0) {
-            const fullFrom = r.arrivals.length > 0 ? r.arrivals[r.arrivals.length - 1]!.afterMs : 0;
-            lostMs += span - fullFrom;
-          }
-          // The player serves the whole line.
-          gold += waiting.reduce((a, p) => a + p, 0);
-          sold += waiting.length;
-          waiting = [];
-        }
-      }
-      const f = (n: number, d = 1): string => (n / RUNS).toFixed(d);
-      console.log(pad(name, 15) + pad(appeal, 8) + pad(`${every} min`, 9) + pad(f(gold), 8) + pad(f(sold), 7) + (lostMs / RUNS / MINUTE).toFixed(0));
-    }
-  }
-}
+const RUNS = 500;
+void RUNS;
+void MINUTE;
 
 // ---------- BG9: the block world's gems, packs, seeds and splicing ----------
 // Every number below is EXPECTED value worked out in closed form from the game's rules (shared/src/balance.ts); the activity
@@ -203,8 +132,9 @@ const rate = BLOCK_BREAKS_CEILING_PER_HOUR;
 console.log(`Cheapest gold to gems: ${cheapestGoldPerGem().toFixed(1)} gold per gem (target at least ${BALANCE_TARGETS.minGoldPerGem}).`);
 console.log(`If blocks never ran out, ${rate} breaks/h would give ${f1(rate * 0.375)} gems/h on common blocks. They do run out: a bought dirt block (${2 * CATALOG_PRICE_MULT} gold) gives ${gemsPerBoughtBlock('dirt').toFixed(2)} gems, so ${f1((2 * CATALOG_PRICE_MULT) / gemsPerBoughtBlock('dirt'))} gold per gem.`);
 
-console.log('\n=== BG9 5. Seed -> plant -> harvest -> sell: gold per cell, and the limit ===');
-console.log(pad('crop', 10) + pad('seed gold', 11) + pad('grow', 8) + pad('yield', 7) + pad('sells', 7) + pad('gold/harvest', 14) + pad('gold per cell-min', 19) + 'cells to feed the shop');
+console.log('\n=== BG9 5. Seed -> plant -> harvest: crop value per cell (S1: no one buys crops until the S2 trader; they feed brewing and cooking) ===');
+console.log(pad('crop', 10) + pad('seed gold', 11) + pad('grow', 8) + pad('yield', 7) + pad('sells', 7) + pad('gold/harvest', 14) + 'gold per cell-min');
+/** The old loot shop (removed in step S1), kept only as a reference ceiling: one customer every 60 s * 100 / (100 + appeal). */
 const CUSTOMERS_PER_HOUR = (appeal: number): number => 3600 / (60 * (100 / (100 + appeal)));
 for (const crop of CROP_TYPES) {
   if (crop.seedPrice === null) continue;
@@ -212,10 +142,8 @@ for (const crop of CROP_TYPES) {
   const y = harvestYield(crop.rank);
   const gold = y * crop.baseValue - crop.seedPrice * (1 - SEED_BACK_CHANCE);
   const perMin = gold / grow;
-  const cellsToSaturate = CUSTOMERS_PER_HOUR(100) / ((60 / grow) * y);
-  console.log(pad(crop.id, 10) + pad(crop.seedPrice, 11) + pad(grow + ' min', 8) + pad(f1(y), 7) + pad(crop.baseValue, 7) + pad(f1(gold), 14) + pad(f1(perMin), 19) + cellsToSaturate.toFixed(2));
+  console.log(pad(crop.id, 10) + pad(crop.seedPrice, 11) + pad(grow + ' min', 8) + pad(f1(y), 7) + pad(crop.baseValue, 7) + pad(f1(gold), 14) + f1(perMin));
 }
-console.log(`The limit is the till: at most ${CUSTOMERS_PER_HOUR(0).toFixed(0)} customers/h at appeal 0 and ${CUSTOMERS_PER_HOUR(100).toFixed(0)}/h at appeal 100 (each buys ONE item, and only while the player serves). So crops cap at about ${(CUSTOMERS_PER_HOUR(100) * 22).toFixed(0)} gold/h however many cells, and a handful of cells already feed that.`);
 
 console.log('\n=== BG9 6. Splicing: time, cost and value of each result (fastest way from starter seeds) ===');
 const ch = chains();
@@ -286,3 +214,6 @@ const avgDish = FOOD_TYPES.reduce((a, f) => a + f.baseValue, 0) / FOOD_TYPES.len
 console.log(`\nOne stove visited every 10 min adds up to ${STOVE_BATCH_MAX * 6} dishes/h worth ${f1(avgDish)} gold each on average (${f1(STOVE_BATCH_MAX * 6 * avgDish)} gold/h if guests ordered them all; dishes are off the menu until the player switches them on).`);
 console.log('REPORT (nothing retuned): the target is tavern gold/h within 0.5x to 2x of the old shop at the same appeal. Result: brewing is the limit in every row. A new game (2 stools, one barrel) earns about 0.1x to 0.25x of the old shop ceiling, 4 barrels 0.45x to 0.9x; guests and seats are never the limit. The old shop figure is a CEILING (it assumes loot for every customer, which the dungeon cannot supply), so the real gap is smaller, and the stove adds dishes. If the owner wants the start closer to 0.5x: more mugs per brew, or a shorter root ale time.');
 console.log(GOLD_PER_GEM_NOTE + '.');
+
+console.log('\n=== S1. Gold per hour now (nothing retuned; S3 tunes it) ===');
+console.log('Gold comes from guests (table above: a new game about 324 gold/h at best, brewing-limited) and from dungeon run gold (npm run simulate:dungeon). Items (loot, ore, fish, spare crops) pile up until the S2 trader.');

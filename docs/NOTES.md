@@ -21,8 +21,8 @@ Contents:
 - UI: layout rule, UI polish, logo splash
 - Shop, catalog, styles, hints (step 7)
 - Room shapes, character creation, new-game intro (step 7b)
-- Shop life (step 9d)
-- Fix list after 9d (nav, natural customers, staff only, chests)
+- Shop life (step 9d; REMOVED in S1: only the guests' look, talk and the staff zone live on, see S1)
+- Fix list after 9d (nav, natural customers [removed in S1], staff only, chests)
 - Dungeon logic (step 8)
 - The dungeon in the game (step 9)
 - Farm and cooking (step 9b)
@@ -771,6 +771,7 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   trousers (legs 23), shoes 6. The box avatar lives in render/avatarParts.ts now.
 
 ## Shop life (step 9d)
+- STEP S1 REMOVED the loot customers described here (customers.ts, the plans, the till, the queue, slots and prices). Read the S1 section at the end first.
 
 - STEP 9d (shop life; owner's decisions in section 9: NO AUTO-SELLING, natural customers, talk,
   take and give):
@@ -1595,3 +1596,23 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 - NOT CHECKED: a real phone; the walk next to a barrel on every shape; a barrel placed in the farm or hotel (placeIn keeps it out); two Menu panels while many guests order (the Serve tab redraws on every tavern event).
 - TESTS: shared/src/menuEdit.test.ts, brewing.test.ts (brewCards), tavern.test.ts (catalog tab), client/src/api/tavernBrewAPI.test.ts (brew through the API: inputs out, ready later, collect with gains, one per barrel, a second barrel, refusals, across a reload; the menu calls; a dish
   from the stove on the menu; introSeen), client/src/texts.test.ts. 966 tests in all now.
+
+## S1: the shop is the tavern (step S1, owner 15 Nov; docs/INN-PLAN.md section 5; changes CLAUDE.md 1, 5, 9)
+- REMOVED: shared/src/customers.ts (walking loot customers, plans, queue, till, catchUpShop, repathCustomers), customerPlan.ts (behaviour picker; the staff-zone and path helpers moved to npcNav.ts), shop.ts (slots, putOnShelf, prices, fillQueueMath,
+  chooseCategory, saleHistory), GameState.shop (the whole ShopState), ShopView / ShopEvent / getShop / putOnShelf / takeFromShelf / setPrice / onShop / isServing in the GameAPI, types ShopSlot, ShopCategory, SaleRecord, FurnitureType.slots (and "slots" in furniture.json),
+  the 'to_stall' guest event, config (SLOTS_*, QUEUE_*, CUSTOMER_* browsing, ACT_*, WINDOW_*, PAIR_*, TALK_GAP/NEAR, SALE_FLOAT_MS, ITEM_HOP_MS, CUSTOMER_PAY_MS, ...), npcLines moments enter, browse, queue, pay, leave, empty, smalltalk*, remark, window.
+  Client: ui/shelfPanel.ts, render/itemHops.ts, the sale floats and till coins (ui/shopFeedback.ts is now ui/hintBox.ts: the quest card only), the goods drawn on slots (itemViews, slotGoods keeps drawGood = the order in the hand), the shelf panel, the "n waiting" badge, the customer sounds are unchanged (bell and coin still serve guests).
+- KEPT / MOVED: shared/src/prices.ts (decide, validPrice: the menu price rule), appeal.ts (tavernAppeal, was shopAppeal), guestLook.ts (guestLook, outsidePoint, rollGuestKind, rollTolerance), npcNav.ts (staffZones, inStaffZone, npcGrid, npcPath, reachableFrom), bar.ts (barCoinPoint = tillPoint: the intro's coin start),
+  client/src/api/catalogApi.ts (was shopApi: buyCatalog only; the tavern grid and world are in tavernApi.tavernWorld, LocalGameAPI.tavernGrid), client/src/game/placeLife.ts (was shopLife: travel, quest card, Map badge, guest bubbles), render/guestViews.ts (was customerViews: GuestViews, no held items).
+  The config names CUSTOMER_WALK_SPEED, CUSTOMER_KIND_WEIGHTS, CUSTOMER_TOLERANCE_*, CUSTOMER_APPEAL_BASE, LOOK_COLORS, CUSTOMER_OUTSIDE_PX keep their names (guests use them); a rename is not worth the churn.
+- STATE: TavernState.nextGuestId (the guest id counter, was ShopState.nextCustomerId) and TavernView.appeal (the Room panel's tavern appeal). SAVE_VERSION 22: MIGRATIONS[21] puts every slot good back in the bag (ledger 'shop_closed', same uids, no finds, no popup), drops GameState.shop, keeps the guest counter.
+  readSave returns shopClosed (version < 22); the opening notice says goods are back in the bag and stalls are decor. Old migrations 8 and 9 still handle customers inside the chain (tested one step at a time: MIGRATIONS[8], MIGRATIONS[9]); migration 2 still builds a shop state that 21 removes.
+- DECOR: stall_table (still in a new game, appeal 0), shelf (appeal 0, catalog 30), display_case (appeal 6, catalog 120) stay placeable in the tavern and count for appeal like any decor. The starting stall table could be swapped for something useful in S3 (not changed here).
+- TEXTS: Map card "Tavern": "Tavern level n: k guests waiting / no guests yet", badge "orders, coin piles" (the Map button shows the same). Quest 3 (index 2): serve a guest and tap the coins (done when coins are collected); quest 4 (dungeon): find loot to use for cooking, brewing, crafting and building (shows while no run is going). Bag materials line: for cooking, brewing, crafting and building. The panels' quest indexes did not move, so hintsDone needs no migration.
+- TESTS: removed with their rules: customers.test.ts (loot customers, queue, plans, decor looks, sitting), shop.test.ts (slots, fillQueueMath, cheapestIn, recordSale), customerPlan.test.ts (behaviour picker; the nav-grid tests moved to npcNav.test.ts), the lootCategory checks in gear/cooking/brewing tests, and the "guests walk past the stall" part of guests.test.ts.
+  New or changed: save.test.ts (21 -> 22: goods back, uids, counter, decor stays, ledger adds up via ledgerGold / ledgerMaterials, nothing lost, no second migration; v8 and v9 steps), appeal.test.ts, prices.test.ts, bar.test.ts, npcNav.test.ts, furniture.test.ts (no slots), npcTalk.test.ts, localGameAPI.test.ts (no goods calls, gold only by serving,
+  catch-up leaves gold alone, stall is decor, an old v21 save through LocalGameAPI.open). Guests and the menu end to end through the API: tavernAPI.test.ts and tavernBrewAPI.test.ts (unchanged). Typecheck proves no reference to the removed code is left. 939 tests now (966 before).
+- BUNDLE (npm run build): index js 727.24 kB (gzip 223.43) before, 695.17 kB (gzip 212.52) after = -32.07 kB (-10.91 kB gzip).
+- ECONOMY (npm run simulate, section 9t C and S1; NOTHING retuned): gold per hour by appeal 0 / 30 / 60 / 100: a new game (2 stools, one barrel of root ale) 324 gold/h at best (brewing-limited), 297 with a mixed menu; 2 barrels 595; 4 barrels 1190. The old shop's ceiling column stays only as a reference.
+  The other gold: dungeon run gold (npm run simulate:dungeon, not rerun here: it takes minutes). Crops, ore, fish and loot can no longer be sold, so they pile up until the S2 trader; the BG9 seed table now prints crop value only. S3 retunes gold and gems.
+- NOT CHECKED: a real phone; the old-save notice text on a small screen; the Map card text lengths.

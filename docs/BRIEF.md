@@ -15,18 +15,17 @@ A browser game with these parts:
   chests. Enemies are the danger: they give xp (the player levels up) and rarely a special
   drop.
 - Tavern (step 9t; the shop room): guests sit, order drinks and dishes from the menu, the player serves them and taps their
-  coins. The Market corner (stall table, shelves) sells loot to NPC customers for gold. A brewing barrel and a stove make the
-  drinks and dishes. Gold buys furniture in the catalog.
+  coins. Since step S1 nobody buys loot at a stall: the stall table, shelves and display case are plain decor. A brewing barrel and
+  a stove make the drinks and dishes. Gold comes from guests and dungeon run gold and buys furniture in the catalog.
 - Farm (section 10b, steps 9b, BG6): a free-form outdoor room where the player plants seeds on soil,
   harvests by punching, and grows the crops that the tavern's stove cooks into food (heals or buffs in the dungeon, step K1).
 - Mine (section 10c, step 9c): a short click-to-mine trip for ore. Ore is smelted into bars
   at the forge, and bars upgrade weapons, armor and the pickaxe.
 - Lakeside (section 10d, step 9f): an outdoor place with a lake: chop trees for wood and fish
-  in the lake. Fish are food for the shop and the stove; bars also make an axe and fishing rods.
+  in the lake. Fish are food for the tavern's menu and the stove; bars also make an axe and fishing rods.
 The loop: dungeon (loot) -> tavern (gold) -> furniture; farm (food) -> stronger dungeon runs;
 mine (ore) -> better gear -> deeper dungeon runs.
-Every player starts with two small, basic rooms: a hotel room and a tavern. They serve guests and sell loot at the
-Market corner for gold, and use the gold to buy furniture for the hotel room or the tavern, and to
+Every player starts with two small, basic rooms: a hotel room and a tavern. They serve guests in the tavern for gold, and use the gold to buy furniture for the hotel room or the tavern, and to
 upgrade the rooms.
 Working title: Pixel Hotel (placeholder). Before any public release we pick a real, original
 name.
@@ -268,72 +267,27 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - One currency: gold (integer). Every loot and furniture type has a baseValue (gold).
 - A new player is created by one shared function, createNewPlayer. They get: level 1 with 0
   xp; 100 gold; only the bare floor and bare wall unlocked, used in both rooms; 4 wood and 2
-  cloth to sell; an empty hotel room; a shop room (section 5) with a counter and one
+  cloth; an empty hotel room; a shop room (section 5) with a counter and one
   stall_table already placed at their fixed positions. No furniture in the inventory.
-- The loop: sell loot in the shop -> gold -> buy furniture for the hotel room or the shop,
-  or upgrade a room.
-- Items for sale sit on slots. The starting stall_table has 3 slots (not in the catalog). A
-  shelf has 3 slots (catalog price 30 gold) and a display case has 4. The player puts items
-  on slots and sets a price per item.
-- Shop appeal: every shop decoration has an appeal number. shopAppeal = min(100, sum of the
-  appeal of placed items, each type counted at most 3 times, plus the appeal of the shop's
-  floor style and wall style (bare gives 0, the others give 4 each)).
-- Customers: every 60 s * 100 / (100 + shopAppeal), a shop with stock spawns one NPC
-  customer (the first customer of a new game arrives after 10 s). Categories are: materials,
-  home furniture, shop furniture, crypt furniture, food (step 9b) and lake furniture (step 9f). Each customer wants one category (80% of
-  the time one that has stock in this shop, otherwise any) and has a tolerance, random in
-  [0.8, 1.4]. The customer looks at the cheapest item in that category and buys it if price
-  <= baseValue * tolerance. Otherwise the customer leaves. The reaction below is based on
-  that cheapest item. There is no sales cap: sales are limited by the number of customers,
-  by slots, and by the stock the player brings back from the dungeon.
-- NO AUTO-SELLING (owner's decision, step 9d): nothing is ever sold without the player at the
-  till. Customers keep coming at the normal rate while the player is elsewhere or the game is
-  closed; each takes an item and joins the queue, but at most QUEUE_MAX (3) wait. While 3 wait,
-  no new customers come. Gold only comes in when the player stands behind the counter and
-  serves. When the game opens after a break, the queue is filled with what would have arrived
-  (at most 3, maths only, no walking; the catch-up looks back at most 8 hours) and those
-  customers stand at their queue spots. Waiting customers never leave on their own (v1). There
-  is no "while you were away" summary. The Map button and the Map's Shop card show "n waiting".
-- Customer flow (step 7, paced after 7b): customers walk calmer than the player (72 px/s, each
-  one up to 10% faster or slower) and at most 5 NPCs are in the shop at once (at most 3 of them
-  buyers; see NATURAL CUSTOMERS in the notes: no fixed route, window-shoppers, pairs, and the
-  area behind the counter is staff only). A customer enters at
-  the door and stops just inside it for a moment, walks to the table, shelf or case with stock,
-  looks at it for 2 to 5 s (a "..." thought bubble; sometimes at a second item too), decides
-  there (the reaction bubble below), and if buying takes the item (it
-  leaves the slot at once), walks to the customer side of the counter, waits in a queue line
-  if someone is already paying (queue spots in a row behind the first, each on a different
-  free nav cell), and waits at the till until the player serves (owner's change after step 7):
-  a coin marker shows above the till; the player taps the counter in play mode and, like
-  sitting, the avatar walks behind the counter and faces the customers. While the player stands
-  there, the waiting customers pay one by one (coins hop out of the till for CUSTOMER_PAY_MS, then
-  a floating "+12 gold"; a coin sound later; gold goes up only now), wait 1 s, then leave through
-  the door at the same calm pace.
-  While QUEUE_MAX (3, step 9d) customers carry something to the till, no new customers come in. A
-  customer who refuses just leaves. Offline catch-up (and a long gap) skips the walking and only
-  fills the queue (see NO AUTO-SELLING).
-- Natural customers (step 9d; reworked after 9d, see NATURAL CUSTOMERS in the notes): each customer gets a random look from the free clothing and
-  LOOK_COLORS (seeded by its id) and a kind: 'hurried' (walks 20% faster, short browse),
-  'browser' (looks at 2 to 3 things, decorations too), 'chatty' (talks more). Some stop at a
-  decoration (a plant, a rug, a banner) first and face what they look at; standing customers
-  shift their weight; in the queue they face the counter, and a waiting customer may sit on a
-  free seat next to the queue (they stand up when it is their turn at the till).
-- Talk (step 9d): speech bubbles with short original lines from shared/data/npcLines.json by
-  moment: enter, browse, the reaction (cheap / fair / a bit high / too high, shown with the face),
-  queue ("Hello? Anyone here?" after a while at the till), pay, leave, and remarks about the shop
-  (high appeal: "What a lovely shop!", empty shelves: "Not much left..."). At least 6 lines per
-  moment, at most 40 characters, picked with the rng passed in, never the same line twice in a
-  row per moment. A chance per moment (config TALK_CHANCE; chatty more, hurried less). Bubbles
-  follow the reading-pace rule.
-- Take and give (step 9d, client only): taking, the customer reaches and the item hops from the
-  slot into their hands in an arc (ITEM_HOP_MS) and is carried as the held-item layer (section 8).
-  Paying, they put it on the counter (hop), the coins hop to the till, the item hops back, they
-  nod and leave carrying it. The player's avatar makes a small hand-over move.
-- Price feedback (this is how the player learns pricing): after each customer decision a
-  bubble shows a reaction. Bought at price <= 0.7 * baseValue * tolerance: big smile (too
-  cheap). Bought at a higher price: smile (fair). Refused at price <= 1.15 * baseValue *
-  tolerance: shrug (a bit high). Refused above that: frown (too high). The shop panel shows
-  the last 5 sale prices per item type.
+- The loop: serve guests in the tavern -> gold -> buy furniture for the hotel room or the tavern, or upgrade a room. Loot, ore,
+  fish and crops are for USE (cook, brew, craft, build, plant, splice); the trader for surplus comes in step S2.
+- Stall table, shelf and display case (step S1) are decor only: no slots, no prices, no selling. Goods that sat on slots in an old
+  save went back to the bag (ledger reason 'shop_closed'; save version 22). The starting stall table stays as decor.
+- Tavern appeal: every decoration has an appeal number. tavernAppeal = min(100, sum of the appeal of placed items, decor too, each
+  type counted at most 3 times, plus the appeal of the floor style and wall style (bare gives 0, the others give 4 each)).
+  It sets the guest rate: a guest group every 45 s * 100 / (100 + appeal) (step 9t, unchanged).
+- Guests (step 9t, texts and looks from step 9d): each guest gets a random look from the free clothing and LOOK_COLORS (seeded by
+  its id) and a kind: 'hurried' (walks 20% faster), 'browser', 'chatty' (talks more). They walk 72 px/s (each up to 10% faster or
+  slower); the strip behind the bar is staff only. Speech bubbles use short original lines from shared/data/npcLines.json by moment
+  (the price reactions cheap / fair / high / too high with the face, "What a lovely tavern!", table talk, toasts, order_wait,
+  unhappy, thanks, no_seat, no_menu). At least 6 lines per moment, at most 40 characters, never the same line twice in a row per
+  moment; a chance per moment (config TALK_CHANCE; chatty more, hurried less). Bubbles follow the reading-pace rule.
+- Price feedback (this is how the player learns the menu prices): a guest has a tolerance in [0.8, 1.4] and orders when the price
+  is at most baseValue * tolerance. Bought at price <= 0.7 * baseValue * tolerance: big smile (too cheap). Bought at a higher
+  price: smile (fair). Refused at price <= 1.15 * baseValue * tolerance: shrug (a bit high). Refused above that: frown (too
+  high). The Menu panel shows the last prices guests paid.
+- NOTHING AUTOMATIC: gold only comes in when the player serves a guest and taps their coins. The Map button and the Map's Tavern
+  card show the orders waiting and the coin piles. Offline catch-up only fills seats (at most 8 hours, at most 3 open orders).
 - Gold sinks: catalog (baseValue * 3), room upgrades (level 2: 300 gold, level 3: 800 gold,
   for each room), dungeon gear and potions (section 10), dungeon key 10 gold, seeds and farm
   upgrades (section 10b), smelting fees (section 10c).
@@ -359,12 +313,11 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   (nothing is collected automatically; a table spot with coins or a dish takes no new guest). A
   guest who waits about 90 s leaves unhappy without paying. The menu price rule is the shop's
   (tolerance, the four faces); too high = something cheaper or nothing. Drinks are brewed in a
-  brewing barrel from crops in real time. The market corner (stall table, shelves, cases, the
-  queue of 3 at the bar) stays exactly as above. Away rule: at most 3 guests sit with an open
+  brewing barrel from crops in real time. (Step S1 removed the market corner and its customers; the stall table, shelves and cases are decor.) Away rule: at most 3 guests sit with an open
   order and they do not walk off. Part C: tap a brewing barrel (the avatar walks next to it) = the Brewing panel (a card per recipe in drinks.json with inputs and what you own,
   time, mugs, value; one brew per barrel; more barrels = more at once; a ready brew is collected by the tap); tap the bar = the Menu panel (tabs Serve and Menu: On/Off,
   a price stepper of 10% of the baseValue between 1 and 3 x, stock, the price face and a hint; out of stock = off the menu; an empty menu says how to fill it).
-  Tavern texts say Tavern (the loot stall keeps Market corner); old saves get one intro toast (introSeen), new games a short line. Details: STEP 9t and 9t C in the notes.
+  Tavern texts say Tavern; old saves get one intro toast (introSeen), new games a short line. Details: STEP 9t and 9t C in the notes.
 
 10. DUNGEON
 - Real-time and click-driven in the same top-down view: clicking fast is the game. A run is
@@ -507,10 +460,10 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   perch 30 s, carrot soup and carp stew 2 min, pumpkin pie 3 min, glowcap broth 4 min, eel pie 5 min). The crops of every
   dish leave the bag when the batch starts (ledger 'cook'); the batch cooks in real time, also while the game is closed
   (TavernState.cooks { stoveUid, food, qty, readyAt }, time passed in); a tap on the stove collects the dishes (ledger 'cook',
-  a gains list for the popup). Nothing is collected automatically; no burnt-food rule; a stove sold at the stall gives the
+  a gains list for the popup). Nothing is collected automatically; no burnt-food rule; a stove that is gone gives the
   crops of its batch back; a stove picked up into the bag keeps its batch. More stoves cook batches in parallel. A tap on a
   stove in play mode: the avatar walks next to it (STOVE_REACH_PX), then a ready batch is collected, else the Cooking panel
-  opens. Dishes feed the lunch box (effects unchanged), the tavern menu (guests order them) and the stall. Old saves
+  opens. Dishes feed the lunch box (effects unchanged), the tavern menu (guests order them). Old saves
   (migration 20 -> 21) get one stove in the tavern on its start spot (else in the bag) and a toast. Recipes (shared/data/food.json): roasted turnip (1
   turnip; heals 8 hp), potato stew (2 potato + 1 turnip; heals 15 hp), carrot soup (2 carrot
   + 1 potato; +1 attack for the rest of the run), pumpkin pie (1 pumpkin + 1 carrot; +10 max
@@ -706,10 +659,10 @@ changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as writ
 - Social (online, phase 6): room names and visit-by-name, a lobby, locks and access lists, signs,
   portals; friends, guilds and trading only later with new safety rules.
 - Cooking happens in the TAVERN (owner, 15 Nov): a stove in the tavern cooks batches in real time from
-  crops; dishes go on the menu, in the lunch box and on the stall. The garden has no pot. (Step K1, done.)
+  crops; dishes go on the menu, and in the lunch box. The garden has no pot. (Step K1, done.)
 - Brewing and RIPENING (owner, 15 Nov): drinks brewed in the barrel can ripen in casks on a keg rack in real time:
   fresh -> aged -> vintage, worth more, ordered by taste guests; limited cask slots. (Step K2, after 9t C.)
 - THE SHOP IS RETIRED (owner, 15 Nov): the shop is the tavern. No loot customers, no stall selling. Items are
   for use (cook, brew, craft, gear, build, plant, splice); surplus is sold by tapping at the trader (Sell tab on
   the bar, low rate). Gold comes from guests, dungeon run gold and the trader; gems from play and a small tavern tip.
-  (Steps S1 to S3, after 9t C.)
+  (Step S1 is done, NOTES S1; S2 the trader and S3 the rebalance follow.)

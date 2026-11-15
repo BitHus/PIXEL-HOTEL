@@ -9,7 +9,6 @@ import { applyChange } from './ledger.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { ROOM_SHAPES } from './room.ts';
 import { readSave, toSaveText } from './save.ts';
-import { lootCategory } from './shop.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
 import type { MaterialId } from './types.ts';
 
@@ -54,11 +53,6 @@ describe('the recipes (section 10b, step K1)', () => {
     expect(cookMs(bare)).toBe(COOK_MS.rare);
   });
 
-  it('crops and food are shop goods in the food category; seeds count as materials', () => {
-    expect(lootCategory({ kind: 'material', id: 'turnip', qty: 1 })).toBe('food');
-    expect(lootCategory({ kind: 'material', id: 'potato_stew', qty: 1 })).toBe('food');
-    expect(lootCategory({ kind: 'material', id: 'turnip_seed', qty: 1 })).toBe('materials');
-  });
 });
 
 describe('the stove', () => {
@@ -182,7 +176,7 @@ describe('cooking in real time', () => {
     expect(collectCook(inBag, uid, 60 * SEC)).toBeNull();
   });
 
-  it('a stove that is gone (sold at the stall) gives its crops back, once', () => {
+  it('a stove that is gone gives its crops back, once', () => {
     const s0 = withGoods({ potato: 4, turnip: 2 });
     const uid = stoveUid(s0);
     const cooking = startCook(s0, uid, 'potato_stew', 2, 0)!;

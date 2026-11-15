@@ -28,7 +28,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -58,8 +58,8 @@ export const FIRST_BUY_POP_MS = 220;
 export const HINTS = [
   'Open the Catalog and buy something with your 100 gold.',
   'Place it in your room.',
-  'Put an item on the stall table in your tavern\'s market corner and set a price.',
-  'Your market corner has nothing left to sell. Tap the Dungeon button to find loot.',
+  'Earn gold in your tavern: tap a guest who waits with an order to serve them, then tap the coins they leave on the table.',
+  'Tap the Dungeon button to find loot: use it to cook, brew, craft and build.',
   'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown (about 2 minutes). Breaking blocks, plants, chests and fish drop gems.',
   'Gems buy packs. With 30 gems open the Catalog, the Packs tab, and open a Basic Seeds Pack: its odds are on the card.',
   'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
@@ -70,7 +70,7 @@ export const TAVERN_INTRO_OLD =
   'Your shop is a tavern now! Guests sit at a table, order from your menu, and wait for you: tap a guest to carry the order from the bar. Place the round table, the stools and the brewing barrel from your bag, tap the barrel to brew drinks from crops and tap the bar to set the menu. Cooking moved here too: dishes come from the stove.';
 /** A new game gets this short line after the intro. */
 export const TAVERN_INTRO_NEW = 'Welcome to your tavern! Guests sit and order: tap them to serve. Tap the bar for the menu and the barrel to brew.';
-/** The index of the dungeon hint in HINTS: it only shows while the market corner has nothing for sale. */
+/** The index of the dungeon hint in HINTS: it shows while no run is going. */
 export const DUNGEON_HINT = 3;
 /** The index of the farm hint (step 9b): done by planting anything. */
 export const FARM_HINT = 4;
@@ -82,7 +82,7 @@ export const MINE_HINT = 6;
 export const SPLICE_HINT = 7;
 
 // ---------- New game intro (step 7b) ----------
-/** The counter and stall_table pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */
+/** The bar and the other start items pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */
 export const POP_MS = 500;
 /** The intro waits this long at the overview before the first pop, ms. */
 export const INTRO_FIRST_POP_MS = 700;
