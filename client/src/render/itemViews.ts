@@ -30,7 +30,7 @@ export class ItemViews {
   /** Items shaking, with the ms they have shaken so far. */
   private readonly shakes = new Map<number, number>();
   /** Goods drawn on tables, shelves and cases (step 7), with a key of what they show. */
-  private readonly goods = new Map<number, { g: Graphics; key: string }>();
+  private readonly goods = new Map<number, { g: Container; key: string }>();
   private slotLoot: readonly ShopSlot[] = [];
   /** Items popping in (the new-game intro), with the ms so far, and their dust puffs. */
   private readonly pops = new Map<number, number>();

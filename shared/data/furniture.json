@@ -56,6 +56,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "chair",
+      "colors": [
+        "oak",
+        "walnut"
+      ]
     }
   },
   {
@@ -138,6 +145,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "sofa",
+      "colors": [
+        "crimson",
+        "red"
+      ]
     }
   },
   {
@@ -216,6 +230,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "oak",
+        "tan"
+      ]
     }
   },
   {
@@ -289,6 +310,13 @@
           "color": 10
         }
       ]
+    },
+    "icon": {
+      "shape": "lamp",
+      "colors": [
+        "gold",
+        "butter"
+      ]
     }
   },
   {
@@ -349,6 +377,13 @@
           "color": 10
         }
       ]
+    },
+    "icon": {
+      "shape": "rug",
+      "colors": [
+        "crimson",
+        "gold"
+      ]
     }
   },
   {
@@ -407,6 +442,13 @@
           "h": 6,
           "color": 12
         }
+      ]
+    },
+    "icon": {
+      "shape": "plant",
+      "colors": [
+        "green",
+        "clay"
       ]
     }
   },
@@ -479,6 +521,13 @@
           "color": 10
         }
       ]
+    },
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "walnut",
+        "oak"
+      ]
     }
   },
   {
@@ -539,6 +588,13 @@
           "color": 6
         }
       ]
+    },
+    "icon": {
+      "shape": "barrel",
+      "colors": [
+        "oak",
+        "steel"
+      ]
     }
   },
   {
@@ -589,6 +645,13 @@
           "h": 2,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "box",
+      "colors": [
+        "tan",
+        "oak"
       ]
     }
   },
@@ -663,6 +726,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "bench",
+      "colors": [
+        "oak",
+        "sand"
+      ]
     }
   },
   {
@@ -724,6 +794,13 @@
           "h": 2,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "walnut",
+        "tan"
       ]
     }
   },
@@ -813,6 +890,13 @@
           "role": "cover"
         }
       ]
+    },
+    "icon": {
+      "shape": "bed",
+      "colors": [
+        "crimson",
+        "cream"
+      ]
     }
   },
   {
@@ -900,7 +984,14 @@
         }
       ]
     },
-    "servedFromBehind": true
+    "servedFromBehind": true,
+    "icon": {
+      "shape": "counter",
+      "colors": [
+        "walnut",
+        "oak"
+      ]
+    }
   },
   {
     "id": "stall_table",
@@ -986,6 +1077,13 @@
           "h": 8,
           "color": 7
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "sand",
+        "oak"
       ]
     }
   },
@@ -1081,7 +1179,14 @@
         "dx": 12,
         "dy": -11
       }
-    ]
+    ],
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "oak",
+        "tan"
+      ]
+    }
   },
   {
     "id": "display_case",
@@ -1161,7 +1266,14 @@
         "dx": 21,
         "dy": -22
       }
-    ]
+    ],
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "sky",
+        "walnut"
+      ]
+    }
   },
   {
     "id": "sign",
@@ -1229,6 +1341,13 @@
           "color": 2
         }
       ]
+    },
+    "icon": {
+      "shape": "sign",
+      "colors": [
+        "oak",
+        "cream"
+      ]
     }
   },
   {
@@ -1287,6 +1406,13 @@
           "h": 3,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "banner",
+      "colors": [
+        "crimson",
+        "gold"
       ]
     }
   },
@@ -1347,6 +1473,13 @@
           "h": 0,
           "color": 11
         }
+      ]
+    },
+    "icon": {
+      "shape": "rug",
+      "colors": [
+        "green",
+        "gold"
       ]
     }
   },
@@ -1416,6 +1549,13 @@
           "color": 21
         }
       ]
+    },
+    "icon": {
+      "shape": "chair",
+      "colors": [
+        "cream",
+        "sand"
+      ]
     }
   },
   {
@@ -1480,6 +1620,13 @@
           "color": 18
         }
       ]
+    },
+    "icon": {
+      "shape": "lamp",
+      "colors": [
+        "cream",
+        "orange"
+      ]
     }
   },
   {
@@ -1530,6 +1677,13 @@
           "h": 4,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "night",
+        "plum"
       ]
     }
   },
@@ -1603,6 +1757,13 @@
           "h": 3,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "torch",
+      "colors": [
+        "orange",
+        "walnut"
       ]
     }
   },
@@ -1699,6 +1860,13 @@
           "color": 20
         }
       ]
+    },
+    "icon": {
+      "shape": "throne",
+      "colors": [
+        "cream",
+        "sand"
+      ]
     }
   },
   {
@@ -1757,6 +1925,13 @@
           "h": 2,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "jar",
+      "colors": [
+        "lime",
+        "green"
       ]
     }
   },
@@ -1826,6 +2001,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "banner",
+      "colors": [
+        "plum",
+        "dusk"
+      ]
     }
   },
   {
@@ -1893,6 +2075,13 @@
           "h": 4,
           "color": 6
         }
+      ]
+    },
+    "icon": {
+      "shape": "skull",
+      "colors": [
+        "cream",
+        "slate"
       ]
     }
   },
@@ -1962,6 +2151,13 @@
           "color": 10
         }
       ]
+    },
+    "icon": {
+      "shape": "box",
+      "colors": [
+        "walnut",
+        "gold"
+      ]
     }
   },
   {
@@ -2030,6 +2226,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "banner",
+      "colors": [
+        "plum",
+        "gold"
+      ]
     }
   },
   {
@@ -2097,6 +2300,13 @@
       "h": 3,
       "range": 13,
       "color": 9
+    },
+    "icon": {
+      "shape": "tank",
+      "colors": [
+        "sky",
+        "cyan"
+      ]
     }
   },
   {
@@ -2164,6 +2374,13 @@
           "h": 2,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "fish",
+      "colors": [
+        "steel",
+        "oak"
       ]
     }
   },
@@ -2233,6 +2450,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "net",
+      "colors": [
+        "tan",
+        "sand"
+      ]
     }
   },
   {
@@ -2297,6 +2521,13 @@
       "radius": 80,
       "color": 10,
       "flicker": 0.2
+    },
+    "icon": {
+      "shape": "lamp",
+      "colors": [
+        "rose",
+        "cream"
+      ]
     }
   },
   {
@@ -2370,6 +2601,13 @@
           "color": 31
         }
       ]
+    },
+    "icon": {
+      "shape": "bench",
+      "colors": [
+        "tan",
+        "steel"
+      ]
     }
   },
   {
@@ -2428,6 +2666,13 @@
           "h": 4,
           "color": 21
         }
+      ]
+    },
+    "icon": {
+      "shape": "anchor",
+      "colors": [
+        "steel",
+        "slate"
       ]
     }
   },
@@ -2511,6 +2756,13 @@
       "radius": 112,
       "color": 2,
       "flicker": 0.3
+    },
+    "icon": {
+      "shape": "chandelier",
+      "colors": [
+        "white",
+        "gold"
+      ]
     }
   },
   {
@@ -2594,6 +2846,13 @@
           "color": 10
         }
       ]
+    },
+    "icon": {
+      "shape": "throne",
+      "colors": [
+        "forest",
+        "gold"
+      ]
     }
   },
   {
@@ -2653,6 +2912,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "stool",
+      "colors": [
+        "oak",
+        "crimson"
+      ]
     }
   },
   {
@@ -2702,6 +2968,13 @@
           "h": 4,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "walnut",
+        "sand"
       ]
     }
   },
@@ -2781,6 +3054,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "oak",
+        "sand"
+      ]
     }
   },
   {
@@ -2848,6 +3128,13 @@
           "h": 7,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "oak",
+        "gold"
       ]
     }
   },
@@ -2917,6 +3204,13 @@
           "color": 1
         }
       ]
+    },
+    "icon": {
+      "shape": "sign",
+      "colors": [
+        "night",
+        "cream"
+      ]
     }
   },
   {
@@ -2976,6 +3270,13 @@
           "h": 20,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "barrel",
+      "colors": [
+        "walnut",
+        "orange"
       ]
     }
   },
@@ -3045,6 +3346,13 @@
           "h": 4,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "barrel",
+      "colors": [
+        "oak",
+        "gold"
       ]
     }
   }

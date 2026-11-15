@@ -1,5 +1,7 @@
 // Plain data types from the brief (sections 5, 7, 8, 9, 10). No logic here.
 
+import type { Icon } from './icons.ts';
+
 // ---------- Common ----------
 export type Facing = 'down' | 'right' | 'up' | 'left';
 export interface Point {
@@ -58,6 +60,8 @@ export type FurnitureArt = { boxes: ArtBox[] } | { sprite: string };
 export interface FurnitureType {
   id: string;
   name: string;
+  /** The inventory icon (step BG2). */
+  icon: Icon;
   category: string;
   theme: string;
   placeIn: PlaceIn;
@@ -181,8 +185,10 @@ export interface MaterialType {
   id: MaterialId;
   name: string;
   baseValue: number;
-  /** Placeholder icon color (palette index) until real 32x32 icons exist. */
+  /** Old placeholder colour (palette index); the icon below is what items show since BG2. */
   color: number;
+  /** The item's square icon (step BG2). */
+  icon: Icon;
   rank: Rank;
   group: MaterialGroup;
 }

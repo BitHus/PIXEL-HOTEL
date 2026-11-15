@@ -530,6 +530,14 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   else, so switching to a bigger warm palette (for example Resurrect 64) later means
   changing one file. If you cannot download the list, ask me to paste it. Final sprites use
   only the palette.
+- ITEM ICONS (step BG2): every item (materials, ore, bars, crops, seeds, food, drinks, fish and
+  fished-up things, gear and forge pieces, clothing, furniture) has icon: { shape, colors[] } in
+  its data file: a shape from the fixed ICON_SHAPES list (shared/src/icons.ts) and 1 to 3 Endesga
+  palette NAMES (PALETTE_NAMES in shared/palette.ts; no hex in data). One function drawIcon
+  (client/src/render/drawIcon.ts, pure pixels in iconPixels.ts) draws it on a 32x32 square: flat
+  fills, light from the top-left, 1 px dark warm outline; the rank only adds a frame in RANK_COLORS.
+  Within one group no two items share shape + colours (tested). These are rough placeholders: real
+  pixel art replaces the drawing per item in phase 4.
 - Light comes from the top-left: top faces lightest, left faces medium, right faces darkest.
   1 px dark outline. No anti-aliasing.
 - Sizes (px): avatar 32x64. Chair 32x48, table 64x56, sofa 80x56, bed 64x80, bookshelf

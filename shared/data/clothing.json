@@ -1,15 +1,15 @@
 [
-  { "id": "short", "slot": "hair", "name": "Short", "free": true },
-  { "id": "long", "slot": "hair", "name": "Long", "free": true },
-  { "id": "ponytail", "slot": "hair", "name": "Ponytail", "free": true },
-  { "id": "buzz", "slot": "hair", "name": "Buzz cut", "free": true },
-  { "id": "mohawk", "slot": "hair", "name": "Mohawk", "free": false },
-  { "id": "t_shirt", "slot": "top", "name": "T-shirt", "free": true },
-  { "id": "long_sleeve", "slot": "top", "name": "Long sleeve", "free": true },
-  { "id": "vest", "slot": "top", "name": "Vest over shirt", "free": true },
-  { "id": "tunic", "slot": "top", "name": "Tunic", "free": false },
-  { "id": "trousers", "slot": "bottoms", "name": "Trousers", "free": true },
-  { "id": "shorts", "slot": "bottoms", "name": "Shorts", "free": true },
-  { "id": "skirt", "slot": "bottoms", "name": "Skirt", "free": true },
-  { "id": "baggy", "slot": "bottoms", "name": "Baggy trousers", "free": false }
+  { "id": "short", "slot": "hair", "name": "Short", "free": true, "icon": {"shape": "hair", "colors": ["walnut", "oak"]}},
+  { "id": "long", "slot": "hair", "name": "Long", "free": true, "icon": {"shape": "hair", "colors": ["oak", "sand"]}},
+  { "id": "ponytail", "slot": "hair", "name": "Ponytail", "free": true, "icon": {"shape": "hair", "colors": ["rust", "clay"]}},
+  { "id": "buzz", "slot": "hair", "name": "Buzz cut", "free": true, "icon": {"shape": "hair", "colors": ["night", "slate"]}},
+  { "id": "mohawk", "slot": "hair", "name": "Mohawk", "free": false, "icon": {"shape": "hair", "colors": ["crimson", "red"]}},
+  { "id": "t_shirt", "slot": "top", "name": "T-shirt", "free": true, "icon": {"shape": "shirt", "colors": ["sky", "white"]}},
+  { "id": "long_sleeve", "slot": "top", "name": "Long sleeve", "free": true, "icon": {"shape": "shirt", "colors": ["green", "lime"]}},
+  { "id": "vest", "slot": "top", "name": "Vest over shirt", "free": true, "icon": {"shape": "shirt", "colors": ["oak", "walnut"]}},
+  { "id": "tunic", "slot": "top", "name": "Tunic", "free": false, "icon": {"shape": "shirt", "colors": ["crimson", "clay"]}},
+  { "id": "trousers", "slot": "bottoms", "name": "Trousers", "free": true, "icon": {"shape": "trousers", "colors": ["navy", "sky"]}},
+  { "id": "shorts", "slot": "bottoms", "name": "Shorts", "free": true, "icon": {"shape": "trousers", "colors": ["tan", "sand"]}},
+  { "id": "skirt", "slot": "bottoms", "name": "Skirt", "free": true, "icon": {"shape": "skirt", "colors": ["plum", "orchid"]}},
+  { "id": "baggy", "slot": "bottoms", "name": "Baggy trousers", "free": false, "icon": {"shape": "trousers", "colors": ["forest", "green"]}}
 ]
