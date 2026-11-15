@@ -53,7 +53,6 @@ import {
   MINE_UNLOCK_LEVEL,
   MINE_LANTERN_MS,
   isSeedId,
-  OUTDOOR_KINDS,
   type FoodId,
   type SeedId,
   screenToWorld,
@@ -647,7 +646,6 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
-          backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
         }
         toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
         await refreshShop();
@@ -691,7 +689,6 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
-          backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
         }
         await refreshShop();
         await refreshInventory();
@@ -1355,7 +1352,6 @@ async function start(): Promise<void> {
     view.setRoom(room);
     cellGrid.setRoom(room);
     atmosphere.setRoom(room);
-    backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
     itemViews.setRoom(room.id);
     blockers.setRoom(room);
     items = await api.getItems();
