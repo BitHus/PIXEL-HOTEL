@@ -42,7 +42,8 @@ describe('every item has an icon', () => {
     });
     it(`${group}: no two items share shape + colours`, () => {
       const seen = new Map<string, string>();
-      for (const { id, icon } of items) {
+      // An aged or vintage drink (step K2) wears the plain drink's icon; the tier band is drawn by the icon option, not by the data.
+      for (const { id, icon } of items.filter((x) => !/_(aged|vintage)$/.test(x.id))) {
         const key = iconKey(icon);
         expect(seen.get(key), `${group}/${id} = ${seen.get(key)}`).toBeUndefined();
         seen.set(key, id);

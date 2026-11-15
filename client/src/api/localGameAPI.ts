@@ -16,7 +16,7 @@ import {
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
-  type TavernEvent, type TavernView, type TavernWorld, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
+  type TavernEvent, type TavernView, type TavernWorld, type CaskView, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
   type StyleKind, type Rng, type NewPlayerChoice, type ServeResult,
   type Avatar, type AvatarLook, type BagTab, type SlotLayout, type SlotRef, type ChatLine, type FurnitureItem,
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
@@ -250,6 +250,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
 
   async serveGuest(guestId: number): Promise<boolean> { return tavernApi.serveGuest(this, guestId); }
   async tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean> { return tavernApi.tidyTable(this, messId, what); }
+  async getCasks(): Promise<CaskView[]> { return tavernApi.getCasks(this); }
+  async fillCask(rackUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean> { return tavernApi.fillCask(this, rackUid, slot, drink, qty); }
+  async collectCask(rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | 'aged' | 'vintage'; gains: GainList } | null> { return tavernApi.collectCask(this, rackUid, slot); }
   async collectBrew(barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null> { return tavernApi.collectBrew(this, barrelUid); }
   async startBrew(barrelUid: number, drink: DrinkId): Promise<boolean> { return tavernApi.startBrew(this, barrelUid, drink); }
   async getMenu(): Promise<MenuRowView[]> { return tavernApi.getMenu(this); }

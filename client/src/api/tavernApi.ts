@@ -11,6 +11,10 @@ import {
   collectCoins,
   clearDish,
   collectBrew,
+  caskViews,
+  fillCask,
+  collectCask,
+  type CaskView,
   startBrew,
   menuRows,
   setMenu,
@@ -104,6 +108,27 @@ export const tavernApi = {
     const gains = gainsSince(h.state, r.state);
     h.commit(r.state);
     return { drink: r.drink, mugs: r.mugs, gains };
+  },
+
+  async getCasks(h: LocalGameAPI): Promise<CaskView[]> {
+    return caskViews(h.state, h.now());
+  },
+
+  async fillCask(h: LocalGameAPI, rackUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const next = fillCask(h.state, rackUid, slot, drink, qty, h.now());
+    if (!next) return false;
+    h.commit(next);
+    return true;
+  },
+
+  async collectCask(h: LocalGameAPI, rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | 'aged' | 'vintage'; gains: GainList } | null> {
+    if (!h.inTavern()) return null;
+    const r = collectCask(h.state, rackUid, slot, h.now());
+    if (!r) return null;
+    const gains = gainsSince(h.state, r.state);
+    h.commit(r.state);
+    return { item: r.item, mugs: r.mugs, tier: r.tier, gains };
   },
 
   async startBrew(h: LocalGameAPI, barrelUid: number, drink: DrinkId): Promise<boolean> {

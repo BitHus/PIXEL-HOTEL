@@ -25,6 +25,7 @@ Updated 2026-11-15. The main Claude session is the project manager. The user sai
 - CLAUDE.md: the project brief; docs/ROADMAP.md, NEXT-STEPS.md, NOTES.md.
 
 ## State (2026-11-15)
+- WORKTREE: the coder works ONLY in C:UsersajrenPIXEL-HOTEL-rebased (branch claude/inn-1b-rebased = origin/main + later commits); the old folder C:UsersajrenPIXEL-HOTEL is the artist's. SAVE_VERSION 26 now (24 taps, 25 Inn name, 26 casks); next reserved: MB-2 27, 9g-2 28, 9g-4 29, 9i-1 30, 9h-2 31. K2a (casks, tier drinks, taste guests) done on origin's taps API; H2 next.
 - REBASE (15 Nov): origin/main got its own T1 (save v24). Worktree ../PIXEL-HOTEL-rebased, branch claude/inn-1b-rebased = origin/main + our unique work: furniture split + carpentry, Inn name (save v25), sprite loader (all kinds) + icon hook, all art and sprites, artist icons/light merged into origin's tavern furniture. Our own T1a/T1b/T1c code was dropped as duplicate (still on branch main of the first worktree).
 - Decided: taps are real; hats stay out of clothes packs; Inn score does not change old saves' guest rate; playtest checkpoints CP-1/CP-2 stay in the plan; 9h-1 stays after 9i; Aseprite sprites allowed ahead of step 6 with code-art fallback.
 - In progress when this was written: coder on T1c (Taps panel, routing, pour/kitchen-tint wiring, barCoinPoint fix) then art-upgrade R1 loader generalisation; artist on the counter sprite.

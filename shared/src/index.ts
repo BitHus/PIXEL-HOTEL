@@ -50,6 +50,7 @@ export * from './farm.ts';
 export * from './cooking.ts';
 export * from './kitchen.ts';
 export * from './taps.ts';
+export * from './casks.ts';
 export * from './forge.ts';
 export * from './tavern.ts';
 export * from './brewing.ts';

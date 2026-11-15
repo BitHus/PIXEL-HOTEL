@@ -3179,6 +3179,7 @@
     "seats": [],
     "baseValue": 16,
     "rank": "common",
+    "casks": true,
     "inCatalog": true,
     "art": {
       "boxes": [

@@ -18,6 +18,11 @@ import {
   TAP_SLOTS,
   POUR_MS,
   PREP_BONUS,
+  RIPEN,
+  RIPEN_AFTER_MIN,
+  CASK_SLOTS,
+  TASTE_AGED_CHANCE,
+  TIER_DRINK_TYPES,
   dishesPerBatch,
   poursPerHour,
   tapLastsMin,
@@ -283,3 +288,17 @@ for (const n of [0, 1, 2, 3]) {
   console.log(pad(n, 13) + pad(dishesPerBatch(b), 22) + pad((dishesPerBatch(b) / STOVE_BATCH_MAX).toFixed(2), 10) + STAGES.map((st) => f1(guestGoldPerHour(st, b).gold)).join(' / '));
 }
 console.log('Gold shares with the best kitchen (mixed hour, guests / dungeon / trader): ' + STAGES.map((st) => { const r = goldBySource(st, seededRng(11), PREP_BONUS.max); const t = r.reduce((a, x) => a + x.mixed, 0); return `${st} ` + r.map((x) => `${Math.round((x.mixed / t) * 100)}%`).join('/'); }).join(', ') + ` (cap ${Math.round(BALANCE_TARGETS.maxGoldShareBestKitchen * 100)}% with prep tables, ${Math.round(BALANCE_TARGETS.maxGoldShare * 100)}% without).`);
+
+console.log('\n=== K2. Ripening: gold per mug fresh / aged / vintage (RIPEN ' + RIPEN.map((r) => r.tier + ' x' + r.valueMult).join(', ') + '), the wait, the casks ===');
+console.log(pad('drink', 16) + pad('fresh', 8) + pad('aged', 8) + pad('vintage', 9) + pad('aged x', 8) + pad('vint. x', 9) + pad('aged after', 12) + pad('vintage after', 15) + 'gold/h of a cask slot (mugs sit in it): aged / vintage, over fresh brewed and sold at once');
+for (const d of DRINK_TYPES) {
+  const gold = (id: string): number => { const x = TIER_DRINK_TYPES.find((y) => y.id === id) ?? d; return x.baseValue * (1 + x.tip); };
+  const f = d.baseValue * (1 + d.tip);
+  const a = gold(d.id + '_aged');
+  const v = gold(d.id + '_vintage');
+  const m = RIPEN_AFTER_MIN[d.rank];
+  // Per hour a cask slot holds one brew of mugs: gold gained over fresh per slot-hour while it ripens to that tier.
+  console.log(pad(d.id, 16) + pad(f1(f), 8) + pad(f1(a), 8) + pad(f1(v), 9) + pad('x' + (a / f).toFixed(2), 8) + pad('x' + (v / f).toFixed(2), 9) + pad(m.aged + ' min', 12) + pad(m.vintage + ' min', 15) + f1(((a - f) * d.mugs * 60) / m.aged) + ' / ' + f1(((v - f) * d.mugs * 60) / m.vintage));
+}
+console.log(`A keg rack has ${CASK_SLOTS} slots; ${Math.round(TASTE_AGED_CHANCE * 100)}% of guests have a taste for aged drinks (they take an aged one when a tap has it; the rest pick any drink). Targets: aged x1.4 to x1.7, vintage x2.5 to x3 of fresh (both met above: the ripening price comes with the wait).`);
+console.log('NOTE for balance: if EVERY mug of a barrel were aged the drink gold would rise by x1.6 (x3 vintage); the S3/T1 tables above assume fresh mugs. A rack ties up mugs for 30 min to 8 h, so it is a way to trade waiting for gold, not a free source; guests order about 150 items per hour at appeal 10, a barrel makes about 52 root ale mugs per hour.');

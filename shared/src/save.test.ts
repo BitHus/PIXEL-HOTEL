@@ -666,10 +666,11 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 25 (24 = the Inn name, 23 -> 24 = the bar fittings) and both migrations exist', () => {
-    expect(SAVE_VERSION).toBe(25);
+  it('SAVE_VERSION is 26 (23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(26);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
+    expect(typeof MIGRATIONS[25]).toBe('function');
   });
 
   it('the tavern gets a register and a tap stand ON the bar, side by side; the taps start empty; the drinks in the bag stay in the bag', () => {

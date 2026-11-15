@@ -21,6 +21,7 @@ import type { BlockProblem } from './blocks.ts';
 import type { Guest, Mess } from './tavern.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
+import type { CaskView } from './casks.ts';
 import type { Tap } from './taps.ts';
 import type { TavernEvent } from './guests.ts';
 import type { SellKind, SellResult, SellRow } from './trader.ts';
@@ -365,6 +366,12 @@ export interface GameAPI {
   tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean>;
   /** Collects the mugs of a ready brew from a barrel in the tavern. Null if it is not ready. */
   collectBrew(barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null>;
+  /** Every slot of every keg rack in the tavern (step K2): the drink, mugs, the tier now and the time to the next tier (read against the API's clock). */
+  getCasks(): Promise<CaskView[]>;
+  /** Puts qty fresh mugs (1 to one brew's mugs) of a brewed drink from the bag into a free cask slot; it ripens in real time. False = refused. */
+  fillCask(rackUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean>;
+  /** Takes the mugs out at their CURRENT tier (fresh when too early); the slot is free again. Null = refused. */
+  collectCask(rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | 'aged' | 'vintage'; gains: GainList } | null>;
   /**
    * Starts a brew in an empty barrel that stands in the tavern: the crops leave the bag (ledger 'brew') and the drink
    * brews in real time, also while the game is closed. False = refused (not in the tavern, not a free barrel, not a

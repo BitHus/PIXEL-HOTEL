@@ -321,6 +321,11 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || !isObject(state.player)) return state;
     return { ...state, player: { ...state.player, innName: typeof state.player.innName === 'string' ? state.player.innName : DEFAULT_INN_NAME } };
   },
+  // 25 -> 26 (step K2): TavernState.casks (empty: keg racks start with free slots). Nothing else changes.
+  25: (state) => {
+    if (!isObject(state) || !isObject(state.tavern)) return state;
+    return { ...state, tavern: { ...state.tavern, casks: Array.isArray(state.tavern.casks) ? state.tavern.casks : [] } };
+  },
 };
 
 /** The storage key for a save version. */
@@ -385,7 +390,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isInt(p.farmRoomId) || !x.rooms.every((r) => isObject(r) && isObject(r.plants) && isObject(r.blocks))) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   const t = x.tavern;
-  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.taps) || !Array.isArray(t.serveQueue) || !isInt(t.nextGuestId)) return false;
+  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.taps) || !Array.isArray(t.casks) || !Array.isArray(t.serveQueue) || !isInt(t.nextGuestId)) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }

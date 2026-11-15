@@ -96,6 +96,8 @@ export interface FurnitureType {
   slotSpots?: { dx: number; dy: number }[];
   /** True for the brewing barrel (step 9t): crops go in, mugs come out (brewing.ts). */
   brews?: boolean;
+  /** True for the keg rack (step K2): it holds CASK_SLOTS casks, each ripening mugs of one drink (casks.ts). */
+  casks?: boolean;
   /** True for the stove (step K1): crops go in, dishes come out in real time (cooking.ts). */
   cooks?: boolean;
   /** True for the tap stand (step T1): TAP_SLOTS taps, each holds one brewed drink (taps.ts). It stands ON the bar. */
@@ -193,7 +195,12 @@ export type TreeDropId = 'resin' | 'amber' | 'golden_acorn';
  * all live in Player.materials, stack in the bag's Materials tab and go through the ledger.
  */
 /** The tavern's drinks (step 9t, shared/data/drinks.json): brewed in a barrel, served by the mug. */
-export type DrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic';
+/** The drinks drinks.json brews (fresh). */
+export type BaseDrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic';
+/** How far a drink has ripened in a cask (step K2): fresh is the plain drink. */
+export type DrinkTier = 'aged' | 'vintage';
+/** A drink item: the plain drink, or its aged / vintage tier (`root_ale_aged`, built from drinks.json by materials.ts). */
+export type DrinkId = BaseDrinkId | `${BaseDrinkId}_${DrinkTier}`;
 export type MaterialId = BaseMaterialId | BlockId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId | DrinkId;
 /** What kind of stackable good it is. */
 export type MaterialGroup = 'block' | 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing' | 'drink';
@@ -257,6 +264,9 @@ export type LedgerReason =
   // leaves unserved), the coins collected from a table, the furniture an old save gets.
   | 'brew'
   | 'tavern_order'
+  // Casks (step K2): fresh mugs into a cask on a keg rack, and the ripened mugs out.
+  | 'cask_fill'
+  | 'cask_collect'
   | 'tavern'
   | 'tavern_gift'
   // Taps (step T1): mugs moved from the bag onto a tap and back (nothing is found or lost).

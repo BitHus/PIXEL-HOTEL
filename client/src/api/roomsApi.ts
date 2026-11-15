@@ -9,6 +9,7 @@ import {
   repathGuests,
   returnOrphanBrews,
   returnOrphanTaps,
+  returnOrphanCasks,
   returnOrphanCooks,
   unlockStyle,
   upgradeRoom,
@@ -189,7 +190,7 @@ export const roomsApi = {
 
   setItems(h: LocalGameAPI, items: FurnitureItem[]): FurnitureItem[] {
     // A barrel or stove that left the tavern gives its crops back to the bag.
-    let next = returnOrphanTaps(returnOrphanCooks(returnOrphanBrews({ ...h.state, items }, h.now()), h.now()), h.now());
+    let next = returnOrphanCasks(returnOrphanTaps(returnOrphanCooks(returnOrphanBrews({ ...h.state, items }, h.now()), h.now()), h.now()), h.now());
     if (h.state.currentRoomId === next.tavern.roomId) {
       h.tavernGrid = null;
       next = repathGuests(next, h.tavernWorld(next));

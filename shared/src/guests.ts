@@ -65,6 +65,7 @@ import {
   openOrders,
   pickSeats,
   recordOrder,
+  tasteOffers,
   seatKey,
   tavernSeats,
   type Guest,
@@ -312,7 +313,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
       c = { ...c, waitMs: c.waitMs - dtMs };
       if (c.waitMs <= 0) {
         changed = true;
-        const choice = chooseOrder(menuOffers(s, [...out, ...all.filter((o) => !out.some((x) => x.id === o.id))]), c.tolerance, rng);
+        const choice = chooseOrder(tasteOffers(menuOffers(s, [...out, ...all.filter((o) => !out.some((x) => x.id === o.id))]), rng), c.tolerance, rng);
         const taken = choice?.order ? reserve(s, choice.order.id, at) : null;
         if (choice?.order && taken) {
           s = taken;
@@ -434,7 +435,7 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
     const first = id;
     for (const seat of picks ?? []) {
       const c = newGuest(id--, first, rng, seat, seat);
-      const choice = chooseOrder(menuOffers(s), c.tolerance, rng);
+      const choice = chooseOrder(tasteOffers(menuOffers(s), rng), c.tolerance, rng);
       const taken = choice?.order ? reserve(s, choice.order.id, at) : null;
       if (!choice?.order || !taken) continue;
       const o = choice.order;

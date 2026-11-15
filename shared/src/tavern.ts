@@ -14,9 +14,10 @@
 //   plate on the spot (a Mess) and goes. Coins are only ever collected by the player (ledger
 //   'tavern'); a spot with coins or a dish on it takes no new guest.
 
-import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TABLE_SPOT_INSET_PX } from './config.ts';
+import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TABLE_SPOT_INSET_PX, TASTE_AGED_CHANCE } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
+import type { Cask } from './casks.ts';
 import type { Cook } from './cooking.ts';
 import { kitchenZone } from './kitchen.ts';
 import { inStaffZone, staffZones } from './npcNav.ts';
@@ -111,6 +112,8 @@ export interface TavernState {
   brews: Brew[];
   /** Batches cooking on stoves (step K1, cooking.ts). */
   cooks: Cook[];
+  /** Mugs ripening in casks on keg racks (step K2, casks.ts); a free slot is not stored. */
+  casks: Cask[];
   /** Drinks on the taps (step T1, taps.ts): only taps that hold at least one mug. */
   taps: Tap[];
   /** Guests the player tapped: their orders wait to be carried, in this order. */
@@ -137,6 +140,7 @@ export function emptyTavern(roomId: number, at: number): TavernState {
     nextMessId: 1,
     brews: [],
     cooks: [],
+    casks: [],
     taps: [],
     serveQueue: [],
     holding: null,
@@ -213,6 +217,15 @@ export function menuOffers(state: GameState, guests: readonly Guest[] = state.ta
     .map((r) => ({ ...r, stock: isDrinkId(r.id) ? stockFor(state.tavern, r.id, guests) : r.stock }))
     .filter((r) => r.on && r.stock > 0)
     .map(({ id, price, baseValue, stock }) => ({ id, price, baseValue, stock }));
+}
+
+/**
+ * The taste trait (step K2): with TASTE_AGED_CHANCE a guest only looks at the aged and vintage drinks when the taps have any (the price rule then works on their
+ * higher value: tolerance x valueMult). The rng is only used when there is something aged to look at, so a tavern without ripened drinks plays exactly as before.
+ */
+export function tasteOffers(offers: readonly MenuOffer[], rng: Rng): readonly MenuOffer[] {
+  const aged = offers.filter((o) => isDrinkId(o.id) && getDrinkType(o.id).tier !== undefined);
+  return aged.length > 0 && rng() < TASTE_AGED_CHANCE ? aged : offers;
 }
 
 export interface OrderChoice {

@@ -6,7 +6,7 @@
 import { getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
-import { DRINK_TYPES, getDrinkType, isDrinkId } from './materials.ts';
+import { DRINK_TYPES, getDrinkType, isBaseDrinkId } from './materials.ts';
 import type { DrinkId, FurnitureItem, MaterialId } from './types.ts';
 
 /** What is in a barrel: the drink and when it is ready (ms, the same clock as `now`). */
@@ -52,7 +52,7 @@ function withBrews(state: GameState, brews: Brew[]): GameState {
  * is not such a barrel, it is in use, it is not a drink, or the crops are short.
  */
 export function startBrew(state: GameState, barrelUid: number, drink: string, at: number): GameState | null {
-  if (!isDrinkId(drink) || !placedBarrel(state, barrelUid) || brewOf(state.tavern.brews, barrelUid)) return null;
+  if (!isBaseDrinkId(drink) || !placedBarrel(state, barrelUid) || brewOf(state.tavern.brews, barrelUid)) return null;
   const type = getDrinkType(drink);
   const used: Partial<Record<MaterialId, number>> = {};
   for (const [id, n] of Object.entries(type.inputs) as [MaterialId, number][]) used[id] = -n;

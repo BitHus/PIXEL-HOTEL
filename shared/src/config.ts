@@ -13,6 +13,7 @@ export * from './config/player.ts';
 export * from './config/atmosphere.ts';
 export * from './config/blocks.ts';
 export * from './config/packs.ts';
+export * from './config/ripen.ts';
 
 
 // ---------- The tavern (step 9t) ----------
