@@ -20,6 +20,10 @@ export interface Change {
   removeFurniture?: number[];
   /** Furniture items put back into the inventory with their old uid (taken off a shop slot). */
   returnFurniture?: { uid: number; typeId: string }[];
+  /** Clothing copies gained, by id (step BG8; ids may repeat). The first copy of a piece unlocks it for good, later copies become spares. */
+  addClothing?: string[];
+  /** Spare copies of clothing sold, by id (step BG8). Null result if the player has fewer spares. */
+  sellSpares?: Record<string, number>;
   /**
    * Of the materials added: how many are NOT new finds (things that only come back: food brought
    * home from a run). Everything else the player gains counts as found in the Book (Player.seen).
@@ -48,6 +52,21 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
     if (next < 0 || !Number.isInteger(next)) return null;
     if (next === 0) delete materials[id];
     else materials[id] = next;
+  }
+  // Clothing (step BG8): the first copy of a piece unlocks it, every later copy is a spare; spares can be sold.
+  let unlockedClothing = p.unlockedClothing;
+  const spares = { ...p.clothingSpares };
+  const clothingDelta: Record<string, number> = {};
+  for (const id of change.addClothing ?? []) {
+    clothingDelta[id] = (clothingDelta[id] ?? 0) + 1;
+    if (unlockedClothing.includes(id)) spares[id] = (spares[id] ?? 0) + 1;
+    else unlockedClothing = [...unlockedClothing, id];
+  }
+  for (const [id, n] of Object.entries(change.sellSpares ?? {})) {
+    if (!Number.isInteger(n) || n <= 0 || (spares[id] ?? 0) < n) return null;
+    spares[id] = spares[id]! - n;
+    if (spares[id] === 0) delete spares[id];
+    clothingDelta[id] = (clothingDelta[id] ?? 0) - n;
   }
   let nextUid = state.nextUid;
   const added: FurnitureItem[] = (change.addFurniture ?? []).map((typeId) => ({
@@ -85,6 +104,7 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
     goldDelta: change.gold ?? 0,
     ...(change.gems ? { gemsDelta: change.gems } : {}),
     ...(change.materials ? { materials: { ...change.materials } } : {}),
+    ...(Object.keys(clothingDelta).length > 0 ? { clothing: clothingDelta } : {}),
     ...(addedUids.length > 0 ? { furnitureUids: addedUids } : {}),
     ...(remove.size > 0 ? { removedUids: [...remove] } : {}),
     ...(change.note ? { note: change.note } : {}),
@@ -97,10 +117,11 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
       if (found > 0) seen = addSeen(seen, id, found, at);
     }
     for (const item of added) seen = addSeen(seen, item.typeId, 1, at);
+    for (const [id, n] of Object.entries(clothingDelta)) if (n > 0) seen = addSeen(seen, id, n, at);
   }
   return {
     ...state,
-    player: { ...p, wallet: { gold, gems }, materials, seen },
+    player: { ...p, wallet: { gold, gems }, materials, seen, unlockedClothing, clothingSpares: spares },
     items: [...state.items.filter((i) => !remove.has(i.uid)), ...returned, ...added],
     nextUid,
     ledger: [...state.ledger, entry],

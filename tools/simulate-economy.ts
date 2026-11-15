@@ -11,6 +11,12 @@ import {
   ENEMY_GEM_RANK,
   GEMS,
   GEM_RANK_MULT,
+  PACK_TYPES,
+  RANK_NAMES,
+  SPARE_SELL,
+  getClothing,
+  packOdds,
+  packPool,
   QUEUE_MAX,
   ROCK_GEM_RANK,
   emptyShop,
@@ -131,6 +137,7 @@ const SOURCES_PER_HOUR: { source: GemSource; perHour: number; rank: Pick; note: 
 console.log(pad('source', 9) + pad('per hour', 10) + pad('gems/h', 9) + 'what');
 const HOURS_SIMULATED = 2000;
 let total = 0;
+const perSource = new Map<string, number>();
 for (const row of SOURCES_PER_HOUR) {
   const rng = seededRng(7);
   const events = Math.round(row.perHour * HOURS_SIMULATED);
@@ -138,8 +145,24 @@ for (const row of SOURCES_PER_HOUR) {
   for (let i = 0; i < events; i++) gems += gemDrop(row.source, row.rank(rng), rng);
   const perHour = gems / HOURS_SIMULATED;
   total += perHour;
+  perSource.set(row.source, (perSource.get(row.source) ?? 0) + perHour);
   console.log(pad(row.source, 9) + pad(row.perHour, 10) + pad(perHour.toFixed(1), 9) + row.note);
 }
 console.log(pad('TOTAL', 19) + total.toFixed(1) + '  (if one player did all of it in one hour: a ceiling, not a typical hour)');
 const book = ([25, 50, 75, 100] as const).map((p) => `${GEMS.book.min * GEM_RANK_MULT[BOOK_GEM_RANK[p]]}-${GEMS.book.max * GEM_RANK_MULT[BOOK_GEM_RANK[p]]}`);
 console.log(`One-off: a finished quest pays ${GEMS.quest.min}-${GEMS.quest.max} gems; a Book tier pays ${book.join(' / ')} gems at 25 / 50 / 75 / 100 % of a tab.`);
+
+// ---------- Packs (step BG8) ----------
+// Gems needed per pack and how many hours of play that is at the gem income above. Two incomes: ALL the activities in
+// one hour (a ceiling no player reaches) and the richest single activity (what one focused hour gives). BG9 tunes the prices.
+const richest = [...perSource.entries()].sort((a, b) => b[1] - a[1])[0]!;
+console.log(`\nPacks (prices in config PACKS; income: ceiling ${total.toFixed(1)} gems/h for everything, or ${richest[1].toFixed(1)} gems/h for the richest single activity, ${richest[0]}).`);
+console.log(pad('pack', 22) + pad('gems', 7) + pad('rolls', 7) + pad('h (all)', 9) + pad('h (one)', 9) + 'odds');
+for (const pack of PACK_TYPES) {
+  const odds = packOdds(pack).map((r) => `${RANK_NAMES[r.rank]} ${r.percent.toFixed(1)}%`).join(', ');
+  console.log(pad(pack.name, 22) + pad(pack.gemPrice, 7) + pad(pack.rolls, 7) + pad((pack.gemPrice / total).toFixed(2), 9) + pad((pack.gemPrice / richest[1]).toFixed(2), 9) + odds);
+}
+const clothes = packPool('clothing');
+const spareGold = (rank: string): number => clothes.filter((c) => c.rank === rank).reduce((a, c) => a + Math.floor(getClothing(c.id)!.baseValue * SPARE_SELL), 0) / Math.max(1, clothes.filter((c) => c.rank === rank).length);
+console.log(`A spare piece sells for gold: ${(['common', 'rare', 'ultra_rare', 'legendary'] as const).map((r) => `${RANK_NAMES[r]} ${spareGold(r)}`).join(', ')} (baseValue x SPARE_SELL ${SPARE_SELL}).`);
+console.log(`${clothes.length} pieces can be found in clothes packs: to see them all takes many packs (duplicates are allowed and become spares).`);

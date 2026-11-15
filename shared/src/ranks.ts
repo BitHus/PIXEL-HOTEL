@@ -2,6 +2,7 @@
 // ranks. Pure helpers; the colours and the base odds are in config (RANK_COLORS, RANK_WEIGHTS).
 
 import { RANK_WEIGHTS } from './config.ts';
+import { CLOTHING } from './clothing.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
 import { MATERIAL_TYPES } from './materials.ts';
 import type { Rank, Rng } from './types.ts';
@@ -10,7 +11,7 @@ import type { Rank, Rng } from './types.ts';
 export const RANKS: readonly Rank[] = ['common', 'rare', 'ultra_rare', 'legendary'];
 export const RANK_NAMES: Record<Rank, string> = { common: 'Common', rare: 'Rare', ultra_rare: 'Ultra rare', legendary: 'Legendary' };
 
-const BY_ID = new Map<string, Rank>([...MATERIAL_TYPES.map((m) => [m.id, m.rank] as const), ...FURNITURE_TYPES.map((f) => [f.id, f.rank] as const)]);
+const BY_ID = new Map<string, Rank>([...MATERIAL_TYPES.map((m) => [m.id, m.rank] as const), ...FURNITURE_TYPES.map((f) => [f.id, f.rank] as const), ...CLOTHING.map((c) => [c.id, c.rank] as const)]);
 
 /** The rank of a material or furniture type id ('common' for anything else, like gold). */
 export function rankOf(id: string): Rank {
@@ -45,8 +46,16 @@ export function rollRank(rng: Rng, multiplier: Partial<Record<Rank, number>> = {
     }
     roll -= w[r];
   }
-  const at = RANKS.indexOf(picked);
+  return rankFallback(picked, has);
+}
+
+/**
+ * Where a rolled rank ends up when only the ranks in `has` can come: the next lower one that can, then a higher one
+ * (a pack without a legendary piece gives the best it has). A rank that can come stays itself.
+ */
+export function rankFallback(rank: Rank, has: readonly Rank[] = RANKS): Rank {
+  const at = RANKS.indexOf(rank);
   for (let i = at; i >= 0; i--) if (has.includes(RANKS[i]!)) return RANKS[i]!;
   for (let i = at + 1; i < RANKS.length; i++) if (has.includes(RANKS[i]!)) return RANKS[i]!;
-  return picked;
+  return rank;
 }

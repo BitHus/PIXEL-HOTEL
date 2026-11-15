@@ -1,0 +1,6 @@
+[
+  { "id": "random_blocks", "name": "Random Blocks Pack", "pool": "blocks", "rankWeights": { "common": 1, "rare": 1, "ultra_rare": 1, "legendary": 0 }, "icon": { "shape": "box", "colors": ["oak", "tan", "walnut"] } },
+  { "id": "basic_seeds", "name": "Basic Seeds Pack", "pool": "seeds", "rankWeights": { "common": 1, "rare": 0.5, "ultra_rare": 0, "legendary": 0 }, "icon": { "shape": "box", "colors": ["green", "lime", "forest"] } },
+  { "id": "common_clothes", "name": "Common Clothes Pack", "pool": "clothing", "rankWeights": { "common": 1, "rare": 0.5, "ultra_rare": 0, "legendary": 0 }, "icon": { "shape": "box", "colors": ["sky", "cream", "navy"] } },
+  { "id": "rare_clothes", "name": "Rare Clothes Pack", "pool": "clothing", "rankWeights": { "common": 0, "rare": 1, "ultra_rare": 1, "legendary": 1 }, "icon": { "shape": "box", "colors": ["plum", "orchid", "night"] } }
+]

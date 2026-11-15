@@ -255,6 +255,12 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || !isObject(state.player)) return state;
     return { ...state, player: { ...state.player, splicesFound: Array.isArray(state.player.splicesFound) ? state.player.splicesFound : [] } };
   },
+  // BG8: spare clothing and the opened-packs counter start empty.
+  18: (state) => {
+    if (!isObject(state) || !isObject(state.player)) return state;
+    const p = state.player;
+    return { ...state, player: { ...p, clothingSpares: isObject(p.clothingSpares) ? p.clothingSpares : {}, packsOpened: isObject(p.packsOpened) ? p.packsOpened : {} } };
+  },
 };
 
 /** The storage key for a save version. */
@@ -308,7 +314,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
   if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
-  if (!Array.isArray(p.unlockedClothing) || !Array.isArray(p.splicesFound) || typeof x.playerCreated !== 'boolean') return false;
+  if (!Array.isArray(p.unlockedClothing) || !Array.isArray(p.splicesFound) || !isObject(p.clothingSpares) || !isObject(p.packsOpened) || typeof x.playerCreated !== 'boolean') return false;
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
   if (!Array.isArray(x.hotbar) || x.hotbar.length !== HOTBAR_SLOTS) return false;
   if (!x.hotbar.every((h) => h === null || typeof h === 'string')) return false;

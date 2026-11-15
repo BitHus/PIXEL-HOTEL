@@ -53,6 +53,7 @@ import {
   MINE_UNLOCK_LEVEL,
   MINE_LANTERN_MS,
   getClothing,
+  SLOT_FIELD,
   isSeedId,
   type FoodId,
   type SeedId,
@@ -118,6 +119,7 @@ import { createSettingsPanel } from './ui/settingsPanel.ts';
 import { createToast } from './ui/toast.ts';
 import { iconButton, typing } from './ui/dom.ts';
 import { confirmBuy } from './ui/confirmBuy.ts';
+import { createPackFlow } from './ui/packOpening.ts';
 import { furnitureIconUrl, materialIconUrl } from './ui/itemIcon.ts';
 import { stylePreviewUrl } from './render/styleArt.ts';
 import { CustomerViews } from './render/customerViews.ts';
@@ -564,6 +566,27 @@ async function start(): Promise<void> {
     await refreshShop();
     await refreshHint();
   };
+  // Packs (step BG8): ask, pop, popups, toast with "Wear it".
+  const packFlow = createPackFlow({
+    ui,
+    api,
+    popups,
+    toast,
+    wear: (id) => {
+      const c = getClothing(id);
+      if (!c) return;
+      const look = { ...avatar.look, [SLOT_FIELD[c.slot]]: id };
+      avatar = { ...avatar, look };
+      sprite.setLook(look);
+      dungeon.setLook(look);
+      void api.setLook(look);
+      void api.getPlayer().then((p) => avatarPanel.setLook(look, p.unlockedClothing));
+    },
+    refresh: async () => {
+      await refreshInventory();
+      avatarPanel.setLook(avatar.look, (await api.getPlayer()).unlockedClothing);
+    },
+  });
   const catalog = createCatalogPanel(ui, {
     buyItem: async (typeId) => {
       const t = getFurnitureType(typeId);
@@ -630,6 +653,8 @@ async function start(): Promise<void> {
       toast(got ? `${b.name}: ${qty} in your bag. Put it in the hotbar, then tap a free cell.` : 'Not enough gold.');
       await refreshInventory();
     },
+    openPack: (pack) => void packFlow.open(pack),
+    sellSpare: (id) => void packFlow.sell(id),
     buyStyle: async (kind, id) => {
       const s = getStyle(kind, id);
       const detail = `${kind === 'floor' ? 'Floor' : 'Wall'}: yours forever, put on this room now.`;
@@ -1092,7 +1117,7 @@ async function start(): Promise<void> {
     walletGold = p.wallet.gold;
     unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
-    catalog.refresh(p.wallet.gold, p.unlockedStyles, room);
+    catalog.refresh(p.wallet.gold, p.unlockedStyles, room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares });
     roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
     shelfPanel.refresh(shop, inventory);
     const materials = inventory.materials;
@@ -1461,7 +1486,10 @@ async function start(): Promise<void> {
     } else if (res.kind === 'harvested') {
       if (wasSeed) plantViews.harvestFx(c, r, wasSeed);
       sound.play('pop');
-      if (res.clothing) toast(`New clothes unlocked: ${getClothing(res.clothing)?.name ?? res.clothing} (Avatar panel).`);
+      if (res.clothing) {
+        toast(`New clothes unlocked: ${getClothing(res.clothing)?.name ?? res.clothing} (Avatar panel).`);
+        void api.getPlayer().then((p) => avatarPanel.setLook(avatar.look, p.unlockedClothing));
+      }
       if (res.recipe) toast('New splice recipe found! See the Book, Splice tab.');
     } else if (res.kind === 'placed') sound.play('pop');
     else if (res.kind === 'cracked') {

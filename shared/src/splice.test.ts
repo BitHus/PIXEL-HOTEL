@@ -328,7 +328,7 @@ describe('the Book: Splice tab', () => {
 
 describe('migration 17 -> 18', () => {
   it('gives an old save an empty found-recipes list', () => {
-    expect(SAVE_VERSION).toBe(18);
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(18);
     const now = createNewPlayer(undefined, 1);
     const { splicesFound: _x, ...oldPlayer } = now.player;
     const r = readSave(JSON.stringify({ version: 17, savedAt: 9, state: { ...now, player: oldPlayer } }));

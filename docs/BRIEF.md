@@ -334,8 +334,18 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - Gold sinks: catalog (baseValue * 3), room upgrades (level 2: 300 gold, level 3: 800 gold,
   for each room), dungeon gear and potions (section 10), dungeon key 10 gold, seeds and farm
   upgrades (section 10b), smelting fees (section 10c).
+- Gem sink (step BG8): packs are bought with gems (config PACKS; the contents are shared/data/packs.json). Packs in
+  v1: Random Blocks (5 blocks), Basic Seeds (5 seeds), Common Clothes (3 pieces) and Rare Clothes (3 pieces). A
+  roll picks a rank first (RANK_WEIGHTS times the pack's multiplier, as for loot), then an item of that rank in the
+  pool (blocks.json; crop and block seeds; clothing.json pieces that are hidden until unlocked, each with a rank).
+  The first copy of a piece of clothing unlocks it forever; every further copy is a spare (Player.clothingSpares,
+  shown as "Spare x2"), which sells for gold (baseValue * config SPARE_SELL) until trading exists. Blocks and seeds
+  stack as always. Pack finds count in the Book like everything else. The Packs tab of the Catalog shows, per
+  pack: the price in gems, how many things it gives, every possible item with its rank odds in percent and, for
+  clothes, how many pieces are still missing. Every buy asks first. Opening plays a short pop, then the items
+  float above the head and land in the bag; a new piece says "New!" with a Wear it button.
 - No trading between players in v1.
-- Every change to gold or items goes through one function and is written to a ledger.
+- Every change to gold, gems or items goes through one function and is written to a ledger.
 - THE TAVERN (owner's decision, step 9t; part A = the shared rules is done, the client parts B and
   C are not, so the game does not show it yet): the shop room is a tavern (internal kind 'shop'
   and the room id stay; the counter is the bar). GUESTS come alone, as a pair or as three, sit on
@@ -625,7 +635,12 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   password.
 - The game is for ages 13 and up. The register screen has a checkbox 'I am 13 or older' and
   collects no other age data. Rules differ by country, so check them before launch.
-- No loot boxes and no real-money purchases. Loot comes only from play.
+- No real-money purchases. Loot comes only from play. The one random thing that costs something is a pack
+  (section 9, BG8), allowed only under these FAIRNESS RULES (owner's decision): (1) gems are earned in play
+  only, never bought with money; (2) the contents and the rank odds are shown on the pack card before
+  buying; (3) duplicates are allowed: extra copies are spares, sellable for gold (and later tradable); (4) no
+  timers, limited-time offers, daily limits or streaks that push buying. Anything else random that costs
+  something needs the owner's yes.
 - The first release is a small private test.
 
 14. WORKING RULES FOR YOU (the AI)

@@ -50,6 +50,8 @@ export function gainsSince(before: GameState, after: GameState): GainList {
     for (const [id, n] of Object.entries(e.materials ?? {})) if (n > 0) list.push(gain(id, n));
     // Gems (step BG5) are a gain with the id 'gems'.
     if ((e.gemsDelta ?? 0) > 0) list.push({ itemId: GEMS_GAIN_ID, count: e.gemsDelta!, rank: 'common' });
+    // Clothing copies (step BG8): a new piece or a spare, with the piece's rank.
+    for (const [id, n] of Object.entries(e.clothing ?? {})) if (n > 0) list.push(gain(id, n));
     for (const uid of e.furnitureUids ?? []) {
       const item = after.items.find((i) => i.uid === uid);
       if (item) list.push(gain(item.typeId));

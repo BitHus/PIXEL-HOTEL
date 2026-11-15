@@ -54,4 +54,5 @@ export * from './blockTypes.ts';
 export * from './blocks.ts';
 export * from './gems.ts';
 export * from './quests.ts';
+export * from './packs.ts';
 export * from './hold.ts';

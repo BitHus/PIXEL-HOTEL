@@ -8,6 +8,7 @@ import clothingData from '../data/clothing.json';
 import { DISPLAY_NAME_MAX, LOOK_COLORS } from './config.ts';
 import type { Icon } from './icons.ts';
 import type { AvatarLook } from './avatar.ts';
+import type { Rank } from './types.ts';
 
 export type ClothingSlot = 'hair' | 'top' | 'bottoms';
 
@@ -16,6 +17,10 @@ export interface ClothingType {
   slot: ClothingSlot;
   name: string;
   free: boolean;
+  /** How hard it is to find (step BG8; the clothes packs roll the rank first). */
+  rank: Rank;
+  /** Gold a spare copy sells for (times config SPARE_SELL). */
+  baseValue: number;
   /** The inventory icon (step BG2). */
   icon: Icon;
 }

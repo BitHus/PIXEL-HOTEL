@@ -18,6 +18,7 @@ import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
 import type { DungeonInput, DungeonRun, RunBag, RunPlace } from './dungeon/run.ts';
 import type { ShopGearId } from './gear.ts';
 import type { GainList } from './gains.ts';
+import type { PackFind } from './packs.ts';
 import type { BlockProblem } from './blocks.ts';
 
 export interface RoomState {
@@ -82,6 +83,13 @@ export interface ServeResult {
 export interface BookClaim {
   gold: number;
   gems: number;
+  gains: GainList;
+}
+
+/** A pack that was opened (step BG8): what each roll gave (for the pop animation and the toasts) and the gains list for the popups. */
+export interface PackOpenResult {
+  packId: string;
+  finds: PackFind[];
   gains: GainList;
 }
 
@@ -313,6 +321,11 @@ export interface GameAPI {
    * 'ripe' (harvest it first) or 'no_plant'. Out of reach: the avatar walks closer first.
    */
   spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult>;
+  // ---------- Step BG8: packs bought with gems ----------
+  /** Opens a pack for gems. Null = unknown pack or not enough gems (nothing changes). */
+  openPack(packId: string): Promise<PackOpenResult | null>;
+  /** Sells spare copies of a piece of clothing for gold (config SPARE_SELL). Returns the gold paid; null = fewer spares than that. */
+  sellSpare(clothingId: string, qty: number): Promise<number | null>;
   /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
   buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
   /** Cooks one food at the pot. Null without all ingredients. */
