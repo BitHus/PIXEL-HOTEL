@@ -1531,3 +1531,16 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   balance.ts / config. (d) The block rates assume 600 hand-fed breaks an hour; blocks come back 40 to 60% of the time, so a fast
   hold-to-punch player eats supply, not gems: 1800 breaks an hour on unlimited common blocks would be 675 gems/h but needs a seed ratio
   of 1 or more or about 250 blocks (1500 gold) an hour, both now closed.
+
+## R1: file split (step R1: no change in behaviour; main.ts 2 076 -> 51 lines, localGameAPI.ts 1 364 -> 432, config.ts 939 -> 82)
+- shared/src/config/{world,economy,dungeon,farm,lakeside,mine,clientInput,player,atmosphere,blocks,packs}.ts: the constants by topic; config.ts re-exports all and keeps the tavern (9t) numbers.
+- client/src/api/localGameAPI.ts: the class (state, clock, open, chat, saves entry); every GameAPI method delegates to `<area>Api.method(this, ...)`. Members the helpers use are public (no `private`).
+- api/walkApi.ts (walk, sit, serve, avatar position), roomsApi.ts (rooms, furniture, bag, styles, painting), shopApi.ts, blocksFarmApi.ts (blocks, plants, splice, seeds, cooking), dungeonApi.ts (dungeon, mine, forge), lakesideApi.ts, packsApi.ts, progressApi.ts (Book, hints, gains), tavernApi.ts (9t: calls and errands), savesApi.ts (export/import/backup); apiShared.ts (WalkState, TavernTask, SaveResult).
+- client/src/main.ts: start() calls the parts in client/src/game/ in order: `const gN = { ...gN-1, ...(await setupX(gN-1)) }`. Each part is the old code, moved.
+- game/ctx.ts: `State` = the 25 `let`s that more than one part changes (used as `st.room`), `Late` = the 16 functions/objects an earlier part calls but a later part defines (`late.openRoom`), `G0..G17` = what each part receives.
+- game/core (boot, Pixi app), avatarWalk, roomItems, uiShell (toast, panels, buttons, run bar), cameraSetup, placing (build, paint, item menu), shopPanels, craftPanels (workshop, cooking, Book, farm, lakeside, travel), shopLife, tavernLife, hotbarBag.
+- game/settingsPanels, dungeonMode, roomFlow (new-game intro, openRoom), blockInput (blocks, plants, hold), pointerInput (camera control, taps, drags), gameLoop (frame loop, first room).
+- A new part: add the file, add it to main.ts and ctx.ts (a new `G` type). A name another part needs goes in the part's `return { ... }`; a name an EARLIER part needs goes in `Late` and is set with `late.x = x`.
+- Proof: tests 934/934 unchanged; a scripted LocalGameAPI scenario (seeded rng, fixed clock; about 590 kB of results) hashes the same before and after; built main chunk 702.03 -> 713.95 kB (+1.7%, gzip 215.5 -> 219.4); old and new builds load a seeded save in headless Chromium and visit farm, lakeside, shop, mine, dungeon with no console errors.
+- Left alone: the tavern files in shared/ (tavern.ts, guests.ts, brewing.ts). The tavern calls in LocalGameAPI moved to api/tavernApi.ts unchanged, so a branch that edits them in localGameAPI.ts will conflict: move its edit into tavernApi.ts.
+
