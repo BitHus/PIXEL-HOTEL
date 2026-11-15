@@ -385,3 +385,31 @@ Step K2: drinks can ripen (owner's request 15 Nov; docs/INN-PLAN.md M-D2). Do it
 6. tools/simulate-economy.ts: gold per hour of play for fresh versus aged versus vintage at the current guest pace, so ripening is worth it but not required (target: aged about 1.4 to 1.7 times the gold of fresh for the same mugs, vintage about 2.5 to 3, with the waiting).
 Tests: ripening over real time and across a reload, tiers at the exact boundaries, collecting early, slot limits, the taste-guest order choice with a fixed rng, the menu price rule for tiers, the ledger, the Book, the migration. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE, sections 1 and 5), docs/BRIEF.md, docs/UI-REFERENCE.md, docs/NOTES.md, tick K2 in docs/ROADMAP.md, commit and push. Tell me what to try on my phone (brew, fill a cask, close the game, come back, collect aged, put it on the menu, watch a taste guest order it).
 ```
+
+## Steps S1 to S3 - Retire the shop (owner's decision 15 Nov; docs/INN-PLAN.md section 5)
+
+Do them AFTER 9t part C (the Menu and brewing exist), in order. Each: read CLAUDE.md, docs/INN-PLAN.md section 5, docs/NOTES.md (shop life 9d, STEP 9t, K1, R1 file split), docs/UI-REFERENCE.md; plan first (max 8 lines); tests first; save migration with a test; no art tools; update CLAUDE.md (sections 1, 5, 9 and CURRENT STATE), docs/BRIEF.md, docs/NOTES.md, tick the ROADMAP; typecheck + full tests; commit and push; tell me what to try on my phone.
+
+## Step S1 - Remove the loot shop
+
+```
+Step S1: the shop is the tavern (owner's decision). Remove selling to loot customers. This changes CLAUDE.md sections 1, 5 and 9 (NO AUTO-SELLING, customers, goods on slots, shopAppeal): rewrite them and docs/BRIEF.md.
+1. REMOVE the loot customer system: shared/src/customers.ts (window-shoppers, buyers, the queue, QUEUE_MAX, reaction bubbles for stall prices, the till rule, offline queue catch-up) and everything that only serves it (shop.ts selling parts, shelfPanel, price setting on slots, the "n waiting" Map badge parts that mean customers, the till glow, customer sounds). Keep what the tavern uses: guests, the bar's staff spot, serving, tidyTable, the menu and prices, brewing, the stove. Reuse npcLines for guests; delete lines that only talk about shopping. Keep files small; delete tests that test removed rules and say so.
+2. FURNITURE: stall_table, shelf and display_case stay as DECOR only (no slots, no prices, no selling); anything put on a slot goes back to the bag (ledger reason 'shop_closed', no gain popup). The counter becomes "the bar" in texts. Appeal: tavern appeal still counts placed decor (each type at most 3 times) and styles; rename shopAppeal to tavernAppeal; guest rate stays as in 9t.
+3. UI AND TEXTS: the Map card "Shop" becomes "Tavern" (badge: guests waiting, orders, coin piles); info panel "Tavern Lv n"; the Catalog tab "Shop" is "Tavern"; hints and quests that talk about selling at the stall are rewritten (earn gold by serving guests; use items to cook, brew, craft and build). Reading pace.
+4. MIGRATION: SAVE_VERSION bump + MIGRATIONS entry with a test: all slot goods return to the bag, stalls and shelves stay as decor, customer state is dropped, the ledger still adds up, nothing is lost.
+5. ECONOMY NOTE: gold income for a new player now comes from guests, dungeon run gold and (S2) the trader. Do not retune numbers here; run tools/simulate-economy.ts and print the new gold per hour so S3 can tune. Items now pile up until S2: say so in a toast at the first full bag only if one already exists, else not.
+Tests: guests and the menu still work end to end through the API, migration returns goods, decor stalls refuse goods, the ledger, no references to removed customer code (typecheck). The bundle may get smaller: report the size.
+```
+
+## Step S2 - The trader (sell surplus, tap only)
+
+```
+Step S2: a trader for surplus items (INN-PLAN section 5). A Sell tab in the Menu panel on the bar (Serve, Menu, Sell): the list of sellable items you own (materials, blocks, seeds, crops, fish, ore, bars you do not need, spare clothes, furniture you do not place), each row with icon, count, price per piece and a Sell 1 / Sell all button. Never automatic: nothing sells unless tapped; every sell of more than 5 pieces or any ultra_rare or legendary item asks first (ui/confirmBuy.ts). Price = baseValue * SELL_RATE (config; start 0.3; spare clothes keep SPARE_SELL), never above what using the item gives: add balance.ts checks and tests that fail if selling an ingredient yields more gold than the dish or brew made from it, or if buying blocks in the catalog and selling them back gains gold, or if a pack's contents sold back exceed its gem value converted at the gold-per-gem floor. Gold through ledger.applyChange (reason 'sell') with a gains list (gold popup). Protected items: gear you wear, the lunch box, hotbar items warn before selling. Tests: sell rules, protected items, balance loops, ledger. Update the Book rule if it counted shop sales (it should count finds only).
+```
+
+## Step S3 - Rebalance gold and gems
+
+```
+Step S3: balance gold and gems after the shop (INN-PLAN section 5). Add a small gem source to the tavern: a happy guest sometimes tips a gem (config GEMS 'tavern': chance by dish rank, aged and vintage (K2) higher). Run tools/simulate-economy.ts and print per source: gold per hour (guests, dungeon run gold, trader) and gems per hour (every source) for a new player, level 3 and level 8. Targets, to be confirmed by me after you print them: gold per hour of a mixed player about as before the shop (0.8x to 1.5x); no gold source over 50% of gold; no gem source over 40%; the first pack about 25 minutes still; no selling loop (BALANCE_TARGETS and balance.test.ts extended). Tune config only. Update the first-hour hints so the first 20 minutes say: serve a guest, cook a dish, punch blocks, plant a seed, go on a run.
+```
