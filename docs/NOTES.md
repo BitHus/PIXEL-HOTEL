@@ -179,6 +179,14 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   phase 4 (a sprite per item id wins over the shape); the data stays as the fallback.
 - CHECK BY EYE: render all icons on one sheet (a vite-node script over iconGroups() + iconPixels()).
 
+- ART PASS (furniture look): furnitureArt.ts `detail()` adds plank seams, a lit top edge, vertical boards, a
+  foot line and a knot to every box, and a woven border plus fringe to flat things (rugs); the shape and
+  outline do not change. iconPixels.ts: 21 furniture icons redrawn bigger (slatted chair, cushioned sofa,
+  filled bookshelf, bed with pillows, patterned rug, potted plant, crate, barrel, throne, counter, tank...).
+  Keep the outer 1 px ring free (a test checks it). ui.css .slot: wooden inner frame line, bottom shade,
+  rank corner studs (::after). CHECK BY EYE: `npx tsx tools/art-sheet.ts out.ppm 2` (a contact sheet of
+  every furniture icon and room sprite; convert the PPM to PNG).
+
 ## File lists: client/ (steps 1 to 5b)
 
 - client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling). Opens

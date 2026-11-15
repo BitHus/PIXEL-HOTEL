@@ -226,52 +226,76 @@ const DRAW: Record<IconShape, Draw> = {
   },
   // ---- furniture silhouettes ----
   chair: (p, a, b) => {
-    p.rect(9, 4, 14, 13, a); p.rect(8, 16, 16, 5, b); p.rect(9, 21, 3, 7, a); p.rect(20, 21, 3, 7, a);
+    p.rect(8, 2, 16, 15, a); p.rect(8, 2, 16, 3, b); p.rect(12, 6, 2, 10, dk(a)); p.rect(18, 6, 2, 10, dk(a));
+    p.rect(6, 16, 20, 5, b); p.rect(6, 21, 20, 3, a); p.rect(7, 24, 3, 6, a); p.rect(22, 24, 3, 6, a); p.rect(11, 24, 2, 3, dk(a)); p.rect(19, 24, 2, 3, dk(a));
   },
   sofa: (p, a, b) => {
-    p.rect(3, 8, 26, 10, a); p.rect(5, 16, 22, 8, b); p.rect(3, 12, 5, 14, a); p.rect(24, 12, 5, 14, a);
+    p.rect(3, 5, 26, 12, a); p.rect(3, 5, 26, 3, b); p.rect(15, 8, 1, 9, dk(a));
+    p.rect(2, 11, 5, 16, a); p.rect(25, 11, 5, 16, a); p.rect(2, 11, 5, 3, b); p.rect(25, 11, 5, 3, b);
+    p.rect(7, 16, 18, 9, b); p.rect(15, 16, 1, 9, dk(b)); p.rect(7, 25, 18, 2, dk(a));
+    p.rect(3, 27, 3, 3, DARK); p.rect(26, 27, 3, 3, DARK);
   },
   table: (p, a, b) => {
-    p.rect(3, 9, 26, 7, b); p.rect(3, 16, 26, 3, a); p.rect(5, 19, 3, 9, a); p.rect(24, 19, 3, 9, a);
+    p.rect(2, 7, 28, 9, b); p.rect(2, 11, 28, 1, dk(b)); p.rect(2, 16, 28, 4, a); p.rect(6, 20, 20, 2, dk(a));
+    p.rect(4, 20, 4, 10, a); p.rect(24, 20, 4, 10, a);
   },
   lamp: (p, a, b) => {
-    p.poly([[10, 5], [22, 5], [26, 16], [6, 16]], a); p.rect(15, 16, 3, 9, b); p.rect(10, 25, 12, 3, b);
+    p.poly([[9, 2], [23, 2], [28, 16], [4, 16]], a); p.poly([[11, 5], [21, 5], [24, 14], [8, 14]], b); p.rect(13, 7, 3, 3, WHITE);
+    p.rect(15, 16, 3, 10, b); p.oval(16, 27, 8, 3, b); p.rect(10, 26, 12, 3, dk(b));
   },
   shelf: (p, a, b) => {
-    p.rect(4, 4, 24, 24, a); p.rect(4, 12, 24, 3, b); p.rect(4, 21, 24, 3, b); p.rect(7, 7, 3, 5, b); p.rect(13, 8, 3, 4, b); p.rect(19, 16, 4, 5, b);
+    p.rect(3, 2, 26, 28, a); p.rect(5, 4, 22, 24, dk(a)); p.rect(5, 12, 22, 2, b); p.rect(5, 20, 22, 2, b);
+    p.rect(6, 6, 3, 6, b); p.rect(9, 5, 3, 7, CREAM); p.rect(12, 7, 3, 5, WHITE); p.rect(16, 6, 3, 6, b); p.rect(20, 5, 4, 7, CREAM);
+    p.rect(6, 15, 4, 5, CREAM); p.rect(10, 14, 3, 6, b); p.rect(15, 16, 5, 4, WHITE); p.rect(22, 15, 3, 5, b);
+    p.rect(7, 23, 4, 5, b); p.rect(12, 22, 3, 6, CREAM); p.oval(21, 25, 3, 3, b);
   },
   bed: (p, a, b) => {
-    p.rect(4, 4, 24, 6, a); p.rect(4, 10, 24, 16, b); p.rect(6, 11, 9, 5, CREAM); p.rect(4, 26, 3, 2, a); p.rect(25, 26, 3, 2, a);
+    p.rect(3, 2, 26, 7, a); p.rect(3, 2, 26, 2, b); p.rect(5, 8, 10, 6, CREAM); p.rect(17, 8, 10, 6, CREAM); p.rect(5, 8, 10, 1, WHITE);
+    p.rect(3, 13, 26, 15, b); p.rect(3, 13, 26, 3, WHITE); p.rect(3, 20, 26, 1, dk(b)); p.rect(3, 24, 26, 1, dk(b));
+    p.rect(3, 27, 26, 3, a);
   },
   rug: (p, a, b) => {
-    p.rect(3, 8, 26, 16, a); p.rect(6, 11, 20, 10, b); p.rect(12, 14, 8, 4, a);
+    p.rect(3, 8, 26, 18, a); p.rect(5, 11, 22, 12, b); p.rect(7, 13, 18, 8, a);
+    p.poly([[16, 12], [23, 17], [16, 22], [9, 17]], b); p.rect(14, 15, 4, 4, a);
+    for (let y = 9; y < 25; y += 3) { p.rect(2, y, 1, 2, CREAM); p.rect(29, y, 1, 2, CREAM); }
   },
   plant: (p, a, b) => {
-    p.poly([[10, 19], [22, 19], [20, 27], [12, 27]], b); p.oval(12, 12, 5, 7, a); p.oval(20, 12, 5, 7, a); p.oval(16, 9, 4, 7, a);
+    p.oval(10, 12, 5, 8, a); p.oval(22, 12, 5, 8, a); p.oval(16, 10, 5, 8, a); p.oval(6, 17, 4, 5, a); p.oval(26, 17, 4, 5, a);
+    p.rect(16, 6, 1, 13, dk(a)); p.line(11, 17, 10, 8, dk(a)); p.line(21, 17, 22, 8, dk(a));
+    p.rect(8, 18, 16, 3, dk(b)); p.poly([[9, 21], [23, 21], [21, 30], [11, 30]], b);
   },
   box: (p, a, b) => {
-    p.rect(4, 8, 24, 19, a); p.rect(4, 8, 24, 5, b); p.rect(4, 17, 24, 2, b); p.rect(14, 12, 4, 5, b);
+    p.rect(3, 5, 26, 25, a); p.rect(3, 5, 26, 7, b); p.rect(3, 15, 26, 1, dk(a)); p.rect(3, 23, 26, 1, dk(a));
+    p.line(5, 17, 26, 28, dk(a)); p.rect(3, 5, 3, 25, b); p.rect(26, 5, 3, 25, b); p.rect(14, 12, 4, 5, dk(b)); p.rect(15, 14, 2, 2, WHITE);
   },
   barrel: (p, a, b) => {
-    p.oval(16, 16, 10, 11, a); p.rect(7, 8, 18, 17, a); p.rect(6, 10, 20, 2, b); p.rect(6, 21, 20, 2, b); p.oval(16, 7, 8, 3, b);
+    p.oval(16, 17, 12, 13, a); p.rect(4, 8, 24, 18, a); p.rect(4, 11, 24, 2, b); p.rect(4, 23, 24, 2, b);
+    p.rect(10, 13, 1, 10, dk(a)); p.rect(16, 13, 1, 10, dk(a)); p.rect(22, 13, 1, 10, dk(a));
+    p.oval(16, 6, 10, 4, b); p.oval(16, 6, 6, 2, dk(b)); p.rect(15, 16, 3, 3, dk(a));
   },
   bench: (p, a, b) => {
-    p.rect(3, 12, 26, 6, b); p.rect(3, 18, 26, 3, a); p.rect(5, 21, 3, 7, a); p.rect(24, 21, 3, 7, a);
+    p.rect(2, 9, 28, 7, b); p.rect(2, 12, 28, 1, dk(b)); p.rect(2, 16, 28, 3, a); p.rect(4, 19, 4, 11, a); p.rect(24, 19, 4, 11, a); p.rect(8, 24, 16, 2, dk(a));
   },
   sign: (p, a, b) => {
-    p.rect(4, 6, 24, 13, a); p.rect(15, 19, 3, 9, b); p.rect(8, 10, 16, 2, b); p.rect(8, 14, 12, 2, b);
+    p.rect(3, 3, 26, 17, a); p.rect(3, 3, 26, 2, b); p.rect(3, 18, 26, 2, dk(a)); p.rect(8, 8, 16, 2, b); p.rect(8, 12, 12, 2, b); p.rect(8, 15, 8, 1, b);
+    p.rect(14, 20, 4, 10, b); p.rect(5, 5, 2, 2, DARK); p.rect(25, 5, 2, 2, DARK);
   },
   banner: (p, a, b) => {
-    p.rect(3, 4, 26, 2, b); p.poly([[6, 6], [26, 6], [26, 24], [16, 28], [6, 24]], a); p.rect(14, 11, 5, 8, b);
+    p.rect(3, 3, 26, 3, b); p.rect(2, 2, 3, 5, b); p.rect(27, 2, 3, 5, b);
+    p.poly([[5, 6], [27, 6], [27, 25], [16, 30], [5, 25]], a); p.rect(5, 6, 22, 2, b); p.poly([[16, 11], [21, 16], [16, 21], [11, 16]], b); p.rect(15, 15, 2, 2, WHITE);
   },
   torch: (p, a, b) => {
-    p.rect(14, 16, 5, 12, b); p.poly([[16, 3], [22, 10], [20, 16], [12, 16], [10, 10]], a); p.rect(14, 10, 4, 5, WHITE);
+    p.rect(12, 22, 8, 3, DARK); p.rect(14, 14, 4, 14, b); p.rect(13, 13, 6, 2, DARK);
+    p.poly([[16, 1], [23, 9], [21, 15], [11, 15], [9, 9]], a); p.poly([[16, 6], [20, 11], [18, 15], [14, 15], [12, 11]], CREAM); p.rect(15, 10, 2, 3, WHITE);
   },
   throne: (p, a, b) => {
-    p.rect(7, 3, 18, 16, a); p.rect(6, 19, 20, 6, b); p.rect(4, 13, 4, 12, a); p.rect(24, 13, 4, 12, a); p.rect(13, 2, 6, 4, b);
+    p.rect(6, 4, 20, 16, a); p.rect(10, 2, 12, 4, a); p.rect(7, 6, 18, 12, dk(a)); p.rect(14, 3, 4, 5, b); p.rect(15, 4, 2, 2, WHITE);
+    p.rect(3, 13, 5, 15, a); p.rect(24, 13, 5, 15, a); p.rect(3, 13, 5, 3, b); p.rect(24, 13, 5, 3, b);
+    p.rect(8, 18, 16, 5, b); p.rect(8, 23, 16, 6, dk(a)); p.rect(10, 25, 12, 2, b);
   },
   jar: (p, a, b) => {
-    p.oval(16, 17, 9, 10, a); p.rect(11, 5, 10, 4, b); p.rect(11, 12, 3, 3, WHITE);
+    p.oval(16, 19, 11, 11, a); p.rect(11, 6, 10, 6, a); p.rect(9, 4, 14, 3, b); p.oval(16, 19, 8, 8, b);
+    p.rect(10, 14, 4, 4, WHITE); p.rect(18, 21, 3, 3, a); p.rect(13, 23, 2, 2, a);
   },
   anchor: (p, a, b) => {
     p.oval(16, 6, 3, 3, a); p.oval(16, 6, 1.5, 1.5, null); p.rect(15, 8, 3, 17, a); p.rect(10, 10, 13, 3, a);
@@ -284,13 +308,16 @@ const DRAW: Record<IconShape, Draw> = {
     p.rect(15, 2, 3, 7, a); p.oval(16, 15, 11, 4, a); for (const x of [6, 15, 24]) { p.rect(x, 8, 3, 6, WHITE); p.rect(x, 5, 3, 3, b); }
   },
   counter: (p, a, b) => {
-    p.rect(2, 8, 28, 7, b); p.rect(2, 15, 28, 12, a); p.rect(6, 18, 8, 6, dk(a)); p.rect(18, 18, 8, 6, dk(a));
+    p.rect(2, 5, 28, 8, b); p.rect(2, 8, 28, 1, dk(b)); p.rect(2, 13, 28, 3, a); p.rect(2, 16, 28, 14, dk(a));
+    p.rect(4, 18, 7, 10, a); p.rect(12, 18, 8, 10, a); p.rect(21, 18, 7, 10, a); p.rect(9, 22, 2, 2, b); p.rect(21, 22, 2, 2, b);
   },
   stool: (p, a, b) => {
-    p.rect(9, 14, 3, 13, a); p.rect(20, 14, 3, 13, a); p.rect(15, 14, 3, 13, a); p.oval(16, 12, 9, 4, b);
+    p.oval(16, 11, 11, 5, b); p.rect(5, 11, 22, 3, a); p.line(9, 15, 6, 27, a, 3); p.line(23, 15, 26, 27, a, 3); p.rect(15, 15, 3, 14, dk(a)); p.rect(8, 22, 16, 2, dk(a));
   },
   tank: (p, a, b) => {
-    p.rect(3, 5, 26, 22, a); p.rect(5, 8, 22, 17, b); p.oval(14, 17, 4, 3, PALETTE[9]); p.poly([[18, 17], [22, 14], [22, 20]], PALETTE[9]);
+    p.rect(2, 3, 28, 4, WOOD); p.rect(2, 7, 28, 22, a); p.rect(4, 9, 24, 18, b); p.rect(4, 9, 24, 1, WHITE);
+    p.rect(4, 24, 24, 3, PALETTE[2]); p.line(8, 24, 8, 17, PALETTE[9]); p.line(23, 24, 24, 15, PALETTE[9]);
+    p.oval(15, 17, 4, 3, PALETTE[9]); p.poly([[19, 17], [23, 14], [23, 20]], PALETTE[9]); p.rect(11, 12, 2, 2, WHITE); p.rect(20, 11, 1, 1, WHITE);
   },
 };
 
