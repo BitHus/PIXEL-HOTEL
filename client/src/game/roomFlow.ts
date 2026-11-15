@@ -6,6 +6,7 @@ import {
   roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, INN_DOOR_HINT, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
+import { savePrefs } from '../api/prefs.ts';
 import type { G13 } from './ctx.ts';
 
 export async function setupRoomFlow(g: G13) {
@@ -13,7 +14,7 @@ export async function setupRoomFlow(g: G13) {
     api, newIntro, syncItems, hint, info, sprite, uiRoot, itemViews, shown0, refreshHint, placer, paint, menu,
     bubbles, chat, view, cellGrid, atmosphere, blockers, seating, roomChanged, roomLevels, roomFloats,
     lakeside, guests, tableMess, orders, syncTavern,
-    refreshInventory, startIntro, fit, st, late, toast,
+    refreshInventory, startIntro, fit, st, late, toast, prefs, storage,
   } = g;
   late.openRoom = openRoom;
   late.openRoomKind = openRoomKind;
@@ -144,14 +145,15 @@ export async function setupRoomFlow(g: G13) {
     syncTavern();
     await refreshInventory();
     await refreshHint();
-    if (arrived && innDoorSpots(st.room).length > 0 && !doorHinted) {
-      doorHinted = true;
+    // Once ever on this device (prefs.doorHintSeen), not once per session.
+    if (arrived && innDoorSpots(st.room).length > 0 && !prefs.doorHintSeen) {
+      prefs.doorHintSeen = true;
+      savePrefs(storage, prefs);
       toast(INN_DOOR_HINT);
     }
     if (intro) startIntro();
     else fit();
   }
-  let doorHinted = false;
   let doorBusy = false;
   const fade = document.createElement('div');
   fade.className = 'room-fade';

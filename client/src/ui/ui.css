@@ -3832,3 +3832,32 @@
     animation: none;
   }
 }
+
+/* ---------- Hats in the Avatar panel (step 9g-1) ---------- */
+.hat-row {
+  align-items: stretch;
+}
+
+.hat-preview {
+  align-self: center;
+  max-width: 100%;
+  image-rendering: pixelated;
+  margin: 4px 0;
+}
+
+.hat-hint {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-dim, var(--text));
+  text-align: center;
+}
+
+.look-wear {
+  align-self: center;
+  min-width: 120px;
+  min-height: var(--touch);
+}
+
+.look-wear:disabled {
+  opacity: 0.6;
+}

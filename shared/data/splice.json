@@ -198,5 +198,10 @@
     "a": "cinder_block_seed",
     "b": "glowcap_spore",
     "result": "heartwood_throne_seed"
+  },
+  {
+    "a": "mohawk_seed",
+    "b": "honeybloom_seed",
+    "result": "flower_crown_seed"
   }
 ]

@@ -12,6 +12,20 @@ The identity: hotel management + dungeon loot + workshop + pets + collectibles. 
 another part (gather -> craft -> decorate / upgrade -> earn -> go further), the player always has
 something to look forward to, and the hotel and shop show what the player has achieved.
 
+## PRIORITY ORDER (manager decision 16 Nov; the owner said: look at the whole roadmap and decide; this order wins over the phase order below)
+Rule: the game must be fun and good-looking in a browser BEFORE it gets bigger or online. Depth that feeds the existing loops beats new areas.
+NOW (in progress): C6 hats and emotes finish; art redo of furniture and icons (docs/ART-REDO.md, icons match models); keg rack side view.
+1. Playtest 2.1 + first-hour pass 2.3 (a real hour in a browser, one fix list; the owner or a browser-capable tester). Nothing else beats finding what is broken.
+2. 9g-2 usable furniture and the cat (save 28), with PT-1 pastimes folded in; 9g-3 room stars; M-C One Inn score. These make the hotel and tavern feel alive.
+3. 9i questline with BD-1 board orders (no timers): gives the player direction; fixes the first hour.
+4. Art rounds continue every cycle (4.2 to 4.6): floors, walls, crops, food, tools, plants, avatar clothing. Art is always one lane busy.
+5. 9h dungeon round 2 (after `npm run simulate` shows no source over 50%) and 5.5/5.4 deeper dungeon and mine.
+6. RG-1 Regulars and RN-1 Inn Renown (the best research ideas: they make the tavern sticky). Then 5.1 pets, 5.2 potions and accessories, SM-1 slow makers (first slice of 5.3).
+7. Phase 3 goals: skills 3.1, achievements and titles 3.2 (with TB-1), collections 3.3; 5.7 hotel 2 furniture sets; 5.8 world life (day/night, weather).
+LATER (only after all of the above feels good): 9g-4 visitors, 5.6, 7.1 Tavern 2 (staff), JR-1 recipe journal, SE-1 seasons, 7.2 new areas, 7.3 random events, 7.4 buildings.
+ONLINE (phase 6, step 10): after depth and a clean playtest. Order inside: AM-1 and SF-1 safety first, 6.1 server, 6.2 visits, then the rest. Needs the owner's go.
+NOT NOW: phase 8 release (name, legal, Windows app) until the game is playable end to end; trading and marketplace and PvP stay held; real money, daily rewards, limited offers and lucky wheels stay rejected.
+
 ## DONE
 Rooms, avatar, walking, furniture, placing, inventory, chat, saving (steps 1 to 5b). Shop with
 customers and the till (7), room shapes and character creation (7b), dungeon (8, 9), farm and

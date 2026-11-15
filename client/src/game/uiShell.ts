@@ -1,7 +1,9 @@
 // The HTML shell: toast, popups, panels, buttons, run bar, dungeon screen (R1 split of main.ts: part 4 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { GEMS_GAIN_ID, bagGains, worldToScreen, type Point, HINTS, DUNGEON_HINT, MINE_HINT } from '@pixel-hotel/shared';
+import { EMOTE_MS, GEMS_GAIN_ID, bagGains, worldToScreen, type Point, HINTS, DUNGEON_HINT, MINE_HINT } from '@pixel-hotel/shared';
+import { createEmoteButton } from '../ui/emoteButton.ts';
+import { createNameTag } from '../ui/nameTag.ts';
 import { createDebugLabel } from '../ui/debugLabel.ts';
 import { createBlockersButton } from '../ui/blockersButton.ts';
 import { createPanels } from '../ui/panels.ts';
@@ -56,7 +58,20 @@ export async function setupUiShell(g: G3) {
   const dungeonBadge = document.createElement('span');
   dungeonBadge.className = 'btn-badge';
   dungeonButton.appendChild(dungeonBadge);
-  const side = createSideButtons(ui, panels, [build.button, dungeonButton]);
+  // Emotes (step 9g-1): the menu asks the API (the avatar must stand still); the frame loop plays the pose.
+  const emote = createEmoteButton(ui, (kind) => {
+    void api.emote(kind).then((e) => {
+      if (!e) {
+        toast('Stand still to emote.');
+        return;
+      }
+      const now = performance.now();
+      st.emote = { kind, startedAt: now, endsAt: now + EMOTE_MS[kind] };
+      emote.setActive(kind);
+    });
+  });
+  const nameTag = createNameTag(ui, prefs.nameTags);
+  const side = createSideButtons(ui, panels, [build.button, dungeonButton, emote.button]);
   const sideButtons = side.col;
   // The quest button, at the top of the column: shows the current quest again. Hidden without a
   // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
@@ -107,5 +122,5 @@ export async function setupUiShell(g: G3) {
     st.avatar.look,
   );
 
-  return { toast, popups, gemFly, flyGems, bubbles, label, blockerButtons, panels, info, hint, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
+  return { toast, popups, gemFly, flyGems, bubbles, emote, nameTag, label, blockerButtons, panels, info, hint, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
 }

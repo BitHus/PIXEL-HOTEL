@@ -20,6 +20,8 @@ import {
 import { DARK_WARM } from './bareStyles.ts';
 import { lyingRects } from './lieArt.ts';
 import { SIT_DROP, avatarParts, sitParts, type Part } from './avatarParts.ts';
+import type { EmotePose } from './emoteAnim.ts';
+import { drawOverlay } from './emoteOverlay.ts';
 
 /** Draws boxes with a 1 px dark warm outline; `shadow` adds the soft shadow under the feet. */
 function drawParts(ps: Part[], shadow: boolean): Graphics {
@@ -55,6 +57,10 @@ export class AvatarSprite {
   /** The held-item layer (section 8; step 9d): what the avatar carries, in its hands. */
   private readonly held = new Container();
   private shiftPx = 0;
+  /** The emote pose (step 9g-1): whole-px body offset and the symbol above the head. Arm lift and head bob need split layers (artist). */
+  private emoteDx = 0;
+  private emoteDy = 0;
+  private readonly overlay = new Graphics();
   private bobPx = 0;
   /** A short move (step 9d): reach toward the facing, nod, or the shopkeeper's hand-over. */
   private gestureNow: { kind: Gesture; startMs: number } | null = null;
@@ -67,7 +73,16 @@ export class AvatarSprite {
   ) {
     this.look = look;
     this.views = this.draw(look);
-    this.container.addChild(this.body, this.held);
+    this.container.addChild(this.body, this.held, this.overlay);
+  }
+
+  /** Plays an emote pose (null = none). tMs: the time since it started (the overlay animates with it). */
+  setEmote(pose: EmotePose | null, tMs = 0): void {
+    this.emoteDx = pose?.dx ?? 0;
+    this.emoteDy = pose?.dy ?? 0;
+    drawOverlay(this.overlay, pose?.overlay ?? null, tMs);
+    this.overlay.position.set(0, this.last.state === 'sit' ? SIT_DROP : 0);
+    this.place();
   }
 
   /** What the avatar holds (drawn in its hands; null = nothing). The display object is kept. */
@@ -144,7 +159,7 @@ export class AvatarSprite {
   /** Puts the body (shift, bob, gesture) and the held item in place. */
   private place(): void {
     const g = gestureOffset(this.gestureNow, this.lastTimeMs, this.last.facing);
-    this.body.position.set(this.shiftPx + g.body.x, this.bobPx + g.body.y);
+    this.body.position.set(this.shiftPx + g.body.x + this.emoteDx, this.bobPx + g.body.y + this.emoteDy);
     const hand = this.handOffset();
     this.held.position.set(hand.x + this.shiftPx + g.hand.x, hand.y + this.bobPx + g.hand.y);
     // Seen from behind, the item is in front of the avatar, so the body hides it.

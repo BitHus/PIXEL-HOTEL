@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CLOTHING, HATS, SLOT_FIELD, hatCatalogPrice, lookAllowed } from './clothing.ts';
-import { buyHat } from './hats.ts';
+import { SKULL_CAP_KILLS, buyHat, earnedHats, grantEarnedHats } from './hats.ts';
+import { addSeen, enemyKey } from './seen.ts';
+import { startMine } from './dungeon/bank.ts';
+import { FISH_TYPES } from './fish.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { BOOK_REWARDS } from './book.ts';
 import { PACK_TYPES, packOdds, packPool } from './packs.ts';
@@ -58,5 +61,41 @@ describe('wearing and buying hats', () => {
   it('the Book hands out the tavern keeper hat at 25% and the gold crown at 100%', () => {
     expect(BOOK_REWARDS.furniture[0]!.hat).toBe('tavern_keeper_hat');
     expect(BOOK_REWARDS.enemies[3]!.hat).toBe('gold_crown');
+  });
+});
+
+describe('event hats', () => {
+  const base = createNewPlayer(undefined, 0);
+  const withSeen = (f: (m: typeof base.player.seen) => typeof base.player.seen) => ({ ...base, player: { ...base.player, seen: f(base.player.seen) } });
+
+  it('a new player has earned none', () => {
+    expect(earnedHats(base.player)).toEqual([]);
+    expect(grantEarnedHats(base)).toBe(base);
+  });
+  it('a rare fish earns the fisher hat, a common fish does not', () => {
+    const common = FISH_TYPES.find((f) => f.rank === 'common')!;
+    const rare = FISH_TYPES.find((f) => f.rank === 'rare')!;
+    expect(earnedHats(withSeen((m) => addSeen(m, common.id, 1, 1)).player)).toEqual([]);
+    const got = grantEarnedHats(withSeen((m) => addSeen(m, rare.id, 1, 1)));
+    expect(got.player.unlockedClothing).toContain('fisher_hat');
+    // Granting twice does not make a spare.
+    expect(grantEarnedHats(got)).toBe(got);
+  });
+  it('skeleton kills, the Bone King and the sunken crown', () => {
+    expect(earnedHats(withSeen((m) => addSeen(m, enemyKey('skeleton'), SKULL_CAP_KILLS - 1, 1)).player)).toEqual([]);
+    expect(earnedHats(withSeen((m) => addSeen(m, enemyKey('skeleton'), SKULL_CAP_KILLS, 1)).player)).toEqual(['skull_cap']);
+    expect(earnedHats(withSeen((m) => addSeen(m, enemyKey('bone_king'), 1, 1)).player)).toEqual(['knight_helm']);
+    expect(earnedHats(withSeen((m) => addSeen(m, 'sunken_crown', 1, 1)).player)).toEqual(['sunken_crown_hat']);
+  });
+  it('the 10th mine visit unlocks the miner lamp cap', () => {
+    const s = { ...base, player: { ...base.player, level: 8, mineVisits: 8 } };
+    const ninth = startMine(s, 1)!;
+    expect(ninth.state.player.unlockedClothing).not.toContain('miner_lamp_cap');
+    const tenth = startMine(ninth.state, 2)!;
+    expect(tenth.state.player.mineVisits).toBe(10);
+    expect(tenth.state.player.unlockedClothing).toContain('miner_lamp_cap');
+  });
+  it('a splice seed grows the flower crown, and harvesting unlocks it', () => {
+    expect(HATS.find((h) => h.id === 'flower_crown')!.source).toBe('splice');
   });
 });

@@ -11,6 +11,7 @@ import { isFoodId } from '../materials.ts';
 import type { GameState } from '../gameState.ts';
 import { addXp } from '../levels.ts';
 import { applyChange } from '../ledger.ts';
+import { grantEarnedHats } from '../hats.ts';
 import type { FoodId, MaterialId } from '../types.ts';
 import { newMineRun, newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
 
@@ -63,7 +64,7 @@ export function startMine(state: GameState, seed: number): { state: GameState; r
   if (p.level < MINE_UNLOCK_LEVEL) return null;
   const visit = p.mineVisits + 1;
   const run = newMineRun({ seed, xp: p.xp, gear: p.gear, potions: p.potions, visit });
-  return { state: { ...state, player: { ...p, potions: 0, mineVisits: visit } }, run };
+  return { state: grantEarnedHats({ ...state, player: { ...p, potions: 0, mineVisits: visit } }), run };
 }
 
 /** Banks a finished run ('left' or 'dead'). Null while the run is still going. */
@@ -92,5 +93,5 @@ export function finishRun(state: GameState, run: DungeonRun, at: number): GameSt
   let seen = player.seen;
   for (const type of run.met) seen = addSeen(seen, enemyKey(type), 0, at);
   for (const [type, n] of Object.entries(run.kills)) seen = addSeen(seen, enemyKey(type), n ?? 0, at);
-  return { ...banked, player: { ...player, seen, potions: player.potions + run.player.potions } };
+  return grantEarnedHats({ ...banked, player: { ...player, seen, potions: player.potions + run.player.potions } });
 }

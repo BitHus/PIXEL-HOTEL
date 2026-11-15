@@ -10,7 +10,7 @@ import type { G11 } from './ctx.ts';
 
 export async function setupSettingsPanels(g: G11) {
   const {
-    ui, sprite, dungeon, api, panels, bubbles, placer, toast, prefs, sound, storage, syncGrid, popups,
+    ui, sprite, dungeon, api, panels, bubbles, placer, toast, prefs, sound, storage, syncGrid, popups, nameTag,
     atmosphere, backdrop, redraw, label, blockerButtons, cross, st, late,
   } = g;
 
@@ -74,6 +74,11 @@ late.avatarPanel = avatarPanel;
     onPopups: (on) => {
       prefs.popups = on;
       popups.setEnabled(on);
+      savePrefs(storage, prefs);
+    },
+    onNameTags: (on) => {
+      prefs.nameTags = on;
+      nameTag.setEnabled(on);
       savePrefs(storage, prefs);
     },
     onLighting: (on) => {

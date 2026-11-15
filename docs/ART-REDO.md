@@ -41,4 +41,8 @@ then carpentry (12), dungeon/bone (crypt set), lake set, suite/garden (rare tier
 - R7+: carpentry (after the block colours are final), crypt, lake, suite and garden pieces, in groups of 5.
 
 ## Round log
-- R1: see the end of this file (updated after drawing).
+- R1 (16 Nov, drawn): counter (down, up, right; 96x64 / 32x128, top 32 rows + front 32 rows, surface height 32 as before), bar_stool (32x56, all facings are the same
+  picture: round red cushion, seat height about 24), round_table (64x84, top at height 26), stove (32x76, brick body, iron top, chimney, pot, fire), brewing_barrel (32x68, iron hoops, brass spigot),
+  plus 5 icons (icons/counter, bar_stool, round_table, stove, brewing_barrel .png). Sources: art-src/aseprite/<id>.aseprite, icons_tavern_core.aseprite (5 frames).
+  FOR THE CODER: code art gives round_table a surface height of 18 (surfaceHeight in render/furnitureArt.ts reads the code boxes), the sprite's top is at 26;
+  bar_stool code seat is 15 high, the sprite seat is about 24. Raise those art boxes (or add a sprite override) so mugs and seated avatars line up.

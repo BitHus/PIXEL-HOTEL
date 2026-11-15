@@ -219,5 +219,22 @@
       "kind": "furniture",
       "id": "heartwood_throne"
     }
+  },
+  {
+    "id": "flower_crown_seed",
+    "name": "Crown bloom seed",
+    "rank": "ultra_rare",
+    "baseValue": 40,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "orchid",
+        "pine"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "flower_crown"
+    }
   }
 ]

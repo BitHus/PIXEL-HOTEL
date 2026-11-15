@@ -3,12 +3,12 @@
 
 import {
   STYLE_TYPES, styleKey, fitsRoomKind, getBlockType, blockPrice, getFurnitureType, catalogPrice, getStyle,
-  stylePrice, upgradeCost, getMaterialType, CROP_TYPES, getClothing, SLOT_FIELD, type Room, type StyleKind,
+  stylePrice, upgradeCost, hatCatalogPrice, getMaterialType, CROP_TYPES, getClothing, SLOT_FIELD, type Room, type StyleKind,
   BLOCK_PACK, SEED_PACK,
 } from '@pixel-hotel/shared';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createPackFlow } from '../ui/packOpening.ts';
-import { furnitureIconUrl, materialIconUrl } from '../ui/itemIcon.ts';
+import { clothingIconUrl, furnitureIconUrl, materialIconUrl } from '../ui/itemIcon.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 import { WHERE, createCatalogPanel, growText } from '../ui/catalogPanel.ts';
 import { createRoomPanel } from '../ui/roomPanel.ts';
@@ -109,6 +109,17 @@ export async function setupShopPanels(g: G6) {
       if (got) popups.show(got);
       toast(got ? `${b.name}: ${qty} in your bag. Put it in the hotbar, then tap a free cell.` : 'Not enough gold.');
       await late.refreshInventory();
+    },
+    buyHat: async (id) => {
+      const h = getClothing(id);
+      const price = hatCatalogPrice(id);
+      if (!h || price === null) return;
+      const sure = await confirmBuy(ui, { name: h.name, detail: 'A hat: yours forever. Wear it in the Avatar panel.', price, image: clothingIconUrl(id), gold: st.walletGold });
+      if (!sure) return;
+      const ok = await api.buyHat(id);
+      toast(ok ? `${h.name}: wear it in the Avatar panel.` : 'Not enough gold.');
+      await late.refreshInventory();
+      late.avatarPanel.setLook(st.avatar.look, (await api.getPlayer()).unlockedClothing);
     },
     openPack: (pack) => void packFlow.open(pack),
     sellSpare: (id) => void packFlow.sell(id),

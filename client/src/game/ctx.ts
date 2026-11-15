@@ -3,7 +3,7 @@
 
 import {
   type Avatar, type Camera, type FurnitureItem, type Inventory, type Point, type Rect, type Room, type RoomKind, type RoomState,
-  type TavernView,
+  type TavernView, type EmoteKind,
 } from '@pixel-hotel/shared';
 import type { Placer } from '../build/placer.ts';
 import type { createItemMenu } from '../ui/itemMenu.ts';
@@ -58,6 +58,8 @@ export interface State {
   pendingCask: number | null;
   /** An Inn door whose spot is the walk goal (step MB-3): the door is used on arrival. */
   pendingDoor: string | null;
+  /** The emote being played (step 9g-1; performance.now() times), or none. Cancelled when the avatar moves or sits. */
+  emote?: { kind: EmoteKind; startedAt: number; endsAt: number } | null;
   walkHold: boolean;
   walkHoldCell: string;
   shiftHeld: boolean;

@@ -15,6 +15,7 @@
 // caught fish goes into the bag through the ledger (reason 'fish'), and its size into
 // Player.biggest if it is a record.
 
+import { grantEarnedHats } from './hats.ts';
 import {
   FISH_BAR,
   FISH_BITE_MS,
@@ -305,5 +306,5 @@ export function bankCatch(state: GameState, s: FishSession, at: number, rng: Rng
   if (!next) return null;
   const biggest = { ...next.player.biggest };
   if (s.cm !== null && s.cm > (biggest[type.id] ?? 0)) biggest[type.id] = s.cm;
-  return { ...next, player: { ...next.player, biggest } };
+  return grantEarnedHats({ ...next, player: { ...next.player, biggest } });
 }

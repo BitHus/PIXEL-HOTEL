@@ -7,7 +7,9 @@
 
 import { rankName } from './rank.ts';
 import {
+  HATS,
   STYLE_TYPES,
+  hatCatalogPrice,
   getCropType,
   seedGrowMs,
   seedsForSale,
@@ -28,12 +30,12 @@ import {
   type StyleType,
 } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
-import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
+import { clothingIconUrl, furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
 import { panelShell, priceTag, tabBar } from './panelShell.ts';
 import { drawPacks, type PacksData } from './packsView.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
-export type CatalogTab = 'home' | 'shop' | 'decor' | 'blocks' | 'seeds' | 'packs';
+export type CatalogTab = 'home' | 'shop' | 'decor' | 'blocks' | 'seeds' | 'clothes' | 'packs';
 
 export interface CatalogHooks {
   buyItem(typeId: string): void;
@@ -42,6 +44,8 @@ export interface CatalogHooks {
   buySeeds(seed: SeedId): void;
   /** Asks first; the confirm panel offers 1 or a pack (step BG5). */
   buyBlock(id: string): void;
+  /** The Clothes tab (step 9g-1): asks first, then buys the hat. */
+  buyHat(hatId: string): void;
   /** The Packs tab (step BG8): asks first, then opens the pack. */
   openPack(pack: PackType): void;
   /** Sells one spare piece of clothing. */
@@ -59,6 +63,7 @@ const TABS = [
   ['decor', 'house', 'Decor'],
   ['blocks', 'hammer', 'Blocks'],
   ['seeds', 'sprout', 'Seeds'],
+  ['clothes', 'shirt', 'Clothes'],
   ['packs', 'bag', 'Packs'],
 ] as const;
 
@@ -117,10 +122,15 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   const blockCard = (b: BlockType): HTMLElement => card(materialIconUrl(b.id), b.name, blockPrice(b.id), `${b.hardness} hit${b.hardness === 1 ? '' : 's'}`, false, () => hooks.buyBlock(b.id), b.id);
 
+  const hatCard = (id: string): HTMLElement => {
+    const h = HATS.find((x) => x.id === id)!;
+    return card(clothingIconUrl(id), h.name, hatCatalogPrice(id) ?? 0, 'Hat', packsData.unlocked.includes(id), () => hooks.buyHat(id), id);
+  };
+
   const draw = (): void => {
     markTab(tab);
     list.replaceChildren();
-    note.hidden = tab !== 'seeds' && tab !== 'blocks' && tab !== 'packs';
+    note.hidden = tab !== 'seeds' && tab !== 'blocks' && tab !== 'packs' && tab !== 'clothes';
     list.classList.toggle('pack-list', tab === 'packs');
     if (tab === 'blocks') {
       note.textContent = 'Select a block in the hotbar, tap a free cell to place it, tap a block to punch it. More kinds drop from punching.';
@@ -135,6 +145,11 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     if (tab === 'seeds') {
       note.textContent = `Plant seeds in the soil of your farm and punch them when grown. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`;
       for (const c of seedsForSale()) list.appendChild(seedCard(c));
+      return;
+    }
+    if (tab === 'clothes') {
+      note.textContent = 'Hats for your avatar: wear them in the Avatar panel. Rarer hats cannot be bought: find them while you play.';
+      for (const h of HATS.filter((x) => hatCatalogPrice(x.id) !== null)) list.appendChild(hatCard(h.id));
       return;
     }
     if (tab === 'decor') {

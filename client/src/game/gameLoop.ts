@@ -2,6 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import { AVATAR_H, WALK_BOB_MS, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
 import type { G16 } from './ctx.ts';
 
@@ -9,7 +10,7 @@ export async function setupGameLoop(g: G16) {
   const {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
     guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
-    doBlock, placeBar, menu, orders, bubbles, popups, gemFly, splashGone, openRoom,
+    doBlock, placeBar, menu, orders, bubbles, emote, nameTag, popups, gemFly, splashGone, openRoom,
     playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, api, setDungeonMode, notice, toast, st, late,
   } = g;
 
@@ -26,6 +27,7 @@ export async function setupGameLoop(g: G16) {
   let lastStepBeat = 0;
   app.ticker.add((ticker) => {
     if (dungeon.isActive) {
+      nameTag.update('', null);
       control.update(ticker.deltaMS);
       hold.tick();
       dungeon.frame(ticker.deltaMS);
@@ -49,6 +51,16 @@ export async function setupGameLoop(g: G16) {
     roomFloats.update(ticker.deltaMS, (p) => worldToScreen(p, st.shown));
     placer.tick(ticker.deltaMS);
     sprite.update(st.avatar, clockMs);
+    // An emote plays while the avatar stands still and ends by itself or when it moves (step 9g-1).
+    if (st.emote && (st.avatar.state !== 'idle' || performance.now() >= st.emote.endsAt)) {
+      st.emote = null;
+      emote.setActive(null);
+      void api.currentEmote(); // lets the API drop its copy too
+    }
+    if (st.emote) {
+      const t = performance.now() - st.emote.startedAt;
+      sprite.setEmote(emotePose(st.emote.kind, t), t);
+    } else sprite.setEmote(null);
     // Soft footsteps, one per bob of the walk.
     const beat = Math.floor(clockMs / (WALK_BOB_MS * 2));
     if (st.avatar.state === 'walk' && beat !== lastStepBeat && sprite.container.visible) sound.play('step');
@@ -99,6 +111,7 @@ export async function setupGameLoop(g: G16) {
     for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, st.shown));
     orders.update(heads);
     bubbles.update(ticker.deltaMS, heads);
+    nameTag.update(st.avatar.name, sprite.container.visible ? worldToScreen({ x: st.avatar.x, y: st.avatar.y + 4 }, st.shown) : null);
     popups.update(heads.get(st.avatar.id) ?? null);
     gemFly.update(heads.get(st.avatar.id) ?? null);
     // Behind the bar: face the room.

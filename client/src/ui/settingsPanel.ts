@@ -16,12 +16,13 @@ export interface SettingsHooks {
   newGame(): void;
   onDebug(on: boolean): void;
   /** The device settings as stored (atmosphere step), and what happens when they change. */
-  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean };
+  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean };
   onSound(on: boolean): void;
   onVolume(volume: number): void;
   onLighting(on: boolean): void;
   onCellGrid(on: boolean): void;
   onPopups(on: boolean): void;
+  onNameTags(on: boolean): void;
 }
 
 export interface SettingsPanel {
@@ -118,6 +119,16 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   popBtn.classList.toggle('on', popups);
   const popNote = el('p', 'panel-note', 'Small icons float above your head for what you get (blocks, loot, gems).');
 
+  let nameTags = hooks.prefs.nameTags;
+  const tagBtn = textButton(`Name tags: ${nameTags ? 'on' : 'off'}`, () => {
+    nameTags = !nameTags;
+    tagBtn.textContent = `Name tags: ${nameTags ? 'on' : 'off'}`;
+    tagBtn.classList.toggle('on', nameTags);
+    hooks.onNameTags(nameTags);
+  });
+  tagBtn.classList.toggle('on', nameTags);
+  const tagNote = el('p', 'panel-note', 'Your name on a small plate under your avatar.');
+
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section');
     s.append(el('h3', '', title), ...buttons);
@@ -129,6 +140,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'Pixel Hotel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }
