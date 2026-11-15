@@ -650,3 +650,19 @@ describe('22 -> 23 (step S3: a table spot can hold the gem a happy guest tipped)
     expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
   });
 });
+
+describe('migrates a version 23 save (MB-1, the Inn name)', () => {
+  it('gives an old save the default Inn name, keeps a name that is already there, and does not migrate twice', () => {
+    const base = createNewPlayer(undefined, 1);
+    const { innName: _gone, ...player } = base.player;
+    const old = { ...base, player };
+    const r = readSave(JSON.stringify({ version: 23, savedAt: 9, state: old }));
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 23 });
+    if (!r.ok) return;
+    expect(r.state.player.innName).toBe('The Inn');
+    expect({ ...r.state.player, innName: undefined }).toEqual({ ...base.player, innName: undefined });
+    expect(r.state.items).toEqual(base.items);
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
+    expect(MIGRATIONS[23]!({ ...old, player: { ...player, innName: 'Mine' } })).toMatchObject({ player: { innName: 'Mine' } });
+  });
+});

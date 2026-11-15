@@ -54,7 +54,7 @@ describe('flickerAt', () => {
 describe('lights from furniture data', () => {
   it('the candle stand, counter, skull lamp, wall torch, shell lamp and pearl chandelier are light sources with palette colours', () => {
     const lit = FURNITURE_TYPES.filter((t) => t.light).map((t) => t.id);
-    expect(lit.sort()).toEqual(['counter', 'ember_lamp', 'lamp', 'pearl_chandelier', 'shell_lamp', 'skull_lamp', 'stove', 'wall_torch']);
+    expect(lit.sort()).toEqual(['counter', 'ember_lamp', 'glass_lamp', 'lamp', 'lantern_post', 'pearl_chandelier', 'shell_lamp', 'skull_lamp', 'stone_fireplace', 'stove', 'wall_torch']);
     for (const t of FURNITURE_TYPES) {
       if (!t.light) continue;
       expect(PALETTE[t.light.color]).toBeDefined();

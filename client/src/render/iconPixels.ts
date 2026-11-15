@@ -357,6 +357,48 @@ const DRAW: Record<IconShape, Draw> = {
     p.rect(5, 11, 22, 18, dk(a)); p.rect(5, 8, 22, 4, a); p.rect(7, 5, 6, 4, DARK); p.rect(15, 5, 6, 4, DARK);
     p.rect(21, 3, 4, 6, a); p.rect(9, 16, 14, 9, DARK); p.rect(11, 19, 10, 5, b); p.rect(13, 17, 6, 3, CREAM); p.rect(5, 27, 22, 2, DARK);
   },
+  // ---- carpentry (M-A) ----
+  fireplace: (p, a, b) => {
+    p.rect(3, 4, 26, 3, dk(a)); p.rect(5, 7, 22, 21, a); p.rect(3, 26, 26, 3, dk(a));
+    for (const y of [11, 16, 21]) p.rect(5, y, 22, 1, dk(a));
+    p.rect(11, 12, 10, 1, dk(a)); p.rect(8, 17, 8, 1, dk(a)); p.rect(18, 22, 7, 1, dk(a));
+    p.poly([[9, 27], [9, 14], [12, 11], [20, 11], [23, 14], [23, 27]], DARK);
+    p.poly([[16, 14], [21, 22], [19, 27], [13, 27], [11, 22]], b); p.poly([[16, 19], [18, 23], [17, 27], [15, 27], [14, 23]], CREAM); p.rect(10, 26, 12, 1, dk(b));
+  },
+  oven: (p, a, b) => {
+    p.rect(3, 26, 26, 3, dk(a)); p.oval(16, 16, 13, 12, a); p.rect(3, 16, 26, 11, a); p.rect(5, 8, 10, 2, lt(a));
+    p.rect(3, 20, 26, 1, dk(a)); p.rect(3, 15, 26, 1, dk(a)); p.rect(9, 9, 1, 6, dk(a)); p.rect(18, 9, 1, 6, dk(a)); p.rect(14, 16, 1, 4, dk(a)); p.rect(23, 16, 1, 4, dk(a));
+    p.poly([[10, 27], [10, 20], [13, 17], [19, 17], [22, 20], [22, 27]], DARK); p.poly([[12, 27], [13, 22], [16, 20], [19, 22], [20, 27]], b); p.rect(14, 24, 4, 3, CREAM);
+    p.rect(22, 2, 5, 8, dk(a)); p.rect(22, 2, 5, 2, a);
+  },
+  jug: (p, a, b) => {
+    p.rect(12, 3, 8, 4, b); p.rect(11, 3, 10, 1, dk(b)); p.rect(13, 6, 6, 4, a); p.oval(16, 19, 10, 10, a); p.rect(6, 12, 20, 12, a);
+    p.rect(5, 12, 22, 2, lt(a)); p.rect(7, 14, 3, 9, lt(a)); p.rect(8, 18, 16, 1, b); p.rect(8, 22, 16, 1, b); p.rect(10, 27, 12, 2, dk(a));
+    p.rect(24, 9, 5, 3, a); p.rect(27, 9, 2, 10, a); p.rect(24, 17, 5, 3, a);
+  },
+  planter: (p, a, b) => {
+    p.oval(9, 11, 4, 6, b); p.oval(16, 9, 4, 7, b); p.oval(23, 11, 4, 6, b); p.oval(12, 15, 3, 4, lt(b)); p.oval(20, 15, 3, 4, lt(b));
+    p.rect(6, 8, 2, 2, PALETTE[8]); p.rect(15, 5, 2, 2, PALETTE[10]); p.rect(24, 9, 2, 2, PALETTE[10]);
+    p.rect(3, 17, 26, 3, lt(a)); p.rect(4, 20, 24, 8, a); p.rect(4, 20, 24, 1, dk(a)); p.rect(4, 24, 24, 1, dk(a)); p.rect(10, 20, 1, 8, dk(a)); p.rect(16, 25, 1, 3, dk(a)); p.rect(22, 20, 1, 8, dk(a));
+    p.rect(4, 27, 24, 2, dk(a));
+  },
+  post: (p, a, b) => {
+    p.rect(14, 12, 4, 18, DARK); p.rect(10, 28, 12, 2, DARK); p.rect(15, 13, 1, 15, WOOD);
+    p.rect(8, 3, 16, 3, DARK); p.poly([[8, 6], [24, 6], [22, 20], [10, 20]], DARK);
+    p.poly([[10, 7], [22, 7], [20, 19], [12, 19]], b); p.poly([[14, 9], [18, 9], [17, 16], [15, 16]], CREAM); p.rect(15, 10, 2, 3, WHITE);
+    p.rect(12, 20, 8, 2, a); p.rect(11, 2, 10, 1, a);
+  },
+  cabinet: (p, a, b) => {
+    p.rect(5, 2, 22, 3, dk(a)); p.rect(4, 4, 24, 25, a); p.rect(4, 4, 24, 1, lt(a)); p.rect(6, 6, 20, 22, b); p.rect(15, 6, 2, 22, a);
+    p.rect(6, 15, 20, 1, a); p.rect(7, 7, 2, 7, WHITE); p.rect(10, 7, 2, 3, WHITE);
+    p.rect(8, 18, 4, 6, CREAM); p.rect(18, 17, 6, 7, PALETTE[10]); p.rect(19, 19, 4, 2, dk(PALETTE[10]));
+    p.rect(13, 16, 1, 3, a); p.rect(18, 16, 1, 3, a); p.rect(5, 28, 22, 2, dk(a));
+  },
+  pillar: (p, a, b) => {
+    p.rect(6, 2, 20, 5, lt(a)); p.rect(6, 5, 20, 2, dk(a)); p.rect(9, 7, 14, 18, a);
+    p.rect(9, 7, 3, 18, lt(a)); p.rect(20, 7, 3, 18, dk(a)); p.rect(9, 12, 14, 1, dk(a)); p.rect(9, 18, 14, 1, dk(a)); p.rect(15, 7, 1, 5, dk(a)); p.rect(12, 13, 1, 5, dk(a)); p.rect(17, 19, 1, 6, dk(a));
+    p.rect(6, 25, 20, 5, lt(a)); p.rect(6, 28, 20, 2, dk(a)); p.rect(4, 29, 24, 1, b);
+  },
 };
 
 /** Shapes with a shiny surface: they get a small glint near the top-left. */

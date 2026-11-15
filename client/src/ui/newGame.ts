@@ -6,10 +6,12 @@
 // Resolves with the choice; the GameAPI checks it again (createPlayer).
 
 import {
+  DEFAULT_INN_NAME,
   DISPLAY_NAME_MAX,
   START_LOOK,
   borderRects,
   cleanDisplayName,
+  cleanInnName,
   createRoom,
   doorRect,
   floorRects,
@@ -86,7 +88,7 @@ function screen(parent: HTMLElement): HTMLElement {
  * the name, the tabs (Body, Hair, Top, Bottoms, Shoes) with one tab's pickers, and Done, always
  * visible at the bottom.
  */
-function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: AvatarLook }> {
+function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: string; look: AvatarLook }> {
   return new Promise((resolve) => {
     const s = el('div', 'charmaker');
     parent.appendChild(s);
@@ -102,6 +104,12 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: Avata
     name.placeholder = 'Your name in the game';
     name.autocomplete = 'off';
     name.setAttribute('aria-label', 'Display name');
+    // MB-1: the Inn's name, the same character rules; left empty it becomes the default.
+    const inn = el('input', 'chat-input name-input inn-name-input');
+    inn.maxLength = DISPLAY_NAME_MAX;
+    inn.placeholder = `Name of your Inn (${DEFAULT_INN_NAME})`;
+    inn.autocomplete = 'off';
+    inn.setAttribute('aria-label', 'Inn name');
     const problem = el('div', 'panel-info newgame-problem');
     const done = textButton('Done', () => {
       const clean = cleanDisplayName(name.value);
@@ -110,11 +118,18 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: Avata
         name.focus();
         return;
       }
+      const innClean = cleanInnName(inn.value);
+      if (!innClean) {
+        problem.textContent = `Pick an Inn name: up to ${DISPLAY_NAME_MAX} letters, digits and spaces.`;
+        inn.focus();
+        return;
+      }
       preview.stop();
       s.remove();
-      resolve({ name: clean, look });
+      resolve({ name: clean, innName: innClean, look });
     }, 'newgame-next');
     name.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
+    inn.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
     const stage = el('div', 'charmaker-stage');
     stage.append(el('h2', 'charmaker-title plate', 'Make your character'), preview.el);
     // The tabs sit on the panel's top edge, like in every panel.
@@ -122,7 +137,7 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; look: Avata
     const panel = el('div', 'frame charmaker-panel');
     const choices = el('div', 'charmaker-choices');
     choices.append(pickers.body);
-    panel.append(name, problem, el('div', 'divider'), choices, done);
+    panel.append(name, inn, problem, el('div', 'divider'), choices, done);
     side.append(pickers.tabs, panel);
     s.append(stage, side);
   });
@@ -159,8 +174,8 @@ function pickShape(parent: HTMLElement, kind: RoomKind, title: string, button: s
 
 /** The whole new-game setup: character, then the hotel shape, then the shop shape. */
 export async function runNewGameSetup(parent: HTMLElement): Promise<NewPlayerChoice> {
-  const { name, look } = await makeCharacter(parent);
+  const { name, innName, look } = await makeCharacter(parent);
   const hotelShape = await pickShape(parent, 'hotel', 'Pick your hotel room', 'Next');
   const shopShape = await pickShape(parent, 'shop', 'Pick your tavern', 'Open my tavern');
-  return { name, look, hotelShape, shopShape };
+  return { name, innName, look, hotelShape, shopShape };
 }

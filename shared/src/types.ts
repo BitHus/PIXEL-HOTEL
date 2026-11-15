@@ -283,6 +283,8 @@ export type GearId = 'copper_sword' | 'iron_sword' | 'mithril_sword' | 'leather_
 export interface Player {
   id: number;
   name: string;
+  /** The name of the player's Inn (MB-1, save 24): max DISPLAY_NAME_MAX letters, digits and spaces; shown in the info panel. */
+  innName: string;
   level: number;
   xp: number;
   wallet: Wallet;

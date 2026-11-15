@@ -94,6 +94,14 @@ describe('a new player from character creation (step 7b)', () => {
     expect(s.playerCreated).toBe(false); // the API sets it once the player is made
   });
 
+  it('names the Inn (MB-1): the default, a chosen clean name, and the same rules as the display name', () => {
+    expect(createNewPlayer(configForChoice(choice)!, 1).player.innName).toBe('The Inn');
+    expect(createNewPlayer(configForChoice({ ...choice, innName: '   ' })!, 1).player.innName).toBe('The Inn');
+    expect(createNewPlayer(configForChoice({ ...choice, innName: '  The  Gilded Mug 2 ' })!, 1).player.innName).toBe('The Gilded Mug 2');
+    expect(configForChoice({ ...choice, innName: 'a'.repeat(17) })).toBeNull();
+    expect(configForChoice({ ...choice, innName: 'Inn<b>' })).toBeNull();
+  });
+
   it('refuses names that are not clean, clothing that is not free, and shapes for the wrong room', () => {
     expect(configForChoice({ ...choice, name: '' })).toBeNull();
     expect(configForChoice({ ...choice, name: 'a'.repeat(17) })).toBeNull();

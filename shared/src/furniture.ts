@@ -14,6 +14,10 @@
 // - Functions that need other items' types take a lookup (default: shared/data/furniture.json).
 
 import furnitureData from '../data/furniture.json';
+import carpentryData from '../data/furniture/carpentry.json';
+import dungeon2Data from '../data/furniture/dungeon2.json';
+import suiteData from '../data/furniture/suite.json';
+import tavern2Data from '../data/furniture/tavern2.json';
 import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_DEPTH_PX,
   STAFF_ZONE_SIDE_PX, SNAP } from './config.ts';
@@ -22,8 +26,14 @@ import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } fro
 import { blockRects, doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, wallBands, type Room } from './room.ts';
 import type { Facing, FurnitureItem, FurnitureType, Point, Rect } from './types.ts';
 
-/** The starter furniture types (step 4), from shared/data/furniture.json. */
-export const FURNITURE_TYPES = furnitureData as FurnitureType[];
+/** All furniture types: shared/data/furniture.json (the base) plus the extra files in shared/data/furniture/ (P0 split; ids are unique across files). */
+export const FURNITURE_TYPES = [
+  ...(furnitureData as FurnitureType[]),
+  ...(carpentryData as FurnitureType[]),
+  ...(tavern2Data as FurnitureType[]),
+  ...(suiteData as FurnitureType[]),
+  ...(dungeon2Data as FurnitureType[]),
+];
 
 const TYPES_BY_ID = new Map(FURNITURE_TYPES.map((t) => [t.id, t]));
 

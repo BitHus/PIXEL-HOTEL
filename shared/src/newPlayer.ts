@@ -9,6 +9,7 @@ import { addSeen } from './seen.ts';
 import { FARM_START_SOIL, SOIL_STYLE,
   HOTBAR_SLOTS,
   LOCAL_PLAYER_ID,
+  DEFAULT_INN_NAME,
   LOCAL_PLAYER_NAME,
   START_FLOOR_STYLE,
   START_GOLD,
@@ -32,7 +33,7 @@ import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { createRoom, defaultShape, getRoomShape, paintFloorCells, shapesFor, type Room } from './room.ts';
-import { cleanDisplayName, lookAllowed } from './clothing.ts';
+import { cleanDisplayName, cleanInnName, lookAllowed } from './clothing.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { emptyTavern } from './tavern.ts';
 import { getFoodType } from './materials.ts';
@@ -42,6 +43,7 @@ import type { MaterialId, StyleKind } from './types.ts';
 export interface NewPlayerConfig {
   playerId: number;
   name: string;
+  innName: string;
   hotelRoomId: number;
   shopRoomId: number;
   farmRoomId: number;
@@ -57,6 +59,7 @@ export interface NewPlayerConfig {
 export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
   playerId: LOCAL_PLAYER_ID,
   name: LOCAL_PLAYER_NAME,
+  innName: DEFAULT_INN_NAME,
   hotelRoomId: START_HOTEL_ROOM_ID,
   shopRoomId: START_SHOP_ROOM_ID,
   farmRoomId: START_FARM_ROOM_ID,
@@ -71,6 +74,8 @@ export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
 /** What the player chooses when a new game starts (character creation and the room shapes). */
 export interface NewPlayerChoice {
   name: string;
+  /** The Inn's name (MB-1); empty or missing = the default "The Inn". */
+  innName?: string;
   look: AvatarLook;
   hotelShape: string;
   shopShape: string;
@@ -83,9 +88,11 @@ export interface NewPlayerChoice {
 export function configForChoice(choice: NewPlayerChoice): NewPlayerConfig | null {
   const name = cleanDisplayName(choice.name);
   if (!name || !lookAllowed(choice.look)) return null;
+  const innName = cleanInnName(choice.innName);
+  if (!innName) return null;
   if (!shapesFor('hotel').some((s) => s.id === choice.hotelShape)) return null;
   if (!shapesFor('shop').some((s) => s.id === choice.shopShape && s.shopStart)) return null;
-  return { ...DEFAULT_NEW_PLAYER, name, look: { ...choice.look }, hotelShape: choice.hotelShape, shopShape: choice.shopShape };
+  return { ...DEFAULT_NEW_PLAYER, name, innName, look: { ...choice.look }, hotelShape: choice.hotelShape, shopShape: choice.shopShape };
 }
 
 /** How an unlocked style is stored in Player.unlockedStyles (floor and wall ids may match). */
@@ -118,6 +125,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     player: {
       id: config.playerId,
       name: config.name,
+      innName: config.innName,
       level: START_PLAYER_LEVEL,
       xp: START_XP,
       wallet: { gold: 0, gems: 0 },

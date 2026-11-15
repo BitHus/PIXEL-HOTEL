@@ -2,6 +2,8 @@
 /** The local player's id and name (one player per browser until accounts exist). */
 export const LOCAL_PLAYER_ID = 1;
 export const LOCAL_PLAYER_NAME = 'You';
+/** The Inn's default name (MB-1); the player can pick another at the start (same rules as the display name). */
+export const DEFAULT_INN_NAME = 'The Inn';
 /** Room ids of a new local player's two rooms. */
 export const START_HOTEL_ROOM_ID = 1;
 export const START_SHOP_ROOM_ID = 2;
@@ -28,7 +30,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */

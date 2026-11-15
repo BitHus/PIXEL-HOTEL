@@ -5,7 +5,7 @@
 // slot (config LOOK_COLORS). The styles only change the hair, top and bottoms boxes of the avatar.
 
 import clothingData from '../data/clothing.json';
-import { DISPLAY_NAME_MAX, LOOK_COLORS } from './config.ts';
+import { DEFAULT_INN_NAME, DISPLAY_NAME_MAX, LOOK_COLORS } from './config.ts';
 import type { Icon } from './icons.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Rank } from './types.ts';
@@ -63,4 +63,10 @@ export function cleanDisplayName(name: string): string | null {
   const s = name.trim().replace(/\s+/g, ' ');
   if (s.length === 0 || s.length > DISPLAY_NAME_MAX) return null;
   return /^[\p{L}\p{N} ]+$/u.test(s) ? s : null;
+}
+
+/** The Inn name (MB-1): the same rules as a display name; nothing typed = the default; null when not allowed. */
+export function cleanInnName(name: string | undefined): string | null {
+  if (name === undefined || name.trim() === '') return DEFAULT_INN_NAME;
+  return cleanDisplayName(name);
 }

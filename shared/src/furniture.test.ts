@@ -43,6 +43,11 @@ const can = (items: FurnitureItem[], typeId: string, col: number, row: number, f
 };
 
 describe('furniture data', () => {
+  it('ids are unique across furniture.json and shared/data/furniture/*.json (P0 split)', () => {
+    const ids = FURNITURE_TYPES.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('has the 12 home types, in the catalog, common, and only the rug does not block', () => {
     const home = FURNITURE_TYPES.filter((t) => t.category === 'home_furniture' && t.inCatalog);
     expect(home).toHaveLength(12);
