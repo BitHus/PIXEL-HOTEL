@@ -1277,7 +1277,7 @@
   },
   {
     "id": "sign",
-    "name": "Shop sign",
+    "name": "Tavern sign",
     "category": "shop_furniture",
     "theme": "tavern",
     "placeIn": "shop",
@@ -1418,7 +1418,7 @@
   },
   {
     "id": "shop_rug",
-    "name": "Shop rug",
+    "name": "Tavern rug",
     "category": "shop_furniture",
     "theme": "tavern",
     "placeIn": "shop",

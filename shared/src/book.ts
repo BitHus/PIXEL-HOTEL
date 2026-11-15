@@ -81,7 +81,7 @@ export function sourceOf(id: string): string {
   const furniture = FURNITURE_TYPES.find((f) => f.id === id);
   if (furniture?.inCatalog) parts.push('Catalog');
   if (RECIPES.some((r) => r.makesKind === 'furniture' && r.makes === id)) parts.push('Crafted');
-  if (START_FURNITURE.includes(id)) parts.push('Your shop');
+  if (START_FURNITURE.includes(id)) parts.push('Your tavern');
   return parts.length > 0 ? parts.join(', ') : 'Unknown';
 }
 

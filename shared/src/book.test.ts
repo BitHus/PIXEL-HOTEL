@@ -133,7 +133,7 @@ describe('the Book (step 9e)', () => {
     expect(sourceOf('potato_stew')).toBe('Cooked');
     expect(sourceOf('iron_ore')).toBe('Mine');
     expect(sourceOf('iron_bar')).toBe('Forge');
-    expect(sourceOf('counter')).toBe('Your shop');
+    expect(sourceOf('counter')).toBe('Your tavern');
     for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) expect(e.source, e.id).not.toBe('Unknown');
     expect(getFurnitureType('slime_jar').rank).toBe('rare');
   });

@@ -161,6 +161,6 @@ function pickShape(parent: HTMLElement, kind: RoomKind, title: string, button: s
 export async function runNewGameSetup(parent: HTMLElement): Promise<NewPlayerChoice> {
   const { name, look } = await makeCharacter(parent);
   const hotelShape = await pickShape(parent, 'hotel', 'Pick your hotel room', 'Next');
-  const shopShape = await pickShape(parent, 'shop', 'Pick your shop', 'Open my shop');
+  const shopShape = await pickShape(parent, 'shop', 'Pick your tavern', 'Open my tavern');
   return { name, look, hotelShape, shopShape };
 }

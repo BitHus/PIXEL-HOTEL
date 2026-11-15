@@ -43,7 +43,7 @@ private suite connected by doors, with expeditions out of the inn. Proposed orde
 0.1 PLAYTEST (phase 2.1 brought forward): one full hour from a new game, one fix list, fix it.
 0.2 [x] R1 Refactor: split main.ts, localGameAPI.ts and config.ts; no behaviour change (NOTES R1).
 0.3 [x] 9t B (guests and serving), [x] K1 Tavern kitchen: cooking moves from the farm to the tavern
-    (NOTES K1), 9t C (brewing, Menu), S1-S3 Retire the shop (no loot customers; trader; rebalance) [prompt ready],
+    (NOTES K1), [x] 9t C (brewing, Menu; NOTES 9t C), S1-S3 Retire the shop (no loot customers; trader; rebalance) [prompt ready],
     K2 Ripening: aged and vintage
     drinks in casks, real time [prompt ready], then M-A Carpentry (blocks -> furniture) [prompt ready],
     M-B Connected Inn (doors, an Inn name) [prompt ready].
@@ -54,9 +54,9 @@ private suite connected by doors, with expeditions out of the inn. Proposed orde
 The loops that are planned must all exist before anything else is added.
 1.0 Housekeeping: shorten CLAUDE.md. [done]
 1.1 Step 9f - Lakeside: fishing and woodcutting. [done]
-1.2 Step 9t - The tavern: the shop becomes a tavern (owner's decision, 14 Nov). Guests sit, order
+1.2 [x] Step 9t - The tavern (A, B, K1 and C all done): the shop becomes a tavern (owner's decision, 14 Nov). Guests sit, order
     drinks and dishes, the player serves and collects the coins; brewing; the loot stall stays as
-    a market corner. [prompt ready; part A (shared rules) done; B and C wait for placement on cells: BG1 is done, so they can be built now (new shop spots are cell based)]
+    a market corner. [done: parts A, B, K1, C; NOTES STEP 9t, K1, 9t C]
 1.3 Step 9g - Livelier hotel: hats, emotes, usable furniture, the cat, room stars, visitors.
     [prompt ready; BG1 is done, placement rules are cell based]
 1.4 Step 9h - Dungeon round 2 (3 floors, boss) and two more dungeon types. [prompt ready]

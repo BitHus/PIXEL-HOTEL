@@ -109,7 +109,7 @@ export const TALK_CHANCE = {
 } as const;
 export const CHATTY_TALK = 2;
 export const HURRIED_TALK = 0.5;
-/** On the way in, a shop with at least this much appeal gets "What a lovely shop!" remarks. */
+/** On the way in, a tavern with at least this much appeal gets "What a lovely tavern!" remarks. */
 export const REMARK_APPEAL_MIN = 40;
 /** On the way in, a shop with at most this part of its slots filled gets "Not much left..." remarks. */
 export const REMARK_EMPTY_SHARE = 0.25;

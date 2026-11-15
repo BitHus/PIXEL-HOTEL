@@ -36,6 +36,7 @@ import {
   GUEST_PATIENCE_MS,
   GUEST_PATIENCE_WARN_MS,
   GUEST_REFUSE_MS,
+  GUEST_ROOM_REMARK_CHANCE,
   GUEST_SEAT_REACH_PX,
   GUEST_SIP_MAX_MS,
   GUEST_SIP_MIN_MS,
@@ -44,6 +45,7 @@ import {
   HURRIED_SPEED_BONUS,
   OFFLINE_MAX_MS,
   QUEUE_MAX,
+  REMARK_APPEAL_MIN,
 } from './config.ts';
 import { npcGrid, npcPath, staffZones } from './customerPlan.ts';
 import { buyerCount, customerLook, outsidePoint, rollKind, stallVisitor } from './customers.ts';
@@ -240,6 +242,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
   }
   s = withTavern(s, { nextGuestInMs: Math.max(0, left) });
 
+  const roomAppeal = shopAppeal(w.room, w.items);
   const all = s.tavern.guests;
   const out: Guest[] = [];
   /** Maybe a line at the table: a toast or a word about the drink while eating with someone, else small talk. */
@@ -248,7 +251,9 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
     if (talkIn > 0) return { ...c, talkInMs: talkIn };
     const table = seatOf(c)?.tableUid;
     const mates = all.some((o) => o.id !== c.id && o.phase === 'eat' && seatOf(o)?.tableUid === table);
-    sayOut(c, c.phase !== 'eat' ? 'table_talk' : mates && rng() < 0.5 ? 'toast' : 'drink_talk', 'table');
+    // A pretty tavern gets a remark about the room now and then (the same appeal limit as the shop customers' remarks).
+    const remark = c.phase !== 'eat' && roomAppeal >= REMARK_APPEAL_MIN && rng() < GUEST_ROOM_REMARK_CHANCE;
+    sayOut(c, remark ? 'lovely' : c.phase !== 'eat' ? 'table_talk' : mates && rng() < 0.5 ? 'toast' : 'drink_talk', 'table');
     return { ...c, talkInMs: between(rng, GUEST_TALK_MIN_MS, GUEST_TALK_MAX_MS) };
   };
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SERVE_QUEUE_MAX } from './config.ts';
+import { catalogPrice } from './economy.ts';
 import { behindPoint, getFurnitureType, staffZone } from './furniture.ts';
 import { inStaffZone } from './customerPlan.ts';
 import { applyChange } from './ledger.ts';
@@ -243,5 +244,24 @@ describe('the serve queue (step 9t)', () => {
     const seat = tavernSeats(s.items, s.tavern.roomId).find((k) => k.uid === 5)!;
     expect(serveStops(s, -1)).toEqual({ bar: behindPoint(bar, getFurnitureType('counter')), table: seat.spot });
     expect(serveStops(s, -7)).toBeNull();
+  });
+});
+
+describe('the Tavern catalog tab (step 9t C)', () => {
+  const ids = ['bar_stool', 'round_table', 'long_table', 'mug_shelf', 'menu_board', 'keg_rack', 'brewing_barrel', 'stove'];
+  it('lists the eight tavern pieces, in the shop category, for the tavern, at baseValue * 3', () => {
+    for (const id of ids) {
+      const t = getFurnitureType(id);
+      expect(t.category, id).toBe('shop_furniture');
+      expect(t.inCatalog, id).toBe(true);
+      expect(['shop', 'both'], id).toContain(t.placeIn);
+      expect(catalogPrice(id), id).toBe(t.baseValue * 3);
+    }
+    expect(getFurnitureType('mug_shelf').wall).toBe(true);
+    expect(getFurnitureType('menu_board').wall).toBe(true);
+    expect(getFurnitureType('brewing_barrel').brews).toBe(true);
+    expect(getFurnitureType('stove').cooks).toBe(true);
+    // The keg rack stays decor for now (ripening is step K2).
+    expect(getFurnitureType('keg_rack').brews).toBeFalsy();
   });
 });

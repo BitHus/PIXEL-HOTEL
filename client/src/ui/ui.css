@@ -3481,3 +3481,49 @@
   opacity: 0.6;
   animation: none;
 }
+
+/* ---------- Step 9t C: the Brewing panel and the Menu panel ---------- */
+.brewing-panel .need.short {
+  color: #8b8b8b;
+  text-decoration: line-through;
+}
+.brewing-panel .catalog-row.cant .catalog-name {
+  opacity: 0.8;
+}
+.menu-row.off .slot,
+.menu-row.off .catalog-name {
+  opacity: 0.55;
+}
+.menu-price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+.menu-price .btn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+.menu-price-num {
+  min-width: 64px;
+  text-align: center;
+  font-family: var(--font);
+}
+.menu-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.menu-hint svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  image-rendering: pixelated;
+}
+.menu-switch {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+.menu-switch.on {
+  color: var(--ok);
+}

@@ -49,6 +49,7 @@ export * from './cooking.ts';
 export * from './forge.ts';
 export * from './tavern.ts';
 export * from './brewing.ts';
+export * from './menuEdit.ts';
 export * from './guests.ts';
 export * from './blockTypes.ts';
 export * from './blocks.ts';

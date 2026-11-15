@@ -55,7 +55,7 @@ export interface CatalogPanel {
 
 const TABS = [
   ['home', 'chair', 'Home'],
-  ['shop', 'coin', 'Shop'],
+  ['shop', 'coin', 'Tavern'],
   ['decor', 'house', 'Decor'],
   ['blocks', 'hammer', 'Blocks'],
   ['seeds', 'sprout', 'Seeds'],
@@ -63,7 +63,7 @@ const TABS = [
 ] as const;
 
 /** Where a furniture type goes, in words (for the confirm panel). */
-export const WHERE: Record<FurnitureType['placeIn'], string> = { hotel: 'the hotel room', shop: 'the shop', both: 'the hotel room or the shop' };
+export const WHERE: Record<FurnitureType['placeIn'], string> = { hotel: 'the hotel room', shop: 'the tavern', both: 'the hotel room or the tavern' };
 
 /** How long a seed takes to be fully grown, in words (step BG6: by rank, config SEED_GROW_MS). */
 export function growText(c: CropType): string {
@@ -105,7 +105,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   const furnitureCard = (t: FurnitureType): HTMLElement => {
     const fits = room === null || fitsRoomKind(t, room);
-    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Shop only' : 'Not here', false, () => hooks.buyItem(t.id), t.id);
+    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Tavern only' : 'Not here', false, () => hooks.buyItem(t.id), t.id);
   };
 
   const styleCard = (s: StyleType): HTMLElement =>

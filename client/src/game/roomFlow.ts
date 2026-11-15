@@ -3,7 +3,7 @@
 
 import {
   INTRO_COINS, doorY, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, tillPoint,
-  roomBoundsRect, worldToScreen, type RoomKind,
+  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, type RoomKind,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import type { G13 } from './ctx.ts';
@@ -13,7 +13,7 @@ export async function setupRoomFlow(g: G13) {
     api, newIntro, syncItems, hint, info, sprite, uiRoot, itemViews, shown0, refreshHint, placer, paint, menu,
     bubbles, chat, view, cellGrid, atmosphere, blockers, seating, roomChanged, roomLevels, roomFloats,
     lakeside, floats, customers, hops, showWaiting, guests, tableMess, orders, syncTavern, refreshShop,
-    refreshInventory, startIntro, fit, st, late,
+    refreshInventory, startIntro, fit, st, late, toast,
   } = g;
   late.openRoom = openRoom;
   late.openRoomKind = openRoomKind;
@@ -95,6 +95,7 @@ export async function setupRoomFlow(g: G13) {
     }
     info.setGold(gold);
     await refreshHint();
+    toast(TAVERN_INTRO_NEW);
   }
 
   // ---------- Rooms ----------

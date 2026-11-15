@@ -14,18 +14,19 @@ A browser game with these parts:
 - Dungeon: a random real-time dungeon where clicking fast is the game. Loot comes from
   chests. Enemies are the danger: they give xp (the player levels up) and rarely a special
   drop.
-- Shop: each player has a shop room. They put loot on shelves and set prices. NPC customers
-  walk in and buy for gold. Gold buys furniture in the catalog.
+- Tavern (step 9t; the shop room): guests sit, order drinks and dishes from the menu, the player serves them and taps their
+  coins. The Market corner (stall table, shelves) sells loot to NPC customers for gold. A brewing barrel and a stove make the
+  drinks and dishes. Gold buys furniture in the catalog.
 - Farm (section 10b, steps 9b, BG6): a free-form outdoor room where the player plants seeds on soil,
   harvests by punching, and grows the crops that the tavern's stove cooks into food (heals or buffs in the dungeon, step K1).
 - Mine (section 10c, step 9c): a short click-to-mine trip for ore. Ore is smelted into bars
   at the forge, and bars upgrade weapons, armor and the pickaxe.
 - Lakeside (section 10d, step 9f): an outdoor place with a lake: chop trees for wood and fish
   in the lake. Fish are food for the shop and the stove; bars also make an axe and fishing rods.
-The loop: dungeon (loot) -> shop (gold) -> furniture; farm (food) -> stronger dungeon runs;
+The loop: dungeon (loot) -> tavern (gold) -> furniture; farm (food) -> stronger dungeon runs;
 mine (ore) -> better gear -> deeper dungeon runs.
-Every player starts with two small, basic rooms: a hotel room and a shop. They sell loot in
-the shop for gold, and use the gold to buy furniture for the hotel room or the shop, and to
+Every player starts with two small, basic rooms: a hotel room and a tavern. They serve guests and sell loot at the
+Market corner for gold, and use the gold to buy furniture for the hotel room or the tavern, and to
 upgrade the rooms.
 Working title: Pixel Hotel (placeholder). Before any public release we pick a real, original
 name.
@@ -114,8 +115,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   is 576x384, level 2 is 704x480, level 3 is 832x576; shop level 1 is 576x320, level 2 is
   704x384, level 3 is 832x448.
 - Every new player gets two basic rooms: a hotel room (level 1) and a shop room (level 1).
-  The hotel room starts completely empty. The shop starts with a counter and one stall_table
-  at fixed positions from the shop shape's data, nothing else.
+  The hotel room starts completely empty. The tavern (kind 'shop') starts with the bar (the counter), a stall_table,
+  a round table with 2 stools, a brewing barrel (6 root ale ready) and a stove, at fixed positions from the shape's data.
 - The counter (step 7): every shop has exactly one counter with a cash register (till) on top.
   It is placed at the start (near the back wall with room behind it, left of center) and can be
   moved and rotated in build mode, but never picked up or sold (FurnitureType.noPickup). The
@@ -350,8 +351,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   float above the head and land in the bag; a new piece says "New!" with a Wear it button.
 - No trading between players in v1.
 - Every change to gold, gems or items goes through one function and is written to a ledger.
-- THE TAVERN (owner's decision, step 9t; part A = the shared rules is done, the client parts B and
-  C are not, so the game does not show it yet): the shop room is a tavern (internal kind 'shop'
+- THE TAVERN (owner's decision, step 9t; parts A, B, K1 and C are done): the shop room is a tavern (internal kind 'shop'
   and the room id stay; the counter is the bar). GUESTS come alone, as a pair or as three, sit on
   free seats at a table, order one drink or dish from the menu, and wait for the player to bring
   it from the bar (taps queue up, at most 3). They eat 20 to 40 s, leave coins and an empty mug or
@@ -361,7 +361,10 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   (tolerance, the four faces); too high = something cheaper or nothing. Drinks are brewed in a
   brewing barrel from crops in real time. The market corner (stall table, shelves, cases, the
   queue of 3 at the bar) stays exactly as above. Away rule: at most 3 guests sit with an open
-  order and they do not walk off. Details: STEP 9t in the notes.
+  order and they do not walk off. Part C: tap a brewing barrel (the avatar walks next to it) = the Brewing panel (a card per recipe in drinks.json with inputs and what you own,
+  time, mugs, value; one brew per barrel; more barrels = more at once; a ready brew is collected by the tap); tap the bar = the Menu panel (tabs Serve and Menu: On/Off,
+  a price stepper of 10% of the baseValue between 1 and 3 x, stock, the price face and a hint; out of stock = off the menu; an empty menu says how to fill it).
+  Tavern texts say Tavern (the loot stall keeps Market corner); old saves get one intro toast (introSeen), new games a short line. Details: STEP 9t and 9t C in the notes.
 
 10. DUNGEON
 - Real-time and click-driven in the same top-down view: clicking fast is the game. A run is

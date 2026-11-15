@@ -66,7 +66,7 @@ const TABS: readonly (readonly [BagTab, IconName, string])[] = [
 ];
 const HINT: Record<BagTab, string> = {
   furniture: 'Tap to place. Drag (or hold) to move.',
-  materials: 'Materials are sold in the shop. Tap one, then a slot, to move it.',
+  materials: 'Materials are sold at the market stall. Tap one, then a slot, to move it.',
 };
 
 const sameRef = (a: SlotRef, b: SlotRef): boolean => a.area === b.area && a.index === b.index;

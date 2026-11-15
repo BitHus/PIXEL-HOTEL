@@ -9,7 +9,7 @@ export async function setupPointerInput(g: G15) {
   const {
     app, dungeon, setCamera, overviewZoom, dpr, intro, holdTargetAt, lakeside, hold, holdBusyElsewhere, menu,
     steerWalk, panels, cross, label, redraw, updateBlockGhost, placer, paint, roomItem, itemViews, build,
-    openMenu, api, applyItems, sound, blockTap, tavernTap, serveAt, toast, shelfPanel, sitOn, walkTo,
+    openMenu, api, applyItems, sound, blockTap, tavernTap, barTap, serveAt, toast, shelfPanel, sitOn, walkTo,
     blockers, st,
   } = g;
 
@@ -141,6 +141,7 @@ export async function setupPointerInput(g: G15) {
       // Plants and blocks (hold to repeat) come first; the stove walk is dropped by any new tap.
       st.pendingBlock = null;
       st.pendingStove = null;
+      st.pendingBarrel = null;
       lakeside.cancel();
       if (blockTap(st.marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).
@@ -149,6 +150,7 @@ export async function setupPointerInput(g: G15) {
       if (tavernTap(st.marked, hit)) return;
       // The counter: walk behind it (like sitting); waiting customers pay while you stand there.
       if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
+        barTap();
         void serveAt(hit.uid).then((ok) => {
           if (ok) return;
           itemViews.shake(hit.uid);
