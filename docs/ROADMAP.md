@@ -16,6 +16,12 @@ something to look forward to, and the hotel and shop show what the player has ac
 Rule: the game must be fun and good-looking in a browser BEFORE it gets bigger or online. Depth that feeds the existing loops beats new areas.
 VIBES FIRST (owner 16 Nov, updated): the game must look and feel like a cozy MEDIEVAL pixel game (Travellers Rest is the reference; see docs/ART-STYLE.md MEDIEVAL DIRECTION). Four art/feel tracks run in parallel with the features and rank above 2 onward: (A) furniture and item redo with matching icons (docs/ART-REDO.md); (B) CHARACTERS: a real pixel avatar and NPCs, medieval outfits and hats (docs/PLAN-CHARACTERS.md; U1 approved); (C) the OUTDOORS REWORK (1b below); (D) medieval content: new furniture, clothes, recipes and decor in medieval style (anvil, weapon rack, banners, chandelier, hearth, trestle tables).
 NOW (in progress): C6 done; N1 done; art redo round 2; C11 outdoors hooks; character plan being written.
+1a. FROM THE DEEP DIVE (docs/RESEARCH-DEEP.md, 16 Nov; learned from Travellers Rest, Growtopia, Pixel Worlds, Habbo):
+   - FP-1 first ten minutes: a skippable, short scripted opening with one-time tooltips (Travellers Rest players complain about a long, unclear, unskippable tutorial). Coder, no save change. Goes with the playtest.
+   - JU-1 juice on the tavern loop (pour splash, coin arc, steam, guest reactions) and AU-1 sound and music (artist + coder): the vibes track; do these next to the outdoors rework.
+   - GT-1 guests with tastes and NC-1 special guest types (with RG-1 Regulars), DS-1 decor sets, CL-1 cleaning, CR-1 closing report, GP-1 big projects, QL-1 small comforts: tavern depth, after 9g-2 (players praise decorating and variety, and complain of nothing to do after unlocks: keep long goals coming).
+   - Safety lessons confirmed: Growtopia lost days to a recycle exploit and Pixel Worlds reset its economy, Habbo lost trust over chat and trading. Keep: no trading, no real money, balance tests as a gate, server authority later.
+
 1. Playtest 2.1 + first-hour pass 2.3 (a real hour in a browser, one fix list; the owner or a browser-capable tester). Nothing else beats finding what is broken.
 1b. OUTDOORS REWORK (owner 16 Nov: the dungeon and the fishing/lakeside look ugly; art and vibes, runs in parallel with 1): docs/PLAN-REWORK-OUTDOORS.md, tasks C11 to C16 (hooks + fx, dungeon juice, fishing/lake juice, crypt light, lakeside ambient, effects settings) and A15 to A23 (code-art crypt and lake now, PNG tiles/enemies/water/trees when the plugin is back), prompts in docs/QUEUE.md. Look and feel only: no rule and no save change. It goes before 2 (9g-2 and the rest) in both lanes.
 1c. CHARACTERS U1 (owner 16 Nov, vibes: a real MEDIEVAL pixel avatar and better NPCs, Travellers Rest as the example; lifts the box avatar rule): docs/PLAN-CHARACTERS.md, tasks B7 (proportion sheet, no plugin, first), A24 prototype and style lock, C17 rig data, then A25 to A31 and C18 to C22, prompts in docs/QUEUE.md (CHARACTERS U1). The MEDIEVAL DIRECTION in docs/ART-STYLE.md applies to every art round. Runs in both lanes next to 1b; the box avatar stays as the fallback, no save change before C20.
@@ -180,6 +186,20 @@ Proposed order (each is its own step if the owner approves):
 10. SF-1 Safe visits first: mute, report, filter and chat-off visits before any public chat (phase 6). [coder] + UI [artist]
 HELD for the owner (conflicts with CLAUDE.md sections 9 and 13): trading and a marketplace, PvP.
 REJECTED: real-money gems or items, daily login rewards, limited offers, lucky wheels.
+
+### DEEP-DIVE IDEAS (lead, 16 Nov; NOT planned, owner confirms; sources, fit checks and sizes in docs/RESEARCH-DEEP.md)
+New items only; the ten above (RN-1 to SF-1) are not repeated. Suggested order is the numbering. None conflicts with CLAUDE.md.
+11. FP-1 First ten minutes: a skippable 5-step nudge with one on-screen hint at a time, one-time tooltips on each new machine, a "what next" pin. S to M. [coder] + hint UI [artist]. Extends 2.3; avoids the Travellers Rest tutorial complaints.
+12. AU-1 Crowd soundscape and music: murmur and clinks that scale with guests, a cheer on a served round, a soft music loop, a toggle. S to M. [coder] + sound pass [artist]
+13. JU-1 Loop juice: pour splash and foam, coin arc into the register, "delighted" ding, stove smoke. S. [artist] + hooks [coder]. Render only.
+14. GT-1 Guest tastes: favourite drink, dish or rank per guest; served-to-taste means a bigger tip or gem; menu variety raises satisfaction. Needs balance test and save bump. M. [coder]
+15. NC-1 Odd guest archetypes: a few funny, memorable guest types with portraits and one-liners (pairs with RG-1). S to M. [artist] + npcLines [coder]
+16. DS-1 Decor style sets: matching pieces add a small capped appeal bonus and a named look title (keeps the 3-per-type and 100 caps). M. [coder] + set art [artist]
+17. CL-1 Cleanliness and troublemakers: spills show as mess, a broom clears them; a rude guest is shooed; never required. M. [coder] + props [artist]
+18. CR-1 Open/Closed sign and closing report: guests, gold, tips, mood; optional, no forced hours. S. [coder] + sign and panel [artist]
+19. GP-1 Grand projects: staged long builds (hearth hall, cellar, stage) as a gold and goods sink and the answer to "nothing else to work for"; balance test. M to L. [coder] + stage art [artist]
+20. QL-1 Quality of life: recipe favourites, "craft again", bag search, item descriptions. S. [coder] + UI [artist]
+Later: IQ-1 ingredient qualities (flavour tags) after GT-1 proves out. Rejected again after the deep dive: trading, real-money gems, daily rewards, PvP.
 
 ## IDEA POOL (not planned yet)
 Item descriptions and comparison, favourites, search in the bag, a pet that sits on your head,
