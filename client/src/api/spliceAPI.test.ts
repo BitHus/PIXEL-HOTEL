@@ -9,7 +9,7 @@ const clock = (): number => t;
 
 function open() {
   const s0 = createNewPlayer(undefined, 0);
-  const s: GameState = { ...applyChange(s0, { reason: 'debug', materials: { dirt_seed: 4, turnip_seed: 4, glass_seed: 2 } }, 0)!, playerCreated: true, hintsDone: 6 };
+  const s: GameState = { ...applyChange(s0, { reason: 'debug', materials: { dirt_seed: 4, turnip_seed: 4, glass_seed: 2 } }, 0)!, playerCreated: true, hintsDone: SPLICE_HINT };
   const storage = memoryStorage({ [saveKey()]: toSaveText(s, 0) });
   return LocalGameAPI.open(storage, clock, seededRng(9)).api;
 }

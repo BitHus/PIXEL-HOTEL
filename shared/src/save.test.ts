@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readSave, saveKey, toSaveText } from './save.ts';
 import { arrangeState, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
-import { SAVE_VERSION } from './config.ts';
+import { FARM_HINT, HINTS, MINE_HINT, PACK_HINT, SAVE_VERSION, SPLICE_HINT } from './config.ts';
 import { canPlace, footprintRect, getFurnitureType, isOnGrid } from './furniture.ts';
 import { createRoom, plantInCell, floorStyleAt } from './room.ts';
 import { growthStage, soilCells } from './farm.ts';
@@ -435,5 +435,20 @@ describe('16 -> 17 (step BG4: gems in a saved run)', () => {
     const r = readSave(JSON.stringify({ version: 16, savedAt: 9, state: { ...now, run: null } }));
     expect(r).toMatchObject({ ok: true, migrated: true });
     if (r.ok) expect(r.state.run).toBeNull();
+  });
+});
+
+describe('19 -> 20 (step BG9: the pack quest sits before the mine quest)', () => {
+  const now = createNewPlayer(undefined, 1);
+  it('moves a player who was at the mine quest (5) or later up by one, and leaves earlier ones alone', () => {
+    for (const [from, to] of [[0, 0], [4, 4], [5, 6], [6, 7], [7, 8]] as const) {
+      const r = readSave(JSON.stringify({ version: 19, savedAt: 9, state: { ...now, hintsDone: from } }));
+      expect(r, `from ${from}`).toMatchObject({ ok: true });
+      if (r.ok) expect(r.state.hintsDone).toBe(to);
+    }
+  });
+  it('the quest indexes keep their order: farm, pack, mine, splice', () => {
+    expect([FARM_HINT, PACK_HINT, MINE_HINT, SPLICE_HINT]).toEqual([4, 5, 6, 7]);
+    expect(HINTS).toHaveLength(8);
   });
 });

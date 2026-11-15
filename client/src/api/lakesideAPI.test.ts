@@ -69,9 +69,9 @@ describe('woodcutting through the GameAPI', () => {
     expect(felled!.kind).toBe('felled');
     expect(felled!.loot!.wood).toBeGreaterThanOrEqual(2);
     expect((await api.getPlayer()).materials.wood).toBe(wood + felled!.loot!.wood!);
-    // The gains list says the same as the loot (wood, and maybe the ranked drop).
+    // The gains list says the same as the loot (wood, and maybe the ranked drop; gems are counted apart).
     expect(felled!.gains.find((g) => g.itemId === 'wood')?.count).toBe(felled!.loot!.wood);
-    expect(felled!.gains.reduce((a, g) => a + g.count, 0)).toBe(Object.values(felled!.loot!).reduce((a, n) => a + (n ?? 0), 0));
+    expect(felled!.gains.filter((g) => g.itemId !== 'gems').reduce((a, g) => a + g.count, 0)).toBe(Object.values(felled!.loot!).reduce((a, n) => a + (n ?? 0), 0));
     // A stump now, with its regrow time.
     const stump = (await api.getLakeside()).trees[0]!;
     expect(stump.regrowInMs).toBe(TREE_REGROW_MS);

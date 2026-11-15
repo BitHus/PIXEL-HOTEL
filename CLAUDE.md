@@ -115,9 +115,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Customers walk 72 px/s (+-10%), at most 5 NPCs in the shop, no fixed route (window-shoppers,
   pairs, talk lines from shared/data/npcLines.json); behind the counter is staff only.
 - Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
-- GEM SINK (BG8): packs cost gems (config PACKS; shared/data/packs.json; pure openPack in shared/src/packs.ts):
-  Random Blocks, Basic Seeds, Common Clothes, Rare Clothes. Rank first (RANK_WEIGHTS times the pack's multiplier),
-  then an item. A clothes piece found again is a SPARE (Player.clothingSpares), sold for baseValue * SPARE_SELL gold.
+- GEM SINK (BG8, numbers BG9): packs cost gems (config PACKS; shared/data/packs.json; pure openPack in shared/src/packs.ts):
+  Random Blocks 40, Basic Seeds 30 (5 rolls each), Common Clothes 75, Rare Clothes 225 (3 rolls). Rank first (RANK_WEIGHTS times
+  the pack's multiplier), then an item. A clothes piece found again is a SPARE (Player.clothingSpares), sold for baseValue *
+  SPARE_SELL (0.1) gold. GEM INCOME (BG9, config GEMS + BLOCK_DROPS, targets BALANCE_TARGETS): a mixed hour gives about 55 gems
+  (new player), 70 (level 3), 100 (level 8); no source over 40%; first pack about 25 min, Common Clothes about 1 h, Rare Clothes
+  about 3 h at level 3. Closed loops: seed ratio of every block seed under 0.85, gold per gem through catalog blocks at least 30,
+  a pack sells for less than its price, playing a pack's contents gives back at most half its price. shared/src/balance.ts (maths)
+  and balance.test.ts fail when a number reopens a loop; `npm run simulate` prints the tables (NOTES BG9).
 - No trading in v1. Every change to gold, gems or items goes through ONE function (ledger.ts
   applyChange) and is written to the ledger.
 
@@ -230,14 +235,11 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   data, drawn by render/drawIcon.ts; NOTES BG2).
 - Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
   texts) next, on the cell grid.
-- BG3 (gain popups, every source) and BG4 (gems from every source: block, harvest, chest, kill, mimic, boss,
-  rock, chop, fish, quest, Book; floor piles in the dungeon and mine, kept on Leave, half lost on death in the
-  crypt) are done (NOTES BG3b + BG4b). BG5 (blocks), BG5b (hold to repeat) and BG6 (seeds, the free-form farm)
-  are done too. BG8 (packs for gems, Catalog > Packs, spares; NOTES BG8) is done. Next: BG9 (tunes the gem and pack
-  numbers), then 9t B/C, 9g.
+- BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
+  packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
+  is done. Next: 9t B/C (the tavern client), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- BG7 (splicing: two seeds in one cell, 40 recipes, the Book's Splice tab) is done (NOTES BG7).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 19. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 20. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -281,7 +283,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 19) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 20) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers

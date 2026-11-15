@@ -645,7 +645,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -677,7 +677,8 @@ export const HINTS = [
   'Place it in your room.',
   'Put an item on the table in your shop and set a price.',
   'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
-  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown.',
+  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown (about 2 minutes). Breaking blocks, plants, chests and fish drop gems.',
+  'Gems buy packs. With 30 gems open the Catalog, the Packs tab, and open a Basic Seeds Pack: its odds are on the card.',
   'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
   'Splice: plant one seed, then use a different seed on the same planted cell. Some pairs make a brand new seed (see the Book, Splice tab).',
 ] as const;
@@ -685,10 +686,12 @@ export const HINTS = [
 export const DUNGEON_HINT = 3;
 /** The index of the farm hint (step 9b): done by planting anything. */
 export const FARM_HINT = 4;
+/** The index of the pack hint (step BG9): done by opening any pack. It sits before the mine hint so a level 1 player sees it. */
+export const PACK_HINT = 5;
 /** The index of the mine hint (step 9c): shows from MINE_UNLOCK_LEVEL on, done by going in. */
-export const MINE_HINT = 5;
+export const MINE_HINT = 6;
 /** The index of the splice hint (step BG7): done by splicing two seeds. */
-export const SPLICE_HINT = 6;
+export const SPLICE_HINT = 7;
 
 // ---------- New game intro (step 7b) ----------
 /** The counter and stall_table pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */
@@ -826,10 +829,10 @@ export const BLOCK_HEAL_MS = 6000;
  * gem = chance of gems and gemMin..gemMax = how many (both included). BG9 tunes these.
  */
 export const BLOCK_DROPS = {
-  common: { block: 0.6, seed: 0.15, gem: 0.25, gemMin: 1, gemMax: 2 },
-  rare: { block: 0.5, seed: 0.12, gem: 0.35, gemMin: 2, gemMax: 5 },
-  ultra_rare: { block: 0.45, seed: 0.1, gem: 0.5, gemMin: 4, gemMax: 8 },
-  legendary: { block: 0.4, seed: 0.08, gem: 0.6, gemMin: 7, gemMax: 12 },
+  common: { block: 0.6, seed: 0.05, gem: 0.05, gemMin: 1, gemMax: 2 },
+  rare: { block: 0.5, seed: 0.08, gem: 0.1, gemMin: 2, gemMax: 4 },
+  ultra_rare: { block: 0.45, seed: 0.08, gem: 0.15, gemMin: 4, gemMax: 8 },
+  legendary: { block: 0.4, seed: 0.06, gem: 0.5, gemMin: 7, gemMax: 12 },
 } as const;
 /** Gem pieces on the ground: a drop is split into the biggest pieces first. Each value has its own colour (palette name). */
 export const GEM_TIERS = [
@@ -844,23 +847,23 @@ export const GEM_TIERS = [
 export const GEMS = {
   block: { chance: 0.15, min: 1, max: 2 },
   /** Harvesting a grown plant (step BG6). */
-  harvest: { chance: 0.12, min: 1, max: 2 },
+  harvest: { chance: 0.25, min: 1, max: 2 },
   /** A harvested spliced plant (the result's rank). */
   splice: { chance: 0.3, min: 1, max: 2 },
   /** A dungeon chest (wooden = common, golden = rare). */
-  chest: { chance: 0.25, min: 1, max: 2 },
+  chest: { chance: 0.8, min: 1, max: 2 },
   /** A kill (the enemy's rank: ENEMY_GEM_RANK). */
-  kill: { chance: 0.1, min: 1, max: 1 },
+  kill: { chance: 0.35, min: 1, max: 1 },
   /** A woken mimic (it also opens its golden chest's loot). */
-  mimic: { chance: 0.5, min: 1, max: 2 },
+  mimic: { chance: 0.9, min: 1, max: 2 },
   /** The Bone King always drops. */
   boss: { chance: 1, min: 2, max: 3 },
   /** A broken mine rock (the rock's rank: ROCK_GEM_RANK). */
-  rock: { chance: 0.1, min: 1, max: 1 },
+  rock: { chance: 0.6, min: 1, max: 1 },
   /** A felled tree (the rank the tree rolled for its extra drop). */
-  chop: { chance: 0.15, min: 1, max: 1 },
+  chop: { chance: 0.45, min: 1, max: 1 },
   /** A fish or fished-up thing (its own rank). */
-  fish: { chance: 0.2, min: 1, max: 2 },
+  fish: { chance: 0.6, min: 1, max: 2 },
   /** A finished first-run quest (a hint): always. */
   quest: { chance: 1, min: 2, max: 2 },
   /** A Book reward (the tier's rank: BOOK_GEM_RANK). */
@@ -882,15 +885,35 @@ export const GEM_RANK_MULT = { common: 1, rare: 2, ultra_rare: 4, legendary: 8 }
  * Clothes Pack should be about an hour of play). The contents and the rank odds are in shared/data/packs.json.
  */
 export const PACKS = {
-  random_blocks: { gemPrice: 30, rolls: 5 },
-  basic_seeds: { gemPrice: 25, rolls: 5 },
-  common_clothes: { gemPrice: 80, rolls: 3 },
-  rare_clothes: { gemPrice: 240, rolls: 3 },
+  random_blocks: { gemPrice: 40, rolls: 5 },
+  basic_seeds: { gemPrice: 30, rolls: 5 },
+  common_clothes: { gemPrice: 75, rolls: 3 },
+  rare_clothes: { gemPrice: 225, rolls: 3 },
 } as const;
 /** Client only: the pack's pop animation (shake, then burst) lasts this long, ms. */
 export const PACK_POP_MS = 700;
 /** A spare piece of clothing sells for its baseValue times this (gold, until trading exists). */
-export const SPARE_SELL = 1;
+export const SPARE_SELL = 0.1;
+/**
+ * The balance targets of the block world (step BG9; the owner confirmed them). shared/src/balance.test.ts fails when a number
+ * drifts away from them. Hours are of MIXED play (equal time in every open activity).
+ */
+export const BALANCE_TARGETS = {
+  /** The first (cheapest) pack is affordable within this many minutes of a new game (the first-run quest gems count). */
+  firstPackMaxMin: 45,
+  /** A Common Clothes Pack is about this many hours of mixed play for a level 3 player. */
+  commonClothesHours: 1,
+  /** A Rare Clothes Pack is about this many hours of mixed play for a level 3 player. */
+  rareClothesHours: 3,
+  /** No single gem source is more than this share of the gems of a mixed hour. */
+  maxSourceShare: 0.4,
+  /** A seed ratio (seeds from one planted block seed) stays under this: seeds never make themselves forever. */
+  maxSeedRatio: 0.85,
+  /** The cheapest way to turn gold into gems (buy a catalog block, place it and punch it until it is gone) costs at least this much gold per gem. */
+  minGoldPerGem: 30,
+  /** Playing a pack's contents (punching its blocks, planting its seeds) gives back at most this share of its gem price (planting takes cell time too). */
+  maxPackGemReturn: 0.5,
+} as const;
 /** The id a gem gain has in a gains list (gems are a currency, not an item). */
 export const GEMS_GAIN_ID = 'gems';
 /** Popups above the avatar's head (step BG3 B): how long one stays, and how many show at once. */
