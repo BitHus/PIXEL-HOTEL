@@ -106,7 +106,8 @@ describe('the farm through the GameAPI', () => {
     await api.buySeeds('turnip_seed', 1);
     await api.enterRoom((await api.getPlayer()).farmRoomId);
     await plantAt(api, 2, 2, 'turnip_seed');
-    expect(await api.currentHint()).toBeNull();
+    // The next quest is the pack quest (step BG9).
+    expect(await api.currentHint()).toMatch(/pack/i);
   });
 
   it('seeds only go on soil in a farm; out of reach walks; a block seed grows blocks', async () => {

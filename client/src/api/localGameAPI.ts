@@ -66,6 +66,7 @@ import {
   inReach,
   plantSeed,
   SPLICE_HINT,
+  PACK_HINT,
   spliceSeed,
   farmCounts,
   roomBlockers,
@@ -710,7 +711,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async openPack(packId: string): Promise<PackOpenResult | null> {
     const res = openPack(this.state, packId, this.rng, this.now());
     if (!res) return null;
-    this.commit(res.state);
+    this.commit(this.hintDone(res.state, PACK_HINT));
     return { packId, finds: res.finds, gains: res.gains };
   }
 

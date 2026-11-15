@@ -267,9 +267,9 @@ describe('drops (rng passed in)', () => {
     // planks (common): block 0.5 hit, seed none, wood 0.05 hit, gem 0.01 hit, amount 0 -> min 1.
     expect(blockDrops(getBlockType('planks'), seq(0.5, 0.99, 0.05, 0.01, 0))).toEqual({ materials: { planks: 1, wood: 1 }, gems: 1 });
   });
-  it('rarer blocks drop more gems, up to 12 for legendary', () => {
+  it('rarer blocks drop more gems, up to 12 for legendary (the max per rank is in config BLOCK_DROPS)', () => {
     expect(blockGemDrop('common', seq(0, 0.99))).toBe(2);
-    expect(blockGemDrop('rare', seq(0, 0.99))).toBe(5);
+    expect(blockGemDrop('rare', seq(0, 0.99))).toBe(4);
     expect(blockGemDrop('ultra_rare', seq(0, 0.99))).toBe(8);
     expect(blockGemDrop('legendary', seq(0, 0.99))).toBe(12);
     expect(blockGemDrop('legendary', seq(0.99, 0))).toBe(0);

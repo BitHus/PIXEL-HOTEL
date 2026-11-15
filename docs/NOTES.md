@@ -1441,3 +1441,49 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   (blocks). The first Common Clothes Pack is about 0.9 h of focused block punching.
 - CHECKED BY EYE (headless Chromium 420 x 760): the Packs tab, the confirm panel, the pop, the toast, gems 150 -> 70. NOT checked on
   a real phone; Sell button not clicked in the browser (tested through the API).
+
+## BG9: balancing the block world (step BG9)
+
+- WHAT IT IS: numbers only (config + one data-free hint change), plus the maths and the tests that keep them. No new feature.
+  shared/src/balance.ts = closed-form EXPECTED values from the real rules and data (gems per event and per hour, block lineage,
+  seed ratio, pack sell value / duplicates / gem return, splice chains: time, gold and cell-minutes of the fastest / cheapest way,
+  the till cap). The activity rates (events per hour per stage: new, level 3, level 8) are ASSUMPTIONS in balance.ts `activities`;
+  a "mixed hour" = equal time in every open activity (blocks, farm, crypt, [mine from level 3], lakeside). Targets are in config
+  BALANCE_TARGETS. shared/src/balance.test.ts (33 tests) fails when a loop reopens. `npm run simulate` prints the six tables below
+  (tools/simulate-economy.ts, after the old shop tables). Only block gems of the old tool used the wrong rule (gemDrop('block')); fixed.
+- LOOPS FOUND (before): (1) every COMMON block seed had a seed ratio of 1.43 (2 to 4 blocks x 2.5 breaks x 15% seed + 30% back):
+  free seeds and free gems forever in the free farm; (2) punching blocks was 82% of mixed gem income (276 gems/h focused vs 16 to
+  27 for every other activity), so no one needed the dungeon, mine or lake; (3) a bought dirt block gave 0.94 gems for 6 gold (6 gold
+  per gem); (4) Rare Clothes sold as spares for 288 gold > 240 gems (a legendary spare 600 > 80 per piece) and Random Blocks sold for
+  31.6 > 30; (5) the other gem sources were too thin (mixed 84/h of which blocks 69) to carry the pack targets once blocks shrank.
+- CHANGES: BLOCK_DROPS seed chance common .15 -> .05, rare .12 -> .08, ultra .10 -> .08, legendary .08 -> .06; gem chance common .25 -> .05
+  (1 to 2), rare .35 -> .10 (2 to 4), ultra .50 -> .15 (4 to 8); legendary unchanged. GEMS: harvest .12 -> .25, chest .25 -> .8,
+  kill .10 -> .35, mimic .5 -> .9, rock .10 -> .6, chop .15 -> .45, fish .20 -> .6 (block, splice, boss, quest, book unchanged).
+  PACKS: Random Blocks 30 -> 40, Basic Seeds 25 -> 30, Common Clothes 80 -> 75, Rare Clothes 240 -> 225. SPARE_SELL 1 -> 0.1.
+  NEW QUEST (HINTS, PACK_HINT = 5, before the mine quest so a level 1 player sees it): "Gems buy packs. With 30 gems open the Catalog,
+  the Packs tab, and open a Basic Seeds Pack"; done by opening any pack (LocalGameAPI.openPack). MINE_HINT 6, SPLICE_HINT 7. The farm
+  quest now says a plant takes about 2 minutes and that blocks, plants, chests and fish drop gems. SAVE_VERSION 20, MIGRATIONS[19]:
+  hintsDone >= 5 moves up by one (the pack quest counts as done for old saves).
+- THE TABLES (after; gems per hour of a MIXED hour; the first-run quests pay 12 gems before the mine, 16 in all):
+  new player 54.9 (block 27%, harvest 26%, chest 17%, fish 17%, chop 7%, kill 6%); level 3 73.0 (block 30%, harvest 27%, fish 14%,
+  chest 13%, rock 8%); level 8 101.5 (block 33%, harvest 28%, chest 11%, fish 10%, rock 8%). Focused hour at level 3: blocks 110,
+  farm 98, lakeside 68, crypt 62, mine 28 (blocks under 2.2x the mean of the others, tested).
+  Hours of mixed play: Random Blocks (40) 31 / 33 / 24 min, Basic Seeds (30) 20 / 25 / 18 min, Common Clothes (75) 1.1 h / 1.0 h / 44
+  min, Rare Clothes (225) 3.9 h / 3.1 h / 2.2 h (new / level 3 / level 8).
+  Packs: sold value vs price: 31.6 / 40, 20.4 / 30, 7.4 / 75, 28.8 / 225 gold; duplicates in 1 / 5 / 10 packs: blocks 1.0 / 16 / 40,
+  clothes 0.3 / 7.5 / 21 (a clothes pack gives about 9 to 10 different pieces in 10 packs; every piece takes about 41 / 50 packs); gems
+  back by planting a pack's contents: blocks 1.7, seeds 12.7 of 30, clothes 0.
+  Blocks: dirt / planks / stone 0.19 gems per block bought (6 / 12 / 15 gold: 32 to 79 gold per gem), glass 0.60 (27 gold, 45 per gem);
+  seed ratio 0.68 common, 0.70 rare, 0.52 ultra; gems from ONE planted seed over all its generations 2.9 / 7.5 / 8.2.
+  Crops (one plant, no limit but the till): turnip 13.6, potato 21.9, carrot 30.2 gold per cell-minute, pumpkin 5.7; 60 to 120 customers
+  an hour (each buys ONE item and only while the player serves) cap crops at about 2600 gold/h, and 2 cells already feed that.
+  Splicing (from starter seeds, branches in parallel): common results 3 min, rare 3 to 24 min, ultra rare 21 to 24 min, the legendary
+  throne 3.0 h (not the 12 h of its own rank: a splice cell takes the longer INGREDIENT time + SPLICE_BONUS_MS). Every spliced thing
+  is worth under its seeds' gold plus its cell-minutes at the best plain crop rate (tested), most under a tenth of a plain crop cell.
+- NOT CLOSED, ONLY PRICED (owner, please look): (a) gold from crops: a 2-minute carrot cell gives 30 gold per minute and the till is the
+  only cap (about 2600 gold/h); this is gold, not gems, and untouched here. (b) The farm gem source is time-gated per cell, not per
+  hour: a very big, fully attended farm (300 harvests/h assumed at level 8) is about 140 gems/h focused, the richest activity after blocks.
+  (c) The activity rates are assumptions; a real phone session should be timed (first pack, common clothes) and the numbers moved in
+  balance.ts / config. (d) The block rates assume 600 hand-fed breaks an hour; blocks come back 40 to 60% of the time, so a fast
+  hold-to-punch player eats supply, not gems: 1800 breaks an hour on unlimited common blocks would be 675 gems/h but needs a seed ratio
+  of 1 or more or about 250 blocks (1500 gold) an hour, both now closed.

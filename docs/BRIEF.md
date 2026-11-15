@@ -156,8 +156,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   all in config GEMS with gemDrop(source, rank, rng); in the dungeon and mine they are floor piles picked up by
   walking close (GEM_PICKUP_REACH) or by tapping; kept on Leave, half lost on death in the crypt (like gold),
   all kept in the mine): Player.wallet.gems (integer), ledger gemsDelta, shown in
-  the info panel next to gold; never traded or sold. A known loop: place and punch the same block
-  forever gives gems for free (gems have no use until packs, BG8; balance in BG9).
+  the info panel next to gold; never traded or sold. BALANCED IN BG9: blocks give few gems (common break 5% x 1 to 2, rare
+  10% x 2 to 4, ultra rare 15% x 4 to 8, config BLOCK_DROPS), the seed ratio of every block seed is under 0.85, so
+  place-and-punch cannot make gems or seeds for free; the cheapest gold to gems way (catalog blocks) costs about 32 gold per gem.
+  Mixed play gives about 55 gems/h (new player), 70 (level 3), 100 (level 8) and no source is over 40% (NOTES BG9).
 - Room ids are integers.
 
 6. MOVEMENT
@@ -334,12 +336,14 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - Gold sinks: catalog (baseValue * 3), room upgrades (level 2: 300 gold, level 3: 800 gold,
   for each room), dungeon gear and potions (section 10), dungeon key 10 gold, seeds and farm
   upgrades (section 10b), smelting fees (section 10c).
-- Gem sink (step BG8): packs are bought with gems (config PACKS; the contents are shared/data/packs.json). Packs in
-  v1: Random Blocks (5 blocks), Basic Seeds (5 seeds), Common Clothes (3 pieces) and Rare Clothes (3 pieces). A
+- Gem sink (step BG8, prices BG9): packs are bought with gems (config PACKS; the contents are shared/data/packs.json). Packs in
+  v1: Random Blocks (5 blocks, 40 gems), Basic Seeds (5 seeds, 30), Common Clothes (3 pieces, 75) and Rare Clothes (3 pieces,
+  225). Targets (config BALANCE_TARGETS): the first pack within 45 minutes of a new game (about 25), a Common Clothes Pack
+  about an hour and a Rare Clothes Pack about 3 hours of mixed play at level 3. A
   roll picks a rank first (RANK_WEIGHTS times the pack's multiplier, as for loot), then an item of that rank in the
   pool (blocks.json; crop and block seeds; clothing.json pieces that are hidden until unlocked, each with a rank).
   The first copy of a piece of clothing unlocks it forever; every further copy is a spare (Player.clothingSpares,
-  shown as "Spare x2"), which sells for gold (baseValue * config SPARE_SELL) until trading exists. Blocks and seeds
+  shown as "Spare x2"), which sells for gold (baseValue * config SPARE_SELL = 0.1, so a spare is always worth far less than a pack piece costs) until trading exists. Blocks and seeds
   stack as always. Pack finds count in the Book like everything else. The Packs tab of the Catalog shows, per
   pack: the price in gems, how many things it gives, every possible item with its rank odds in percent and, for
   clothes, how many pieces are still missing. Every buy asks first. Opening plays a short pop, then the items

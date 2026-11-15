@@ -261,6 +261,12 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     const p = state.player;
     return { ...state, player: { ...p, clothingSpares: isObject(p.clothingSpares) ? p.clothingSpares : {}, packsOpened: isObject(p.packsOpened) ? p.packsOpened : {} } };
   },
+  // 19 -> 20 (BG9): a new quest (open a pack) sits at index 5, before the mine quest. A player who was already past
+  // the farm quest keeps their place: the mine and splice quests moved up by one and the pack quest counts as done.
+  19: (state) => {
+    if (!isObject(state) || typeof state.hintsDone !== 'number') return state;
+    return state.hintsDone >= 5 ? { ...state, hintsDone: state.hintsDone + 1 } : state;
+  },
 };
 
 /** The storage key for a save version. */

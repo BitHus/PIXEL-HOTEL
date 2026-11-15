@@ -1,6 +1,6 @@
 // Step BG8: packs through the GameAPI: opening, the bag, selling a spare, a refused buy, saving.
 import { describe, expect, it } from 'vitest';
-import { PACKS, applyChange, createNewPlayer, saveKey, toSaveText, type GameState, type Rng } from '@pixel-hotel/shared';
+import { HINTS, PACKS, PACK_HINT, applyChange, createNewPlayer, saveKey, toSaveText, type GameState, type Rng } from '@pixel-hotel/shared';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
 
@@ -28,6 +28,14 @@ describe('GameAPI packs', () => {
     const p = await api.getPlayer();
     expect(p.wallet.gems).toBe(100 - PACKS.random_blocks.gemPrice);
     expect(p.materials.dirt).toBe(PACKS.random_blocks.rolls);
+  });
+
+  it('opening a pack finishes the pack quest when it shows (and pays its gems)', async () => {
+    const { api } = open({ ...fresh(100), hintsDone: PACK_HINT });
+    expect(await api.currentHint()).toBe(HINTS[PACK_HINT]);
+    await api.openPack('random_blocks');
+    expect(await api.currentHint()).toBeNull(); // the mine quest waits for level 3
+    expect(api.snapshot().hintsDone).toBe(PACK_HINT + 1);
   });
 
   it('refuses with too few gems and changes nothing', async () => {

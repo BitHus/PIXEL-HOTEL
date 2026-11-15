@@ -35,7 +35,7 @@ BG5b Hold to repeat: hold a press to keep punching / chopping / mining and to pl
 BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates. [done]
 BG7 Splicing: two seeds make a new one; a Splice tab in the Book. [done, NOTES BG7]
 BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible. [done, NOTES BG8]
-BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools.
+BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools. [done, NOTES BG9]
 
 ## PHASE 1 - Finish the core game
 The loops that are planned must all exist before anything else is added.
