@@ -18,6 +18,8 @@
 //   hold and it becomes a pan). A press held still for HOLD_PLACE_START_MS may become a 'line' hold
 //   (onHoldStill): from then on moving does not pan, onHoldMove follows the pointer. Release, a pan or a
 //   second finger ends it (onHoldEnd). The actions themselves (and holdTick) live in the client.
+// - HOLD TO WALK: a press held still for HOLD_PLACE_START_MS on free floor (onWalkHold) walks to the pointer
+//   and keeps following it while it stays down (the app re-paths when the pointer changes cell).
 // Uses Pixi's federated pointer and wheel events.
 
 import type { Container, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
@@ -66,7 +68,12 @@ export interface CameraControlHooks {
   onPress?(screen: Point, target: Container | null): 'repeat' | null;
   /** The press was held still for HOLD_PLACE_START_MS. Return true to start a 'line' hold (moves then do not pan). */
   onHoldStill?(screen: Point, target: Container | null): boolean;
-  /** The pointer moved during a 'line' hold. */
+  /**
+   * Nothing else claimed a press that is held still (no repeat, no block line): return true to WALK while
+   * it stays down. The pointer then steers the walk (onHoldMove) and moving never pans.
+   */
+  onWalkHold?(screen: Point, target: Container | null): boolean;
+  /** The pointer moved during a 'line' or 'walk' hold. */
   onHoldMove?(screen: Point): void;
   /** A hold ended: released, panned away, or cancelled. */
   onHoldEnd?(): void;
@@ -90,7 +97,7 @@ interface Press {
   /** True once the press fired a long press (it no longer taps). */
   long: boolean;
   /** The hold this press started, if any. */
-  hold: 'repeat' | 'line' | null;
+  hold: 'repeat' | 'line' | 'walk' | null;
   /** True once the hold-still check ran. */
   holdChecked: boolean;
 }
@@ -152,18 +159,15 @@ export function attachCameraControl(
 
   const movePress = (p: Point): void => {
     if (!press) return;
-    if (press.hold === 'line') {
+    if (press.hold) {
+      // Sliding while holding never pans: a line follows the pointer, a repeating hit moves on to
+      // whatever the finger slides over (the room stays put).
       hooks.onHoldMove?.(p);
       press.last = p;
       return;
     }
     if (!press.drag) {
       if (Math.hypot(p.x - press.start.x, p.y - press.start.y) < TAP_MAX_MOVE_PX) return;
-      if (press.hold === 'repeat') {
-        // Moved past the tap limit: a pan, not a punch.
-        press.hold = null;
-        hooks.onHoldEnd?.();
-      }
       press.drag = hooks.getDragMode?.(press.target, press.start) ?? 'pan';
       if (press.drag === 'draw') hooks.onDraw?.('start', press.start);
     }
@@ -273,6 +277,7 @@ export function attachCameraControl(
       if (press && !press.drag && !press.hold && !press.holdChecked && performance.now() - press.downAt >= HOLD_PLACE_START_MS) {
         press.holdChecked = true;
         if (hooks.onHoldStill?.(press.last, press.target)) press.hold = 'line';
+        else if (hooks.onWalkHold?.(press.last, press.target)) press.hold = 'walk';
       }
       if (press && !press.drag && !press.long && !press.hold && performance.now() - press.downAt >= LONG_PRESS_MS) {
         press.long = true;

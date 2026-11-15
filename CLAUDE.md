@@ -255,9 +255,9 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. HOLD TO
   REPEAT (BG5b): a press on a block, a plant, a mine rock or a tree hits at once and keeps hitting at that
   thing's cooldown (blocks 250 ms, rock and tree 400 ms) until it breaks, the press ends or the avatar is out of
-  reach (it walks closer, then goes on); moving 8 px = a pan, which never hits; two fingers never hit. With a block
+  reach (it walks closer, then goes on); sliding the finger while holding never pans: it moves on to the next block, plant, rock or tree under it (also after one broke) without lifting; two fingers never hit. With a block
   selected, holding still 300 ms on free floor places blocks, dragging then makes a line (one per cell, in reach,
-  the usual rules). NOT for the dungeon fight (one hit per tap) and NOT for fishing. Pure helper
+  the usual rules). NOT for the dungeon fight (one hit per tap) and NOT for fishing. HOLD TO WALK: holding still 300 ms on free floor (no block selected, no panel, not build/paint/dungeon) walks to the pointer and follows it while the press lasts (re-paths when the pointer changes cell; moving never pans then; a quick drag still pans). Pure helper
   shared/src/hold.ts holdTick; the client only feeds pointer events. BUILD MODE (Build
   button or B; furniture only): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
   up), a tap on a free spot moves the selected item there. PAINT MODE (Room > Paint cells): tap =
