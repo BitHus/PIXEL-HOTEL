@@ -274,6 +274,11 @@ describe('LocalGameAPI shop (step 7)', () => {
     expect((await api.getPlayer()).wallet.gold).toBe(100 - 15 - 15 - 30);
     expect((await api.applyStyle(1, 'floor', 'wood_planks'))?.floorStyle).toBe('wood_planks');
     expect(await api.applyStyle(1, 'wall', 'brick')).toBeNull();
+    // Painting cells (step BG1): the unlocked style on one cell, and a style you do not own is refused.
+    await api.applyStyle(1, 'floor', 'bare');
+    const painted = await api.paintFloor(1, { c: 2, r: 2 }, { c: 3, r: 2 }, 'wood_planks');
+    expect(painted?.floorCells).toEqual({ '2,2': 'wood_planks', '3,2': 'wood_planks' });
+    expect(await api.paintFloor(1, { c: 2, r: 2 }, { c: 2, r: 2 }, 'stone_tiles')).toBeNull();
     expect(await api.upgradeRoom(1)).toBeNull();
   });
 });

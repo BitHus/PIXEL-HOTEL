@@ -69,6 +69,7 @@ import {
   NAV_CELL,
   SHOP_TICK_MS,
   applyStyle,
+  paintFloor,
   buyCatalog,
   canPickUp,
   catchUpShop,
@@ -259,7 +260,11 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       if (old === null) continue;
       storage.set(SAVE_BACKUP_KEY, old);
       const r = readSave(old);
-      if (r.ok) return start(r.state, 'Your save was updated to the new version of the game.');
+      if (r.ok) {
+        const back = r.returnedToBag;
+        const extra = back > 0 ? ` ${back} ${back === 1 ? 'item' : 'items'} did not fit the new building grid and went back to your bag.` : '';
+        return start(r.state, `Your save was updated to the new version of the game.${extra}`);
+      }
       return start(
         createNewPlayer(undefined, now()),
         'Your save is from an old version that cannot be updated. A new game was started (the old save is kept as the backup).',
@@ -489,6 +494,13 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
 
   async applyStyle(roomId: number, kind: StyleKind, id: string): Promise<Room | null> {
     const next = applyStyle(this.state, roomId, kind, id);
+    if (!next) return null;
+    this.commit(next);
+    return this.roomById(roomId);
+  }
+
+  async paintFloor(roomId: number, from: { c: number; r: number }, to: { c: number; r: number }, id: string): Promise<Room | null> {
+    const next = paintFloor(this.state, roomId, from, to, id);
     if (!next) return null;
     this.commit(next);
     return this.roomById(roomId);

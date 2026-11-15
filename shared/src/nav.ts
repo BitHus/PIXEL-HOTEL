@@ -1,14 +1,14 @@
 // Navigation in the hotel and the shop (brief section 6). Pure functions on plain data.
 //
-// - The grid has NAV_CELL px cells over the floor. A cell is blocked if any part of it is
-//   outside the floor, or if it overlaps a blocking footprint made bigger by AVATAR_RADIUS on
-//   every side. Because the whole cell area is tested, every point in a free cell is at least
-//   AVATAR_RADIUS away from every blocker.
+// - The grid has NAV_CELL px cells over the floor: in rooms it IS the build grid (BUILD_CELL, step
+//   BG1). A cell is blocked if any part of it is outside the floor, or if it overlaps a blocking
+//   footprint (whole cells, so a blocked cell is simply a cell with furniture on it; there is no
+//   avatar radius). The dungeon builds its own grid (dungeon/grid.ts).
 // - A* with 8 directions and no corner cutting (a diagonal step needs both side cells free).
 // - Smoothing: a waypoint is removed when the straight line between its neighbours does not
 //   touch a blocked cell. The result is a list of world points.
 
-import { AVATAR_RADIUS, NAV_CELL } from './config.ts';
+import { NAV_CELL } from './config.ts';
 import { MinHeap } from './minHeap.ts';
 import { rectInsideFloor, rectsOverlap, type Room } from './room.ts';
 import type { Point, Rect } from './types.ts';
@@ -27,7 +27,7 @@ export function inflateRect(rect: Rect, r: number): Rect {
   return { x: rect.x - r, y: rect.y - r, w: rect.w + 2 * r, h: rect.h + 2 * r };
 }
 
-export function buildNavGrid(room: Room, blockers: readonly Rect[], radius = AVATAR_RADIUS, cell = NAV_CELL): NavGrid {
+export function buildNavGrid(room: Room, blockers: readonly Rect[], radius = 0, cell = NAV_CELL): NavGrid {
   const cols = Math.ceil(room.w / cell);
   const rows = Math.ceil(room.h / cell);
   const grown = blockers.map((b) => inflateRect(b, radius));
@@ -35,7 +35,7 @@ export function buildNavGrid(room: Room, blockers: readonly Rect[], radius = AVA
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const rect = cellRect({ cols, rows, cell, blocked }, c, r);
-      // Outside the floor (the union of the shape's rectangles) or too close to a blocker.
+      // Outside the floor (the union of the shape's rectangles) or covered by a blocker.
       blocked.push(!rectInsideFloor(room, rect) || grown.some((g) => rectsOverlap(rect, g)));
     }
   }

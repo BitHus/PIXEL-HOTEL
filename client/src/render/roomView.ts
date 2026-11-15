@@ -2,7 +2,7 @@
 // (brief section 7). All children are in world px; the camera scales and moves `world`.
 
 import { Container, Graphics, TilingSprite } from 'pixi.js';
-import { borderRects, doorRect, floorRects, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
+import { BUILD_CELL, borderRects, doorRect, floorCellList, floorRects, floorStyleAt, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
 import { BORDER_COLOR } from './bareStyles.ts';
 import { floorTexture, wallTexture } from './styleArt.ts';
 import { DepthLayer } from './depthLayer.ts';
@@ -15,6 +15,8 @@ export class RoomView {
   readonly rugLayer = new Container();
   /** Non-blocking items (rugs), sorted among themselves, under everything else. */
   readonly rugs = new DepthLayer();
+  /** The faint build grid and the floor paint preview (step BG1), above rugs, under the items. */
+  readonly gridLayer = new Container({ eventMode: 'none' });
   /** Debug drawings on the floor (Blockers mode), above rugs and below the wall. */
   readonly debugLayer = new Container();
   readonly wallLayer = new Container();
@@ -35,6 +37,7 @@ export class RoomView {
     this.world.addChild(
       this.floorLayer,
       this.rugLayer,
+      this.gridLayer,
       this.debugLayer,
       this.wallLayer,
       this.shadowLayer,
@@ -65,6 +68,13 @@ export class RoomView {
       f.tilePosition.set(-r.x, -r.y);
       this.floorLayer.addChild(f);
     }
+    // Cells painted with another floor style (step BG1): runs of the same style along a row.
+    for (const run of paintedRuns(room)) {
+      const t = new TilingSprite({ texture: floorTexture(run.style), width: run.w, height: BUILD_CELL });
+      t.position.set(run.x, run.y);
+      t.tilePosition.set(-run.x, -run.y);
+      this.floorLayer.addChild(t);
+    }
 
     // A back wall band above every floor edge that faces up, then the thin borders.
     const wallTex = wallTexture(room.wallStyle);
@@ -82,4 +92,18 @@ export class RoomView {
 
 function fillRect(g: Graphics, r: Rect, color: string): void {
   if (r.w > 0 && r.h > 0) g.rect(r.x, r.y, r.w, r.h).fill(color);
+}
+
+/** Painted floor cells joined into runs of one style along a row: { x, y, w } in px. */
+function paintedRuns(room: Room): { x: number; y: number; w: number; style: string }[] {
+  if (!room.floorCells) return [];
+  const out: { x: number; y: number; w: number; style: string }[] = [];
+  for (const { c, r } of floorCellList(room)) {
+    const style = floorStyleAt(room, c, r);
+    if (style === room.floorStyle) continue;
+    const last = out[out.length - 1];
+    if (last && last.style === style && last.y === r * BUILD_CELL && last.x + last.w === c * BUILD_CELL) last.w += BUILD_CELL;
+    else out.push({ x: c * BUILD_CELL, y: r * BUILD_CELL, w: BUILD_CELL, style });
+  }
+  return out;
 }

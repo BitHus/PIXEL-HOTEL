@@ -102,6 +102,45 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   Import it as '@pixel-hotel/shared' (TypeScript source, no build step).
 - Avatar types moved from types.ts to avatar.ts (still exported from the shared index).
 
+## BG1: the cell grid (step BG1)
+
+- DATA: shared/data/roomShapes.json is in CELLS (x, y, w, h; door.x is a cell boundary): the old
+  px numbers were rounded up to whole cells, overlaps re-cut, so wide_hall level 1 is 26 x 8 cells
+  (was 7.5 high), plus has 8-wide arms (was 6.5), long and L doors moved to a boundary. shopStart
+  spots were re-placed with nearestValidPlacement. shared/data/furniture.json: floor types have
+  w and d in whole cells (px, multiples of 32; rounded to nearest, at least 1): sofa 3x1,
+  counter 3x1, stall_table 3x2, round_table 2x2, bed 2x3, long_table 4x1, small things 1x1; art
+  boxes, seats and slotSpots were scaled to the new footprint (bed seat dy -48). Wall items are
+  unchanged (px). The farm plots are 2 cells apart on cells (64, 128, ... ; level 3 row at y 192)
+  and the pot is one cell; the lakeside's water, pier and tree anchors are on cells.
+- RULES: furniture.ts (footprintCells, poseAtCell, topLeftCell, anchorCell, poseForAnchorCell,
+  isOnGrid, snapToCells, nearestValidPlacement; canPlace needs isOnGrid for floor items; wall items
+  skip it; riders snap to the cells of their surface), placing.ts (planGhost snaps floor items to
+  cells, wall items keep snapCoord; rotateInPlace keeps the anchor cell and is refused, not
+  shifted, when it does not fit), room.ts (levelRects, cellOf, cellRectOf, cellOnFloor,
+  floorCellList, floorStyleAt, dominantFloorStyle, paintFloorCells, paintWholeFloor; Room.floorCells
+  is optional), economy.ts (paintFloor; applyStyle floor clears the paint; upgrade uses overlap with
+  the door zone), config (BUILD_CELL, DOOR_ZONE 64 x 64, NAV_CELL, CASHIER_BEHIND_PX, STAFF_ZONE_*).
+  The door zone now only forbids OVERLAP (an item next to it is fine). doorPoint is the middle of the
+  zone's bottom row. SNAP (4 px) is for wall items only.
+- WALL ITEMS: they keep x free (4 px, Shift = whole px) and their anchor y is the band's foot,
+  because their art is drawn upward from there (z 12 to 52 in a 64 px band): moving y inside the
+  band would push the art off the wall. The owner's text said "any x and y inside the band"; this
+  keeps the old behaviour and is flagged for the owner.
+- MIGRATION 13 -> 14: shared/gridMigration.ts snapItemsToGrid: recomputes room sizes, floor items
+  (counter first, then back to front) go to nearestValidPlacement (rings of up to 40 cells), wall
+  items stay when canPlace holds (else the nearest band spot, else the bag), riders go to the
+  nearest free cell of their surface (else the bag), what has no spot goes back to the bag.
+  readSave reports returnedToBag; LocalGameAPI.open adds it to the "save was updated" notice.
+- CLIENT: render/cellGrid.ts (faint grid, view.gridLayer), build/floorPaint.ts (the paint session
+  and rectangle preview), ui/paintBar.ts (brush swatches, # grid toggle, Done), roomPanel "Paint
+  cells", roomView draws painted cells as runs of tiling sprites, prefs.cellGrid + Settings "Build
+  grid". main.ts: paint mode takes taps and one-finger drags before placing and build mode.
+- TESTS: furniture.test.ts (footprints, rotation and anchor cell, validity, door zone, a path
+  through a 1-cell gap, wall items free), nav.test.ts, seats.test.ts, placing.test.ts,
+  room.test.ts (cells, paint), economy.test.ts (paintFloor), save.test.ts (13 -> 14),
+  localGameAPI.test.ts (paintFloor).
+
 ## File lists: client/ (steps 1 to 5b)
 
 - client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling). Opens
@@ -217,6 +256,16 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 ## Navigation
 
+- NAVIGATION (shared/nav.ts, rewritten in BG1): NAV_CELL = BUILD_CELL = 32 px, no avatar radius
+  (AVATAR_RADIUS is gone; before BG1 it was 4 px with 8 px cells). A cell is blocked if ANY part of it
+  is outside the floor or a blocker touches it. A gap of one free cell is walkable (tested at every
+  row); a gap that is not a whole free cell never is. The biggest room is 34 x 18 cells at most.
+  Customers: queue spots and the paying spot are cell centres (QUEUE_SPACING_PX = one cell); the
+  staff zone is the cells behind the counter (STAFF_ZONE_DEPTH_PX one cell, side 0). The
+  shopkeeper's spot is CASHIER_BEHIND_PX = half a cell behind the counter. Seat approach points are
+  half a cell outside the footprint, level with the seat: a side whose neighbouring cell is blocked
+  does not count. The rest of this paragraph is the pre-BG1 text and still holds for the dungeon and
+  for how paths, line of sight and re-pathing work:
 - NAVIGATION (shared/nav.ts): NAV_CELL 8 px, AVATAR_RADIUS 4 px (owner's decision after 9d; it
   was 16 and 12). A cell is blocked if ANY part of it is outside the floor or overlaps a blocker
   grown by AVATAR_RADIUS, so every point in a free cell is at least the radius away from every

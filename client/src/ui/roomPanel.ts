@@ -12,6 +12,8 @@ import { stylePreviewUrl } from '../render/styleArt.ts';
 export interface RoomHooks {
   upgrade(roomId: number): void;
   applyStyle(roomId: number, kind: StyleKind, id: string): void;
+  /** Starts painting floor cells (step BG1): the panel closes and the paint bar opens. */
+  startPaint(): void;
 }
 
 export interface RoomPanel {
@@ -71,6 +73,8 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
         el('div', 'divider'),
         el('h3', '', 'Floor'),
         picker(room, 'floor', unlocked),
+        textButton('Paint cells', () => hooks.startPaint()),
+        el('div', 'panel-info', 'A swatch covers the whole floor. Paint cells colours one cell or a dragged rectangle.'),
         el('h3', '', 'Wall'),
         picker(room, 'wall', unlocked),
         el('div', 'panel-info', 'Buy more floors and walls in the Catalog (Decor).'),

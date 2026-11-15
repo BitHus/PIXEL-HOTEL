@@ -11,16 +11,19 @@ export const WALL_BAND = 64;
 export const SIDE_BORDER = 16;
 /** Width of the door opening in the bottom wall, in px. */
 export const DOOR_WIDTH = 64;
-/** The door zone: a rectangle on the floor just inside the door. */
+/** The door zone: 2 x 2 cells on the floor just inside the door (BG1). */
 export const DOOR_ZONE_W = 64;
-export const DOOR_ZONE_H = 48;
+export const DOOR_ZONE_H = 64;
 
 export type RoomLevel = 1 | 2 | 3;
 export const ROOM_MAX_LEVEL: RoomLevel = 3;
 
+/** The build grid (step BG1): rooms, floors and furniture footprints are whole cells of this size, px. */
+export const BUILD_CELL = 32;
 /**
- * Room shapes and their floor rectangles per level live in shared/data/roomShapes.json (step 7b).
- * Shape rectangles, doors and walls are aligned to this grid, px.
+ * Room shapes and their floor rectangles per level live in shared/data/roomShapes.json in CELLS
+ * (BUILD_CELL px each). This grid (px) is only the size of the thin border pieces that are drawn
+ * around the floor.
  */
 export const ROOM_GRID = 16;
 
@@ -40,25 +43,18 @@ export const START_WALL_STYLE = 'bare';
  * center; the stall_table in the middle.
  */
 export const SHOP_START_ITEMS = [
-  { typeId: 'counter', x: 176, y: 88, facing: 'down' },
-  { typeId: 'stall_table', x: 288, y: 184, facing: 'down' },
+  { typeId: 'counter', x: 176, y: 96, facing: 'down' },
+  { typeId: 'stall_table', x: 304, y: 192, facing: 'down' },
 ] as const;
 
 // ---------- Movement (section 6) ----------
-/** Internal navigation grid cell size, in px. Never shown. */
-export const NAV_CELL = 8;
-/**
- * Footprints are made bigger by this radius when building the nav grid. Small on purpose (owner's
- * decision after playtesting): with 8 px cells a gap of 24 px between two items is always walkable
- * (the gap keeps 16 px, so a whole free cell at every 4 px alignment); the avatar may overlap
- * furniture edges a little.
- */
-export const AVATAR_RADIUS = 4;
+/** Navigation grid cell size in rooms, px: the build grid (step BG1). Blockers are whole cells. */
+export const NAV_CELL = BUILD_CELL;
 /** Walking speed in the hotel and the shop, px per second. */
 export const HOTEL_WALK_SPEED = 128;
 
 // ---------- Furniture (section 7) ----------
-/** Placement snap, in px. Holding Shift turns it off. */
+/** Snap of WALL items (they stay free along the back wall band), px. Shift turns it off. Floor items snap to cells. */
 export const SNAP = 4;
 /** Default point where a customer stands, relative to an item's anchor. */
 export const DEFAULT_STAND_POINT = { dx: 0, dy: 24 } as const;
@@ -124,7 +120,7 @@ export const CUSTOMER_DECIDE_MS = 1200;
 /** Paying takes this long once the player stands behind the counter (the till animation). */
 export const CUSTOMER_PAY_MS = 900;
 /** The shopkeeper's spot is this far behind the counter's back edge, px. */
-export const CASHIER_BEHIND_PX = 20;
+export const CASHIER_BEHIND_PX = BUILD_CELL / 2;
 /** At most this many customers wait with an item for the till (step 9d: was 5). While this many
  *  wait, no new customers come. They never leave on their own. */
 export const QUEUE_MAX = 3;
@@ -141,8 +137,8 @@ export const CUSTOMER_BROWSE_MIN_MS = 2000;
 export const CUSTOMER_BROWSE_MAX_MS = 5000;
 /** After paying, a customer waits this long at the till before walking out, ms. */
 export const CUSTOMER_AFTER_PAY_MS = 1000;
-/** Queue spots behind the paying spot are this far apart, px. */
-export const QUEUE_SPACING_PX = 24;
+/** Queue spots behind the paying spot are this far apart, px: one cell each (BG1). */
+export const QUEUE_SPACING_PX = BUILD_CELL;
 /** Customers appear this far below the floor and walk in through the door, px. */
 export const CUSTOMER_OUTSIDE_PX = 24;
 /** Customer ids count down from -1 (players have positive ids). */
@@ -225,8 +221,8 @@ export const TALK_LINES_MAX = 3;
 export const TALK_GAP_MS = 2200;
 export const TALK_NEAR_PX = 20;
 /** Staff only: customers never enter the strip behind the counter, this deep and this much wider than the counter on each side, px. */
-export const STAFF_ZONE_DEPTH_PX = 40;
-export const STAFF_ZONE_SIDE_PX = 8;
+export const STAFF_ZONE_DEPTH_PX = BUILD_CELL;
+export const STAFF_ZONE_SIDE_PX = 0;
 /** Two queue spots are never closer than this, px. */
 export const QUEUE_MIN_GAP_PX = 16;
 /** Talk lines are at most this many characters (tested). */
@@ -400,19 +396,19 @@ export const FARM_WALL_STYLE = 'hedge';
 export const FARM_PLOT_SIZE = 32;
 /**
  * Every plot's top-left corner, in order; level n has the first FARM_PLOTS_PER_LEVEL[n - 1]. All of
- * them lie inside the level 1 farm, in neat rows, so an upgrade only adds plots. 48 px apart.
+ * them lie inside the level 1 farm, in neat rows, so an upgrade only adds plots. On cells (BG1), 2 cells apart.
  */
 export const FARM_PLOTS: readonly { x: number; y: number }[] = [
   // Level 1: two rows of three.
-  ...[48, 96, 144].flatMap((x) => [{ x, y: 48 }, { x, y: 96 }]),
+  ...[64, 128, 192].flatMap((x) => [{ x, y: 64 }, { x, y: 128 }]),
   // Level 2: the rows get three more plots.
-  ...[192, 240, 288].flatMap((x) => [{ x, y: 48 }, { x, y: 96 }]),
+  ...[256, 320, 384].flatMap((x) => [{ x, y: 64 }, { x, y: 128 }]),
   // Level 3: a third row of eight.
-  ...[48, 96, 144, 192, 240, 288, 336, 384].map((x) => ({ x, y: 144 })),
+  ...[64, 128, 192, 256, 320, 384, 448, 512].map((x) => ({ x, y: 192 })),
 ];
 export const FARM_PLOTS_PER_LEVEL = [6, 12, 20] as const;
 /** The cooking pot: a fixed spot in the farm (anchor = bottom middle of its footprint), w x d px. */
-export const COOKING_POT = { x: 464, y: 120, w: 32, d: 24 } as const;
+export const COOKING_POT = { x: 464, y: 128, w: 32, d: 32 } as const;
 /** One harvest gives this many crops (random, both ends included). */
 export const HARVEST_MIN = 1;
 export const HARVEST_MAX = 2;
@@ -431,18 +427,18 @@ export const GLOWCAP_SPORE_CHANCE = 0.05;
 // ---------- Lakeside: woodcutting and fishing (section 10d, step 9f) ----------
 /** The lake: three water rectangles around the pier (floor px). The lake is about a third of the 576 x 384 lakeside. */
 export const LAKE_WATER: readonly { x: number; y: number; w: number; h: number }[] = [
-  { x: 288, y: 40, w: 272, h: 112 },
-  { x: 288, y: 184, w: 272, h: 96 },
-  { x: 360, y: 152, w: 200, h: 32 },
+  { x: 288, y: 32, w: 256, h: 128 },
+  { x: 288, y: 192, w: 256, h: 96 },
+  { x: 384, y: 160, w: 160, h: 32 },
 ];
 /** The wooden pier (walkable) reaching into the lake from the shore. */
-export const LAKE_PIER = { x: 248, y: 152, w: 112, h: 32 } as const;
+export const LAKE_PIER = { x: 256, y: 160, w: 128, h: 32 } as const;
 /** The 8 trees: anchor = the bottom middle of the trunk. They stay (a stump) when felled. */
 export const LAKE_TREES: readonly { x: number; y: number }[] = [
-  { x: 48, y: 96 }, { x: 112, y: 60 }, { x: 184, y: 100 }, { x: 56, y: 208 },
-  { x: 140, y: 248 }, { x: 216, y: 288 }, { x: 420, y: 336 }, { x: 520, y: 324 },
+  { x: 48, y: 96 }, { x: 112, y: 64 }, { x: 176, y: 96 }, { x: 48, y: 224 },
+  { x: 144, y: 256 }, { x: 208, y: 288 }, { x: 432, y: 352 }, { x: 528, y: 320 },
 ];
-/** A tree's trunk footprint (blocks walking), px. */
+/** A tree's trunk footprint (blocks walking), px: it sits in the bottom half of one cell (the anchors are on cell centres). */
 export const TREE_FOOTPRINT = { w: 24, d: 16 } as const;
 /** Bushes: decoration only (drawn, never in the way). */
 export const LAKE_BUSHES: readonly { x: number; y: number }[] = [
@@ -633,7 +629,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -743,10 +739,10 @@ export const SPLASH_MARGIN_PX = 16;
 /** What a new tavern starts with besides the bar and the stall table: `key` is the spot in the shop
  *  shape's shopStart (roomShapes.json); x and y here are the square shop's. */
 export const TAVERN_START_ITEMS = [
-  { key: 'round_table', typeId: 'round_table', x: 432, y: 200, facing: 'down' },
-  { key: 'stool_left', typeId: 'bar_stool', x: 392, y: 188, facing: 'right' },
-  { key: 'stool_right', typeId: 'bar_stool', x: 472, y: 188, facing: 'left' },
-  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 504, y: 56, facing: 'down' },
+  { key: 'round_table', typeId: 'round_table', x: 448, y: 224, facing: 'down' },
+  { key: 'stool_left', typeId: 'bar_stool', x: 400, y: 192, facing: 'right' },
+  { key: 'stool_right', typeId: 'bar_stool', x: 496, y: 192, facing: 'left' },
+  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 496, y: 64, facing: 'down' },
 ] as const;
 /** The drink that is ready in the start barrel. */
 export const TAVERN_START_DRINK = 'root_ale' as const;

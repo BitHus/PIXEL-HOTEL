@@ -226,6 +226,8 @@ export interface GameAPI {
   buyStyle(kind: StyleKind, id: string): Promise<boolean>;
   /** Puts an unlocked style on one of the player's rooms (free). */
   applyStyle(roomId: number, kind: StyleKind, id: string): Promise<Room | null>;
+  /** Paints the floor cells of a rectangle of cells (corners inclusive) with an unlocked floor style (free; step BG1). */
+  paintFloor(roomId: number, from: { c: number; r: number }, to: { c: number; r: number }, id: string): Promise<Room | null>;
   /** Upgrades a room one level (the items keep their places). Null = max level or not enough gold. */
   upgradeRoom(roomId: number): Promise<Room | null>;
   getRoom(roomId: number): Promise<Room | null>;

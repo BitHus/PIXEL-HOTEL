@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import { BUILD_CELL } from './config.ts';
 import {
   FURNITURE_TYPES,
+  anchorCell,
   canPlace,
+  footprintCells,
   footprintRect,
   getFurnitureType,
+  isOnGrid,
   moveItem,
+  nearestValidPlacement,
   nextFacing,
   pickUpItem,
   planPlacement,
+  poseAtCell,
+  poseForAnchorCell,
+  snapToCells,
   snapToSurface,
   standPointFor,
   type FurnitureLookup,
@@ -16,13 +24,23 @@ import { createRoom, rectInsideFloor } from './room.ts';
 import { buildNavGrid, findPath, isCellFree } from './nav.ts';
 import type { Facing, FurnitureItem, FurnitureType } from './types.ts';
 
-const room = createRoom(1, 'hotel', 1, 1); // 576 x 384, door zone x 256..320, y 336..384
+const room = createRoom(1, 'hotel', 1, 1); // 18 x 12 cells (576 x 384), door zone x 256..320, y 320..384
 const T = getFurnitureType;
 
 let nextUid = 1;
 function item(typeId: string, x: number, y: number, facing: Facing = 'down', onItemUid: number | null = null): FurnitureItem {
   return { uid: nextUid++, typeId, ownerId: 1, roomId: room.id, x, y, facing, onItemUid };
 }
+/** An item whose footprint's top-left cell is (col, row). */
+function atCell(typeId: string, col: number, row: number, facing: Facing = 'down', rm = room): FurnitureItem {
+  const p = poseAtCell(T(typeId), facing, col, row);
+  return { uid: nextUid++, typeId, ownerId: 1, roomId: rm.id, x: p.x, y: p.y, facing, onItemUid: null };
+}
+const pose = (typeId: string, col: number, row: number, facing: Facing = 'down') => poseAtCell(T(typeId), facing, col, row);
+const can = (items: FurnitureItem[], typeId: string, col: number, row: number, facing: Facing = 'down', rm = room): boolean => {
+  const p = pose(typeId, col, row, facing);
+  return canPlace(rm, items, T(typeId), p.x, p.y, facing);
+};
 
 describe('furniture data', () => {
   it('has the 12 home types, in the catalog, common, and only the rug does not block', () => {
@@ -39,28 +57,81 @@ describe('furniture data', () => {
     expect(T('chair').placeIn).toBe('both');
   });
 
+  it('floor items are whole cells (w x d); wall items keep their free px size (BG1)', () => {
+    for (const t of FURNITURE_TYPES) {
+      if (t.wall) continue;
+      expect(t.w % BUILD_CELL, t.id).toBe(0);
+      expect(t.d % BUILD_CELL, t.id).toBe(0);
+      expect(t.w, t.id).toBeGreaterThanOrEqual(BUILD_CELL);
+      expect(t.d, t.id).toBeGreaterThanOrEqual(BUILD_CELL);
+    }
+    expect(T('sign').w).toBe(40);
+    expect(T('banner').d).toBe(4);
+  });
+
   it('has the step 7 shop types (section 7, 9)', () => {
-    expect(T('shelf')).toMatchObject({ w: 72, d: 24, height: 80, slots: 3, baseValue: 10, blocks: true, inCatalog: true, placeIn: 'shop' });
-    expect(T('display_case')).toMatchObject({ w: 72, d: 32, slots: 4, baseValue: 40, appeal: 6, inCatalog: true, placeIn: 'shop' });
+    expect(T('shelf')).toMatchObject({ w: 64, d: 32, slots: 3, baseValue: 10, blocks: true, inCatalog: true, placeIn: 'shop' });
+    expect(T('display_case')).toMatchObject({ w: 64, d: 32, slots: 4, baseValue: 40, appeal: 6, inCatalog: true, placeIn: 'shop' });
     expect(T('sign')).toMatchObject({ w: 40, wall: true, appeal: 10, baseValue: 25, inCatalog: true, placeIn: 'shop' });
     expect(T('banner')).toMatchObject({ w: 32, wall: true, appeal: 6, baseValue: 15, inCatalog: true, placeIn: 'shop' });
-    expect(T('shop_rug')).toMatchObject({ w: 80, d: 56, blocks: false, appeal: 5, baseValue: 12, inCatalog: true, placeIn: 'shop' });
-    expect(T('counter')).toMatchObject({ w: 80, d: 40, appeal: 8, inCatalog: false, noPickup: true });
-    expect(T('stall_table')).toMatchObject({ w: 80, d: 48, slots: 3, baseValue: 10, blocks: true, inCatalog: false });
+    expect(T('shop_rug')).toMatchObject({ w: 96, d: 64, blocks: false, appeal: 5, baseValue: 12, inCatalog: true, placeIn: 'shop' });
+    expect(T('counter')).toMatchObject({ w: 96, d: 32, appeal: 8, inCatalog: false, noPickup: true });
+    expect(T('stall_table')).toMatchObject({ w: 96, d: 64, slots: 3, baseValue: 10, blocks: true, inCatalog: false });
     expect(T('lamp')).toMatchObject({ placeIn: 'both', appeal: 4 });
     expect(T('plant')).toMatchObject({ placeIn: 'both', appeal: 3 });
   });
 });
 
-describe('footprintRect', () => {
-  it('runs from (x - fw/2, y - fd) to (x + fw/2, y)', () => {
-    expect(footprintRect({ x: 200, y: 200, facing: 'down' }, T('sofa'))).toEqual({ x: 160, y: 160, w: 80, h: 40 });
-    expect(footprintRect({ x: 200, y: 200, facing: 'up' }, T('sofa'))).toEqual({ x: 160, y: 160, w: 80, h: 40 });
+describe('footprints in cells and rotation (BG1)', () => {
+  it('footprintRect runs from (x - fw/2, y - fd) to (x + fw/2, y)', () => {
+    expect(footprintRect({ x: 208, y: 224, facing: 'down' }, T('sofa'))).toEqual({ x: 160, y: 192, w: 96, h: 32 });
+    expect(footprintRect({ x: 208, y: 224, facing: 'up' }, T('sofa'))).toEqual({ x: 160, y: 192, w: 96, h: 32 });
   });
 
   it('swaps w and d when facing left or right', () => {
-    expect(footprintRect({ x: 200, y: 200, facing: 'right' }, T('sofa'))).toEqual({ x: 180, y: 120, w: 40, h: 80 });
-    expect(footprintRect({ x: 200, y: 200, facing: 'left' }, T('sofa'))).toEqual({ x: 180, y: 120, w: 40, h: 80 });
+    expect(footprintRect({ x: 208, y: 224, facing: 'right' }, T('sofa'))).toEqual({ x: 192, y: 128, w: 32, h: 96 });
+    expect(footprintRect({ x: 208, y: 224, facing: 'left' }, T('sofa'))).toEqual({ x: 192, y: 128, w: 32, h: 96 });
+    expect(footprintCells(T('sofa'), 'down')).toEqual({ w: 3, d: 1 });
+    expect(footprintCells(T('sofa'), 'right')).toEqual({ w: 1, d: 3 });
+    expect(footprintCells(T('bed'), 'down')).toEqual({ w: 2, d: 3 });
+  });
+
+  it('the anchor cell is the bottom-centre cell (even widths: the left of the two centre cells)', () => {
+    // 3 wide, 1 high at columns 4..6, row 5: anchor column 5.
+    expect(anchorCell(pose('sofa', 4, 5), T('sofa'))).toEqual({ col: 5, row: 5 });
+    // 2 wide: columns 4..5, the anchor is the left one.
+    expect(anchorCell(pose('table', 4, 5), T('table'))).toEqual({ col: 4, row: 5 });
+    // The bed (2 x 3): rows 3..5, the anchor is the bottom row.
+    expect(anchorCell(pose('bed', 4, 3), T('bed'))).toEqual({ col: 4, row: 5 });
+    // A 1 x 1 item is its own anchor cell; the anchor point is the middle of the cell.
+    expect(pose('chair', 4, 5)).toEqual({ x: 4 * 32 + 16, y: 6 * 32, facing: 'down' });
+    expect(isOnGrid(pose('sofa', 4, 5), T('sofa'))).toBe(true);
+    expect(isOnGrid({ x: 130, y: 224, facing: 'down' }, T('sofa'))).toBe(false);
+  });
+
+  it('rotation swaps w and d and keeps the anchor cell', () => {
+    for (const id of ['sofa', 'table', 'bed', 'stall_table', 'chair']) {
+      for (const facing of ['right', 'up', 'left'] as Facing[]) {
+        const t = T(id);
+        const a = anchorCell(pose(id, 6, 6), t);
+        const turned = poseForAnchorCell(t, facing, a.col, a.row);
+        expect(anchorCell(turned, t), `${id} ${facing}`).toEqual(a);
+        expect(isOnGrid(turned, t), `${id} ${facing}`).toBe(true);
+        const f = footprintRect(turned, t);
+        const base = footprintRect(pose(id, 6, 6), t);
+        const swapped = facing === 'right' || facing === 'left';
+        expect(f.w, `${id} ${facing}`).toBe(swapped ? base.h : base.w);
+        expect(f.h, `${id} ${facing}`).toBe(swapped ? base.w : base.h);
+      }
+    }
+  });
+
+  it('snapToCells puts the footprint on the cells nearest to where its middle is dragged', () => {
+    const p = snapToCells(T('sofa'), 'down', { x: 210, y: 200 }); // middle of a 96 x 32 footprint
+    expect(p).toEqual(pose('sofa', 5, 6)); // left edge 162 -> column 5, top 184 -> row 6 (5.75)
+    expect(isOnGrid(p, T('sofa'))).toBe(true);
+    const q = snapToCells(T('chair'), 'down', { x: 100, y: 100 });
+    expect(q).toEqual(pose('chair', 3, 3));
   });
 });
 
@@ -76,102 +147,165 @@ describe('nextFacing', () => {
   });
 });
 
-describe('canPlace', () => {
-  it('refuses overlaps between blocking items, but rugs overlap anything', () => {
-    const sofa = item('sofa', 200, 200);
-    expect(canPlace(room, [sofa], T('sofa'), 220, 210, 'down')).toBe(false);
-    expect(canPlace(room, [sofa], T('chair'), 200, 190, 'down')).toBe(false);
-    expect(canPlace(room, [sofa], T('rug'), 200, 210, 'down')).toBe(true);
+describe('canPlace on cells', () => {
+  it('refuses overlaps between blocking items, but rugs and floor decor overlap anything', () => {
+    const sofa = atCell('sofa', 6, 6); // columns 6..8, row 6
+    expect(can([sofa], 'sofa', 7, 6)).toBe(false);
+    expect(can([sofa], 'chair', 7, 6)).toBe(false);
+    expect(can([sofa], 'sofa', 7, 5)).toBe(true); // the row above
+    expect(can([sofa], 'rug', 6, 5)).toBe(true); // a rug (3 x 2) over the sofa's row
     // Sharing an edge is not an overlap.
-    expect(canPlace(room, [sofa], T('sofa'), 280, 200, 'down')).toBe(true);
+    expect(can([sofa], 'sofa', 9, 6)).toBe(true);
     // A blocking item can stand on a rug.
-    const rug = item('rug', 400, 200);
-    expect(canPlace(room, [rug], T('table'), 400, 190, 'down')).toBe(true);
+    const rug = atCell('rug', 12, 6);
+    expect(can([rug], 'table', 12, 6)).toBe(true);
   });
 
-  it('keeps the footprint inside the floor', () => {
-    expect(canPlace(room, [], T('chair'), 16, 32, 'down')).toBe(true);
-    expect(canPlace(room, [], T('chair'), 12, 32, 'down')).toBe(false);
-    expect(canPlace(room, [], T('chair'), 100, 20, 'down')).toBe(false);
-    expect(canPlace(room, [], T('chair'), 100, 388, 'down')).toBe(false);
+  it('refuses a footprint that is not on the cells', () => {
+    expect(canPlace(room, [], T('sofa'), 208, 224, 'down')).toBe(true); // columns 5..7, row 6
+    expect(canPlace(room, [], T('sofa'), 212, 224, 'down')).toBe(false); // 4 px off
+    expect(canPlace(room, [], T('sofa'), 208, 228, 'down')).toBe(false);
+    expect(canPlace(room, [], T('rug'), 210, 224, 'down')).toBe(false);
   });
 
-  it('refuses the door zone, also for rugs and when only touching it', () => {
-    expect(canPlace(room, [], T('chair'), 288, 384, 'down')).toBe(false);
-    expect(canPlace(room, [], T('rug'), 288, 384, 'down')).toBe(false);
-    expect(canPlace(room, [], T('chair'), 240, 384, 'down')).toBe(false); // right edge at x 256
-    expect(canPlace(room, [], T('chair'), 236, 384, 'down')).toBe(true);
-    expect(canPlace(room, [], T('rug'), 288, 336, 'down')).toBe(false); // bottom edge at y 336
+  it('keeps the footprint fully on floor cells', () => {
+    expect(can([], 'chair', 0, 0)).toBe(true);
+    expect(can([], 'chair', 17, 0)).toBe(true);
+    expect(can([], 'chair', -1, 0)).toBe(false);
+    expect(can([], 'chair', 18, 0)).toBe(false);
+    expect(can([], 'chair', 0, 11)).toBe(true);
+    expect(can([], 'chair', 0, 12)).toBe(false);
+    expect(can([], 'sofa', 16, 0)).toBe(false); // sticks out to the right
+    expect(can([], 'sofa', 15, 0)).toBe(true);
+  });
+
+  it('refuses the 2 x 2 cell door zone, also for rugs; next to it is fine', () => {
+    // Door at x 288: the zone is columns 8..9, rows 10..11.
+    expect(can([], 'chair', 8, 10)).toBe(false);
+    expect(can([], 'chair', 9, 11)).toBe(false);
+    expect(can([], 'rug', 7, 10)).toBe(false); // 3 x 2 reaches into the zone
+    expect(can([], 'rug', 5, 10)).toBe(true); // columns 5..7
+    expect(can([], 'chair', 7, 10)).toBe(true);
+    expect(can([], 'chair', 10, 11)).toBe(true);
+    expect(can([], 'chair', 8, 9)).toBe(true); // just above the zone
   });
 
   it('refuses an item that would cut the door off from the middle of the room', () => {
-    // Bookshelves (56 wide) in a row above the door zone, from x 0 to 504: a 72 px gap is left.
-    const row = Array.from({ length: 9 }, (_, i) => item('bookshelf', 28 + i * 56, 320));
-    expect(canPlace(room, row, T('chair'), 100, 100, 'down')).toBe(true);
-    // A bookshelf at 516..572 leaves 12 px and 4 px: too narrow to walk through.
-    expect(canPlace(room, row, T('bookshelf'), 544, 320, 'down')).toBe(false);
-    // A rug in the gap is fine: it does not block walking.
-    expect(canPlace(room, row, T('rug'), 536, 320, 'right')).toBe(true);
+    // A row of plants across the room above the door zone, with a one-cell gap at column 3.
+    const row = Array.from({ length: 18 }, (_, c) => c).filter((c) => c !== 3).map((c) => atCell('plant', c, 9));
+    expect(can(row, 'chair', 5, 4)).toBe(true);
+    // The gap is one cell wide: a path through it is still a way, but closing it is refused.
+    expect(can(row, 'chair', 3, 9)).toBe(false);
+    // A rug in the gap does not block walking.
+    expect(can(row, 'rug', 2, 9)).toBe(true);
+    // The way through the gap exists on the nav grid (one free cell).
+    const grid = buildNavGrid(room, row.map((i) => footprintRect(i, T('plant'))));
+    const path = findPath(grid, { x: 288, y: 352 }, { x: 288, y: 100 });
+    expect(path).not.toBeNull();
+    // Walk the polyline in 2 px steps: it crosses row 9 only inside the gap (column 3).
+    let through = false;
+    for (let i = 1; i < path!.length; i++) {
+      const a = path![i - 1]!;
+      const b = path![i]!;
+      const n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2);
+      for (let k = 0; k <= n; k++) {
+        const x = a.x + ((b.x - a.x) * k) / n;
+        const y = a.y + ((b.y - a.y) * k) / n;
+        if (y >= 9 * 32 && y < 10 * 32) {
+          through = true;
+          expect(Math.floor(x / 32)).toBe(3);
+        }
+      }
+    }
+    expect(through).toBe(true);
   });
 
   it('respects placeIn', () => {
     const shop = createRoom(2, 'shop', 1, 1);
-    expect(canPlace(shop, [], T('bed'), 100, 200, 'down')).toBe(false);
-    expect(canPlace(shop, [], T('chair'), 100, 200, 'down')).toBe(true);
+    expect(can([], 'bed', 3, 2, 'down', shop)).toBe(false);
+    expect(can([], 'chair', 3, 2, 'down', shop)).toBe(true);
+  });
+});
+
+describe('wall items stay free (BG1: only floor items go per cell)', () => {
+  it('hang at any x along the band, in 4 px steps or whole px, anchor y at the band foot', () => {
+    const torch = T('wall_torch'); // 24 px wide: not a whole number of cells, so it cannot be per cell
+    for (const x of [100, 101, 104, 117, 130]) expect(canPlace(room, [], torch, x, 0, 'down'), `x ${x}`).toBe(true);
+    expect(canPlace(room, [], torch, 100, 4, 'down')).toBe(false); // not on the floor edge
+    expect(canPlace(room, [], torch, 8, 0, 'down')).toBe(false); // sticks out left
+    expect(canPlace(room, [], torch, 12, 0, 'down')).toBe(true);
+    // A wall item is not snapped to a cell by the rules: planPlacement keeps x and finds the band.
+    expect(planPlacement(room, [], torch, 133, 20, 'down')).toMatchObject({ x: 133, y: 0, ok: true });
+  });
+
+  it('two wall items overlap only when their widths overlap', () => {
+    const a: FurnitureItem = { ...item('wall_torch', 100, 0), roomId: room.id };
+    expect(canPlace(room, [a], T('wall_torch'), 130, 0, 'down')).toBe(true);
+    expect(canPlace(room, [a], T('wall_torch'), 120, 0, 'down')).toBe(false);
+  });
+
+  it('a wall item is not in the way of the door zone or floor items', () => {
+    const torch = item('wall_torch', 288, 0);
+    expect(can([torch], 'chair', 9, 0)).toBe(true);
   });
 });
 
 describe('surfaces', () => {
-  it('snaps an onSurface item to the nearest free spot on top', () => {
-    const table = item('table', 200, 200); // top: x 168..232, y 160..200
-    expect(snapToSurface(room, [table], T('lamp'), 200, 190, 'down')).toEqual({ x: 200, y: 190, onItemUid: table.uid });
-    // Near the edge it is pulled inside the top.
-    expect(snapToSurface(room, [table], T('lamp'), 230, 200, 'down')).toEqual({ x: 220, y: 200, onItemUid: table.uid });
-    // A second lamp does not overlap the first.
-    const lamp = item('lamp', 180, 190, 'down', table.uid);
-    const spot = snapToSurface(room, [table, lamp], T('lamp'), 184, 190, 'down');
-    expect(spot?.onItemUid).toBe(table.uid);
-    const a = footprintRect(lamp, T('lamp'));
-    const b = footprintRect({ x: spot!.x, y: spot!.y, facing: 'down' }, T('lamp'));
-    expect(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y).toBe(true);
+  it('snaps an onSurface item to the nearest free cell on top', () => {
+    const table = atCell('table', 6, 5); // top: columns 6..7, row 5: x 192..256, y 160..192
+    expect(snapToSurface(room, [table], T('lamp'), 200, 190, 'down')).toEqual({ x: 208, y: 192, onItemUid: table.uid });
+    // Near the edge it is pulled onto the last cell.
+    expect(snapToSurface(room, [table], T('lamp'), 252, 192, 'down')).toEqual({ x: 240, y: 192, onItemUid: table.uid });
+    // A second lamp goes to the other cell.
+    const lamp = { ...item('lamp', 208, 192, 'down', table.uid) };
+    const spot = snapToSurface(room, [table, lamp], T('lamp'), 212, 190, 'down');
+    expect(spot).toEqual({ x: 240, y: 192, onItemUid: table.uid });
+    // A full table has no free spot.
+    const lamp2 = { ...item('lamp', 240, 192, 'down', table.uid) };
+    expect(snapToSurface(room, [table, lamp, lamp2], T('lamp'), 212, 190, 'down')).toBeNull();
     // Not over a surface: no snap; on the floor it is a normal placement.
     expect(snapToSurface(room, [table], T('lamp'), 400, 190, 'down')).toBeNull();
-    expect(planPlacement(room, [table], T('lamp'), 400, 190, 'down')).toMatchObject({ onItemUid: null, ok: true });
+    const floorSpot = pose('lamp', 12, 5);
+    expect(planPlacement(room, [table], T('lamp'), floorSpot.x, floorSpot.y, 'down')).toMatchObject({ onItemUid: null, ok: true });
     // Items that are not onSurface never snap.
     expect(snapToSurface(room, [table], T('chair'), 200, 190, 'down')).toBeNull();
   });
 
   it('moves and goes back with the item under it', () => {
-    const table = item('table', 200, 200);
-    const lamp = item('lamp', 210, 190, 'down', table.uid);
-    const moved = moveItem([table, lamp], table.uid, { x: 300, y: 250, facing: 'down', roomId: room.id, onItemUid: null });
-    expect(moved.find((i) => i.uid === lamp.uid)).toMatchObject({ x: 310, y: 240, onItemUid: table.uid, roomId: room.id });
+    const table = atCell('table', 6, 5);
+    const lamp = item('lamp', 208, 192, 'down', table.uid);
+    const to = pose('table', 9, 7);
+    const moved = moveItem([table, lamp], table.uid, { x: to.x, y: to.y, facing: 'down', roomId: room.id, onItemUid: null });
+    expect(moved.find((i) => i.uid === lamp.uid)).toMatchObject({ x: 9 * 32 + 16, y: 8 * 32, onItemUid: table.uid, roomId: room.id });
     const back = pickUpItem(moved, table.uid);
     expect(back.find((i) => i.uid === table.uid)).toMatchObject({ roomId: null });
     expect(back.find((i) => i.uid === lamp.uid)).toMatchObject({ roomId: null, onItemUid: null });
   });
 
-  it('turns with the item under it and stays on top', () => {
-    const table = item('table', 200, 200); // center (200, 180)
-    const lamp = item('lamp', 220, 192, 'down', table.uid); // lamp center (220, 180)
-    const turned = moveItem([table, lamp], table.uid, { x: 200, y: 212, facing: 'right', roomId: room.id, onItemUid: null });
+  it('turns with the item under it and stays on top, on a cell of the surface', () => {
+    const table = atCell('table', 6, 5);
+    const lamp = item('lamp', 240, 192, 'down', table.uid);
+    const a = anchorCell(table, T('table'));
+    const to = poseForAnchorCell(T('table'), 'right', a.col, a.row);
+    const turned = moveItem([table, lamp], table.uid, { ...to, roomId: room.id, onItemUid: null });
     const l = turned.find((i) => i.uid === lamp.uid)!;
     const top = footprintRect(turned.find((i) => i.uid === table.uid)!, T('table'));
     const fp = footprintRect(l, T('lamp'));
     expect(l.onItemUid).toBe(table.uid);
     expect(fp.x >= top.x && fp.y >= top.y && fp.x + fp.w <= top.x + top.w && fp.y + fp.h <= top.y + top.h).toBe(true);
+    expect(isOnGrid(l, T('lamp'))).toBe(true);
   });
 
   it('is one level only', () => {
-    const box: FurnitureType = { ...T('crate'), id: 'small_box', w: 24, d: 24, surface: true, onSurface: true };
+    const box: FurnitureType = { ...T('crate'), id: 'small_box', w: 32, d: 32, surface: true, onSurface: true };
     const types: FurnitureLookup = (id) => (id === 'small_box' ? box : T(id));
-    const table = item('table', 200, 200);
-    const onTable = item('small_box', 180, 192, 'down', table.uid);
-    // A lamp aimed at the box lands on the table next to it, never on the box.
-    const spot = snapToSurface(room, [table, onTable], T('lamp'), 180, 188, 'down', types);
-    expect(spot?.onItemUid).toBe(table.uid);
+    const table = atCell('table', 6, 5);
+    const onTable = item('small_box', 208, 192, 'down', table.uid);
+    // A lamp aimed at the box lands on the table's other cell, never on the box.
+    const spot = snapToSurface(room, [table, onTable], T('lamp'), 208, 190, 'down', types);
+    expect(spot).toEqual({ x: 240, y: 192, onItemUid: table.uid });
     // A surface that carries items cannot itself go onto a surface.
-    const p = planPlacement(room, [table], box, 200, 192, 'down', true, types);
+    const p = planPlacement(room, [table], box, 208, 192, 'down', true, types);
     expect(p.onItemUid).toBeNull();
     expect(p.ok).toBe(false);
   });
@@ -190,26 +324,41 @@ describe('standPointFor', () => {
 describe('the counter (served from behind)', () => {
   it('cannot stand against the back wall: the shopkeeper must fit behind it', () => {
     const shop = createRoom(2, 'shop', 1, 1);
-    expect(canPlace(shop, [], T('counter'), 176, 40, 'down')).toBe(false);
-    expect(canPlace(shop, [], T('counter'), 176, 88, 'down')).toBe(true);
+    expect(can([], 'counter', 4, 0, 'down', shop)).toBe(false);
+    expect(can([], 'counter', 4, 2, 'down', shop)).toBe(true);
+    expect(can([], 'counter', 4, 1, 'down', shop)).toBe(true); // one free row behind it is enough
     // Facing up, its back is toward the door side: against the back wall is fine then.
-    expect(canPlace(shop, [], T('counter'), 176, 40, 'up')).toBe(true);
+    expect(can([], 'counter', 4, 0, 'up', shop)).toBe(true);
   });
 });
 
+describe('nearestValidPlacement', () => {
+  it('keeps a free spot, moves off a taken one to the nearest cell footprint, null when nothing fits', () => {
+    const sofa = atCell('sofa', 6, 6);
+    const want = { x: sofa.x, y: sofa.y - 16 };
+    const p = nearestValidPlacement(room, [sofa], T('sofa'), 'down', want)!;
+    expect(p).not.toBeNull();
+    expect(canPlace(room, [sofa], T('sofa'), p.x, p.y, 'down')).toBe(true);
+    expect(Math.abs(p.y - sofa.y)).toBe(32); // the row above or below
+    expect(nearestValidPlacement(room, [], T('chair'), 'down', { x: 100, y: 100 })).toEqual(pose('chair', 3, 3));
+    // A room with no free cell for the item.
+    const full = Array.from({ length: 18 * 12 }, (_, i) => atCell('plant', i % 18, Math.floor(i / 18)));
+    expect(nearestValidPlacement(room, full, T('chair'), 'down', { x: 100, y: 100 })).toBeNull();
+  });
+});
 
 describe('non-rectangular rooms (step 7b)', () => {
-  const l = createRoom(5, 'hotel', 1, 1, 'l_shape'); // (0,0,320,448) + (320,192,320,256)
-  const plus = createRoom(6, 'hotel', 1, 1, 'plus'); // arms x 208..432, bar y 128..320
-  const at = (room: typeof l, typeId: string, x: number, y: number): FurnitureItem => ({ uid: 900, typeId, ownerId: 1, roomId: room.id, x, y, facing: 'down', onItemUid: null });
+  const l = createRoom(5, 'hotel', 1, 1, 'l_shape'); // cells (0,0,10,14) + (10,6,10,8)
+  const plus = createRoom(6, 'hotel', 1, 1, 'plus'); // top arm columns 6..13, bar rows 4..9
 
   it('placement rejects items crossing outside the floor', () => {
-    expect(canPlace(l, [], T('table'), 320, 300, 'down')).toBe(true); // across the seam of the L
-    expect(canPlace(l, [], T('table'), 352, 200, 'down')).toBe(false); // pokes into the cut-out
-    expect(canPlace(l, [], T('table'), 480, 100, 'down')).toBe(false); // in the cut-out
-    expect(canPlace(plus, [], T('table'), 320, 100, 'down')).toBe(true); // in the top arm
-    expect(canPlace(plus, [], T('table'), 220, 100, 'down')).toBe(false); // half off the top arm
-    expect(canPlace(plus, [], T('table'), 100, 400, 'down')).toBe(false); // below the bar, outside
+    expect(can([], 'table', 9, 9, 'down', l)).toBe(true); // across the seam of the L (columns 9..10)
+    expect(can([], 'table', 10, 5, 'down', l)).toBe(false); // in the cut-out above the right arm
+    expect(can([], 'table', 9, 5, 'down', l)).toBe(false); // half in the cut-out
+    expect(can([], 'table', 15, 3, 'down', l)).toBe(false); // in the cut-out
+    expect(can([], 'table', 7, 2, 'down', plus)).toBe(true); // in the top arm
+    expect(can([], 'table', 5, 2, 'down', plus)).toBe(false); // half off the top arm
+    expect(can([], 'table', 2, 12, 'down', plus)).toBe(false); // below the bar, outside
   });
 
   it('the nav grid blocks every cell outside the union', () => {
@@ -221,8 +370,8 @@ describe('non-rectangular rooms (step 7b)', () => {
           if (!rectInsideFloor(room, cell)) expect(isCellFree(grid, c, r)).toBe(false);
         }
       }
-      expect(isCellFree(grid, 60, 8) && room === l).toBe(false); // the L's cut-out corner
     }
+    expect(isCellFree(buildNavGrid(l, []), 15, 2)).toBe(false); // the L's cut-out corner
     // Walking from the top arm of the plus to its bottom arm goes through the bar.
     expect(findPath(buildNavGrid(plus, []), { x: 320, y: 40 }, { x: 320, y: 420 })).not.toBeNull();
   });
@@ -235,6 +384,5 @@ describe('non-rectangular rooms (step 7b)', () => {
     expect(canPlace(l, [], T('banner'), 480, 0, 'down')).toBe(false); // no wall up there
     const p = planPlacement(l, [], T('banner'), 470, 230, 'down');
     expect(p).toMatchObject({ x: 470, y: 192, ok: true });
-    expect(at(l, 'banner', 470, 192).y).toBe(192);
   });
 });

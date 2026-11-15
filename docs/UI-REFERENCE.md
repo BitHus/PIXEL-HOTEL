@@ -214,6 +214,15 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   around the screen edge, so the mode is always clear. Tapping Build again, or Escape, returns
   to play mode and closes any menu.
 
+- **The build grid and floor paint (BG1).** While a furniture ghost is out or the paint bar is
+  open, a faint cream grid (alpha 0.22) shows the cells on the floor, under the items; the ghost
+  snaps to cells (wall items keep their free 4 px steps). Settings has "Build grid: on/off", and
+  the paint bar has a # button for the same setting. Painting: Room panel -> Floor -> "Paint
+  cells" closes the panel and opens the paint bar at the hotbar's place (the hotbar hides): the
+  unlocked floors as swatches (the room's own floor erases paint), a # toggle and Done (Escape
+  also ends it). One finger: a tap paints that cell, a drag paints a rectangle (green preview);
+  two fingers pan and zoom.
+
 - **Hotbar + Bag (inventory).** The hotbar shows a few chosen items. The Bag button opens the
   full inventory panel, laid out like this (polish):
 

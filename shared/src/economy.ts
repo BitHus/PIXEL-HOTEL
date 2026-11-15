@@ -17,7 +17,7 @@ import { noPlaceRects } from './farmLayout.ts';
 import { FURNITURE_TYPES, footprintRect, getFurnitureType, pickUpItem } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
-import { doorZoneRect, rectsOverlap, rectsTouch, roomAtLevel, type Room } from './room.ts';
+import { doorZoneRect, paintFloorCells, paintWholeFloor, rectsOverlap, roomAtLevel, type Room } from './room.ts';
 import { returnOrphanLoot } from './shop.ts';
 import { findStyle, stylePrice } from './styles.ts';
 import { GEAR_TYPES, type ShopGearId } from './gear.ts';
@@ -62,7 +62,8 @@ export function applyStyle(state: GameState, roomId: number, kind: StyleKind, id
   if (!isStyleUnlocked(state, kind, id)) return null;
   const room = state.rooms.find((r) => r.id === roomId);
   if (!room || room.kind === 'lakeside') return null;
-  const changed: Room = kind === 'floor' ? { ...room, floorStyle: id } : { ...room, wallStyle: id };
+  // A whole-floor style clears the painted cells (step BG1).
+  const changed: Room = kind === 'floor' ? paintWholeFloor(room, id) : { ...room, wallStyle: id };
   return { ...state, rooms: state.rooms.map((r) => (r.id === roomId ? changed : r)) };
 }
 
@@ -72,6 +73,20 @@ export function upgradeCost(room: Room): number | null {
   if (room.kind === 'lakeside' || room.level >= ROOM_MAX_LEVEL) return null;
   const to = (room.level + 1) as 2 | 3;
   return room.kind === 'farm' ? FARM_UPGRADE_COST[to] : ROOM_UPGRADE_COST[to];
+}
+
+/**
+ * Paints the floor cells in a rectangle of cells (corners inclusive) with an unlocked floor style
+ * (step BG1). Free. Null if the style is not unlocked, there is no such room, or no cell of the
+ * rectangle is floor.
+ */
+export function paintFloor(state: GameState, roomId: number, a: { c: number; r: number }, b: { c: number; r: number }, id: string): GameState | null {
+  if (!isStyleUnlocked(state, 'floor', id)) return null;
+  const room = state.rooms.find((r) => r.id === roomId);
+  if (!room || room.kind === 'lakeside') return null;
+  const changed = paintFloorCells(room, a, b, id);
+  if (changed === room) return null;
+  return { ...state, rooms: state.rooms.map((r) => (r.id === roomId ? changed : r)) };
 }
 
 /**
@@ -97,7 +112,7 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
     const t = getFurnitureType(i.typeId);
     if (i.roomId !== roomId || i.onItemUid !== null || t.wall || t.noPickup) continue;
     const fp = footprintRect(i, t);
-    if (rectsTouch(fp, zone) || plots.some((r) => rectsOverlap(fp, r))) items = pickUpItem(items, i.uid);
+    if (rectsOverlap(fp, zone) || plots.some((r) => rectsOverlap(fp, r))) items = pickUpItem(items, i.uid);
   }
   const farm = grown.kind === 'farm' && paid.farm.roomId === roomId ? growPlots(paid.farm, level) : paid.farm;
   return returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items, farm }, at);

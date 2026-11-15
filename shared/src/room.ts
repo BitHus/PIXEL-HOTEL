@@ -1,13 +1,15 @@
 // Room geometry (brief section 5, room shapes in step 7b). Pure functions on plain data.
 //
-// A room's floor is a union of rectangles (16 px aligned), taken from its shape and level in
-// shared/data/roomShapes.json. room.w and room.h are the size of the floor's bounding box, which
-// starts at (0, 0). Every floor edge that faces up gets the 64 px back wall band above it; every
-// other outside edge gets the thin 16 px border. The door is a 64 px gap in the border under a
-// bottom edge, centered on the shape's door x; the door zone is the 64 x 48 px floor just inside it.
+// A room's floor is a union of rectangles of whole BUILD_CELL cells (step BG1), taken from its shape
+// and level in shared/data/roomShapes.json (the data is in cells; everything in this file is px).
+// room.w and room.h are the size of the floor's bounding box, which starts at (0, 0). Every floor edge that faces up gets the 64 px back wall band above it; every
+// other outside edge gets the thin 16 px border. The door is a 2-cell (64 px) gap in the border under a
+// bottom edge, centered on the shape's door x (a cell boundary); the door zone is the 2 x 2 cells of
+// floor just inside it.
 
 import roomShapeData from '../data/roomShapes.json';
 import {
+  BUILD_CELL,
   DOOR_WIDTH,
   DOOR_ZONE_H,
   DOOR_ZONE_W,
@@ -35,13 +37,17 @@ export interface Room {
   /** Size of the floor's bounding box in px (the floor starts at 0, 0). */
   w: number;
   h: number;
+  /** The floor style of every cell that is not painted (floorCells). */
   floorStyle: string;
+  /** Cells painted with another floor style (step BG1): "col,row" -> style id. Absent = none. */
+  floorCells?: Record<string, string>;
   wallStyle: string;
   ownerId: number;
   /** Owners can set a room to private (section 13). */
   private: boolean;
 }
 
+/** One level of a shape as it is stored: rectangles in CELLS, and the door's x as a cell boundary. */
 export interface ShapeLevel {
   rects: Rect[];
   door: { x: number };
@@ -81,6 +87,11 @@ function shapeLevel(shape: string, level: RoomLevel): ShapeLevel {
   return l;
 }
 
+/** The floor rectangles of a shape level in px (the data is in cells). */
+function levelRects(shape: string, level: RoomLevel): Rect[] {
+  return shapeLevel(shape, level).rects.map((r) => ({ x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL }));
+}
+
 /** The bounding box of rectangles. */
 export function boundsOf(rects: readonly Rect[]): Rect {
   const x0 = Math.min(...rects.map((r) => r.x));
@@ -92,7 +103,7 @@ export function boundsOf(rects: readonly Rect[]): Rect {
 
 /** A new room of the given kind, level and shape, with the bare styles (the farm: grass and hedge). */
 export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId: number, shape = defaultShape(kind)): Room {
-  const b = boundsOf(shapeLevel(shape, level).rects);
+  const b = boundsOf(levelRects(shape, level));
   return {
     id,
     kind,
@@ -109,13 +120,13 @@ export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId
 
 /** The same room at another level of its shape (the size follows). */
 export function roomAtLevel(room: Room, level: RoomLevel): Room {
-  const b = boundsOf(shapeLevel(room.shape, level).rects);
+  const b = boundsOf(levelRects(room.shape, level));
   return { ...room, level, w: b.x + b.w, h: b.y + b.h };
 }
 
 /** The floor's rectangles. */
 export function floorRects(room: Room): Rect[] {
-  return shapeLevel(room.shape ?? defaultShape(room.kind), room.level).rects.map((r) => ({ ...r }));
+  return levelRects(room.shape ?? defaultShape(room.kind), room.level);
 }
 
 /** The floor's bounding box. */
@@ -125,7 +136,7 @@ export function floorRect(room: Room): Rect {
 
 /** The x of the middle of the door. */
 export function doorX(room: Room): number {
-  return shapeLevel(room.shape ?? defaultShape(room.kind), room.level).door.x;
+  return shapeLevel(room.shape ?? defaultShape(room.kind), room.level).door.x * BUILD_CELL;
 }
 
 /** True if the point lies on the floor (edges count). */
@@ -235,7 +246,7 @@ export function borderRects(room: Room): Rect[] {
   return out;
 }
 
-/** The door zone: on the floor just inside the door. Nothing can be placed here. */
+/** The door zone: 2 x 2 cells on the floor just inside the door. Nothing can be placed here. */
 export function doorZoneRect(room: Room): Rect {
   return { x: doorX(room) - DOOR_ZONE_W / 2, y: doorY(room) - DOOR_ZONE_H, w: DOOR_ZONE_W, h: DOOR_ZONE_H };
 }
@@ -276,4 +287,81 @@ export function rectsTouch(a: Rect, b: Rect): boolean {
 /** True if two rectangles overlap with some area (sharing only an edge does not count). */
 export function rectsOverlap(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+// ---------- The build grid (step BG1) ----------
+
+/** The cell (column, row) that contains a world point. */
+export function cellOf(p: Point): { c: number; r: number } {
+  return { c: Math.floor(p.x / BUILD_CELL), r: Math.floor(p.y / BUILD_CELL) };
+}
+
+/** The px rectangle of a cell. */
+export function cellRectOf(c: number, r: number): Rect {
+  return { x: c * BUILD_CELL, y: r * BUILD_CELL, w: BUILD_CELL, h: BUILD_CELL };
+}
+
+/** True if the whole cell lies on the floor. */
+export function cellOnFloor(room: Room, c: number, r: number): boolean {
+  return rectInsideFloor(room, cellRectOf(c, r));
+}
+
+/** Every floor cell of the room, row by row. */
+export function floorCellList(room: Room): { c: number; r: number }[] {
+  const out: { c: number; r: number }[] = [];
+  for (let r = 0; r < Math.ceil(room.h / BUILD_CELL); r++) {
+    for (let c = 0; c < Math.ceil(room.w / BUILD_CELL); c++) if (cellOnFloor(room, c, r)) out.push({ c, r });
+  }
+  return out;
+}
+
+/** The floor style id of one cell (a painted one, else the room's floor style). */
+export function floorStyleAt(room: Room, c: number, r: number): string {
+  return room.floorCells?.[`${c},${r}`] ?? room.floorStyle;
+}
+
+/** The style that covers most floor cells (used for the shop's appeal). */
+export function dominantFloorStyle(room: Room): string {
+  if (!room.floorCells) return room.floorStyle;
+  const count = new Map<string, number>();
+  for (const { c, r } of floorCellList(room)) {
+    const id = floorStyleAt(room, c, r);
+    count.set(id, (count.get(id) ?? 0) + 1);
+  }
+  let best = room.floorStyle;
+  let bestN = -1;
+  for (const [id, n] of count) {
+    if (n > bestN || (n === bestN && id === room.floorStyle)) {
+      best = id;
+      bestN = n;
+    }
+  }
+  return best;
+}
+
+/**
+ * Paints the floor cells of a rectangle of cells (inclusive corners, any order) with a style.
+ * Cells that are not floor are skipped. Painting the room's own floor style clears the cell.
+ * Returns the room unchanged when nothing on the floor is in the rectangle.
+ */
+export function paintFloorCells(room: Room, a: { c: number; r: number }, b: { c: number; r: number }, styleId: string): Room {
+  const painted: Record<string, string> = { ...room.floorCells };
+  let any = false;
+  for (let r = Math.min(a.r, b.r); r <= Math.max(a.r, b.r); r++) {
+    for (let c = Math.min(a.c, b.c); c <= Math.max(a.c, b.c); c++) {
+      if (!cellOnFloor(room, c, r)) continue;
+      any = true;
+      if (styleId === room.floorStyle) delete painted[`${c},${r}`];
+      else painted[`${c},${r}`] = styleId;
+    }
+  }
+  if (!any) return room;
+  const { floorCells: _old, ...rest } = room;
+  return Object.keys(painted).length > 0 ? { ...rest, floorCells: painted } : rest;
+}
+
+/** The whole floor in one style: clears every painted cell. */
+export function paintWholeFloor(room: Room, styleId: string): Room {
+  const { floorCells: _old, ...rest } = room;
+  return { ...rest, floorStyle: styleId };
 }

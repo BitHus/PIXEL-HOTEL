@@ -3037,3 +3037,45 @@
     animation: none;
   }
 }
+
+/* ---------- The floor paint bar (step BG1): brushes, grid toggle, Done. Sits where the hotbar is
+   (the hotbar hides while painting). ---------- */
+.paint-bar {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: calc(var(--edge) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 2 * var(--edge) - var(--side-col)));
+  box-sizing: border-box;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+}
+
+.paint-bar[hidden] {
+  display: none;
+}
+
+.paint-hint {
+  font-size: 12px;
+  text-align: center;
+}
+
+.paint-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--px);
+  justify-content: center;
+}
+
+.paint-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* A toast stays clear of the paint bar. */
+.painting .toast {
+  bottom: calc(var(--bar-h) + var(--edge) + 90px + env(safe-area-inset-bottom));
+}

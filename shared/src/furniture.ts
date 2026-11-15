@@ -2,20 +2,24 @@
 //
 // - (x, y) is the anchor: the bottom center of the footprint. The footprint runs from
 //   (x - fw/2, y - fd) to (x + fw/2, y); fw, fd are w, d facing down/up and d, w facing left/right.
-// - Placement: footprint inside the floor, no overlap with another blocking item (non-blocking
-//   items such as rugs overlap anything), not touching the door zone, and the door can still
-//   reach the middle of the room. Wall items stay on the back wall band (anchor y = 0).
-// - onSurface items snap to the nearest free spot on top of a surface item (one level only)
-//   and move and return together with the item under it ("riders").
+// - BUILD GRID (step BG1): floor items are whole BUILD_CELL cells (type.w and type.d are multiples
+//   of it) and stand on cell boundaries: the footprint's top-left corner is a cell corner. The
+//   anchor CELL is the bottom-centre cell (even widths: the left of the two centre cells);
+//   rotating keeps it. Wall items stay free (4 px snap along the back wall band).
+// - Placement: footprint on floor cells, no overlap with another blocking item (non-blocking
+//   items such as rugs overlap anything), not on the 2 x 2 cell door zone, and the door can still
+//   reach the middle of the room. Wall items stay on the back wall band (anchor y = band bottom).
+// - onSurface items sit on the cells of a surface item (one level only) and move and return
+//   together with the item under it ("riders").
 // - Functions that need other items' types take a lookup (default: shared/data/furniture.json).
 
 import furnitureData from '../data/furniture.json';
-import { APPROACH_REACH_PX, CASHIER_BEHIND_PX,
+import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_DEPTH_PX,
-  STAFF_ZONE_SIDE_PX, DOOR_ZONE_H, SNAP } from './config.ts';
+  STAFF_ZONE_SIDE_PX, SNAP } from './config.ts';
 import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
-import { doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, rectsTouch, wallBands, type Room } from './room.ts';
+import { doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, wallBands, type Room } from './room.ts';
 import type { Facing, FurnitureItem, FurnitureType, Point, Rect } from './types.ts';
 
 /** The starter furniture types (step 4), from shared/data/furniture.json. */
@@ -50,9 +54,52 @@ export function footprintRect(item: Pose & { typeId?: string }, type?: Furniture
   return { x: item.x - w / 2, y: item.y - d, w, h: d };
 }
 
-/** Snaps a coordinate to SNAP px, or to a whole px when snapping is off (Shift). */
+/** Snaps a coordinate to SNAP px, or to a whole px when snapping is off (Shift). Wall items only (floor items snap to cells). */
 export function snapCoord(v: number, snap = true): number {
   return snap ? Math.round(v / SNAP) * SNAP : Math.round(v);
+}
+
+/** Whole cells of a footprint for a facing: { w, d } in cells. */
+export function footprintCells(type: FurnitureType, facing: Facing): { w: number; d: number } {
+  const f = footprintSize(type, facing);
+  return { w: Math.round(f.w / BUILD_CELL), d: Math.round(f.d / BUILD_CELL) };
+}
+
+/** The pose whose footprint has its top-left cell at (col, row) (floor items). */
+export function poseAtCell(type: FurnitureType, facing: Facing, col: number, row: number): Pose {
+  const f = footprintSize(type, facing);
+  return { x: col * BUILD_CELL + f.w / 2, y: row * BUILD_CELL + f.d, facing };
+}
+
+/** The footprint's top-left cell. Only meaningful for a pose on the grid (isOnGrid). */
+export function topLeftCell(pose: Pose, type: FurnitureType): { col: number; row: number } {
+  const r = footprintRect(pose, type);
+  return { col: Math.round(r.x / BUILD_CELL), row: Math.round(r.y / BUILD_CELL) };
+}
+
+/** The anchor cell: the bottom-centre cell of the footprint (even widths: the left of the two centre cells). */
+export function anchorCell(pose: Pose, type: FurnitureType): { col: number; row: number } {
+  const { col, row } = topLeftCell(pose, type);
+  const c = footprintCells(type, pose.facing);
+  return { col: col + Math.floor((c.w - 1) / 2), row: row + c.d - 1 };
+}
+
+/** The pose with this anchor cell and facing (rotating an item keeps its anchor cell). */
+export function poseForAnchorCell(type: FurnitureType, facing: Facing, col: number, row: number): Pose {
+  const c = footprintCells(type, facing);
+  return poseAtCell(type, facing, col - Math.floor((c.w - 1) / 2), row - c.d + 1);
+}
+
+/** True if the footprint's corners are on cell corners (floor items must be). */
+export function isOnGrid(pose: Pose, type: FurnitureType): boolean {
+  const r = footprintRect(pose, type);
+  return r.x % BUILD_CELL === 0 && r.y % BUILD_CELL === 0 && r.w % BUILD_CELL === 0 && r.h % BUILD_CELL === 0;
+}
+
+/** The pose a floor item gets when its footprint's middle is dragged to `center`: the nearest cell footprint. */
+export function snapToCells(type: FurnitureType, facing: Facing, center: Point): Pose {
+  const f = footprintSize(type, facing);
+  return poseAtCell(type, facing, Math.round((center.x - f.w / 2) / BUILD_CELL), Math.round((center.y - f.d / 2) / BUILD_CELL));
 }
 
 /** The next facing in the type's list (rotation cycles through them). */
@@ -115,9 +162,9 @@ export function snapToWallBand(room: Room, x: number, y: number): Point {
   return best;
 }
 
-/** Where avatars come in: the middle of the door zone. */
+/** Where avatars come in: the middle of the door zone's bottom row of cells. */
 export function doorPoint(room: Room): Point {
-  return { x: doorX(room), y: doorY(room) - DOOR_ZONE_H / 2 };
+  return { x: doorX(room), y: doorY(room) - BUILD_CELL / 2 };
 }
 
 /**
@@ -155,8 +202,8 @@ export function canPlace(
       (o) => o.roomId === room.id && types(o.typeId).wall && rectsOverlap(fp, footprintRect(o, types(o.typeId))),
     );
   }
-  if (!rectInsideFloor(room, fp)) return false;
-  if (rectsTouch(fp, doorZoneRect(room))) return false;
+  if (!isOnGrid({ x, y, facing }, type) || !rectInsideFloor(room, fp)) return false;
+  if (rectsOverlap(fp, doorZoneRect(room))) return false;
   // The farm's plots and cooking pot (step 9b): nothing on them, not even a rug.
   if (noPlaceRects(room).some((r) => rectsOverlap(fp, r))) return false;
   if (!type.blocks) return true;
@@ -241,19 +288,14 @@ export function snapToSurface(
   const top = footprintRect(surface, types(surface.typeId));
   if (fw > top.w || fd > top.h) return null;
   const others = ridersOf(items, surface.uid).map((r) => footprintRect(r, types(r.typeId)));
-  const minX = top.x + fw / 2;
-  const maxX = top.x + top.w - fw / 2;
-  const minY = top.y + fd;
-  const maxY = top.y + top.h;
   const free = (px: number, py: number): boolean =>
     !others.some((o) => rectsOverlap(footprintRect({ x: px, y: py, facing }, type), o));
-  const want = { x: clamp(x, minX, maxX), y: clamp(y, minY, maxY) };
-  if (free(want.x, want.y)) return { ...want, onItemUid: surface.uid };
+  // The rider sits on the surface's own cells: its corner is a cell corner of the surface.
   let best: SurfaceSpot | null = null;
   let bestD = Infinity;
-  for (const px of steps(minX, maxX)) {
-    for (const py of steps(minY, maxY)) {
-      const d = (px - want.x) ** 2 + (py - want.y) ** 2;
+  for (let px = top.x + fw / 2; px <= top.x + top.w - fw / 2; px += BUILD_CELL) {
+    for (let py = top.y + fd; py <= top.y + top.h; py += BUILD_CELL) {
+      const d = (px - x) ** 2 + (py - y) ** 2;
       if (d < bestD && free(px, py)) {
         bestD = d;
         best = { x: px, y: py, onItemUid: surface.uid };
@@ -338,8 +380,10 @@ export function moveItem(
     const rt = types(r.typeId);
     const { w: rw, d: rd } = footprintSize(rt, r.facing);
     const off = rotateQuarter({ x: r.x - oldCenter.x, y: r.y - rd / 2 - oldCenter.y }, turns);
-    const rx = clamp(newCenter.x + off.x, top.x + rw / 2, top.x + top.w - rw / 2);
-    const ry = clamp(newCenter.y + off.y + rd / 2, top.y + rd, top.y + top.h);
+    // Riders stay on the cells of the surface (step BG1).
+    const cellOf = (v: number, lo: number, size: number, hi: number): number => clamp(lo + Math.round((v - lo) / BUILD_CELL) * BUILD_CELL, lo, hi - size);
+    const rx = cellOf(newCenter.x + off.x - rw / 2, top.x, rw, top.x + top.w) + rw / 2;
+    const ry = cellOf(newCenter.y + off.y - rd / 2, top.y, rd, top.y + top.h) + rd;
     const fp = footprintRect({ x: rx, y: ry, facing: r.facing }, rt);
     const fits = rw <= top.w && rd <= top.h && !placed.some((p) => rectsOverlap(p, fp));
     if (fits && to.roomId !== null) {
@@ -375,10 +419,39 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
 }
 
-/** lo, lo + SNAP, ... and hi itself. */
-function steps(lo: number, hi: number): number[] {
-  const out: number[] = [];
-  for (let v = lo; v < hi; v += SNAP) out.push(v);
-  out.push(hi);
-  return out;
+/**
+ * The nearest valid cell footprint for a floor item (BG1 migration, rotating, start furniture):
+ * tries the footprint whose middle is closest to `want`, then rings of cells around it, up to
+ * `maxRing` cells away. Returns the pose, or null when nothing fits. Wall items are not moved:
+ * use canPlace on their own spot.
+ */
+export function nearestValidPlacement(
+  room: Room,
+  items: readonly FurnitureItem[],
+  type: FurnitureType,
+  facing: Facing,
+  want: Point,
+  maxRing = 40,
+  types: FurnitureLookup = getFurnitureType,
+): Pose | null {
+  const f = footprintSize(type, facing);
+  const col0 = Math.round((want.x - f.w / 2) / BUILD_CELL);
+  const row0 = Math.round((want.y - f.d / 2) / BUILD_CELL);
+  for (let ring = 0; ring <= maxRing; ring++) {
+    let best: Pose | null = null;
+    let bestD = Infinity;
+    for (let dr = -ring; dr <= ring; dr++) {
+      for (let dc = -ring; dc <= ring; dc++) {
+        if (Math.max(Math.abs(dc), Math.abs(dr)) !== ring) continue;
+        const pose = poseAtCell(type, facing, col0 + dc, row0 + dr);
+        const d = (pose.x - want.x) ** 2 + (pose.y - f.d / 2 - want.y) ** 2;
+        if (d < bestD && canPlace(room, items, type, pose.x, pose.y, facing, types)) {
+          best = pose;
+          bestD = d;
+        }
+      }
+    }
+    if (best) return best;
+  }
+  return null;
 }

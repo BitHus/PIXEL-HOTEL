@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { DOOR_WIDTH, DOOR_ZONE_H, DOOR_ZONE_W, ROOM_GRID, SIDE_BORDER, WALL_BAND } from './config.ts';
+import { BUILD_CELL, DOOR_WIDTH, DOOR_ZONE_H, DOOR_ZONE_W, ROOM_GRID, SIDE_BORDER, WALL_BAND } from './config.ts';
 import {
   ROOM_SHAPES,
   borderRects,
+  cellOf,
+  cellOnFloor,
   createRoom,
+  dominantFloorStyle,
+  floorCellList,
+  floorStyleAt,
+  paintFloorCells,
+  paintWholeFloor,
   doorRect,
   doorX,
   doorY,
@@ -40,15 +47,30 @@ describe('room shapes (step 7b)', () => {
     expect(doorX(createRoom(1, 'hotel', 2, 1))).toBe(352);
   });
 
-  it('level 1 floors have about the same area, all on the 16 px grid, rectangles never overlap', () => {
+  it('level 1 floors have about the same area, whole cells, rectangles never overlap (BG1: the data is in cells)', () => {
     for (const s of ROOM_SHAPES) {
-      const a = area(s.levels[0]!.rects);
+      const a = area(s.levels[0]!.rects) * BUILD_CELL * BUILD_CELL;
       expect(a, s.id).toBeGreaterThan(170_000);
-      expect(a, s.id).toBeLessThan(235_000);
+      expect(a, s.id).toBeLessThan(240_000);
       for (const l of s.levels) {
-        for (const r of l.rects) for (const v of [r.x, r.y, r.w, r.h]) expect(v % ROOM_GRID, s.id).toBe(0);
+        for (const r of l.rects) for (const v of [r.x, r.y, r.w, r.h]) expect(Number.isInteger(v), s.id).toBe(true);
+        expect(Number.isInteger(l.door.x), s.id).toBe(true);
         l.rects.forEach((r, i) => l.rects.slice(i + 1).forEach((q) => expect(rectsOverlap(r, q), s.id).toBe(false)));
       }
+    }
+  });
+
+  it('every room is whole cells: size, floor rectangles and the door on a cell boundary', () => {
+    for (const room of allRooms) {
+      expect(room.w % BUILD_CELL, room.shape).toBe(0);
+      expect(room.h % BUILD_CELL, room.shape).toBe(0);
+      for (const r of floorRects(room)) for (const v of [r.x, r.y, r.w, r.h]) expect(v % BUILD_CELL, room.shape).toBe(0);
+      expect(doorX(room) % BUILD_CELL, room.shape).toBe(0);
+      expect(doorY(room) % BUILD_CELL, room.shape).toBe(0);
+      // The door is 2 cells and the wall band 2 cells.
+      expect(DOOR_WIDTH).toBe(2 * BUILD_CELL);
+      expect(WALL_BAND).toBe(2 * BUILD_CELL);
+      expect(doorZoneRect(room)).toMatchObject({ w: 2 * BUILD_CELL, h: 2 * BUILD_CELL });
     }
   });
 
@@ -56,7 +78,8 @@ describe('room shapes (step 7b)', () => {
     for (const s of ROOM_SHAPES) {
       for (const level of [2, 3] as const) {
         const now = createRoom(1, 'hotel', level, 1, s.id);
-        for (const r of s.levels[level - 2]!.rects) expect(rectInsideFloor(now, r), `${s.id} ${level}`).toBe(true);
+        const before = createRoom(1, 'hotel', (level - 1) as 1 | 2, 1, s.id);
+        for (const r of floorRects(before)) expect(rectInsideFloor(now, r), `${s.id} ${level}`).toBe(true);
       }
     }
   });
@@ -161,5 +184,43 @@ describe('rectsOverlap', () => {
     expect(rectsOverlap(a, { x: 5, y: 5, w: 10, h: 10 })).toBe(true);
     expect(rectsOverlap(a, { x: 10, y: 0, w: 10, h: 10 })).toBe(false);
     expect(rectsOverlap(a, { x: 20, y: 20, w: 1, h: 1 })).toBe(false);
+  });
+});
+
+describe('the build grid and floor painting (step BG1)', () => {
+  const room = createRoom(1, 'hotel', 1, 1, 'l_shape');
+
+  it('cells: the cell of a point, floor cells, the cells of the L', () => {
+    expect(cellOf({ x: 31, y: 32 })).toEqual({ c: 0, r: 1 });
+    expect(cellOnFloor(room, 0, 0)).toBe(true);
+    expect(cellOnFloor(room, 12, 0)).toBe(false); // the notch of the L
+    expect(cellOnFloor(room, 12, 7)).toBe(true);
+    expect(floorCellList(room)).toHaveLength(10 * 14 + 10 * 8);
+  });
+
+  it('paints one cell or a dragged rectangle (any corner order) and skips cells off the floor', () => {
+    const one = paintFloorCells(room, { c: 2, r: 3 }, { c: 2, r: 3 }, 'wood_planks');
+    expect(floorStyleAt(one, 2, 3)).toBe('wood_planks');
+    expect(floorStyleAt(one, 3, 3)).toBe('bare');
+    const rect = paintFloorCells(room, { c: 12, r: 8 }, { c: 9, r: 5 }, 'wood_planks');
+    // (9, 5) is the left part, (12, 8) the right part; the notch (cols 10-12, rows 5) is skipped: row 5 is above the right arm.
+    expect(floorStyleAt(rect, 9, 5)).toBe('wood_planks');
+    expect(floorStyleAt(rect, 11, 5)).toBe('bare');
+    expect(floorStyleAt(rect, 11, 6)).toBe('wood_planks');
+    expect(paintFloorCells(room, { c: 40, r: 40 }, { c: 41, r: 41 }, 'wood_planks')).toBe(room);
+  });
+
+  it('painting the room style again clears the cell; the whole floor clears all paint', () => {
+    const painted = paintFloorCells(room, { c: 0, r: 0 }, { c: 1, r: 0 }, 'wood_planks');
+    const back = paintFloorCells(painted, { c: 0, r: 0 }, { c: 1, r: 0 }, 'bare');
+    expect(back.floorCells).toBeUndefined();
+    expect(paintWholeFloor(painted, 'wood_planks')).toMatchObject({ floorStyle: 'wood_planks' });
+    expect(paintWholeFloor(painted, 'wood_planks').floorCells).toBeUndefined();
+  });
+
+  it('the dominant floor style is the one on most cells', () => {
+    expect(dominantFloorStyle(room)).toBe('bare');
+    const most = paintFloorCells(room, { c: 0, r: 0 }, { c: 9, r: 13 }, 'wood_planks'); // 140 of 220 cells
+    expect(dominantFloorStyle(most)).toBe('wood_planks');
   });
 });
