@@ -212,6 +212,60 @@ Extend A16 with the shore ring pieces (edges and corners as code draw functions 
 ### A23 [artist] PLUGIN later: mine tiles and rocks (after the crypt tiles are signed off)
 mine_floor_a..c, mine_wall_top, mine_wall_front (with a lantern variant), rock_copper, rock_iron, rock_mithril (32 x 32, crack stages stay code), mine lantern strip. Same gate.
 
+## CHARACTERS U1 (owner go 16 Nov: a real, medieval pixel avatar and better NPCs; read docs/PLAN-CHARACTERS.md first, and docs/ART-STYLE.md MEDIEVAL DIRECTION)
+Common: the box avatar (render/avatarParts.ts) stays as the fallback until the owner signs off; AvatarLook stays compatible; no save change until C20; every layer PNG goes in client/src/assets/sprites/avatar/ named `<layerslot>_<item>_<anim>_<facing>.png`; palette Endesga 32 only; key colours K1 silver/steel/slate/dusk, K2 cyan/sky/navy/pine, KS rose/orchid/plum/magenta (PLAN-CHARACTERS section 5); NO outline between layers (code adds the outer 1 px outline).
+Order: B7 -> (owner picks proportions) -> A24 + C17 in parallel -> (owner signs the character style lock) -> A25 to A28 + C18 -> A29 hats + C19 -> A30 + C20 -> A31 + C21 -> C22.
+
+### B7 [artist, CODE-ART] Proportion sheet (no plugin; first, decides the rig)
+GOAL: let the owner choose the avatar proportions. In tools/ only (a new tools/avatar-proportions.ts or the existing tools/art-sheet.ts; do NOT touch client/src/render/avatarParts.ts): draw three boxy figures on a 32 x 64 canvas, feet bottom centre, with the spec numbers of PLAN-CHARACTERS section 2: A slim (the current box avatar), B cosy three-head (figure -54, head -35 to -52, shoulders 14 wide, hat zone to -64, a straw hat and a cook cap as boxes), C chibi two-head. Show each at zoom 1 and 3, as a solid black silhouette, next to a 32 px chair, the bar (3 cells) and a door (2 cells), plus three guests with a tunic, an apron and a cloak as boxes.
+DONE WHEN: one contact sheet image and a 5 line note in the report with your own recommendation; the owner chooses. Palette from shared/palette.ts only.
+
+### A24 [artist, PLUGIN] Character prototype and style lock (after B7; `preflight` first)
+Read PLAN-CHARACTERS sections 2 to 5 and the aseprite brief/concept/rig/animate skills. In art-src/aseprite/ make ONE file per layer on the 32 x 64 canvas: body_base, hair_short, torso_tunic, shoes_boots, hat_straw_hat. DOWN facing only: body walk 4 frames (contact, pass, contact, pass; the pass frames bob 1 px) and sit 1 frame; tunic walk 4 and sit 1; the head layers one picture. Use the key colours of section 5 for the recolourable parts, fixed Endesga colours for the rest; no outline between layers; medieval look (tunic with a belt, laced collar, leather boots, a wide straw hat). Write the head offset per frame in a note (headDx/headDy) for avatarRig.json.
+Export strips to art-src/staging/avatar/ (128 x 64 for 4 frames) AND a composed preview (all layers, outline added by hand only for the preview) at zoom 3 next to the box avatar and in a mock room crop.
+DONE WHEN: `validate` is clean (only Endesga plus keys), a 3-recolour proof (a red, a green, a navy tunic with another skin and hair) and the sheet are shown to the lead; the owner signs the CHARACTER STYLE LOCK. Do not start A25 before the lock.
+
+### A25 [artist, PLUGIN] Base body, all facings (after the lock; rounds of 5 files)
+body_base for down, up, right: walk 4 frames each (128 x 64) and sit 1 frame each; shoes_boots the same; the head table for up and right; the stand pose is walk frame 1. Rig check: the head in the body art never moves except by the table. Stage in art-src/staging/avatar/, export to client/src/assets/sprites/avatar/ after C18 lands. Contact sheet, then the pixel-critic and the in-game check at zoom 3 and 1.
+
+### A26 [artist, PLUGIN] Hair (3 head files per style: down, up, right; long hair also hairback_)
+Free four first: short (bowl cut), long, ponytail, buzz (shorn); then braids, bob, curly, bun, shaggy, top_knot, mohawk, spiky, crown_braid, tonsure (NPC only). Key colour K1 for the hair ramp (3 to 4 shades, light top-left). Hair under a hat is handled by `hides` in data: draw the hair as if no hat. 5 files per round.
+
+### A27 [artist, PLUGIN] Tops (6 files each: walk and sit for down, up, right)
+Free first: t_shirt (linen shirt), long_sleeve (peasant shirt), vest (laced vest, K2 = shirt); then tunic, jerkin, apron, hoodie, tabard, wayfarer_cloak, ember_robe, bodice, monk_robe. Sleeves and hands are in the torso strip (hands in the KS skin ramp). Long robes cover the legs (draw to the hem).
+
+### A28 [artist, PLUGIN] Bottoms and shoes
+trousers, shorts (knee breeches), skirt, baggy, overalls, kilt, breeches, hose, long skirt; shoes: boots (done in A25), shoes, sandals. 6 files each, K1 ramp.
+
+### A29 [artist, PLUGIN] The 12 hats as PNGs (after A26 and C19)
+Redo the 12 hats of hatParts.ts on the new head (PLAN-CHARACTERS section 8: medieval reading per hat): straw_hat, wool_cap, cook_cap, feather_cap, tavern_keeper_hat, fisher_hat, skull_cap, flower_crown, knight_helm, gold_crown, sunken_crown_hat, miner_lamp_cap. 3 files each (hat_<id>_down/up/right.png), fixed colours (no keys), the hat's bottom edge drawn, crown top never above -64. Contact sheet of every hat on every free hair style.
+
+### A30 [artist, PLUGIN] Outer layer and role items
+outer_apron, outer_tabard (2 heraldic variants), outer_cloak (+ outer_back for the cape behind), outer_belt_pouch, outer_scarf; then the role hats (hood, coif, kettle helm, bard cap, merchant hat). 6 files each.
+
+### A31 [artist, PLUGIN] Faces, moods and extra frames
+face_neutral, face_blink, face_happy, face_sad, face_open, face_closed for down and right (1 frame each); torso strips `eat_*` (2 frames), `wave_*` and `cheer_*` (2 frames) for the free tops first.
+
+### C17 [coder] Rig data, ramps and naming (no art needed; do with A24)
+GOAL: everything the renderer needs that is not drawing. BUILD: spriteIndex.ts kind `avatar` (+ naming tests like the furniture ones); shared/data/avatarRig.json (per facing and frame: headDx, headDy, handX, handY, sit seat height, headTop) and shared/data/ramps.json (PLAN-CHARACTERS section 5, names from palette.ts); config WALK_FRAME_PX = 12; pure helpers in shared/src/avatarRig.ts: `walkFrame(distancePx)`, `headOffset(pose, frame, t)`, `rampFor(paletteName)`; the pure layer plan `avatarLayers(look, role, facing, pose) -> LayerRef[]` (section 3 order, UP view order, hat `hides`); a key-colour checker used by a test over every PNG in sprites/avatar/.
+TESTS: frame from distance (wrap, WALK_FRAME_PX), tables match frame counts, a ramp exists for every LOOK_COLORS value, layer order for the three facings, hides, the PNG key test (passes with zero PNGs), naming. SAVE: none. DONE WHEN: suite + typecheck green, nothing changes visibly.
+
+### C18 [coder] Layered avatar renderer with box fallback (needs C17 and the A24 files)
+GOAL: the player and the guests draw from the layer PNGs when they exist. BUILD: client/src/render/avatarCompose.ts (bake: recolour each layer by key -> ramp, composite in order, ONE 1 px outline pass, Texture per frame, cache by look + pose + facing, LRU 64 looks), AvatarSprite internals (keep every public method): walk frame from distance, sit frame, head offset table (breath and bob), hand anchor per frame for the held item, shadow unchanged; `hasAvatarSprites(look, pose)` true only when every needed layer file exists, else the whole avatar is the box code as today; drawAvatarOnCanvas (character creation, Avatar panel) uses the same bake; code hats lowered 8 px while no hat PNG exists; tools/avatar-sheet.ts (contact sheet).
+TESTS: bake fixture (a 4 x 4 layer: exact recolour and outline pixels), cache hit and eviction, hasAvatarSprites false with a missing layer, no PNG = identical to today, setLook rebakes only that look. SAVE: none. DONE WHEN: suite + typecheck green; by hand: walk, sit on a stool, change hair colour in the Avatar panel, guests look varied; with the PNGs removed the box avatar is back.
+
+### C19 [coder] Hats, name tag and emote anchors on the new avatar (after C18 and A29)
+Hats: hat PNG layer with `hides` from clothing.json (add the field for the 12 hats, test), the locked grey silhouette from the PNG alpha, name tag and emote overlays use headTop from the rig, emotePose offsets applied to head layers and body, wave/cheer use the A31 frames when present, else the offsets as today. TESTS: hides rule, headTop positions, locked silhouette keeps the alpha. SAVE: none.
+
+### C20 [coder] Medieval wardrobe data and the `outer` slot (SAVE bump if needed)
+Rename display names per PLAN-CHARACTERS section 8 (ids unchanged), add the new items as data rows (bodice, tabard, monk_robe, hose, bun, tonsure, ...; ranks, baseValue, unlock sources that already exist), `sprite`, `hides`, `trim`, `npc` fields, optional AvatarLook.outer (lookAllowed, Avatar panel picker, packs pools unchanged unless a test says the pool may grow: check balance.test.ts and `npm run simulate`). TESTS: data valid, pack pools unchanged for the existing items, lookAllowed with outer, migration only if the rule requires it (the manager sets the SAVE number). DONE WHEN: suite green; by hand: wear a cloak over a tunic.
+
+### C21 [coder] NPC variety and role outfits (after C20 and A30)
+guestLook weights (a village palette, 3 to 5 percent hat, rare apron), group colours, mood faces (unhappy after 90 s, eating, happy when served), shared/data/npcRoles.json with the 11 roles of PLAN-CHARACTERS section 9 and a pure `roleLook(id)`; visitors and the trader use it where they appear. TESTS: guestLook deterministic per id, distribution over 2000 ids (every free hair style appears, hat rate within bounds), roles reference existing clothing ids, moods map from guest state. SAVE: none unless a guest field is added (then stop and tell the manager).
+
+### C22 [coder] Eat and emote frames wiring (after A31)
+Guest eating frames while the eat timer runs, wave and cheer frames from emotePose, closed eyes on sleep; retire nothing yet. A final cleanup task (not queued) removes avatarParts.ts and the code hats after the owner's sign-off.
+
 ## TESTER LANE (agent ~/.claude/agents/tester.md; no code changes; run after G1-start, C5, C6, C7 and any large art round)
 SMOKE ROUTE (10 steps; report each as PASS/FAIL with a screenshot, plus console errors and any 404 for a sprite):
 1. `npm run dev`, open the page at 1000x700, then once at 420x760 (phone). Console must be clean; note load time.
@@ -230,7 +284,7 @@ OUTPUT: a short list of crashes, missing sprites, layout problems and anything t
 1. STYLE LOCK on art round R2 (first blocks, the register, one icon): the user signs it once. Recommended: look at the contact sheet and sign; later rounds follow it.
 2. CP-1 playtest: the whole tavern loop exists now (taps, casks, kitchen). Recommended: ask the user for the one-hour playtest right after G1, before C6/9g.
 3. Dungeon round 2 on (C7): changes run gold and the gold shares. Recommended: yes after the simulation shows 60 to 75% survival and the shares inside targets.
-4. U1 pixel avatar: hats in C6/B2 are drawn on the CURRENT box avatar. Recommended: yes, do that now; redraw hats if U1 is approved later (last art step, prototype first).
+4. U1 pixel avatar: DECIDED YES by the owner on 16 Nov (the box avatar is now only the fallback). Plan and tasks: docs/PLAN-CHARACTERS.md, queue section CHARACTERS U1 (B7, A24 to A31, C17 to C22). Hats of C6/B2 stay code until A29. Still to sign by the owner: the proportions (after B7) and the CHARACTER STYLE LOCK (after A24).
 5. The plugin: the Aseprite plugin is not attached now. Recommended: run all CODE-ART tasks (B1 to B6) meanwhile; they improve the look without it and none is wasted (sprites replace code art piece by piece).
 6. Push to GitHub: still the user's call (a push deploys). Recommended: ask after CP-1 passes and G1 is done.
 Everything else in this queue is decided (door design, hat list, tier numbers, folders, content list).

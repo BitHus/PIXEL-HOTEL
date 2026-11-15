@@ -46,3 +46,25 @@ then carpentry (12), dungeon/bone (crypt set), lake set, suite/garden (rare tier
   plus 5 icons (icons/counter, bar_stool, round_table, stove, brewing_barrel .png). Sources: art-src/aseprite/<id>.aseprite, icons_tavern_core.aseprite (5 frames).
   FOR THE CODER: code art gives round_table a surface height of 18 (surfaceHeight in render/furnitureArt.ts reads the code boxes), the sprite's top is at 26;
   bar_stool code seat is 15 high, the sprite seat is about 24. Raise those art boxes (or add a sprite override) so mugs and seated avatars line up.
+- R2 (16 Nov, drawn): table (64x58 down, 32x90 right), long_table (128x58 down, 32x154 right), chair (32x76 down, up, right), plant (32x64), bed (64x147 down and up, 96x114 right),
+  plus 5 icons (icons/chair, table, long_table, bed, plant .png). Sources art-src/aseprite/<id>.aseprite, <id>_right.aseprite, icons_hotel_start.aseprite.
+  Medieval touches so far: iron straps and rivets on table legs and the chair crown, brass studs and finials on the bed, tripod pedestal on the round table.
+  Also fixed: round_table outline pixels. The barrel belly was NOT done (the 32 px footprint leaves no room to widen; a belly needs a narrower top and bottom, left for a later pass).
+  FOR THE CODER (same note as R1): table and long_table sprite tops are at height 26 (code: 16, surfaceHeight reads the code boxes), chair seat about 18 (code 10), bed mattress about 22 (code 12).
+  Chair "right" has the backrest on the LEFT; "up" shows the back of the chair. Bed "down" has the headboard at the back, "up" at the front, "right" at the left; left is mirrored by the game.
+
+## MEDIEVAL DIRECTION (owner, 16 Nov; ART-STYLE.md gets the full section from the lead)
+Heavy timber, iron straps and studs, copper and brass, candles and lanterns, rushes, stone, thatch, banners, heraldry, barrels, kegs and tankards. Every redesign adds at least one of
+these (iron straps and rivets on joints, brass studs, a carved or heraldic mark, a candle or lantern, rushes under things). Warm timber, cool iron, a little crimson cloth.
+
+## Candidate list: medieval items missing from the furniture list (for the coder; no data added by the artist)
+Ids avoid clashes with existing ones (banner, kings_banner, wall_torch, pearl_chandelier, stone_fireplace, brick_oven, glass_cabinet, anchor exist).
+TAVERN (placeIn shop unless noted): trestle_table (3x1 surface, planks on trestles with benches built in), keg_stack (1x1 decor, 3 casks), iron_chandelier (wall/ceiling, light, candles),
+candelabra (1x1 onSurface, light), great_hearth (3x1, light, a big stone hearth with a spit), spit_roast (onSurface or hearth add-on), cauldron (1x1, hanging pot, decor or cooking flavour),
+tankard_rack and mug_shelf variants (wall), coat_of_arms and heraldic_banner (wall, ranks by colour), shield_wall (wall, 2 cells), rush_mat (floor decor, rug-like), hay_bale (1x1 seat or decor),
+wooden_bucket and water_trough (1x1 decor), cheese_rack (wall or 1x1 pantry decor), bellows (decor beside the hearth).
+HOTEL AND SUITE: four_poster_bed (already planned), storage_chest (1x1, trunk with iron straps, maybe storage later), weapon_rack (2x1 decor), suit_of_armor (1x1 tall, rare), lute_stand (1x1 decor),
+writing_desk with candle (already planned as writing_desk), wall_tapestry (wall, 2 cells), candle_stand (1x1, light), wash_basin (1x1 decor), cloak_hook_board (wall).
+CRAFT AND MINE FLAVOUR (decor, rare): anvil (1x1, tie to the forge flavour), grindstone (1x1), tool_wall (wall: hammers and tongs), bellows_forge_display.
+OUTDOOR (farm and lakeside, placeIn those rooms): well (2x2), scarecrow (already planned), cart (2x1), hay_cart, fence_post_lantern, dovecote (1x1 tall).
+Suggested first batch of about 5 (data only, art after): trestle_table, keg_stack, iron_chandelier, weapon_rack, anvil.

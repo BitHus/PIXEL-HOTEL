@@ -93,14 +93,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   An item can only be placed in a room that matches its placeIn.
 
 8. AVATARS
-- Layers: body, shoes, legs, torso, hair, hat, held item; each recolorable (palette index swap).
-- Slim, normal proportions (head about a quarter of the height), not chibi. Canvas 32x64, feet
-  at the bottom center; down, up, right drawn, left mirrored. The box avatar
-  (client/src/render/avatarParts.ts) is the approved base: do not change its shape.
-- Clothing is data (shared/data/clothing.json; free items, others hidden until unlocked).
-- Character creation once at a new game (look pickers, display name max 16: letters, digits,
-  spaces), then the hotel shape and the shop shape, then the new-game intro in the shop (a tap
-  skips it). The Avatar panel uses the same pickers.
+- Layers (U1, owner go 16 Nov): body (head, hands, skin), shoes, legs (bottoms), torso (top with sleeves), outer (cloak, tabard, apron, belt; optional), hair (back and front), face, hat, held item. Body layers are frame strips; head layers (hair, face, hat) are one picture per facing placed by a per-frame head offset (shared/data/avatarRig.json). Each recolourable layer uses key colours that are swapped for a ramp of the chosen colour (shared/data/ramps.json); hats keep fixed colours.
+- Proportions (owner confirms after the sheet B7): cosy three-head figure on a 32x64 canvas, feet at the bottom centre: about 54 px tall (head 17 px, shoulders 14 px wide) with the hat zone above it (nothing above 64). Down, up, right drawn, left mirrored. Stand = one walk frame; walk = 4 frames chosen by distance walked; sit = 1 frame per facing; eating, wave and cheer add 2 frames each later; face moods are single frames.
+- Look: medieval (docs/ART-STYLE.md MEDIEVAL DIRECTION): tunics, jerkins, aprons, hoods, cloaks, tabards, boots, belts. Endesga 32 only; a 1 px dark warm outline is added by code around the composed figure; light top-left. The box avatar (client/src/render/avatarParts.ts) is the FALLBACK until every layer exists and is retired when the owner signs the new avatar off.
+- Clothing is data (shared/data/clothing.json; free items, others hidden until unlocked); an id never changes, only its display name and sprite. AvatarLook stays compatible (a later optional `outer`). NPCs (guests, staff, roles) use the same body and layers; roles are data (shared/data/npcRoles.json).
+- Character creation once at a new game (look pickers, display name max 16: letters, digits, spaces), then the hotel shape and the shop shape, then the new-game intro in the shop (a tap skips it). The Avatar panel uses the same pickers.
 
 9. ECONOMY (all numbers in shared/config.ts)
 - One currency: gold (integer). Everything has a baseValue. New player (createNewPlayer): level
