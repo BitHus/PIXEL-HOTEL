@@ -16,8 +16,8 @@ A browser game with these parts:
   drop.
 - Shop: each player has a shop room. They put loot on shelves and set prices. NPC customers
   walk in and buy for gold. Gold buys furniture in the catalog.
-- Farm (section 10b, step 9b): an outdoor plot where the player grows crops in real time and
-  cooks them into food that heals or buffs them in the dungeon.
+- Farm (section 10b, steps 9b, BG6): a free-form outdoor room where the player plants seeds on soil,
+  harvests by punching, and cooks crops into food that heals or buffs them in the dungeon.
 - Mine (section 10c, step 9c): a short click-to-mine trip for ore. Ore is smelted into bars
   at the forge, and bars upgrade weapons, armor and the pickaxe.
 - Lakeside (section 10d, step 9f): an outdoor place with a lake: chop trees for wood and fish
@@ -127,18 +127,18 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - BLOCKS (step BG5, owner's decisions): every buildable room (hotel, shop/tavern, farm; the
   lakeside stays unbuildable) has a foreground layer Room.blocks: one block per cell
   ("col,row" -> { id, hits, hitAt }). Block types are data (shared/data/blocks.json: id, name,
-  hardness = hits to break, rank, baseValue, inCatalog, drops, seedId (null until BG6), placeIn,
+  hardness = hits to break, rank, baseValue, inCatalog, drops, seedId (`<id>_seed`, BG6), placeIn,
   icon); 10 starter blocks (dirt, clay, thatch, glass, planks, lantern block, stone, brick, mossy
   stone, cinder block), hardness 1 to 8. Blocks are items: they stack in Player.materials (group
   'block'), sit in the bag and the hotbar, are found in the Book (Blocks tab) and may stand on
   shop slots. A block may never stand on the door zone, outside the floor, on a cell with floor
-  furniture, on the farm's plots or cooking pot, on the cell of an avatar standing still, or on
+  furniture, on a plant or the cooking pot, on the cell of an avatar standing still, or on
   a cell that would shut the door off from the middle of the room or the shopkeeper's spot behind
   the counter (refused: 'door_blocked', 'counter_blocked'). Blocks block walking (roomBlockers);
   the grids are rebuilt and walkers and customers re-path. Only the room's owner places or breaks.
   Reach: BLOCK_REACH = 3 cells from the avatar (centre to centre); farther, the GameAPI answers
   with a walk to a spot near the cell and the client asks again on arrival. Punching: one hit
-  per tap, cooldown BLOCK_HIT_COOLDOWN_MS = 250; a block takes `hardness` hits; a half-broken
+  per tap (or held: HOLD TO REPEAT, see section 6 INPUT), cooldown BLOCK_HIT_COOLDOWN_MS = 250; a block takes `hardness` hits; a half-broken
   block heals after BLOCK_HEAL_MS = 6000 without a hit; cracks are drawn per stage (rendering
   only). A broken block drops itself back to the bag (always), its seed (BLOCK_SEED_CHANCE, if it
   has a seedId), its extra drops (blocks.json drops) and sometimes gems (gemDrop('block', rank),
@@ -146,6 +146,12 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   ('block_place', 'block_break'). The Catalog sells dirt, planks, stone and glass (Blocks tab,
   baseValue * 3, 1 or a pack of BLOCK_PACK); the rest comes from punching and later splicing.
   Input: see CLAUDE.md INPUT (play mode places and punches; Build mode moves furniture).
+  HOLD TO REPEAT (BG5b): pressing and holding on a block, a grown plant, a mine rock or a tree
+  repeats the hit at that thing's cooldown (250 / 250 / 400 / 400 ms), first hit on press, until it
+  breaks, the press ends, or the avatar is out of reach (it walks closer and goes on). A press that
+  moves 8 px is a pan; two fingers never hit. Holding still 300 ms with a block selected places blocks;
+  dragging then places a line (one per cell, HOLD_PLACE_MS = 150, only cells in reach, same rules). Not for the
+  dungeon fight (one hit per tap, no auto-attack) and not for fishing.
 - GEMS (started in BG5, BG4 finishes it): Player.wallet.gems (integer), ledger gemsDelta, shown in
   the info panel next to gold; never traded or sold. A known loop: place and punch the same block
   forever gives gems for free (gems have no use until packs, BG8; balance in BG9).
@@ -436,18 +442,32 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   rules as a room (kind 'farm'), with a grass floor, a fence or hedge in place of the back
   wall, and the door at the bottom. Sizes: level 1 576x384, level 2 704x480, level 3 832x576
   (upgrade 200 / 600 gold). The farm is unlocked from the start.
-- Soil plots: 32x32 tilled squares at fixed positions from config, in neat rows. Level 1 has 6
-  plots, level 2 has 12, level 3 has 20. Plots are part of the farm, not furniture; the player
-  can still place decorations (fences, plants, benches) around them in build mode.
-- Seeds are bought in the catalog (a Seeds tab) and stack in the bag. Planting: in play mode,
-  with a seed selected in the hotbar, tap an empty plot: the avatar walks there and plants.
-  Tapping a ripe plot walks there and harvests into the bag (stacks).
-- Crops grow in real time, also while the game is closed, in 3 visible stages (sprout, half,
-  ripe). Growth uses times passed in (no Date.now in shared/). No watering in v1.
-- Crops (all numbers in shared/data/crops.json): turnip (seed 4 gold, 5 min, worth 10),
-  potato (seed 6, 15 min, worth 16), carrot (seed 8, 30 min, worth 22), pumpkin (seed 15,
-  2 h, worth 50), glowcap mushroom (no seed for sale; 1 glowcap spore drops from 5% of
-  dungeon chests; 1 h, worth 40). One harvest gives 1 to 2 crops.
+- BG6 CHANGED THE FARM (owner's request): it is free-form. The fixed plots are gone; the only fixed thing
+  is the cooking pot. SOIL is a floor style ('soil', styles.json, free): a new farm has a 6 x 2 patch
+  (config FARM_START_SOIL); Room > Paint soil paints soil, painting grass over it removes it (a cell with a
+  plant stays soil). Decorations, paths and fences (blocks) go anywhere else.
+- SEEDS: every block (blocks.json seedId `<block>_seed`) and every crop (crops.json seed) has a seed item
+  with a seed icon in its colours; they stack in the bag and the hotbar. Basic crop seeds are sold in the
+  Catalog (Seeds tab, gold); block seeds drop from broken blocks (BLOCK_SEED_CHANCE), harvests (SEED_BACK_CHANCE)
+  and later splicing (BG7). The glowcap spore still only drops in the dungeon.
+- PLANTING: select a seed in the hotbar and tap a free soil cell of a farm room within BLOCK_REACH cells (farther:
+  the avatar walks closer first; holding still 300 ms and dragging plants a line). One plant per cell. A plant
+  blocks its cell like a small block (nav grids rebuilt, never on the door zone, furniture, the pot, an avatar
+  standing still, nor where it would shut the door off). Plants are Room.plants { seed, plantedAt, readyAt }.
+- GROWTH: 3 stages in real time, also while the game is closed (times passed in, no Date.now in shared/): sprout
+  (first half), small plant, full plant. Grow time by RANK of what grows (config SEED_GROW_MS): common 2 min,
+  rare 20 min, ultra_rare 3 h, legendary 12 h. No watering. A full plant waits until punched, no rotting.
+- HARVEST: punch the full plant (one hit, cooldown BLOCK_HIT_COOLDOWN_MS 250, hold to repeat): SEED_YIELD blocks
+  or crops by rank (common 2-4, rare 2-3, ultra_rare 1-2, legendary 1), SEED_BACK_CHANCE (30%) for the seed, and
+  gemDrop('harvest', rank) gems. The plant goes, the cell is free again. Punching an unripe plant does nothing
+  (a shake and "ready in n min"), so a tap never destroys it. All results go through the gains list and ledger
+  (reasons 'plant', 'harvest'). Pure functions: plantSeed, growthStage, harvestPlant, hitPlant (shared/src/farm.ts).
+- Crops (shared/data/crops.json): turnip (seed 4 gold, worth 10), potato (seed 6, worth 16), carrot (seed 8,
+  worth 22), pumpkin (seed 15, rare, worth 50), glowcap mushroom (no seed for sale; 1 glowcap spore drops from 5%
+  of dungeon chests; ultra_rare, worth 40). crops.json growMinutes is LEGACY (only the save migration uses it).
+- MIGRATION (save 15 -> 16): each old plot became a soil cell (snapped to the cell grid), each planted crop a plant
+  with the same crop, planting time and time left; crops and seeds in the bag are unchanged (same ids); GameState.farm
+  is gone; a toast explains the new farm once.
 - Cooking: a cooking pot stands in the farm at a fixed spot (not furniture, cannot be moved).
   Tap it to open the Cooking panel. Recipes (shared/data/food.json): roasted turnip (1
   turnip; heals 8 hp), potato stew (2 potato + 1 turnip; heals 15 hp), carrot soup (2 carrot

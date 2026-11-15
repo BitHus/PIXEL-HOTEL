@@ -51,3 +51,4 @@ export * from './guests.ts';
 export * from './blockTypes.ts';
 export * from './blocks.ts';
 export * from './gems.ts';
+export * from './hold.ts';

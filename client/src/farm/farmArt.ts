@@ -1,9 +1,9 @@
-// The farm's placeholder art (step 9b), drawn in code from boxes like the furniture: tilled soil
-// plots, the crop on top in its stage (sprout, half, ripe; the crop's colour from crops.json), the
+// The farm's placeholder art (steps 9b, BG6), drawn in code from boxes like the furniture: a plant in
+// its stage (sprout, small plant, full plant in the colours of its crop or block), the
 // cooking pot and the bouncing ripe marker. Light from the top-left: top faces lighter, fronts darker.
 
 import { Graphics } from 'pixi.js';
-import { COOKING_POT, PALETTE, getCropType, type CropId, type CropStage, type Rect } from '@pixel-hotel/shared';
+import { COOKING_POT, PALETTE, getMaterialType, paletteColor, seedProduct, type PaletteName, type PlantStage, type SeedId } from '@pixel-hotel/shared';
 import { DARK_WARM } from '../render/bareStyles.ts';
 import { shade } from '../render/colors.ts';
 
@@ -17,50 +17,43 @@ function box(g: Graphics, x: number, y: number, w: number, d: number, h: number,
   g.rect(x, y - h, w, h).fill(shade(color, 0.75));
 }
 
-/** One plot's tilled soil with furrows. */
-export function drawPlot(g: Graphics, r: Rect): void {
-  g.rect(r.x - 1, r.y - 1, r.w + 2, r.h + 2).fill(DARK_WARM);
-  g.rect(r.x, r.y, r.w, r.h).fill(SOIL);
-  for (let y = r.y + 4; y < r.y + r.h; y += 8) {
-    g.rect(r.x + 2, y, r.w - 4, 2).fill(shade(SOIL, 0.7));
-    g.rect(r.x + 2, y + 2, r.w - 4, 1).fill(shade(SOIL, 1.2));
-  }
+/** The two colours of what a seed grows (the icon colours of the crop or the block), as hex. */
+function plantColors(seed: SeedId): { main: string; accent: string } {
+  const [c0, c1] = getMaterialType(seedProduct(seed)).icon.colors as [PaletteName, PaletteName | undefined];
+  return { main: paletteColor(c0), accent: paletteColor(c1 ?? c0) };
 }
 
-/** The crop on a plot in its stage: little sprouts, bigger leaves, then the ripe crop showing. */
-export function drawCrop(g: Graphics, r: Rect, crop: CropId, stage: CropStage): void {
-  const color = PALETTE[getCropType(crop).color] ?? PALETTE[0];
-  const cx = r.x + r.w / 2;
-  const spots = [
-    { x: r.x + 9, y: r.y + 12 },
-    { x: r.x + r.w - 9, y: r.y + 12 },
-    { x: cx, y: r.y + r.h - 6 },
-  ];
+/**
+ * A plant in its stage on one 32 x 32 cell (top-left at 0, 0; the stem stands at the bottom middle): a sprout, a
+ * small plant, then the full plant with its crop or block colour showing. Placeholder art in code.
+ */
+export function drawPlantArt(g: Graphics, seed: SeedId, stage: PlantStage): void {
+  const { main, accent } = plantColors(seed);
+  const cx = 16;
+  const base = 30;
+  g.ellipse(cx, base, 8, 2).fill({ color: DARK_WARM, alpha: 0.35 });
   if (stage === 'sprout') {
-    for (const s of spots) {
-      g.rect(s.x - 1, s.y - 4, 2, 4).fill(LEAF);
-      g.rect(s.x - 3, s.y - 5, 2, 2).fill(shade(LEAF, 1.2));
-      g.rect(s.x + 1, s.y - 5, 2, 2).fill(shade(LEAF, 1.2));
-    }
+    g.rect(cx - 1, base - 8, 2, 8).fill(LEAF);
+    g.rect(cx - 5, base - 10, 4, 3).fill(shade(LEAF, 1.2));
+    g.rect(cx + 1, base - 11, 4, 3).fill(shade(LEAF, 1.2));
+    g.rect(cx - 1, base - 1, 2, 1).fill(shade(SOIL, 0.6));
     return;
   }
-  if (stage === 'half') {
-    for (const s of spots) {
-      box(g, s.x - 4, s.y, 8, 4, 4, LEAF);
-      g.rect(s.x - 1, s.y - 11, 2, 3).fill(shade(LEAF, 1.25));
-    }
+  if (stage === 'small') {
+    g.rect(cx - 1, base - 16, 2, 16).fill(shade(LEAF, 0.85));
+    box(g, cx - 9, base - 6, 8, 4, 3, LEAF);
+    box(g, cx + 2, base - 11, 8, 4, 3, shade(LEAF, 1.1));
+    g.rect(cx - 2, base - 21, 4, 4).fill(shade(accent, 0.9)); // the bud, in the colour to come
     return;
   }
-  // Ripe: the crop itself, big and in its colour, with leaves on top.
-  if (crop === 'pumpkin') {
-    box(g, cx - 11, r.y + r.h - 4, 22, 10, 10, color);
-    g.rect(cx - 1, r.y + r.h - 28, 3, 5).fill(PALETTE[14]);
-    return;
-  }
-  for (const s of spots) {
-    box(g, s.x - 5, s.y, 10, 5, 5, color);
-    g.rect(s.x - 3, s.y - 14, 2, 4).fill(LEAF);
-    g.rect(s.x + 1, s.y - 15, 2, 5).fill(shade(LEAF, 1.2));
+  // Fully grown: a bush with the crop (or block) colour on it.
+  g.rect(cx - 1, base - 18, 2, 18).fill(shade(LEAF, 0.8));
+  box(g, cx - 11, base - 4, 22, 6, 5, shade(LEAF, 0.95));
+  box(g, cx - 8, base - 12, 16, 6, 5, LEAF);
+  box(g, cx - 6, base - 19, 12, 5, 4, shade(LEAF, 1.15));
+  for (const [x, y] of [[-9, -2], [6, -3], [-3, -10], [2, -16]] as const) {
+    box(g, cx + x, base + y, 5, 3, 3, main);
+    g.rect(cx + x, base + y - 6, 3, 1).fill(shade(accent, 1.2));
   }
 }
 

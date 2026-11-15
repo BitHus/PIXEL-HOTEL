@@ -11,9 +11,8 @@
 //   inventory (with what stands on it).
 // - Shop catch-up: customers.ts catchUpShop (step 9d: it only fills the queue; no gold).
 
-import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
-import { growPlots } from './farm.ts';
-import { noPlaceRects } from './farmLayout.ts';
+import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, SOIL_STYLE, type RoomLevel } from './config.ts';
+import { keepSoilUnderPlants, plantsOverlapping } from './farm.ts';
 import { FURNITURE_TYPES, doorReachesMiddle, footprintRect, getFurnitureType, pickUpItem, roomBlockers } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
@@ -46,6 +45,9 @@ export function buyCatalog(state: GameState, typeId: string, at: number): GameSt
 export function isStyleUnlocked(state: GameState, kind: StyleKind, id: string): boolean {
   return state.player.unlockedStyles.includes(styleKey(kind, id));
 }
+
+/** The farm's own floors (step BG6): soil and grass are free for the player to paint on a farm room. */
+const FARM_FLOORS: readonly string[] = [SOIL_STYLE, 'grass'];
 
 /**
  * Buys a catalog style (baseValue * 3) and unlocks it forever. Null if it is unknown, not in the
@@ -83,11 +85,14 @@ export function upgradeCost(room: Room): number | null {
  * rectangle is floor.
  */
 export function paintFloor(state: GameState, roomId: number, a: { c: number; r: number }, b: { c: number; r: number }, id: string): GameState | null {
-  if (!isStyleUnlocked(state, 'floor', id)) return null;
   const room = state.rooms.find((r) => r.id === roomId);
   if (!room || room.kind === 'lakeside') return null;
-  const changed = paintFloorCells(room, a, b, id);
-  if (changed === room) return null;
+  // A farm paints soil and grass (free); every other room paints the floors the player has unlocked.
+  if (room.kind === 'farm' ? !FARM_FLOORS.includes(id) : !isStyleUnlocked(state, 'floor', id)) return null;
+  const painted = paintFloorCells(room, a, b, id);
+  if (painted === room) return null;
+  // A cell with a plant stays soil.
+  const changed = room.kind === 'farm' ? keepSoilUnderPlants(painted) : painted;
   return { ...state, rooms: state.rooms.map((r) => (r.id === roomId ? changed : r)) };
 }
 
@@ -106,23 +111,21 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   const level = (room.level + 1) as RoomLevel;
   // The next level of the room's shape: its floor contains the old one, so every item still fits.
   const grown: Room = roomAtLevel(room, level);
-  // The new door zone, and on a farm the new plots, must be free: what stands there goes back.
+  // The new door zone must be free: what stands there goes back.
   const zone = doorZoneRect(grown);
-  const plots = noPlaceRects(grown);
   let items = paid.items;
   for (const i of paid.items) {
     const t = getFurnitureType(i.typeId);
     if (i.roomId !== roomId || i.onItemUid !== null || t.wall || t.noPickup) continue;
     const fp = footprintRect(i, t);
-    if (rectsOverlap(fp, zone) || plots.some((r) => rectsOverlap(fp, r))) items = pickUpItem(items, i.uid);
+    if (rectsOverlap(fp, zone)) items = pickUpItem(items, i.uid);
   }
-  const farm = grown.kind === 'farm' && paid.farm.roomId === roomId ? growPlots(paid.farm, level) : paid.farm;
-  let next = returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items, farm }, at);
-  // Blocks (step BG5) on the new door zone or plots go back to the bag; if the door still cannot reach
-  // the middle of the grown room, all of its blocks do.
+  let next = returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items }, at);
+  // Blocks (step BG5) on the new door zone go back to the bag, and so do the seeds of plants there (BG6); if the
+  // door still cannot reach the middle of the grown room, all of its blocks do.
   const room2 = next.rooms.find((r) => r.id === roomId) ?? grown;
-  const hit = [...blocksOverlapping(room2, zone), ...plots.flatMap((p) => blocksOverlapping(room2, p))];
-  next = returnBlocks(next, roomId, hit, at);
+  next = returnBlocks(next, roomId, blocksOverlapping(room2, zone), at);
+  next = returnPlants(next, roomId, plantsOverlapping(next.rooms.find((r) => r.id === roomId) ?? grown, zone), at);
   const room3 = next.rooms.find((r) => r.id === roomId) ?? grown;
   if (!doorReachesMiddle(room3, roomBlockers(room3, next.items))) {
     next = returnBlocks(next, roomId, Object.keys(room3.blocks).map((k) => {
@@ -161,6 +164,23 @@ function returnBlocks(state: GameState, roomId: number, cells: { c: number; r: n
   const given = applyChange(state, { reason: 'block_return', materials: back, notFound: back, note: `room ${roomId} changed` }, at);
   if (!given) return state;
   return { ...given, rooms: given.rooms.map((r) => (r.id === roomId ? { ...r, blocks } : r)) };
+}
+
+/** Takes plants out of a room and gives their seeds back (ledger 'block_return'): they stood where the door is now. */
+function returnPlants(state: GameState, roomId: number, cells: { c: number; r: number; seed: string }[], at: number): GameState {
+  if (cells.length === 0) return state;
+  const room = state.rooms.find((r) => r.id === roomId);
+  if (!room) return state;
+  const plants = { ...room.plants };
+  const back: Record<string, number> = {};
+  for (const p of cells) {
+    if (!plants[`${p.c},${p.r}`]) continue;
+    delete plants[`${p.c},${p.r}`];
+    back[p.seed] = (back[p.seed] ?? 0) + 1;
+  }
+  const given = applyChange(state, { reason: 'block_return', materials: back, notFound: back, note: `room ${roomId} changed` }, at);
+  if (!given) return state;
+  return { ...given, rooms: given.rooms.map((r) => (r.id === roomId ? { ...r, plants } : r)) };
 }
 
 /** Catalog price of a block: baseValue * 3. */

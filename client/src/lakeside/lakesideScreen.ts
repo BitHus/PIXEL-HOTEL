@@ -307,19 +307,20 @@ export class LakesideScreen {
   }
 
   // ---------- Woodcutting ----------
-  private async swing(i: number): Promise<void> {
+  /** Swings once. 'go' = done, hold on; 'stop' = felled or not choppable; 'walk' = it walks to the tree first. */
+  private async swing(i: number): Promise<'go' | 'stop' | 'walk'> {
     const r = await this.hooks.api.chopTree(i);
     if (!r) {
       // Not next to the tree after all: walk there.
       const ok = await this.hooks.walkTo(treeStand(i));
       if (ok) this.pending = { kind: 'chop', index: i };
-      return;
+      return ok ? 'walk' : 'stop';
     }
     this.set(r.lakeside);
-    if (r.kind === 'cooldown') return;
+    if (r.kind === 'cooldown') return 'go';
     if (r.kind === 'regrowing') {
       this.hooks.toast('This tree grows back later.');
-      return;
+      return 'stop';
     }
     const a = treeAnchor(i);
     const me = this.hooks.avatar();
@@ -338,6 +339,32 @@ export class LakesideScreen {
       }
       await this.hooks.afterChange();
     }
+    return r.kind === 'felled' ? 'stop' : 'go';
+  }
+
+  /** Hold to repeat (BG5b): the standing tree under a point, or null (a tree that grows back is not held). */
+  treeUnder(p: Point): number | null {
+    if (!this.lake || this.session || this.pending?.kind === 'cast') return null;
+    const i = treeAt(p);
+    if (i === null) return null;
+    const t = this.lake.trees[i];
+    if (!t) return null;
+    const left = t.regrowInMs === null ? null : t.regrowInMs - (performance.now() - this.readAt);
+    return left !== null && left > 0 ? null : i;
+  }
+
+  /** One held swing at a tree: swings when next to it, else walks there (the hold goes on after arriving). */
+  async holdSwing(i: number): Promise<'go' | 'stop' | 'walk'> {
+    const me = this.hooks.avatar();
+    const a = treeAnchor(i);
+    if (Math.hypot(me.x - a.x, me.y - a.y) <= CHOP_REACH_PX) return this.swing(i);
+    const ok = await this.hooks.walkTo(treeStand(i));
+    if (!ok) {
+      this.hooks.toast('There is no way to that tree.');
+      return 'stop';
+    }
+    this.pending = { kind: 'chop', index: i };
+    return 'walk';
   }
 
   // ---------- Fishing ----------

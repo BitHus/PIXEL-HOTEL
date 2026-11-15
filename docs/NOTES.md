@@ -916,6 +916,8 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 ## Farm and cooking (step 9b)
 
+- CHANGED IN BG6 (see the BG6 section at the end): the fixed plots, Plot / FarmState, plantPlot / harvestPlot and GameState.farm are GONE (seeds are planted on soil cells and punched, Room.plants). The cooking pot, crops, food, cooking and the lunch box below still hold. Read the BG6 section first.
+
 - Step 9b (farm and cooking, section 10b):
   - Data: shared/data/crops.json (turnip, potato, carrot, pumpkin, glowcap: seed id and name,
     seedPrice (null = not sold: the glowcap spore), seedValue, growMinutes, baseValue, colours),
@@ -1241,3 +1243,81 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 - CHECKED BY EYE (headless Chromium, 900 x 640): place 5 dirt blocks, punch one (it breaks, a chip
   floats up), stone cracks after 2 hits, glass and lantern art. A bug found that way: the hotbar
   did not accept blocks (fitsArea) and the popup chip was stretched by a CSS order clash; both fixed.
+
+## BG5b: hold to repeat (step BG5b)
+
+- CHANGES THE INPUT RULE (CLAUDE.md INPUT, BRIEF section 6a): a press on a block, grown plant (BG6), mine
+  rock or standing tree is a HOLD: it hits at once and repeats at that thing's cooldown until it breaks
+  (the API answers 'broken' / 'felled' / the rock is gone), the press ends, or it moves past
+  TAP_MAX_MOVE_PX (then it is a pan and never hits). A second finger cancels the hold. The press never
+  taps afterwards, so a short tap is exactly one hit (made on press, not on release). A tap on a far block
+  still walks closer and hits once on arrival (pendingBlock, only when no hold is running).
+  NOT for the dungeon fight (click_enemy stays one hit per tap) and NOT for fishing (the reel has its own taps).
+- PURE: shared/src/hold.ts: HoldState { active, lastHitAt }, holdStart, holdStop, holdMoved (pan check),
+  holdTick(state, nowMs, cooldownMs) -> { state, hit } (first tick hits; one hit per call; next hit a full
+  cooldown after the last one, never earlier, so the API cooldown never refuses it; a long stall gives one
+  hit, no burst), cellsBetween(a, b) (cells a fast drag passed over, no gaps). Config HOLD_PLACE_START_MS
+  (= TAP_MAX_MS), HOLD_PLACE_MS 150. Tests: shared/src/hold.test.ts (8), client/src/input/holdControl.test.ts (6),
+  blocksAPI.test.ts (held punching with no refused hits, out of reach = walk).
+- CLIENT: input/cameraControl.ts has new hooks onPress (returns 'repeat' to claim the press), onHoldStill
+  (after HOLD_PLACE_START_MS still: true = a 'line' hold, moves then do not pan), onHoldMove, onHoldEnd.
+  input/holdControl.ts HoldControl keeps the HoldState and sends ONE request per hit via deps.hit (-> GameAPI);
+  answers: 'go', 'stop', 'walk' (waits until the avatar stopped walking, then goes on), 'retry' (too early:
+  the cooldown is not used up, asked again next frame; used for the API's 'cooldown' refusal and the mine's own
+  clock). main.ts: holdTargetAt (block / tree / rock under a press), doBlock returns a HoldResult, the ticker
+  calls hold.tick() (also in the dungeon). Rooms: hold is off while a panel, build, paint, placing, blockers or
+  fishing is on. Mine: DungeonScreen.rockUnder / holdRock send click_rock again (the step function keeps its
+  400 ms cooldown; the screen waits while run.timeMs < pickReadyAt). Trees: LakesideScreen.treeUnder /
+  holdSwing (walks next to the tree when too far, then the hold goes on); a felled tree ends the hold.
+- PLACING: with a block selected, a short tap places one block as before. Holding still 300 ms on a free
+  cell starts a line: the first block goes down, and the cells the pointer crosses are queued (cellsBetween)
+  and placed one per 150 ms; cells out of reach, taken or refused are skipped quietly (no walking, no toast).
+  Why 300 ms and not "on press": a press on free floor with a block selected must still be able to start a
+  pan, or every pan would drop a stray block.
+- CHECK BY HAND (owner): PC: hold the mouse on a stone block (it cracks and breaks, no clicking), hold on a
+  tree, hold on a mine rock, hold on far blocks (walks, then hits), hold with dirt selected and drag along the
+  floor (a line). Phone: finger hold on a block, a drag that starts on a block pans (one hit may land first), two-finger
+  pinch never keeps punching.
+- KNOWN: the first hit happens on press, so a pan that starts on a block or a tree gives one hit before the pan
+  (the owner asked for hit-on-press). Not run on a real phone by the AI.
+
+## BG6: seeds and the free-form farm (step BG6)
+
+- OWNER'S REQUEST (changes CLAUDE.md 10b and 9, BRIEF 10b). The farm is free-form: no fixed plots, soil = a floor style.
+- DATA: types.ts SeedId = CropSeedId | BlockSeedId (`${BlockId}_seed`). blocks.json seedId is now `<id>_seed` for all 10
+  blocks. materials.ts adds a 'seed' material per block (name "Dirt seed", icon { shape 'seed', colors = the block's two
+  colours }, baseValue = half the block's, rank = the block's). styles.json: floor 'soil' (not in the catalog; the farm paints
+  soil and grass for free, economy.paintFloor: FARM_FLOORS). crops.json growMinutes is LEGACY (migration only).
+  Config: SEED_GROW_MS (rank: common 2 min, rare 20 min, ultra_rare 3 h, legendary 12 h), SEED_YIELD, SEED_BACK_CHANCE 0.3,
+  PLANT_SPROUT_SHARE 0.5, GEMS.harvest, FARM_START_SOIL { c 2, r 2, w 6, h 2 }, SOIL_STYLE; the old FARM_PLOTS became
+  LEGACY_FARM_PLOTS (+ _PER_LEVEL), read only by migration 15 -> 16.
+- SHARED (all pure): room.ts Plant { seed, plantedAt, readyAt }, Room.plants (key "col,row", like blocks), plantInCell,
+  plantList, blockRects now includes plants (so roomBlockers, every nav grid and the door checks see them). blocks.ts:
+  blockProblem is now cellProblem(room, items, placeIn, c, r, ctx) (taken = a block OR a plant) + the BlockProblem
+  values 'no_soil', 'no_plant', 'unripe'. farm.ts (rewritten): seedProduct / seedRank / seedGrowMs, isSoil / soilCells,
+  growthStage (sprout, small, full), isRipe, readyInMs, plantProblem, plantSeed (ledger 'plant'), harvestPlant(plant, rng)
+  (rolls: amount, seed back, gems), hitPlant(state, roomId, c, r, at, lastHitAt, rng, from) (order: owner, plant, reach,
+  unripe, cooldown), plantsOverlapping, seedsForSale / buySeeds, farmCounts(room, now), keepSoilUnderPlants.
+  farmLayout.ts: only the pot is fixed (potRect, fixedBlockers, noPlaceRects = [pot]). legacyFarm.ts: the old farm
+  shape and convertLegacyFarm, ONLY for migrations. economy.upgradeRoom: no plot logic; plants on the new door zone
+  give their seed back (reason 'block_return').
+- MIGRATION 15 -> 16 (SAVE_VERSION 16, tests in save.test.ts): GameState.farm removed; each old plot -> a soil cell
+  (floorCells, snapped); planted crop -> plant { seed: the crop's seed, plantedAt: same, readyAt: plantedAt + the crop's OLD
+  growMinutes } so the stage and the time left stay exactly the same (new plants use the rank times); every room gets
+  plants {}; LoadResult.farmChanged (version < 16) -> LocalGameAPI shows the one-time toast. A migrated plant keeps
+  its old time, so a migrated carrot still needs 30 min.
+- GAMEAPI: plantSeed(c, r, seed) and hitPlant(c, r) return BlockResult (new kinds 'planted', 'harvested', 'unripe' with
+  leftMs; 'walk' and 'refused' as for blocks; the cooldown is the same lastBlockHitAt). getFarm() = FarmView { ripe, growing,
+  free } for the Map card. plant / harvest are gone. Planting finishes the farm hint (FARM_HINT).
+- CLIENT: farm/farmScreen.ts is only the pot now; farm/plantViews.ts (PlantViews: a node per plant in view.objects, stage art
+  farmArt.drawPlantArt, bobbing ripe marker, shake for an unripe punch, harvest puff, seed ghost); styleArt 'soil'. main.ts:
+  selectedBlock may be a seed (selectedProblem picks plantProblem or blockProblem), doBlock plants / punches (a plant in
+  the cell -> api.hitPlant; 'unripe' -> shake + toast + the hold stops), hold target kind 'plant', line hold plants seeds
+  too, paintableStyles() (the farm paints soil and grass). Room panel on the farm: Soil cells N, Paint soil.
+- LOOPS: block seeds drop from breaking blocks (20%) and come back from harvests (30%): per cycle (1 seed -> 2 to 4 blocks
+  -> 0.2 seeds each + 0.3 back) a loop decays, not grows (about 0.9 to 1.2 seeds per cycle, so dirt can be farmed
+  slowly; BG9 balances it).
+- TESTS: farm.test.ts (20), save.test.ts (4 new), farmAPI.test.ts, blocks.test.ts adjusted. By hand in headless Chromium
+  (900 x 640): an old v15 save (toast, 6 soil cells, a ripe turnip with its marker, a young pumpkin), plant by tap (walks,
+  plants), a hold on an unripe plant (nothing happens), a hold on ripe plants (harvest), a stone line by hold + drag, hold
+  on stone (breaks by itself, drops a stone seed), hold on a tree (walks, 5 swings, +3 wood). NOT checked: mine rocks, a real phone.

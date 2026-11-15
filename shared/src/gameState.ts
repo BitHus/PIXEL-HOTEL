@@ -7,7 +7,6 @@ import type { Room } from './room.ts';
 import type { ShopState } from './shop.ts';
 import type { FurnitureItem, LedgerEntry, Player } from './types.ts';
 import type { DungeonRun } from './dungeon/run.ts';
-import type { FarmState } from './farm.ts';
 import type { LakesideState } from './woodcut.ts';
 import type { TavernState } from './tavern.ts';
 
@@ -34,8 +33,6 @@ export interface GameState {
   hintsDone: number;
   /** The dungeon run in progress (step 9), saved so a reload resumes it; null between runs. */
   run: DungeonRun | null;
-  /** The farm's plots (step 9b, farm.ts); the farm room itself is in rooms. */
-  farm: FarmState;
   /** The lakeside's trees (step 9f, woodcut.ts); the lakeside room itself is in rooms. */
   lakeside: LakesideState;
   /** The tavern (step 9t, tavern.ts): the menu, guests, coins and dishes on the tables, brews. It is the shop room. */

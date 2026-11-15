@@ -6,7 +6,6 @@ import type { BookTab } from './book.ts';
 import type { BarId, CropId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
 import type { ChopKind } from './woodcut.ts';
-import type { Plot } from './farm.ts';
 import type { RoomLevel } from './config.ts';
 import type { Customer, ShopEvent } from './customers.ts';
 import type { ShelfSlotRef, StockPick } from './shop.ts';
@@ -122,20 +121,16 @@ export interface RunUpdate {
   gains: GainList;
 }
 
-/** The farm as the client sees it (step 9b). `at` is the API's clock when it was read: stages are
- *  worked out with stageOf(plot, at + time since). */
+/** The farm as the client sees it (step BG6): counts for the Map card. The plants themselves are in Room.plants. */
 export interface FarmView {
   roomId: number;
   level: RoomLevel;
-  plots: Plot[];
+  /** Fully grown plants waiting to be punched. */
+  ripe: number;
+  growing: number;
+  /** Soil cells with nothing planted. */
+  free: number;
   at: number;
-}
-
-export interface HarvestResult {
-  farm: FarmView;
-  crop: CropId;
-  qty: number;
-  gains: GainList;
 }
 
 /** One tree as the client sees it (step 9f). */
@@ -187,6 +182,12 @@ export type BlockResult =
   | { kind: 'placed'; room: Room; c: number; r: number; gains: GainList }
   | { kind: 'cracked'; room: Room; c: number; r: number; hits: number; hardness: number; gains: GainList }
   | { kind: 'broken'; room: Room; c: number; r: number; gains: GainList }
+  /** A seed went into a soil cell (step BG6). */
+  | { kind: 'planted'; room: Room; c: number; r: number; gains: GainList }
+  /** A grown plant was punched and harvested: `gains` has what grew, the seed back and gems. */
+  | { kind: 'harvested'; room: Room; c: number; r: number; gains: GainList }
+  /** A plant that is not fully grown was punched: nothing happens, leftMs says how long it still needs. */
+  | { kind: 'unripe'; c: number; r: number; leftMs: number }
   | { kind: 'walk'; path: Point[] }
   | { kind: 'refused'; problem: BlockProblem };
 
@@ -286,11 +287,12 @@ export interface GameAPI {
   /** Buys gear or a potion in the Blacksmith. Null if owned, at the potion limit, or gold is short. */
   buyGear(id: ShopGearId): Promise<GainList | null>;
   // ---------- Step 9b: the farm and cooking ----------
+  /** Counts for the Map card (ripe, growing, free soil). */
   getFarm(): Promise<FarmView>;
-  /** Plants one seed from the bag on an empty plot. Null = refused (not empty, no seed). */
-  plant(plot: number, seed: SeedId): Promise<FarmView | null>;
-  /** Harvests a ripe plot into the bag (1 to 2 crops). Null = not ripe. */
-  harvest(plot: number): Promise<HarvestResult | null>;
+  /** Plants one seed from the bag in a soil cell within BLOCK_REACH ('walk' when farther; 'refused' says why: no_soil, taken...). */
+  plantSeed(c: number, r: number, seed: SeedId): Promise<BlockResult>;
+  /** One punch at the plant in a cell (cooldown BLOCK_HIT_COOLDOWN_MS): a grown plant is harvested, an unripe one answers 'unripe' and is left alone. */
+  hitPlant(c: number, r: number): Promise<BlockResult>;
   /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
   buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
   /** Cooks one food at the pot. Null without all ingredients. */

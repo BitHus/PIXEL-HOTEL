@@ -24,7 +24,7 @@ export interface BlockType {
   inCatalog: boolean;
   /** Extra drops besides the block itself (which always comes back). */
   drops: BlockDrop[];
-  /** The seed a broken block may drop (step BG6 fills it in); null until then. */
+  /** The seed a broken block may drop, and that grows this block when planted (step BG6): `<id>_seed`. */
   seedId: MaterialId | null;
   /** The room kinds it can be placed in. */
   placeIn: RoomKind[];

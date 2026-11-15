@@ -84,6 +84,19 @@ const FLOORS: Record<string, Paint> = {
     for (const [x, y] of [[17, 18], [53, 6], [38, 50]] as const) rect(ctx, x, y, 1, 1, PALETTE[11]);
     rect(ctx, 30, 22, 2, 1, shade(base, 0.85));
   },
+  // Tilled soil (step BG6): brown with furrows and a few pebbles, seamless. Seeds grow here.
+  soil: (ctx, n) => {
+    const base = PALETTE[5];
+    rect(ctx, 0, 0, n, n, base);
+    for (let y = 4; y < n; y += 16) {
+      rect(ctx, 0, y, n, 3, shade(base, 0.72));
+      rect(ctx, 0, y + 3, n, 1, shade(base, 1.22));
+    }
+    for (const [x, y] of [[6, 11], [21, 25], [40, 9], [55, 41], [13, 52], [33, 36], [47, 58]] as const) {
+      rect(ctx, x, y, 2, 1, shade(base, 1.3));
+      rect(ctx, x + 1, y + 1, 1, 1, shade(base, 0.8));
+    }
+  },
 };
 
 const WALLS: Record<string, Paint> = {

@@ -163,7 +163,10 @@ export type EnemyDropId =
 export type OreId = 'copper_ore' | 'iron_ore' | 'mithril_ore';
 export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 /** Farm goods (section 10b, step 9b): seeds (crops.json), crops (crops.json) and food (food.json). */
-export type SeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
+export type CropSeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
+/** Every block has a seed (step BG6): `<block id>_seed`; planted, it grows blocks. */
+export type BlockSeedId = `${BlockId}_seed`;
+export type SeedId = CropSeedId | BlockSeedId;
 export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
 export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth' | 'grilled_perch' | 'carp_stew' | 'eel_pie';
 /** The lakeside (section 10d, step 9f): fish (fish.json) and the things fished up (also fish.json), and what trees give besides wood. */

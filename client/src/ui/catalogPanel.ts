@@ -9,6 +9,7 @@ import { rankName } from './rank.ts';
 import {
   STYLE_TYPES,
   getCropType,
+  seedGrowMs,
   seedsForSale,
   type BlockType,
   type CropType,
@@ -57,8 +58,10 @@ const TABS = [
 /** Where a furniture type goes, in words (for the confirm panel). */
 export const WHERE: Record<FurnitureType['placeIn'], string> = { hotel: 'the hotel room', shop: 'the shop', both: 'the hotel room or the shop' };
 
+/** How long a seed takes to be fully grown, in words (step BG6: by rank, config SEED_GROW_MS). */
 export function growText(c: CropType): string {
-  return c.growMinutes >= 60 ? `${c.growMinutes / 60} h` : `${c.growMinutes} min`;
+  const min = Math.round(seedGrowMs(c.seed) / 60_000);
+  return min >= 60 ? `${min / 60} h` : `${min} min`;
 }
 
 export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): CatalogPanel {
@@ -116,7 +119,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
       return;
     }
     if (tab === 'seeds') {
-      note.textContent = `Plant seeds on your farm. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`;
+      note.textContent = `Plant seeds in the soil of your farm and punch them when grown. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`;
       for (const c of seedsForSale()) list.appendChild(seedCard(c));
       return;
     }

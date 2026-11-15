@@ -62,7 +62,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
 - BLOCKS (BG5): Room.blocks = a foreground layer, one block per cell (shared/data/blocks.json, items
-  in the bag and hotbar). Never on the door zone, off the floor, on floor furniture, farm plots or
+  in the bag and hotbar). Never on the door zone, off the floor, on floor furniture, plants or
   the pot, or under an avatar standing still. They block walking: a block that would shut the door
   off from the middle or the counter's staff spot is refused. In hotel, shop and farm only (owner).
 
@@ -114,7 +114,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   fills the queue (looks back at most 8 h). No "while you were away" summary.
 - Customers walk 72 px/s (+-10%), at most 5 NPCs in the shop, no fixed route (window-shoppers,
   pairs, talk lines from shared/data/npcLines.json); behind the counter is staff only.
-- Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), seeds, fees.
+- Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
 - No trading in v1. Every change to gold or items goes through ONE function (ledger.ts
   applyChange) and is written to the ledger.
 
@@ -139,9 +139,16 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - THE BOOK: everything ever found (grey "???" until seen); 25 / 50 / 75 / 100% of a tab gives gold.
 
 10b. FARM
-- Outdoor room (kind 'farm', 3 levels, open from the start): soil plots at fixed spots (6 / 12 /
-  20) and a fixed cooking pot. Seeds from the catalog; crops (shared/data/crops.json) grow in
-  real time, also while the game is closed, in 3 stages; a harvest gives 1 to 2. No watering.
+- Outdoor room (kind 'farm', 3 levels, open from the start), FREE-FORM since BG6: no fixed plots, only
+  the cooking pot is fixed. SOIL = floor cells painted 'soil' (new farm: a 6 x 2 patch; the player paints
+  or removes soil for free, Room > Paint soil). Every block and every crop has a SEED item (`<block>_seed`,
+  crops.json seeds, icon = the seed shape in its colours). Select a seed, tap a soil cell in reach (BLOCK_REACH):
+  one plant per cell, it blocks the cell like a small block. It grows in 3 stages (sprout, small, full) in real
+  time, also while the game is closed (SEED_GROW_MS by rank: common 2 min, rare 20 min, ultra_rare 3 h,
+  legendary 12 h; no watering, no rotting). Harvest = PUNCH the full plant (one hit, hold works): SEED_YIELD
+  blocks or crops by rank (1 to 4), SEED_BACK_CHANCE for the seed, gemDrop 'harvest'. An unripe plant only shakes
+  and says when it is ready. Basic crop seeds are sold (gold); block seeds and rarer ones come from drops.
+  Paths and fences are blocks. Hold to repeat: see INPUT.
 - Cooking recipes: shared/data/food.json. Up to 3 food items go into the dungeon (lunch box; lost
   on death). Crops and food sell in the shop.
 
@@ -216,9 +223,11 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
 - Step BG3 is HALF done: A (gains lists, shared/src/gains.ts) done; B: the popup module exists
   (ui/gainPopups.ts, Settings "Popups"), wired for blocks only; chest, kill, fish, harvest next.
 - BG4 (gems) STARTED inside BG5: wallet.gems, ledger gemsDelta, gemDrop (block source), info panel.
-  BG5 (blocks and punching) is done (NOTES BG5). Next: BG4 other sources, BG6-BG9, then 9t B/C, 9g.
+  BG5 (blocks), BG5b (hold to repeat) and BG6 (seeds, the free-form farm: soil cells, plants grown in real
+  time, harvest by punching; the old plots migrated) are done (NOTES BG5, BG5b, BG6). Next: BG4 other gem
+  sources, BG7-BG9, then 9t B/C, 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 15. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 16. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -245,7 +254,13 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
 - INPUT: a press is a TAP only if it moved under 8 px and lasted under 300 ms; else a drag or
   long press, which never walks or punches. PLAY MODE: with a block selected in the hotbar a tap on
   a free cell places it; a tap on a block punches it (also with a block selected); any other tap
-  walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. BUILD MODE (Build
+  walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. HOLD TO
+  REPEAT (BG5b): a press on a block, a plant, a mine rock or a tree hits at once and keeps hitting at that
+  thing's cooldown (blocks 250 ms, rock and tree 400 ms) until it breaks, the press ends or the avatar is out of
+  reach (it walks closer, then goes on); moving 8 px = a pan, which never hits; two fingers never hit. With a block
+  selected, holding still 300 ms on free floor places blocks, dragging then makes a line (one per cell, in reach,
+  the usual rules). NOT for the dungeon fight (one hit per tap) and NOT for fishing. Pure helper
+  shared/src/hold.ts holdTick; the client only feeds pointer events. BUILD MODE (Build
   button or B; furniture only): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
   up), a tap on a free spot moves the selected item there. PAINT MODE (Room > Paint cells): tap =
   one cell, drag = rectangle. One finger pans, two fingers pinch-zoom, the wheel zooms. A tap on
@@ -256,7 +271,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 15) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 16) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers
