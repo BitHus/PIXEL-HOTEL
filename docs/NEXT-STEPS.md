@@ -236,3 +236,72 @@ Plan first (max 8 lines), then build. Tests for any new pure helpers. Run typech
   dungeon themes and their furniture).
 - Step 10 (online): visitors become real players; emotes, name tags and the guestbook are ready
   for it.
+
+# Block world steps BG1 to BG9 (owner's request, 15 Nov; read docs/BLOCKS-PLAN.md first)
+
+Every BG prompt: read CLAUDE.md, docs/BLOCKS-PLAN.md and docs/UI-REFERENCE.md; plan first (max 8
+lines); tests first or together; SAVE_VERSION bump + migration with a test when the state shape
+changes; no art tools (shapes drawn in code, Endesga 32); original names only (never copy Growtopia
+or Pixel Worlds item names or recipes); typecheck + tests; update CLAUDE.md (sections that changed),
+docs/BRIEF.md, docs/NOTES.md, tick docs/ROADMAP.md; commit and push; tell me what to try on my phone.
+
+## Step BG1 - The cell grid
+
+```
+Step BG1: building goes per cell (owner's decision; this changes CLAUDE.md sections 4, 5, 6, 7: update them and docs/BRIEF.md). BUILD_CELL = 32 px in config.
+1. shared: room shapes in cells (convert roomShapes.json; round up to whole cells; keep levels containing the previous one). Furniture footprints in whole cells (w x d), anchor = bottom-centre cell, rotation swaps w and d. Validity: fully on floor cells, no overlap with another blocking item (rugs and floor decor = background layer, overlap anything), not on the 2x2 door zone, door still reaches the middle, wall items in wall cells, onSurface on a surface item. Remove the 4 px snap and the Shift no-snap.
+2. Floors and wall styles per cell: paint a cell or a dragged rectangle (the Styles panel keeps unlocked-forever rules). Walls per segment. Back wall band = 2 cells.
+3. Navigation: the nav grid is the build grid (32 px cells, 8 directions, no corner cutting, smoothing). Remove the AVATAR_RADIUS growing for rooms (blockers are whole cells). The dungeon keeps its own grid. Seats, the counter-behind rule and customer npcGrid keep working.
+4. Client: draw a faint cell grid while placing or painting (toggle), ghost snaps to cells, tap-to-walk unchanged. Placer, picking and the hotbar keep their flow.
+5. Migration: snap every placed item to the nearest valid footprint; what no longer fits goes to the bag with a toast.
+6. Update the CLAUDE.md rule "no tile grid" and the camera/world maths if needed (zoom math stays).
+Tests: footprints, rotation, validity, door zone, nav on cells (path through a 1-cell gap), seats, the migration. Check bundle and phone feel by hand.
+```
+
+## Step BG2 - Item icons
+
+```
+Step BG2: every item is a coloured square (owner's request). Data field icon: { shape, colors[] } on every item in materials, food, fish, crops, ore, bars, gear, clothing and furniture inventory icons. Small fixed shape list (ore chunk, bar, fish, leaf, mushroom, log, potion, bread, mug, gem, seed, block, cloth, bone, boot, key, ring, sword, helmet...). One drawIcon(shape, colors, rank) in client/src/render drawing a 32x32 square with a dark warm outline and top-left light, Endesga 32 colours from shared/palette.ts, used by the bag, hotbar, shop, Book, recipes, drops. Every item gets a distinct shape + colour pair (rough, but you can tell a copper ore from a carrot at a glance). Test: every item id has an icon; no two items of the same group share the same pair. Real art replaces drawIcon later (phase 4).
+```
+
+## Step BG3 - Gain popups above the head
+
+```
+Step BG3: show what you got (owner's request). GameAPI results that give items or gems carry gains: { itemId, count, rank }[] (+ gems). Client: small icons with "x3" float above the avatar's head for about 1.2 s (config), in a row, max 5 at once, the rest queue, rank colour, sparkle for ultra_rare and legendary. Sources: chest, kill, fish catch, fished-up things, tree chop, harvest, ore, crafting, buying, quest claim, pack opening, Book reward. Works in the dungeon and in rooms. Setting Popups on/off. Rendering only: numbers come from the API result; shared rules stay pure. Tests for the gains lists in each API path and the popup queue helper (pure).
+```
+
+## Step BG4 - Gems
+
+```
+Step BG4: gems, the second currency (owner's request; update CLAUDE.md section 9 and BRIEF). Integer, not tradable, no real money. Config GEMS: faucet amounts by source and rank (block break, harvest, kill, chest, ore, tree, fish, quest, Book reward). Pure gemDrop(source, rank, rng). Gem pickups: small gems on the floor that fly to the avatar when it is near or is tapped (no menu). All changes go through ledger.applyChange (add the gems currency). Info panel shows gems next to gold. Start with 0 gems. Save migration. Nothing to buy yet except through BG8: say so in a hint. Tests: drops by source and rank, ledger adds up. Add gem income to tools/simulate-economy.ts.
+```
+
+## Step BG5 - Blocks and punching
+
+```
+Step BG5: blocks (owner's request; read BLOCKS-PLAN 3.5 and ask me its open questions b, c, d before building). shared/data/blocks.json: { id, name, hardness (hits), rank, drops, seedId, placeIn, icon }. Foreground layer, one block per cell. Place: select in the hotbar, tap a free cell within reach (config, 3 cells). Break: tap a block, one hit per tap, 250 ms cooldown, hardness taps, then it drops itself, sometimes a seed, sometimes gems; hit cracks drawn in code. Only the owner changes a room. Blocks block navigation (rebuild the grid, re-path). A starter set of 10 blocks with original names (dirt, stone, planks, glass...). The catalog sells a few for gold, the rest come from drops and splicing. Tests: hits to break, drops with a fixed rng, placement rules, nav after change, migration. Build mode vs direct placing as I decide.
+```
+
+## Step BG6 - Seeds and the free-form farm
+
+```
+Step BG6: seeds and farming by punching (owner's request; read BLOCKS-PLAN 3.6). Every block and crop can have a seed item. Plant a seed in a free soil cell of a farm room (not only fixed plots). 3 growth stages in real time, also while closed (time passed in); time by rank (config SEED_GROW_MS). Harvest = punch the grown tree: 1 to 4 blocks or crops, a chance for a seed, a chance for gems (BG4). Unharvested trees stay ready; no watering. The farm room becomes free-form (paths and fences from blocks). Migrate the old plots: crops.json become seeds, planted crops keep their progress, soil cells replace plots, the cooking pot stays. Food, cooking and brewing still use crops. Quests, hints and texts updated. Tests: growth over real time and a reload, harvest rolls with a fixed rng, the migration, ledger.
+```
+
+## Step BG7 - Splicing
+
+```
+Step BG7: splicing (owner's request; read BLOCKS-PLAN 3.7). Plant two different seeds in one cell; after the growth time a NEW seed grows from shared/data/splice.json ({ a, b, result }, order does not matter). No random failure; a wrong pair says "nothing happens" and returns both seeds. About 40 recipes with original names, chains of 2 to 3 steps to rarer items; results can be blocks, crops, furniture seeds (a tree that grows a table), clothes seeds and tavern goods. A Splice tab in the Book: found recipes shown, undiscovered ones "???" with a hint of one ingredient; 25/50/75/100% rewards in gems or gold. Pure splice(a, b) and tests: symmetry, every result reachable from starter seeds, no dead ends, the Book. Add a plant-and-splice hint to the quests.
+```
+
+## Step BG8 - Packs
+
+```
+Step BG8: packs bought with gems (owner's request; ASK me to confirm the fairness rules in BLOCKS-PLAN 3.8 and update CLAUDE.md section 13 in the same step). shared/data/packs.json: { id, name, gemPrice, rolls, pool, rankWeights }. Packs: Random Blocks Pack, Basic Seeds Pack, Common Clothes Pack, Rare Clothes Pack. Pure openPack(state, packId, rng): rank first (RANK_WEIGHTS times the pack's multiplier), then an item; clothes packs roll only pieces not owned yet until the category is complete, then they return gems. A Packs panel (a tab in the Catalog or a button in the right column per docs/UI-REFERENCE.md): each card shows price, possible contents and the odds. Every buy asks first (ui/confirmBuy.ts). Opening: a short pop, items float above the head (BG3), land in the bag. Ledger for everything. Tests: odds with a fixed rng across many rolls, no repeats of owned clothes, gems back at completion, ledger, a refused buy without enough gems.
+```
+
+## Step BG9 - Balance
+
+```
+Step BG9: balance the block world with tools/simulate-economy.ts (gems per hour from each source, pack prices, grow times, how fast the first clothes pack is reachable, no infinite loops like seed -> block -> seed with a net gain). Print a table; tune config only; keep the first hour feeling generous. Update the first-hour hints and the quests with the block world (planting, splicing, opening a pack). Tick everything in the ROADMAP.
+```
