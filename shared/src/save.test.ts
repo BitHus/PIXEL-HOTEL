@@ -7,6 +7,7 @@ import { canPlace, footprintRect, getFurnitureType, isOnGrid } from './furniture
 import { createRoom, plantInCell, floorStyleAt } from './room.ts';
 import { growthStage, soilCells } from './farm.ts';
 import { SOIL_STYLE } from './config.ts';
+import { testRun } from './dungeon/testRun.ts';
 import type { FurnitureItem } from './types.ts';
 
 const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
@@ -408,5 +409,31 @@ describe('15 -> 16 (step BG6: seeds and the free-form farm)', () => {
     const r = readSave(JSON.stringify({ version: 15, savedAt: 9, state: lvl3 }));
     if (!r.ok) throw new Error('not ok');
     expect(soilCells(r.state.rooms.find((x) => x.id === farmId)!)).toHaveLength(20);
+  });
+});
+
+describe('16 -> 17 (step BG4: gems in a saved run)', () => {
+  const now = createNewPlayer(undefined, 1);
+  const run = testRun();
+  const oldBag = (b: { slots: unknown[]; gold: number }) => ({ slots: b.slots, gold: b.gold });
+  const oldRun = (() => {
+    const { pickups: _p, ...rest } = run;
+    return { ...rest, bag: oldBag({ slots: [], gold: 7 }), banked: oldBag({ slots: [], gold: 0 }), lost: oldBag({ slots: [], gold: 0 }) };
+  })();
+
+  it('gives a saved run 0 gems in every bag and an empty floor, and keeps its gold', () => {
+    const r = readSave(JSON.stringify({ version: 16, savedAt: 9, state: { ...now, run: oldRun } }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.run?.bag).toEqual({ slots: [], gold: 7, gems: 0 });
+    expect(r.state.run?.banked.gems).toBe(0);
+    expect(r.state.run?.lost.gems).toBe(0);
+    expect(r.state.run?.pickups).toEqual([]);
+  });
+
+  it('a save without a run is unchanged', () => {
+    const r = readSave(JSON.stringify({ version: 16, savedAt: 9, state: { ...now, run: null } }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (r.ok) expect(r.state.run).toBeNull();
   });
 });

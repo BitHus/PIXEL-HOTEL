@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyChange } from './ledger.ts';
 import { createNewPlayer } from './newPlayer.ts';
-import { gain, gainsFromRunEvents, gainsSince, mergeGains } from './gains.ts';
+import { bagGains, gain, gainsFromRunEvents, gainsSince, mergeGains } from './gains.ts';
 import type { RunEvent } from './dungeon/run.ts';
 
 describe('mergeGains', () => {
@@ -86,5 +86,24 @@ describe('gainsFromRunEvents (dungeon and mine)', () => {
       { t: 'left_behind', item: { kind: 'furniture', typeId: 'wall_torch' } },
     ];
     expect(gainsFromRunEvents(events)).toEqual([{ itemId: 'bone', count: 3, rank: 'common' }]);
+  });
+});
+
+describe('bagGains (step BG3b)', () => {
+  it('lists the slots and the gems of a banked bag, merged; gold is not a gain', () => {
+    const list = bagGains({
+      slots: [
+        { kind: 'material', id: 'bone', qty: 10 },
+        { kind: 'material', id: 'bone', qty: 3 },
+        { kind: 'furniture', typeId: 'skull_lamp' },
+      ],
+      gems: 5,
+    });
+    expect(list).toEqual([
+      { itemId: 'bone', count: 13, rank: 'common' },
+      { itemId: 'skull_lamp', count: 1, rank: expect.any(String) },
+      { itemId: 'gems', count: 5, rank: 'common' },
+    ]);
+    expect(bagGains({ slots: [], gems: 0 })).toEqual([]);
   });
 });

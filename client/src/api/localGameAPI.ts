@@ -12,6 +12,10 @@ import {
   AVATAR_START_FROM_BOTTOM,
   gain,
   gainsFromRunEvents,
+  completeQuest,
+  GEMS_GAIN_ID,
+  mergeGains,
+  type BookClaim,
   gainsSince,
   type GainList,
   DUNGEON_HINT,
@@ -742,7 +746,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       this.fish = null;
       if (next.outcome === 'caught') {
         const before = this.state.player.biggest[next.catchId] ?? 0;
-        const banked = bankCatch(this.state, next, this.now());
+        const banked = bankCatch(this.state, next, this.now(), this.rng);
         if (banked) {
           gains = gainsSince(this.state, banked);
           this.commit(banked);
@@ -761,12 +765,13 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.commit(openBook(this.state, this.now()));
   }
 
-  async claimBookReward(tab: BookTab, percent: number): Promise<number | null> {
-    const next = claimBookReward(this.state, tab, percent, this.now());
+  async claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null> {
+    const next = claimBookReward(this.state, tab, percent, this.now(), this.rng);
     if (!next) return null;
     const gold = next.player.wallet.gold - this.state.player.wallet.gold;
+    const gems = next.player.wallet.gems - this.state.player.wallet.gems;
     this.commit(next);
-    return gold;
+    return { gold, gems, gains: gems > 0 ? [{ itemId: GEMS_GAIN_ID, count: gems, rank: 'common' }] : [] };
   }
 
   async cook(food: FoodId): Promise<GainList | null> {
@@ -935,7 +940,19 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
 
   /** Marks hint `index` done when it is the one showing (hints go one at a time). */
   private hintDone(state: GameState, index: number): GameState {
-    return state.hintsDone === index ? { ...state, hintsDone: index + 1 } : state;
+    const next = completeQuest(state, index, this.now(), this.rng);
+    // The quest's gems are handed to the client by takeGains (the call that finished the quest has its own result).
+    if (next !== state) this.pendingGains = mergeGains(this.pendingGains, gainsSince(state, next));
+    return next;
+  }
+
+  /** Gains nobody has been told about yet (quest gems, step BG4). */
+  private pendingGains: GainList = [];
+
+  async takeGains(): Promise<GainList> {
+    const out = this.pendingGains;
+    this.pendingGains = [];
+    return out;
   }
 
   private roomById(roomId: number): Room | null {

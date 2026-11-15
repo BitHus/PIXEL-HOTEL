@@ -152,7 +152,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   moves 8 px is a pan; two fingers never hit. Holding still 300 ms with a block selected places blocks;
   dragging then places a line (one per cell, HOLD_PLACE_MS = 150, only cells in reach, same rules). Not for the
   dungeon fight (one hit per tap, no auto-attack) and not for fishing.
-- GEMS (started in BG5, BG4 finishes it): Player.wallet.gems (integer), ledger gemsDelta, shown in
+- GEMS (BG5 started it, BG3b + BG4b finished it: sources chest, kill, mimic, boss, rock, chop, fish, harvest, block, quest, Book,
+  all in config GEMS with gemDrop(source, rank, rng); in the dungeon and mine they are floor piles picked up by
+  walking close (GEM_PICKUP_REACH) or by tapping; kept on Leave, half lost on death in the crypt (like gold),
+  all kept in the mine): Player.wallet.gems (integer), ledger gemsDelta, shown in
   the info panel next to gold; never traded or sold. A known loop: place and punch the same block
   forever gives gems for free (gems have no use until packs, BG8; balance in BG9).
 - Room ids are integers.

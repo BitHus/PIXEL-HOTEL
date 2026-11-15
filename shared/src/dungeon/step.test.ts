@@ -248,16 +248,16 @@ describe('step: chests, xp, potions, exit, death', () => {
 
   it('leaving banks the bag and ends the run', () => {
     let r = testRun({ at: start });
-    r = { ...r, status: 'exit_choice', bag: { slots: [{ kind: 'material', id: 'bone', qty: 4 }], gold: 30 } };
+    r = { ...r, status: 'exit_choice', bag: { slots: [{ kind: 'material', id: 'bone', qty: 4 }], gold: 30, gems: 0 } };
     r = step(r, [{ t: 'choose_exit', choice: 'leave' }], 0, seededRng(1));
     expect(r.status).toBe('left');
-    expect(r.banked).toEqual({ slots: [{ kind: 'material', id: 'bone', qty: 4 }], gold: 30 });
-    expect(r.bag).toEqual({ slots: [], gold: 0 });
+    expect(r.banked).toEqual({ slots: [{ kind: 'material', id: 'bone', qty: 4 }], gold: 30, gems: 0 });
+    expect(r.bag).toEqual({ slots: [], gold: 0, gems: 0 });
   });
 
   it('going deeper keeps the bag, makes the next floor and heals 30% of max hp', () => {
     let r = newRun({ seed: 9, round: 2, xp: 0, gear: [], potions: 0 });
-    r = { ...r, status: 'exit_choice', player: { ...r.player, hp: 10 }, bag: { slots: [{ kind: 'furniture', typeId: 'skull_lamp' }], gold: 12 } };
+    r = { ...r, status: 'exit_choice', player: { ...r.player, hp: 10 }, bag: { slots: [{ kind: 'furniture', typeId: 'skull_lamp' }], gold: 12, gems: 0 } };
     const d = step(r, [{ t: 'choose_exit', choice: 'deeper' }], 0, seededRng(1));
     expect(d.status).toBe('active');
     expect(d.floor).toBe(2);
@@ -271,12 +271,12 @@ describe('step: chests, xp, potions, exit, death', () => {
 
   it('death clears the bag and halves the run gold; xp is kept', () => {
     let r = testRun({ at: start, enemies: [enemyAt(1, start.x + 30, start.y, 'skeleton', 99)] });
-    r = { ...r, xpGained: 9, player: { ...r.player, hp: 1 }, bag: { slots: [{ kind: 'material', id: 'crystal', qty: 2 }], gold: 41 }, banked: { slots: [], gold: 5 } };
+    r = { ...r, xpGained: 9, player: { ...r.player, hp: 1 }, bag: { slots: [{ kind: 'material', id: 'crystal', qty: 2 }], gold: 41, gems: 0 }, banked: { slots: [], gold: 5, gems: 0 } };
     r = run(r, [], 1000);
     expect(r.status).toBe('dead');
-    expect(r.bag).toEqual({ slots: [], gold: 0 });
+    expect(r.bag).toEqual({ slots: [], gold: 0, gems: 0 });
     expect(r.banked.gold).toBe(5 + 20);
-    expect(r.lost).toEqual({ slots: [{ kind: 'material', id: 'crystal', qty: 2 }], gold: 21 });
+    expect(r.lost).toEqual({ slots: [{ kind: 'material', id: 'crystal', qty: 2 }], gold: 21, gems: 0 });
     expect(r.xpGained).toBe(9);
     expect(step(r, [{ t: 'click_point', x: 10, y: 10 }], 1000, seededRng(1))).toMatchObject({ status: 'dead', timeMs: r.timeMs });
   });
@@ -297,10 +297,10 @@ describe('step: chests, xp, potions, exit, death', () => {
 
   it('killing the Bone King drops throne pieces and banks the bag', () => {
     let r = testRun({ at: start, floor: 3, enemies: [enemyAt(1, start.x + 20, start.y, 'bone_king', 1)] });
-    r = { ...r, bag: { slots: [{ kind: 'material', id: 'wood', qty: 3 }], gold: 10 } };
+    r = { ...r, bag: { slots: [{ kind: 'material', id: 'wood', qty: 3 }], gold: 10, gems: 0 } };
     r = step(r, [{ t: 'click_enemy', id: 1 }], 0, seededRng(1));
     expect(r.bossDefeated).toBe(true);
-    expect(r.bag).toEqual({ slots: [], gold: 0 });
+    expect(r.bag).toEqual({ slots: [], gold: 0, gems: 0 });
     expect(r.banked.gold).toBe(10);
     const pieces = r.banked.slots.find((s) => s.kind === 'material' && s.id === 'throne_piece');
     expect(pieces && pieces.kind === 'material' && pieces.qty).toBeGreaterThanOrEqual(1);

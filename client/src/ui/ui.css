@@ -2033,6 +2033,13 @@
   height: 14px;
 }
 
+.run-gold.run-gems img,
+.run-gem-line img {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+}
+
 @media (max-width: 680px) {
   .run-slots {
     grid-template-columns: repeat(6, var(--run-slot, 36px));
@@ -3143,4 +3150,22 @@
   width: 20px;
   height: 20px;
   image-rendering: pixelated;
+}
+
+/* Gems flying to the avatar after a punch, a harvest or a felled tree (step BG4). */
+.gem-fly-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.gem-fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+  opacity: 0;
 }

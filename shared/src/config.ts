@@ -641,7 +641,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -815,12 +815,41 @@ export const BLOCK_HIT_COOLDOWN_MS = 250;
 export const BLOCK_HEAL_MS = 6000;
 /** Chance that a broken block drops its seed (when the block has a seedId). */
 export const BLOCK_SEED_CHANCE = 0.2;
-/** Where gems come from (step BG4 adds the other sources): the chance of a drop and its size before the rank bonus. */
+/**
+ * Where gems come from (step BG4): the chance of a drop and its size (min to max, both included) before the rank
+ * bonus. Small on purpose; BG9 tunes them. The rank of the thing that dropped it multiplies the amount (GEM_RANK_MULT).
+ */
 export const GEMS = {
   block: { chance: 0.15, min: 1, max: 2 },
   /** Harvesting a grown plant (step BG6). */
   harvest: { chance: 0.12, min: 1, max: 2 },
+  /** A dungeon chest (wooden = common, golden = rare). */
+  chest: { chance: 0.25, min: 1, max: 2 },
+  /** A kill (the enemy's rank: ENEMY_GEM_RANK). */
+  kill: { chance: 0.1, min: 1, max: 1 },
+  /** A woken mimic (it also opens its golden chest's loot). */
+  mimic: { chance: 0.5, min: 1, max: 2 },
+  /** The Bone King always drops. */
+  boss: { chance: 1, min: 2, max: 3 },
+  /** A broken mine rock (the rock's rank: ROCK_GEM_RANK). */
+  rock: { chance: 0.1, min: 1, max: 1 },
+  /** A felled tree (the rank the tree rolled for its extra drop). */
+  chop: { chance: 0.15, min: 1, max: 1 },
+  /** A fish or fished-up thing (its own rank). */
+  fish: { chance: 0.2, min: 1, max: 2 },
+  /** A finished first-run quest (a hint): always. */
+  quest: { chance: 1, min: 2, max: 2 },
+  /** A Book reward (the tier's rank: BOOK_GEM_RANK). */
+  book: { chance: 1, min: 2, max: 3 },
 } as const;
+/** The rank an enemy counts as for its gems (a mimic and the boss have their own sources). */
+export const ENEMY_GEM_RANK = { slime: 'common', bat: 'common', skeleton: 'rare', bone_king: 'ultra_rare' } as const;
+/** The rank a mine rock counts as for its gems. */
+export const ROCK_GEM_RANK = { copper: 'common', iron: 'rare', mithril: 'ultra_rare' } as const;
+/** The rank of a Book tier (25 / 50 / 75 / 100 %) for its gems. */
+export const BOOK_GEM_RANK = { 25: 'common', 50: 'rare', 75: 'ultra_rare', 100: 'legendary' } as const;
+/** A gem pickup on the dungeon floor is collected when the avatar is this close (px), or walks onto it. */
+export const GEM_PICKUP_REACH = 28;
 /** The gem amount is multiplied by this per rank of the thing that dropped it. */
 export const GEM_RANK_MULT = { common: 1, rare: 2, ultra_rare: 4, legendary: 8 } as const;
 /** The id a gem gain has in a gains list (gems are a currency, not an item). */

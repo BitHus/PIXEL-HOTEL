@@ -252,6 +252,7 @@ export type LedgerReason =
   | 'forge'
   | 'mine_bank'
   | 'book_reward'
+  | 'quest'
   | 'chop'
   | 'fish'
   // Blocks (step BG5): a block put in a cell, a block broken (it comes back, maybe a seed and gems).

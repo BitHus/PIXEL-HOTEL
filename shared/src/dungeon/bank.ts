@@ -84,7 +84,7 @@ export function finishRun(state: GameState, run: DungeonRun, at: number): GameSt
   const banked =
     applyChange(
       state,
-      { reason: run.place === 'mine' ? 'mine_bank' : 'dungeon_bank', gold: run.banked.gold, materials, notFound: broughtBack, addFurniture: furniture, note: `${run.place === 'mine' ? 'mine visit' : 'dungeon run'} ${run.status}` },
+      { reason: run.place === 'mine' ? 'mine_bank' : 'dungeon_bank', gold: run.banked.gold, ...(run.banked.gems > 0 ? { gems: run.banked.gems } : {}), materials, notFound: broughtBack, addFurniture: furniture, note: `${run.place === 'mine' ? 'mine visit' : 'dungeon run'} ${run.status}` },
       at,
     ) ?? state;
   const player = addXp(banked.player, run.xpGained);

@@ -45,7 +45,7 @@ export function addToBag(bag: RunBag, loot: readonly Loot[], limit = RUN_BAG_SLO
       }
     }
   }
-  return { bag: { slots, gold }, leftBehind };
+  return { bag: { slots, gold, gems: bag.gems }, leftBehind };
 }
 
 /** A bag's slots as loot (to move them into another bag). */

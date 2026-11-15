@@ -78,6 +78,13 @@ export interface ServeResult {
   facing: Facing;
 }
 
+/** What a Book reward gave (step BG4). `gains` is the gems as a gains list, for the popup. */
+export interface BookClaim {
+  gold: number;
+  gems: number;
+  gains: GainList;
+}
+
 export interface BuyResult {
   /** The new item in the bag. */
   uid: number;
@@ -266,6 +273,11 @@ export interface GameAPI {
   getRoom(roomId: number): Promise<Room | null>;
   /** The first-run hint to show now, or null when all are done. */
   currentHint(): Promise<string | null>;
+  /**
+   * Gains the calls did not return themselves (step BG4: the gems a finished quest pays). Returns them once and
+   * forgets them: the client calls it after every action that may finish a quest and shows the popups.
+   */
+  takeGains(): Promise<GainList>;
   // ---------- Step 9: the dungeon, crafting, the Blacksmith ----------
   /** The run in progress, or null. */
   getRun(): Promise<RunView | null>;
@@ -312,8 +324,8 @@ export interface GameAPI {
   // ---------- Step 9e: the collection book (what was found is Player.seen) ----------
   /** The Book was opened: nothing is "New!" any more. */
   bookOpened(): Promise<void>;
-  /** Takes a Book reward that is ready. Returns the gold, or null if it is not ready. */
-  claimBookReward(tab: BookTab, percent: number): Promise<number | null>;
+  /** Takes a Book reward that is ready: the gold and the gems (step BG4), or null if it is not ready. */
+  claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null>;
   // ---------- Step 9c: the mine and the forge ----------
   /** Starts a mine visit (free; from player level 3). Null if locked or a run is already going.
    *  The visit runs through getRun / dungeonInput / dungeonAdvance like a dungeon run. */

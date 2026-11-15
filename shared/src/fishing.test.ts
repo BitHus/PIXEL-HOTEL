@@ -387,14 +387,14 @@ describe('banking a catch', () => {
   it('a caught fish goes into the bag through the ledger (reason fish) and the Book, and the size is a record', () => {
     let s = createNewPlayer(undefined, 0);
     const caught = (cm: number): FishSession => ({ ...session('common'), outcome: 'caught', phase: 'done', cm });
-    s = bankCatch(s, caught(12), 100)!;
+    s = bankCatch(s, caught(12), 100, () => 0.9999)!;
     expect(s.player.materials.mudfin).toBe(1);
     expect(s.player.seen.mudfin).toEqual({ count: 1, firstSeenAt: 100 });
     expect(s.player.biggest.mudfin).toBe(12);
     expect(s.ledger[s.ledger.length - 1]).toMatchObject({ reason: 'fish' });
-    s = bankCatch(s, caught(9), 200)!;
+    s = bankCatch(s, caught(9), 200, () => 0.9999)!;
     expect(s.player.biggest.mudfin).toBe(12);
-    s = bankCatch(s, caught(17), 300)!;
+    s = bankCatch(s, caught(17), 300, () => 0.9999)!;
     expect(s.player.biggest.mudfin).toBe(17);
     expect(s.player.materials.mudfin).toBe(3);
     expect(s.player.seen.mudfin!.count).toBe(3);
@@ -402,11 +402,24 @@ describe('banking a catch', () => {
 
   it('only a catch can be banked; things have no size', () => {
     const s = createNewPlayer(undefined, 0);
-    expect(bankCatch(s, { ...session('common'), outcome: 'escaped', phase: 'done' }, 5)).toBeNull();
-    expect(bankCatch(s, { ...session('common'), outcome: null }, 5)).toBeNull();
+    expect(bankCatch(s, { ...session('common'), outcome: 'escaped', phase: 'done' }, 5, () => 0.9999)).toBeNull();
+    expect(bankCatch(s, { ...session('common'), outcome: null }, 5, () => 0.9999)).toBeNull();
     const boot: FishSession = { ...session('common'), catchId: 'old_boot', cm: null, outcome: 'caught', phase: 'done' };
-    const next = bankCatch(s, boot, 5)!;
+    const next = bankCatch(s, boot, 5, () => 0.9999)!;
     expect(next.player.materials.old_boot).toBe(1);
     expect(next.player.biggest).toEqual({});
+  });
+});
+
+describe('gems from a catch (step BG4)', () => {
+  it('the rank of the catch scales the gems; a miss gives none', () => {
+    const s0 = createNewPlayer(undefined, 0);
+    const caught = (rank: 'common' | 'ultra_rare'): FishSession => ({ ...session(rank), outcome: 'caught', phase: 'done', cm: 10 });
+    const common = bankCatch(s0, caught('common'), 1, () => 0)!;
+    expect(common.player.wallet.gems).toBe(1);
+    const ultra = bankCatch(s0, caught('ultra_rare'), 1, () => 0)!;
+    expect(ultra.player.wallet.gems).toBe(4);
+    expect(ultra.ledger[ultra.ledger.length - 1]).toMatchObject({ reason: 'fish', gemsDelta: 4 });
+    expect(bankCatch(s0, caught('common'), 1, () => 0.9999)!.player.wallet.gems).toBe(0);
   });
 });

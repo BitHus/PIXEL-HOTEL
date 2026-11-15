@@ -7,7 +7,7 @@
 import { setRank } from './rank.ts';
 import { RUN_BAG_SLOTS, getFoodType, getFurnitureType, getMaterialType, type DungeonRun } from '@pixel-hotel/shared';
 import { el, iconButton, textButton, typing } from './dom.ts';
-import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
+import { furnitureIconUrl, gemIconUrl, materialIconUrl } from './itemIcon.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
 export interface RunBar {
@@ -36,6 +36,15 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   const goldText = el('span', '', '0');
   gold.append(pixelIcon('coin'), goldText);
   gold.title = 'Gold found on this run (half is lost if you die)';
+  // The gems picked up on this run (step BG4): shown in the crypt and the mine; kept on Leave, half lost on death in the crypt.
+  const gems = el('div', 'run-gold run-gems');
+  const gemImg = el('img');
+  gemImg.src = gemIconUrl();
+  gemImg.alt = '';
+  gemImg.draggable = false;
+  const gemText = el('span', '', '0');
+  gems.append(gemImg, gemText);
+  gems.title = 'Gems found on this run (the crypt: half is lost if you die)';
   const potion = iconButton('potion', 'Drink a potion (Q)', onPotion, 'potion-btn');
   const potionCount = el('span', 'btn-badge', '0');
   potion.appendChild(potionCount);
@@ -44,7 +53,7 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   food.appendChild(foodCount);
   const leave = textButton('Leave', onLeave, 'run-leave');
   leave.title = 'Walk out of the mine now, with everything';
-  side.append(gold, potion, food, leave);
+  side.append(gold, gems, potion, food, leave);
   bar.append(grid, side);
   parent.appendChild(bar);
 
@@ -81,6 +90,7 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
         }
       });
       goldText.textContent = String(run.bag.gold);
+      gemText.textContent = String(run.bag.gems);
       const p = run.player;
       potionCount.textContent = String(p.potions);
       potion.disabled = p.potions <= 0 || p.hp >= p.maxHp || run.status !== 'active';

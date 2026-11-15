@@ -100,6 +100,16 @@ export interface RunBag {
   slots: BagItem[];
   /** Gold takes no slot. */
   gold: number;
+  /** Gems (step BG4) take no slot either: collected pickups, kept on Leave, half lost on death (the mine keeps them). */
+  gems: number;
+}
+
+/** Gems lying on the floor (step BG4), collected by walking within GEM_PICKUP_REACH. Not in the bag until then. */
+export interface GemPickup {
+  id: number;
+  x: number;
+  y: number;
+  qty: number;
 }
 
 export interface RunPlayer {
@@ -157,6 +167,9 @@ export type RunEvent =
   /** rank: only for drops that rolled a rank above common (step 9e: the coloured, sparkling drop text). */
   | { t: 'loot'; item: string; qty: number; rank?: Rank }
   | { t: 'left_behind'; item: BagItem }
+  /** Gems dropped on the floor at a point (step BG4), and collected into the bag. */
+  | { t: 'gem_drop'; id: number; x: number; y: number; qty: number }
+  | { t: 'gem_pickup'; id: number; qty: number }
   | { t: 'chest'; chestId: number }
   | { t: 'mimic'; enemyId: number; chestId: number }
   | { t: 'potion'; healed: number }
@@ -185,6 +198,8 @@ export interface DungeonRun {
   chests: Chest[];
   /** The mine's rocks (empty in the crypt). */
   rocks: Rock[];
+  /** Gems on the floor of this floor (step BG4); gone when the floor is left. */
+  pickups: GemPickup[];
   /** The mine: the run time when the lantern goes out (the visit ends). null in the crypt. */
   lanternEndsAt: number | null;
   /** At risk until banked. */
@@ -249,7 +264,7 @@ export interface NewRunOptions {
 export type FoodBuff = 'attack' | 'max_hp' | 'attack_cooldown';
 
 export function emptyRunBag(): RunBag {
-  return { slots: [], gold: 0 };
+  return { slots: [], gold: 0, gems: 0 };
 }
 
 /** A new run on floor 1 at full hp. (bank.ts startRun also pays the key.) */
@@ -300,6 +315,7 @@ function runFrom(o: NewRunOptions, plan: FloorPlan, round: DungeonRoundId, place
     enemies: plan.enemies,
     chests: plan.chests,
     rocks: plan.rocks,
+    pickups: [],
     lanternEndsAt: place === 'mine' ? MINE_LANTERN_MS : null,
     bag: emptyRunBag(),
     banked: emptyRunBag(),

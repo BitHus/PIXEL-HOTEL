@@ -37,6 +37,7 @@ import { CATCH_TYPES, getCatchType, type CatchType } from './fish.ts';
 import type { GameState } from './gameState.ts';
 import { ownedRod } from './gear.ts';
 import { applyChange } from './ledger.ts';
+import { gemDrop } from './gems.ts';
 import { RANKS, rollRank } from './ranks.ts';
 import { rngInt } from './rng.ts';
 import type { MaterialId, Rank, Rng } from './types.ts';
@@ -295,10 +296,12 @@ export function fishDone(s: FishSession): boolean {
  * Banks a caught fish or thing: it goes into the bag through the ledger (reason 'fish'), and the
  * size goes into Player.biggest when it is a record. Null unless the session ended with a catch.
  */
-export function bankCatch(state: GameState, s: FishSession, at: number): GameState | null {
+export function bankCatch(state: GameState, s: FishSession, at: number, rng: Rng): GameState | null {
   if (s.outcome !== 'caught') return null;
   const type = getCatchType(s.catchId);
-  const next = applyChange(state, { reason: 'fish', materials: { [type.id]: 1 } as Partial<Record<MaterialId, number>>, note: `caught ${type.id}${s.cm ? ` ${s.cm} cm` : ''}` }, at);
+  // Gems (step BG4): by the rank of the catch.
+  const gems = gemDrop('fish', s.rank, rng);
+  const next = applyChange(state, { reason: 'fish', materials: { [type.id]: 1 } as Partial<Record<MaterialId, number>>, ...(gems > 0 ? { gems } : {}), note: `caught ${type.id}${s.cm ? ` ${s.cm} cm` : ''}` }, at);
   if (!next) return null;
   const biggest = { ...next.player.biggest };
   if (s.cm !== null && s.cm > (biggest[type.id] ?? 0)) biggest[type.id] = s.cm;
