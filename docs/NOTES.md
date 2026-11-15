@@ -1479,7 +1479,7 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   an hour (each buys ONE item and only while the player serves) cap crops at about 2600 gold/h, and 2 cells already feed that.
   Splicing (from starter seeds, branches in parallel): common results 3 min, rare 3 to 24 min, ultra rare 21 to 24 min, the legendary
   throne 3.0 h (not the 12 h of its own rank: a splice cell takes the longer INGREDIENT time + SPLICE_BONUS_MS). Every spliced thing
-  is worth under its seeds' gold plus its cell-minutes at the best plain crop rate (tested), most under a tenth of a plain crop cell.
+  is worth under its seeds' gold plus its cell-minutes at the best plain crop rate (tested), all under a plain crop cell per minute (the Crest seed is the closest, about two thirds of it).
 - NOT CLOSED, ONLY PRICED (owner, please look): (a) gold from crops: a 2-minute carrot cell gives 30 gold per minute and the till is the
   only cap (about 2600 gold/h); this is gold, not gems, and untouched here. (b) The farm gem source is time-gated per cell, not per
   hour: a very big, fully attended farm (300 harvests/h assumed at level 8) is about 140 gems/h focused, the richest activity after blocks.
