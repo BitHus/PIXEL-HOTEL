@@ -76,6 +76,10 @@ late.avatarPanel = avatarPanel;
       popups.setEnabled(on);
       savePrefs(storage, prefs);
     },
+    onReduceEffects: (on) => {
+      prefs.reduceEffects = on;
+      savePrefs(storage, prefs);
+    },
     onNameTags: (on) => {
       prefs.nameTags = on;
       nameTag.setEnabled(on);

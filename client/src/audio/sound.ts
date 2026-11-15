@@ -1,10 +1,15 @@
 // Sounds made in code with the Web Audio API (atmosphere step): no files. Quiet by default. The
 // audio context is only made after the first tap or key (browsers do not allow sound before).
 
-export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour';
+import type { Rank } from '@pixel-hotel/shared';
+
+export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found';
+
+/** The ping of a find, by rank: the rarer, the higher (G5, B5, E6, G6). */
+const FOUND_HZ: Record<Rank, number> = { common: 784, rare: 988, ultra_rare: 1319, legendary: 1568 };
 
 /** The same sound is never started twice within this many ms. */
-const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600 };
+const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90 };
 
 type Wave = OscillatorType;
 
@@ -65,7 +70,8 @@ export class Sound {
     if (this.master) this.master.gain.value = this.enabled ? this.volume * this.volume : 0;
   }
 
-  play(name: SoundName): void {
+  /** `rank` only matters for 'found': a rank-pitched ping, rarer = higher. */
+  play(name: SoundName, rank: Rank = 'common'): void {
     const ctx = this.ctx;
     if (!ctx || !this.master || !this.enabled || this.volume <= 0 || ctx.state !== 'running') return;
     const nowMs = ctx.currentTime * 1000;
@@ -112,6 +118,33 @@ export class Sound {
       case 'hurt':
         this.tone('sawtooth', 300, 110, 0.2, 0.12);
         this.hiss(0.1, 0.12, 'lowpass', 900);
+        break;
+      case 'kill':
+        // A dull burst: a low thump that drops, and a soft rush of noise.
+        this.tone('square', 220, 60, 0.14, 0.09);
+        this.hiss(0.1, 0.1, 'lowpass', 700);
+        break;
+      case 'chestOpen':
+        // A creaking lid, then a small sparkle.
+        this.tone('sawtooth', 120, 230, 0.22, 0.045);
+        this.tone('triangle', 1047, 1568, 0.2, 0.07, 0.2);
+        break;
+      case 'windup':
+        // A rising warning growl.
+        this.tone('sawtooth', 170, 340, 0.28, 0.045);
+        break;
+      case 'levelUp':
+        // A bright four-note run.
+        [523, 659, 784, 1047].forEach((f, i) => this.tone('triangle', f, f, 0.22, 0.09, i * 0.09));
+        break;
+      case 'stairs':
+        // Steps going down: a falling note and a soft scuff.
+        this.tone('sine', 330, 165, 0.35, 0.08);
+        this.hiss(0.12, 0.06, 'lowpass', 500);
+        break;
+      case 'found':
+        this.tone('triangle', FOUND_HZ[rank], FOUND_HZ[rank], 0.16, 0.08);
+        if (rank === 'ultra_rare' || rank === 'legendary') this.tone('triangle', FOUND_HZ[rank] * 1.5, FOUND_HZ[rank] * 1.5, 0.22, 0.06, 0.08);
         break;
     }
   }

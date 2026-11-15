@@ -18,9 +18,11 @@ export interface Prefs {
   nameTags: boolean;
   /** True once the one-time Inn door hint toast was shown (step MB-3): it never shows again on this device. */
   doorHintSeen: boolean;
+  /** Reduce effects (outdoors rework C11): no hit-stop, shake, particles, squash or other juice; damage numbers and sounds stay. */
+  reduceEffects: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false };
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -40,6 +42,7 @@ export function parsePrefs(text: string | null): Prefs {
     popups: typeof o.popups === 'boolean' ? o.popups : DEFAULT_PREFS.popups,
     nameTags: typeof o.nameTags === 'boolean' ? o.nameTags : DEFAULT_PREFS.nameTags,
     doorHintSeen: typeof o.doorHintSeen === 'boolean' ? o.doorHintSeen : DEFAULT_PREFS.doorHintSeen,
+    reduceEffects: typeof o.reduceEffects === 'boolean' ? o.reduceEffects : DEFAULT_PREFS.reduceEffects,
   };
 }
 

@@ -1,13 +1,13 @@
 // Sprites (docs/PLAN-SPRITES.md, docs/PLAN-ART-UPGRADE.md section 0): every PNG in assets/sprites/<kind>/ is bundled by Vite and loaded once
 // at boot (loadSprites). Kinds: furniture (per facing), icons, blocks, floors, walls, plants (three growth stages). The id is the key, no data
-// hook: a piece without a complete set of files is drawn by the code art as before.
+// hook: a piece without a complete set of files is drawn by the code art as before. Outdoors kinds (C11): dungeon, actors, lake; strips: spriteFrames.
 //   spriteFor(typeId, facing)          furniture texture ('left' asks for 'right'; the caller mirrors), or null
 //   spriteTexture(kind, id, variant)   a PixiJS texture, or null
 //   spriteUrl(kind, id, variant)       the bundled file's URL for an <img> (HTML slots), or null
 
-import { Assets, type Texture } from 'pixi.js';
+import { Assets, Rectangle, Texture } from 'pixi.js';
 import { FURNITURE_TYPES, type Facing } from '@pixel-hotel/shared';
-import { neededFacings, parseSpritePath, plantComplete, type SpriteKind } from './spriteIndex.ts';
+import { neededFacings, parseSpritePath, plantComplete, stripFrameCount, stripFrameX, stripId, type SpriteKind } from './spriteIndex.ts';
 
 const URLS = import.meta.glob('../assets/sprites/*/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
@@ -43,6 +43,7 @@ export async function loadSprites(): Promise<void> {
     }),
   );
   store.clear();
+  frameCache.clear();
   for (const [key, per] of loaded) {
     const [kind, ...rest] = key.split('/') as [SpriteKind, ...string[]];
     const id = rest.join('/');
@@ -69,4 +70,30 @@ export function spriteTexture(kind: SpriteKind, id: string, variant = ''): Textu
 /** The URL of a sprite file for an <img> (HTML slots), or null. */
 export function spriteUrl(kind: SpriteKind, id: string, variant = ''): string | null {
   return pick(kind, id, variant)?.url ?? null;
+}
+
+const frameCache = new Map<string, Texture[] | null>();
+
+/**
+ * The frames of an animation strip `<kind>/<id>_<tag>.png` cut into textures of `frameW` wide (the whole height), or null when there is no such file
+ * or its width is not a whole number of frames: the caller then draws its code art. The result is cached (one texture per frame, shared).
+ */
+export function spriteFrames(kind: SpriteKind, id: string, tag: string, frameW: number): Texture[] | null {
+  const strip = pick(kind, stripId(id, tag), '');
+  if (!strip) return null;
+  const key = `${kind}/${stripId(id, tag)}/${frameW}`;
+  const cached = frameCache.get(key);
+  if (cached !== undefined && cached !== null && cached[0]?.source === strip.texture.source) return cached;
+  const base = strip.texture;
+  const count = stripFrameCount(base.frame.width, frameW);
+  if (count === 0) {
+    frameCache.set(key, null);
+    return null;
+  }
+  const frames: Texture[] = [];
+  for (let i = 0; i < count; i++) {
+    frames.push(new Texture({ source: base.source, frame: new Rectangle(base.frame.x + stripFrameX(i, frameW), base.frame.y, frameW, base.frame.height) }));
+  }
+  frameCache.set(key, frames);
+  return frames;
 }

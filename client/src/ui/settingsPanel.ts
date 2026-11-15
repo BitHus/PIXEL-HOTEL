@@ -16,13 +16,15 @@ export interface SettingsHooks {
   newGame(): void;
   onDebug(on: boolean): void;
   /** The device settings as stored (atmosphere step), and what happens when they change. */
-  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean };
+  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean; reduceEffects: boolean };
   onSound(on: boolean): void;
   onVolume(volume: number): void;
   onLighting(on: boolean): void;
   onCellGrid(on: boolean): void;
   onPopups(on: boolean): void;
   onNameTags(on: boolean): void;
+  /** Reduce effects (outdoors rework C11): a device pref read by the dungeon screen each frame. */
+  onReduceEffects(on: boolean): void;
 }
 
 export interface SettingsPanel {
@@ -129,6 +131,16 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   tagBtn.classList.toggle('on', nameTags);
   const tagNote = el('p', 'panel-note', 'Your name on a small plate under your avatar.');
 
+  let reduceFx = hooks.prefs.reduceEffects;
+  const fxBtn = textButton(`Reduce effects: ${reduceFx ? 'on' : 'off'}`, () => {
+    reduceFx = !reduceFx;
+    fxBtn.textContent = `Reduce effects: ${reduceFx ? 'on' : 'off'}`;
+    fxBtn.classList.toggle('on', reduceFx);
+    hooks.onReduceEffects(reduceFx);
+  });
+  fxBtn.classList.toggle('on', reduceFx);
+  const fxNote = el('p', 'panel-note', 'Calmer fights: no screen shake, freeze frames, sparks or bursts. Damage numbers and sounds stay.');
+
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section');
     s.append(el('h3', '', title), ...buttons);
@@ -140,6 +152,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'Pixel Hotel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

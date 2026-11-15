@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOCK_TYPES } from '@pixel-hotel/shared';
-import { neededFacings, parseSpriteName, parseSpritePath, plantComplete, spriteComplete } from './spriteIndex.ts';
+import { neededFacings, parseSpriteName, parseSpritePath, plantComplete, spriteComplete, stripFrameCount, stripFrameX, stripId } from './spriteIndex.ts';
 
 describe('sprite names', () => {
   it('parses id and facing; plain id = down', () => {
@@ -70,5 +70,29 @@ describe('floor and wall sprites (step H3)', () => {
       expect(parseSpritePath(`../assets/sprites/${kind}/wood_planks.png`)).toEqual({ kind, id: 'wood_planks', variant: '' });
       expect(parseSpritePath(`x/${kind}/wood_planks_2.png`)?.variant).toBe('');
     }
+  });
+});
+
+describe('outdoors kinds and animation strips (C11)', () => {
+  it('dungeon, actors and lake files are <id>.png; a strip is just <id>_<tag>.png', () => {
+    expect(parseSpritePath('../assets/sprites/dungeon/crypt_floor_a.png')).toEqual({ kind: 'dungeon', id: 'crypt_floor_a', variant: '' });
+    expect(parseSpritePath('../assets/sprites/actors/slime_idle.png')).toEqual({ kind: 'actors', id: 'slime_idle', variant: '' });
+    expect(parseSpritePath('x/lake/water.png')).toEqual({ kind: 'lake', id: 'water', variant: '' });
+    expect(parseSpritePath('x/lake/Water.png')).toBeNull();
+    expect(stripId('slime', 'idle')).toBe('slime_idle');
+    expect(parseSpritePath(`x/actors/${stripId('bone_king', 'move')}.png`)?.id).toBe('bone_king_move');
+  });
+  it('the frame count is width / frame width; a width that is not whole frames, or a bad frame width, is 0 (= treated as missing)', () => {
+    expect(stripFrameCount(64, 32)).toBe(2);
+    expect(stripFrameCount(128, 32)).toBe(4);
+    expect(stripFrameCount(48, 16)).toBe(3);
+    expect(stripFrameCount(32, 32)).toBe(1);
+    expect(stripFrameCount(70, 32)).toBe(0);
+    expect(stripFrameCount(64, 0)).toBe(0);
+    expect(stripFrameCount(0, 32)).toBe(0);
+    expect(stripFrameCount(64, 24.5)).toBe(0);
+  });
+  it('frame i starts at i * frame width', () => {
+    expect([0, 1, 2].map((i) => stripFrameX(i, 32))).toEqual([0, 32, 64]);
   });
 });

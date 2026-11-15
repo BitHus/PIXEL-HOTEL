@@ -79,3 +79,20 @@ describe('icon, block, floor, wall and plant sprite files', () => {
     }
   }
 });
+
+describe('outdoors sprite files (dungeon, actors, lake; C11)', () => {
+  it('the three kinds are known (no files yet is fine)', () => {
+    for (const k of ['dungeon', 'actors', 'lake']) expect(SPRITE_KINDS as readonly string[]).toContain(k);
+  });
+  for (const kind of ['dungeon', 'actors', 'lake'] as const) {
+    for (const file of filesOf(kind)) {
+      it(`${kind}/${file} has a valid name, a PNG header and a size in whole art pixels`, () => {
+        expect(parseSpritePath(`${kind}/${file}`), 'file name').not.toBeNull();
+        const { w, h, header } = sizeOf(kind, file);
+        expect(header).toEqual(PNG_SIGNATURE);
+        expect(w).toBeGreaterThan(0);
+        expect(h).toBeGreaterThan(0);
+      });
+    }
+  }
+});

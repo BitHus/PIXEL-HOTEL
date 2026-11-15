@@ -15,15 +15,13 @@ import type { Application } from 'pixi.js';
 import {
   rankOf,
   CHEST_OPEN_MS,
-  HIT_SHAKE_PX,
-  HURT_SHAKE_PX,
+  FX_SHAKE_STEP_MS,
   DUNGEON_CSS_PX_PER_ART_PX,
   DUNGEON_DEVICE_PX_PER_ART_PX,
   LEVEL_FLASH_MS,
   LEVEL_TOTAL_XP,
   MINE_LANTERN_MS,
   FLOAT_STAGGER_MS,
-  SCREEN_SHAKE_MS,
   ZOOM_MIN,
   cameraAt,
   getFurnitureType,
@@ -40,6 +38,7 @@ import {
   type FoodBuff,
   type GameAPI,
   type Point,
+  type Rank,
   type RunResult,
   type RunUpdate,
 } from '@pixel-hotel/shared';
@@ -50,6 +49,11 @@ import { flashScreen, showExitChoice, showResume, showRunResult } from '../ui/ru
 import { DungeonView } from './dungeonView.ts';
 import { FloatTexts } from './floatTexts.ts';
 import type { GainPopups } from '../ui/gainPopups.ts';
+import type { SoundName } from '../audio/sound.ts';
+import { easeOutQuad } from '../fx/ease.ts';
+import { fxSpec, isLowHp, type FxContext, type FxSpec } from '../fx/fxSpec.ts';
+import { HitStop, frameTimes } from '../fx/hitStop.ts';
+import { Shake } from '../fx/shake.ts';
 
 export interface DungeonContext {
   app: Application;
@@ -59,7 +63,9 @@ export interface DungeonContext {
   runBar: RunBar;
   toast: Toast;
   /** Plays a sound (atmosphere step). */
-  sound(name: 'hit' | 'hurt' | 'coin'): void;
+  sound(name: SoundName, rank?: Rank): void;
+  /** The Reduce effects pref (outdoors rework C11): no hit-stop, shake, particles, squash, fades or overlays; damage numbers and sounds stay. */
+  reduceEffects(): boolean;
   dpr(): number;
   /** The run ended and its screen was closed: back to the room the player came from. */
   onDone(result: RunResult): Promise<void>;
@@ -68,6 +74,9 @@ export interface DungeonContext {
   /** "hotel room" or "shop": where the result screen's button goes. */
   backTo(): string;
 }
+
+/** How many drops pop out of a chest or a kill, by the rank of the find. */
+const LOOT_POP_COUNT: Record<Rank, number> = { common: 2, rare: 3, ultra_rare: 4, legendary: 5 };
 
 /** The floating text when a food buff starts (step 9b). */
 const BUFF_TEXT: Record<FoodBuff, string> = { attack: '+1 attack', max_hp: '+10 max hp', attack_cooldown: 'faster hits' };
@@ -85,7 +94,13 @@ export class DungeonScreen {
   private pendingMs = 0;
   private clockMs = 0;
   private zoom = 1;
-  private shake = { ms: 0, px: 0 };
+  private readonly shake = new Shake(FX_SHAKE_STEP_MS);
+  private readonly hitStop = new HitStop();
+  /** The hurt edge pulse: ms left and its total (the overlay fades with it). */
+  private edgeMs = 0;
+  private edgeTotal = 1;
+  private readonly hurtEdge: HTMLElement;
+  private readonly lowHpEl: HTMLElement;
   private shown: Camera = { x: 0, y: 0, zoom: 1 };
 
   constructor(private readonly ctx: DungeonContext, look: AvatarLook) {
@@ -93,6 +108,16 @@ export class DungeonScreen {
     this.view.world.visible = false;
     ctx.app.stage.addChild(this.view.world);
     this.floats = new FloatTexts(ctx.ui);
+    // Screen overlays; shown and hidden here, drawn by CSS (.hurt-edge, .low-hp). Empty and invisible without that CSS.
+    this.hurtEdge = document.createElement('div');
+    this.hurtEdge.className = 'hurt-edge';
+    this.lowHpEl = document.createElement('div');
+    this.lowHpEl.className = 'low-hp';
+    for (const o of [this.hurtEdge, this.lowHpEl]) {
+      o.style.display = 'none';
+      o.style.pointerEvents = 'none';
+      ctx.ui.appendChild(o);
+    }
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.active && !this.halted && this.run?.status === 'active') void this.pauseForResume('The game was in the background.');
     });
@@ -122,6 +147,7 @@ export class DungeonScreen {
     this.prev = null;
     this.pendingMs = 0;
     this.view.world.visible = true;
+    this.resetFx();
     const dpr = this.ctx.dpr();
     const devicePx = Math.max(DUNGEON_DEVICE_PX_PER_ART_PX, Math.round(DUNGEON_CSS_PX_PER_ART_PX * dpr));
     this.zoom = introZoom(ZOOM_MIN, dpr, devicePx);
@@ -204,9 +230,10 @@ export class DungeonScreen {
   /** Called every frame. */
   frame(dtMs: number): void {
     if (!this.active || !this.run) return;
-    this.clockMs += dtMs;
+    // Hit-stop holds back the DRAWING only: the run gets the real dt (frameTimes keeps runMs = dt).
+    const t = frameTimes(dtMs, this.hitStop);
     if (!this.halted) {
-      this.pendingMs += dtMs;
+      this.pendingMs += t.runMs;
       if (!this.busy) {
         const take = this.pendingMs;
         this.pendingMs = 0;
@@ -217,7 +244,7 @@ export class DungeonScreen {
         });
       }
     }
-    this.render(dtMs);
+    this.render(t.drawMs, t.skipDraw);
   }
 
   private input(input: DungeonInput): void {
@@ -261,6 +288,7 @@ export class DungeonScreen {
 
   private async finish(result: RunResult): Promise<void> {
     this.halted = true;
+    this.hitStop.clear();
     this.render(0);
     await showRunResult(this.ctx.ui, result, this.ctx.backTo());
     this.active = false;
@@ -268,6 +296,7 @@ export class DungeonScreen {
     this.run = null;
     this.prev = null;
     this.view.world.visible = false;
+    this.resetFx();
     this.floats.clear();
     this.ctx.popups.clear();
     await this.ctx.onDone(result);
@@ -283,33 +312,96 @@ export class DungeonScreen {
     this.ctx.runBar.refresh(run);
   }
 
-  private shakeBy(px: number): void {
-    if (px >= this.shake.px || this.shake.ms <= 0) this.shake = { ms: SCREEN_SHAKE_MS, px };
+  private resetFx(): void {
+    this.hitStop.clear();
+    this.shake.clear();
+    this.edgeMs = 0;
+    this.view.particles.clear();
+    this.hurtEdge.style.display = 'none';
+    this.lowHpEl.style.display = 'none';
+  }
+
+  /** What the effects need to know about the world right now (positions are the ones drawn). */
+  private fxContext(run: DungeonRun, before: DungeonRun): FxContext {
+    const v = this.view;
+    return {
+      reduce: this.ctx.reduceEffects(),
+      player: v.playerAt,
+      attackMin: run.player.attackMin,
+      attackMax: run.player.attackMax,
+      enemy: (id) => {
+        const e = run.enemies.find((x) => x.id === id) ?? before.enemies.find((x) => x.id === id);
+        const feet = v.enemyFeet(id);
+        return e ? { kind: e.kind, mimic: e.mimic, x: feet?.x ?? e.x, y: feet?.y ?? e.y } : null;
+      },
+      rock: (id) => run.rocks.find((x) => x.id === id) ?? before.rocks.find((x) => x.id === id) ?? null,
+    };
+  }
+
+  /** Turns one effect spec (fx/fxSpec.ts) into a change in the view, a particle burst, a float text, a pulse or a sound. */
+  private applySpec(s: FxSpec, lootAt: Point, head: Point, run: DungeonRun): void {
+    const v = this.view;
+    switch (s.t) {
+      case 'hitStop':
+        this.hitStop.trigger(s.ms);
+        break;
+      case 'shake':
+        this.shake.kick(s.px, s.ms);
+        break;
+      case 'squash':
+        v.squashEnemy(s.enemyId);
+        break;
+      case 'knockback':
+        v.knockEnemy(s.enemyId, s.dx, s.dy, s.px);
+        break;
+      case 'sparks':
+        v.particles.sparks(s.at, s.count);
+        break;
+      case 'floatText':
+        this.floats.add(s.at ?? head, s.style === 'big' ? `${s.text}!` : s.text, s.style === 'big' ? 'crit' : s.style);
+        break;
+      case 'burst':
+        v.particles.burst(s.at, s.bits, s.count);
+        break;
+      case 'fadeOut':
+        v.fadeEnemy(s.enemyId, s.ms);
+        break;
+      case 'chestOpen': {
+        v.openChest(s.chestId);
+        const c = run.chests.find((x) => x.id === s.chestId);
+        if (c) v.particles.sparks({ x: c.x, y: c.y - 14 }, 5);
+        break;
+      }
+      case 'lootPop':
+        v.particles.lootPop({ x: lootAt.x, y: lootAt.y + 12 }, lootAt.y + 28, s.rank, LOOT_POP_COUNT[s.rank]);
+        break;
+      case 'telegraph':
+        v.telegraphEnemy(s.enemyId, s.ms);
+        break;
+      case 'edgePulse':
+        this.edgeMs = s.ms;
+        this.edgeTotal = s.ms;
+        break;
+      case 'sound':
+        this.ctx.sound(s.name, s.rank);
+        break;
+    }
   }
 
   private effects(run: DungeonRun, before: DungeonRun): void {
     const v = this.view;
     const head = (): Point => ({ x: v.playerAt.x, y: v.playerAt.y - 64 });
+    const fxCtx = this.fxContext(run, before);
     let lootAt: Point = head();
     let stagger = 0;
     const leftBehind: string[] = [];
     for (const e of run.events) {
       switch (e.t) {
-        case 'hit': {
+        case 'hit':
           v.flashEnemy(e.enemyId);
-          this.floats.add(v.enemyPoint(e.enemyId) ?? head(), `-${e.damage}`, 'damage');
-          this.shakeBy(HIT_SHAKE_PX);
-          this.ctx.sound('hit');
           break;
-        }
         case 'enemy_hit':
           v.hurtPlayer();
-          this.floats.add(head(), `-${e.damage}`, 'hurt');
-          this.shakeBy(HURT_SHAKE_PX);
-          this.ctx.sound('hurt');
-          break;
-        case 'enemy_miss':
-          this.floats.add(head(), 'dodged!', 'info');
           break;
         case 'kill': {
           lootAt = v.enemyPoint(e.enemyId) ?? head();
@@ -318,7 +410,6 @@ export class DungeonScreen {
           break;
         }
         case 'chest': {
-          v.openChest(e.chestId);
           const c = run.chests.find((x) => x.id === e.chestId);
           lootAt = c ? { x: c.x, y: c.y - 24 } : head();
           // The drops float up once the lid is open.
@@ -341,9 +432,6 @@ export class DungeonScreen {
         case 'left_behind':
           leftBehind.push(e.item.kind === 'material' ? getMaterialType(e.item.id).name : getFurnitureType(e.item.typeId).name);
           break;
-        case 'mimic':
-          this.floats.add(v.enemyPoint(e.enemyId) ?? head(), 'A mimic!', 'hurt');
-          break;
         case 'potion':
           this.floats.add(head(), `+${e.healed}`, 'heal');
           break;
@@ -362,8 +450,6 @@ export class DungeonScreen {
           break;
         case 'swing':
           v.shakeRock(e.rockId);
-          this.shakeBy(HIT_SHAKE_PX / 2);
-          this.ctx.sound('hit');
           break;
         case 'too_hard': {
           const rk = run.rocks.find((x) => x.id === e.rockId);
@@ -386,27 +472,38 @@ export class DungeonScreen {
         default:
           break;
       }
+      // The look and sound of the event: hit-stop, shake, sparks, bursts, fades, pings (fx/fxSpec.ts, pure and tested).
+      for (const s of fxSpec(e, fxCtx)) this.applySpec(s, lootAt, head(), run);
     }
     if (leftBehind.length > 0) this.ctx.toast(`Your bag is full: ${[...new Set(leftBehind)].join(', ')} left behind.`);
   }
 
-  private render(dtMs: number): void {
+  /** Draws one frame. `skip` = a hit-stop holds the picture (the caller worked out the times with frameTimes). */
+  private render(dtMs: number, skip = false): void {
     const run = this.run;
-    if (!run) return;
-    this.view.render(run, this.prev, dtMs, this.clockMs);
+    if (!run || skip) return;
+    const reduce = this.ctx.reduceEffects();
+    if (reduce && !this.view.reduce) this.resetFx();
+    this.view.reduce = reduce;
+    this.floats.pop = !reduce;
+    const rdt = dtMs;
+    this.clockMs += rdt;
+    this.view.render(run, this.prev, rdt, this.clockMs);
     const { app } = this.ctx;
     const w = app.screen.width;
     const h = app.screen.height;
     let cam = cameraAt(this.view.playerAt, this.zoom, w, h);
-    this.shake.ms = Math.max(0, this.shake.ms - dtMs);
-    if (this.shake.ms > 0) {
-      const k = (this.shake.px * this.shake.ms) / SCREEN_SHAKE_MS / this.zoom;
-      cam = { ...cam, x: cam.x + Math.sin(this.clockMs * 0.09) * k, y: cam.y + Math.cos(this.clockMs * 0.07) * k };
-    }
+    const off = this.shake.update(rdt);
+    cam = { ...cam, x: cam.x + off.x / this.zoom, y: cam.y + off.y / this.zoom };
     this.shown = snapCamera(cam, this.ctx.dpr());
     this.view.world.scale.set(this.shown.zoom);
     this.view.world.position.set(-this.shown.x * this.shown.zoom, -this.shown.y * this.shown.zoom);
-    this.floats.update(dtMs, (p) => worldToScreen(p, this.shown));
+    this.floats.update(rdt, (p) => worldToScreen(p, this.shown));
     this.ctx.popups.update(worldToScreen({ x: this.view.playerAt.x, y: this.view.playerAt.y - 64 }, this.shown));
+    // Hurt edge pulse and the low hp heartbeat vignette (HTML overlays; their look is CSS: .hurt-edge and .low-hp).
+    this.edgeMs = Math.max(0, this.edgeMs - rdt);
+    this.hurtEdge.style.display = this.edgeMs > 0 ? '' : 'none';
+    if (this.edgeMs > 0) this.hurtEdge.style.opacity = String(easeOutQuad(this.edgeMs / Math.max(1, this.edgeTotal)));
+    this.lowHpEl.style.display = !reduce && run.status === 'active' && isLowHp(run.player.hp, run.player.maxHp) ? '' : 'none';
   }
 }

@@ -25,7 +25,11 @@ export function neededFacings(type: { facings: readonly Facing[] }): SpriteFacin
   return [...new Set(type.facings.map((f): SpriteFacing => (f === 'left' ? 'right' : f)))];
 }
 
-export const SPRITE_KINDS = ['furniture', 'icons', 'blocks', 'floors', 'walls', 'plants'] as const;
+/**
+ * dungeon (crypt and mine tiles, 32 x 32), actors (enemies and chests) and lake (water, trees, pier, decor) are the outdoors kinds (PLAN-REWORK-OUTDOORS
+ * section 4). Their files are `<id>.png`; an animation STRIP is `<id>_<tag>.png` (see stripId): a horizontal row of equal frames.
+ */
+export const SPRITE_KINDS = ['furniture', 'icons', 'blocks', 'floors', 'walls', 'plants', 'dungeon', 'actors', 'lake'] as const;
 export type SpriteKind = (typeof SPRITE_KINDS)[number];
 
 /** One sprite file: its kind (the folder), the id, and the variant: the facing (furniture), the growth stage 1 to 3 (plants), else ''. */
@@ -73,3 +77,19 @@ export function spriteComplete(type: { id: string; facings: readonly Facing[] },
   }
   return neededFacings(type).every((f) => have.has(f));
 }
+
+// ---------- Animation strips (outdoors rework C11) ----------
+/** The file id of an animation strip: `slime` + `idle` = `slime_idle` (the file is `slime_idle.png`, a horizontal row of equal frames). */
+export const stripId = (id: string, tag: string): string => `${id}_${tag}`;
+
+/**
+ * How many frames a strip of this width holds (width / frame width), or 0 when it cannot be cut: a bad frame width, or a width that is not a whole
+ * number of frames (such a strip is treated as missing, so a mis-sized file shows the code art instead of a torn frame).
+ */
+export function stripFrameCount(width: number, frameW: number): number {
+  if (!Number.isInteger(width) || !Number.isInteger(frameW) || frameW <= 0 || width <= 0 || width % frameW !== 0) return 0;
+  return width / frameW;
+}
+
+/** The x offset of frame `i` in a strip. */
+export const stripFrameX = (i: number, frameW: number): number => i * frameW;

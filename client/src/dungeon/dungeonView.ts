@@ -12,9 +12,15 @@ import {
   DUNGEON_BLOCK,
   DUNGEON_SEEN_DARK,
   DUNGEON_TICK_MS,
+  ENEMY_WINDUP_MS,
+  FX_AGGRO_MS,
+  FX_KNOCKBACK_MS,
+  FX_SQUASH_MS,
+  FX_TELEGRAPH_RADIUS,
   GEM_ICON,
   GEM_PICKUP_REACH,
   HIT_FLASH_MS,
+  PALETTE,
   PICKAXE_COOLDOWN_MS,
   facingFor,
   type Avatar,
@@ -33,6 +39,9 @@ import { DepthLayer } from '../render/depthLayer.ts';
 import { iconTexture } from '../render/drawIcon.ts';
 import { CRYPT_OUTLINE, ENEMY_HEIGHT, ROCK_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit, drawRock } from './dungeonArt.ts';
 import { FogMemory } from './fog.ts';
+import { DungeonFx } from './dungeonFx.ts';
+import { easeInQuad, easeOutBounce, easeOutQuad } from '../fx/ease.ts';
+import { aggroStarted } from '../fx/fxSpec.ts';
 
 /** Depth key ids: the player first, then enemies, then chests (only breaks exact ties). */
 const PLAYER_ID = 0;
@@ -59,6 +68,18 @@ interface RockView {
 
 interface EnemyView {
   root: Container;
+  /** The art and its white flash: squashed around the feet (outdoors rework C12). */
+  body: Container;
+  /** The "!" over the head when it starts to chase. */
+  bang: Graphics;
+  squashMs: number;
+  knock: Point;
+  /** ms since the knockback started (FX_KNOCKBACK_MS = done). */
+  knockMs: number;
+  telegraphMs: number;
+  aggroMs: number;
+  /** Its distance to the player at the last frame (for the aggro cue), null = not seen yet. */
+  prevDist: number | null;
   white: Graphics;
   hp: Graphics;
   flashMs: number;
@@ -72,7 +93,18 @@ interface ChestView {
   kind: 'wooden' | 'golden';
   /** ms since the lid started to open; -1 = shut. */
   openMs: number;
+  /** Holds the three poses (shut, half, open): built once, only their visibility changes (no per-frame redraw). */
   art: Container;
+  poses: Container[];
+  glows: Container[];
+}
+
+/** A killed enemy fading out (its view stays for FX_DEATH_FADE_MS). */
+interface DyingView {
+  v: EnemyView;
+  ms: number;
+  total: number;
+  at: Point;
 }
 
 export class DungeonView {
@@ -83,6 +115,15 @@ export class DungeonView {
   /** Above the objects: the attack cooldown ring. */
   private readonly fx = new Graphics();
   private readonly fog = new Graphics();
+  /** On the floor under the objects: the wind-up telegraph rings (outdoors rework C12). */
+  private readonly floorFx = new Graphics();
+  /** Sparks, bits, dust and loot drops above the objects. */
+  readonly particles = new DungeonFx();
+  /** Set by the screen each frame from the Reduce effects pref: no dust, aggro cue or telegraph then. */
+  reduce = false;
+  private readonly dying: DyingView[] = [];
+  /** Kills the screen asked to fade (enemy id -> ms): the view keeps those views for a moment instead of removing them. */
+  private readonly fadeRequests = new Map<number, number>();
   private readonly exit = drawExit();
   readonly player: AvatarSprite;
   private facing: Facing = 'down';
@@ -101,7 +142,7 @@ export class DungeonView {
     this.player = new AvatarSprite(look);
     this.player.container.eventMode = 'none';
     this.world.eventMode = 'none';
-    this.world.addChild(this.base, this.objects.container, this.fx, this.fog);
+    this.world.addChild(this.base, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog);
     this.objects.add(this.player.container, { y: 0, x: 0, uid: PLAYER_ID });
   }
 
@@ -122,6 +163,9 @@ export class DungeonView {
     this.exit.position.set((map.exit.c + 0.5) * DUNGEON_BLOCK, (map.exit.r + 1) * DUNGEON_BLOCK);
     this.base.addChild(this.exit);
     for (const id of [...this.enemies.keys()]) this.removeEnemy(id);
+    for (const d of this.dying.splice(0)) this.destroyEnemyView(d.v);
+    this.fadeRequests.clear();
+    this.particles.clear();
     for (const [id, c] of this.chests) {
       this.objects.remove(c.root);
       c.root.destroy({ children: true });
@@ -200,6 +244,11 @@ export class DungeonView {
     return v ? { x: v.at.x, y: v.at.y - v.height } : null;
   }
 
+  /** Where an enemy's feet are drawn (before knockback), or null. */
+  enemyFeet(id: number): Point | null {
+    return this.enemies.get(id)?.at ?? null;
+  }
+
   flashEnemy(id: number): void {
     const v = this.enemies.get(id);
     if (v) v.flashMs = HIT_FLASH_MS;
@@ -212,6 +261,37 @@ export class DungeonView {
   openChest(id: number): void {
     const v = this.chests.get(id);
     if (v && v.openMs < 0) v.openMs = 0;
+  }
+
+  /** A hit enemy squashes (stepped, whole pixels) for FX_SQUASH_MS. */
+  squashEnemy(id: number): void {
+    const v = this.enemies.get(id);
+    if (v) v.squashMs = FX_SQUASH_MS;
+  }
+
+  /** A hit enemy is pushed px away along (dx, dy), easing back over FX_KNOCKBACK_MS. */
+  knockEnemy(id: number, dx: number, dy: number, px: number): void {
+    const v = this.enemies.get(id);
+    if (!v) return;
+    v.knock = { x: dx * px, y: dy * px };
+    v.knockMs = 0;
+  }
+
+  /** The red wind-up ring on the floor under an enemy, growing over ms. */
+  telegraphEnemy(id: number, ms: number): void {
+    const v = this.enemies.get(id);
+    if (v) v.telegraphMs = ms;
+  }
+
+  /** The enemy is about to leave the run (a kill): keep its view and fade it out over ms instead of removing it at once. */
+  fadeEnemy(id: number, ms: number): void {
+    if (this.enemies.has(id)) this.fadeRequests.set(id, ms);
+  }
+
+  /** The floor y of a chest, for the loot that pops out of it. */
+  chestFloorY(id: number): number | null {
+    const v = this.chests.get(id);
+    return v ? v.root.y + 4 : null;
   }
 
   /**
@@ -250,13 +330,28 @@ export class DungeonView {
 
     // Enemies: only on lit blocks; they blink during the wind-up and flash white when hit.
     const alive = new Set(run.enemies.map((e) => e.id));
-    for (const id of [...this.enemies.keys()]) if (!alive.has(id)) this.removeEnemy(id);
+    for (const id of [...this.enemies.keys()]) if (!alive.has(id)) this.retireEnemy(id);
     for (const e of run.enemies) {
       const v = this.enemies.get(e.id) ?? this.addEnemy(e);
       const pos = lerp(same?.enemies.find((x) => x.id === e.id), e);
       v.at = pos;
-      v.root.position.set(Math.round(pos.x), Math.round(pos.y));
+      // Knockback eases back, the squash steps back to normal (outdoors rework C12); both are whole pixels.
+      let kx = 0;
+      let ky = 0;
+      if (v.knockMs < FX_KNOCKBACK_MS) {
+        v.knockMs = Math.min(FX_KNOCKBACK_MS, v.knockMs + dtMs);
+        const k = 1 - easeOutQuad(v.knockMs / FX_KNOCKBACK_MS);
+        kx = v.knock.x * k;
+        ky = v.knock.y * k;
+      }
+      v.root.position.set(Math.round(pos.x + kx), Math.round(pos.y + ky));
       v.root.visible = this.fogMemory.isLit(map, pos);
+      this.squashBody(v, dtMs);
+      v.telegraphMs = Math.max(0, v.telegraphMs - dtMs);
+      const dist = Math.hypot(pos.x - at.x, pos.y - at.y);
+      if (!this.reduce && v.root.visible && aggroStarted(v.prevDist, dist)) v.aggroMs = FX_AGGRO_MS;
+      v.prevDist = dist;
+      this.bang(v, dtMs);
       const blink = e.windupMs > 0 && Math.floor(clockMs / 60) % 2 === 0;
       v.root.tint = blink ? 0xff5050 : 0xffffff;
       v.flashMs = Math.max(0, v.flashMs - dtMs);
@@ -264,6 +359,9 @@ export class DungeonView {
       this.drawHp(v, e);
       this.objects.setKey(v.root, { y: pos.y, x: pos.x, uid: e.id });
     }
+
+    this.updateDying(dtMs);
+    this.drawTelegraphs(run);
 
     // Chests: drawn once seen; the lid opens over CHEST_OPEN_MS.
     for (const c of run.chests) {
@@ -273,19 +371,18 @@ export class DungeonView {
         if (c.opened) {
           // Opened before this view existed (a reload): drawn open, no animation.
           v.openMs = CHEST_OPEN_MS;
-          this.redrawChest(v, 1);
+          this.poseChest(v, 1);
         }
       }
       if (c.opened && v.openMs < 0) v.openMs = 0;
       if (v.openMs >= 0 && v.openMs < CHEST_OPEN_MS) {
         v.openMs = Math.min(CHEST_OPEN_MS, v.openMs + dtMs);
-        this.redrawChest(v, v.openMs / CHEST_OPEN_MS);
+        this.poseChest(v, v.openMs / CHEST_OPEN_MS);
         // A little hop while it opens.
         v.art.y = -Math.round(Math.sin((v.openMs / CHEST_OPEN_MS) * Math.PI) * 4);
       }
       v.root.visible = this.fogMemory.isSeen(map, c);
-      const glow = v.art.children.find((ch) => ch.label === 'glow');
-      if (glow) glow.alpha = 0.7 + 0.3 * Math.sin(clockMs / 300);
+      for (const glow of v.glows) glow.alpha = 0.7 + 0.3 * Math.sin(clockMs / 300);
     }
     // A mimic leaves the chest list when it wakes.
     for (const [id, v] of this.chests) {
@@ -364,17 +461,81 @@ export class DungeonView {
       this.fx.circle(cx, cy, 5).fill({ color: CRYPT_OUTLINE, alpha: 0.7 });
       this.fx.moveTo(cx, cy).arc(cx, cy, 5, -Math.PI / 2, -Math.PI / 2 + done * Math.PI * 2).lineTo(cx, cy).fill('#feae34');
     }
+    if (!this.reduce && dtMs > 0) this.particles.footsteps(at, moving);
+    this.particles.update(dtMs);
     this.objects.update();
+  }
+
+  /** The stepped squash of a hit enemy: wide and flat, then halfway, then normal (whole pixels, no smoothing). */
+  private squashBody(v: EnemyView, dtMs: number): void {
+    v.squashMs = Math.max(0, v.squashMs - dtMs);
+    const k = v.squashMs / FX_SQUASH_MS;
+    const [sx, sy] = k > 0.66 ? [1.25, 0.75] : k > 0.33 ? [1.12, 0.88] : [1, 1];
+    v.body.scale.set(sx, sy);
+  }
+
+  /** The aggro "!" over an enemy that just started to chase: it drops in with a bounce and stays FX_AGGRO_MS. */
+  private bang(v: EnemyView, dtMs: number): void {
+    v.aggroMs = Math.max(0, v.aggroMs - dtMs);
+    v.bang.visible = v.aggroMs > 0;
+    if (!v.bang.visible) return;
+    const t = Math.min(1, (FX_AGGRO_MS - v.aggroMs) / 220);
+    v.bang.position.set(0, -v.height - 14 - Math.round(10 * (1 - easeOutBounce(t))));
+  }
+
+  /** Red rings that grow on the floor under every enemy that winds up an attack. */
+  private drawTelegraphs(run: DungeonRun): void {
+    const g = this.floorFx;
+    g.clear();
+    if (this.reduce) return;
+    for (const e of run.enemies) {
+      const v = this.enemies.get(e.id);
+      if (!v || v.telegraphMs <= 0 || !v.root.visible) continue;
+      const k = 1 - v.telegraphMs / ENEMY_WINDUP_MS;
+      const r = Math.max(4, Math.round(FX_TELEGRAPH_RADIUS * easeInQuad(Math.min(1, k + 0.15))));
+      g.ellipse(Math.round(v.at.x), Math.round(v.at.y), r, Math.round(r * 0.55)).fill({ color: PALETTE[8]!, alpha: 0.18 }).stroke({ color: PALETTE[8]!, width: 1, alpha: 0.9 });
+    }
+  }
+
+  /** Fades the views of killed enemies and removes them when done. */
+  private updateDying(dtMs: number): void {
+    for (let i = this.dying.length - 1; i >= 0; i--) {
+      const d = this.dying[i]!;
+      d.ms += dtMs;
+      let kx = 0;
+      let ky = 0;
+      if (d.v.knockMs < FX_KNOCKBACK_MS) {
+        d.v.knockMs = Math.min(FX_KNOCKBACK_MS, d.v.knockMs + dtMs);
+        const k = 1 - easeOutQuad(d.v.knockMs / FX_KNOCKBACK_MS);
+        kx = d.v.knock.x * k;
+        ky = d.v.knock.y * k;
+      }
+      d.v.root.position.set(Math.round(d.at.x + kx), Math.round(d.at.y + ky));
+      this.squashBody(d.v, dtMs);
+      d.v.root.alpha = Math.max(0, 1 - easeInQuad(d.ms / d.total));
+      if (d.ms >= d.total) {
+        this.destroyEnemyView(d.v);
+        this.dying.splice(i, 1);
+      }
+    }
   }
 
   private addEnemy(e: Enemy): EnemyView {
     const root = new Container();
+    const body = new Container();
     const art = drawEnemy(e.kind, e.mimic);
     const white = drawEnemy(e.kind, e.mimic, true);
     white.visible = false;
+    body.addChild(art, white);
     const hp = new Graphics();
-    root.addChild(art, white, hp);
-    const v: EnemyView = { root, white, hp, flashMs: 0, height: ENEMY_HEIGHT[e.mimic ? 'mimic' : e.kind], at: { x: e.x, y: e.y } };
+    const bang = new Graphics();
+    bang.rect(-3, -9, 6, 2).fill(CRYPT_OUTLINE).rect(-2, -8, 4, 7).fill(PALETTE[11]!).rect(-3, -1, 6, 4).fill(CRYPT_OUTLINE).rect(-2, 0, 3, 2).fill(PALETTE[11]!);
+    bang.visible = false;
+    root.addChild(body, hp, bang);
+    const v: EnemyView = {
+      root, body, bang, white, hp, flashMs: 0, height: ENEMY_HEIGHT[e.mimic ? 'mimic' : e.kind], at: { x: e.x, y: e.y },
+      squashMs: 0, knock: { x: 0, y: 0 }, knockMs: FX_KNOCKBACK_MS, telegraphMs: 0, aggroMs: 0, prevDist: null,
+    };
     this.enemies.set(e.id, v);
     this.objects.add(root, { y: e.y, x: e.x, uid: e.id });
     return v;
@@ -383,9 +544,29 @@ export class DungeonView {
   private removeEnemy(id: number): void {
     const v = this.enemies.get(id);
     if (!v) return;
+    this.destroyEnemyView(v);
+    this.enemies.delete(id);
+  }
+
+  private destroyEnemyView(v: EnemyView): void {
     this.objects.remove(v.root);
     v.root.destroy({ children: true });
+  }
+
+  /** An enemy left the run: a killed one (the screen asked for a fade) fades out, anything else is removed at once. */
+  private retireEnemy(id: number): void {
+    const ms = this.fadeRequests.get(id);
+    const v = this.enemies.get(id);
+    this.fadeRequests.delete(id);
+    if (ms === undefined || !v || !v.root.visible) {
+      this.removeEnemy(id);
+      return;
+    }
     this.enemies.delete(id);
+    v.hp.clear();
+    v.bang.visible = false;
+    v.white.visible = false;
+    this.dying.push({ v, ms: 0, total: ms, at: { x: v.at.x, y: v.at.y } });
   }
 
   private drawHp(v: EnemyView, e: Enemy): void {
@@ -400,22 +581,26 @@ export class DungeonView {
 
   private addChest(c: Chest): ChestView {
     const root = new Container();
-    const art = drawChest(c.kind, 0);
+    // Three poses built once; opening only switches which one shows (no Graphics redraw per frame).
+    const poses = [drawChest(c.kind, 0), drawChest(c.kind, 0.5), drawChest(c.kind, 1)];
+    const art = new Container();
+    art.addChild(...poses);
+    const glows = poses.map((p) => p.children.find((ch) => ch.label === 'glow')).filter((g): g is Container => g !== undefined);
     root.addChild(art);
     root.position.set(c.x, c.y);
-    const v: ChestView = { root, kind: c.kind, openMs: -1, art };
+    const v: ChestView = { root, kind: c.kind, openMs: -1, art, poses, glows };
+    this.poseChest(v, 0);
     this.chests.set(c.id, v);
     this.objects.add(root, { y: c.y, x: c.x, uid: CHEST_ID_BASE + c.id });
     return v;
   }
 
-  private redrawChest(v: ChestView, open: number): void {
-    const y = v.art.y;
-    v.root.removeChild(v.art);
-    v.art.destroy({ children: true });
-    v.art = drawChest(v.kind, open);
-    v.art.y = y;
-    v.root.addChild(v.art);
+  /** Shows the pose for how far the lid is open (0 = shut, 1 = open). */
+  private poseChest(v: ChestView, open: number): void {
+    const i = open <= 0 ? 0 : open < 0.5 ? 1 : 2;
+    v.poses.forEach((p, k) => {
+      p.visible = k === i;
+    });
   }
 
   private drawFog(map: DungeonMap): void {

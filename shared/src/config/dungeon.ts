@@ -136,3 +136,33 @@ export const BOSS_THRONE_PIECE_MIN = 1;
 export const BOSS_THRONE_PIECE_MAX = 2;
 /** Chance per kill of one drop from the enemy's own table (step 9e: the table decides the rank). */
 export const RARE_DROP_CHANCE = 0.1;
+// ---------- Effects (outdoors rework C11/C12): look and feel only, never rules ----------
+/** All pooled particles together (dungeon and lakeside): a spawn over this cap is dropped. */
+export const FX_MAX_PARTICLES = 160;
+/** Hit-stop: the view freezes this long on a hit and on being hit (render only, the run keeps real time), ms. */
+export const FX_HIT_STOP_MS = 50;
+/** The screen shake is kicked again at most every FX_SHAKE_STEP_MS (the noise changes this often), ms. */
+export const FX_SHAKE_STEP_MS = 40;
+/** An enemy hit is pushed back this many px (decays), and squashes for FX_SQUASH_MS. */
+export const FX_KNOCKBACK_PX = 3;
+export const FX_KNOCKBACK_MS = 140;
+export const FX_SQUASH_MS = 160;
+/** Spark particles per hit, and bits per kill burst. */
+export const FX_SPARK_COUNT = 5;
+export const FX_BURST_COUNT = 9;
+/** A killed enemy fades out over this long instead of vanishing, ms. */
+export const FX_DEATH_FADE_MS = 200;
+/** A damage number pops in (scale) over this long, ms; a "big hit" is damage at the top of the attack range. */
+export const FX_DAMAGE_POP_MS = 140;
+/** The wind-up telegraph ring grows to this radius (px) over the enemy's wind-up. */
+export const FX_TELEGRAPH_RADIUS = 40;
+/** The aggro "!" shows this long over an enemy that starts chasing, ms. */
+export const FX_AGGRO_MS = 600;
+/** The red edge pulse when the player is hit, ms; the heartbeat vignette shows under this fraction of max hp. */
+export const FX_HURT_EDGE_MS = 320;
+export const FX_LOW_HP_FRACTION = 0.3;
+/** Footstep dust: one puff per this many px walked. */
+export const FX_DUST_EVERY_PX = 24;
+/** Loot popped out of a chest: how high it jumps (px), and how long the arc lasts, ms. */
+export const FX_LOOT_POP_PX = 18;
+export const FX_LOOT_POP_MS = 420;

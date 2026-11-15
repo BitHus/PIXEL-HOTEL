@@ -75,3 +75,7 @@ export const FISH_REEL = {
 } as const;
 /** A reel that lasts longer than this is lost (the fish gets away), ms. A safety limit. */
 export const FISH_REEL_MAX_MS = 45_000;
+// ---------- Effects (outdoors rework C13/C15; the shared FX_* numbers are in dungeon.ts) ----------
+/** Tree crowns sway this many px at most (whole px, off with reduce effects), and a hit puffs this many leaves. */
+export const FX_TREE_SWAY_PX = 1;
+export const FX_LEAF_PUFF = 5;
