@@ -1,14 +1,15 @@
 // One furniture item on screen: the box placeholder art for its facing, at its anchor (the
 // bottom center of the footprint). Items on a surface are lifted by the surface height.
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import { PALETTE, type Facing, type FurnitureType } from '@pixel-hotel/shared';
 import { drawFurniture } from './furnitureArt.ts';
+import { spriteFor } from './spriteStore.ts';
 
 export class FurnitureSprite {
   /** Positioned at the anchor, in world px. */
   readonly container = new Container();
-  private art: Graphics | null = null;
+  private art: Container | null = null;
   private facing: Facing | null = null;
   /** The small fish swimming in a fish tank (FurnitureType.swim, step 9f), or null. */
   private fish: Graphics | null = null;
@@ -21,7 +22,13 @@ export class FurnitureSprite {
     if (facing === this.facing) return;
     this.facing = facing;
     this.art?.destroy();
-    this.art = drawFurniture(this.type, facing);
+    // A PNG sprite (docs/PLAN-SPRITES.md) when the piece has all its facings, else the code art. Anchor = bottom centre.
+    const tex = spriteFor(this.type.id, facing);
+    if (tex) {
+      const s = new Sprite(tex);
+      s.anchor.set(0.5, 1);
+      this.art = s;
+    } else this.art = drawFurniture(this.type, facing);
     this.art.scale.x = facing === 'left' ? -1 : 1;
     this.container.addChildAt(this.art, 0);
     if (this.type.swim && !this.fish) {
