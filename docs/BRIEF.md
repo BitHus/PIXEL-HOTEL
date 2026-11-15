@@ -691,3 +691,5 @@ changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as writ
 - Everything you gain floats above the avatar's head for about 1.2 s (icon + count, rank colour).
 - Social (online, phase 6): room names and visit-by-name, a lobby, locks and access lists, signs,
   portals; friends, guilds and trading only later with new safety rules.
+- Cooking happens in the TAVERN (owner, 15 Nov): a stove in the tavern cooks batches in real time from
+  crops; dishes go on the menu, in the lunch box and on the stall. The garden has no pot. (Step K1.)

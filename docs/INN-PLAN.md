@@ -1,6 +1,7 @@
 # INN-PLAN: one game out of the block world, the tavern and the hotel room (planner, 15 Nov)
 
-Status: PROPOSED. Needs the owner's OK on section 3 before any step starts. No code yet.
+Status: ACCEPTED by the owner (15 Nov): one connected Inn, playtest + refactor first, and COOKING MOVES
+TO THE TAVERN (M-D). No code yet.
 
 ## 1. Review: what the project is now (checked in the repo, 15 Nov)
 Built and merged: cell grid, icons, popups, gems, blocks + hold-to-punch, free-form farm, seeds,
@@ -61,8 +62,13 @@ M-C. ONE INN SCORE. A single "Inn appeal" 0 to 100 from three parts: tavern furn
      (as shopAppeal today), suite stars (9g room score) and garden beauty (flowers, lanterns,
      fences, plants count by baseValue, capped). It sets guest rate, tip size and later visitor
      numbers. Blocks and plants now COUNT, so building with them pays. [Do it after 9t and 9g.]
-M-D. CROP FLOW. Crops from the garden are the tavern's ingredients (brewing and menu are
-     already planned in 9t), so planting is how the tavern gets stock. [Already in 9t: check.]
+M-D. THE TAVERN KITCHEN (owner, 15 Nov: you cook in the tavern). The cooking pot leaves the
+     garden: the tavern gets a KITCHEN corner with a stove (furniture, one at the start, more in
+     the catalog) and the brewing barrel. Cooking takes real time per batch (also while the game
+     is closed, time passed in): put crops in, wait, tap to collect dishes. Dishes feed three
+     things: the MENU (guests order them, 9t), the lunch box for the dungeon (heals and buffs as
+     now), and the stall. So the garden grows, the kitchen turns crops into dishes, the bar sells
+     them. The garden keeps no pot; the farm room is for planting only. Step K1.
 M-E. SHOWCASE. The suite gets trophy places: the Book rewards, splice discoveries (a plant
      in a pot for each recipe found), hats on a stand. Shows achievements (phase 3). [Later.]
 M-F. LATER WITH ONLINE: the stall becomes a vending machine for real players, locks and
@@ -74,7 +80,7 @@ FURNITURE = things you use or admire (tables, beds, lamps). Carpentry connects t
 1. PLAYTEST + FIX (docs/ROADMAP phase 2.1, brought forward): the owner plays one full hour from
    a new game; one fix list. No new features first.
 2. R1 REFACTOR: split main.ts and localGameAPI.ts by part (no behaviour change).
-3. 9t B and C: the tavern appears in the game.
+3. 9t B (guests and serving), then K1 (kitchen: cooking moves to the tavern), then 9t C.
 4. M-A carpentry, M-B connected inn.
 5. 9g livelier suite (stars, visitors, hats, cat), then M-C one Inn score.
 6. 9i questline, rewritten to follow the one flow (garden -> tavern -> suite -> expeditions).
