@@ -40,7 +40,7 @@ Zones, all connected by doors you can walk through (Map stays as fast travel):
 - THE GARDEN (today's farm room): the blocks, seeds and splicing world. Produces crops, blocks,
   furniture seeds, clothes seeds. Beauty counts (flowers, fences, lanterns).
 - THE TAVERN (today's shop): where gold is earned. Uses crops (brewing, cooking), shows
-  goods on the stall (later a vending machine for real players), guests sit on furniture.
+  guests sit on furniture. THE SHOP IS GONE (owner, 15 Nov, section 5): no stall, no loot customers.
 - THE PRIVATE SUITE (today's hotel room): the owner's home and showcase: grown furniture, hats,
   trophies, the Book wall. Visitors tip by its stars.
 Trips (dungeon, mine, lakeside) are EXPEDITIONS out of the inn: they bring ore, loot, fish,
@@ -67,7 +67,7 @@ M-D. THE TAVERN KITCHEN (owner, 15 Nov: you cook in the tavern). The cooking pot
      the catalog) and the brewing barrel. Cooking takes real time per batch (also while the game
      is closed, time passed in): put crops in, wait, tap to collect dishes. Dishes feed three
      things: the MENU (guests order them, 9t), the lunch box for the dungeon (heals and buffs as
-     now), and the stall. So the garden grows, the kitchen turns crops into dishes, the bar sells
+     now), (the stall is gone). So the garden grows, the kitchen turns crops into dishes, the bar sells
      them. The garden keeps no pot; the farm room is for planting only. Step K1.
 M-D2. BREWING AND RIPENING (owner, 15 Nov). Brewing is 9t C (barrel, real time, drinks.json). RIPENING
      is new (step K2): a finished batch can go into a CASK on a keg rack and ripen in real time,
@@ -80,7 +80,7 @@ M-D2. BREWING AND RIPENING (owner, 15 Nov). Brewing is 9t C (barrel, real time, 
      (roadmap 5.7). Later idea: the same for food (cheese, cured ham).
 M-E. SHOWCASE. The suite gets trophy places: the Book rewards, splice discoveries (a plant
      in a pot for each recipe found), hats on a stand. Shows achievements (phase 3). [Later.]
-M-F. LATER WITH ONLINE: the stall becomes a vending machine for real players, locks and
+M-F. LATER WITH ONLINE: a vending machine in the tavern for real players (new, not the old stall), locks and
      access lists per zone (suite private, tavern and garden public), visit by Inn name.
 Rule for blocks versus furniture: BLOCKS = structure and nature (walls, paths, fences, soil, light).
 FURNITURE = things you use or admire (tables, beds, lamps). Carpentry connects them.
@@ -95,3 +95,23 @@ FURNITURE = things you use or admire (tables, beds, lamps). Carpentry connects t
 6. 9i questline, rewritten to follow the one flow (garden -> tavern -> suite -> expeditions).
 7. 9h dungeon round 2 and themes; phase 2.2 economy re-balance; art.
 Step prompts: docs/NEXT-STEPS.md "Inn steps".
+
+## 5. The shop is retired (owner, 15 Nov)
+Decision: the shop is the tavern. Items are for USE (cooking, brewing, crafting, gear, building,
+planting, splicing). Gold and gems come from the tavern, the dungeon and farming blocks; nobody
+sells loot to walk-in customers any more.
+- REMOVED: loot customers (window-shoppers, the queue, QUEUE_MAX, the till rule), stall tables,
+  shelves and display cases as selling places, shopAppeal for customers, "goods on slots with a
+  price". Hints, Map card ("Shop" is "Tavern"), catalog tab and Book texts follow.
+- KEPT: the room (internal kind 'shop'), the bar/counter (staff spot, serving), guests, the menu,
+  the stove and barrels; stall tables, shelves and display cases stay as plain DECOR (goods put
+  on them return to the bag; they no longer sell). Appeal still counts decor (tavern appeal sets
+  the guest rate, as 9t does).
+- SURPLUS: items you will not use must still go somewhere or the bag clogs. ADVICE: a TRADER
+  (a tap-to-sell Sell tab on the bar: you choose items, you get gold at SELL_RATE of baseValue,
+  low enough that selling never beats using the item; closed-loop tests in balance.ts). It is NOT
+  auto-selling: nothing sells unless the player taps. Spare clothes sell there too.
+- GOLD sources: tavern guests (main), dungeon run gold, the trader (surplus blocks, ore, fish).
+  GEM sources: as BG4/BG9 plus a small tavern source (a happy guest sometimes tips a gem; rarer
+  drinks and aged drinks tip more). Both re-balanced in S3.
+- Order: after 9t C: S1 retire the shop, S2 the trader, S3 rebalance gold and gems.
