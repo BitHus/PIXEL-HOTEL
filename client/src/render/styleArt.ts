@@ -6,6 +6,7 @@ import { Texture } from 'pixi.js';
 import { FLOOR_TEXTURE_SIZE, PALETTE, WALL_BAND } from '@pixel-hotel/shared';
 import { BARE_WALL_COLOR, BARE_WALL_EDGE, BORDER_COLOR, createBareFloorTexture } from './bareStyles.ts';
 import { desaturate, shade } from './colors.ts';
+import { spriteTexture, spriteUrl } from './spriteStore.ts';
 
 type Paint = (ctx: CanvasRenderingContext2D, size: number) => void;
 
@@ -184,6 +185,8 @@ const wallCache = new Map<string, Texture>();
 
 /** The seamless floor texture of a style (unknown styles look bare). */
 export function floorTexture(id: string): Texture {
+  const png = spriteTexture('floors', id); // sprites/floors/<id>.png (64x64, seamless) wins over the code texture
+  if (png) return png;
   let t = floorCache.get(id);
   if (!t) {
     const paint = FLOORS[id];
@@ -195,6 +198,8 @@ export function floorTexture(id: string): Texture {
 
 /** A piece of the wall band of a style, repeating sideways, with the dark edge at the bottom. */
 export function wallTexture(id: string): Texture {
+  const png = spriteTexture('walls', id); // sprites/walls/<id>.png (64x64, repeats sideways, has its own foot outline)
+  if (png) return png;
   let t = wallCache.get(id);
   if (!t) {
     const paint = WALLS[id];
@@ -210,6 +215,8 @@ export function wallTexture(id: string): Texture {
 
 /** A small preview of a style for the catalog and the room panel (data URL). */
 export function stylePreviewUrl(kind: 'floor' | 'wall', id: string): string {
+  const url = spriteUrl(kind === 'floor' ? 'floors' : 'walls', id);
+  if (url) return url;
   const t = kind === 'floor' ? floorTexture(id) : wallTexture(id);
   const src = t.source.resource as HTMLCanvasElement | undefined;
   return src instanceof HTMLCanvasElement ? src.toDataURL() : '';

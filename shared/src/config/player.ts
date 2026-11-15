@@ -72,6 +72,8 @@ export const TAVERN_INTRO_OLD =
   'Your shop is a tavern now! Guests sit at a table, order from your menu, and wait for you: tap a guest to carry the order from the bar. Place the round table, the stools and the brewing barrel from your bag, tap the barrel to brew drinks from crops and tap the bar to set the menu. Cooking moved here too: dishes come from the stove.';
 /** A new game gets this short line after the intro. */
 export const TAVERN_INTRO_NEW = 'Welcome to your tavern! Guests sit and order: tap them to serve. Tap the register for the menu and the tap stand to load drinks; tap the barrel to brew.';
+/** The one-time hint at the first Inn door (step MB-3). */
+export const INN_DOOR_HINT = 'Doors lead to the tavern and the garden. Walk onto the doorway to step through.';
 /**
  * The opening notice of an old save (step T1, version below 24): the bar got a register and taps, and the tavern a kitchen.
  * Drinks in the bag stay there until you load them on a tap (guests only order what is on a tap).

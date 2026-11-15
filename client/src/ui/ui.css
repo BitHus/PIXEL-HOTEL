@@ -3733,3 +3733,102 @@
     transition: none;
   }
 }
+
+/* ---------- Room fade (inn doors, step MB-3) ---------- */
+.room-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--outline, #181425);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-in-out;
+}
+
+.room-fade.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-fade {
+    transition: opacity 1ms linear;
+  }
+}
+
+/* ---------- Emotes and name tags (step 9g-1) ---------- */
+/* Use together with .btn / .frame: these only add size, layout and the pixel look. */
+.emote-btn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 16px var(--font);
+  color: var(--text);
+}
+
+.emote-btn.on {
+  outline: 2px solid var(--select);
+  outline-offset: -4px;
+}
+
+.emote-menu {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(5, var(--touch));
+  gap: 4px;
+  padding: 8px;
+  max-width: calc(100vw - 2 * var(--edge));
+  bottom: calc(var(--bottom-clear) + 4px);
+  right: var(--edge);
+  animation: emote-pop 120ms steps(3, end);
+}
+
+.emote-menu[hidden] {
+  display: none;
+}
+
+.emote-menu .btn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 0;
+  font: 14px var(--font);
+  line-height: 1;
+}
+
+@keyframes emote-pop {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Name tag above an avatar: a small dark plate with light text, placed by the client in screen px. */
+.nametag {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -100%);
+  max-width: 120px;
+  padding: 1px 6px 2px;
+  background: var(--outline);
+  color: var(--cream);
+  font: 12px var(--font);
+  line-height: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--night);
+  box-shadow: 0 1px 0 rgba(24, 20, 37, 0.55);
+  pointer-events: none;
+}
+
+.nametag.own {
+  color: var(--warm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emote-menu {
+    animation: none;
+  }
+}

@@ -3,7 +3,7 @@
 
 import {
   INTRO_COINS, doorY, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, barCoinPoint,
-  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, type RoomKind,
+  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, INN_DOOR_HINT, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import type { G13 } from './ctx.ts';
@@ -17,6 +17,7 @@ export async function setupRoomFlow(g: G13) {
   } = g;
   late.openRoom = openRoom;
   late.openRoomKind = openRoomKind;
+  late.useDoor = useDoor;
 
   // ---------- The new-game intro (step 7b) ----------
   /**
@@ -100,13 +101,13 @@ export async function setupRoomFlow(g: G13) {
 
   // ---------- Rooms ----------
   /** Opens a room: draws it, puts the avatar in the door zone and plays the camera intro. */
-  async function openRoom(roomId: number, intro = true): Promise<void> {
+  async function openRoom(roomId: number, intro = true, arrived?: RoomState): Promise<void> {
     placer.cancel();
     paint.end();
     menu.close();
     bubbles.clear();
     chat.clear();
-    const state = await api.enterRoom(roomId);
+    const state = arrived ?? (await api.enterRoom(roomId));
     st.room = state.room;
     st.bounds = roomBoundsRect(st.room);
     view.setRoom(st.room);
@@ -117,7 +118,7 @@ export async function setupRoomFlow(g: G13) {
     st.items = await api.getItems();
     const mine = state.avatars[0];
     if (mine) st.avatar = { ...mine, look: st.avatar.look };
-    st.path = [];
+    st.path = arrived && mine ? [{ x: mine.x, y: mine.y + BUILD_CELL }] : []; // a door arrival steps one cell down
     st.goal = null;
     seating.clear();
     st.marked = null;
@@ -137,8 +138,32 @@ export async function setupRoomFlow(g: G13) {
     syncTavern();
     await refreshInventory();
     await refreshHint();
+    if (arrived && innDoorSpots(st.room).length > 0 && !doorHinted) {
+      doorHinted = true;
+      toast(INN_DOOR_HINT);
+    }
     if (intro) startIntro();
     else fit();
+  }
+  let doorHinted = false;
+  let doorBusy = false;
+  const fade = document.createElement('div');
+  fade.className = 'room-fade';
+  uiRoot.appendChild(fade);
+  /** Steps through an Inn door: fade out, the room opens on the matching door (no camera intro), fade in. False = refused. */
+  async function useDoor(doorId: string): Promise<boolean> {
+    if (doorBusy) return false;
+    doorBusy = true;
+    try {
+      fade.classList.add('on');
+      const [state] = await Promise.all([api.useDoor(doorId), new Promise((r) => window.setTimeout(r, 200))]);
+      if (!state) return false;
+      await openRoom(state.room.id, false, state);
+      return true;
+    } finally {
+      fade.classList.remove('on');
+      doorBusy = false;
+    }
   }
   async function openRoomKind(kind: RoomKind): Promise<void> {
     if (kind === st.room.kind) return;

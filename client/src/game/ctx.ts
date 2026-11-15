@@ -2,7 +2,7 @@
 // st holds the variables that more than one part changes; late holds what an earlier part calls but a later part defines.
 
 import {
-  type Avatar, type Camera, type FurnitureItem, type Inventory, type Point, type Rect, type Room, type RoomKind,
+  type Avatar, type Camera, type FurnitureItem, type Inventory, type Point, type Rect, type Room, type RoomKind, type RoomState,
   type TavernView,
 } from '@pixel-hotel/shared';
 import type { Placer } from '../build/placer.ts';
@@ -56,6 +56,8 @@ export interface State {
   pendingBarrel: number | null;
   /** A keg rack the avatar is walking to (step K2b): the tap is finished on arrival. */
   pendingCask: number | null;
+  /** An Inn door whose spot is the walk goal (step MB-3): the door is used on arrival. */
+  pendingDoor: string | null;
   walkHold: boolean;
   walkHoldCell: string;
   shiftHeld: boolean;
@@ -75,7 +77,9 @@ export interface Late {
   setDungeonMode: (on: boolean) => void;
   enterDungeonAsked: () => Promise<void>;
   enterMineAsked: () => Promise<void>;
-  openRoom: (roomId: number, intro?: boolean) => Promise<void>;
+  openRoom: (roomId: number, intro?: boolean, arrived?: RoomState) => Promise<void>;
+  /** Steps through an Inn door with the room fade (step MB-3). */
+  useDoor: (doorId: string) => Promise<boolean>;
   openRoomKind: (kind: RoomKind) => Promise<void>;
 }
 

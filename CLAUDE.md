@@ -269,9 +269,9 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
   is done. S1 (the shop is the tavern: loot customers, slots and prices removed; stalls are decor; save v22; NOTES S1) and S2 (the trader:
   bar Sell tab, four loops tested; NOTES S2) are done. S3 (rebalance: SELL_RATES per group, a faster start, splice strict, the tavern gem tip, 3 seats,
-  gold tables in `npm run simulate`; save v23; NOTES S3) is done. T1 (the bar with taps and a register, the kitchen zone with prep tables, taps hold drinks, the pour step; save v24; NOTES T1) is done. Next: K2 (ripening: casks feed the taps), then 9g.
+  gold tables in `npm run simulate`; save v23; NOTES S3) is done. T1 (the bar with taps and a register, the kitchen zone with prep tables, taps hold drinks, the pour step; save v24; NOTES T1) is done. K2 (casks, tier drinks; save v26) and MB-2 (Inn doors rules; save v27) are done, MB-3 (doors client) and H3 (floors and walls from PNG) are in. Next: G1, then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 25 (24 = taps and the register, 25 = the Inn name). LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 27 (24 = taps and the register, 25 = the Inn name, 26 = casks, 27 = Inn doors). LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -319,7 +319,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 25) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 27) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

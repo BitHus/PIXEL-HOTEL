@@ -63,3 +63,12 @@ describe('block sprites (step H2)', () => {
     for (const id of ['dirt', 'planks', 'stone', 'glass', 'clay']) expect(BLOCK_TYPES.some((b) => b.id === id), id).toBe(true);
   });
 });
+
+describe('floor and wall sprites (step H3)', () => {
+  it('floors/<id>.png and walls/<id>.png are looked up by the style id', () => {
+    for (const kind of ['floors', 'walls'] as const) {
+      expect(parseSpritePath(`../assets/sprites/${kind}/wood_planks.png`)).toEqual({ kind, id: 'wood_planks', variant: '' });
+      expect(parseSpritePath(`x/${kind}/wood_planks_2.png`)?.variant).toBe('');
+    }
+  });
+});

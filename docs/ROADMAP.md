@@ -45,9 +45,9 @@ private suite connected by doors, with expeditions out of the inn. Proposed orde
 0.3 [x] 9t B (guests and serving), [x] K1 Tavern kitchen: cooking moves from the farm to the tavern
     (NOTES K1), [x] 9t C (brewing, Menu; NOTES 9t C), [x] S1 Retire the shop (no loot customers; NOTES S1), [x] S2 trader (NOTES S2), [x] S3 rebalance gold and gems (NOTES S3),
     [x] T1 Bar taps, the register and the kitchen (zone, prep tables; NOTES T1),
-    K2 Ripening: aged and vintage
+    [x] K2 Ripening: aged and vintage
     drinks in casks, real time [prompt ready], then M-A Carpentry (blocks -> furniture) [prompt ready],
-    M-B Connected Inn (doors, an Inn name) [prompt ready].
+    M-B Connected Inn (doors, an Inn name): [x] MB-2 rules (save v27), [x] MB-3 client (doors, fade, hint); [x] H3 floors and walls from PNG hook.
 0.4 9g livelier suite, then M-C One Inn score (tavern + suite stars + garden beauty), M-E suite
     showcase; 9i questline follows the flow. After that 9h and phase 2.2 rebalancing.
 

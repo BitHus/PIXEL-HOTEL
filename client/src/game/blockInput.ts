@@ -7,6 +7,7 @@ import {
 } from '@pixel-hotel/shared';
 import { HoldControl, type HoldResult, type HoldTarget } from '../input/holdControl.ts';
 import type { G14 } from './ctx.ts';
+import { doorGoalAt } from './doorGoal.ts';
 
 export async function setupBlockInput(g: G14) {
   const {
@@ -178,7 +179,11 @@ export async function setupBlockInput(g: G14) {
     const key = `${c},${r}`;
     if (key === st.walkHoldCell && st.walkHold) return;
     st.walkHoldCell = key;
-    void walkTo(st.marked);
+    const goal = st.marked;
+    st.pendingDoor = null;
+    void walkTo(goal).then((ok) => {
+      if (ok && st.walkHoldCell === key) st.pendingDoor = doorGoalAt(st.room, goal);
+    });
   };
   /** What a press on this screen point would hit (a held thing), or null. */
   const holdTargetAt = (screen: Point): HoldTarget | null => {

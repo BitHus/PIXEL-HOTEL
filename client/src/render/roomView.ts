@@ -2,8 +2,9 @@
 // (brief section 7). All children are in world px; the camera scales and moves `world`.
 
 import { Container, Graphics, TilingSprite } from 'pixi.js';
-import { BUILD_CELL, borderRects, doorRect, floorCellList, floorRects, floorStyleAt, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
+import { BUILD_CELL, borderRects, doorRect, floorCellList, floorRects, floorStyleAt, innDoorSpots, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
 import { BORDER_COLOR } from './bareStyles.ts';
+import { drawInnDoor } from './innDoors.ts';
 import { floorTexture, wallTexture } from './styleArt.ts';
 import { DepthLayer } from './depthLayer.ts';
 
@@ -87,6 +88,8 @@ export class RoomView {
     const walls = new Graphics();
     for (const r of borderRects(room)) fillRect(walls, r, BORDER_COLOR);
     this.wallLayer.addChild(walls);
+    // Inn doors (step MB-3): the doorway in the back wall band above each door spot.
+    for (const d of innDoorSpots(room)) drawInnDoor(this.wallLayer, { id: d.id, x: d.spot.x + d.spot.w / 2, y: d.spot.y, w: d.spot.w });
   }
 }
 

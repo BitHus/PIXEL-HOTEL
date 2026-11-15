@@ -4,6 +4,7 @@
 import { blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween } from '@pixel-hotel/shared';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
+import { doorGoalAt } from './doorGoal.ts';
 
 export async function setupPointerInput(g: G15) {
   const {
@@ -142,6 +143,7 @@ export async function setupPointerInput(g: G15) {
       st.pendingBlock = null;
       st.pendingStove = null;
       st.pendingBarrel = null;
+      st.pendingDoor = null;
       st.pendingCask = null;
       lakeside.cancel();
       if (blockTap(st.marked)) return;
@@ -169,7 +171,9 @@ export async function setupPointerInput(g: G15) {
         return;
       }
       const to = st.marked;
-      void walkTo(to);
+      void walkTo(to).then((ok) => {
+        if (ok) st.pendingDoor = doorGoalAt(st.room, to);
+      });
     },
     getDragMode: (target) => {
       if (dungeon.isActive || blockers.on || placer.active || paint.active) return 'draw';
