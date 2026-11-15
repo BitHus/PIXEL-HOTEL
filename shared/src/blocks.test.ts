@@ -6,7 +6,7 @@ import { buyBlocks, blockPrice, upgradeRoom } from './economy.ts';
 import { behindPoint, behindReachable, doorReachesMiddle, getFurnitureType, roomBlockers } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { gainsSince } from './gains.ts';
-import { gemDrop } from './gems.ts';
+import { blockGemDrop, gemDrop, gemPieces } from './gems.ts';
 import { applyChange } from './ledger.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { blockInCell, blockKey, blockList, cellOf, type Room } from './room.ts';
@@ -203,11 +203,11 @@ describe('punching', () => {
       last = at;
       expect(blockInCell(hotel(s), 3, 3)?.hits).toBe(n);
     }
-    const final = hitBlock(s, id, 3, 3, 1000 + hardness * BLOCK_HIT_COOLDOWN_MS, last, seq(), null);
+    const final = hitBlock(s, id, 3, 3, 1000 + hardness * BLOCK_HIT_COOLDOWN_MS, last, seq(0.1, 0.99, 0.99, 0.99), null);
     expect(final).toMatchObject({ ok: true, kind: 'broken' });
     if (!final.ok || final.kind !== 'broken') return;
     expect(blockInCell(hotel(final.state), 3, 3)).toBeNull();
-    // The block came back to the bag.
+    // The block came back to the bag (the first roll was low).
     expect(final.state.player.materials.stone).toBe(60);
     expect(final.state.ledger.at(-1)).toMatchObject({ reason: 'block_break' });
   });
@@ -256,18 +256,29 @@ describe('punching', () => {
 });
 
 describe('drops (rng passed in)', () => {
-  it('a block always drops itself; no gems when the roll is high', () => {
-    expect(blockDrops(getBlockType('stone'), seq(0.9))).toEqual({ materials: { stone: 1 }, gems: 0 });
+  it('every part is its own roll: nothing, block, seed, both', () => {
+    // stone has no seed; dirt does. Rolls: block, seed, (extras), gem chance.
+    expect(blockDrops(getBlockType('dirt'), seq(0.99, 0.99, 0.99))).toEqual({ materials: {}, gems: 0 });
+    expect(blockDrops(getBlockType('dirt'), seq(0.1, 0.99, 0.99)).materials).toEqual({ dirt: 1 });
+    expect(blockDrops(getBlockType('dirt'), seq(0.99, 0.01, 0.99)).materials).toEqual({ dirt_seed: 1 });
+    expect(blockDrops(getBlockType('dirt'), seq(0.1, 0.01, 0.99)).materials).toEqual({ dirt: 1, dirt_seed: 1 });
   });
-  it('an extra drop and a gem drop follow the rolls in order', () => {
-    // planks: the seed roll first (0.5: none), the wood roll (0.05 < 0.1), then the gem chance (0.01 < 0.15) and the amount (0 -> min).
-    expect(blockDrops(getBlockType('planks'), seq(0.5, 0.05, 0.01, 0))).toEqual({ materials: { planks: 1, wood: 1 }, gems: 1 });
-    expect(blockDrops(getBlockType('planks'), seq(0.5, 0.5, 0.01, 0.99))).toEqual({ materials: { planks: 1 }, gems: 2 });
+  it('gems follow after the item rolls, by rank', () => {
+    // planks (common): block 0.5 hit, seed none, wood 0.05 hit, gem 0.01 hit, amount 0 -> min 1.
+    expect(blockDrops(getBlockType('planks'), seq(0.5, 0.99, 0.05, 0.01, 0))).toEqual({ materials: { planks: 1, wood: 1 }, gems: 1 });
   });
-  it('a seed drops with BLOCK_SEED_CHANCE when the block has a seedId (every block has one since BG6)', () => {
-    const withSeed = { ...getBlockType('dirt'), seedId: 'turnip_seed' } as BlockType;
-    expect(blockDrops(withSeed, seq(0.1, 0.9)).materials).toEqual({ dirt: 1, turnip_seed: 1 });
-    expect(blockDrops(withSeed, seq(0.5, 0.9)).materials).toEqual({ dirt: 1 });
+  it('rarer blocks drop more gems, up to 12 for legendary', () => {
+    expect(blockGemDrop('common', seq(0, 0.99))).toBe(2);
+    expect(blockGemDrop('rare', seq(0, 0.99))).toBe(5);
+    expect(blockGemDrop('ultra_rare', seq(0, 0.99))).toBe(8);
+    expect(blockGemDrop('legendary', seq(0, 0.99))).toBe(12);
+    expect(blockGemDrop('legendary', seq(0.99, 0))).toBe(0);
+  });
+  it('gem pieces add up and use the colour of their tier', () => {
+    for (let n = 0; n <= 25; n++) expect(gemPieces(n).reduce((a, p) => a + p.value, 0)).toBe(n);
+    expect(gemPieces(7).map((p) => p.value)).toEqual([5, 1, 1]);
+    expect(gemPieces(10)).toHaveLength(1);
+    expect(new Set(gemPieces(16).map((p) => p.colors.join()))).toHaveProperty('size', 3);
   });
   it('gems get the rank bonus', () => {
     expect(gemDrop('block', 'common', seq(0, 0))).toBe(1);
@@ -279,7 +290,7 @@ describe('drops (rng passed in)', () => {
     const id = s0.player.hotelRoomId;
     const s1 = put(s0, id, 3, 3, 'planks');
     // Planks take 3 hits; here a soft copy so one hit breaks it (the rolls are what is tested).
-    const r = hitBlock(s1, id, 3, 3, 1000, 0, seq(0.5, 0.05, 0.01, 0), null, (b) => ({ ...getBlockType(b), hardness: 1 }));
+    const r = hitBlock(s1, id, 3, 3, 1000, 0, seq(0.5, 0.99, 0.05, 0.01, 0), null, (b) => ({ ...getBlockType(b), hardness: 1 }));
     expect(r).toMatchObject({ ok: true, kind: 'broken' });
     if (!r.ok) return;
     expect(r.state.player.wallet.gems).toBe(1);
@@ -306,7 +317,9 @@ describe('drops (rng passed in)', () => {
         if (r.ok) s = r.state;
       }
     }
-    expect(s.player.materials.stone).toBe(60);
+    // The block only comes back by chance now: never more than we had, and the room ends empty.
+    expect(s.player.materials.stone).toBeLessThanOrEqual(60);
+    expect(s.player.materials.stone).toBeGreaterThan(20);
     expect(blockList(hotel(s))).toHaveLength(0);
   });
 });
