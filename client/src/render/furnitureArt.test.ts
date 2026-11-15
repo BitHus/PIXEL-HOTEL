@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FURNITURE_TYPES, LIE_HEAD_PX, footprintRect, headPoint, seatSpots, type ArtBox, type Facing } from '@pixel-hotel/shared';
-import { boxesForFacing, roleFloorRects } from './furnitureArt.ts';
+import { boxesForFacing, iconStylePixels, roleFloorRects } from './furnitureArt.ts';
 
 /** The floor rect of a box relative to the anchor. */
 const floorOf = (b: ArtBox) => ({ x: b.dx, y: b.dy - b.d, w: b.w, h: b.d });
@@ -42,5 +42,18 @@ describe('lying on the bed (step 5b)', () => {
       // The blanket is there in every facing too.
       expect(roleFloorRects(bed, facing, 'cover')).toHaveLength(1);
     }
+  });
+});
+
+describe('icon style (room art looks like the item icon)', () => {
+  it('adds one outline around the whole shape and light on the top-left edge', () => {
+    const out = iconStylePixels([[0, 0, 4, 4, '#808080']]);
+    const px = new Map<string, string>();
+    for (const [x, y, w, h, c] of out) for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) px.set(`${x + i},${y + j}`, c);
+    expect(px.size).toBe(6 * 6); // 4x4 plus a 1 px outline all round
+    expect(px.get('-1,-1')).toBeUndefined(); // no corner pixel in the outline
+    expect(px.get('-1,0')).toBe(px.get('0,-1')); // outline colour
+    expect(px.get('0,0')).not.toBe('#808080'); // lighter top-left edge
+    expect(px.get('1,1')).toBe('#808080'); // the inside stays flat
   });
 });
