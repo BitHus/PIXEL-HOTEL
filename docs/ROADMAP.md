@@ -31,6 +31,7 @@ BG2 Item icons: every item a rough shape and colour in a 32x32 square, drawn in 
 BG3 Gain popups: items and gems float above the avatar's head (chest, kill, fish, harvest, pack).
 BG4 Gems: the second currency, dropped by everything, through the ledger.
 BG5 Blocks and punching: place and break blocks by hits; drops, seeds, gems.
+BG5b Hold to punch: hold the mouse or a finger to keep hitting (blocks, plants, rocks, trees).
 BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates.
 BG7 Splicing: two seeds make a new one; a Splice tab in the Book.
 BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible.

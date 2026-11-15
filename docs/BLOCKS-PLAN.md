@@ -108,6 +108,14 @@ Everything stays original (names, art); no Growtopia item names or splice recipe
 - Locks: a room always belongs to its owner; only the owner builds or breaks. The "access list"
   and visitors building come with online (phase 6).
 
+- HOLD TO REPEAT (owner, 15 Nov: clicking all the time is bad): pressing and HOLDING on a block
+  or a grown plant keeps punching at the cooldown rate, with the mouse on PC and a finger on a
+  phone, until the block breaks or the press ends. Same for placing: hold on free cells and drag
+  to place a line of blocks. This is for blocks, harvesting, and (BG5b) mining rocks and chopping
+  trees. NOT for the dungeon fight (clicking fast is the game there) and not for fishing.
+  A press that moves under 8 px and is held counts as a hold on that target; a drag past 8 px
+  stays a camera pan, so panning is never punching.
+
 ### 3.6 Seeds and farming (BG6)
 - Every block and crop item can have a seed. A seed is planted in a free cell of a farm room
   (any cell with soil style, not only the fixed plots). It grows in real time in 3 stages

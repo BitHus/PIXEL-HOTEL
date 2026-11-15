@@ -282,6 +282,19 @@ Step BG4: gems, the second currency (owner's request; update CLAUDE.md section 9
 Step BG5: blocks (owner's request; read BLOCKS-PLAN 3.5 and ask me its open questions b, c, d before building). shared/data/blocks.json: { id, name, hardness (hits), rank, drops, seedId, placeIn, icon }. Foreground layer, one block per cell. Place: select in the hotbar, tap a free cell within reach (config, 3 cells). Break: tap a block, one hit per tap, 250 ms cooldown, hardness taps, then it drops itself, sometimes a seed, sometimes gems; hit cracks drawn in code. Only the owner changes a room. Blocks block navigation (rebuild the grid, re-path). A starter set of 10 blocks with original names (dirt, stone, planks, glass...). The catalog sells a few for gold, the rest come from drops and splicing. Tests: hits to break, drops with a fixed rng, placement rules, nav after change, migration. Build mode vs direct placing as I decide.
 ```
 
+## Step BG5b - Hold to punch (owner's request, 15 Nov)
+
+```
+Step BG5b: hold to repeat instead of clicking all the time (docs/BLOCKS-PLAN.md section 3.5, HOLD TO REPEAT). This changes the INPUT convention in CLAUDE.md: update it and docs/BRIEF.md. Read CLAUDE.md, docs/NOTES.md (input, tap rules, mining, woodcutting) first. Plan first (max 8 lines); no art tools.
+1. Press and hold on a block, a grown plant, a mine rock or a tree keeps hitting at that thing's cooldown rate (blocks 250 ms, rock 400 ms, tree 400 ms) until it breaks, the press ends, or the avatar is out of reach (then it walks closer and goes on). Works with mouse hold on PC and finger hold on a phone and the touch screen. The first hit happens on press, not after a delay.
+2. Hold with a block selected on free cells places blocks; dragging along cells places a line (one per cell, within reach, same placement rules).
+3. A press that moves over 8 px is a drag = camera pan; it never punches or places. A short tap still works as one hit as now. Two-finger pinch never punches.
+4. NOT for the dungeon fight (one hit per tap, no auto-attack) and NOT for fishing: say so in the docs.
+5. The hold logic is a pure helper (holdTick(state, nowMs, cooldownMs) -> hit or not) with tests: first hit on press, rate follows the cooldown, stops on release or pan, no double hits per tick. The client only feeds pointer events into it.
+6. Hit feedback: crack stages and a small pop per hit as in BG5; popups and gems come through the same API calls as before (one request per hit).
+Tests: the helper, plus API paths still refusing out-of-reach and non-owner. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE, INPUT), docs/NOTES.md, tick BG5b in docs/ROADMAP.md, commit and push. Tell me what to try on PC (mouse hold) and phone (finger hold, drag to pan, hold on a rock and a tree).
+```
+
 ## Step BG6 - Seeds and the free-form farm
 
 ```

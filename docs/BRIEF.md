@@ -579,6 +579,8 @@ changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as writ
   locks and access, visit by name), next to Travellers Rest and Habbo. Never copy names or art.
 - Building per cell: BUILD_CELL 32 px; rooms, floors, floor furniture and navigation on cells.
   Wall items stay freely placeable along the back wall band (4 px snap).
+- Hold to repeat: hold the mouse or a finger on a block, plant, rock or tree to keep hitting at
+  its cooldown (not in the dungeon fight, not in fishing); dragging pans the camera.
 - Blocks: place and break by hits; drops, seeds, gems. Seeds grow in real time; two seeds splice
   into a new one (fixed table). Farming = plant and punch.
 - Gems: second currency, dropped by everything, not tradable, never bought with real money.
