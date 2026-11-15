@@ -399,10 +399,52 @@ const DRAW: Record<IconShape, Draw> = {
     p.rect(9, 7, 3, 18, lt(a)); p.rect(20, 7, 3, 18, dk(a)); p.rect(9, 12, 14, 1, dk(a)); p.rect(9, 18, 14, 1, dk(a)); p.rect(15, 7, 1, 5, dk(a)); p.rect(12, 13, 1, 5, dk(a)); p.rect(17, 19, 1, 6, dk(a));
     p.rect(6, 25, 20, 5, lt(a)); p.rect(6, 28, 20, 2, dk(a)); p.rect(4, 29, 24, 1, b);
   },
+  // ---- tavern bar and kitchen (ART-T1) ----
+  register: (p, a, b) => {
+    // Till: a slanted screen strip on top, a key block, a brass drawer and a small bell.
+    p.poly([[6, 6], [26, 6], [28, 13], [4, 13]], DARK); p.poly([[8, 7], [24, 7], [25, 11], [7, 11]], CREAM); p.rect(10, 9, 3, 1, DARK); p.rect(15, 9, 5, 1, DARK);
+    p.rect(4, 12, 24, 5, lt(a)); for (const x of [7, 11, 15, 19, 23]) { p.rect(x, 13, 3, 1, b); p.rect(x, 15, 3, 1, b); }
+    p.rect(4, 17, 24, 11, a); p.rect(6, 19, 20, 7, dk(a)); p.rect(13, 21, 6, 2, b); p.rect(4, 27, 24, 2, dk(a));
+    p.rect(23, 3, 4, 2, b); p.rect(24, 2, 2, 1, b);
+  },
+  taps: (p, a, b) => {
+    // Two taps on a bar stand: a trough, two pipes with handles and spouts, a drip tray.
+    p.rect(4, 24, 24, 3, DARK); p.rect(5, 26, 22, 3, a);
+    p.rect(3, 21, 26, 4, lt(a)); p.rect(3, 21, 26, 1, WHITE);
+    for (const x of [7, 19]) {
+      p.rect(x + 1, 11, 4, 10, PALETTE[21]); p.rect(x + 1, 11, 1, 10, PALETTE[20]); p.rect(x, 7, 6, 4, a);
+      p.rect(x + 1, 4, 4, 4, b); p.rect(x + 2, 3, 2, 1, b);
+      p.rect(x - 1, 14, 3, 2, PALETTE[21]); p.rect(x + 2, 16, 2, 5, PALETTE[10]);
+    }
+  },
+  sink: (p, a, b) => {
+    // A stone basin on a counter, a tall faucet and a drip of water.
+    p.rect(21, 3, 3, 9, PALETTE[21]); p.rect(14, 3, 10, 3, PALETTE[21]); p.rect(14, 5, 2, 3, PALETTE[20]); p.rect(15, 9, 1, 2, PALETTE[17]);
+    p.rect(3, 12, 26, 4, lt(a)); p.rect(5, 13, 22, 3, b); p.rect(5, 13, 22, 1, WHITE);
+    p.rect(3, 16, 26, 12, a); p.rect(3, 16, 26, 1, dk(a)); p.rect(5, 18, 10, 9, dk(a)); p.rect(17, 18, 10, 9, dk(a)); p.rect(13, 22, 2, 2, b); p.rect(17, 22, 2, 2, b);
+    p.rect(3, 27, 26, 2, DARK);
+  },
+  hatch: (p, a, b) => {
+    // A pass-through window: frame, open dark hole with a lit shelf, two shutter leaves and a sill.
+    p.rect(3, 3, 26, 3, a); p.rect(3, 3, 26, 1, lt(a)); p.rect(3, 6, 4, 18, a); p.rect(25, 6, 4, 18, a);
+    p.rect(7, 6, 18, 18, DARK); p.rect(9, 8, 14, 9, b); p.rect(9, 8, 14, 1, WHITE); p.rect(9, 17, 14, 2, PALETTE[10]);
+    p.rect(11, 12, 3, 4, CREAM); p.rect(17, 11, 4, 5, PALETTE[8]);
+    p.rect(2, 24, 28, 3, lt(a)); p.rect(2, 27, 28, 2, dk(a));
+    p.rect(7, 6, 1, 18, dk(a)); p.rect(24, 6, 1, 18, dk(a));
+  },
+  pantry: (p, a, b) => {
+    // A shelf cabinet with three rows of crops (turnip, carrot, herb, pumpkin).
+    p.rect(3, 2, 26, 27, a); p.rect(3, 2, 26, 1, lt(a)); p.rect(5, 4, 22, 23, dk(a));
+    for (const y of [11, 19]) p.rect(5, y, 22, 2, a);
+    p.rect(5, 27, 22, 2, a);
+    p.oval(9, 8, 3, 3, CREAM); p.rect(8, 4, 2, 2, PALETTE[13]); p.oval(16, 8, 3, 3, PALETTE[9]); p.rect(15, 4, 2, 2, PALETTE[13]); p.oval(23, 8, 3, 3, CREAM); p.rect(22, 4, 2, 2, PALETTE[13]);
+    p.rect(7, 14, 4, 5, PALETTE[9]); p.rect(13, 14, 4, 5, PALETTE[9]); p.rect(19, 14, 6, 5, b); p.rect(20, 13, 4, 1, PALETTE[12]);
+    p.oval(9, 23, 3, 3, PALETTE[12]); p.oval(16, 23, 3, 3, PALETTE[12]); p.oval(23, 23, 3, 3, PALETTE[10]); p.rect(22, 20, 2, 1, PALETTE[13]);
+  },
 };
 
 /** Shapes with a shiny surface: they get a small glint near the top-left. */
-const GLOSSY = new Set<IconShape>(['gem', 'potion', 'orb', 'ring', 'jar', 'bottle', 'mug', 'bar', 'ore', 'helmet', 'armor', 'sword', 'crown', 'heart', 'key', 'tank', 'lamp', 'pumpkin', 'plate', 'bowl']);
+const GLOSSY = new Set<IconShape>(['gem', 'potion', 'orb', 'ring', 'jar', 'bottle', 'mug', 'bar', 'ore', 'helmet', 'armor', 'sword', 'crown', 'heart', 'key', 'tank', 'lamp', 'pumpkin', 'plate', 'bowl', 'register']);
 
 /** The outline on the light side: a very dark version of the colour it borders (a warm, coloured outline). */
 function mixDark(c: string): string {

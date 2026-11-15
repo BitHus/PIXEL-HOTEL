@@ -904,7 +904,7 @@
     "height": 70,
     "blocks": true,
     "sittable": false,
-    "surface": false,
+    "surface": true,
     "onSurface": false,
     "wall": false,
     "facings": [

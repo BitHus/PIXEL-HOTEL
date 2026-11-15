@@ -9,6 +9,7 @@ import { FurnitureSprite } from './furnitureSprite.ts';
 import { surfaceHeight } from './furnitureArt.ts';
 import { itemDepthKey } from './depthOrder.ts';
 import type { RoomView } from './roomView.ts';
+import { PourEffects } from './pourEffect.ts';
 
 /** The dust puff of a pop spreads and fades in this many ms. */
 const PUFF_MS = 450;
@@ -32,15 +33,20 @@ export class ItemViews {
   /** Items popping in (the new-game intro), with the ms so far, and their dust puffs. */
   private readonly pops = new Map<number, number>();
   private readonly puffs: { g: Graphics; age: number }[] = [];
+  /** Pours at the taps (ART-T1), drawn on the ghost layer. */
+  private readonly pours: PourEffects;
 
   constructor(
     private readonly view: RoomView,
     private roomId: number,
-  ) {}
+  ) {
+    this.pours = new PourEffects(view.ghostLayer);
+  }
 
   /** Shows another room: every sprite of the old room is dropped. */
   setRoom(roomId: number): void {
     for (const [uid, sprite] of this.sprites) this.drop(uid, sprite);
+    this.pours.clear();
     this.shakes.clear();
     this.roomId = roomId;
   }
@@ -103,11 +109,18 @@ export class ItemViews {
     this.puffs.push({ g, age: 0 });
   }
 
+  /** Starts a pour at this tap stand (use playPour from pourEffect.ts). */
+  pourAt(uid: number, durationMs: number, onSound?: (name: 'clink') => void): void {
+    const c = this.sprites.get(uid)?.container;
+    if (c) this.pours.start(uid, c.position.x, c.position.y, durationMs, onSound);
+  }
+
   private clockMs = 0;
 
   update(dtMs: number): void {
     // The fish in a fish tank swim (step 9f).
     this.clockMs += dtMs;
+    this.pours.update(dtMs);
     for (const sprite of this.sprites.values()) if (sprite.type.swim) sprite.animate(this.clockMs);
     for (const [uid, t] of this.pops) {
       const c = this.sprites.get(uid)?.container;

@@ -51,7 +51,7 @@ function droppedBy(id: string): EnemyTableId[] {
 const ORES = ['copper_ore', 'iron_ore', 'mithril_ore', 'gem'];
 const TREE_DROPS = ['wood', 'resin', 'amber', 'golden_acorn'];
 const BARS = ['copper_bar', 'iron_bar', 'mithril_bar'];
-const START_FURNITURE = ['counter', 'stall_table'];
+const START_FURNITURE = ['counter', 'stall_table', 'register'];
 /** Furniture and clothes only a splice seed grows (their source is "Splicing"). */
 const FURNITURE_GROWN = new Set(SPLICE_SEEDS.flatMap((s) => (s.grows.kind === 'furniture' ? [s.grows.id] : [])));
 const CLOTHING_GROWN = new Set(SPLICE_SEEDS.flatMap((s) => (s.grows.kind === 'clothing' ? [s.grows.id] : [])));

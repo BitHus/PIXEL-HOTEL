@@ -236,3 +236,15 @@ CANNOT: two coder tasks (save.ts and config.ts are shared hot files); T1 and K2 
 3. Inn score weights: may M-C change the guest rate of existing saves, or must a new score start neutral?
 4. Playtest checkpoints CP-1 and CP-2: ok to pause new features for them?
 5. Should 9h-1 (round 2 on) move earlier, since it only touches dungeon files? It needs a rebalance either way.
+
+PAUSE NOTE (artist, ART-T1)
+- DONE: stubs, both fully working: client/src/render/kitchenTint.ts `drawKitchenTint(layer, rects)` (rects = world-px Rects, [] clears) and client/src/render/pourEffect.ts `playPour(itemViews, tapUid, durationMs=800, onSound?)` (wired through ItemViews.pourAt/update/setRoom in itemViews.ts; the stream/mug are drawn, spouts at TAP_SPOUTS dx +-8, dy -13: retune to dy -24 and MUG_DROP 13 once the tap_stand art exists). New icon shapes register, taps, sink, hatch, pantry added in shared/src/icons.ts and client/src/render/iconPixels.ts (pantry reuses nothing; prep_table can use 'table'). Tap glow = a `light` field on tap_stand, not done yet.
+- NOT STARTED: art/icon/light fields of the six pieces (shared/data/furniture/tavern2.json was still `[]`, the coder's skeleton had not landed), counter art losing the baked till (boxes 4 and 5 of the counter in furniture.json, only after T1a's register exists), Taps panel CSS in ui.css (planned classes .taps-list, .tap-row, .tap-level, .tap-load; tell the coder), the visual check with npm run dev.
+- Last run: client/src/render tests and `tsc -p client` were green after the last edit (full suite not run). Next step: when tavern2.json has the six ids, fill art/icon/light (tap_stand: two pipes at dx +-8, light radius ~40 color 10), then the ui.css Taps panel, then run npm test, typecheck and look at it.
+
+## PAUSE NOTE (coder)
+- traderAPI test fix: DONE (client/src/api/traderAPI.test.ts, path separators normalised in the test only). Not re-run yet.
+- T1a: IN PROGRESS, design only plus data. Touched: shared/data/furniture/tavern2.json (skeleton for register, tap_stand, prep_table, pantry, sink, serving_hatch; register and tap_stand appeal 0 on purpose so old saves keep their guest rate), shared/data/furniture.json (counter now surface:true), shared/src/types.ts (FurnitureType.taps?). NOT started: taps.ts, TavernState.taps, config (TAP_SLOTS, TAP_CAP 12, POUR_MS), bar.ts register point, newPlayer start items and 7 ale on a tap (start barrel brew then empty), SAVE 25 migration, GameAPI getTaps/loadTap/unloadTap, tests (legacyStart/withAle must load a tap).
+- T1b: NOT started.
+- Tests and typecheck: NOT run since these edits (last known green state unknown; counter surface:true may break furniture/seat tests).
+- Next step: run npm test and typecheck, fix fallout from the counter change, then build shared/src/taps.ts. Design: drinks are not reserved from the bag; available mugs = tap mugs minus open drink orders (not yet poured); the mug is taken at the pour step; a held mug goes back to the bag if the guest leaves or cancelServe runs.

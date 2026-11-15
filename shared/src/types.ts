@@ -96,6 +96,8 @@ export interface FurnitureType {
   slotSpots?: { dx: number; dy: number }[];
   /** True for the brewing barrel (step 9t): crops go in, mugs come out (brewing.ts). */
   brews?: boolean;
+  /** True for the tap stand (step T1): it holds TAP_SLOTS taps; mugs of one drink are loaded into each (taps.ts). */
+  taps?: boolean;
   /** True for the stove (step K1): crops go in, dishes come out in real time (cooking.ts). */
   cooks?: boolean;
   /** A light source (atmosphere step): the client draws a warm pool around the item. Drawing only. */
