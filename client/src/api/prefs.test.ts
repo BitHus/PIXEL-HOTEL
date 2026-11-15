@@ -5,7 +5,7 @@ import { memoryStorage } from './saveStorage.ts';
 
 describe('prefs', () => {
   it('defaults: sound on and quiet, lighting on, build grid on', () => {
-    expect(parsePrefs(null)).toEqual({ sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true });
+    expect(parsePrefs(null)).toEqual({ sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true });
     expect(SOUND_DEFAULT_VOLUME).toBeLessThanOrEqual(0.5);
   });
   it('damaged or odd text gives the defaults', () => {
@@ -13,15 +13,16 @@ describe('prefs', () => {
     expect(parsePrefs('"hello"')).toEqual(DEFAULT_PREFS);
     expect(parsePrefs('{"sound":"yes","volume":"loud","lighting":1,"cellGrid":"on"}')).toEqual(DEFAULT_PREFS);
   });
-  it('keeps valid values and clamps the volume', () => {
-    expect(parsePrefs('{"sound":false,"volume":0.8,"lighting":false,"cellGrid":false}')).toEqual({ sound: false, volume: 0.8, lighting: false, cellGrid: false });
+  it('keeps valid values (popups can be switched off) and clamps the volume', () => {
+    expect(parsePrefs('{"popups":false}').popups).toBe(false);
+    expect(parsePrefs('{"sound":false,"volume":0.8,"lighting":false,"cellGrid":false}')).toEqual({ sound: false, volume: 0.8, lighting: false, cellGrid: false, popups: true });
     expect(parsePrefs('{"volume":7}').volume).toBe(1);
     expect(parsePrefs('{"volume":-1}').volume).toBe(0);
   });
   it('saves and loads through the storage', () => {
     const s = memoryStorage();
-    savePrefs(s, { sound: false, volume: 0.2, lighting: false, cellGrid: false });
+    savePrefs(s, { sound: false, volume: 0.2, lighting: false, cellGrid: false, popups: false });
     expect(s.data.has(PREFS_KEY)).toBe(true);
-    expect(loadPrefs(s)).toEqual({ sound: false, volume: 0.2, lighting: false, cellGrid: false });
+    expect(loadPrefs(s)).toEqual({ sound: false, volume: 0.2, lighting: false, cellGrid: false, popups: false });
   });
 });

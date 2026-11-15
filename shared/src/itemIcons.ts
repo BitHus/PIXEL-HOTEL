@@ -10,7 +10,9 @@ import { MATERIAL_TYPES, getMaterialType } from './materials.ts';
 import type { MaterialId } from './types.ts';
 
 /** The dungeon key (10 gold at the dungeon door). */
-export const KEY_ICON = (extraIcons as { key: Icon }).key;
+export const KEY_ICON = (extraIcons as { key: Icon; gems: Icon }).key;
+/** The gems currency (step BG5): shown in the info panel and in gain popups. */
+export const GEM_ICON = (extraIcons as { key: Icon; gems: Icon }).gems;
 
 /** Every icon by group. Items of one group must differ in shape + colours (tested). */
 export function iconGroups(): Record<string, { id: string; icon: Icon }[]> {
@@ -19,7 +21,7 @@ export function iconGroups(): Record<string, { id: string; icon: Icon }[]> {
   out.furniture = FURNITURE_TYPES.map((f) => ({ id: f.id, icon: f.icon }));
   out.clothing = CLOTHING.map((c) => ({ id: c.id, icon: c.icon }));
   out.gear = [...GEAR_PIECES, ...GEAR_TYPES].map((g) => ({ id: g.id, icon: g.icon }));
-  out.extra = [{ id: 'key', icon: KEY_ICON }];
+  out.extra = [{ id: 'key', icon: KEY_ICON }, { id: 'gems', icon: GEM_ICON }];
   return out;
 }
 

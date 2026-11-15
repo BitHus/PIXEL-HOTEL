@@ -19,6 +19,7 @@ import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
 import type { DungeonInput, DungeonRun, RunBag, RunPlace } from './dungeon/run.ts';
 import type { ShopGearId } from './gear.ts';
 import type { GainList } from './gains.ts';
+import type { BlockProblem } from './blocks.ts';
 
 export interface RoomState {
   room: Room;
@@ -177,6 +178,18 @@ export interface FishUpdate {
   gains: GainList;
 }
 
+/**
+ * What a block request did (step BG5). 'placed', 'cracked' and 'broken' carry the room with its new
+ * block layer; 'walk' = the cell was out of reach, the avatar walks closer (the client asks again on
+ * arrival); 'refused' says why (a 'cooldown' is not an error).
+ */
+export type BlockResult =
+  | { kind: 'placed'; room: Room; c: number; r: number; gains: GainList }
+  | { kind: 'cracked'; room: Room; c: number; r: number; hits: number; hardness: number; gains: GainList }
+  | { kind: 'broken'; room: Room; c: number; r: number; gains: GainList }
+  | { kind: 'walk'; path: Point[] }
+  | { kind: 'refused'; problem: BlockProblem };
+
 export interface GameAPI {
   /** The current player (gold, materials, rooms). */
   getPlayer(): Promise<Player>;
@@ -238,6 +251,15 @@ export interface GameAPI {
   applyStyle(roomId: number, kind: StyleKind, id: string): Promise<Room | null>;
   /** Paints the floor cells of a rectangle of cells (corners inclusive) with an unlocked floor style (free; step BG1). */
   paintFloor(roomId: number, from: { c: number; r: number }, to: { c: number; r: number }, id: string): Promise<Room | null>;
+  /**
+   * Puts a block from the bag into a cell of the current room (step BG5). Only the room's owner;
+   * a cell beyond BLOCK_REACH answers 'walk' with the path to a spot near it.
+   */
+  placeBlock(c: number, r: number, blockId: string): Promise<BlockResult>;
+  /** One punch at the block in a cell (cooldown BLOCK_HIT_COOLDOWN_MS; the last hit breaks it). */
+  hitBlock(c: number, r: number): Promise<BlockResult>;
+  /** Buys blocks from the Catalog into the bag. Null = not sold or not enough gold. */
+  buyBlocks(blockId: string, qty: number): Promise<GainList | null>;
   /** Upgrades a room one level (the items keep their places). Null = max level or not enough gold. */
   upgradeRoom(roomId: number): Promise<Room | null>;
   getRoom(roomId: number): Promise<Room | null>;

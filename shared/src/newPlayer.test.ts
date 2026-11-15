@@ -12,7 +12,7 @@ describe('createNewPlayer (brief section 9)', () => {
   it('gives level 1, 0 xp, 100 gold, 4 wood and 2 cloth, nothing else', () => {
     expect(s.player.level).toBe(1);
     expect(s.player.xp).toBe(0);
-    expect(s.player.wallet).toEqual({ gold: 100 });
+    expect(s.player.wallet).toEqual({ gold: 100, gems: 0 });
     expect(s.player.materials).toEqual({ wood: 4, cloth: 2 });
     expect(s.player.gear).toEqual([]);
     expect(s.player.potions).toBe(0);

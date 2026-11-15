@@ -8,6 +8,7 @@
 import { BAG_SLOTS, HOTBAR_SLOTS } from './config.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
 import { furnitureStacks, materialStacks } from './inventory.ts';
+import { isBlockId } from './blockTypes.ts';
 import { MATERIAL_TYPES, isMaterialId, isSeedId } from './materials.ts';
 import type { FurnitureItem, MaterialId } from './types.ts';
 
@@ -39,9 +40,14 @@ const isFurnitureType = (id: string): boolean => FURNITURE_TYPES.some((t) => t.i
 /** What may sit in a slot area: the hotbar takes furniture and seeds (step 9b: planting), the
  *  Furniture tab furniture, the Materials tab every stackable good (materials, seeds, crops, food). */
 export function fitsArea(area: SlotArea, id: string): boolean {
-  if (area === 'hotbar') return isFurnitureType(id) || isSeedId(id);
+  if (area === 'hotbar') return isFurnitureType(id) || hotbarMaterial(id);
   if (area === 'furniture') return isFurnitureType(id);
   return isMaterialId(id);
+}
+
+/** Seeds and blocks (step BG5) are the materials that may sit in the hotbar: they are used from there. */
+function hotbarMaterial(id: string): boolean {
+  return isSeedId(id) || isBlockId(id);
 }
 
 /** Pads to BAG_SLOTS with empty slots, and drops empty slots at the end beyond BAG_SLOTS. */
@@ -85,11 +91,11 @@ export function arrangeSlots(layout: SlotLayout, furnitureIds: readonly string[]
     seen.add(id);
     return id;
   });
-  // A seed type the player gets for the first time goes into a free hotbar slot (to plant it), if
+  // A seed or block type the player gets for the first time goes into a free hotbar slot (to plant or place it), if
   // there is one and it is not in the bag already.
   const inBag = new Set(layout.bag.materials);
   for (const id of materialIds) {
-    if (!isSeedId(id) || seen.has(id) || inBag.has(id)) continue;
+    if (!hotbarMaterial(id) || seen.has(id) || inBag.has(id)) continue;
     const free = hotbar.indexOf(null);
     if (free < 0) break;
     hotbar[free] = id;
@@ -158,7 +164,7 @@ export function hotbarToBag(layout: SlotLayout, index: number): SlotLayout | nul
   if (id === undefined || id === null) return null;
   const next = copy(layout);
   next.hotbar[index] = null;
-  const tab = next.bag[isSeedId(id) ? 'materials' : 'furniture'];
+  const tab = next.bag[hotbarMaterial(id) ? 'materials' : 'furniture'];
   const free = tab.indexOf(null);
   if (free >= 0) tab[free] = id;
   else tab.push(id);

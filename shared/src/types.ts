@@ -140,6 +140,8 @@ export interface FurnitureItem {
 
 // ---------- Economy (section 9) ----------
 /** Dungeon materials (section 10). */
+/** The blocks (shared/data/blocks.json, step BG5). They stack in the bag like materials. */
+export type BlockId = 'dirt' | 'clay' | 'thatch' | 'planks' | 'stone' | 'glass' | 'brick' | 'lantern_block' | 'mossy_stone' | 'cinder_block';
 export type BaseMaterialId =
   | 'bone'
   | 'cloth'
@@ -177,9 +179,9 @@ export type TreeDropId = 'resin' | 'amber' | 'golden_acorn';
  */
 /** The tavern's drinks (step 9t, shared/data/drinks.json): brewed in a barrel, served by the mug. */
 export type DrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic';
-export type MaterialId = BaseMaterialId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId | DrinkId;
+export type MaterialId = BaseMaterialId | BlockId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId | DrinkId;
 /** What kind of stackable good it is. */
-export type MaterialGroup = 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing' | 'drink';
+export type MaterialGroup = 'block' | 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing' | 'drink';
 
 export interface MaterialType {
   id: MaterialId;
@@ -222,6 +224,8 @@ export interface SaleRecord {
 
 export interface Wallet {
   gold: number;
+  /** The second currency (step BG5 starts it; BG4 adds the other sources). Never traded, never sold. */
+  gems: number;
 }
 
 export type LedgerReason =
@@ -247,6 +251,10 @@ export type LedgerReason =
   | 'book_reward'
   | 'chop'
   | 'fish'
+  // Blocks (step BG5): a block put in a cell, a block broken (it comes back, maybe a seed and gems).
+  | 'block_place'
+  | 'block_break'
+  | 'block_return'
   // The tavern (step 9t): brewing, an order taken out of the bag (and put back when the guest
   // leaves unserved), the coins collected from a table, the furniture an old save gets.
   | 'brew'
@@ -261,6 +269,8 @@ export interface LedgerEntry {
   playerId: number;
   reason: LedgerReason;
   goldDelta: number;
+  /** Gems added (negative = spent); absent = 0. */
+  gemsDelta?: number;
   materials?: Partial<Record<MaterialId, number>>;
   /** Furniture added (new or back from a shop slot). */
   furnitureUids?: number[];

@@ -123,7 +123,32 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   blocks it is refused (FurnitureType.servedFromBehind, canPlace).
 - Room upgrade (costs gold): the room switches to the next level of its shape. Every item
   keeps its position. The door moves to the new level's door, and any item standing in the new
-  door zone goes back to the inventory. Costs are in config.
+  door zone goes back to the inventory (blocks there go back to the bag too). Costs are in config.
+- BLOCKS (step BG5, owner's decisions): every buildable room (hotel, shop/tavern, farm; the
+  lakeside stays unbuildable) has a foreground layer Room.blocks: one block per cell
+  ("col,row" -> { id, hits, hitAt }). Block types are data (shared/data/blocks.json: id, name,
+  hardness = hits to break, rank, baseValue, inCatalog, drops, seedId (null until BG6), placeIn,
+  icon); 10 starter blocks (dirt, clay, thatch, glass, planks, lantern block, stone, brick, mossy
+  stone, cinder block), hardness 1 to 8. Blocks are items: they stack in Player.materials (group
+  'block'), sit in the bag and the hotbar, are found in the Book (Blocks tab) and may stand on
+  shop slots. A block may never stand on the door zone, outside the floor, on a cell with floor
+  furniture, on the farm's plots or cooking pot, on the cell of an avatar standing still, or on
+  a cell that would shut the door off from the middle of the room or the shopkeeper's spot behind
+  the counter (refused: 'door_blocked', 'counter_blocked'). Blocks block walking (roomBlockers);
+  the grids are rebuilt and walkers and customers re-path. Only the room's owner places or breaks.
+  Reach: BLOCK_REACH = 3 cells from the avatar (centre to centre); farther, the GameAPI answers
+  with a walk to a spot near the cell and the client asks again on arrival. Punching: one hit
+  per tap, cooldown BLOCK_HIT_COOLDOWN_MS = 250; a block takes `hardness` hits; a half-broken
+  block heals after BLOCK_HEAL_MS = 6000 without a hit; cracks are drawn per stage (rendering
+  only). A broken block drops itself back to the bag (always), its seed (BLOCK_SEED_CHANCE, if it
+  has a seedId), its extra drops (blocks.json drops) and sometimes gems (gemDrop('block', rank),
+  config GEMS; gems in every room). Gains go through the gains list and ledger.applyChange
+  ('block_place', 'block_break'). The Catalog sells dirt, planks, stone and glass (Blocks tab,
+  baseValue * 3, 1 or a pack of BLOCK_PACK); the rest comes from punching and later splicing.
+  Input: see CLAUDE.md INPUT (play mode places and punches; Build mode moves furniture).
+- GEMS (started in BG5, BG4 finishes it): Player.wallet.gems (integer), ledger gemsDelta, shown in
+  the info panel next to gold; never traded or sold. A known loop: place and punch the same block
+  forever gives gems for free (gems have no use until packs, BG8; balance in BG9).
 - Room ids are integers.
 
 6. MOVEMENT
@@ -596,7 +621,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 
 
 15. THE BLOCK WORLD (PLANNED, owner's decision 15 Nov; full design docs/BLOCKS-PLAN.md)
-Not built yet. When a BG step builds a part, it moves that part into the sections above and
+BG1 to BG3 A and BG5 are built (sections 4, 5, 9 above); the rest is not. When a BG step builds a part, it moves that part into the sections above and
 changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as written.
 - Inspiration: Growtopia and Pixel Worlds (block grid, punching, seeds, splicing, gems, packs,
   locks and access, visit by name), next to Travellers Rest and Habbo. Never copy names or art.

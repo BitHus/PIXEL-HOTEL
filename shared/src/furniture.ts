@@ -19,7 +19,7 @@ import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_SIDE_PX, SNAP } from './config.ts';
 import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
-import { doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, wallBands, type Room } from './room.ts';
+import { blockRects, doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, wallBands, type Room } from './room.ts';
 import type { Facing, FurnitureItem, FurnitureType, Point, Rect } from './types.ts';
 
 /** The starter furniture types (step 4), from shared/data/furniture.json. */
@@ -138,9 +138,9 @@ export function itemBlockers(
     .map((i) => footprintRect(i, types(i.typeId)));
 }
 
-/** Everything that blocks walking in a room: the blocking furniture plus fixed things (the farm's pot). */
+/** Everything that blocks walking in a room: the blocking furniture, the blocks (step BG5) and fixed things (the farm's pot). */
 export function roomBlockers(room: Room, items: readonly FurnitureItem[], types: FurnitureLookup = getFurnitureType): Rect[] {
-  return [...itemBlockers(items, room.id, types), ...fixedBlockers(room)];
+  return [...itemBlockers(items, room.id, types), ...fixedBlockers(room), ...blockRects(room)];
 }
 
 /**

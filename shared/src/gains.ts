@@ -3,6 +3,7 @@
 // events; nothing here draws or reads a clock. Gold is not a gain (the wallet shows it).
 
 import type { GameState } from './gameState.ts';
+import { GEMS_GAIN_ID } from './config.ts';
 import { rankOf } from './ranks.ts';
 import type { LedgerReason, Rank } from './types.ts';
 import type { RunEvent } from './dungeon/run.ts';
@@ -17,7 +18,7 @@ export interface Gain {
 export type GainList = Gain[];
 
 /** Ledger reasons whose items are not new: already shown (the run bag, popups at the find) or only moved. */
-const NOT_GAINS: readonly LedgerReason[] = ['dungeon_bank', 'lunch_box', 'shelf', 'tavern_order'];
+const NOT_GAINS: readonly LedgerReason[] = ['dungeon_bank', 'lunch_box', 'shelf', 'tavern_order', 'block_return'];
 
 /** One gain; the rank is the item type's unless given (a drop that rolled a rank). */
 export function gain(itemId: string, count = 1, rank: Rank = rankOf(itemId)): Gain {
@@ -47,6 +48,8 @@ export function gainsSince(before: GameState, after: GameState): GainList {
   for (const e of after.ledger.slice(before.ledger.length)) {
     if (NOT_GAINS.includes(e.reason)) continue;
     for (const [id, n] of Object.entries(e.materials ?? {})) if (n > 0) list.push(gain(id, n));
+    // Gems (step BG5) are a gain with the id 'gems'.
+    if ((e.gemsDelta ?? 0) > 0) list.push({ itemId: GEMS_GAIN_ID, count: e.gemsDelta!, rank: 'common' });
     for (const uid of e.furnitureUids ?? []) {
       const item = after.items.find((i) => i.uid === uid);
       if (item) list.push(gain(item.typeId));

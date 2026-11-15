@@ -22,6 +22,7 @@ import {
   WALL_BAND,
   type RoomLevel,
 } from './config.ts';
+import type { BlockCell } from './blockTypes.ts';
 import type { Point, Rect } from './types.ts';
 
 /** The hotel room, the shop, the farm (step 9b) and the lakeside (step 9f). */
@@ -42,6 +43,8 @@ export interface Room {
   /** Cells painted with another floor style (step BG1): "col,row" -> style id. Absent = none. */
   floorCells?: Record<string, string>;
   wallStyle: string;
+  /** The foreground layer (step BG5): one block per cell, key "col,row". Empty = none. */
+  blocks: Record<string, BlockCell>;
   ownerId: number;
   /** Owners can set a room to private (section 13). */
   private: boolean;
@@ -113,6 +116,7 @@ export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId
     h: b.y + b.h,
     floorStyle: kind === 'farm' || kind === 'lakeside' ? FARM_FLOOR_STYLE : START_FLOOR_STYLE,
     wallStyle: kind === 'farm' || kind === 'lakeside' ? FARM_WALL_STYLE : START_WALL_STYLE,
+    blocks: {},
     ownerId,
     private: false,
   };
@@ -364,4 +368,29 @@ export function paintFloorCells(room: Room, a: { c: number; r: number }, b: { c:
 export function paintWholeFloor(room: Room, styleId: string): Room {
   const { floorCells: _old, ...rest } = room;
   return { ...rest, floorStyle: styleId };
+}
+
+// ---------- Blocks (step BG5) ----------
+
+/** The key of a cell in Room.blocks. */
+export function blockKey(c: number, r: number): string {
+  return `${c},${r}`;
+}
+
+/** The block standing in a cell, or null. */
+export function blockInCell(room: Room, c: number, r: number): BlockCell | null {
+  return room.blocks[blockKey(c, r)] ?? null;
+}
+
+/** Every block of the room with its cell. */
+export function blockList(room: Room): { c: number; r: number; block: BlockCell }[] {
+  return Object.entries(room.blocks).map(([k, block]) => {
+    const [c, r] = k.split(',').map(Number) as [number, number];
+    return { c, r, block };
+  });
+}
+
+/** The cells of the blocks, as rectangles: they block walking. */
+export function blockRects(room: Room): Rect[] {
+  return blockList(room).map((b) => cellRectOf(b.c, b.r));
 }

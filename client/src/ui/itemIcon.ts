@@ -3,7 +3,7 @@
 // caches it. These helpers give the data URL an <img> slot needs. Real pixel art replaces the drawing
 // per item in phase 4.
 
-import { KEY_ICON, getClothing, getFurnitureType, getMaterialType, getPiece, getGear, type GearId, type MaterialId, type Rank, type ShopGearId } from '@pixel-hotel/shared';
+import { GEM_ICON, KEY_ICON, getClothing, getFurnitureType, getMaterialType, isMaterialId, getPiece, getGear, type GearId, type MaterialId, type Rank, type ShopGearId } from '@pixel-hotel/shared';
 import { iconDataUrl } from '../render/drawIcon.ts';
 
 export function furnitureIconUrl(typeId: string, rank?: Rank): string {
@@ -34,4 +34,15 @@ export function potionIconUrl(id: ShopGearId = 'health_potion'): string {
 /** The dungeon key. */
 export function keyIconUrl(): string {
   return iconDataUrl(KEY_ICON);
+}
+
+/** The gem (the second currency). */
+export function gemIconUrl(): string {
+  return iconDataUrl(GEM_ICON);
+}
+
+/** The picture of a gain: a gem for 'gems', else the item's own icon (material or furniture). */
+export function gainIconUrl(itemId: string, rank?: Rank): string {
+  if (itemId === 'gems') return gemIconUrl();
+  return isMaterialId(itemId) ? materialIconUrl(itemId, rank) : furnitureIconUrl(itemId, rank);
 }

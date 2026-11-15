@@ -309,3 +309,25 @@ describe('migrates a version 13 save to the cell grid (step BG1)', () => {
     expect(r.state.rooms.find((x) => x.id === hotelId)).toMatchObject({ shape: 'wide_hall', w: 832, h: 256 });
   });
 });
+
+describe('14 -> 15 (step BG5: blocks and gems)', () => {
+  it('gives every room an empty block layer and the wallet 0 gems', () => {
+    const now = createNewPlayer(undefined, 1);
+    const old = {
+      ...now,
+      rooms: now.rooms.map((r) => {
+        const { blocks: _blocks, ...rest } = r;
+        return rest;
+      }),
+      player: { ...now.player, wallet: { gold: 77 } },
+    };
+    const r = readSave(JSON.stringify({ version: 14, savedAt: 5, state: old }));
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 14 });
+    if (!r.ok) return;
+    expect(r.state.rooms.length).toBe(now.rooms.length);
+    for (const room of r.state.rooms) expect(room.blocks).toEqual({});
+    expect(r.state.player.wallet).toEqual({ gold: 77, gems: 0 });
+    // Nothing else changed.
+    expect(r.state.items).toEqual(now.items);
+  });
+});

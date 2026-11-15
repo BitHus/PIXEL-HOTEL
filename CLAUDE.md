@@ -61,6 +61,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - The counter: one per shop, movable, never picked up; the spot behind it must stay reachable.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
+- BLOCKS (BG5): Room.blocks = a foreground layer, one block per cell (shared/data/blocks.json, items
+  in the bag and hotbar). Never on the door zone, off the floor, on floor furniture, farm plots or
+  the pot, or under an avatar standing still. They block walking: a block that would shut the door
+  off from the middle or the counter's staff spot is refused. In hotel, shop and farm only (owner).
 
 6. MOVEMENT
 - Tap the floor: walk there. Tap an item with seats: walk to its nearest reachable free side and
@@ -209,11 +213,12 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   data, drawn by render/drawIcon.ts; NOTES BG2).
 - Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
   texts) next, on the cell grid.
-- Step BG3 is HALF done: A (gains lists in every GameAPI result, shared/src/gains.ts; NOTES Gains) done;
-  B (popups above the head, queue, Settings toggle) next.
-- Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder). Next (docs/ROADMAP.md): BG3-BG9
-  (block world, docs/BLOCKS-PLAN.md), then 9t B/C, 9g, 9h, 9i.
-- DUNGEON_ROUND is 1. SAVE_VERSION is 14. LocalGameAPI only. All art is placeholder shapes and boxes
+- Step BG3 is HALF done: A (gains lists, shared/src/gains.ts) done; B: the popup module exists
+  (ui/gainPopups.ts, Settings "Popups"), wired for blocks only; chest, kill, fish, harvest next.
+- BG4 (gems) STARTED inside BG5: wallet.gems, ledger gemsDelta, gemDrop (block source), info panel.
+  BG5 (blocks and punching) is done (NOTES BG5). Next: BG4 other sources, BG6-BG9, then 9t B/C, 9g.
+- Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
+- DUNGEON_ROUND is 1. SAVE_VERSION is 15. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -238,18 +243,20 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   screen = a button in ui/sideButtons.ts plus a panel. Every buy asks first (ui/confirmBuy.ts).
   Texts stay at reading pace (shared/src/text.ts readingMs).
 - INPUT: a press is a TAP only if it moved under 8 px and lasted under 300 ms; else a drag or
-  long press, which never walks. PLAY MODE: a tap walks, sits, or uses a thing. BUILD MODE (Build
-  button or B): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
+  long press, which never walks or punches. PLAY MODE: with a block selected in the hotbar a tap on
+  a free cell places it; a tap on a block punches it (also with a block selected); any other tap
+  walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. BUILD MODE (Build
+  button or B; furniture only): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
   up), a tap on a free spot moves the selected item there. PAINT MODE (Room > Paint cells): tap =
   one cell, drag = rectangle. One finger pans, two fingers pinch-zoom, the wheel zooms. A tap on
   the room with a panel open only closes the panel. Escape closes a panel, then placing or
-  painting, then build mode.
+  painting, then build mode, then puts a selected block away.
 - GAME API: the client changes nothing itself; every action goes through GameAPI and the client
   draws what comes back (null = refused). LocalGameAPI also runs the shop clock (stepShop every
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 14) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 15) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers

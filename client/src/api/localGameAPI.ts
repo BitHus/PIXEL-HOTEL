@@ -27,6 +27,12 @@ import {
   MINE_HINT,
   MINE_UNLOCK_LEVEL,
   buySeeds,
+  buyBlocks,
+  approachSpot,
+  blockRects,
+  placeBlock,
+  hitBlock,
+  type BlockResult,
   cook,
   claimBookReward,
   openBook,
@@ -511,6 +517,36 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return this.roomById(roomId);
   }
 
+  async placeBlock(c: number, r: number, blockId: string): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const res = placeBlock(this.state, room.id, c, r, blockId, this.now(), { standing: this.standingPoints(), from: me });
+    if (!res.ok) return res.problem === 'reach' ? this.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
+    this.commitBlocks(res.state);
+    return { kind: 'placed', room: this.roomById(room.id)!, c, r, gains: [] };
+  }
+
+  async hitBlock(c: number, r: number): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const now = this.now();
+    const res = hitBlock(this.state, room.id, c, r, now, this.lastBlockHitAt, this.rng, me);
+    if (!res.ok) return res.problem === 'reach' ? this.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
+    this.lastBlockHitAt = now;
+    if (res.kind === 'cracked') {
+      this.commit(res.state);
+      return { kind: 'cracked', room: this.roomById(room.id)!, c, r, hits: res.hits, hardness: res.hardness, gains: [] };
+    }
+    const gains = gainsSince(this.state, res.state);
+    this.commitBlocks(res.state);
+    return { kind: 'broken', room: this.roomById(room.id)!, c, r, gains };
+  }
+
+  async buyBlocks(blockId: string, qty: number): Promise<GainList | null> {
+    const next = buyBlocks(this.state, blockId, qty, this.now());
+    return next ? this.commitGains(next) : null;
+  }
+
   async upgradeRoom(roomId: number): Promise<Room | null> {
     const next = upgradeRoom(this.state, roomId, this.now());
     if (!next) return null;
@@ -906,7 +942,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   private shopWorld(state: GameState): ShopWorld {
     const room = state.rooms.find((r) => r.id === state.shop.roomId);
     if (!room) throw new Error('shop room missing');
-    this.shopGrid ??= buildNavGrid(room, itemBlockers(state.items, room.id));
+    this.shopGrid ??= buildNavGrid(room, [...itemBlockers(state.items, room.id), ...blockRects(room)]);
     // The own avatar's seat in the shop (customers do not sit there).
     const seated = state.currentRoomId === room.id ? this.walkState.seated : null;
     return { room, items: state.items, grid: this.shopGrid, cashier: this.isServing(), seatsTaken: seated ? [seated] : [] };
@@ -979,6 +1015,38 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       }
     }
     return this.visibleItems();
+  }
+
+  /** The last block punch (ms), for the cooldown. Not saved. */
+  private lastBlockHitAt = -Infinity;
+
+  /** Where avatars stand still in the current room: the own avatar, and the shop's customers and guests. */
+  private standingPoints(): Point[] {
+    const me = this.avatarNow();
+    const out: Point[] = this.walkState.path.length === 0 ? [{ x: me.x, y: me.y }] : [];
+    if (this.state.currentRoomId === this.state.shop.roomId) {
+      for (const g of [...this.state.shop.customers, ...this.state.tavern.guests]) if (g.path.length === 0) out.push({ x: g.x, y: g.y });
+    }
+    return out;
+  }
+
+  /** A block cell is out of reach: walk to a spot near it; the client asks again on arrival. */
+  private walkCloser(me: Avatar, c: number, r: number): BlockResult {
+    const spot = approachSpot(this.grid, me, c, r);
+    const path = spot && findPath(this.grid, me, spot);
+    if (!path) return { kind: 'refused', problem: 'reach' };
+    this.walkState = { avatar: { ...me, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seated: null };
+    return { kind: 'walk', path };
+  }
+
+  /** A block was placed or broken: save, rebuild the grids and send the customers round the new walls. */
+  private commitBlocks(next: GameState): void {
+    this.commit(next);
+    this.grid = this.buildGrid();
+    this.shopGrid = null;
+    if (this.state.currentRoomId === this.state.shop.roomId) {
+      this.commit(repathCustomers(this.state, this.shopWorld(this.state)));
+    }
   }
 
   private buildGrid(): NavGrid {

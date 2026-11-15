@@ -629,7 +629,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -793,3 +793,28 @@ export const AWAY_ORDERS_MAX = 3;
 export const GUEST_BROWSE_STALL_CHANCE = 0.25;
 /** The menu panel shows this many last prices paid per drink or dish. */
 export const MENU_HISTORY_LENGTH = 5;
+
+// ---------- Blocks, punching and gems (step BG5) ----------
+/** A block can be placed or punched this many cells from the avatar (centre to centre, in cells). */
+export const BLOCK_REACH = 3;
+/** One punch per tap, at most every this many ms. */
+export const BLOCK_HIT_COOLDOWN_MS = 250;
+/** A half-broken block heals (its hits reset) when it was not hit for this long. */
+export const BLOCK_HEAL_MS = 6000;
+/** Chance that a broken block drops its seed (when the block has a seedId). */
+export const BLOCK_SEED_CHANCE = 0.2;
+/** Where gems come from (step BG4 adds the other sources): the chance of a drop and its size before the rank bonus. */
+export const GEMS = {
+  block: { chance: 0.15, min: 1, max: 2 },
+} as const;
+/** The gem amount is multiplied by this per rank of the thing that dropped it. */
+export const GEM_RANK_MULT = { common: 1, rare: 2, ultra_rare: 4, legendary: 8 } as const;
+/** The id a gem gain has in a gains list (gems are a currency, not an item). */
+export const GEMS_GAIN_ID = 'gems';
+/** Popups above the avatar's head (step BG3 B): how long one stays, and how many show at once. */
+export const POPUP_MS = 1200;
+export const POPUP_MAX = 5;
+/** The crack pictures of a block that is being punched: 0 = whole, then up to this many minus one. */
+export const BLOCK_CRACK_STAGES = 4;
+/** Blocks are bought one at a time or in a pack of this many (Catalog > Blocks). */
+export const BLOCK_PACK = 10;
