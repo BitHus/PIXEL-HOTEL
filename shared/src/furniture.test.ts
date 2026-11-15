@@ -44,7 +44,7 @@ const can = (items: FurnitureItem[], typeId: string, col: number, row: number, f
 
 describe('furniture data', () => {
   it('has the 12 home types, in the catalog, common, and only the rug does not block', () => {
-    const home = FURNITURE_TYPES.filter((t) => t.category === 'home_furniture');
+    const home = FURNITURE_TYPES.filter((t) => t.category === 'home_furniture' && t.inCatalog);
     expect(home).toHaveLength(12);
     for (const t of home) {
       expect(t.inCatalog).toBe(true);

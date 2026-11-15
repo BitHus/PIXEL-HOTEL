@@ -192,7 +192,9 @@ export type BlockResult =
   /** A seed went into a soil cell (step BG6). */
   | { kind: 'planted'; room: Room; c: number; r: number; gains: GainList }
   /** A grown plant was punched and harvested: `gains` has what grew, the seed back and gems. */
-  | { kind: 'harvested'; room: Room; c: number; r: number; gains: GainList }
+  | { kind: 'harvested'; room: Room; c: number; r: number; gains: GainList; /** Step BG7: a clothing piece this harvest unlocked (id). */ clothing?: string; /** Step BG7: a splice recipe found by this harvest (pair key). */ recipe?: string }
+  /** A second seed went into a planted cell (step BG7): it now grows the pair's new seed. */
+  | { kind: 'spliced'; room: Room; c: number; r: number; gains: GainList }
   /** A plant that is not fully grown was punched: nothing happens, leftMs says how long it still needs. */
   | { kind: 'unripe'; c: number; r: number; leftMs: number }
   | { kind: 'walk'; path: Point[] }
@@ -305,6 +307,12 @@ export interface GameAPI {
   plantSeed(c: number, r: number, seed: SeedId): Promise<BlockResult>;
   /** One punch at the plant in a cell (cooldown BLOCK_HIT_COOLDOWN_MS): a grown plant is harvested, an unripe one answers 'unripe' and is left alone. */
   hitPlant(c: number, r: number): Promise<BlockResult>;
+  /**
+   * Uses a second seed on a planted cell (step BG7). 'spliced' = the cell now grows the new seed; refused with
+   * 'nothing_happens' (pair not in the table or the same seed twice: nothing is taken), 'already_spliced',
+   * 'ripe' (harvest it first) or 'no_plant'. Out of reach: the avatar walks closer first.
+   */
+  spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult>;
   /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
   buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
   /** Cooks one food at the pot. Null without all ingredients. */

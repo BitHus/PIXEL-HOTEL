@@ -420,6 +420,10 @@ export const SEED_YIELD = {
   ultra_rare: { min: 1, max: 2 },
   legendary: { min: 1, max: 1 },
 } as const;
+/** Splicing (step BG7): the cell grows for the longer of the two grow times plus this, ms. */
+export const SPLICE_BONUS_MS = 60_000;
+/** A spliced harvest may also give one block or crop of one of the two seeds (chance 0 to 1). */
+export const SPLICE_BONUS_CHANCE = 0.25;
 /** Chance that a harvest also gives the seed back. */
 export const SEED_BACK_CHANCE = 0.3;
 /** A plant is in its first stage (sprout) until this share of its time has passed, then the small plant, then fully grown. */
@@ -641,7 +645,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -675,6 +679,7 @@ export const HINTS = [
   'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
   'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown.',
   'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
+  'Splice: plant one seed, then use a different seed on the same planted cell. Some pairs make a brand new seed (see the Book, Splice tab).',
 ] as const;
 /** The index of the dungeon hint in HINTS: it only shows while the shop has nothing for sale. */
 export const DUNGEON_HINT = 3;
@@ -682,6 +687,8 @@ export const DUNGEON_HINT = 3;
 export const FARM_HINT = 4;
 /** The index of the mine hint (step 9c): shows from MINE_UNLOCK_LEVEL on, done by going in. */
 export const MINE_HINT = 5;
+/** The index of the splice hint (step BG7): done by splicing two seeds. */
+export const SPLICE_HINT = 6;
 
 // ---------- New game intro (step 7b) ----------
 /** The counter and stall_table pop in: scale 0 -> 1.2 -> 0.9 -> 1 over this many ms. */
@@ -823,6 +830,8 @@ export const GEMS = {
   block: { chance: 0.15, min: 1, max: 2 },
   /** Harvesting a grown plant (step BG6). */
   harvest: { chance: 0.12, min: 1, max: 2 },
+  /** A harvested spliced plant (the result's rank). */
+  splice: { chance: 0.3, min: 1, max: 2 },
   /** A dungeon chest (wooden = common, golden = rare). */
   chest: { chance: 0.25, min: 1, max: 2 },
   /** A kill (the enemy's rank: ENEMY_GEM_RANK). */

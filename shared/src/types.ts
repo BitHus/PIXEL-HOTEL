@@ -166,7 +166,11 @@ export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 export type CropSeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
 /** Every block has a seed (step BG6): `<block id>_seed`; planted, it grows blocks. */
 export type BlockSeedId = `${BlockId}_seed`;
-export type SeedId = CropSeedId | BlockSeedId;
+/** Seeds that only splicing makes (step BG7, shared/data/spliceSeeds.json): they grow drinks, furniture, clothes and rarer goods. */
+export type SpliceSeedId =
+  | 'flaxbloom_seed' | 'hopvine_seed' | 'honeybloom_seed' | 'vine_bench_seed' | 'mohawk_seed' | 'baggy_seed' | 'tunic_seed'
+  | 'gilded_chair_seed' | 'honey_table_seed' | 'ember_lamp_seed' | 'amberbud_seed' | 'spiritbrew_seed' | 'heartwood_throne_seed';
+export type SeedId = CropSeedId | BlockSeedId | SpliceSeedId;
 export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
 export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth' | 'grilled_perch' | 'carp_stew' | 'eel_pie';
 /** The lakeside (section 10d, step 9f): fish (fish.json) and the things fished up (also fish.json), and what trees give besides wood. */
@@ -246,6 +250,7 @@ export type LedgerReason =
   | 'seeds'
   | 'plant'
   | 'harvest'
+  | 'splice'
   | 'cook'
   | 'lunch_box'
   | 'smelt'
@@ -321,6 +326,8 @@ export interface Player {
   bookOpenedAt: number;
   /** Book rewards already taken, as '<tab>:<percent>'. */
   bookRewards: string[];
+  /** Splice recipes found (step BG7): the pair keys of recipes whose result was harvested (splice.ts pairKey). */
+  splicesFound: string[];
 }
 
 export interface SeenEntry {

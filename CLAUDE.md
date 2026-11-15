@@ -148,6 +148,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   legendary 12 h; no watering, no rotting). Harvest = PUNCH the full plant (one hit, hold works): SEED_YIELD
   blocks or crops by rank (1 to 4), SEED_BACK_CHANCE for the seed, gemDrop 'harvest'. An unripe plant only shakes
   and says when it is ready. Basic crop seeds are sold (gold); block seeds and rarer ones come from drops.
+  SPLICING (BG7): with a seed selected, tap a young plant: the second seed goes in and the cell grows the pair's
+  NEW seed (shared/data/splice.json, order free, no random failure; a wrong pair or the same seed = "nothing
+  happens", nothing taken) for the longer grow time + SPLICE_BONUS_MS. Harvest gives the new seed (+ a small
+  chance of a block or crop, gems 'splice'); results grow blocks, crops, drinks, furniture or clothes.
   Paths and fences are blocks. Hold to repeat: see INPUT.
 - Cooking recipes: shared/data/food.json. Up to 3 food items go into the dungeon (lunch box; lost
   on death). Crops and food sell in the shop.
@@ -223,9 +227,10 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
 - BG3 (gain popups, every source) and BG4 (gems from every source: block, harvest, chest, kill, mimic, boss,
   rock, chop, fish, quest, Book; floor piles in the dungeon and mine, kept on Leave, half lost on death in the
   crypt) are done (NOTES BG3b + BG4b). BG5 (blocks), BG5b (hold to repeat) and BG6 (seeds, the free-form farm)
-  are done too. Next: BG7-BG9 (BG9 tunes the gem numbers), then 9t B/C, 9g.
+  are done too. Next: BG8-BG9 (BG9 tunes the gem numbers), then 9t B/C, 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 17. LocalGameAPI only. All art is placeholder shapes and boxes
+- BG7 (splicing: two seeds in one cell, 40 recipes, the Book's Splice tab) is done (NOTES BG7).
+- DUNGEON_ROUND is 1. SAVE_VERSION is 18. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -269,7 +274,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 17) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 18) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers
