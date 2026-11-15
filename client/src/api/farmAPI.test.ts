@@ -29,8 +29,8 @@ describe('the farm through the GameAPI', () => {
     expect(farmRoom.room).toMatchObject({ kind: 'farm', floorStyle: 'grass', wallStyle: 'hedge' });
     expect((await api.getFarm()).plots).toHaveLength(6);
     // Seeds from the catalog go into the hotbar.
-    expect(await api.buySeeds('turnip_seed', 5)).toBe(true);
-    expect(await api.buySeeds('potato_seed', 3)).toBe(true);
+    expect(await api.buySeeds('turnip_seed', 5)).toEqual([{ itemId: 'turnip_seed', count: 5, rank: 'common' }]);
+    expect(await api.buySeeds('potato_seed', 3)).not.toBeNull();
     const inv = await api.getInventory();
     expect(inv.hotbar.slice(0, 2)).toEqual(['turnip_seed', 'potato_seed']);
     expect((await api.getPlayer()).wallet.gold).toBe(100 - 20 - 18);
@@ -51,11 +51,12 @@ describe('the farm through the GameAPI', () => {
       expect(h!.qty).toBeGreaterThanOrEqual(1);
       expect(h!.qty).toBeLessThanOrEqual(2);
       crops += h!.qty;
+      expect(h!.gains).toEqual([{ itemId: h!.crop, count: h!.qty, rank: expect.any(String) }]);
     }
     const m = (await again.getPlayer()).materials;
     expect((m.turnip ?? 0) + (m.potato ?? 0)).toBe(crops);
     // Cook a stew: 2 potatoes + 1 turnip (3 potato plots give at least 3).
-    expect(await again.cook('potato_stew')).toBe(true);
+    expect(await again.cook('potato_stew')).toEqual([{ itemId: 'potato_stew', count: 1, rank: expect.any(String) }]);  // the ingredients used are not gains
     expect((await again.getPlayer()).materials.potato_stew).toBe(1);
     const food = 'potato_stew';
     // Into the dungeon with the food in the lunch box; eat it to heal.

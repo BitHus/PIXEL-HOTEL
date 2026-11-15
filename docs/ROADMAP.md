@@ -28,7 +28,7 @@ is done. All prompts [prompt ready] in docs/NEXT-STEPS.md. Owner confirms the op
 (BLOCKS-PLAN section 5) and the pack fairness rules (section 4, row 3) before BG1 and BG8.
 BG1 Cell grid (32 px): rooms, furniture, floors per cell, navigation on cells, migration. [done]
 BG2 Item icons: every item a rough shape and colour in a 32x32 square, drawn in code. [done]
-BG3 Gain popups: items and gems float above the avatar's head (chest, kill, fish, harvest, pack).
+BG3 Gain popups: items and gems float above the avatar's head (chest, kill, fish, harvest, pack). [A done: gains lists in the API; B popups next]
 BG4 Gems: the second currency, dropped by everything, through the ledger.
 BG5 Blocks and punching: place and break blocks by hits; drops, seeds, gems.
 BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates.

@@ -436,6 +436,21 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   stall_table (addShopStartItems); MIGRATIONS[3] moves a counter still on the old spot against the
   back wall (176, 40) to the new start spot (176, 88), so the player fits behind it.
 
+## Gains: what a call gave (step BG3, part A: shared rules and the API)
+
+- shared/src/gains.ts: Gain { itemId, count, rank }, GainList, gain(), mergeGains() (same item +
+  rank add up; empty counts drop), gainsSince(before, after) (the ledger entries written between two
+  states: materials and furniture that came IN; reasons dungeon_bank, lunch_box, shelf, tavern_order
+  are not gains), gainsFromRunEvents(events) (the run's 'loot' events with their rolled rank, minus
+  'left_behind'; gold is never a gain). Gold is not a gain anywhere (the wallet shows it).
+- GameAPI: RunUpdate.gains (chest, kill drop, mimic, boss, rock/ore, gem), ChopUpdate.gains,
+  FishUpdate.gains (the fish or fished-up thing), HarvestResult.gains, BuyResult.gains (catalog).
+  craft, smelt, forge, cook, buyGear, buySeeds now return GainList | null (null = refused, an empty
+  list = done but no item, e.g. a style recipe); forge and buyGear give the gear piece / potion id
+  itself (gear is not in the ledger). Banking a run at the exit gives no gains (shown at the find).
+- NOT DONE YET (BG3 part B): the popups above the head (queue helper, rendering, Settings
+  "Popups"), claimBookReward and quest claims (gold only today, no items), packs (BG8), gems (BG4).
+
 ## Inventory, chat and texts (step 5)
 
 - INVENTORY (step 5): the inventory is the player's furniture with roomId null plus

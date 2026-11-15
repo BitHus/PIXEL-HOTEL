@@ -1,6 +1,6 @@
 // Step 9c: the mine and the forge through the GameAPI (LocalGameAPI).
 import { describe, expect, it } from 'vitest';
-import { MINE_HINT, MINE_LANTERN_MS, applyChange, createNewPlayer, saveKey, seededRng, toSaveText, type GameState } from '@pixel-hotel/shared';
+import { MINE_HINT, MINE_LANTERN_MS, applyChange, createNewPlayer, mergeGains, saveKey, seededRng, toSaveText, type GainList, type GameState } from '@pixel-hotel/shared';
 import { ledgerGold, ledgerMaterials } from '../../../shared/src/testState.ts';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
@@ -36,11 +36,16 @@ describe('the mine through the GameAPI', () => {
     const run = (await api.mineStart())!;
     // Swing at the nearest copper or iron rock until it breaks.
     const rock = [...run.rocks].filter((r) => r.kind !== 'mithril').sort((a, b) => Math.hypot(a.x - run.player.x, a.y - run.player.y) - Math.hypot(b.x - run.player.x, b.y - run.player.y))[0]!;
+    const gains: GainList = [];
     for (let k = 0; k < 200; k++) {
       const u = await api.dungeonInput({ t: 'click_rock', id: rock.id });
+      gains.push(...(u?.gains ?? []));
       if (!u?.run.rocks.some((r) => r.id === rock.id)) break;
-      await api.dungeonAdvance(400);
+      gains.push(...((await api.dungeonAdvance(400))?.gains ?? []));
     }
+    // The broken rock gave its ore (and maybe a gem): the gains say how much went in the run bag.
+    const oreGain = mergeGains(gains).find((g) => g.itemId === `${rock.kind}_ore`);
+    expect(oreGain?.count).toBeGreaterThanOrEqual(1);
     const now = (await api.getRun())!.run;
     expect(now.rocks.some((r) => r.id === rock.id)).toBe(false);
     const ore = `${rock.kind}_ore`;
@@ -53,10 +58,10 @@ describe('the mine through the GameAPI', () => {
     const s = api.snapshot();
     const rich = applyChange(s, { reason: 'debug', materials: { copper_ore: 12 } }, t)!;
     const forge = open(rich);
-    for (let i = 0; i < 4; i++) expect(await forge.smelt('copper_bar')).toBe(true);
-    expect(await forge.smelt('copper_bar')).toBe(false);
-    expect(await forge.forge('iron_sword')).toBe(false); // needs the copper sword first
-    expect(await forge.forge('copper_sword')).toBe(true);
+    for (let i = 0; i < 4; i++) expect(await forge.smelt('copper_bar')).toEqual([{ itemId: 'copper_bar', count: 1, rank: expect.any(String) }]);
+    expect(await forge.smelt('copper_bar')).toBeNull();
+    expect(await forge.forge('iron_sword')).toBeNull(); // needs the copper sword first
+    expect(await forge.forge('copper_sword')).toEqual([{ itemId: 'copper_sword', count: 1, rank: 'common' }]);
     expect((await forge.getPlayer()).gear).toEqual(['copper_sword']);
     const dungeon = await forge.dungeonStart();
     expect(dungeon?.player).toMatchObject({ attackMin: 5 + 1, attackMax: 7 + 1 }); // level 3: +1 from level 2
