@@ -577,7 +577,8 @@ Not built yet. When a BG step builds a part, it moves that part into the section
 changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as written.
 - Inspiration: Growtopia and Pixel Worlds (block grid, punching, seeds, splicing, gems, packs,
   locks and access, visit by name), next to Travellers Rest and Habbo. Never copy names or art.
-- Building per cell: BUILD_CELL 32 px; rooms, floors, walls, furniture and navigation on cells.
+- Building per cell: BUILD_CELL 32 px; rooms, floors, floor furniture and navigation on cells.
+  Wall items stay freely placeable along the back wall band (4 px snap).
 - Blocks: place and break by hits; drops, seeds, gems. Seeds grow in real time; two seeds splice
   into a new one (fixed table). Farming = plant and punch.
 - Gems: second currency, dropped by everything, not tradable, never bought with real money.

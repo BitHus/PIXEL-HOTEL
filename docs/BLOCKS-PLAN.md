@@ -51,11 +51,13 @@ Everything stays original (names, art); no Growtopia item names or splice recipe
 - Rooms are cell maps. Room shapes in roomShapes.json become cell rectangles (the 16 px aligned
   numbers are converted: round up to whole cells; the owner checks the shapes on screen).
 - Furniture: footprint in whole cells (w x d), anchor = the cell at the bottom centre
-  (even widths: the left of the two centre cells). Rotation swaps w and d. Wall items sit in wall
-  cells. onSurface items stay (one level, on a surface item). Rugs and floor decor live on the
+  (even widths: the left of the two centre cells). Rotation swaps w and d. WALL ITEMS STAY FREE
+  (owner, 15 Nov: walls are freely placeable in every game): they slide along the back wall
+  band at any x and y inside the band, snapped to 4 px (Shift = no snap), never to cells; they only
+  must stay inside the band and not overlap the door. Only floor things go per cell. onSurface items stay (one level, on a surface item). Rugs and floor decor live on the
   BACKGROUND layer (can overlap, never block). Draw order stays: floor, rugs, back wall, items and
   avatars sorted by y, x, uid.
-- Floors and wall styles per cell: paint one cell or a rectangle (drag). A style is still
+- Floor styles per cell: paint one cell or a rectangle (drag). Wall styles stay per wall segment. A style is still
   unlocked forever once owned.
 - Navigation: the nav grid IS the build grid (one cell = 32 px, 8 directions, no corner cutting,
   smoothing stays). Blockers are whole cells, so no AVATAR_RADIUS growing. Avatars still move in
