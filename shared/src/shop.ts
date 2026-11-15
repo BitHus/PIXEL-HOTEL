@@ -35,7 +35,7 @@ import type { GameState } from './gameState.ts';
 import { nextInventoryUid } from './inventory.ts';
 import { applyChange, type Change } from './ledger.ts';
 import { getMaterialType, isMaterialId } from './materials.ts';
-import type { Room } from './room.ts';
+import { dominantFloorStyle, type Room } from './room.ts';
 import { styleAppeal } from './styles.ts';
 import type { NpcMoment } from './npcTalk.ts';
 import type { FurnitureItem, LootRef, MaterialId, Reaction, Rng, ShopCategory, ShopSlot } from './types.ts';
@@ -218,7 +218,7 @@ export function shopAppeal(room: Room, items: readonly FurnitureItem[]): number 
     counted.set(i.typeId, n + 1);
     sum += getFurnitureType(i.typeId).appeal;
   }
-  sum += styleAppeal('floor', room.floorStyle) + styleAppeal('wall', room.wallStyle);
+  sum += styleAppeal('floor', dominantFloorStyle(room)) + styleAppeal('wall', room.wallStyle);
   return Math.min(SHOP_APPEAL_MAX, sum);
 }
 

@@ -130,9 +130,9 @@ describe('the farm place', () => {
       expect(rectsOverlap(r, potRect())).toBe(false);
       for (let j = 0; j < i; j++) expect(rectsOverlap(r, plotRect(j))).toBe(false);
     }
-    expect(plotAt(1, { x: 50, y: 50 })).toBe(0);
-    expect(plotAt(1, { x: 300, y: 50 })).toBeNull(); // a level 2 plot
-    expect(plotAt(2, { x: 300, y: 50 })).not.toBeNull();
+    expect(plotAt(1, { x: 80, y: 80 })).toBe(0);
+    expect(plotAt(1, { x: 270, y: 70 })).toBeNull(); // a level 2 plot
+    expect(plotAt(2, { x: 270, y: 70 })).not.toBeNull();
   });
 
   it('decorations go around the plots, never on them; the pot blocks walking', () => {
@@ -140,12 +140,12 @@ describe('the farm place', () => {
     const room = farmRoom(s);
     const plant = getFurnitureType('plant');
     const p0 = plotRect(0);
-    expect(canPlace(room, s.items, plant, p0.x + 16, p0.y + 32, 'down')).toBe(false);
-    expect(canPlace(room, s.items, getFurnitureType('rug'), p0.x + 16, p0.y + 40, 'down')).toBe(false);
-    expect(canPlace(room, s.items, plant, 500, 300, 'down')).toBe(true);
+    expect(canPlace(room, s.items, plant, p0.x + 16, p0.y + 32, 'down')).toBe(false); // on the plot
+    expect(canPlace(room, s.items, getFurnitureType('rug'), p0.x + 16, p0.y + 64, 'down')).toBe(false); // a rug too
+    expect(canPlace(room, s.items, plant, 496, 320, 'down')).toBe(true);
     expect(canPlace(room, s.items, plant, COOKING_POT.x, COOKING_POT.y, 'down')).toBe(false);
     // Shop furniture does not go on the farm; home furniture does.
-    expect(canPlace(room, s.items, getFurnitureType('shelf'), 500, 300, 'down')).toBe(false);
+    expect(canPlace(room, s.items, getFurnitureType('shelf'), 480, 320, 'down')).toBe(false);
     expect(roomBlockers(room, s.items)).toEqual([potRect()]);
     expect(noPlaceRects(room)).toHaveLength(7);
   });

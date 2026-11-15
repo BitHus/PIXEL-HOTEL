@@ -136,10 +136,10 @@ describe('walking customers', () => {
     const cells = spots.map((p) => cellAt(w.grid, p));
     for (const c of cells) expect(isCellFree(w.grid, c.c, c.r)).toBe(true);
     expect(new Set(cells.map((c) => `${c.c},${c.r}`)).size).toBe(8);
-    // With the fine nav grid two spots are still never on top of each other.
+    // Two spots are never on top of each other.
     for (let i = 0; i < spots.length; i++) for (let j = i + 1; j < spots.length; j++) expect(Math.hypot(spots[i]!.x - spots[j]!.x, spots[i]!.y - spots[j]!.y)).toBeGreaterThanOrEqual(QUEUE_MIN_GAP_PX);
     // The paying spot is just in front of the counter.
-    expect(spots[0]).toEqual({ x: counter.x, y: counter.y + 24 });
+    expect(spots[0]).toEqual({ x: counter.x, y: counter.y + 16 }); // the middle of the cell in front of it
   });
 
   it('the catch-up after a break sells nothing and fills the line, at most QUEUE_MAX, at the queue spots', () => {
@@ -493,7 +493,7 @@ describe('walking customers', () => {
     const room = s.rooms.find((r) => r.id === s.shop.roomId)!;
     const counter = findCounter(s.items, room.id)!;
     // A bench next to the queue row, below the counter.
-    const spot = { x: counter.x + 32, y: counter.y + 80 };
+    const spot = { x: counter.x + 48, y: counter.y + 64 }; // columns 6..7, beside the queue column
     expect(canPlace(room, s.items, getFurnitureType('bench'), spot.x, spot.y, 'down')).toBe(true);
     s = { ...s, items: [...s.items, { uid: 88, typeId: 'bench', ownerId: 1, roomId: room.id, x: spot.x, y: spot.y, facing: 'down', onItemUid: null }] };
     const rng = seededRng(6);

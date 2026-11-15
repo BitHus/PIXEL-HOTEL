@@ -65,8 +65,8 @@ describe('guests: seating and groups (step 9t)', () => {
     expect(most).toBe(2);
     // With many seats the config cap holds.
     let big = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 200 } }, 0)!);
-    for (let k = 0; k < 3; k++) big = withItem(big, 54 + k, 'bar_stool', 80 + k * 40, 288, 'up');
-    big = withItem(withItem(big, 57, 'bar_stool', 44, 248, 'right'), 58, 'bar_stool', 196, 248, 'left');
+    for (let k = 0; k < 3; k++) big = withItem(big, 54 + k, 'bar_stool', 48 + k * 32, 288, 'up'); // below the table
+    big = withItem(withItem(big, 57, 'bar_stool', 16, 256, 'right'), 58, 'bar_stool', 176, 256, 'left'); // at its ends
     expect(tavernSeats(big.items, big.tavern.roomId).length).toBe(10);
     let top = 0;
     runTavern(big, 0, 30 * MIN, seededRng(8), true, (x) => {

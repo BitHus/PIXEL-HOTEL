@@ -16,6 +16,8 @@ import {
   INTRO_STEP_MS,
   tillPoint,
   PALETTE,
+  STYLE_TYPES,
+  styleKey,
   buildNavGrid,
   cameraAt,
   centerCamera,
@@ -126,6 +128,9 @@ import { createTravelPanel, type PlaceCard, type Place } from './ui/travelPanel.
 import { createLunchPicker } from './ui/lunchPicker.ts';
 import { ROOM_NAMES } from './ui/infoPanel.ts';
 import { RoomAtmosphere } from './render/roomAtmosphere.ts';
+import { CellGrid } from './render/cellGrid.ts';
+import { FloorPaint } from './build/floorPaint.ts';
+import { createPaintBar } from './ui/paintBar.ts';
 import { Backdrop } from './render/backdrop.ts';
 import { Sound } from './audio/sound.ts';
 import { loadPrefs, savePrefs } from './api/prefs.ts';
@@ -186,6 +191,10 @@ async function start(): Promise<void> {
   let room: Room = first.room;
   let bounds: Rect = roomBoundsRect(room);
   const view = new RoomView();
+  // The faint build grid (step BG1): shown while placing furniture or painting floors.
+  const cellGrid = new CellGrid();
+  view.gridLayer.addChild(cellGrid.container);
+  cellGrid.setRoom(room);
   // Atmosphere step: the dark planks outside the room, then the room with its shadows and light.
   const backdrop = new Backdrop(app.renderer);
   app.stage.addChild(backdrop.container, view.world);
@@ -302,6 +311,8 @@ async function start(): Promise<void> {
   const panels = createPanels();
   /** The player's gold as last read (for the "Buy this?" panels). */
   let walletGold = 0;
+  /** The floor and wall styles the player has unlocked (style keys), as last read. */
+  let unlockedStyles: readonly string[] = [];
   const info = createInfoPanel(ui);
   const hint = createHintBox(ui, info.column);
   const floats = createSaleFloats(ui);
@@ -313,7 +324,7 @@ async function start(): Promise<void> {
       menu.close();
       placer.cancel();
     },
-    escapeTaken: () => panels.open !== null || placer.active || dungeon.isActive,
+    escapeTaken: () => panels.open !== null || placer.active || paint.active || dungeon.isActive,
   });
   build.button.classList.add('room-only');
   // The Dungeon button (step 9): shows the key cost, or "free" under 10 gold.
@@ -451,11 +462,46 @@ async function start(): Promise<void> {
       },
       onChange: () => {
         syncItems();
-        hotbar.setHidden(placer.active);
+        hotbar.setHidden(placer.active || paint.active);
+        syncGrid();
       },
     },
     view.ghostLayer,
   );
+  // ---------- Painting floors per cell (step BG1) ----------
+  /** The grid shows while placing or painting (unless it is switched off in Settings). */
+  const syncGrid = (): void => {
+    cellGrid.visible = prefs.cellGrid && (placer.active || paint.active);
+    paintBar.update(paint.brush, unlockedStyles, prefs.cellGrid);
+    ui.classList.toggle('painting', paint.active);
+  };
+  const paint: FloorPaint = new FloorPaint({
+    getRoom: () => room,
+    paint: async (from, to, id) => {
+      const next = await api.paintFloor(room.id, from, to, id);
+      if (!next || next.id !== room.id) return false;
+      room = next;
+      view.setRoom(room);
+      atmosphere.setRoom(room);
+      sound.play('pop');
+      await refreshShop();
+      return true;
+    },
+    onChange: () => {
+      hotbar.setHidden(placer.active || paint.active);
+      syncGrid();
+    },
+  });
+  view.gridLayer.addChild(paint.container);
+  const paintBar = createPaintBar(ui, {
+    onBrush: (id) => paint.setBrush(id),
+    onGrid: () => {
+      prefs.cellGrid = !prefs.cellGrid;
+      savePrefs(storage, prefs);
+      syncGrid();
+    },
+    onDone: () => paint.end(),
+  });
   const viewCenter = (): Point => screenToWorld({ x: app.screen.width / 2, y: app.screen.height / 2 }, shown);
   const placeBar = createPlaceBar(ui, {
     onPlace: () => void placer.place(),
@@ -572,6 +618,16 @@ async function start(): Promise<void> {
         toast(`Upgraded to level ${next.level}!`);
         await openRoom(next.id, false);
       });
+    },
+    startPaint: () => {
+      // The brush starts as the first unlocked floor that is not the room's own (painting the room's
+      // own floor erases the paint).
+      const own = room.floorStyle;
+      const floors = STYLE_TYPES.filter((x) => x.kind === 'floor' && unlockedStyles.includes(styleKey('floor', x.id))).map((x) => x.id);
+      const brush = floors.find((id) => id !== own) ?? own;
+      panels.close();
+      build.set(false);
+      paint.start(brush);
     },
     applyStyle: (roomId, kind: StyleKind, id) => {
       void api.applyStyle(roomId, kind, id).then(async (next) => {
@@ -941,6 +997,8 @@ async function start(): Promise<void> {
     dungeonBadge.textContent = free ? 'free' : String(DUNGEON_KEY_COST);
     dungeonButton.title = free ? 'Dungeon: a free run (you have less than 10 gold)' : `Dungeon: the key costs ${DUNGEON_KEY_COST} gold`;
     walletGold = p.wallet.gold;
+    unlockedStyles = p.unlockedStyles;
+    paintBar.update(paint.brush, unlockedStyles, prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, room);
     roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
     shelfPanel.refresh(shop, inventory);
@@ -1017,6 +1075,11 @@ async function start(): Promise<void> {
       sound.setVolume(v);
       savePrefs(storage, prefs);
     },
+    onCellGrid: (on) => {
+      prefs.cellGrid = on;
+      savePrefs(storage, prefs);
+      syncGrid();
+    },
     onLighting: (on) => {
       prefs.lighting = on;
       atmosphere.setLighting(on);
@@ -1044,6 +1107,7 @@ async function start(): Promise<void> {
     backdrop.container.visible = !on && lightingOn;
     backdrop.refresh();
     sprite.container.visible = !on;
+    if (on) paint.end();
     hotbar.setHidden(on);
     runBar.setHidden(!on);
     if (!on) info.setRun(null);
@@ -1176,6 +1240,7 @@ async function start(): Promise<void> {
   /** Opens a room: draws it, puts the avatar in the door zone and plays the camera intro. */
   async function openRoom(roomId: number, intro = true): Promise<void> {
     placer.cancel();
+    paint.end();
     menu.close();
     bubbles.clear();
     chat.clear();
@@ -1183,6 +1248,7 @@ async function start(): Promise<void> {
     room = state.room;
     bounds = roomBoundsRect(room);
     view.setRoom(room);
+    cellGrid.setRoom(room);
     atmosphere.setRoom(room);
     backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
     itemViews.setRoom(room.id);
@@ -1255,6 +1321,13 @@ async function start(): Promise<void> {
           if (panels.open !== null) panels.close();
           else lakeside.fishTap();
         }
+        return;
+      }
+      if (paint.active) {
+        // Painting floors: a tap paints that cell (a drag paints a rectangle).
+        if (kind !== 'tap') return;
+        if (panels.open !== null) panels.close();
+        else paint.tap(marked);
         return;
       }
       if (placer.active) {
@@ -1330,7 +1403,7 @@ async function start(): Promise<void> {
       void walkTo(to);
     },
     getDragMode: (target) => {
-      if (dungeon.isActive || blockers.on || placer.active) return 'draw';
+      if (dungeon.isActive || blockers.on || placer.active || paint.active) return 'draw';
       // Build mode: a drag that starts on an item moves that item (no Move button, no ✓).
       const hit = build.on && panels.open === null ? roomItem(itemViews.uidOf(target)) : undefined;
       if (!hit) return 'pan';
@@ -1357,7 +1430,8 @@ async function start(): Promise<void> {
           placer.cancel();
           itemViews.shake(moved);
         }
-      } else if (blockers.on) blockers.draw(phase, world);
+      } else if (paint.active) paint.drag(phase, world);
+      else if (blockers.on) blockers.draw(phase, world);
     },
   });
 

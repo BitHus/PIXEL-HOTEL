@@ -6,6 +6,7 @@ import { CUSTOMER_CALL_AFTER_MS, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_K
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
 import { addShopStartItems, addTavern } from './newPlayer.ts';
+import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { emptyShop } from './shop.ts';
 import { emptyFarm } from './farm.ts';
 import { emptyLakeside } from './woodcut.ts';
@@ -22,7 +23,7 @@ export interface SaveFile {
 export type SaveProblem = 'bad_json' | 'not_a_save' | 'too_old' | 'too_new' | 'invalid';
 
 export type LoadResult =
-  | { ok: true; state: GameState; version: number; migrated: boolean }
+  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number }
   | { ok: false; problem: SaveProblem; version?: number };
 
 /**
@@ -208,6 +209,16 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       return state;
     }
   },
+  // 13 -> 14 (step BG1, the cell grid): rooms are whole cells, floor furniture snaps to the nearest
+  // valid cell footprint, wall items stay, what no longer fits goes back to the bag.
+  13: (state) => {
+    if (!isObject(state) || !Array.isArray(state.items) || !Array.isArray(state.rooms)) return state;
+    try {
+      return snapItemsToGrid(state as unknown as GameState).state;
+    } catch {
+      return state;
+    }
+  },
 };
 
 /** The storage key for a save version. */
@@ -235,13 +246,16 @@ export function readSave(text: string): LoadResult {
   const version = file.version;
   if (version > SAVE_VERSION) return { ok: false, problem: 'too_new', version };
   let state: unknown = file.state;
+  let returnedToBag = 0;
   for (let v = version; v < SAVE_VERSION; v++) {
     const migrate = MIGRATIONS[v];
     if (!migrate) return { ok: false, problem: 'too_old', version };
+    const was = v === 13 && isObject(state) && Array.isArray(state.items) ? placedCount(state.items as GameState['items']) : 0;
     state = migrate(state);
+    if (v === 13 && isObject(state) && Array.isArray(state.items)) returnedToBag = Math.max(0, was - placedCount(state.items as GameState['items']));
   }
   if (!isGameState(state)) return { ok: false, problem: 'invalid', version };
-  return { ok: true, state, version, migrated: version !== SAVE_VERSION };
+  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag };
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {

@@ -5,7 +5,8 @@ Fixed decisions. Do not change them unless I say so. Short form; the full text o
 1. WHAT WE ARE BUILDING
 A browser game. Parts:
 - Hotel: top-down pixel-art rooms in the style of Travellers Rest (slight front angle: you see the
-  top and front of things). Walk as an avatar, chat in bubbles, place furniture freely (no grid).
+  top and front of things). Walk as an avatar, chat in bubbles, build per cell (32 px build grid;
+  wall items stay free along the back wall).
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
 - Shop: a shop room per player: loot on shelves with prices, NPC customers buy for gold, gold
   buys furniture in the catalog.
@@ -42,18 +43,20 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   largest where the whole room fits (at least 0.5; else the camera follows the avatar).
 - Camera intro when a room opens: overview, wait 0.6 s, zoom in over 0.8 s to the settled zoom
   nearest 3 device px per art px, centered on the avatar. Any tap, drag, pinch or wheel skips it.
-- No tile grid in rooms. Two hidden grids only: navigation (8 px cells) and dungeon blocks (32 px).
+- BUILD GRID (BG1): rooms are cell maps of BUILD_CELL = 32 px (config); the nav grid is the build
+  grid (the dungeon keeps its own). Faint while placing or painting (Settings toggle).
 - Pixel-perfect: no texture smoothing, sprites at whole world pixels.
 
 5. ROOMS
 - Room { id (integer), kind: 'hotel'|'shop'|'farm'|'lakeside', level, shape, w, h, floorStyle,
   wallStyle }. The floor is a union of rectangles from shared/data/roomShapes.json (shape + level
-  1..3; each level contains the previous one; 16 px aligned). Shapes: square / square_shop, long,
+  1..3; each level contains the previous one; data in whole CELLS). Shapes: square / square_shop, long,
   l_shape, plus, wide_hall. The player picks one for the hotel and one for the shop at the start.
-- Walls: every up-facing floor edge gets the 64 px back wall band; other outside edges a 16 px
-  border. Door: a 64 px opening under a bottom edge; the DOOR ZONE (64 x 48 px) stays free.
+- Walls: every up-facing floor edge gets the back wall band (2 cells = 64 px); other outside edges
+  a 16 px border. Door: a 2-cell opening under a bottom edge; the DOOR ZONE (2 x 2 cells) stays free.
 - Floors and walls are unlockable styles (shared/data/styles.json). Rooms start 'bare'. A bought
   or crafted style is unlocked forever and applied to any own room for free. Price = baseValue * 3.
+  Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
 - New player: an empty level 1 hotel room and a level 1 shop with a counter and one stall_table.
 - The counter: one per shop, movable, never picked up; the spot behind it must stay reachable.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
@@ -62,18 +65,19 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 6. MOVEMENT
 - Tap the floor: walk there. Tap an item with seats: walk to its nearest reachable free side and
   sit or lie. A blocked target = the nearest free cell; nothing reachable = do nothing.
-- Navigation: 8 px cells (NAV_CELL), blockers grown by AVATAR_RADIUS 4 px (a 24 px gap between
-  two items is always walkable). A* with 8 directions, no corner cutting, then smoothed to
-  straight lines. Paths are lists of world points from shared/; clients animate them.
+- Navigation: the nav grid is the build grid (NAV_CELL = BUILD_CELL 32 px); a cell with furniture
+  on it is blocked, no avatar radius (a 1-cell gap is walkable). A* with 8 directions, no corner
+  cutting, then smoothed to straight lines. Paths are lists of world points from shared/.
 - Speed 128 px/s in rooms. Avatars never block each other. Facing = dominant movement axis.
 
 7. FURNITURE
-- Types: docs/BRIEF.md 7 and shared/src/types.ts. (x, y) is the anchor: the bottom center of the
-  footprint; w and d swap for left / right facings.
-- Placement is free, snapped to 4 px (Shift = no snap). Valid if: fully on the floor, no overlap
-  with another blocking item (rugs overlap anything), not on the door zone, and the door still
-  reaches the middle of the room. Wall items slide along a back wall band. onSurface items snap
-  onto a surface item (one level) and move with it.
+- Types: docs/BRIEF.md 7, shared/src/types.ts. (x, y) = the anchor, bottom center of the footprint.
+- FLOOR items are whole cells (type w, d multiples of 32); the anchor CELL is the bottom-centre
+  cell (even widths: the left of the two centre cells); rotation swaps w and d, keeps the anchor
+  cell. Valid if: on floor cells, no overlap with another blocking item (rugs and floor decor
+  overlap anything), not on the door zone, the door still reaches the middle. onSurface items sit
+  on a cell of a surface item (one level). WALL items stay free: any x along a back wall band,
+  4 px snap (Shift = none), anchor y = the band's foot.
 - Draw order: floor, rugs, back wall, then ONE list of items and avatars sorted by y, x, uid; an
   item on a surface right after the item under it.
 - Rotation cycles the type's facings; left = right mirrored. Placeholder art = boxes.
@@ -165,9 +169,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   many small props, dark warm outlines. The crypt is the opposite: cool and dark, few warm lights.
 - Palette: Endesga 32; the hex list lives only in shared/palette.ts. Light from the top-left. 1 px
   dark outline. No anti-aliasing. Nearest-neighbour scaling only.
-- Sprite sizes are in docs/BRIEF.md 12 (avatar 32x64, floor texture 64x64, dungeon blocks and
-  icons 32x32). Anchor = bottom center of the footprint. Until sprites exist, art is drawn in
-  code from boxes. The style sheet docs/STYLE.md comes in step 6.
+- Sprite sizes: docs/BRIEF.md 12 (avatar 32x64, floor texture 64x64, blocks and icons 32x32).
+  Anchor = bottom center of the footprint. Art is drawn in code from boxes until step 6.
 - UI: HTML/CSS over the canvas, local open-license pixel font. Layout, frame style and patterns
   are in docs/UI-REFERENCE.md: read it before any step that adds or changes UI.
 
@@ -199,19 +202,15 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   (https://bithus.github.io/pixel-hotel/). Commit and push at the end of every step.
 
 CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
-- Done: steps 1 to 5b (rooms, avatar, walking, furniture, placing, inventory, UI, chat, saving,
-  sitting and lying), 7 (shop), 7b (room shapes, character creation, intro), 8 and 9 (dungeon),
-  9b (farm), 9c (mine and forge), UI polish, atmosphere, logo splash, 9d (shop life) and its fix
-  list, 9e (ranks and the Book), 9f (lakeside), housekeeping 1.0 (this file shortened).
-- Step 9t (tavern) is HALF done: part A (shared rules and tests, docs/NOTES.md STEP 9t) is done;
-  part B (room, guests and serving in the client) and part C (brewing and Menu panels, intro toast,
-  texts, economy tool, brief sections 1 and 5, UI-REFERENCE) are next. The game does not show it yet.
-- Not done: step 6 (art, docs/STYLE.md), step 10 (server; server/src/index.ts is a placeholder).
-  Next (docs/ROADMAP.md): BG1-BG9, then 9t B/C, 9g, 9h, 9i.
-- PLANNED, not built (owner 15 Nov): block world BG1-BG9, docs/BLOCKS-PLAN.md (cells, gems, packs,
-  splicing). 9t B/C and 9g wait for BG1. Sections 4-7, 9, 13 stay valid until a BG step.
-- DUNGEON_ROUND is 1. SAVE_VERSION is 13. The game runs on LocalGameAPI only. All art is
-  placeholder boxes drawn in code. The indoor lighting look is approved: keep it.
+- Done: steps 1 to 5b, 7, 7b, 8 and 9 (dungeon), 9b (farm), 9c (mine), UI polish, atmosphere, logo
+  splash, 9d (shop life) and fixes, 9e (ranks, Book), 9f (lakeside), 1.0 (housekeeping), BG1 (the
+  32 px cell grid: floor furniture, floor paint, navigation per cell; docs/NOTES.md BG1).
+- Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
+  texts) next, on the cell grid.
+- Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder). Next (docs/ROADMAP.md): BG2-BG9
+  (block world, docs/BLOCKS-PLAN.md), then 9t B/C, 9g, 9h, 9i.
+- DUNGEON_ROUND is 1. SAVE_VERSION is 14. LocalGameAPI only. All art is placeholder boxes drawn
+  in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, simulate, simulate:dungeon. Vite base stays './'.
@@ -235,20 +234,22 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   screen = a button in ui/sideButtons.ts plus a panel. Every buy asks first (ui/confirmBuy.ts).
   Texts stay at reading pace (shared/src/text.ts readingMs).
 - INPUT: a press is a TAP only if it moved under 8 px and lasted under 300 ms; else a drag or
-  long press, which never walks. PLAY MODE: a tap walks, sits, or uses a thing. BUILD MODE
-  (Build button or B): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick up), a tap on a free spot moves the selected
-  item there. One finger pans, two fingers pinch-zoom, the wheel zooms. A tap on the room with a
-  panel open only closes the panel. Escape closes a panel, then placing, then build mode.
+  long press, which never walks. PLAY MODE: a tap walks, sits, or uses a thing. BUILD MODE (Build
+  button or B): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
+  up), a tap on a free spot moves the selected item there. PAINT MODE (Room > Paint cells): tap =
+  one cell, drag = rectangle. One finger pans, two fingers pinch-zoom, the wheel zooms. A tap on
+  the room with a panel open only closes the panel. Escape closes a panel, then placing or
+  painting, then build mode.
 - GAME API: the client changes nothing itself; every action goes through GameAPI and the client
   draws what comes back (null = refused). LocalGameAPI also runs the shop clock (stepShop every
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 12) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
-  settings (sound, lighting) live in prefs, not in the GameState.
-- NAVIGATION: shared/src/nav.ts; a cell is free only if all of it is on the floor and at least
-  AVATAR_RADIUS from every blocker. Use roomBlockers(room, items) for room grids. Customers use
-  npcGrid (staff zone blocked). The dungeon has its own grid (16 px cells, no radius). When
-  blockers change, the grid is rebuilt and walkers re-path.
+  SAVE_VERSION (now 14) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  settings (sound, lighting, grid) live in prefs, not in the GameState.
+- NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
+  on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers
+  use npcGrid (staff zone blocked; queue spots are cell centres). The dungeon has its own grid
+  (16 px cells, no radius). When blockers change, the grid is rebuilt and walkers re-path.
 - Camera state is unsnapped and clamped; drawing and hit testing use snapCamera(camera, dpr). In
   main.ts use syncItems (not itemViews.sync alone), so lights and shadows follow.

@@ -3,13 +3,16 @@ import { readSave, saveKey, toSaveText } from './save.ts';
 import { arrangeState, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { SAVE_VERSION } from './config.ts';
+import { canPlace, footprintRect, getFurnitureType, isOnGrid } from './furniture.ts';
+import { createRoom } from './room.ts';
+import type { FurnitureItem } from './types.ts';
 
 const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
 
 describe('save files', () => {
   it('saving then loading gives an identical state', () => {
     const loaded = readSave(toSaveText(state, 3));
-    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false });
+    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0 });
   });
   it('uses a versioned key', () => {
     expect(saveKey()).toBe(`pixel-hotel.save.v${SAVE_VERSION}`);
@@ -54,7 +57,7 @@ describe('save files', () => {
     const r = readSave(JSON.stringify({ version: 3, savedAt: 0, state: v3 }));
     expect(r).toMatchObject({ ok: true, migrated: true });
     if (!r.ok) return;
-    expect(r.state.items.find((i) => i.typeId === 'counter')).toMatchObject({ x: 176, y: 88 });
+    expect(r.state.items.find((i) => i.typeId === 'counter')).toMatchObject({ x: 176, y: 96 }); // on the cell grid (step BG1)
   });
 
   it('migrates a version 4 save: square rooms, the old look as clothing, and no character creation', () => {
@@ -212,5 +215,97 @@ describe('save files', () => {
     expect(s.shop).toEqual(v12.shop);
     // A new game has seen the intro already.
     expect(state.tavern.introSeen).toBe(true);
+  });
+});
+
+
+describe('migrates a version 13 save to the cell grid (step BG1)', () => {
+  const base = createNewPlayer(undefined, 1);
+  const hotelId = base.player.hotelRoomId;
+  const shopId = base.player.shopRoomId;
+  let uid = 500;
+  const piece = (typeId: string, roomId: number | null, x: number, y: number, onItemUid: number | null = null, facing: FurnitureItem['facing'] = 'down'): FurnitureItem => ({
+    uid: uid++,
+    typeId,
+    ownerId: base.player.id,
+    roomId,
+    x,
+    y,
+    facing,
+    onItemUid,
+  });
+  const table = piece('table', hotelId, 301, 250);
+  const old = {
+    ...base,
+    items: [
+      ...base.items,
+      piece('chair', hotelId, 203, 197), // off the grid
+      table,
+      piece('lamp', hotelId, 311, 241, table.uid), // on the table
+      piece('rug', hotelId, 120, 300),
+    ],
+  };
+  const wall = piece('wall_torch', hotelId, 133, 0); // free along the band: stays at 133
+  const oldState = { ...old, items: [...old.items, wall] };
+  const run = (state: typeof oldState) => readSave(JSON.stringify({ version: 13, savedAt: 0, state }));
+
+  it('puts every floor item on the nearest valid cells, keeps wall items where they are, riders on their surface', () => {
+    const r = run(oldState);
+    expect(r).toMatchObject({ ok: true, version: 13, migrated: true, returnedToBag: 0 });
+    if (!r.ok) return;
+    const room = r.state.rooms.find((x) => x.id === hotelId)!;
+    const here = r.state.items.filter((i) => i.roomId === hotelId);
+    for (const i of here.filter((x) => x.onItemUid === null && !getFurnitureType(x.typeId).wall)) {
+      const t = getFurnitureType(i.typeId);
+      expect(isOnGrid(i, t), i.typeId).toBe(true);
+      expect(canPlace(room, here.filter((o) => o.uid !== i.uid), t, i.x, i.y, i.facing), i.typeId).toBe(true);
+    }
+    // Near where they were: the chair (203, 197) is within a cell or two.
+    const chair = here.find((i) => i.typeId === 'chair')!;
+    expect(Math.hypot(chair.x - 203, chair.y - 197)).toBeLessThanOrEqual(32);
+    // The lamp rides the table, on a cell of it.
+    const t = here.find((i) => i.typeId === 'table')!;
+    const lamp = here.find((i) => i.typeId === 'lamp')!;
+    expect(lamp.onItemUid).toBe(t.uid);
+    const top = footprintRect(t, getFurnitureType('table'));
+    const fp = footprintRect(lamp, getFurnitureType('lamp'));
+    expect(fp.x >= top.x && fp.y >= top.y && fp.x + fp.w <= top.x + top.w && fp.y + fp.h <= top.y + top.h).toBe(true);
+    expect(isOnGrid(lamp, getFurnitureType('lamp'))).toBe(true);
+    // The wall item did not move.
+    expect(here.find((i) => i.typeId === 'wall_torch')).toMatchObject({ x: 133, y: 0 });
+    // The shop's counter is still exactly one, in the shop.
+    expect(r.state.items.filter((i) => i.typeId === 'counter' && i.roomId === shopId)).toHaveLength(1);
+  });
+
+  it('what no longer fits goes back to the bag, and the count is reported (also its riders)', () => {
+    const outside = piece('crate', hotelId, 2000, 2000); // far off the floor, nowhere near a free cell
+    const rider = piece('lamp', hotelId, 2000, 1990, outside.uid);
+    const blocker = (c: number, r: number) => piece('plant', hotelId, c * 32 + 16, (r + 1) * 32);
+    const r = run({ ...oldState, items: [...oldState.items, outside, rider] });
+    expect(r).toMatchObject({ ok: true });
+    if (!r.ok) return;
+    expect(r.returnedToBag).toBe(2); // the crate and the lamp on it
+    expect(r.state.items.find((i) => i.uid === outside.uid)).toMatchObject({ roomId: null });
+    expect(r.state.items.find((i) => i.uid === rider.uid)).toMatchObject({ roomId: null, onItemUid: null });
+    // A full room: nothing fits, so the extra item goes back to the bag.
+    const room = createRoom(hotelId, 'hotel', 1, 1);
+    const cells = Array.from({ length: room.w / 32 }, (_, c) => c).flatMap((c) => Array.from({ length: room.h / 32 }, (_, rr) => [c, rr] as const));
+    const crowd = cells.filter(([c, rr]) => !(c >= 8 && c <= 9 && rr >= 10)).map(([c, rr]) => blocker(c, rr));
+    const full = { ...base, items: [...base.items, ...crowd, piece('chair', hotelId, 203, 197)] };
+    const r2 = run(full);
+    expect(r2).toMatchObject({ ok: true });
+    if (!r2.ok) return;
+    // Walking in must stay possible and everything on the floor is valid; some items went back to the bag.
+    expect(r2.returnedToBag).toBeGreaterThan(0);
+    const inBag = r2.state.items.filter((i) => i.roomId === null).length;
+    expect(inBag).toBeGreaterThanOrEqual(r2.returnedToBag);
+  });
+
+  it('the room sizes come from the cell data (a wide hall was 240 high, now 8 cells)', () => {
+    const wide = { ...oldState, rooms: oldState.rooms.map((x) => (x.id === hotelId ? { ...x, shape: 'wide_hall', w: 832, h: 240 } : x)), items: [] as FurnitureItem[] };
+    const r = run(wide);
+    expect(r).toMatchObject({ ok: true });
+    if (!r.ok) return;
+    expect(r.state.rooms.find((x) => x.id === hotelId)).toMatchObject({ shape: 'wide_hall', w: 832, h: 256 });
   });
 });

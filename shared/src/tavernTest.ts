@@ -29,10 +29,10 @@ export function withItem(s: GameState, uid: number, typeId: string, x: number, y
   return { ...s, items: [...s.items, { uid, typeId, ownerId: 1, roomId: s.tavern.roomId, x, y, facing, onItemUid: null }] };
 }
 
-/** A long table with 3 stools above it: 3 more seats at one table (uids 50..53). */
+/** A long table (4 x 1 cells: columns 1..4, row 7) with 3 stools above it: 3 more seats at one table (uids 50..53). */
 export function withLongTable(s: GameState): GameState {
-  s = withItem(s, 50, 'long_table', 120, 260);
-  for (let k = 0; k < 3; k++) s = withItem(s, 51 + k, 'bar_stool', 80 + k * 40, 216);
+  s = withItem(s, 50, 'long_table', 96, 256);
+  for (let k = 0; k < 3; k++) s = withItem(s, 51 + k, 'bar_stool', 48 + k * 32, 224);
   return s;
 }
 

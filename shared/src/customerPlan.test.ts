@@ -100,6 +100,6 @@ describe('the customers\' nav grid (staff only)', () => {
     expect(inStaffZone([zone], end)).toBe(false);
     const cell = cellAt(g, end);
     expect(isCellFree(g, cell.c, cell.r)).toBe(true);
-    expect(Math.hypot(end.x - 148, end.y - 60)).toBeLessThan(40);
+    expect(Math.hypot(end.x - 148, end.y - 60)).toBeLessThan(48);
   });
 });

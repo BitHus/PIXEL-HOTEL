@@ -4,14 +4,14 @@
 //   with the item like standPoint. A sitting avatar faces the way the item faces; a lying
 //   avatar's head points to the pillow end (headDirection).
 // - Every seat has four approach points, one on each side of the footprint, just outside it at
-//   AVATAR_RADIUS distance and level with the seat. The avatar walks to the reachable one with
+//   half a cell away (the middle of the neighbouring cell) and level with the seat. The avatar walks to the reachable one with
 //   the shortest real route (findPath's smoothed path plus the slide onto the seat; ties within
 //   APPROACH_TIE_PX go to the one nearest the tap), then slides onto the seat (no pathfinding
 //   for that last bit).
 // - Long items have several seats: the free seat nearest to the tap is taken. `taken` lists the
 //   seat indices other avatars use (prepared for more avatars).
 
-import { APPROACH_REACH_PX, APPROACH_TIE_PX, AVATAR_RADIUS } from './config.ts';
+import { APPROACH_REACH_PX, APPROACH_TIE_PX, BUILD_CELL } from './config.ts';
 import { footprintRect, footprintSize, rotateQuarter, type Pose } from './furniture.ts';
 import { cellAt, cellCenter, findPath, isCellFree, nearestFreeCell, type NavGrid } from './nav.ts';
 import { pathLength } from './avatar.ts';
@@ -55,7 +55,7 @@ export function headPoint(spot: SeatSpot, headPx: number): Point {
 /** The four approach points of a seat: below, left, right and above the footprint. */
 export function approachPoints(item: Pose, type: FurnitureType, seat: Point): Point[] {
   const fp = footprintRect(item, type);
-  const r = AVATAR_RADIUS;
+  const r = BUILD_CELL / 2;
   const sx = Math.min(fp.x + fp.w, Math.max(fp.x, seat.x));
   const sy = Math.min(fp.y + fp.h, Math.max(fp.y, seat.y));
   return [
@@ -86,8 +86,8 @@ export interface Approach {
 /**
  * Every reachable approach point of the seat, each with the real path from `from` (findPath,
  * smoothed). A point counts as reached when the walk ends within APPROACH_REACH_PX of it (its own
- * cell is usually blocked, being only AVATAR_RADIUS from the item, so the walk ends in the nearest
- * free cell; a point in a gap as wide as the avatar still counts).
+ * cell is blocked, the walk ends in the nearest free cell, which is a whole cell or more away, so
+ * that approach does not count).
  */
 export function approaches(grid: NavGrid, from: Point, item: Pose, type: FurnitureType, seat: Point): Approach[] {
   const out: Approach[] = [];

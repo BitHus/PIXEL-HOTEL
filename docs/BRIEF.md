@@ -9,8 +9,8 @@ here and in CLAUDE.md.
 A browser game with these parts:
 - Hotel: top-down pixel-art rooms in the style of Travellers Rest (you look down at the room
   with a slight front angle, you see the top and front of things). Players walk around as an
-  avatar, chat in bubbles, and place furniture anywhere they like in the room. There is no
-  tile grid.
+  avatar, chat in bubbles, and build per cell on a 32 px grid (step BG1, owner's decision 15 Nov;
+  wall items stay free along the back wall).
 - Dungeon: a random real-time dungeon where clicking fast is the game. Loot comes from
   chests. Enemies are the danger: they give xp (the player levels up) and rarely a special
   drop.
@@ -71,9 +71,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   (the zooms above where zoom * devicePixelRatio is whole) nearest to 3 real pixels per art
   pixel (INTRO_DEVICE_PX_PER_ART_PX), ending centered on the avatar. A tap, a drag, a pinch or
   the wheel during the intro skips it (the camera stays where it is).
-- The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
-  grids exist only inside the code and are never shown: the navigation grid (8 px cells,
-  section 6) and the dungeon's 32 px blocks (section 10).
+- BUILD GRID (step BG1): rooms are cell maps of BUILD_CELL = 32 px. Floor furniture, floor
+  paint and navigation use it (sections 5, 6, 7); wall items stay free. The grid is drawn faintly
+  only while placing furniture or painting floors (a Settings toggle, pref cellGrid). Avatars
+  still move in pixels between cell centres. The dungeon keeps its own grids (32 px blocks,
+  16 px nav cells; section 10).
 - Pixel-perfect: no texture smoothing, and sprites are drawn at whole world pixels. At a zoom
   that is not a whole number some art pixels are 1 screen px wider than others, and below
   zoom 1 some art pixels are skipped; that is accepted (owner's choice, step 2).
@@ -87,12 +89,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   counter and stall_table stand). Each level's floor fully contains the previous level's floor,
   so upgrades never cut off furniture. Shapes: square (the old rectangle; 'square' for the hotel,
   'square_shop' for the shop), long (narrow and long), l_shape, plus (a cross) and wide_hall
-  (wide and shallow), each with 3 levels, all about the same area at level 1, 16 px aligned.
-- Walls: every floor edge that faces up gets the 64 px back wall band (WALL_BAND) above it;
+  (wide and shallow), each with 3 levels, all about the same area at level 1. The data is in whole CELLS (the old
+  16 px numbers were rounded up to cells; each level still contains the previous one; the door
+  is at a cell boundary).
+- Walls: every floor edge that faces up gets the back wall band (WALL_BAND = 2 cells = 64 px) above it;
   all other outside edges get the thin 16 px border. Inner corners are drawn cleanly. The
   floor is a seamless repeating texture, not a tile map.
-- The door is a 64 px wide opening in the border under a bottom edge, at the x from the shape
-  data. The DOOR ZONE is a 64 x 48 px rectangle on the floor just inside it. Nothing can be
+- The door is a 2-cell (64 px) wide opening in the border under a bottom edge, at the x from the
+  shape data. The DOOR ZONE is the 2 x 2 cells of floor just inside it. Nothing can be
   placed on the door zone. Avatars enter and leave through it, walking up from the bottom of
   the screen.
 - The player picks one shape for the hotel and one for the shop when a new game starts. Later
@@ -125,11 +129,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 6. MOVEMENT
 - Click the floor: the avatar walks there. Click an item with seats: it walks to the
   nearest free side of the item it can reach and sits or lies (step 5b).
-- Navigation uses an internal grid of 8 px cells (NAV_CELL), rebuilt when furniture changes.
-  A cell is blocked if it is outside the floor or inside the footprint of an item with
-  blocks = true, with the footprint made bigger by the avatar radius (AVATAR_RADIUS 4 px;
-  owner's decision after 9d: a gap of 24 px between two items is always walkable, and the
-  avatar may overlap furniture edges a little). A* with 8
+- Navigation (step BG1) uses the build grid: cells of NAV_CELL = BUILD_CELL = 32 px, rebuilt when
+  furniture changes. A cell is blocked if any part of it is outside the floor or a footprint of
+  an item with blocks = true touches it. There is no avatar radius (AVATAR_RADIUS is gone):
+  blockers are whole cells, so a gap of ONE free cell is walkable. Avatars still walk in pixels
+  between cell centres at the same speed. A* with 8
   directions and no corner cutting finds a cell path. Then the path is smoothed: a waypoint
   is removed when a straight line between its neighbours does not touch a blocked cell. The
   result is a list of world points, so avatars walk in straight lines, not in grid zigzags.
@@ -155,14 +159,24 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - (x, y) is the anchor: the bottom center of the footprint, in world px. The footprint
   rectangle runs from (x - fw/2, y - fd) to (x + fw/2, y). fw and fd are w and d when the
   facing is down or up, and d and w when it is left or right.
-- Placement is free: any x and y, snapped to 4 px (SNAP). Holding Shift turns snapping off.
-  A placement is valid if: the footprint is fully inside the floor; it does not overlap the
-  footprint of another item with blocks = true (items with blocks = false, like rugs, can
-  overlap anything and are drawn under everything); it does not touch the door zone; and the
-  door can still reach the middle of the room (navigation check). A wall item only moves
-  left and right and stays on the back wall band. An onSurface item can be put on a surface
-  item: it snaps to the nearest free spot on top, one level only, and it moves and returns
-  together with the item under it.
+- Placement is per cell (step BG1): a floor item's w and d are whole cells (type.w and type.d
+  are multiples of 32); its footprint stands on cells and the ghost snaps to the nearest cell
+  footprint. The anchor (x, y) is still the bottom centre of the footprint; the anchor CELL is
+  the bottom-centre cell (even widths: the left of the two centre cells). Rotation swaps w and
+  d and keeps the anchor cell. A placement is valid if: the footprint is fully on floor cells;
+  it does not overlap the footprint of another item with blocks = true (items with blocks =
+  false, like rugs and floor decor, are the background layer: they overlap anything and are
+  drawn under everything); it does not overlap the 2 x 2 cell door zone; and the door can still
+  reach the middle of the room. A WALL item stays free (owner, 15 Nov): it slides along a back
+  wall band at any x, 4 px snap (SNAP; Shift = whole px), its anchor y is the band's foot (its
+  art is drawn upward from there); not on the door. An onSurface item sits on a cell of a
+  surface item, one level only, and moves and returns together with the item under it.
+- Floors are painted per cell (BG1): Room.floorCells maps "col,row" to a floor style id; every
+  other cell has Room.floorStyle. Pick an unlocked floor in the Room panel and tap Paint cells:
+  tap a cell or drag a rectangle (free; the unlocked-forever rules stay). Wall styles stay one
+  per room. The shop's appeal uses the floor style on most cells.
+- Save migration 13 -> 14: every placed floor item moves to the nearest valid cell footprint,
+  wall items stay, what no longer fits goes back to the bag, and a notice says how many.
 - Draw order: floor, rugs, back wall, then ONE list of items and avatars sorted by y (the
   bottom of the footprint, or the avatar's feet), then x, then uid. An item on a surface is
   drawn right after the item under it.
@@ -520,7 +534,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   1 px dark outline. No anti-aliasing.
 - Sizes (px): avatar 32x64. Chair 32x48, table 64x56, sofa 80x56, bed 64x80, bookshelf
   56x80, lamp 24x48, plant 32x48, rug 80x56, barrel 40x48, crate 40x40, bench 64x40, desk
-  64x56. Chests 48x40. The anchor of every sprite is the bottom center of its footprint.
+  64x56. Chests 48x40. (Since BG1 the FOOTPRINTS are whole cells; these are art sizes.) The
+  anchor of every sprite is the bottom center of its footprint.
   Floors are a seamless 64x64 texture. The wall band is 64 px tall and repeats sideways.
   Dungeon blocks are 32x32. Icons for loot and materials are 32x32.
 - Until real sprites exist, art is drawn in code from boxes. Placeholder shading may compute
