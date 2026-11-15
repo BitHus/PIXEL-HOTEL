@@ -14,6 +14,10 @@ import {
   GUEST_ORDER_AFTER_MIN_MS,
   DRINK_TYPES,
   STOVE_BATCH_MAX,
+  TAP_CAP,
+  TAP_SLOTS,
+  POUR_MS,
+  PREP_BONUS,
   cookMs,
   getMaterialType,
   type MaterialId,
@@ -262,3 +266,22 @@ for (const m of [5, 10, 20, 30, 45, 60]) {
   console.log(pad(m, 9) + pad(f1(x.guests), 13) + pad(x.mugs, 7) + pad(x.dishes, 8) + f1(x.gold));
 }
 console.log(`Target: first 30 min ${TARGETS.firstHalfHourGold.min} to ${TARGETS.firstHalfHourGold.max} gold, first hour ${TARGETS.firstHourGold.min} to ${TARGETS.firstHourGold.max} gold (plus 100 start gold and a few dozen from the first dungeon run).`);
+
+console.log('\n=== T1. Taps and the kitchen: pours per hour, mugs per tap, dishes per batch with prep tables ===');
+console.log(`A tap stand has ${TAP_SLOTS} taps of ${TAP_CAP} mugs (${TAP_SLOTS * TAP_CAP} on a stand). Every drink order costs one pour of ${POUR_MS} ms at the bar before the walk to the table.`);
+console.log(pad('appeal', 8) + pad('orders/h (all guests)', 24) + pad('pour time/h (s)', 18) + pad('taps emptied/h', 16) + 'minutes one full tap lasts');
+for (const appeal of [10, 30, 60, 100]) {
+  const perHour = GUESTS_PER_HOUR(appeal);
+  console.log(pad(appeal, 8) + pad(f1(perHour), 24) + pad(f1((perHour * POUR_MS) / 1000), 18) + pad(f1(perHour / TAP_CAP), 16) + f1((TAP_CAP / perHour) * 60));
+}
+console.log('Brews against the tap size (a brew that fits one tap needs one Load tap):');
+console.log(pad('drink', 16) + pad('mugs/brew', 11) + pad('taps per brew', 15) + 'brews per full stand');
+for (const d of DRINK_TYPES) console.log(pad(d.id, 16) + pad(d.mugs, 11) + pad(f1(d.mugs / TAP_CAP), 15) + f1((TAP_SLOTS * TAP_CAP) / d.mugs));
+console.log(`Prep tables (kitchen zone, next to a stove inside it): +${PREP_BONUS.perTable} dish per table, at most +${PREP_BONUS.max}; the extra dishes cost no crops.`);
+console.log(pad('prep tables', 13) + pad('dishes per batch', 18) + 'vs no prep table');
+for (let n = 0; n <= PREP_BONUS.max + 1; n++) {
+  const bonus = Math.min(PREP_BONUS.max, n * PREP_BONUS.perTable);
+  const dishes = STOVE_BATCH_MAX + bonus;
+  console.log(pad(n, 13) + pad(dishes, 18) + `x${(dishes / STOVE_BATCH_MAX).toFixed(2)} dishes for the same crops`);
+}
+console.log('A kitchen costs appeal-giving furniture, floor cells and three catalog buys, so +50% dishes for a full prep corner is a convenience, not a new gold source: crops stay the limit (K1 note above).');

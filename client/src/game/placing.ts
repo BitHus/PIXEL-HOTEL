@@ -2,8 +2,9 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  styleKey, getFurnitureType, screenToWorld, type Camera, type FurnitureItem, type ItemsResult, type Point,
+  styleKey, getFurnitureType, kitchenRect, screenToWorld, type Camera, type FurnitureItem, type ItemsResult, type Point,
 } from '@pixel-hotel/shared';
+import { drawKitchenTint } from '../render/kitchenTint.ts';
 import { Placer } from '../build/placer.ts';
 import { createPlaceBar } from '../ui/placeBar.ts';
 import { createItemMenu } from '../ui/itemMenu.ts';
@@ -13,7 +14,7 @@ import { savePrefs } from '../api/prefs.ts';
 import type { G5 } from './ctx.ts';
 
 export async function setupPlacing(g: G5) {
-  const { itemViews, atmosphere, roomChanged, api, sound, view, cellGrid, prefs, ui, storage, app, st, late } = g;
+  const { itemViews, atmosphere, roomChanged, api, sound, view, cellGrid, kitchenLayer, prefs, ui, storage, app, st, late, panels } = g;
 
   // ---------- Placing and the item menu ----------
   /** The intro's state: while it runs, the gold and the hint wait, and some items are hidden. */
@@ -64,11 +65,21 @@ late.placer = placer;
   /** The floors the paint bar offers: the farm paints soil and grass (free), other rooms the unlocked floors. */
   const paintableStyles = (): readonly string[] => (st.room.kind === 'farm' ? [styleKey('floor', 'soil'), styleKey('floor', 'grass')] : st.unlockedStyles);
   /** The grid shows while placing or painting (unless it is switched off in Settings). */
+  let kitchenKey = '';
   const syncGrid = (): void => {
     cellGrid.visible = prefs.cellGrid && (placer.active || paint.active || st.selectedBlock !== null);
+    // The kitchen tint (step T1b) shows with the grid, and while the Room panel is open; redrawn when the room or its level changes.
+    const zone = kitchenRect(st.room);
+    const key = zone ? `${st.room.id}:${st.room.shape}:${st.room.level}` : '';
+    if (key !== kitchenKey) {
+      kitchenKey = key;
+      drawKitchenTint(kitchenLayer, zone ? [zone] : []);
+    }
+    kitchenLayer.visible = zone !== null && ((prefs.cellGrid && (placer.active || paint.active)) || panels.open === 'room');
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     ui.classList.toggle('painting', paint.active);
   };
+  panels.onChange(syncGrid);
   const paint: FloorPaint = new FloorPaint({
     getRoom: () => st.room,
     paint: async (from, to, id) => {

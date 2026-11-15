@@ -901,7 +901,7 @@
     "appeal": 8,
     "w": 96,
     "d": 32,
-    "height": 70,
+    "height": 64,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -950,24 +950,6 @@
           "z": 6,
           "h": 16,
           "color": 4
-        },
-        {
-          "dx": 12,
-          "dy": -11,
-          "w": 26,
-          "d": 11,
-          "z": 32,
-          "h": 10,
-          "color": 31
-        },
-        {
-          "dx": 14,
-          "dy": -19,
-          "w": 22,
-          "d": 5,
-          "z": 42,
-          "h": 4,
-          "color": 10
         }
       ]
     },

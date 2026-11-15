@@ -217,6 +217,8 @@ CAN RUN IN PARALLEL (coder with artist): any coder task with its ART task; MA-1 
 CANNOT: two coder tasks (save.ts and config.ts are shared hot files); T1 and K2 (same tavern files); 9g-4 before K2.
 
 ## 6. Fixes the old prompts need (the lead applies these when pasting a prompt)
+STATUS 15 Nov after T1a/T1b: the T1 items below are DONE (register item, 7 ale start, taps in shared/src/taps.ts, kitchen zone). They are now applied
+in docs/QUEUE.md, which has the refreshed K2, MB-2, MB-3 and 9g-1 prompts (ready to paste). Use QUEUE.md, not the old NEXT-STEPS prompts, for those four.
 - T1: the till is a box inside the counter's art and bar.ts tillPoint; the register as a separate item must replace it. The
   old-save migration in the prompt says "6 root ale"; S3 made it 7. Start items live in config TAVERN_START_ITEMS + roomShapes.json shopStart.
 - K2: written before T1; casks feed taps now (aged and vintage ids are tap-loadable, nothing special). Slots are 3 casks per rack.

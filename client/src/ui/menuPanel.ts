@@ -23,6 +23,8 @@ export interface MenuHooks {
   toggle(id: MaterialId, on: boolean): void;
   /** One tap of - (dir -1) or + (dir 1) on a price. */
   step(id: MaterialId, dir: 1 | -1): void;
+  /** Open the Taps panel (step T1): a drink is only on the menu while a tap holds it. */
+  openTaps(): void;
   /** The player tapped Sell 1 or Sell all on a row of the Sell tab. */
   sell(row: SellRow, qty: number): void;
 }
@@ -68,6 +70,13 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     return row;
   };
 
+  /** The line under a menu row: drinks say what stands on a tap (step T1), dishes what is in stock. */
+  const stockLine = (r: MenuRowView): string => {
+    if (getMaterialType(r.id).group !== 'drink') return r.stock === 0 ? 'Out of stock: it is off the menu until you have more.' : `Worth ${r.baseValue} gold.`;
+    if (r.stock > 0) return `${r.onTap} on a tap. Worth ${r.baseValue} gold.`;
+    return r.inBag > 0 ? `${r.inBag} in your bag, but none on a tap: load a tap to put it on the menu.` : 'No mug on a tap: it is off the menu until you load a tap.';
+  };
+
   const menuRow = (r: MenuRowView): HTMLElement => {
     const row = el('div', `catalog-row menu-row${r.on && r.stock > 0 ? '' : ' off'}`);
     const hint = priceHint(r.price, r.baseValue);
@@ -83,7 +92,7 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     const last = r.history.slice(-MENU_HISTORY_LENGTH);
     info.append(
       rankName('div', 'catalog-name', `${getMaterialType(r.id).name} (${r.stock})`, r.id),
-      el('div', 'catalog-sub', r.stock === 0 ? 'Out of stock: it is off the menu until you have more.' : `Worth ${r.baseValue} gold.`),
+      el('div', 'catalog-sub', stockLine(r)),
       price,
       hintLine,
       el('div', 'catalog-sub', last.length > 0 ? `Guests paid: ${last.join(', ')}` : 'Nobody paid for it yet.'),
@@ -111,6 +120,7 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     }
     const empty = !rows.some((r) => r.on && r.stock > 0);
     list.replaceChildren(
+      textButton('Taps', () => hooks.openTaps()),
       ...(empty ? [el('div', 'panel-info', EMPTY_MENU_HELP)] : [el('div', 'panel-info', 'Guests order what is on the menu and in stock. If a price is too high they take something cheaper, or nothing.')]),
       ...rows.map(menuRow),
     );

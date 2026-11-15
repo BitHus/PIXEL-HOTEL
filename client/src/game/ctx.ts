@@ -54,6 +54,8 @@ export interface State {
   pendingStove: number | null;
   /** A brewing barrel the avatar is walking to (step 9t C): the tap is finished on arrival. */
   pendingBarrel: number | null;
+  /** A tap stand the avatar is walking to (step T1): the tap is finished on arrival. */
+  pendingStand: number | null;
   walkHold: boolean;
   walkHoldCell: string;
   shiftHeld: boolean;

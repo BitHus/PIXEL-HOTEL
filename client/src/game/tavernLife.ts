@@ -4,10 +4,12 @@
 import {
   REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, SERVE_QUEUE_MAX, seatKey,
   tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
-  brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
+  brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, TAPS_INTRO_OLD, TAP_EMPTY_TEXT, TAP_REACH_PX, kitchenRect, type MenuRowView, type TapView, type MaterialId, type SellRow, sellWarning,
 } from '@pixel-hotel/shared';
 import { createBrewingPanel } from '../ui/brewingPanel.ts';
 import { createMenuPanel } from '../ui/menuPanel.ts';
+import { createTapsPanel } from '../ui/tapsPanel.ts';
+import { playPour } from '../render/pourEffect.ts';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { sellDetail, sellRowIcon } from '../ui/sellTab.ts';
 import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
@@ -20,7 +22,7 @@ import type { G9 } from './ctx.ts';
 
 export async function setupTavernLife(g: G9) {
   const {
-    api, view, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, follow, sprite, st, late, panels, walkTo,
+    api, view, itemViews, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, follow, sprite, st, late, panels, walkTo,
   } = g;
 
   // ---------- The tavern (step 9t): guests, orders, coins on the tables ----------
@@ -59,7 +61,9 @@ export async function setupTavernLife(g: G9) {
     syncTavern();
     refreshCooks();
     brewing.setBrews(st.tavern.brews);
+    taps.update(st.tavern.taps, st.inventory.materials);
     maybeIntro();
+    maybeTapsIntro();
     if (panels.open === 'menu') void refreshMenu();
   }
   // ---------- The kitchen (step K1): stoves cook batches in real time; a tap collects or opens the Cooking panel ----------
@@ -208,8 +212,50 @@ export async function setupTavernLife(g: G9) {
       if (row) void changeMenu(id, { price: stepPrice(row.price, row.baseValue, dir) });
     },
     sell: (row, qty) => void sellTap(row, qty),
+    openTaps: () => void openTapsPanel(),
   });
   panels.add('menu', menuPanel.el);
+  // ---------- Taps (step T1): the tap stand on the bar holds mugs; guests only order what stands on a tap ----------
+  const taps = createTapsPanel(ui, {
+    load: (standUid, slot, drink, qty) => void changeTaps(api.loadTap(standUid, slot, drink, qty), 'Load'),
+    unload: (standUid, slot, qty) => void changeTaps(api.unloadTap(standUid, slot, qty), 'Unload'),
+  });
+  panels.add('taps', taps.el);
+  /** After a Load or Unload: the new taps are drawn, the bag and the Menu panel follow. */
+  async function changeTaps(call: Promise<TapView[] | null>, what: string): Promise<void> {
+    const next = await call;
+    if (!next) {
+      toast(`${what} did not work.`);
+      return;
+    }
+    sound.play('pop');
+    st.tavern = { ...st.tavern, taps: next };
+    await late.refreshInventory();
+    await refreshTavern();
+    taps.update(st.tavern.taps, st.inventory.materials);
+  }
+  async function openTapsPanel(): Promise<void> {
+    await refreshTavern();
+    taps.update(st.tavern.taps, st.inventory.materials);
+    panels.show('taps');
+  }
+  /** The avatar is next to the tap stand: the Taps panel opens. */
+  async function standArrived(_uid: number): Promise<void> {
+    await openTapsPanel();
+  }
+  /** A tap on a tap stand: walk next to it (when farther than TAP_REACH_PX), then the Taps panel opens. */
+  const standTap = (stand: FurnitureItem): void => {
+    const c = footprintCenter(stand, stand.typeId);
+    if (Math.hypot(st.avatar.x - c.x, st.avatar.y - c.y) <= TAP_REACH_PX) {
+      st.pendingStand = null;
+      void standArrived(stand.uid);
+      return;
+    }
+    void walkTo({ x: stand.x, y: stand.y + 16 }).then((ok) => {
+      if (!ok) toast('There is no way to the taps.');
+      else st.pendingStand = stand.uid;
+    });
+  };
   /** A tap on the bar: the Menu panel opens (Serve tab when orders wait, else Menu). Only in the tavern. */
   const barTap = (): void => {
     if (!inTavern()) return;
@@ -224,6 +270,15 @@ export async function setupTavernLife(g: G9) {
     toast(TAVERN_INTRO_OLD);
     st.tavern = { ...st.tavern, introSeen: true };
     void api.markTavernIntroSeen();
+  }
+  /** The one-time toast for an old save about the register, the taps and the kitchen (step T1); after the tavern intro when both are new. */
+  let tapsIntroShown = false;
+  function maybeTapsIntro(): void {
+    if (tapsIntroShown || st.tavern.tapsIntroSeen || !inTavern() || !st.tavern.introSeen) return;
+    tapsIntroShown = true;
+    toast(TAPS_INTRO_OLD);
+    st.tavern = { ...st.tavern, tapsIntroSeen: true };
+    void api.markTapsIntroSeen();
   }
   /** A tap on a guest or an order bubble: the order is carried to the table (taps queue up, at most SERVE_QUEUE_MAX). */
   async function serveTap(guestId: number): Promise<void> {
@@ -256,6 +311,10 @@ export async function setupTavernLife(g: G9) {
     }
     if (hit && getFurnitureType(hit.typeId).brews) {
       barrelTap(hit);
+      return true;
+    }
+    if (hit && getFurnitureType(hit.typeId).taps) {
+      standTap(hit);
       return true;
     }
     return false;
@@ -324,8 +383,16 @@ export async function setupTavernLife(g: G9) {
         st.tavern = { ...st.tavern, serveQueue: e.queue };
         syncTavern();
         break;
+      case 'pour':
+        // The pour effect hangs on the tap stand; the clink sounds when the mug is full.
+        if (on) playPour(itemViews, e.standUid, e.ms, () => sound.play('clink'));
+        break;
+      case 'tap_empty':
+        if (on) toast(TAP_EMPTY_TEXT);
+        void refreshTavern();
+        break;
     }
   });
 
-  return { guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived };
+  return { guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, taps, stoveArrived, barrelArrived, standArrived };
 }

@@ -30,6 +30,8 @@ export const TAVERN_START_ITEMS = [
 export const TAP_SLOTS = 2;
 export const TAP_CAP = 12;
 export const POUR_MS = 800;
+/** A tap on a tap stand opens the Taps panel at once when the avatar is this close (px) to its centre; else the avatar walks next to it first. */
+export const TAP_REACH_PX = 64;
 /** The kitchen (step T1b): the furniture type that gives a stove its bonus, and the bonus: each prep table inside the kitchen zone and cell-adjacent to a
  *  stove that is inside it adds `perTable` dishes to every batch of that stove, at most `max` (the extra dishes cost no crops). */
 export const PREP_TABLE_ID = 'prep_table';

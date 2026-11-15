@@ -11,7 +11,7 @@ import type { G13 } from './ctx.ts';
 export async function setupRoomFlow(g: G13) {
   const {
     api, newIntro, syncItems, hint, info, sprite, uiRoot, itemViews, shown0, refreshHint, placer, paint, menu,
-    bubbles, chat, view, cellGrid, atmosphere, blockers, seating, roomChanged, roomLevels, roomFloats,
+    bubbles, chat, view, cellGrid, syncGrid, atmosphere, blockers, seating, roomChanged, roomLevels, roomFloats,
     lakeside, guests, tableMess, orders, syncTavern,
     refreshInventory, startIntro, fit, st, late, toast,
   } = g;
@@ -68,7 +68,7 @@ export async function setupRoomFlow(g: G13) {
     }
     if (!skipped && counter) {
       // The start gold flies from the bar to the gold counter, coin by coin.
-      const till = barCoinPoint(counter);
+      const till = barCoinPoint(counter, startItems);
       const target = info.coinTarget();
       let shown = 0;
       const per = Math.ceil(gold / INTRO_COINS);
@@ -111,6 +111,7 @@ export async function setupRoomFlow(g: G13) {
     st.bounds = roomBoundsRect(st.room);
     view.setRoom(st.room);
     cellGrid.setRoom(st.room);
+    syncGrid();
     atmosphere.setRoom(st.room);
     itemViews.setRoom(st.room.id);
     blockers.setRoom(st.room);

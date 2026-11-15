@@ -142,6 +142,7 @@ export async function setupPointerInput(g: G15) {
       st.pendingBlock = null;
       st.pendingStove = null;
       st.pendingBarrel = null;
+      st.pendingStand = null;
       lakeside.cancel();
       if (blockTap(st.marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).
@@ -149,11 +150,13 @@ export async function setupPointerInput(g: G15) {
       // The tavern (step 9t): a guest with an order, coins or a dish on a table, a brewing barrel.
       if (tavernTap(st.marked, hit)) return;
       // The bar: its Menu panel opens and the avatar walks behind it (the staff spot, like sitting).
-      if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
+      // The register on the bar (step T1) opens the same panel and walks behind the bar it stands on.
+      const bar = hit && getFurnitureType(hit.typeId).servedFromBehind ? hit : hit && hit.typeId === 'register' ? st.items.find((i) => i.uid === hit.onItemUid) : undefined;
+      if (bar) {
         barTap();
-        void serveAt(hit.uid).then((ok) => {
+        void serveAt(bar.uid).then((ok) => {
           if (ok) return;
-          itemViews.shake(hit.uid);
+          itemViews.shake(bar.uid);
           toast('There is no way to get behind the bar.');
         });
         return;

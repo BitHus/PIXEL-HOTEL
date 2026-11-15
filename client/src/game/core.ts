@@ -1,7 +1,7 @@
 // Boot: storage, API, new-game setup, the Pixi app, the room view (R1 split of main.ts: part 1 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { Application } from 'pixi.js';
+import { Application, Container } from 'pixi.js';
 import { PALETTE, roomBoundsRect } from '@pixel-hotel/shared';
 import { LocalGameAPI } from '../api/localGameAPI.ts';
 import { browserStorage } from '../api/saveStorage.ts';
@@ -77,6 +77,10 @@ export async function setupCore(g: G0) {
   const cellGrid = new CellGrid();
   view.gridLayer.addChild(cellGrid.container);
   cellGrid.setRoom(st.room);
+  // The kitchen tint (step T1b): the staff-only corner of the tavern, shown with the grid and while the Room panel is open.
+  const kitchenLayer = new Container({ eventMode: 'none' });
+  kitchenLayer.visible = false;
+  view.gridLayer.addChild(kitchenLayer);
   // Atmosphere step: the dark planks outside the room, then the room with its shadows and light.
   const backdrop = new Backdrop(app.renderer);
   app.stage.addChild(backdrop.container, view.world);
@@ -86,5 +90,5 @@ export async function setupCore(g: G0) {
   st.lightingOn = prefs.lighting;
   backdrop.container.visible = st.lightingOn;
 
-  return { splashGone, ui, uiRoot, storage, api, notice, prefs, sound, app, dpr, first, view, cellGrid, backdrop, atmosphere };
+  return { splashGone, ui, uiRoot, storage, api, notice, prefs, sound, app, dpr, first, view, cellGrid, kitchenLayer, backdrop, atmosphere };
 }

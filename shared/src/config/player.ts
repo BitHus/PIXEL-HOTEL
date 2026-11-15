@@ -60,7 +60,7 @@ export const FIRST_BUY_POP_MS = 220;
 export const HINTS = [
   'Open the Catalog and buy something with your 100 gold.',
   'Place it in your room.',
-  'Earn gold in your tavern: tap a guest who waits with an order to serve them, then tap the coins they leave. Brew root ale at the barrel or cook a roasted turnip at the stove to have more to serve.',
+  'Earn gold in your tavern: tap a guest who waits with an order to serve them, then tap the coins they leave. Brew root ale at the barrel and load it on a tap (tap the tap stand on the bar), or cook a roasted turnip at the stove, to have more to serve.',
   'Tap the Dungeon button for a run: chests and slimes give gold and loot to cook, brew, craft and build with. What you will not use, sell at the bar: tap the bar and open the Sell tab.',
   'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown (about 2 minutes). Punching blocks, plants and chests, and catching fish, drop gems.',
   'Gems buy packs. With 30 gems open the Catalog, the Packs tab, and open a Basic Seeds Pack: its odds are on the card.',
@@ -71,7 +71,15 @@ export const HINTS = [
 export const TAVERN_INTRO_OLD =
   'Your shop is a tavern now! Guests sit at a table, order from your menu, and wait for you: tap a guest to carry the order from the bar. Place the round table, the stools and the brewing barrel from your bag, tap the barrel to brew drinks from crops and tap the bar to set the menu. Cooking moved here too: dishes come from the stove.';
 /** A new game gets this short line after the intro. */
-export const TAVERN_INTRO_NEW = 'Welcome to your tavern! Guests sit and order: tap them to serve. Tap the bar for the menu and the barrel to brew.';
+export const TAVERN_INTRO_NEW = 'Welcome to your tavern! Guests sit and order: tap them to serve. Tap the register for the menu, the tap stand to load drinks and the barrel to brew.';
+/** The one-time toast for an old save (TavernState.tapsIntroSeen false): the bar got a register and taps, and the kitchen is a corner of its own (step T1). */
+export const TAPS_INTRO_OLD =
+  'Your bar has a register and a tap stand now! Guests only order a drink that stands on a tap: tap the tap stand and load it with mugs from your bag (the ones in your bag are not on the menu yet). Tap the register for the menu. The faint orange corner next to the stove is your kitchen: guests stay out of it, and prep tables next to the stove inside it add dishes to every batch.';
+/** Hints (step T1). */
+export const TAPS_HINT = 'Load a tap with a brewed drink: guests only order what stands on a tap.';
+export const REGISTER_HINT = 'Tap the register for the menu.';
+export const TAP_EMPTY_TEXT = 'Tap is empty. Load it from your bag, then tap the guest again.';
+export const KITCHEN_HINT = 'The orange corner is your kitchen: guests stay out. A prep table next to the stove inside it adds a dish to every batch (up to 2).';
 /** The index of the dungeon hint in HINTS: it shows while no run is going. */
 export const DUNGEON_HINT = 3;
 /** The index of the farm hint (step 9b): done by planting anything. */
