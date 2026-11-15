@@ -7,6 +7,7 @@
 
 import gearData from '../data/gear.json';
 import forgeData from '../data/forge.json';
+import type { Icon } from './icons.ts';
 import type { BarId, GearId, Rank } from './types.ts';
 
 export type GearSlot = 'weapon' | 'armor' | 'pickaxe' | 'axe' | 'rod';
@@ -19,6 +20,8 @@ interface PieceBase {
   needs: GearId | null;
   /** Bars it costs at the forge. */
   bars: Partial<Record<BarId, number>>;
+  /** The square icon (step BG2). */
+  icon: Icon;
 }
 export interface WeaponType extends PieceBase {
   slot: 'weapon';
@@ -59,6 +62,7 @@ export interface PotionType {
   name: string;
   kind: 'potion';
   price: number;
+  icon: Icon;
   heal: number;
   cooldownMs: number;
   carryMax: number;

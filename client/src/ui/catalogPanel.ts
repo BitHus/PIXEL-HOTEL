@@ -9,9 +9,13 @@ import { rankName } from './rank.ts';
 import {
   STYLE_TYPES,
   getCropType,
+  seedGrowMs,
   seedsForSale,
+  type BlockType,
   type CropType,
   type SeedId,
+  blockPrice,
+  catalogBlocks,
   catalogPrice,
   catalogTypes,
   fitsRoomKind,
@@ -27,13 +31,15 @@ import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
 import { panelShell, priceTag, tabBar } from './panelShell.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
-export type CatalogTab = 'home' | 'shop' | 'decor' | 'seeds';
+export type CatalogTab = 'home' | 'shop' | 'decor' | 'blocks' | 'seeds';
 
 export interface CatalogHooks {
   buyItem(typeId: string): void;
   buyStyle(kind: StyleKind, id: string): void;
   /** Asks first; the confirm panel offers 1 or a pack. */
   buySeeds(seed: SeedId): void;
+  /** Asks first; the confirm panel offers 1 or a pack (step BG5). */
+  buyBlock(id: string): void;
 }
 
 export interface CatalogPanel {
@@ -45,14 +51,17 @@ const TABS = [
   ['home', 'chair', 'Home'],
   ['shop', 'coin', 'Shop'],
   ['decor', 'house', 'Decor'],
+  ['blocks', 'hammer', 'Blocks'],
   ['seeds', 'sprout', 'Seeds'],
 ] as const;
 
 /** Where a furniture type goes, in words (for the confirm panel). */
 export const WHERE: Record<FurnitureType['placeIn'], string> = { hotel: 'the hotel room', shop: 'the shop', both: 'the hotel room or the shop' };
 
+/** How long a seed takes to be fully grown, in words (step BG6: by rank, config SEED_GROW_MS). */
 export function growText(c: CropType): string {
-  return c.growMinutes >= 60 ? `${c.growMinutes / 60} h` : `${c.growMinutes} min`;
+  const min = Math.round(seedGrowMs(c.seed) / 60_000);
+  return min >= 60 ? `${min / 60} h` : `${min} min`;
 }
 
 export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): CatalogPanel {
@@ -98,12 +107,19 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   const seedCard = (c: CropType): HTMLElement => card(materialIconUrl(c.seed), c.seedName, c.seedPrice ?? 0, null, false, () => hooks.buySeeds(c.seed), c.seed);
 
+  const blockCard = (b: BlockType): HTMLElement => card(materialIconUrl(b.id), b.name, blockPrice(b.id), `${b.hardness} hit${b.hardness === 1 ? '' : 's'}`, false, () => hooks.buyBlock(b.id), b.id);
+
   const draw = (): void => {
     markTab(tab);
     list.replaceChildren();
-    note.hidden = tab !== 'seeds';
+    note.hidden = tab !== 'seeds' && tab !== 'blocks';
+    if (tab === 'blocks') {
+      note.textContent = 'Select a block in the hotbar, tap a free cell to place it, tap a block to punch it. More kinds drop from punching.';
+      for (const b of catalogBlocks()) list.appendChild(blockCard(b));
+      return;
+    }
     if (tab === 'seeds') {
-      note.textContent = `Plant seeds on your farm. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`;
+      note.textContent = `Plant seeds in the soil of your farm and punch them when grown. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`;
       for (const c of seedsForSale()) list.appendChild(seedCard(c));
       return;
     }

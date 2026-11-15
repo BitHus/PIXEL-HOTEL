@@ -56,6 +56,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "chair",
+      "colors": [
+        "oak",
+        "walnut"
+      ]
     }
   },
   {
@@ -66,9 +73,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 0,
-    "w": 80,
-    "d": 40,
-    "height": 62,
+    "w": 96,
+    "d": 32,
+    "height": 54,
     "blocks": true,
     "sittable": true,
     "surface": false,
@@ -86,13 +93,13 @@
     },
     "seats": [
       {
-        "dx": -17,
-        "dy": -18,
+        "dx": -20,
+        "dy": -14,
         "pose": "sit"
       },
       {
-        "dx": 17,
-        "dy": -18,
+        "dx": 20,
+        "dy": -14,
         "pose": "sit"
       }
     ],
@@ -102,41 +109,48 @@
     "art": {
       "boxes": [
         {
-          "dx": -38,
-          "dy": -34,
-          "w": 76,
-          "d": 6,
+          "dx": -46,
+          "dy": -27,
+          "w": 91,
+          "d": 5,
           "z": 0,
           "h": 22,
           "color": 5
         },
         {
-          "dx": -34,
+          "dx": -41,
           "dy": -2,
-          "w": 68,
-          "d": 32,
+          "w": 82,
+          "d": 26,
           "z": 0,
           "h": 10,
           "color": 4
         },
         {
-          "dx": -40,
+          "dx": -48,
           "dy": -2,
-          "w": 6,
-          "d": 38,
+          "w": 7,
+          "d": 30,
           "z": 0,
           "h": 16,
           "color": 5
         },
         {
-          "dx": 34,
+          "dx": 41,
           "dy": -2,
-          "w": 6,
-          "d": 38,
+          "w": 7,
+          "d": 30,
           "z": 0,
           "h": 16,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "sofa",
+      "colors": [
+        "crimson",
+        "red"
       ]
     }
   },
@@ -149,8 +163,8 @@
     "slots": 0,
     "appeal": 0,
     "w": 64,
-    "d": 40,
-    "height": 56,
+    "d": 32,
+    "height": 48,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -172,18 +186,18 @@
       "boxes": [
         {
           "dx": -30,
-          "dy": -34,
+          "dy": -27,
           "w": 4,
-          "d": 4,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
           "dx": 26,
-          "dy": -34,
+          "dy": -27,
           "w": 4,
-          "d": 4,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
@@ -192,7 +206,7 @@
           "dx": -30,
           "dy": -2,
           "w": 4,
-          "d": 4,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
@@ -201,7 +215,7 @@
           "dx": 26,
           "dy": -2,
           "w": 4,
-          "d": 4,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
@@ -210,11 +224,18 @@
           "dx": -32,
           "dy": 0,
           "w": 64,
-          "d": 40,
+          "d": 32,
           "z": 12,
           "h": 4,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "oak",
+        "tan"
       ]
     }
   },
@@ -231,9 +252,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 4,
-    "w": 24,
-    "d": 24,
-    "height": 47,
+    "w": 32,
+    "d": 32,
+    "height": 51,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -253,41 +274,48 @@
     "art": {
       "boxes": [
         {
-          "dx": -8,
-          "dy": -4,
-          "w": 16,
-          "d": 16,
+          "dx": -11,
+          "dy": -5,
+          "w": 21,
+          "d": 21,
           "z": 0,
           "h": 4,
           "color": 6
         },
         {
-          "dx": -2,
-          "dy": -10,
-          "w": 4,
-          "d": 4,
+          "dx": -3,
+          "dy": -13,
+          "w": 5,
+          "d": 5,
           "z": 4,
           "h": 22,
           "color": 5
         },
         {
-          "dx": -3,
-          "dy": -10,
-          "w": 6,
-          "d": 4,
+          "dx": -4,
+          "dy": -13,
+          "w": 8,
+          "d": 5,
           "z": 26,
           "h": 6,
           "color": 2
         },
         {
           "dx": -1,
-          "dy": -11,
-          "w": 2,
+          "dy": -15,
+          "w": 3,
           "d": 1,
           "z": 32,
           "h": 3,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "lamp",
+      "colors": [
+        "gold",
+        "butter"
       ]
     }
   },
@@ -299,9 +327,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 0,
-    "w": 80,
-    "d": 56,
-    "height": 56,
+    "w": 96,
+    "d": 64,
+    "height": 64,
     "blocks": false,
     "sittable": false,
     "surface": false,
@@ -322,32 +350,39 @@
     "art": {
       "boxes": [
         {
-          "dx": -40,
+          "dx": -48,
           "dy": 0,
-          "w": 80,
-          "d": 56,
+          "w": 96,
+          "d": 64,
           "z": 0,
           "h": 0,
           "color": 7
         },
         {
-          "dx": -34,
-          "dy": -6,
-          "w": 68,
-          "d": 44,
+          "dx": -41,
+          "dy": -7,
+          "w": 82,
+          "d": 50,
           "z": 0,
           "h": 0,
           "color": 0
         },
         {
-          "dx": -24,
-          "dy": -16,
-          "w": 48,
-          "d": 24,
+          "dx": -29,
+          "dy": -18,
+          "w": 58,
+          "d": 27,
           "z": 0,
           "h": 0,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "rug",
+      "colors": [
+        "crimson",
+        "gold"
       ]
     }
   },
@@ -408,6 +443,13 @@
           "color": 12
         }
       ]
+    },
+    "icon": {
+      "shape": "plant",
+      "colors": [
+        "green",
+        "clay"
+      ]
     }
   },
   {
@@ -418,9 +460,9 @@
     "placeIn": "hotel",
     "slots": 0,
     "appeal": 0,
-    "w": 56,
-    "d": 24,
-    "height": 80,
+    "w": 64,
+    "d": 32,
+    "height": 88,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -443,41 +485,48 @@
     "art": {
       "boxes": [
         {
-          "dx": -28,
+          "dx": -32,
           "dy": 0,
-          "w": 56,
-          "d": 24,
+          "w": 64,
+          "d": 32,
           "z": 0,
           "h": 56,
           "color": 5
         },
         {
-          "dx": -24,
+          "dx": -27,
           "dy": 0,
-          "w": 48,
+          "w": 55,
           "d": 0,
           "z": 6,
           "h": 10,
           "color": 7
         },
         {
-          "dx": -24,
+          "dx": -27,
           "dy": 0,
-          "w": 48,
+          "w": 55,
           "d": 0,
           "z": 22,
           "h": 10,
           "color": 14
         },
         {
-          "dx": -24,
+          "dx": -27,
           "dy": 0,
-          "w": 48,
+          "w": 55,
           "d": 0,
           "z": 38,
           "h": 10,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "walnut",
+        "oak"
       ]
     }
   },
@@ -489,9 +538,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 0,
-    "w": 40,
-    "d": 40,
-    "height": 62,
+    "w": 32,
+    "d": 32,
+    "height": 55,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -512,32 +561,39 @@
     "art": {
       "boxes": [
         {
-          "dx": -18,
+          "dx": -14,
           "dy": -2,
-          "w": 36,
-          "d": 36,
+          "w": 29,
+          "d": 29,
           "z": 0,
           "h": 24,
           "color": 4
         },
         {
-          "dx": -18,
+          "dx": -14,
           "dy": -2,
-          "w": 36,
+          "w": 29,
           "d": 0,
           "z": 4,
           "h": 3,
           "color": 6
         },
         {
-          "dx": -18,
+          "dx": -14,
           "dy": -2,
-          "w": 36,
+          "w": 29,
           "d": 0,
           "z": 17,
           "h": 3,
           "color": 6
         }
+      ]
+    },
+    "icon": {
+      "shape": "barrel",
+      "colors": [
+        "oak",
+        "steel"
       ]
     }
   },
@@ -549,9 +605,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 0,
-    "w": 40,
-    "d": 40,
-    "height": 60,
+    "w": 32,
+    "d": 32,
+    "height": 52,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -572,23 +628,30 @@
     "art": {
       "boxes": [
         {
-          "dx": -20,
+          "dx": -16,
           "dy": 0,
-          "w": 40,
-          "d": 40,
+          "w": 32,
+          "d": 32,
           "z": 0,
           "h": 20,
           "color": 31
         },
         {
-          "dx": -20,
+          "dx": -16,
           "dy": 0,
-          "w": 40,
+          "w": 32,
           "d": 0,
           "z": 9,
           "h": 2,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "box",
+      "colors": [
+        "tan",
+        "oak"
       ]
     }
   },
@@ -663,6 +726,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "bench",
+      "colors": [
+        "oak",
+        "sand"
+      ]
     }
   },
   {
@@ -674,8 +744,8 @@
     "slots": 0,
     "appeal": 0,
     "w": 64,
-    "d": 40,
-    "height": 56,
+    "d": 32,
+    "height": 48,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -701,7 +771,7 @@
           "dx": -30,
           "dy": -2,
           "w": 8,
-          "d": 36,
+          "d": 29,
           "z": 0,
           "h": 14,
           "color": 5
@@ -710,7 +780,7 @@
           "dx": 22,
           "dy": -2,
           "w": 8,
-          "d": 36,
+          "d": 29,
           "z": 0,
           "h": 14,
           "color": 5
@@ -719,11 +789,18 @@
           "dx": -32,
           "dy": 0,
           "w": 64,
-          "d": 40,
+          "d": 32,
           "z": 14,
           "h": 2,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "walnut",
+        "tan"
       ]
     }
   },
@@ -736,8 +813,8 @@
     "slots": 0,
     "appeal": 0,
     "w": 64,
-    "d": 80,
-    "height": 100,
+    "d": 96,
+    "height": 116,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -756,7 +833,7 @@
     "seats": [
       {
         "dx": 0,
-        "dy": -34,
+        "dy": -48,
         "pose": "lie"
       }
     ],
@@ -767,9 +844,9 @@
       "boxes": [
         {
           "dx": -32,
-          "dy": -76,
+          "dy": -91,
           "w": 64,
-          "d": 4,
+          "d": 5,
           "z": 0,
           "h": 20,
           "color": 5
@@ -778,25 +855,25 @@
           "dx": -32,
           "dy": 0,
           "w": 64,
-          "d": 76,
+          "d": 91,
           "z": 0,
           "h": 8,
           "color": 5
         },
         {
           "dx": -28,
-          "dy": -4,
+          "dy": -5,
           "w": 56,
-          "d": 68,
+          "d": 82,
           "z": 8,
           "h": 4,
           "color": 2
         },
         {
           "dx": -20,
-          "dy": -56,
+          "dy": -67,
           "w": 40,
-          "d": 12,
+          "d": 14,
           "z": 12,
           "h": 3,
           "color": 19,
@@ -804,14 +881,21 @@
         },
         {
           "dx": -28,
-          "dy": -4,
+          "dy": -5,
           "w": 56,
-          "d": 40,
+          "d": 48,
           "z": 12,
           "h": 1,
           "color": 7,
           "role": "cover"
         }
+      ]
+    },
+    "icon": {
+      "shape": "bed",
+      "colors": [
+        "crimson",
+        "cream"
       ]
     }
   },
@@ -828,9 +912,9 @@
     "placeIn": "shop",
     "slots": 0,
     "appeal": 8,
-    "w": 80,
-    "d": 40,
-    "height": 76,
+    "w": 96,
+    "d": 32,
+    "height": 70,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -854,53 +938,60 @@
     "art": {
       "boxes": [
         {
-          "dx": -40,
+          "dx": -48,
           "dy": 0,
-          "w": 80,
-          "d": 40,
+          "w": 96,
+          "d": 32,
           "z": 0,
           "h": 28,
           "color": 5
         },
         {
-          "dx": -40,
+          "dx": -48,
           "dy": 0,
-          "w": 80,
-          "d": 40,
+          "w": 96,
+          "d": 32,
           "z": 28,
           "h": 4,
           "color": 4
         },
         {
-          "dx": -36,
+          "dx": -43,
           "dy": 0,
-          "w": 72,
+          "w": 86,
           "d": 0,
           "z": 6,
           "h": 16,
           "color": 4
         },
         {
-          "dx": 10,
-          "dy": -14,
-          "w": 22,
-          "d": 14,
+          "dx": 12,
+          "dy": -11,
+          "w": 26,
+          "d": 11,
           "z": 32,
           "h": 10,
           "color": 31
         },
         {
-          "dx": 12,
-          "dy": -24,
-          "w": 18,
-          "d": 6,
+          "dx": 14,
+          "dy": -19,
+          "w": 22,
+          "d": 5,
           "z": 42,
           "h": 4,
           "color": 10
         }
       ]
     },
-    "servedFromBehind": true
+    "servedFromBehind": true,
+    "icon": {
+      "shape": "counter",
+      "colors": [
+        "walnut",
+        "oak"
+      ]
+    }
   },
   {
     "id": "stall_table",
@@ -910,9 +1001,9 @@
     "placeIn": "shop",
     "slots": 3,
     "appeal": 0,
-    "w": 80,
-    "d": 48,
-    "height": 64,
+    "w": 96,
+    "d": 64,
+    "height": 80,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -933,59 +1024,66 @@
     "art": {
       "boxes": [
         {
-          "dx": -38,
-          "dy": -42,
-          "w": 4,
-          "d": 4,
+          "dx": -46,
+          "dy": -56,
+          "w": 5,
+          "d": 5,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": 34,
-          "dy": -42,
-          "w": 4,
-          "d": 4,
+          "dx": 41,
+          "dy": -56,
+          "w": 5,
+          "d": 5,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": -38,
-          "dy": -2,
-          "w": 4,
-          "d": 4,
+          "dx": -46,
+          "dy": -3,
+          "w": 5,
+          "d": 5,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": 34,
-          "dy": -2,
-          "w": 4,
-          "d": 4,
+          "dx": 41,
+          "dy": -3,
+          "w": 5,
+          "d": 5,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": -40,
+          "dx": -48,
           "dy": 0,
-          "w": 80,
-          "d": 48,
+          "w": 96,
+          "d": 64,
           "z": 12,
           "h": 4,
           "color": 4
         },
         {
-          "dx": -40,
+          "dx": -48,
           "dy": 0,
-          "w": 80,
+          "w": 96,
           "d": 0,
           "z": 4,
           "h": 8,
           "color": 7
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "sand",
+        "oak"
       ]
     }
   },
@@ -997,9 +1095,9 @@
     "placeIn": "shop",
     "slots": 3,
     "appeal": 0,
-    "w": 72,
-    "d": 24,
-    "height": 80,
+    "w": 64,
+    "d": 32,
+    "height": 88,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -1022,45 +1120,45 @@
     "art": {
       "boxes": [
         {
-          "dx": -36,
+          "dx": -32,
           "dy": 0,
-          "w": 72,
-          "d": 24,
+          "w": 64,
+          "d": 32,
           "z": 0,
           "h": 56,
           "color": 5
         },
         {
-          "dx": -32,
+          "dx": -28,
           "dy": 0,
-          "w": 64,
+          "w": 57,
           "d": 0,
           "z": 4,
           "h": 48,
           "color": 6
         },
         {
-          "dx": -32,
+          "dx": -28,
           "dy": 0,
-          "w": 64,
+          "w": 57,
           "d": 0,
           "z": 6,
           "h": 2,
           "color": 4
         },
         {
-          "dx": -32,
+          "dx": -28,
           "dy": 0,
-          "w": 64,
+          "w": 57,
           "d": 0,
           "z": 24,
           "h": 2,
           "color": 4
         },
         {
-          "dx": -32,
+          "dx": -28,
           "dy": 0,
-          "w": 64,
+          "w": 57,
           "d": 0,
           "z": 42,
           "h": 2,
@@ -1070,18 +1168,25 @@
     },
     "slotSpots": [
       {
-        "dx": -14,
-        "dy": -44
+        "dx": -12,
+        "dy": -59
       },
       {
         "dx": 0,
-        "dy": -26
+        "dy": -35
       },
       {
-        "dx": 14,
-        "dy": -8
+        "dx": 12,
+        "dy": -11
       }
-    ]
+    ],
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "oak",
+        "tan"
+      ]
+    }
   },
   {
     "id": "display_case",
@@ -1091,7 +1196,7 @@
     "placeIn": "shop",
     "slots": 4,
     "appeal": 6,
-    "w": 72,
+    "w": 64,
     "d": 32,
     "height": 70,
     "blocks": true,
@@ -1116,27 +1221,27 @@
     "art": {
       "boxes": [
         {
-          "dx": -36,
+          "dx": -32,
           "dy": 0,
-          "w": 72,
+          "w": 64,
           "d": 32,
           "z": 0,
           "h": 20,
           "color": 5
         },
         {
-          "dx": -34,
+          "dx": -30,
           "dy": -2,
-          "w": 68,
+          "w": 60,
           "d": 28,
           "z": 20,
           "h": 16,
           "color": 20
         },
         {
-          "dx": -36,
+          "dx": -32,
           "dy": 0,
-          "w": 72,
+          "w": 64,
           "d": 32,
           "z": 36,
           "h": 2,
@@ -1146,22 +1251,29 @@
     },
     "slotSpots": [
       {
-        "dx": -24,
+        "dx": -21,
         "dy": -22
       },
       {
-        "dx": -8,
+        "dx": -7,
         "dy": -22
       },
       {
-        "dx": 8,
+        "dx": 7,
         "dy": -22
       },
       {
-        "dx": 24,
+        "dx": 21,
         "dy": -22
       }
-    ]
+    ],
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "sky",
+        "walnut"
+      ]
+    }
   },
   {
     "id": "sign",
@@ -1229,6 +1341,13 @@
           "color": 2
         }
       ]
+    },
+    "icon": {
+      "shape": "sign",
+      "colors": [
+        "oak",
+        "cream"
+      ]
     }
   },
   {
@@ -1288,6 +1407,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "banner",
+      "colors": [
+        "crimson",
+        "gold"
+      ]
     }
   },
   {
@@ -1298,9 +1424,9 @@
     "placeIn": "shop",
     "slots": 0,
     "appeal": 5,
-    "w": 80,
-    "d": 56,
-    "height": 56,
+    "w": 96,
+    "d": 64,
+    "height": 64,
     "blocks": false,
     "sittable": false,
     "surface": false,
@@ -1321,32 +1447,39 @@
     "art": {
       "boxes": [
         {
-          "dx": -40,
+          "dx": -48,
           "dy": 0,
-          "w": 80,
-          "d": 56,
+          "w": 96,
+          "d": 64,
           "z": 0,
           "h": 0,
           "color": 14
         },
         {
-          "dx": -34,
-          "dy": -6,
-          "w": 68,
-          "d": 44,
+          "dx": -41,
+          "dy": -7,
+          "w": 82,
+          "d": 50,
           "z": 0,
           "h": 0,
           "color": 13
         },
         {
-          "dx": -24,
-          "dy": -16,
-          "w": 48,
-          "d": 24,
+          "dx": -29,
+          "dy": -18,
+          "w": 58,
+          "d": 27,
           "z": 0,
           "h": 0,
           "color": 11
         }
+      ]
+    },
+    "icon": {
+      "shape": "rug",
+      "colors": [
+        "green",
+        "gold"
       ]
     }
   },
@@ -1416,6 +1549,13 @@
           "color": 21
         }
       ]
+    },
+    "icon": {
+      "shape": "chair",
+      "colors": [
+        "cream",
+        "sand"
+      ]
     }
   },
   {
@@ -1431,9 +1571,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 4,
-    "w": 24,
-    "d": 24,
-    "height": 32,
+    "w": 32,
+    "d": 32,
+    "height": 38,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -1453,32 +1593,39 @@
     "art": {
       "boxes": [
         {
-          "dx": -8,
-          "dy": -4,
-          "w": 16,
-          "d": 16,
+          "dx": -11,
+          "dy": -5,
+          "w": 21,
+          "d": 21,
           "z": 0,
           "h": 4,
           "color": 22
         },
         {
-          "dx": -6,
-          "dy": -8,
-          "w": 12,
-          "d": 10,
+          "dx": -8,
+          "dy": -11,
+          "w": 16,
+          "d": 13,
           "z": 4,
           "h": 10,
           "color": 2
         },
         {
-          "dx": -2,
-          "dy": -12,
-          "w": 4,
-          "d": 2,
+          "dx": -3,
+          "dy": -16,
+          "w": 5,
+          "d": 3,
           "z": 14,
           "h": 4,
           "color": 18
         }
+      ]
+    },
+    "icon": {
+      "shape": "lamp",
+      "colors": [
+        "cream",
+        "orange"
       ]
     }
   },
@@ -1491,8 +1638,8 @@
     "slots": 0,
     "appeal": 6,
     "w": 64,
-    "d": 40,
-    "height": 60,
+    "d": 32,
+    "height": 52,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -1516,7 +1663,7 @@
           "dx": -30,
           "dy": -2,
           "w": 60,
-          "d": 36,
+          "d": 29,
           "z": 0,
           "h": 16,
           "color": 6
@@ -1525,11 +1672,18 @@
           "dx": -32,
           "dy": 0,
           "w": 64,
-          "d": 40,
+          "d": 32,
           "z": 16,
           "h": 4,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "night",
+        "plum"
       ]
     }
   },
@@ -1604,6 +1758,13 @@
           "color": 10
         }
       ]
+    },
+    "icon": {
+      "shape": "torch",
+      "colors": [
+        "orange",
+        "walnut"
+      ]
     }
   },
   {
@@ -1615,8 +1776,8 @@
     "slots": 0,
     "appeal": 12,
     "w": 64,
-    "d": 56,
-    "height": 108,
+    "d": 64,
+    "height": 116,
     "blocks": true,
     "sittable": true,
     "surface": false,
@@ -1635,7 +1796,7 @@
     "seats": [
       {
         "dx": 0,
-        "dy": -24,
+        "dy": -27,
         "pose": "sit"
       }
     ],
@@ -1646,58 +1807,65 @@
       "boxes": [
         {
           "dx": -28,
-          "dy": -50,
+          "dy": -57,
           "w": 56,
-          "d": 6,
+          "d": 7,
           "z": 0,
           "h": 44,
           "color": 2
         },
         {
           "dx": -20,
-          "dy": -50,
+          "dy": -57,
           "w": 8,
-          "d": 6,
+          "d": 7,
           "z": 44,
           "h": 8,
           "color": 2
         },
         {
           "dx": 12,
-          "dy": -50,
+          "dy": -57,
           "w": 8,
-          "d": 6,
+          "d": 7,
           "z": 44,
           "h": 8,
           "color": 2
         },
         {
           "dx": -24,
-          "dy": -4,
+          "dy": -5,
           "w": 48,
-          "d": 46,
+          "d": 53,
           "z": 0,
           "h": 12,
           "color": 27
         },
         {
           "dx": -32,
-          "dy": -4,
+          "dy": -5,
           "w": 8,
-          "d": 50,
+          "d": 57,
           "z": 0,
           "h": 20,
           "color": 20
         },
         {
           "dx": 24,
-          "dy": -4,
+          "dy": -5,
           "w": 8,
-          "d": 50,
+          "d": 57,
           "z": 0,
           "h": 20,
           "color": 20
         }
+      ]
+    },
+    "icon": {
+      "shape": "throne",
+      "colors": [
+        "cream",
+        "sand"
       ]
     }
   },
@@ -1709,9 +1877,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 5,
-    "w": 16,
-    "d": 16,
-    "height": 28,
+    "w": 32,
+    "d": 32,
+    "height": 42,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -1731,32 +1899,39 @@
     "art": {
       "boxes": [
         {
-          "dx": -7,
-          "dy": -2,
-          "w": 14,
-          "d": 12,
+          "dx": -14,
+          "dy": -4,
+          "w": 28,
+          "d": 24,
           "z": 0,
           "h": 14,
           "color": 12
         },
         {
-          "dx": -5,
-          "dy": -4,
-          "w": 10,
-          "d": 8,
+          "dx": -10,
+          "dy": -8,
+          "w": 20,
+          "d": 16,
           "z": 14,
           "h": 2,
           "color": 2
         },
         {
-          "dx": -3,
-          "dy": -6,
-          "w": 6,
-          "d": 4,
+          "dx": -6,
+          "dy": -12,
+          "w": 12,
+          "d": 8,
           "z": 16,
           "h": 2,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "jar",
+      "colors": [
+        "lime",
+        "green"
       ]
     }
   },
@@ -1826,6 +2001,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "banner",
+      "colors": [
+        "plum",
+        "dusk"
+      ]
     }
   },
   {
@@ -1836,9 +2018,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 5,
-    "w": 24,
-    "d": 16,
-    "height": 32,
+    "w": 32,
+    "d": 32,
+    "height": 44,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -1858,41 +2040,48 @@
     "art": {
       "boxes": [
         {
-          "dx": -10,
-          "dy": -2,
-          "w": 20,
-          "d": 12,
+          "dx": -13,
+          "dy": -4,
+          "w": 27,
+          "d": 24,
           "z": 0,
           "h": 6,
           "color": 5
         },
         {
-          "dx": -7,
-          "dy": -4,
-          "w": 14,
-          "d": 8,
+          "dx": -9,
+          "dy": -8,
+          "w": 19,
+          "d": 16,
           "z": 6,
           "h": 14,
           "color": 2
         },
         {
-          "dx": -5,
-          "dy": -4,
-          "w": 4,
-          "d": 1,
+          "dx": -7,
+          "dy": -8,
+          "w": 5,
+          "d": 2,
           "z": 12,
           "h": 4,
           "color": 6
         },
         {
           "dx": 1,
-          "dy": -4,
-          "w": 4,
-          "d": 1,
+          "dy": -8,
+          "w": 5,
+          "d": 2,
           "z": 12,
           "h": 4,
           "color": 6
         }
+      ]
+    },
+    "icon": {
+      "shape": "skull",
+      "colors": [
+        "cream",
+        "slate"
       ]
     }
   },
@@ -1904,9 +2093,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 5,
-    "w": 40,
-    "d": 24,
-    "height": 53,
+    "w": 32,
+    "d": 32,
+    "height": 61,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -1926,41 +2115,48 @@
     "art": {
       "boxes": [
         {
-          "dx": -20,
+          "dx": -16,
           "dy": 0,
-          "w": 40,
-          "d": 24,
+          "w": 32,
+          "d": 32,
           "z": 0,
           "h": 16,
           "color": 4
         },
         {
-          "dx": -18,
+          "dx": -14,
           "dy": -1,
-          "w": 36,
+          "w": 29,
           "d": 1,
           "z": 16,
           "h": 3,
           "color": 19
         },
         {
-          "dx": -20,
-          "dy": -12,
-          "w": 40,
-          "d": 12,
+          "dx": -16,
+          "dy": -16,
+          "w": 32,
+          "d": 16,
           "z": 19,
           "h": 10,
           "color": 5
         },
         {
-          "dx": -3,
+          "dx": -2,
           "dy": 0,
-          "w": 6,
+          "w": 5,
           "d": 1,
           "z": 8,
           "h": 5,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "box",
+      "colors": [
+        "walnut",
+        "gold"
       ]
     }
   },
@@ -2030,6 +2226,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "banner",
+      "colors": [
+        "plum",
+        "gold"
+      ]
     }
   },
   {
@@ -2040,9 +2243,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 5,
-    "w": 24,
-    "d": 16,
-    "height": 36,
+    "w": 32,
+    "d": 32,
+    "height": 52,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -2062,28 +2265,28 @@
     "art": {
       "boxes": [
         {
-          "dx": -12,
+          "dx": -16,
           "dy": 0,
-          "w": 24,
-          "d": 16,
+          "w": 32,
+          "d": 32,
           "z": 0,
           "h": 4,
           "color": 5
         },
         {
-          "dx": -11,
-          "dy": -1,
-          "w": 22,
-          "d": 14,
+          "dx": -15,
+          "dy": -2,
+          "w": 29,
+          "d": 28,
           "z": 4,
           "h": 14,
           "color": 17
         },
         {
-          "dx": -12,
+          "dx": -16,
           "dy": 0,
-          "w": 24,
-          "d": 16,
+          "w": 32,
+          "d": 32,
           "z": 18,
           "h": 2,
           "color": 5
@@ -2097,6 +2300,13 @@
       "h": 3,
       "range": 13,
       "color": 9
+    },
+    "icon": {
+      "shape": "tank",
+      "colors": [
+        "sky",
+        "cyan"
+      ]
     }
   },
   {
@@ -2164,6 +2374,13 @@
           "h": 2,
           "color": 5
         }
+      ]
+    },
+    "icon": {
+      "shape": "fish",
+      "colors": [
+        "steel",
+        "oak"
       ]
     }
   },
@@ -2233,6 +2450,13 @@
           "color": 5
         }
       ]
+    },
+    "icon": {
+      "shape": "net",
+      "colors": [
+        "tan",
+        "sand"
+      ]
     }
   },
   {
@@ -2243,9 +2467,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 5,
-    "w": 16,
-    "d": 16,
-    "height": 25,
+    "w": 32,
+    "d": 32,
+    "height": 36,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -2265,28 +2489,28 @@
     "art": {
       "boxes": [
         {
-          "dx": -6,
-          "dy": -3,
-          "w": 12,
-          "d": 10,
+          "dx": -12,
+          "dy": -6,
+          "w": 24,
+          "d": 20,
           "z": 0,
           "h": 3,
           "color": 4
         },
         {
-          "dx": -5,
-          "dy": -4,
-          "w": 10,
-          "d": 8,
+          "dx": -10,
+          "dy": -8,
+          "w": 20,
+          "d": 16,
           "z": 3,
           "h": 9,
           "color": 29
         },
         {
-          "dx": -2,
-          "dy": -6,
-          "w": 4,
-          "d": 3,
+          "dx": -4,
+          "dy": -12,
+          "w": 8,
+          "d": 6,
           "z": 12,
           "h": 4,
           "color": 11
@@ -2297,6 +2521,13 @@
       "radius": 80,
       "color": 10,
       "flicker": 0.2
+    },
+    "icon": {
+      "shape": "lamp",
+      "colors": [
+        "rose",
+        "cream"
+      ]
     }
   },
   {
@@ -2308,8 +2539,8 @@
     "slots": 0,
     "appeal": 5,
     "w": 64,
-    "d": 24,
-    "height": 39,
+    "d": 32,
+    "height": 47,
     "blocks": true,
     "sittable": true,
     "surface": false,
@@ -2328,12 +2559,12 @@
     "seats": [
       {
         "dx": -16,
-        "dy": -10,
+        "dy": -13,
         "pose": "sit"
       },
       {
         "dx": 16,
-        "dy": -10,
+        "dy": -13,
         "pose": "sit"
       }
     ],
@@ -2344,18 +2575,18 @@
       "boxes": [
         {
           "dx": -30,
-          "dy": -2,
+          "dy": -3,
           "w": 6,
-          "d": 20,
+          "d": 27,
           "z": 0,
           "h": 10,
           "color": 5
         },
         {
           "dx": 24,
-          "dy": -2,
+          "dy": -3,
           "w": 6,
-          "d": 20,
+          "d": 27,
           "z": 0,
           "h": 10,
           "color": 5
@@ -2364,11 +2595,18 @@
           "dx": -32,
           "dy": 0,
           "w": 64,
-          "d": 24,
+          "d": 32,
           "z": 10,
           "h": 5,
           "color": 31
         }
+      ]
+    },
+    "icon": {
+      "shape": "bench",
+      "colors": [
+        "tan",
+        "steel"
       ]
     }
   },
@@ -2380,9 +2618,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 5,
-    "w": 24,
-    "d": 16,
-    "height": 39,
+    "w": 32,
+    "d": 32,
+    "height": 47,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -2402,32 +2640,39 @@
     "art": {
       "boxes": [
         {
-          "dx": -10,
-          "dy": -2,
-          "w": 20,
-          "d": 6,
+          "dx": -13,
+          "dy": -4,
+          "w": 27,
+          "d": 12,
           "z": 0,
           "h": 5,
           "color": 22
         },
         {
-          "dx": -2,
-          "dy": -4,
-          "w": 4,
-          "d": 4,
+          "dx": -3,
+          "dy": -8,
+          "w": 5,
+          "d": 8,
           "z": 5,
           "h": 26,
           "color": 22
         },
         {
-          "dx": -8,
-          "dy": -4,
-          "w": 16,
-          "d": 3,
+          "dx": -11,
+          "dy": -8,
+          "w": 21,
+          "d": 6,
           "z": 24,
           "h": 4,
           "color": 21
         }
+      ]
+    },
+    "icon": {
+      "shape": "anchor",
+      "colors": [
+        "steel",
+        "slate"
       ]
     }
   },
@@ -2511,6 +2756,13 @@
       "radius": 112,
       "color": 2,
       "flicker": 0.3
+    },
+    "icon": {
+      "shape": "chandelier",
+      "colors": [
+        "white",
+        "gold"
+      ]
     }
   },
   {
@@ -2521,7 +2773,7 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 10,
-    "w": 40,
+    "w": 32,
     "d": 32,
     "height": 92,
     "blocks": true,
@@ -2549,50 +2801,57 @@
     "art": {
       "boxes": [
         {
-          "dx": -20,
+          "dx": -16,
           "dy": 0,
-          "w": 40,
+          "w": 32,
           "d": 32,
           "z": 0,
           "h": 14,
           "color": 15
         },
         {
-          "dx": -20,
+          "dx": -16,
           "dy": -24,
-          "w": 40,
+          "w": 32,
           "d": 8,
           "z": 14,
           "h": 40,
           "color": 14
         },
         {
-          "dx": -20,
+          "dx": -16,
           "dy": 0,
-          "w": 6,
+          "w": 5,
           "d": 24,
           "z": 14,
           "h": 10,
           "color": 15
         },
         {
-          "dx": 14,
+          "dx": 11,
           "dy": 0,
-          "w": 6,
+          "w": 5,
           "d": 24,
           "z": 14,
           "h": 10,
           "color": 15
         },
         {
-          "dx": -8,
+          "dx": -6,
           "dy": -26,
-          "w": 16,
+          "w": 13,
           "d": 4,
           "z": 54,
           "h": 8,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "throne",
+      "colors": [
+        "forest",
+        "gold"
       ]
     }
   },
@@ -2604,9 +2863,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 0,
-    "w": 24,
-    "d": 24,
-    "height": 37,
+    "w": 32,
+    "d": 32,
+    "height": 45,
     "blocks": true,
     "sittable": true,
     "surface": false,
@@ -2625,7 +2884,7 @@
     "seats": [
       {
         "dx": 0,
-        "dy": -12,
+        "dy": -16,
         "pose": "sit"
       }
     ],
@@ -2635,23 +2894,30 @@
     "art": {
       "boxes": [
         {
-          "dx": -3,
-          "dy": -9,
-          "w": 6,
-          "d": 6,
+          "dx": -4,
+          "dy": -12,
+          "w": 8,
+          "d": 8,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": -10,
-          "dy": -2,
-          "w": 20,
-          "d": 20,
+          "dx": -13,
+          "dy": -3,
+          "w": 27,
+          "d": 27,
           "z": 12,
           "h": 3,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "stool",
+      "colors": [
+        "oak",
+        "crimson"
       ]
     }
   },
@@ -2663,9 +2929,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 0,
-    "w": 48,
-    "d": 48,
-    "height": 66,
+    "w": 64,
+    "d": 64,
+    "height": 82,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -2685,23 +2951,30 @@
     "art": {
       "boxes": [
         {
-          "dx": -6,
-          "dy": -18,
-          "w": 12,
-          "d": 12,
+          "dx": -8,
+          "dy": -24,
+          "w": 16,
+          "d": 16,
           "z": 0,
           "h": 14,
           "color": 5
         },
         {
-          "dx": -24,
+          "dx": -32,
           "dy": 0,
-          "w": 48,
-          "d": 48,
+          "w": 64,
+          "d": 64,
           "z": 14,
           "h": 4,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "walnut",
+        "sand"
       ]
     }
   },
@@ -2713,9 +2986,9 @@
     "placeIn": "both",
     "slots": 0,
     "appeal": 0,
-    "w": 112,
-    "d": 40,
-    "height": 56,
+    "w": 128,
+    "d": 32,
+    "height": 48,
     "blocks": true,
     "sittable": false,
     "surface": true,
@@ -2736,50 +3009,57 @@
     "art": {
       "boxes": [
         {
-          "dx": -54,
-          "dy": -34,
-          "w": 4,
-          "d": 4,
+          "dx": -62,
+          "dy": -27,
+          "w": 5,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": 50,
-          "dy": -34,
-          "w": 4,
-          "d": 4,
+          "dx": 57,
+          "dy": -27,
+          "w": 5,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": -54,
+          "dx": -62,
           "dy": -2,
-          "w": 4,
-          "d": 4,
+          "w": 5,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": 50,
+          "dx": 57,
           "dy": -2,
-          "w": 4,
-          "d": 4,
+          "w": 5,
+          "d": 3,
           "z": 0,
           "h": 12,
           "color": 5
         },
         {
-          "dx": -56,
+          "dx": -64,
           "dy": 0,
-          "w": 112,
-          "d": 40,
+          "w": 128,
+          "d": 32,
           "z": 12,
           "h": 4,
           "color": 4
         }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "oak",
+        "sand"
       ]
     }
   },
@@ -2849,6 +3129,13 @@
           "color": 10
         }
       ]
+    },
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "oak",
+        "gold"
+      ]
     }
   },
   {
@@ -2917,6 +3204,13 @@
           "color": 1
         }
       ]
+    },
+    "icon": {
+      "shape": "sign",
+      "colors": [
+        "night",
+        "cream"
+      ]
     }
   },
   {
@@ -2977,6 +3271,13 @@
           "color": 4
         }
       ]
+    },
+    "icon": {
+      "shape": "barrel",
+      "colors": [
+        "walnut",
+        "orange"
+      ]
     }
   },
   {
@@ -2987,9 +3288,9 @@
     "placeIn": "shop",
     "slots": 0,
     "appeal": 0,
-    "w": 40,
-    "d": 40,
-    "height": 68,
+    "w": 32,
+    "d": 32,
+    "height": 61,
     "blocks": true,
     "sittable": false,
     "surface": false,
@@ -3010,27 +3311,27 @@
     "art": {
       "boxes": [
         {
-          "dx": -18,
+          "dx": -14,
           "dy": -2,
-          "w": 36,
-          "d": 36,
+          "w": 29,
+          "d": 29,
           "z": 0,
           "h": 30,
           "color": 4
         },
         {
-          "dx": -18,
+          "dx": -14,
           "dy": -2,
-          "w": 36,
+          "w": 29,
           "d": 0,
           "z": 5,
           "h": 3,
           "color": 6
         },
         {
-          "dx": -18,
+          "dx": -14,
           "dy": -2,
-          "w": 36,
+          "w": 29,
           "d": 0,
           "z": 22,
           "h": 3,
@@ -3039,12 +3340,19 @@
         {
           "dx": -2,
           "dy": 0,
-          "w": 4,
+          "w": 3,
           "d": 2,
           "z": 10,
           "h": 4,
           "color": 10
         }
+      ]
+    },
+    "icon": {
+      "shape": "barrel",
+      "colors": [
+        "oak",
+        "gold"
       ]
     }
   }

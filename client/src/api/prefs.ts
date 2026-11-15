@@ -10,9 +10,13 @@ export interface Prefs {
   /** 0 to 1. */
   volume: number;
   lighting: boolean;
+  /** Show the faint cell grid while placing furniture and painting floors (step BG1). */
+  cellGrid: boolean;
+  /** Show what you got as small icons above the avatar's head (step BG3 B). */
+  popups: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true };
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -28,6 +32,8 @@ export function parsePrefs(text: string | null): Prefs {
     sound: typeof o.sound === 'boolean' ? o.sound : DEFAULT_PREFS.sound,
     volume,
     lighting: typeof o.lighting === 'boolean' ? o.lighting : DEFAULT_PREFS.lighting,
+    cellGrid: typeof o.cellGrid === 'boolean' ? o.cellGrid : DEFAULT_PREFS.cellGrid,
+    popups: typeof o.popups === 'boolean' ? o.popups : DEFAULT_PREFS.popups,
   };
 }
 

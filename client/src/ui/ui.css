@@ -3037,3 +3037,110 @@
     animation: none;
   }
 }
+
+/* ---------- The floor paint bar (step BG1): brushes, grid toggle, Done. Sits where the hotbar is
+   (the hotbar hides while painting). ---------- */
+.paint-bar {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: calc(var(--edge) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 2 * var(--edge) - var(--side-col)));
+  box-sizing: border-box;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+}
+
+.paint-bar[hidden] {
+  display: none;
+}
+
+.paint-hint {
+  font-size: 12px;
+  text-align: center;
+}
+
+.paint-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--px);
+  justify-content: center;
+}
+
+.paint-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* A toast stays clear of the paint bar. */
+.painting .toast {
+  bottom: calc(var(--bar-h) + var(--edge) + 90px + env(safe-area-inset-bottom));
+}
+
+/* Gems next to the gold in the info panel (step BG5). */
+.info-gems {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+}
+
+.info-gem-icon {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+/* Gain popups (step BG3 B): small icons with "x3" above the avatar's head, in a row, rank-coloured. */
+.popup-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.gain-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+  padding: 0 4px 0 1px;
+  box-sizing: border-box;
+  background: var(--cream);
+  border: 2px solid var(--rank-common, var(--wood));
+  color: var(--text);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.gain-chip.gain-popup {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+}
+
+.gain-chip.rank-rare {
+  border-color: var(--rank-rare);
+}
+
+.gain-chip.rank-ultra_rare {
+  border-color: var(--rank-ultra_rare);
+}
+
+.gain-chip.rank-legendary {
+  border-color: var(--rank-legendary);
+}
+
+.gain-chip img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}

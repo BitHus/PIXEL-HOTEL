@@ -7,15 +7,16 @@ import { applyChange } from './ledger.ts';
 import { RECIPES } from './crafting.ts';
 import { isCatchId, CATCH_TYPES } from './fish.ts';
 import { ENEMY_TABLES, LOOT_TABLES, getLootTable, type EnemyTableId } from './dungeon/loot.ts';
+import { BLOCK_TYPES } from './blockTypes.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { MATERIAL_TYPES } from './materials.ts';
 import { enemyKey } from './seen.ts';
 import type { Rank, SeenMap } from './types.ts';
 
-export type BookTab = 'materials' | 'furniture' | 'food' | 'fish' | 'enemies';
-export const BOOK_TABS: readonly BookTab[] = ['materials', 'furniture', 'food', 'fish', 'enemies'];
-export const BOOK_TAB_NAMES: Record<BookTab, string> = { materials: 'Materials', furniture: 'Furniture', food: 'Food and crops', fish: 'Fish', enemies: 'Enemies' };
+export type BookTab = 'materials' | 'blocks' | 'furniture' | 'food' | 'fish' | 'enemies';
+export const BOOK_TABS: readonly BookTab[] = ['materials', 'blocks', 'furniture', 'food', 'fish', 'enemies'];
+export const BOOK_TAB_NAMES: Record<BookTab, string> = { materials: 'Materials', blocks: 'Blocks', furniture: 'Furniture', food: 'Food and crops', fish: 'Fish', enemies: 'Enemies' };
 
 export const ENEMY_NAMES: Record<EnemyTableId, string> = { slime: 'Slime', bat: 'Bat', skeleton: 'Skeleton', mimic: 'Mimic', bone_king: 'Bone King' };
 /** The Book's rank for an enemy type (how hard it is to meet). */
@@ -63,6 +64,10 @@ export function sourceOf(id: string): string {
   if (material?.group === 'crop') parts.push('Farm');
   if (material?.group === 'food') parts.push('Cooked');
   if (material?.group === 'drink') parts.push('Brewed');
+  if (material?.group === 'block') {
+    if (BLOCK_TYPES.find((b) => b.id === id)?.inCatalog) parts.push('Catalog');
+    parts.push('Punching blocks');
+  }
   const furniture = FURNITURE_TYPES.find((f) => f.id === id);
   if (furniture?.inCatalog) parts.push('Catalog');
   if (RECIPES.some((r) => r.makesKind === 'furniture' && r.makes === id)) parts.push('Crafted');
@@ -79,7 +84,7 @@ export function bookEntries(tab: BookTab): BookEntry[] {
   if (tab === 'fish') {
     return CATCH_TYPES.map((c) => ({ key: c.id, id: c.id, kind: 'material' as const, name: c.name, rank: c.rank, source: sourceOf(c.id), ...(c.kind === 'fish' ? { cm: { min: c.minCm ?? 0, max: c.maxCm ?? 0 } } : {}) }));
   }
-  return MATERIAL_TYPES.filter((m) => (tab === 'materials' ? m.group === 'material' : tab === 'food' && ['seed', 'crop', 'food', 'drink'].includes(m.group))).map((m) => ({ key: m.id, id: m.id, kind: 'material' as const, name: m.name, rank: m.rank, source: sourceOf(m.id) }));
+  return MATERIAL_TYPES.filter((m) => (tab === 'materials' ? m.group === 'material' : tab === 'blocks' ? m.group === 'block' : tab === 'food' && ['seed', 'crop', 'food', 'drink'].includes(m.group))).map((m) => ({ key: m.id, id: m.id, kind: 'material' as const, name: m.name, rank: m.rank, source: sourceOf(m.id) }));
 }
 
 export interface BookProgress {

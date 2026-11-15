@@ -26,13 +26,13 @@ and pickups that float above the head. It goes BEFORE the rest of phase 1, becau
 (9t B and C) and the livelier hotel (9g) are built on how things are placed. Pause them until BG1
 is done. All prompts [prompt ready] in docs/NEXT-STEPS.md. Owner confirms the open questions
 (BLOCKS-PLAN section 5) and the pack fairness rules (section 4, row 3) before BG1 and BG8.
-BG1 Cell grid (32 px): rooms, furniture, floors and walls per cell, navigation on cells, migration.
-BG2 Item icons: every item a rough shape and colour in a 32x32 square, drawn in code.
-BG3 Gain popups: items and gems float above the avatar's head (chest, kill, fish, harvest, pack).
-BG4 Gems: the second currency, dropped by everything, through the ledger.
-BG5 Blocks and punching: place and break blocks by hits; drops, seeds, gems.
-BG5b Hold to punch: hold the mouse or a finger to keep hitting (blocks, plants, rocks, trees).
-BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates.
+BG1 Cell grid (32 px): rooms, furniture, floors per cell, navigation on cells, migration. [done]
+BG2 Item icons: every item a rough shape and colour in a 32x32 square, drawn in code. [done]
+BG3 Gain popups: items and gems float above the avatar's head (chest, kill, fish, harvest, pack). [A done: gains lists in the API; B: popup module + Settings done, wired for blocks; the other sources next]
+BG4 Gems: the second currency, dropped by everything, through the ledger. [core done inside BG5: wallet.gems, gemDrop for blocks, info panel; the other sources are left]
+BG5 Blocks and punching: place and break blocks by hits; drops, seeds, gems. [done]
+BG5b Hold to repeat: hold a press to keep punching / chopping / mining and to place block lines. [done]
+BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates. [done]
 BG7 Splicing: two seeds make a new one; a Splice tab in the Book.
 BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible.
 BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools.
@@ -43,9 +43,9 @@ The loops that are planned must all exist before anything else is added.
 1.1 Step 9f - Lakeside: fishing and woodcutting. [done]
 1.2 Step 9t - The tavern: the shop becomes a tavern (owner's decision, 14 Nov). Guests sit, order
     drinks and dishes, the player serves and collects the coins; brewing; the loot stall stays as
-    a market corner. [prompt ready; part A (shared rules) done, B and C PAUSED until BG1 is done]
+    a market corner. [prompt ready; part A (shared rules) done; B and C wait for placement on cells: BG1 is done, so they can be built now (new shop spots are cell based)]
 1.3 Step 9g - Livelier hotel: hats, emotes, usable furniture, the cat, room stars, visitors.
-    [prompt ready; after BG1, placement rules are cell based]
+    [prompt ready; BG1 is done, placement rules are cell based]
 1.4 Step 9h - Dungeon round 2 (3 floors, boss) and two more dungeon types. [prompt ready]
 1.5 Step 9i - The questline: chapters, progress, rewards, daily tasks. [prompt ready]
 

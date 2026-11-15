@@ -19,6 +19,7 @@ import {
   CAST_REACH_PX,
   type FishInput,
   type FishSession,
+  type GainList,
   type GameState,
 } from '@pixel-hotel/shared';
 import { LocalGameAPI } from './localGameAPI.ts';
@@ -58,7 +59,7 @@ describe('woodcutting through the GameAPI', () => {
     const wood = (await api.getPlayer()).materials.wood ?? 0;
     for (let hit = 1; hit < TREE_HITS; hit++) {
       const r = await api.chopTree(0);
-      expect(r).toMatchObject({ kind: 'hit', hits: hit });
+      expect(r).toMatchObject({ kind: 'hit', hits: hit, gains: [] });
       // Tapping again at once does nothing: the 400 ms cooldown.
       expect((await api.chopTree(0))!.kind).toBe('cooldown');
       expect((await api.getLakeside()).trees[0]!.hits).toBe(hit);
@@ -68,6 +69,9 @@ describe('woodcutting through the GameAPI', () => {
     expect(felled!.kind).toBe('felled');
     expect(felled!.loot!.wood).toBeGreaterThanOrEqual(2);
     expect((await api.getPlayer()).materials.wood).toBe(wood + felled!.loot!.wood!);
+    // The gains list says the same as the loot (wood, and maybe the ranked drop).
+    expect(felled!.gains.find((g) => g.itemId === 'wood')?.count).toBe(felled!.loot!.wood);
+    expect(felled!.gains.reduce((a, g) => a + g.count, 0)).toBe(Object.values(felled!.loot!).reduce((a, n) => a + (n ?? 0), 0));
     // A stump now, with its regrow time.
     const stump = (await api.getLakeside()).trees[0]!;
     expect(stump.regrowInMs).toBe(TREE_REGROW_MS);
@@ -93,7 +97,7 @@ describe('woodcutting through the GameAPI', () => {
     let s = fresh();
     s = applyChange(s, { reason: 'debug', materials: { iron_bar: 5, copper_bar: 2 } }, 0)!;
     const { api } = open(s);
-    expect(await api.forge('steel_axe')).toBe(true);
+    expect(await api.forge('steel_axe')).not.toBeNull();
     expect((await api.getPlayer()).gear).toContain('steel_axe');
     const p = await api.getPlayer();
     await api.enterRoom(p.lakesideRoomId);
@@ -109,7 +113,7 @@ describe('woodcutting through the GameAPI', () => {
 
 describe('fishing through the GameAPI', () => {
   /** Plays a cast to the end with a bot: taps at the bite, then holds the box under the fish. */
-  async function fishOnce(api: LocalGameAPI): Promise<{ session: FishSession; caught: { id: string; rank: string; cm: number | null; record: boolean } | null }> {
+  async function fishOnce(api: LocalGameAPI): Promise<{ session: FishSession; caught: { id: string; rank: string; cm: number | null; record: boolean } | null; gains: GainList }> {
     const s0 = await api.fishStart();
     expect(s0).not.toBeNull();
     let held = false;
@@ -148,6 +152,8 @@ describe('fishing through the GameAPI', () => {
     const u = await fishOnce(api);
     expect(u.session.outcome).toBe('caught');
     expect(u.caught).not.toBeNull();
+    // The catch comes back as a gain: the fish, once, in its rank.
+    expect(u.gains).toEqual([{ itemId: u.caught!.id, count: 1, rank: expect.any(String) }]);
     const after = await api.getPlayer();
     expect(after.materials[u.caught!.id as 'mudfin']).toBe(1);
     expect(after.seen[u.caught!.id]!.count).toBe(1);
@@ -167,6 +173,7 @@ describe('fishing through the GameAPI', () => {
     expect(last.session.outcome).toBe('missed');
     expect(last.session.timeMs).toBeGreaterThanOrEqual(2000 + FISH_BITE_MS.legendary);
     expect(last.caught).toBeNull();
+    expect(last.gains).toEqual([]);
     const after = await api.getPlayer();
     expect(after.materials).toEqual(before.materials);
     expect(after.wallet.gold).toBe(before.wallet.gold);
@@ -177,12 +184,12 @@ describe('fishing through the GameAPI', () => {
     let s = fresh();
     s = applyChange(s, { reason: 'debug', materials: { copper_bar: 4, pebble_perch: 1, turnip: 1, lantern_carp: 1, potato: 1 } }, 0)!;
     const { api } = open(s);
-    expect(await api.forge('mithril_rod')).toBe(false); // the copper-reel rod comes first
-    expect(await api.forge('copper_reel_rod')).toBe(true);
+    expect(await api.forge('mithril_rod')).toBeNull(); // the copper-reel rod comes first
+    expect(await api.forge('copper_reel_rod')).not.toBeNull();
     expect((await api.getPlayer()).gear).toContain('copper_reel_rod');
     // Cooking: grilled perch heals, carp stew gives +1 attack.
-    expect(await api.cook('grilled_perch')).toBe(true);
-    expect(await api.cook('carp_stew')).toBe(true);
+    expect(await api.cook('grilled_perch')).not.toBeNull();
+    expect(await api.cook('carp_stew')).not.toBeNull();
     const m = (await api.getPlayer()).materials;
     expect(m.grilled_perch).toBe(1);
     expect(m.carp_stew).toBe(1);

@@ -6,6 +6,7 @@
 import type { RoomKind } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
+import { gemIconUrl } from './itemIcon.ts';
 
 export interface InfoPanel {
   /** The top-left column (the hint box goes under the info panel). */
@@ -15,6 +16,8 @@ export interface InfoPanel {
   /** Where coins fly to: the middle of the gold coin icon (screen px), read when called. */
   coinTarget(): () => { x: number; y: number };
   setGold(gold: number): void;
+  /** The gems next to the gold (step BG5). */
+  setGems(gems: number): void;
   setRoom(kind: RoomKind): void;
   /** Level and xp (next = total xp for the next level, null at the top level). */
   setStats(level: number, xp: number, next: number | null, prev: number): void;
@@ -42,6 +45,16 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
   const goldText = el('span', '', '0');
   gold.append(pixelIcon('coin'), goldText);
   gold.title = 'Gold';
+  // The gems (step BG5) sit right of the gold, with the gem square icon.
+  const gemIcon = el('img', 'info-gem-icon');
+  gemIcon.src = gemIconUrl();
+  gemIcon.alt = '';
+  gemIcon.draggable = false;
+  const gemText = el('span', '', '0');
+  const gems = el('span', 'info-gems');
+  gems.append(gemIcon, gemText);
+  gems.title = 'Gems: you find them by playing';
+  gold.append(gems);
   // Line 2: the room name, the level and a thin xp bar (the numbers are in its tooltip).
   const line = el('div', 'info-line');
   const name = el('span', 'info-room');
@@ -70,6 +83,9 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
     },
     setGold(n) {
       goldText.textContent = String(n);
+    },
+    setGems(n) {
+      gemText.textContent = String(n);
     },
     setRoom(kind) {
       name.textContent = ROOM_NAMES[kind];

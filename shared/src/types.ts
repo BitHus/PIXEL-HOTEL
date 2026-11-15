@@ -1,5 +1,7 @@
 // Plain data types from the brief (sections 5, 7, 8, 9, 10). No logic here.
 
+import type { Icon } from './icons.ts';
+
 // ---------- Common ----------
 export type Facing = 'down' | 'right' | 'up' | 'left';
 export interface Point {
@@ -58,6 +60,8 @@ export type FurnitureArt = { boxes: ArtBox[] } | { sprite: string };
 export interface FurnitureType {
   id: string;
   name: string;
+  /** The inventory icon (step BG2). */
+  icon: Icon;
   category: string;
   theme: string;
   placeIn: PlaceIn;
@@ -136,6 +140,8 @@ export interface FurnitureItem {
 
 // ---------- Economy (section 9) ----------
 /** Dungeon materials (section 10). */
+/** The blocks (shared/data/blocks.json, step BG5). They stack in the bag like materials. */
+export type BlockId = 'dirt' | 'clay' | 'thatch' | 'planks' | 'stone' | 'glass' | 'brick' | 'lantern_block' | 'mossy_stone' | 'cinder_block';
 export type BaseMaterialId =
   | 'bone'
   | 'cloth'
@@ -157,7 +163,10 @@ export type EnemyDropId =
 export type OreId = 'copper_ore' | 'iron_ore' | 'mithril_ore';
 export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 /** Farm goods (section 10b, step 9b): seeds (crops.json), crops (crops.json) and food (food.json). */
-export type SeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
+export type CropSeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
+/** Every block has a seed (step BG6): `<block id>_seed`; planted, it grows blocks. */
+export type BlockSeedId = `${BlockId}_seed`;
+export type SeedId = CropSeedId | BlockSeedId;
 export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
 export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth' | 'grilled_perch' | 'carp_stew' | 'eel_pie';
 /** The lakeside (section 10d, step 9f): fish (fish.json) and the things fished up (also fish.json), and what trees give besides wood. */
@@ -173,16 +182,18 @@ export type TreeDropId = 'resin' | 'amber' | 'golden_acorn';
  */
 /** The tavern's drinks (step 9t, shared/data/drinks.json): brewed in a barrel, served by the mug. */
 export type DrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic';
-export type MaterialId = BaseMaterialId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId | DrinkId;
+export type MaterialId = BaseMaterialId | BlockId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId | DrinkId;
 /** What kind of stackable good it is. */
-export type MaterialGroup = 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing' | 'drink';
+export type MaterialGroup = 'block' | 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing' | 'drink';
 
 export interface MaterialType {
   id: MaterialId;
   name: string;
   baseValue: number;
-  /** Placeholder icon color (palette index) until real 32x32 icons exist. */
+  /** Old placeholder colour (palette index); the icon below is what items show since BG2. */
   color: number;
+  /** The item's square icon (step BG2). */
+  icon: Icon;
   rank: Rank;
   group: MaterialGroup;
 }
@@ -216,6 +227,8 @@ export interface SaleRecord {
 
 export interface Wallet {
   gold: number;
+  /** The second currency (step BG5 starts it; BG4 adds the other sources). Never traded, never sold. */
+  gems: number;
 }
 
 export type LedgerReason =
@@ -241,6 +254,10 @@ export type LedgerReason =
   | 'book_reward'
   | 'chop'
   | 'fish'
+  // Blocks (step BG5): a block put in a cell, a block broken (it comes back, maybe a seed and gems).
+  | 'block_place'
+  | 'block_break'
+  | 'block_return'
   // The tavern (step 9t): brewing, an order taken out of the bag (and put back when the guest
   // leaves unserved), the coins collected from a table, the furniture an old save gets.
   | 'brew'
@@ -255,6 +272,8 @@ export interface LedgerEntry {
   playerId: number;
   reason: LedgerReason;
   goldDelta: number;
+  /** Gems added (negative = spent); absent = 0. */
+  gemsDelta?: number;
   materials?: Partial<Record<MaterialId, number>>;
   /** Furniture added (new or back from a shop slot). */
   furnitureUids?: number[];

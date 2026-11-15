@@ -13,10 +13,16 @@
 //   (onPoint 'longpress', with what was under the pointer when it went down). It never taps.
 // - When getDragMode() returns 'draw' (Blockers mode, later), a one-finger / left drag is
 //   sent to onDraw instead of panning.
+// - HOLD TO REPEAT (step BG5b): onPress may claim a press for a repeating action ('repeat': the
+//   first hit already happened on press; the press never taps; moving past TAP_MAX_MOVE_PX ends the
+//   hold and it becomes a pan). A press held still for HOLD_PLACE_START_MS may become a 'line' hold
+//   (onHoldStill): from then on moving does not pan, onHoldMove follows the pointer. Release, a pan or a
+//   second finger ends it (onHoldEnd). The actions themselves (and holdTick) live in the client.
 // Uses Pixi's federated pointer and wheel events.
 
 import type { Container, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
 import {
+  HOLD_PLACE_START_MS,
   LONG_PRESS_MS,
   TAP_MAX_MOVE_PX,
   TAP_MAX_MS,
@@ -53,6 +59,17 @@ export interface CameraControlHooks {
   getDragMode?(target: Container | null, start: Point): DragMode;
   /** Called for drags while the drag mode is 'draw'. */
   onDraw?(phase: DrawPhase, screen: Point): void;
+  /**
+   * A one-finger / left press went down. Return 'repeat' when it starts a repeating hit (a block, plant,
+   * rock or tree under the pointer): the hold's first hit is done by the app now, and the press never taps.
+   */
+  onPress?(screen: Point, target: Container | null): 'repeat' | null;
+  /** The press was held still for HOLD_PLACE_START_MS. Return true to start a 'line' hold (moves then do not pan). */
+  onHoldStill?(screen: Point, target: Container | null): boolean;
+  /** The pointer moved during a 'line' hold. */
+  onHoldMove?(screen: Point): void;
+  /** A hold ended: released, panned away, or cancelled. */
+  onHoldEnd?(): void;
   /** Any press or wheel on the room started (the camera intro stops). */
   onGestureStart?(): void;
 }
@@ -72,6 +89,10 @@ interface Press {
   target: Container | null;
   /** True once the press fired a long press (it no longer taps). */
   long: boolean;
+  /** The hold this press started, if any. */
+  hold: 'repeat' | 'line' | null;
+  /** True once the hold-still check ran. */
+  holdChecked: boolean;
 }
 
 export interface CameraControl {
@@ -125,13 +146,24 @@ export function attachCameraControl(
   /** Ends the current press without a tap (a second finger came down, or it was cancelled). */
   const cancelPress = (): void => {
     if (press?.drag === 'draw') hooks.onDraw?.('end', press.last);
+    if (press?.hold) hooks.onHoldEnd?.();
     press = null;
   };
 
   const movePress = (p: Point): void => {
     if (!press) return;
+    if (press.hold === 'line') {
+      hooks.onHoldMove?.(p);
+      press.last = p;
+      return;
+    }
     if (!press.drag) {
       if (Math.hypot(p.x - press.start.x, p.y - press.start.y) < TAP_MAX_MOVE_PX) return;
+      if (press.hold === 'repeat') {
+        // Moved past the tap limit: a pan, not a punch.
+        press.hold = null;
+        hooks.onHoldEnd?.();
+      }
       press.drag = hooks.getDragMode?.(press.target, press.start) ?? 'pan';
       if (press.drag === 'draw') hooks.onDraw?.('start', press.start);
     }
@@ -144,8 +176,9 @@ export function attachCameraControl(
     if (!press || press.id !== e.pointerId) return;
     const p = pt(e);
     movePress(p);
+    if (press.hold) hooks.onHoldEnd?.();
     if (press.drag === 'draw') hooks.onDraw?.('end', p);
-    else if (!press.drag && !press.long && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap', targetOf(e));
+    else if (!press.drag && !press.long && !press.hold && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap', targetOf(e));
     press = null;
   };
 
@@ -160,11 +193,15 @@ export function attachCameraControl(
       drag: null,
       target: targetOf(e),
       long: false,
+      hold: null,
+      holdChecked: false,
     });
     if (e.pointerType === 'touch') {
       touches.set(e.pointerId, p);
-      if (touches.size === 1) press = newPress();
-      else cancelPress();
+      if (touches.size === 1) {
+        press = newPress();
+        press.hold = hooks.onPress?.(p, press.target) ?? null;
+      } else cancelPress();
       wheel = null;
       wheelIdleMs = null;
       // A new pinch takes over from a running settle; one finger (a pan) runs alongside it.
@@ -172,6 +209,7 @@ export function attachCameraControl(
       pinch = pinchState();
     } else if (e.button === 0) {
       press = newPress();
+      press.hold = hooks.onPress?.(p, press.target) ?? null;
     } else if (e.button === 2) {
       rightDrag = p;
     }
@@ -232,7 +270,11 @@ export function attachCameraControl(
 
   return {
     update(dtMs) {
-      if (press && !press.drag && !press.long && performance.now() - press.downAt >= LONG_PRESS_MS) {
+      if (press && !press.drag && !press.hold && !press.holdChecked && performance.now() - press.downAt >= HOLD_PLACE_START_MS) {
+        press.holdChecked = true;
+        if (hooks.onHoldStill?.(press.last, press.target)) press.hold = 'line';
+      }
+      if (press && !press.drag && !press.long && !press.hold && performance.now() - press.downAt >= LONG_PRESS_MS) {
         press.long = true;
         hooks.onPoint(press.start, 'longpress', press.target);
       }

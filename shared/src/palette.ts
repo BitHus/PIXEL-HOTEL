@@ -39,3 +39,25 @@ export const PALETTE = [
 ] as const;
 
 export type PaletteColor = (typeof PALETTE)[number];
+
+/**
+ * Our own names for the 32 colours, in palette order (data files name a colour by these, so no hex
+ * and no index appears outside this file). `outline` is the dark warm outline colour.
+ */
+export const PALETTE_NAMES = [
+  'rust', 'clay', 'cream', 'sand', 'oak', 'walnut', 'outline', 'crimson',
+  'red', 'orange', 'gold', 'butter', 'lime', 'green', 'forest', 'pine',
+  'navy', 'sky', 'cyan', 'white', 'silver', 'steel', 'slate', 'dusk',
+  'night', 'ink', 'magenta', 'plum', 'orchid', 'rose', 'skin', 'tan',
+] as const;
+
+export type PaletteName = (typeof PALETTE_NAMES)[number];
+
+export function isPaletteName(name: string): name is PaletteName {
+  return (PALETTE_NAMES as readonly string[]).includes(name);
+}
+
+/** The hex of a palette name. */
+export function paletteColor(name: PaletteName): string {
+  return PALETTE[PALETTE_NAMES.indexOf(name)]!;
+}

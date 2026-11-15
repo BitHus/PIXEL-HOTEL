@@ -9,15 +9,15 @@ here and in CLAUDE.md.
 A browser game with these parts:
 - Hotel: top-down pixel-art rooms in the style of Travellers Rest (you look down at the room
   with a slight front angle, you see the top and front of things). Players walk around as an
-  avatar, chat in bubbles, and place furniture anywhere they like in the room. There is no
-  tile grid.
+  avatar, chat in bubbles, and build per cell on a 32 px grid (step BG1, owner's decision 15 Nov;
+  wall items stay free along the back wall).
 - Dungeon: a random real-time dungeon where clicking fast is the game. Loot comes from
   chests. Enemies are the danger: they give xp (the player levels up) and rarely a special
   drop.
 - Shop: each player has a shop room. They put loot on shelves and set prices. NPC customers
   walk in and buy for gold. Gold buys furniture in the catalog.
-- Farm (section 10b, step 9b): an outdoor plot where the player grows crops in real time and
-  cooks them into food that heals or buffs them in the dungeon.
+- Farm (section 10b, steps 9b, BG6): a free-form outdoor room where the player plants seeds on soil,
+  harvests by punching, and cooks crops into food that heals or buffs them in the dungeon.
 - Mine (section 10c, step 9c): a short click-to-mine trip for ore. Ore is smelted into bars
   at the forge, and bars upgrade weapons, armor and the pickaxe.
 - Lakeside (section 10d, step 9f): an outdoor place with a lake: chop trees for wood and fish
@@ -71,9 +71,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   (the zooms above where zoom * devicePixelRatio is whole) nearest to 3 real pixels per art
   pixel (INTRO_DEVICE_PX_PER_ART_PX), ending centered on the avatar. A tap, a drag, a pinch or
   the wheel during the intro skips it (the camera stays where it is).
-- The hotel and the shop have no tile grid. Furniture and avatars have pixel positions. Two
-  grids exist only inside the code and are never shown: the navigation grid (8 px cells,
-  section 6) and the dungeon's 32 px blocks (section 10).
+- BUILD GRID (step BG1): rooms are cell maps of BUILD_CELL = 32 px. Floor furniture, floor
+  paint and navigation use it (sections 5, 6, 7); wall items stay free. The grid is drawn faintly
+  only while placing furniture or painting floors (a Settings toggle, pref cellGrid). Avatars
+  still move in pixels between cell centres. The dungeon keeps its own grids (32 px blocks,
+  16 px nav cells; section 10).
 - Pixel-perfect: no texture smoothing, and sprites are drawn at whole world pixels. At a zoom
   that is not a whole number some art pixels are 1 screen px wider than others, and below
   zoom 1 some art pixels are skipped; that is accepted (owner's choice, step 2).
@@ -87,12 +89,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   counter and stall_table stand). Each level's floor fully contains the previous level's floor,
   so upgrades never cut off furniture. Shapes: square (the old rectangle; 'square' for the hotel,
   'square_shop' for the shop), long (narrow and long), l_shape, plus (a cross) and wide_hall
-  (wide and shallow), each with 3 levels, all about the same area at level 1, 16 px aligned.
-- Walls: every floor edge that faces up gets the 64 px back wall band (WALL_BAND) above it;
+  (wide and shallow), each with 3 levels, all about the same area at level 1. The data is in whole CELLS (the old
+  16 px numbers were rounded up to cells; each level still contains the previous one; the door
+  is at a cell boundary).
+- Walls: every floor edge that faces up gets the back wall band (WALL_BAND = 2 cells = 64 px) above it;
   all other outside edges get the thin 16 px border. Inner corners are drawn cleanly. The
   floor is a seamless repeating texture, not a tile map.
-- The door is a 64 px wide opening in the border under a bottom edge, at the x from the shape
-  data. The DOOR ZONE is a 64 x 48 px rectangle on the floor just inside it. Nothing can be
+- The door is a 2-cell (64 px) wide opening in the border under a bottom edge, at the x from the
+  shape data. The DOOR ZONE is the 2 x 2 cells of floor just inside it. Nothing can be
   placed on the door zone. Avatars enter and leave through it, walking up from the bottom of
   the screen.
 - The player picks one shape for the hotel and one for the shop when a new game starts. Later
@@ -119,17 +123,48 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   blocks it is refused (FurnitureType.servedFromBehind, canPlace).
 - Room upgrade (costs gold): the room switches to the next level of its shape. Every item
   keeps its position. The door moves to the new level's door, and any item standing in the new
-  door zone goes back to the inventory. Costs are in config.
+  door zone goes back to the inventory (blocks there go back to the bag too). Costs are in config.
+- BLOCKS (step BG5, owner's decisions): every buildable room (hotel, shop/tavern, farm; the
+  lakeside stays unbuildable) has a foreground layer Room.blocks: one block per cell
+  ("col,row" -> { id, hits, hitAt }). Block types are data (shared/data/blocks.json: id, name,
+  hardness = hits to break, rank, baseValue, inCatalog, drops, seedId (`<id>_seed`, BG6), placeIn,
+  icon); 10 starter blocks (dirt, clay, thatch, glass, planks, lantern block, stone, brick, mossy
+  stone, cinder block), hardness 1 to 8. Blocks are items: they stack in Player.materials (group
+  'block'), sit in the bag and the hotbar, are found in the Book (Blocks tab) and may stand on
+  shop slots. A block may never stand on the door zone, outside the floor, on a cell with floor
+  furniture, on a plant or the cooking pot, on the cell of an avatar standing still, or on
+  a cell that would shut the door off from the middle of the room or the shopkeeper's spot behind
+  the counter (refused: 'door_blocked', 'counter_blocked'). Blocks block walking (roomBlockers);
+  the grids are rebuilt and walkers and customers re-path. Only the room's owner places or breaks.
+  Reach: BLOCK_REACH = 3 cells from the avatar (centre to centre); farther, the GameAPI answers
+  with a walk to a spot near the cell and the client asks again on arrival. Punching: one hit
+  per tap (or held: HOLD TO REPEAT, see section 6 INPUT), cooldown BLOCK_HIT_COOLDOWN_MS = 250; a block takes `hardness` hits; a half-broken
+  block heals after BLOCK_HEAL_MS = 6000 without a hit; cracks are drawn per stage (rendering
+  only). A broken block drops itself back to the bag (always), its seed (BLOCK_SEED_CHANCE, if it
+  has a seedId), its extra drops (blocks.json drops) and sometimes gems (gemDrop('block', rank),
+  config GEMS; gems in every room). Gains go through the gains list and ledger.applyChange
+  ('block_place', 'block_break'). The Catalog sells dirt, planks, stone and glass (Blocks tab,
+  baseValue * 3, 1 or a pack of BLOCK_PACK); the rest comes from punching and later splicing.
+  Input: see CLAUDE.md INPUT (play mode places and punches; Build mode moves furniture).
+  HOLD TO REPEAT (BG5b): pressing and holding on a block, a grown plant, a mine rock or a tree
+  repeats the hit at that thing's cooldown (250 / 250 / 400 / 400 ms), first hit on press, until it
+  breaks, the press ends, or the avatar is out of reach (it walks closer and goes on). A press that
+  moves 8 px is a pan; two fingers never hit. Holding still 300 ms with a block selected places blocks;
+  dragging then places a line (one per cell, HOLD_PLACE_MS = 150, only cells in reach, same rules). Not for the
+  dungeon fight (one hit per tap, no auto-attack) and not for fishing.
+- GEMS (started in BG5, BG4 finishes it): Player.wallet.gems (integer), ledger gemsDelta, shown in
+  the info panel next to gold; never traded or sold. A known loop: place and punch the same block
+  forever gives gems for free (gems have no use until packs, BG8; balance in BG9).
 - Room ids are integers.
 
 6. MOVEMENT
 - Click the floor: the avatar walks there. Click an item with seats: it walks to the
   nearest free side of the item it can reach and sits or lies (step 5b).
-- Navigation uses an internal grid of 8 px cells (NAV_CELL), rebuilt when furniture changes.
-  A cell is blocked if it is outside the floor or inside the footprint of an item with
-  blocks = true, with the footprint made bigger by the avatar radius (AVATAR_RADIUS 4 px;
-  owner's decision after 9d: a gap of 24 px between two items is always walkable, and the
-  avatar may overlap furniture edges a little). A* with 8
+- Navigation (step BG1) uses the build grid: cells of NAV_CELL = BUILD_CELL = 32 px, rebuilt when
+  furniture changes. A cell is blocked if any part of it is outside the floor or a footprint of
+  an item with blocks = true touches it. There is no avatar radius (AVATAR_RADIUS is gone):
+  blockers are whole cells, so a gap of ONE free cell is walkable. Avatars still walk in pixels
+  between cell centres at the same speed. A* with 8
   directions and no corner cutting finds a cell path. Then the path is smoothed: a waypoint
   is removed when a straight line between its neighbours does not touch a blocked cell. The
   result is a list of world points, so avatars walk in straight lines, not in grid zigzags.
@@ -155,14 +190,24 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - (x, y) is the anchor: the bottom center of the footprint, in world px. The footprint
   rectangle runs from (x - fw/2, y - fd) to (x + fw/2, y). fw and fd are w and d when the
   facing is down or up, and d and w when it is left or right.
-- Placement is free: any x and y, snapped to 4 px (SNAP). Holding Shift turns snapping off.
-  A placement is valid if: the footprint is fully inside the floor; it does not overlap the
-  footprint of another item with blocks = true (items with blocks = false, like rugs, can
-  overlap anything and are drawn under everything); it does not touch the door zone; and the
-  door can still reach the middle of the room (navigation check). A wall item only moves
-  left and right and stays on the back wall band. An onSurface item can be put on a surface
-  item: it snaps to the nearest free spot on top, one level only, and it moves and returns
-  together with the item under it.
+- Placement is per cell (step BG1): a floor item's w and d are whole cells (type.w and type.d
+  are multiples of 32); its footprint stands on cells and the ghost snaps to the nearest cell
+  footprint. The anchor (x, y) is still the bottom centre of the footprint; the anchor CELL is
+  the bottom-centre cell (even widths: the left of the two centre cells). Rotation swaps w and
+  d and keeps the anchor cell. A placement is valid if: the footprint is fully on floor cells;
+  it does not overlap the footprint of another item with blocks = true (items with blocks =
+  false, like rugs and floor decor, are the background layer: they overlap anything and are
+  drawn under everything); it does not overlap the 2 x 2 cell door zone; and the door can still
+  reach the middle of the room. A WALL item stays free (owner, 15 Nov): it slides along a back
+  wall band at any x, 4 px snap (SNAP; Shift = whole px), its anchor y is the band's foot (its
+  art is drawn upward from there); not on the door. An onSurface item sits on a cell of a
+  surface item, one level only, and moves and returns together with the item under it.
+- Floors are painted per cell (BG1): Room.floorCells maps "col,row" to a floor style id; every
+  other cell has Room.floorStyle. Pick an unlocked floor in the Room panel and tap Paint cells:
+  tap a cell or drag a rectangle (free; the unlocked-forever rules stay). Wall styles stay one
+  per room. The shop's appeal uses the floor style on most cells.
+- Save migration 13 -> 14: every placed floor item moves to the nearest valid cell footprint,
+  wall items stay, what no longer fits goes back to the bag, and a notice says how many.
 - Draw order: floor, rugs, back wall, then ONE list of items and avatars sorted by y (the
   bottom of the footprint, or the avatar's feet), then x, then uid. An item on a surface is
   drawn right after the item under it.
@@ -397,18 +442,32 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   rules as a room (kind 'farm'), with a grass floor, a fence or hedge in place of the back
   wall, and the door at the bottom. Sizes: level 1 576x384, level 2 704x480, level 3 832x576
   (upgrade 200 / 600 gold). The farm is unlocked from the start.
-- Soil plots: 32x32 tilled squares at fixed positions from config, in neat rows. Level 1 has 6
-  plots, level 2 has 12, level 3 has 20. Plots are part of the farm, not furniture; the player
-  can still place decorations (fences, plants, benches) around them in build mode.
-- Seeds are bought in the catalog (a Seeds tab) and stack in the bag. Planting: in play mode,
-  with a seed selected in the hotbar, tap an empty plot: the avatar walks there and plants.
-  Tapping a ripe plot walks there and harvests into the bag (stacks).
-- Crops grow in real time, also while the game is closed, in 3 visible stages (sprout, half,
-  ripe). Growth uses times passed in (no Date.now in shared/). No watering in v1.
-- Crops (all numbers in shared/data/crops.json): turnip (seed 4 gold, 5 min, worth 10),
-  potato (seed 6, 15 min, worth 16), carrot (seed 8, 30 min, worth 22), pumpkin (seed 15,
-  2 h, worth 50), glowcap mushroom (no seed for sale; 1 glowcap spore drops from 5% of
-  dungeon chests; 1 h, worth 40). One harvest gives 1 to 2 crops.
+- BG6 CHANGED THE FARM (owner's request): it is free-form. The fixed plots are gone; the only fixed thing
+  is the cooking pot. SOIL is a floor style ('soil', styles.json, free): a new farm has a 6 x 2 patch
+  (config FARM_START_SOIL); Room > Paint soil paints soil, painting grass over it removes it (a cell with a
+  plant stays soil). Decorations, paths and fences (blocks) go anywhere else.
+- SEEDS: every block (blocks.json seedId `<block>_seed`) and every crop (crops.json seed) has a seed item
+  with a seed icon in its colours; they stack in the bag and the hotbar. Basic crop seeds are sold in the
+  Catalog (Seeds tab, gold); block seeds drop from broken blocks (BLOCK_SEED_CHANCE), harvests (SEED_BACK_CHANCE)
+  and later splicing (BG7). The glowcap spore still only drops in the dungeon.
+- PLANTING: select a seed in the hotbar and tap a free soil cell of a farm room within BLOCK_REACH cells (farther:
+  the avatar walks closer first; holding still 300 ms and dragging plants a line). One plant per cell. A plant
+  blocks its cell like a small block (nav grids rebuilt, never on the door zone, furniture, the pot, an avatar
+  standing still, nor where it would shut the door off). Plants are Room.plants { seed, plantedAt, readyAt }.
+- GROWTH: 3 stages in real time, also while the game is closed (times passed in, no Date.now in shared/): sprout
+  (first half), small plant, full plant. Grow time by RANK of what grows (config SEED_GROW_MS): common 2 min,
+  rare 20 min, ultra_rare 3 h, legendary 12 h. No watering. A full plant waits until punched, no rotting.
+- HARVEST: punch the full plant (one hit, cooldown BLOCK_HIT_COOLDOWN_MS 250, hold to repeat): SEED_YIELD blocks
+  or crops by rank (common 2-4, rare 2-3, ultra_rare 1-2, legendary 1), SEED_BACK_CHANCE (30%) for the seed, and
+  gemDrop('harvest', rank) gems. The plant goes, the cell is free again. Punching an unripe plant does nothing
+  (a shake and "ready in n min"), so a tap never destroys it. All results go through the gains list and ledger
+  (reasons 'plant', 'harvest'). Pure functions: plantSeed, growthStage, harvestPlant, hitPlant (shared/src/farm.ts).
+- Crops (shared/data/crops.json): turnip (seed 4 gold, worth 10), potato (seed 6, worth 16), carrot (seed 8,
+  worth 22), pumpkin (seed 15, rare, worth 50), glowcap mushroom (no seed for sale; 1 glowcap spore drops from 5%
+  of dungeon chests; ultra_rare, worth 40). crops.json growMinutes is LEGACY (only the save migration uses it).
+- MIGRATION (save 15 -> 16): each old plot became a soil cell (snapped to the cell grid), each planted crop a plant
+  with the same crop, planting time and time left; crops and seeds in the bag are unchanged (same ids); GameState.farm
+  is gone; a toast explains the new farm once.
 - Cooking: a cooking pot stands in the farm at a fixed spot (not furniture, cannot be moved).
   Tap it to open the Cooking panel. Recipes (shared/data/food.json): roasted turnip (1
   turnip; heals 8 hp), potato stew (2 potato + 1 turnip; heals 15 hp), carrot soup (2 carrot
@@ -516,11 +575,20 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   else, so switching to a bigger warm palette (for example Resurrect 64) later means
   changing one file. If you cannot download the list, ask me to paste it. Final sprites use
   only the palette.
+- ITEM ICONS (step BG2): every item (materials, ore, bars, crops, seeds, food, drinks, fish and
+  fished-up things, gear and forge pieces, clothing, furniture) has icon: { shape, colors[] } in
+  its data file: a shape from the fixed ICON_SHAPES list (shared/src/icons.ts) and 1 to 3 Endesga
+  palette NAMES (PALETTE_NAMES in shared/palette.ts; no hex in data). One function drawIcon
+  (client/src/render/drawIcon.ts, pure pixels in iconPixels.ts) draws it on a 32x32 square: flat
+  fills, light from the top-left, 1 px dark warm outline; the rank only adds a frame in RANK_COLORS.
+  Within one group no two items share shape + colours (tested). These are rough placeholders: real
+  pixel art replaces the drawing per item in phase 4.
 - Light comes from the top-left: top faces lightest, left faces medium, right faces darkest.
   1 px dark outline. No anti-aliasing.
 - Sizes (px): avatar 32x64. Chair 32x48, table 64x56, sofa 80x56, bed 64x80, bookshelf
   56x80, lamp 24x48, plant 32x48, rug 80x56, barrel 40x48, crate 40x40, bench 64x40, desk
-  64x56. Chests 48x40. The anchor of every sprite is the bottom center of its footprint.
+  64x56. Chests 48x40. (Since BG1 the FOOTPRINTS are whole cells; these are art sizes.) The
+  anchor of every sprite is the bottom center of its footprint.
   Floors are a seamless 64x64 texture. The wall band is 64 px tall and repeats sideways.
   Dungeon blocks are 32x32. Icons for loot and materials are 32x32.
 - Until real sprites exist, art is drawn in code from boxes. Placeholder shading may compute
@@ -573,7 +641,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 
 
 15. THE BLOCK WORLD (PLANNED, owner's decision 15 Nov; full design docs/BLOCKS-PLAN.md)
-Not built yet. When a BG step builds a part, it moves that part into the sections above and
+BG1 to BG3 A and BG5 are built (sections 4, 5, 9 above); the rest is not. When a BG step builds a part, it moves that part into the sections above and
 changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as written.
 - Inspiration: Growtopia and Pixel Worlds (block grid, punching, seeds, splicing, gems, packs,
   locks and access, visit by name), next to Travellers Rest and Habbo. Never copy names or art.

@@ -10,6 +10,10 @@
 
 import {
   AVATAR_START_FROM_BOTTOM,
+  gain,
+  gainsFromRunEvents,
+  gainsSince,
+  type GainList,
   DUNGEON_HINT,
   HINTS,
   RECIPES,
@@ -23,6 +27,12 @@ import {
   MINE_HINT,
   MINE_UNLOCK_LEVEL,
   buySeeds,
+  buyBlocks,
+  approachSpot,
+  blockRects,
+  placeBlock,
+  hitBlock,
+  type BlockResult,
   cook,
   claimBookReward,
   openBook,
@@ -45,12 +55,12 @@ import {
   type FishUpdate,
   type LakesideView,
   type BookTab,
-  harvestPlot,
-  plantPlot,
+  hitPlant,
+  plantSeed,
+  farmCounts,
   roomBlockers,
   type FarmView,
   type FoodId,
-  type HarvestResult,
   type RoomLevel,
   type SeedId,
   buyGear,
@@ -69,6 +79,7 @@ import {
   NAV_CELL,
   SHOP_TICK_MS,
   applyStyle,
+  paintFloor,
   buyCatalog,
   canPickUp,
   catchUpShop,
@@ -259,7 +270,14 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       if (old === null) continue;
       storage.set(SAVE_BACKUP_KEY, old);
       const r = readSave(old);
-      if (r.ok) return start(r.state, 'Your save was updated to the new version of the game.');
+      if (r.ok) {
+        const back = r.returnedToBag;
+        const extra = back > 0 ? ` ${back} ${back === 1 ? 'item' : 'items'} did not fit the new building grid and went back to your bag.` : '';
+        const farm = r.farmChanged
+          ? ' The farm is free-form now: your old plots are soil cells. Select a seed and tap soil to plant, punch a grown plant to harvest it.'
+          : '';
+        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}`);
+      }
       return start(
         createNewPlayer(undefined, now()),
         'Your save is from an old version that cannot be updated. A new game was started (the old save is kept as the backup).',
@@ -475,8 +493,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!next) return null;
     const uid = next.ledger.at(-1)?.furnitureUids?.[0];
     if (uid === undefined) return null;
+    const gains = gainsSince(this.state, next);
     this.commit(this.hintDone(next, 0));
-    return { uid, first };
+    return { uid, first, gains };
   }
 
   async buyStyle(kind: StyleKind, id: string): Promise<boolean> {
@@ -492,6 +511,43 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!next) return null;
     this.commit(next);
     return this.roomById(roomId);
+  }
+
+  async paintFloor(roomId: number, from: { c: number; r: number }, to: { c: number; r: number }, id: string): Promise<Room | null> {
+    const next = paintFloor(this.state, roomId, from, to, id);
+    if (!next) return null;
+    this.commit(next);
+    return this.roomById(roomId);
+  }
+
+  async placeBlock(c: number, r: number, blockId: string): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const res = placeBlock(this.state, room.id, c, r, blockId, this.now(), { standing: this.standingPoints(), from: me });
+    if (!res.ok) return res.problem === 'reach' ? this.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
+    this.commitBlocks(res.state);
+    return { kind: 'placed', room: this.roomById(room.id)!, c, r, gains: [] };
+  }
+
+  async hitBlock(c: number, r: number): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const now = this.now();
+    const res = hitBlock(this.state, room.id, c, r, now, this.lastBlockHitAt, this.rng, me);
+    if (!res.ok) return res.problem === 'reach' ? this.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
+    this.lastBlockHitAt = now;
+    if (res.kind === 'cracked') {
+      this.commit(res.state);
+      return { kind: 'cracked', room: this.roomById(room.id)!, c, r, hits: res.hits, hardness: res.hardness, gains: [] };
+    }
+    const gains = gainsSince(this.state, res.state);
+    this.commitBlocks(res.state);
+    return { kind: 'broken', room: this.roomById(room.id)!, c, r, gains };
+  }
+
+  async buyBlocks(blockId: string, qty: number): Promise<GainList | null> {
+    const next = buyBlocks(this.state, blockId, qty, this.now());
+    return next ? this.commitGains(next) : null;
   }
 
   async upgradeRoom(roomId: number): Promise<Room | null> {
@@ -543,7 +599,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async dungeonAdvance(dtMs: number): Promise<RunUpdate | null> {
     const run = this.state.run;
     if (!run) return null;
-    if (this.runPaused || !(dtMs > 0)) return { run, result: null };
+    if (this.runPaused || !(dtMs > 0)) return { run, result: null, gains: [] };
     return this.applyRun(step(run, [], dtMs, this.rng));
   }
 
@@ -555,19 +611,18 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.runPaused = false;
   }
 
-  async craft(recipeId: string): Promise<boolean> {
+  async craft(recipeId: string): Promise<GainList | null> {
     const recipe = RECIPES.find((r) => r.id === recipeId);
     const next = recipe ? craftRecipe(recipe, this.state, this.now()) : null;
-    if (!next) return false;
-    this.commit(next);
-    return true;
+    return next ? this.commitGains(next) : null;
   }
 
-  async buyGear(id: ShopGearId): Promise<boolean> {
+  async buyGear(id: ShopGearId): Promise<GainList | null> {
     const next = buyGear(this.state, id, this.now());
-    if (!next) return false;
+    if (!next) return null;
     this.commit(next);
-    return true;
+    // Gear and potions are not in the ledger's materials: the piece itself is the gain.
+    return [gain(id)];
   }
 
   // ---------- The mine and the forge (step 9c) ----------
@@ -583,18 +638,16 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return r.run;
   }
 
-  async smelt(bar: BarId): Promise<boolean> {
+  async smelt(bar: BarId): Promise<GainList | null> {
     const next = smelt(this.state, bar, this.now());
-    if (!next) return false;
-    this.commit(next);
-    return true;
+    return next ? this.commitGains(next) : null;
   }
 
-  async forge(piece: GearId): Promise<boolean> {
+  async forge(piece: GearId): Promise<GainList | null> {
     const next = forgePiece(this.state, piece, this.now());
-    if (!next) return false;
+    if (!next) return null;
     this.commit(next);
-    return true;
+    return [gain(piece)];
   }
 
   // ---------- The farm and cooking (step 9b) ----------
@@ -603,26 +656,37 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return this.farmView();
   }
 
-  async plant(plot: number, seed: SeedId): Promise<FarmView | null> {
-    const next = plantPlot(this.state, plot, seed, this.now());
-    if (!next) return null;
-    // The farm quest: plant your first turnip (any seed counts).
-    this.commit(this.hintDone(next, FARM_HINT));
-    return this.farmView();
+  /** Plants a seed in a soil cell (step BG6): within reach, else the avatar walks closer first. */
+  async plantSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const res = plantSeed(this.state, room.id, c, r, seed, this.now(), { standing: this.standingPoints(), from: me });
+    if (!res.ok) return res.problem === 'reach' ? this.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
+    // The farm quest: plant your first seed (any seed counts).
+    this.commitBlocks(this.hintDone(res.state, FARM_HINT));
+    return { kind: 'planted', room: this.roomById(room.id)!, c, r, gains: [] };
   }
 
-  async harvest(plot: number): Promise<HarvestResult | null> {
-    const r = harvestPlot(this.state, plot, this.now(), this.rng);
-    if (!r) return null;
-    this.commit(r.state);
-    return { farm: this.farmView(), crop: r.harvest.crop, qty: r.harvest.qty };
+  /** One punch at a plant (step BG6): a grown one is harvested, an unripe one is left alone. */
+  async hitPlant(c: number, r: number): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const now = this.now();
+    const res = hitPlant(this.state, room.id, c, r, now, this.lastBlockHitAt, this.rng, me);
+    if (!res.ok) {
+      if (res.problem === 'reach') return this.walkCloser(me, c, r);
+      if (res.problem === 'unripe') return { kind: 'unripe', c, r, leftMs: res.leftMs ?? 0 };
+      return { kind: 'refused', problem: res.problem };
+    }
+    this.lastBlockHitAt = now;
+    const gains = gainsSince(this.state, res.state);
+    this.commitBlocks(res.state);
+    return { kind: 'harvested', room: this.roomById(room.id)!, c, r, gains };
   }
 
-  async buySeeds(seed: SeedId, qty: number): Promise<boolean> {
+  async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> {
     const next = buySeeds(this.state, seed, qty, this.now());
-    if (!next) return false;
-    this.commit(next);
-    return true;
+    return next ? this.commitGains(next) : null;
   }
 
   async getLakeside(): Promise<LakesideView> {
@@ -644,8 +708,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (Math.hypot(me.x - tree.x, me.y - tree.y) > CHOP_REACH_PX) return null;
     const r = chop(this.state, index, this.now(), this.rng);
     if (!r) return null;
+    const gains = gainsSince(this.state, r.state);
     if (r.state !== this.state) this.commit(r.state);
-    return { kind: r.result.kind, hits: r.result.hits, ...(r.result.loot ? { loot: r.result.loot } : {}), lakeside: this.lakesideView() };
+    return { kind: r.result.kind, hits: r.result.hits, ...(r.result.loot ? { loot: r.result.loot } : {}), gains, lakeside: this.lakesideView() };
   }
 
   async castAt(target: Point): Promise<CastPlan | null> {
@@ -672,18 +737,20 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const next = fishStep(this.fish, inputs, dtMs, this.rng);
     this.fish = next;
     let caught: FishUpdate['caught'] = null;
+    let gains: GainList = [];
     if (next.phase === 'done') {
       this.fish = null;
       if (next.outcome === 'caught') {
         const before = this.state.player.biggest[next.catchId] ?? 0;
         const banked = bankCatch(this.state, next, this.now());
         if (banked) {
+          gains = gainsSince(this.state, banked);
           this.commit(banked);
           caught = { id: next.catchId, rank: next.rank, cm: next.cm, record: next.cm !== null && next.cm > before };
         }
       }
     }
-    return { session: structuredClone(next), caught };
+    return { session: structuredClone(next), caught, gains };
   }
 
   async fishStop(): Promise<void> {
@@ -702,11 +769,16 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return gold;
   }
 
-  async cook(food: FoodId): Promise<boolean> {
+  async cook(food: FoodId): Promise<GainList | null> {
     const next = cook(this.state, food, this.now());
-    if (!next) return false;
+    return next ? this.commitGains(next) : null;
+  }
+
+  /** Saves a new state and returns what it gave (the items the ledger wrote since the old state). */
+  private commitGains(next: GameState): GainList {
+    const gains = gainsSince(this.state, next);
     this.commit(next);
-    return true;
+    return gains;
   }
 
   /** A fishing line that is cast (not saved: a reload loses it, and nothing is lost with it). */
@@ -723,9 +795,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   private farmView(): FarmView {
-    const f = this.state.farm;
-    const room = this.roomById(f.roomId);
-    return structuredClone({ roomId: f.roomId, level: (room?.level ?? 1) as RoomLevel, plots: f.plots, at: this.now() });
+    const room = this.roomById(this.state.player.farmRoomId);
+    const at = this.now();
+    const counts = room ? farmCounts(room, at) : { ripe: 0, growing: 0, free: 0 };
+    return { roomId: this.state.player.farmRoomId, level: (room?.level ?? 1) as RoomLevel, ...counts, at };
   }
 
   /**
@@ -750,7 +823,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
         floor: next.floor,
         lastHitBy: next.lastHitBy,
       };
-      return { run: next, result };
+      return { run: next, result, gains: gainsFromRunEvents(next.events) };
     }
     const worth = next.events.some((e) => e.t !== 'windup') || next.status !== this.state.run?.status;
     if (worth || next.timeMs - this.runSavedAt >= RUN_SAVE_EVERY_MS) {
@@ -759,7 +832,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     } else {
       this.state = { ...this.state, run: next };
     }
-    return { run: next, result: null };
+    return { run: next, result: null, gains: gainsFromRunEvents(next.events) };
   }
 
   /** Tests only: furniture of these types into the bag (ledger reason 'debug'). */
@@ -885,7 +958,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   private shopWorld(state: GameState): ShopWorld {
     const room = state.rooms.find((r) => r.id === state.shop.roomId);
     if (!room) throw new Error('shop room missing');
-    this.shopGrid ??= buildNavGrid(room, itemBlockers(state.items, room.id));
+    this.shopGrid ??= buildNavGrid(room, [...itemBlockers(state.items, room.id), ...blockRects(room)]);
     // The own avatar's seat in the shop (customers do not sit there).
     const seated = state.currentRoomId === room.id ? this.walkState.seated : null;
     return { room, items: state.items, grid: this.shopGrid, cashier: this.isServing(), seatsTaken: seated ? [seated] : [] };
@@ -958,6 +1031,38 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       }
     }
     return this.visibleItems();
+  }
+
+  /** The last block punch (ms), for the cooldown. Not saved. */
+  private lastBlockHitAt = -Infinity;
+
+  /** Where avatars stand still in the current room: the own avatar, and the shop's customers and guests. */
+  private standingPoints(): Point[] {
+    const me = this.avatarNow();
+    const out: Point[] = this.walkState.path.length === 0 ? [{ x: me.x, y: me.y }] : [];
+    if (this.state.currentRoomId === this.state.shop.roomId) {
+      for (const g of [...this.state.shop.customers, ...this.state.tavern.guests]) if (g.path.length === 0) out.push({ x: g.x, y: g.y });
+    }
+    return out;
+  }
+
+  /** A block cell is out of reach: walk to a spot near it; the client asks again on arrival. */
+  private walkCloser(me: Avatar, c: number, r: number): BlockResult {
+    const spot = approachSpot(this.grid, me, c, r);
+    const path = spot && findPath(this.grid, me, spot);
+    if (!path) return { kind: 'refused', problem: 'reach' };
+    this.walkState = { avatar: { ...me, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seated: null };
+    return { kind: 'walk', path };
+  }
+
+  /** A block was placed or broken: save, rebuild the grids and send the customers round the new walls. */
+  private commitBlocks(next: GameState): void {
+    this.commit(next);
+    this.grid = this.buildGrid();
+    this.shopGrid = null;
+    if (this.state.currentRoomId === this.state.shop.roomId) {
+      this.commit(repathCustomers(this.state, this.shopWorld(this.state)));
+    }
   }
 
   private buildGrid(): NavGrid {

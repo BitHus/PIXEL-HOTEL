@@ -11,16 +11,19 @@ export const WALL_BAND = 64;
 export const SIDE_BORDER = 16;
 /** Width of the door opening in the bottom wall, in px. */
 export const DOOR_WIDTH = 64;
-/** The door zone: a rectangle on the floor just inside the door. */
+/** The door zone: 2 x 2 cells on the floor just inside the door (BG1). */
 export const DOOR_ZONE_W = 64;
-export const DOOR_ZONE_H = 48;
+export const DOOR_ZONE_H = 64;
 
 export type RoomLevel = 1 | 2 | 3;
 export const ROOM_MAX_LEVEL: RoomLevel = 3;
 
+/** The build grid (step BG1): rooms, floors and furniture footprints are whole cells of this size, px. */
+export const BUILD_CELL = 32;
 /**
- * Room shapes and their floor rectangles per level live in shared/data/roomShapes.json (step 7b).
- * Shape rectangles, doors and walls are aligned to this grid, px.
+ * Room shapes and their floor rectangles per level live in shared/data/roomShapes.json in CELLS
+ * (BUILD_CELL px each). This grid (px) is only the size of the thin border pieces that are drawn
+ * around the floor.
  */
 export const ROOM_GRID = 16;
 
@@ -40,25 +43,18 @@ export const START_WALL_STYLE = 'bare';
  * center; the stall_table in the middle.
  */
 export const SHOP_START_ITEMS = [
-  { typeId: 'counter', x: 176, y: 88, facing: 'down' },
-  { typeId: 'stall_table', x: 288, y: 184, facing: 'down' },
+  { typeId: 'counter', x: 176, y: 96, facing: 'down' },
+  { typeId: 'stall_table', x: 304, y: 192, facing: 'down' },
 ] as const;
 
 // ---------- Movement (section 6) ----------
-/** Internal navigation grid cell size, in px. Never shown. */
-export const NAV_CELL = 8;
-/**
- * Footprints are made bigger by this radius when building the nav grid. Small on purpose (owner's
- * decision after playtesting): with 8 px cells a gap of 24 px between two items is always walkable
- * (the gap keeps 16 px, so a whole free cell at every 4 px alignment); the avatar may overlap
- * furniture edges a little.
- */
-export const AVATAR_RADIUS = 4;
+/** Navigation grid cell size in rooms, px: the build grid (step BG1). Blockers are whole cells. */
+export const NAV_CELL = BUILD_CELL;
 /** Walking speed in the hotel and the shop, px per second. */
 export const HOTEL_WALK_SPEED = 128;
 
 // ---------- Furniture (section 7) ----------
-/** Placement snap, in px. Holding Shift turns it off. */
+/** Snap of WALL items (they stay free along the back wall band), px. Shift turns it off. Floor items snap to cells. */
 export const SNAP = 4;
 /** Default point where a customer stands, relative to an item's anchor. */
 export const DEFAULT_STAND_POINT = { dx: 0, dy: 24 } as const;
@@ -124,7 +120,7 @@ export const CUSTOMER_DECIDE_MS = 1200;
 /** Paying takes this long once the player stands behind the counter (the till animation). */
 export const CUSTOMER_PAY_MS = 900;
 /** The shopkeeper's spot is this far behind the counter's back edge, px. */
-export const CASHIER_BEHIND_PX = 20;
+export const CASHIER_BEHIND_PX = BUILD_CELL / 2;
 /** At most this many customers wait with an item for the till (step 9d: was 5). While this many
  *  wait, no new customers come. They never leave on their own. */
 export const QUEUE_MAX = 3;
@@ -141,8 +137,8 @@ export const CUSTOMER_BROWSE_MIN_MS = 2000;
 export const CUSTOMER_BROWSE_MAX_MS = 5000;
 /** After paying, a customer waits this long at the till before walking out, ms. */
 export const CUSTOMER_AFTER_PAY_MS = 1000;
-/** Queue spots behind the paying spot are this far apart, px. */
-export const QUEUE_SPACING_PX = 24;
+/** Queue spots behind the paying spot are this far apart, px: one cell each (BG1). */
+export const QUEUE_SPACING_PX = BUILD_CELL;
 /** Customers appear this far below the floor and walk in through the door, px. */
 export const CUSTOMER_OUTSIDE_PX = 24;
 /** Customer ids count down from -1 (players have positive ids). */
@@ -225,8 +221,8 @@ export const TALK_LINES_MAX = 3;
 export const TALK_GAP_MS = 2200;
 export const TALK_NEAR_PX = 20;
 /** Staff only: customers never enter the strip behind the counter, this deep and this much wider than the counter on each side, px. */
-export const STAFF_ZONE_DEPTH_PX = 40;
-export const STAFF_ZONE_SIDE_PX = 8;
+export const STAFF_ZONE_DEPTH_PX = BUILD_CELL;
+export const STAFF_ZONE_SIDE_PX = 0;
 /** Two queue spots are never closer than this, px. */
 export const QUEUE_MIN_GAP_PX = 16;
 /** Talk lines are at most this many characters (tested). */
@@ -396,27 +392,39 @@ export const FARM_UPGRADE_COST = {
 /** The farm's ground and fence (styles.json, not in the catalog; the farm always uses them). */
 export const FARM_FLOOR_STYLE = 'grass';
 export const FARM_WALL_STYLE = 'hedge';
-/** A soil plot is a square of this size, px. */
-export const FARM_PLOT_SIZE = 32;
 /**
- * Every plot's top-left corner, in order; level n has the first FARM_PLOTS_PER_LEVEL[n - 1]. All of
- * them lie inside the level 1 farm, in neat rows, so an upgrade only adds plots. 48 px apart.
+ * LEGACY (steps 9b to 9e): the old fixed plots, top-left corners in px, level n had the first
+ * LEGACY_FARM_PLOTS_PER_LEVEL[n - 1]. Only the save migration 15 -> 16 reads them (each plot became a soil cell).
  */
-export const FARM_PLOTS: readonly { x: number; y: number }[] = [
-  // Level 1: two rows of three.
-  ...[48, 96, 144].flatMap((x) => [{ x, y: 48 }, { x, y: 96 }]),
-  // Level 2: the rows get three more plots.
-  ...[192, 240, 288].flatMap((x) => [{ x, y: 48 }, { x, y: 96 }]),
-  // Level 3: a third row of eight.
-  ...[48, 96, 144, 192, 240, 288, 336, 384].map((x) => ({ x, y: 144 })),
+export const LEGACY_FARM_PLOTS: readonly { x: number; y: number }[] = [
+  ...[64, 128, 192].flatMap((x) => [{ x, y: 64 }, { x, y: 128 }]),
+  ...[256, 320, 384].flatMap((x) => [{ x, y: 64 }, { x, y: 128 }]),
+  ...[64, 128, 192, 256, 320, 384, 448, 512].map((x) => ({ x, y: 192 })),
 ];
-export const FARM_PLOTS_PER_LEVEL = [6, 12, 20] as const;
+export const LEGACY_FARM_PLOTS_PER_LEVEL = [6, 12, 20] as const;
+/** The soil a new farm starts with (step BG6): a rectangle of cells (col, row, width, height). The player adds or removes soil for free. */
+export const FARM_START_SOIL = { c: 2, r: 2, w: 6, h: 2 } as const;
+/** The floor style ids of the farm's ground (styles.json): soil takes seeds, grass is the rest. Both are free. */
+export const SOIL_STYLE = 'soil';
 /** The cooking pot: a fixed spot in the farm (anchor = bottom middle of its footprint), w x d px. */
-export const COOKING_POT = { x: 464, y: 120, w: 32, d: 24 } as const;
-/** One harvest gives this many crops (random, both ends included). */
-export const HARVEST_MIN = 1;
-export const HARVEST_MAX = 2;
-/** The ripe marker above a plot bobs this many px every this many ms (client). */
+export const COOKING_POT = { x: 464, y: 128, w: 32, d: 32 } as const;
+/**
+ * How long a planted seed takes to be fully grown, by the rank of the thing it grows (step BG6). Real time, also
+ * while the game is closed. The first harvest of a starter seed (common) is within about 2 minutes.
+ */
+export const SEED_GROW_MS = { common: 2 * 60_000, rare: 20 * 60_000, ultra_rare: 3 * 3_600_000, legendary: 12 * 3_600_000 } as const;
+/** A harvest gives this many blocks or crops (min to max, both included), by rank. */
+export const SEED_YIELD = {
+  common: { min: 2, max: 4 },
+  rare: { min: 2, max: 3 },
+  ultra_rare: { min: 1, max: 2 },
+  legendary: { min: 1, max: 1 },
+} as const;
+/** Chance that a harvest also gives the seed back. */
+export const SEED_BACK_CHANCE = 0.3;
+/** A plant is in its first stage (sprout) until this share of its time has passed, then the small plant, then fully grown. */
+export const PLANT_SPROUT_SHARE = 0.5;
+/** The ripe marker above a grown plant bobs this many px every this many ms (client). */
 export const RIPE_MARKER_BOB_PX = 2;
 export const RIPE_MARKER_BOB_MS = 400;
 /** Seeds are bought in packs of 1 or this many (catalog Seeds tab). */
@@ -431,18 +439,18 @@ export const GLOWCAP_SPORE_CHANCE = 0.05;
 // ---------- Lakeside: woodcutting and fishing (section 10d, step 9f) ----------
 /** The lake: three water rectangles around the pier (floor px). The lake is about a third of the 576 x 384 lakeside. */
 export const LAKE_WATER: readonly { x: number; y: number; w: number; h: number }[] = [
-  { x: 288, y: 40, w: 272, h: 112 },
-  { x: 288, y: 184, w: 272, h: 96 },
-  { x: 360, y: 152, w: 200, h: 32 },
+  { x: 288, y: 32, w: 256, h: 128 },
+  { x: 288, y: 192, w: 256, h: 96 },
+  { x: 384, y: 160, w: 160, h: 32 },
 ];
 /** The wooden pier (walkable) reaching into the lake from the shore. */
-export const LAKE_PIER = { x: 248, y: 152, w: 112, h: 32 } as const;
+export const LAKE_PIER = { x: 256, y: 160, w: 128, h: 32 } as const;
 /** The 8 trees: anchor = the bottom middle of the trunk. They stay (a stump) when felled. */
 export const LAKE_TREES: readonly { x: number; y: number }[] = [
-  { x: 48, y: 96 }, { x: 112, y: 60 }, { x: 184, y: 100 }, { x: 56, y: 208 },
-  { x: 140, y: 248 }, { x: 216, y: 288 }, { x: 420, y: 336 }, { x: 520, y: 324 },
+  { x: 48, y: 96 }, { x: 112, y: 64 }, { x: 176, y: 96 }, { x: 48, y: 224 },
+  { x: 144, y: 256 }, { x: 208, y: 288 }, { x: 432, y: 352 }, { x: 528, y: 320 },
 ];
-/** A tree's trunk footprint (blocks walking), px. */
+/** A tree's trunk footprint (blocks walking), px: it sits in the bottom half of one cell (the anchors are on cell centres). */
 export const TREE_FOOTPRINT = { w: 24, d: 16 } as const;
 /** Bushes: decoration only (drawn, never in the way). */
 export const LAKE_BUSHES: readonly { x: number; y: number }[] = [
@@ -633,7 +641,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 16;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -665,7 +673,7 @@ export const HINTS = [
   'Place it in your room.',
   'Put an item on the table in your shop and set a price.',
   'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
-  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds) and plant your first turnip.',
+  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown.',
   'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
 ] as const;
 /** The index of the dungeon hint in HINTS: it only shows while the shop has nothing for sale. */
@@ -743,10 +751,10 @@ export const SPLASH_MARGIN_PX = 16;
 /** What a new tavern starts with besides the bar and the stall table: `key` is the spot in the shop
  *  shape's shopStart (roomShapes.json); x and y here are the square shop's. */
 export const TAVERN_START_ITEMS = [
-  { key: 'round_table', typeId: 'round_table', x: 432, y: 200, facing: 'down' },
-  { key: 'stool_left', typeId: 'bar_stool', x: 392, y: 188, facing: 'right' },
-  { key: 'stool_right', typeId: 'bar_stool', x: 472, y: 188, facing: 'left' },
-  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 504, y: 56, facing: 'down' },
+  { key: 'round_table', typeId: 'round_table', x: 448, y: 224, facing: 'down' },
+  { key: 'stool_left', typeId: 'bar_stool', x: 400, y: 192, facing: 'right' },
+  { key: 'stool_right', typeId: 'bar_stool', x: 496, y: 192, facing: 'left' },
+  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 496, y: 64, facing: 'down' },
 ] as const;
 /** The drink that is ready in the start barrel. */
 export const TAVERN_START_DRINK = 'root_ale' as const;
@@ -797,3 +805,36 @@ export const AWAY_ORDERS_MAX = 3;
 export const GUEST_BROWSE_STALL_CHANCE = 0.25;
 /** The menu panel shows this many last prices paid per drink or dish. */
 export const MENU_HISTORY_LENGTH = 5;
+
+// ---------- Blocks, punching and gems (step BG5) ----------
+/** A block can be placed or punched this many cells from the avatar (centre to centre, in cells). */
+export const BLOCK_REACH = 3;
+/** One punch per tap, at most every this many ms. */
+export const BLOCK_HIT_COOLDOWN_MS = 250;
+/** A half-broken block heals (its hits reset) when it was not hit for this long. */
+export const BLOCK_HEAL_MS = 6000;
+/** Chance that a broken block drops its seed (when the block has a seedId). */
+export const BLOCK_SEED_CHANCE = 0.2;
+/** Where gems come from (step BG4 adds the other sources): the chance of a drop and its size before the rank bonus. */
+export const GEMS = {
+  block: { chance: 0.15, min: 1, max: 2 },
+  /** Harvesting a grown plant (step BG6). */
+  harvest: { chance: 0.12, min: 1, max: 2 },
+} as const;
+/** The gem amount is multiplied by this per rank of the thing that dropped it. */
+export const GEM_RANK_MULT = { common: 1, rare: 2, ultra_rare: 4, legendary: 8 } as const;
+/** The id a gem gain has in a gains list (gems are a currency, not an item). */
+export const GEMS_GAIN_ID = 'gems';
+/** Popups above the avatar's head (step BG3 B): how long one stays, and how many show at once. */
+export const POPUP_MS = 1200;
+export const POPUP_MAX = 5;
+/** The crack pictures of a block that is being punched: 0 = whole, then up to this many minus one. */
+export const BLOCK_CRACK_STAGES = 4;
+/** Blocks are bought one at a time or in a pack of this many (Catalog > Blocks). */
+export const BLOCK_PACK = 10;
+
+// ---------- Hold to repeat (step BG5b) ----------
+/** A press on empty floor with a block selected becomes a "place" hold after this many ms of not moving (a short tap places one). */
+export const HOLD_PLACE_START_MS = TAP_MAX_MS;
+/** While a place hold runs, one block is placed at most every this many ms (a drag along cells makes a line). */
+export const HOLD_PLACE_MS = 150;

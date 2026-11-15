@@ -6,7 +6,7 @@
 // room is empty.
 
 import { addSeen } from './seen.ts';
-import {
+import { FARM_START_SOIL, SOIL_STYLE,
   HOTBAR_SLOTS,
   LOCAL_PLAYER_ID,
   LOCAL_PLAYER_NAME,
@@ -30,10 +30,9 @@ import { arrangeForInventory, emptyBag } from './bag.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
-import { createRoom, defaultShape, getRoomShape, shapesFor } from './room.ts';
+import { createRoom, defaultShape, getRoomShape, paintFloorCells, shapesFor, type Room } from './room.ts';
 import { cleanDisplayName, lookAllowed } from './clothing.ts';
 import { emptyShop } from './shop.ts';
-import { emptyFarm } from './farm.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { emptyTavern } from './tavern.ts';
 import type { FurnitureItem } from './types.ts';
@@ -94,6 +93,12 @@ export function styleKey(kind: StyleKind, id: string): string {
 }
 
 /** A brand new game for one player. The start gold and materials go through the ledger. */
+/** A new farm starts with a patch of soil (FARM_START_SOIL); the player adds or removes soil for free. */
+function startFarmRoom(room: Room): Room {
+  const { c, r, w, h } = FARM_START_SOIL;
+  return paintFloorCells(room, { c, r }, { c: c + w - 1, r: r + h - 1 }, SOIL_STYLE);
+}
+
 export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at = 0): GameState {
   const shopStart = getRoomShape(config.shopShape).shopStart;
   // The bar and the stall table, then the tavern's round table, two stools and the brewing barrel.
@@ -108,7 +113,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       name: config.name,
       level: START_PLAYER_LEVEL,
       xp: START_XP,
-      wallet: { gold: 0 },
+      wallet: { gold: 0, gems: 0 },
       materials: {},
       unlockedStyles: [styleKey('floor', START_FLOOR_STYLE), styleKey('wall', START_WALL_STYLE)],
       gear: [],
@@ -128,7 +133,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     rooms: [
       createRoom(config.hotelRoomId, 'hotel', 1, config.playerId, config.hotelShape),
       createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape),
-      createRoom(config.farmRoomId, 'farm', 1, config.playerId),
+      startFarmRoom(createRoom(config.farmRoomId, 'farm', 1, config.playerId)),
       createRoom(config.lakesideRoomId, 'lakeside', 1, config.playerId),
     ],
     items: startItems,
@@ -140,7 +145,6 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     shop: emptyShop(config.shopRoomId, at),
     hintsDone: 0,
     run: null,
-    farm: emptyFarm(config.farmRoomId),
     lakeside: emptyLakeside(config.lakesideRoomId),
     // The start barrel holds a brew that is ready to collect.
     tavern: { ...emptyTavern(config.shopRoomId, at), brews: barrel ? [{ barrelUid: barrel.uid, drink: TAVERN_START_DRINK, readyAt: at }] : [] },

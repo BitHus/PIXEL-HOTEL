@@ -210,8 +210,10 @@ export function queueSpots(grid: NavGrid, room: Room, counter: FurnitureItem, n:
   const spots: Point[] = [];
   const apart = (p: Point): boolean => spots.every((q) => Math.hypot(q.x - p.x, q.y - p.y) >= QUEUE_MIN_GAP_PX);
   for (let k = 0; k < n; k++) {
-    const want = { x: first.x + dir.x * QUEUE_SPACING_PX * k, y: first.y + dir.y * QUEUE_SPACING_PX * k };
-    const c = cellAt(grid, want);
+    // Each spot is the middle of a cell (BG1), so two customers never share a cell.
+    const raw = { x: first.x + dir.x * QUEUE_SPACING_PX * k, y: first.y + dir.y * QUEUE_SPACING_PX * k };
+    const c = cellAt(grid, raw);
+    const want = cellCenter(grid, c.c, c.r);
     if (isCellFree(grid, c.c, c.r) && usable(c.r * grid.cols + c.c) && apart(want)) {
       spots.push(want);
       continue;

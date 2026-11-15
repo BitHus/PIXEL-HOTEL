@@ -13,8 +13,11 @@ import {
   moveItem,
   nextFacing,
   planPlacement,
+  poseForAnchorCell,
+  anchorCell,
   ridersOf,
   snapCoord,
+  snapToCells,
   type FurnitureLookup,
   type MoveTo,
   type Placement,
@@ -59,14 +62,16 @@ export function rotateGhost(s: PlacingSession, types: FurnitureLookup = getFurni
 }
 
 /**
- * Where the ghost would go: anchor snapped to SNAP (or whole px with snap off), on a surface or
- * on the floor, and whether it fits. `items` are all items (the one being placed is left out).
+ * Where the ghost would go: floor items snap to the nearest cell footprint (step BG1); wall items
+ * keep their free snap (SNAP px, or whole px with snap off) along the back wall band. On a surface
+ * or on the floor, and whether it fits. `items` are all items (the one being placed is left out).
  */
 export function planGhost(room: Room, items: readonly FurnitureItem[], s: PlacingSession, snap = true, types: FurnitureLookup = getFurnitureType): Placement {
   const type = types(s.typeId);
   const fd = footprintSize(type, s.facing).d;
-  const x = snapCoord(s.center.x, snap);
-  const y = snapCoord(s.center.y + fd / 2, snap);
+  const cell = type.wall ? null : snapToCells(type, s.facing, s.center);
+  const x = cell ? cell.x : snapCoord(s.center.x, snap);
+  const y = cell ? cell.y : snapCoord(s.center.y + fd / 2, snap);
   const others = items.filter((i) => i.uid !== s.uid);
   const carrying = s.origin !== null && s.uid !== null && ridersOf(items, s.uid).length > 0;
   return planPlacement(room, others, type, x, y, s.facing, carrying, types);
@@ -102,7 +107,7 @@ export function cancelPlacing(items: readonly FurnitureItem[], s: PlacingSession
 }
 
 /**
- * Turns a placed item to its next facing around its footprint center. Returns the new items, or
+ * Turns a placed item to its next facing, keeping its anchor cell. Returns the new items, or
  * null when the type has only one facing, the turned item does not fit there, or something
  * standing on it would fall off.
  */
@@ -112,11 +117,16 @@ export function rotateInPlace(room: Room, items: readonly FurnitureItem[], uid: 
   const type = types(item.typeId);
   const facing = nextFacing(type, item.facing);
   if (facing === item.facing) return null;
-  const c = footprintCenter(item, item.typeId, types);
-  const y = type.wall ? item.y : Math.round(c.y + footprintSize(type, facing).d / 2);
   const others = items.filter((i) => i.uid !== uid);
   const carrying = ridersOf(items, uid).length > 0;
-  const plan = planPlacement(room, others, type, item.x, y, facing, carrying, types);
+  // Rotating keeps the anchor cell (step BG1: the bottom-centre cell); wall items and riders turn where they are.
+  let at = { x: item.x, y: item.y };
+  if (!type.wall && item.onItemUid === null) {
+    const a = anchorCell(item, type);
+    const p = poseForAnchorCell(type, facing, a.col, a.row);
+    at = { x: p.x, y: p.y };
+  }
+  const plan = planPlacement(room, others, type, at.x, at.y, facing, carrying, types);
   if (!plan.ok || plan.onItemUid !== item.onItemUid) return null;
   const next = moveItem(items, uid, { x: plan.x, y: plan.y, facing, onItemUid: plan.onItemUid, roomId: room.id }, types);
   const fellOff = ridersOf(items, uid).some((r) => next.find((n) => n.uid === r.uid)?.roomId !== room.id);

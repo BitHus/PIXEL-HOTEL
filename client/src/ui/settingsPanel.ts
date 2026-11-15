@@ -16,10 +16,12 @@ export interface SettingsHooks {
   newGame(): void;
   onDebug(on: boolean): void;
   /** The device settings as stored (atmosphere step), and what happens when they change. */
-  prefs: { sound: boolean; volume: number; lighting: boolean };
+  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean };
   onSound(on: boolean): void;
   onVolume(volume: number): void;
   onLighting(on: boolean): void;
+  onCellGrid(on: boolean): void;
+  onPopups(on: boolean): void;
 }
 
 export interface SettingsPanel {
@@ -96,6 +98,25 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   });
   lightBtn.classList.toggle('on', lighting);
   const lightNote = el('p', 'panel-note', 'Turn lighting off if the game feels slow.');
+  let cellGrid = hooks.prefs.cellGrid;
+  const gridBtn = textButton(`Build grid: ${cellGrid ? 'on' : 'off'}`, () => {
+    cellGrid = !cellGrid;
+    gridBtn.textContent = `Build grid: ${cellGrid ? 'on' : 'off'}`;
+    gridBtn.classList.toggle('on', cellGrid);
+    hooks.onCellGrid(cellGrid);
+  });
+  gridBtn.classList.toggle('on', cellGrid);
+  const gridNote = el('p', 'panel-note', 'A faint grid on the floor while you place furniture or paint floors.');
+
+  let popups = hooks.prefs.popups;
+  const popBtn = textButton(`Popups: ${popups ? 'on' : 'off'}`, () => {
+    popups = !popups;
+    popBtn.textContent = `Popups: ${popups ? 'on' : 'off'}`;
+    popBtn.classList.toggle('on', popups);
+    hooks.onPopups(popups);
+  });
+  popBtn.classList.toggle('on', popups);
+  const popNote = el('p', 'panel-note', 'Small icons float above your head for what you get (blocks, loot, gems).');
 
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section');
@@ -108,6 +129,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'Pixel Hotel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

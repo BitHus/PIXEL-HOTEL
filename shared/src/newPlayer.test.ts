@@ -12,7 +12,7 @@ describe('createNewPlayer (brief section 9)', () => {
   it('gives level 1, 0 xp, 100 gold, 4 wood and 2 cloth, nothing else', () => {
     expect(s.player.level).toBe(1);
     expect(s.player.xp).toBe(0);
-    expect(s.player.wallet).toEqual({ gold: 100 });
+    expect(s.player.wallet).toEqual({ gold: 100, gems: 0 });
     expect(s.player.materials).toEqual({ wood: 4, cloth: 2 });
     expect(s.player.gear).toEqual([]);
     expect(s.player.potions).toBe(0);
@@ -35,10 +35,9 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.rooms.find((r) => r.id === s.player.lakesideRoomId)).toMatchObject({ kind: 'lakeside', level: 1, w: 576, h: 384 });
     expect(s.lakeside.trees).toEqual(Array.from({ length: 8 }, () => ({ hits: 0, felledAt: null })));
     expect(s.player.biggest).toEqual({});
-    // Step 9b: a level 1 farm (576x384) with 6 empty plots.
-    expect(s.rooms.find((r) => r.id === s.player.farmRoomId)).toMatchObject({ kind: 'farm', level: 1, w: 576, h: 384 });
-    expect(s.farm.roomId).toBe(s.player.farmRoomId);
-    expect(s.farm.plots).toEqual(Array.from({ length: 6 }, () => ({ crop: null, plantedAt: 0 })));
+    // Step BG6: a level 1 farm (576x384) with a patch of soil cells and no plants.
+    expect(s.rooms.find((r) => r.id === s.player.farmRoomId)).toMatchObject({ kind: 'farm', level: 1, w: 576, h: 384, plants: {} });
+    expect(Object.values(s.rooms.find((r) => r.id === s.player.farmRoomId)!.floorCells ?? {})).toEqual(Array.from({ length: 12 }, () => 'soil'));
     expect(s.currentRoomId).toBe(hotel?.id);
   });
 

@@ -16,6 +16,8 @@ import {
   INTRO_STEP_MS,
   tillPoint,
   PALETTE,
+  STYLE_TYPES,
+  styleKey,
   buildNavGrid,
   cameraAt,
   centerCamera,
@@ -25,6 +27,16 @@ import {
   fitZoom,
   fitsRoomKind,
   isMaterialId,
+  isBlockId,
+  getBlockType,
+  blockInCell,
+  blockProblem,
+  plantProblem,
+  plantInCell,
+  readyInMs,
+  blockPrice,
+  cellOf,
+  type BlockResult,
   getFurnitureType,
   catalogPrice,
   getStyle,
@@ -33,7 +45,6 @@ import {
   introZoom,
   roomBlockers,
   roomBoundsRect,
-  farmCounts,
   getMaterialType,
   CROP_TYPES,
   MINE_UNLOCK_LEVEL,
@@ -67,6 +78,7 @@ import {
   MINE_HINT,
   xpForNextLevel,
   newEntries,
+  cellsBetween,
 } from '@pixel-hotel/shared';
 import './ui/ui.css';
 import { LocalGameAPI } from './api/localGameAPI.ts';
@@ -74,6 +86,7 @@ import { browserStorage } from './api/saveStorage.ts';
 import { RoomView } from './render/roomView.ts';
 import { createCursorCross } from './render/cursorCross.ts';
 import { attachCameraControl } from './input/cameraControl.ts';
+import { HoldControl, type HoldResult, type HoldTarget } from './input/holdControl.ts';
 import { CameraIntro } from './input/cameraIntro.ts';
 import { createDebugLabel } from './ui/debugLabel.ts';
 import { AvatarSprite } from './render/avatarSprite.ts';
@@ -90,6 +103,9 @@ import { createSideButtons } from './ui/sideButtons.ts';
 import { createBuildMode } from './ui/buildMode.ts';
 import { createInfoPanel } from './ui/infoPanel.ts';
 import { createHotbar } from './ui/hotbar.ts';
+import { createGainPopups } from './ui/gainPopups.ts';
+import { BlockViews } from './render/blockViews.ts';
+import { PlantViews } from './farm/plantViews.ts';
 import { createBagPanel } from './ui/bagPanel.ts';
 import { createAvatarPanel } from './ui/avatarPanel.ts';
 import { createChatPanel } from './ui/chatPanel.ts';
@@ -105,7 +121,7 @@ import { ItemHops } from './render/itemHops.ts';
 import { goodSpot } from './render/slotGoods.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
 import { WHERE, createCatalogPanel, growText } from './ui/catalogPanel.ts';
-import { SEED_PACK } from '@pixel-hotel/shared';
+import { BLOCK_PACK, SEED_PACK } from '@pixel-hotel/shared';
 import { watchLayout } from './ui/layoutVars.ts';
 import { createRoomPanel } from './ui/roomPanel.ts';
 import { flyCoin } from './ui/coinFly.ts';
@@ -126,6 +142,9 @@ import { createTravelPanel, type PlaceCard, type Place } from './ui/travelPanel.
 import { createLunchPicker } from './ui/lunchPicker.ts';
 import { ROOM_NAMES } from './ui/infoPanel.ts';
 import { RoomAtmosphere } from './render/roomAtmosphere.ts';
+import { CellGrid } from './render/cellGrid.ts';
+import { FloorPaint } from './build/floorPaint.ts';
+import { createPaintBar } from './ui/paintBar.ts';
 import { Backdrop } from './render/backdrop.ts';
 import { Sound } from './audio/sound.ts';
 import { loadPrefs, savePrefs } from './api/prefs.ts';
@@ -186,6 +205,10 @@ async function start(): Promise<void> {
   let room: Room = first.room;
   let bounds: Rect = roomBoundsRect(room);
   const view = new RoomView();
+  // The faint build grid (step BG1): shown while placing furniture or painting floors.
+  const cellGrid = new CellGrid();
+  view.gridLayer.addChild(cellGrid.container);
+  cellGrid.setRoom(room);
   // Atmosphere step: the dark planks outside the room, then the room with its shadows and light.
   const backdrop = new Backdrop(app.renderer);
   app.stage.addChild(backdrop.container, view.world);
@@ -258,6 +281,8 @@ async function start(): Promise<void> {
   let items: FurnitureItem[] = await api.getItems();
   let inventory: Inventory = await api.getInventory();
   const itemViews = new ItemViews(view, room.id);
+  const blockViews = new BlockViews(view);
+  const plantViews = new PlantViews(view);
   /** The shop (goods on the slots, prices, sale history, customers). */
   let shop: ShopView = await api.getShop();
   const customers = new CustomerViews(view);
@@ -296,12 +321,16 @@ async function start(): Promise<void> {
 
   // ---------- HTML UI (layout rule in CLAUDE.md) ----------
   const toast = createToast(ui);
+  // Gain popups above the avatar's head (step BG3 B) and the blocks (step BG5).
+  const popups = createGainPopups(ui, prefs.popups);
   const bubbles = createChatBubbles(ui);
   const label = createDebugLabel(ui);
   const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
   const panels = createPanels();
   /** The player's gold as last read (for the "Buy this?" panels). */
   let walletGold = 0;
+  /** The floor and wall styles the player has unlocked (style keys), as last read. */
+  let unlockedStyles: readonly string[] = [];
   const info = createInfoPanel(ui);
   const hint = createHintBox(ui, info.column);
   const floats = createSaleFloats(ui);
@@ -313,7 +342,7 @@ async function start(): Promise<void> {
       menu.close();
       placer.cancel();
     },
-    escapeTaken: () => panels.open !== null || placer.active || dungeon.isActive,
+    escapeTaken: () => panels.open !== null || placer.active || paint.active || dungeon.isActive,
   });
   build.button.classList.add('room-only');
   // The Dungeon button (step 9): shows the key cost, or "free" under 10 gold.
@@ -451,11 +480,48 @@ async function start(): Promise<void> {
       },
       onChange: () => {
         syncItems();
-        hotbar.setHidden(placer.active);
+        hotbar.setHidden(placer.active || paint.active);
+        syncGrid();
       },
     },
     view.ghostLayer,
   );
+  // ---------- Painting floors per cell (step BG1) ----------
+  /** The floors the paint bar offers: the farm paints soil and grass (free), other rooms the unlocked floors. */
+  const paintableStyles = (): readonly string[] => (room.kind === 'farm' ? [styleKey('floor', 'soil'), styleKey('floor', 'grass')] : unlockedStyles);
+  /** The grid shows while placing or painting (unless it is switched off in Settings). */
+  const syncGrid = (): void => {
+    cellGrid.visible = prefs.cellGrid && (placer.active || paint.active || selectedBlock !== null);
+    paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
+    ui.classList.toggle('painting', paint.active);
+  };
+  const paint: FloorPaint = new FloorPaint({
+    getRoom: () => room,
+    paint: async (from, to, id) => {
+      const next = await api.paintFloor(room.id, from, to, id);
+      if (!next || next.id !== room.id) return false;
+      room = next;
+      view.setRoom(room);
+      atmosphere.setRoom(room);
+      sound.play('pop');
+      await refreshShop();
+      return true;
+    },
+    onChange: () => {
+      hotbar.setHidden(placer.active || paint.active);
+      syncGrid();
+    },
+  });
+  view.gridLayer.addChild(paint.container);
+  const paintBar = createPaintBar(ui, {
+    onBrush: (id) => paint.setBrush(id),
+    onGrid: () => {
+      prefs.cellGrid = !prefs.cellGrid;
+      savePrefs(storage, prefs);
+      syncGrid();
+    },
+    onDone: () => paint.end(),
+  });
   const viewCenter = (): Point => screenToWorld({ x: app.screen.width / 2, y: app.screen.height / 2 }, shown);
   const placeBar = createPlaceBar(ui, {
     onPlace: () => void placer.place(),
@@ -512,7 +578,7 @@ async function start(): Promise<void> {
       const m = getMaterialType(seed);
       const crop = CROP_TYPES.find((c) => c.seed === seed);
       const price = crop?.seedPrice ?? 0;
-      const detail = crop ? `Plant on your farm: ripe in ${growText(crop)}, the crop is worth ${crop.baseValue}.` : 'Plant on your farm.';
+      const detail = crop ? `Plant it in the soil of your farm: fully grown in ${growText(crop)}, then punch it. The crop is worth ${crop.baseValue}.` : 'Plant it in the soil of your farm.';
       const sure = await confirmBuy(ui, {
         name: m.name,
         detail,
@@ -526,7 +592,27 @@ async function start(): Promise<void> {
       if (!sure) return;
       const qty = sure === 'more' ? SEED_PACK : 1;
       const ok = await api.buySeeds(seed, qty);
-      toast(ok ? `${m.name}: ${qty} in your ${inventory.hotbar.includes(seed) || !inventory.bag.materials.includes(seed) ? 'hotbar' : 'bag'}. Tap an empty plot on your farm.` : 'Not enough gold.');
+      toast(ok ? `${m.name}: ${qty} in your ${inventory.hotbar.includes(seed) || !inventory.bag.materials.includes(seed) ? 'hotbar' : 'bag'}. Select it in the hotbar and tap soil on your farm.` : 'Not enough gold.');
+      await refreshInventory();
+    },
+    buyBlock: async (id) => {
+      const b = getBlockType(id);
+      const price = blockPrice(id);
+      const sure = await confirmBuy(ui, {
+        name: b.name,
+        detail: `Place it in a free cell of your rooms. ${b.hardness} punch${b.hardness === 1 ? '' : 'es'} to break; it comes back to your bag.`,
+        price,
+        image: materialIconUrl(b.id),
+        gold: walletGold,
+        title: 'Buy this?',
+        yes: 'Buy 1',
+        more: { label: `Buy ${BLOCK_PACK}`, price: price * BLOCK_PACK },
+      });
+      if (!sure) return;
+      const qty = sure === 'more' ? BLOCK_PACK : 1;
+      const got = await api.buyBlocks(id, qty);
+      if (got) popups.show(got);
+      toast(got ? `${b.name}: ${qty} in your bag. Put it in the hotbar, then tap a free cell.` : 'Not enough gold.');
       await refreshInventory();
     },
     buyStyle: async (kind, id) => {
@@ -572,6 +658,16 @@ async function start(): Promise<void> {
         toast(`Upgraded to level ${next.level}!`);
         await openRoom(next.id, false);
       });
+    },
+    startPaint: () => {
+      // The brush starts as the first unlocked floor that is not the room's own (painting the room's
+      // own floor erases the paint).
+      const own = room.floorStyle;
+      const floors = STYLE_TYPES.filter((x) => x.kind === 'floor' && paintableStyles().includes(styleKey('floor', x.id))).map((x) => x.id);
+      const brush = floors.find((id) => id !== own) ?? own;
+      panels.close();
+      build.set(false);
+      paint.start(brush);
     },
     applyStyle: (roomId, kind: StyleKind, id) => {
       void api.applyStyle(roomId, kind, id).then(async (next) => {
@@ -650,21 +746,7 @@ async function start(): Promise<void> {
     });
   });
   const farm = new FarmScreen(view, {
-    api,
-    toast,
-    walkTo: (p) => walkTo(p),
     openCooking: () => panels.show('cooking'),
-    pickSeed: () => {
-      const count = (id: string): number => (isSeedId(id) ? (inventory.materials[id] ?? 0) : 0);
-      const chosen = selectedSlot !== null ? inventory.hotbar[selectedSlot] : null;
-      if (chosen && count(chosen) > 0) return chosen as SeedId;
-      const any = [...inventory.hotbar, ...inventory.bag.materials].find((id) => id !== null && count(id) > 0);
-      return (any as SeedId | undefined) ?? null;
-    },
-    afterChange: async () => {
-      await refreshInventory();
-      await refreshHint();
-    },
   });
   // ---------- The lakeside: woodcutting and fishing (step 9f) ----------
   /** Floating texts in the rooms (what a tree or a fish gave): the dungeon's FloatTexts, at world points. */
@@ -699,9 +781,8 @@ async function start(): Promise<void> {
     const s = await api.getShop();
     const forSale = s.slots.filter((x) => x.loot).length;
     const waiting = waitingCount(s.customers);
-    const c = farmCounts(f, f.at);
     const farmStatus =
-      c.ripe > 0 ? `${c.ripe} ${c.ripe === 1 ? 'crop' : 'crops'} ripe` : c.growing > 0 ? `${c.growing} growing` : `${c.empty} empty plots`;
+      f.ripe > 0 ? `${f.ripe} ${f.ripe === 1 ? 'plant' : 'plants'} ready to harvest` : f.growing > 0 ? `${f.growing} growing` : `${f.free} free soil cells`;
     const lake = await api.getLakeside();
     const standing = lake.trees.filter((t) => t.regrowInMs === null).length;
     const lakeStatus = `Fish and chop wood: ${standing} of ${lake.trees.length} trees standing`;
@@ -866,6 +947,20 @@ async function start(): Promise<void> {
 
   // ---------- Hotbar and Bag ----------
   let selectedSlot: number | null = null;
+  /** The block picked in the hotbar (step BG5), or null: then taps on blocks punch them. */
+  let selectedBlock: string | null = null;
+  /** A block action waiting for the avatar to arrive (the cell was out of reach). */
+  let pendingBlock: { kind: 'place' | 'hit'; c: number; r: number; tries: number } | null = null;
+  const selectBlock = (id: string | null, slot: number | null): void => {
+    selectedBlock = id;
+    selectedSlot = id === null ? null : slot;
+    hotbar.setSelected(selectedSlot);
+    if (id === null) {
+      blockViews.showGhost(null);
+      plantViews.showGhost(null);
+    }
+    syncGrid();
+  };
   const hotbar = createHotbar(ui, {
     onTap: (index) => {
       if (bag.carrying) {
@@ -874,19 +969,41 @@ async function start(): Promise<void> {
       }
       const typeId = inventory.hotbar[index];
       if (!typeId) return;
-      // Seeds (step 9b): pick them for planting; the next tap on an empty plot plants one.
+      // Seeds (step BG6): select one; a tap on a free soil cell of your farm plants it (hold to plant a line).
       if (isSeedId(typeId)) {
         const n = inventory.materials[typeId] ?? 0;
         const name = getMaterialType(typeId).name;
-        if (n === 0) {
-          toast(`No ${name} left. Buy more in the Catalog (Seeds).`);
-          return;
+        if (selectedBlock === typeId) {
+          selectBlock(null, null);
+          toast('Seeds put away.');
+        } else if (n === 0) {
+          toast(`No ${name} left. Buy seeds in the Catalog (Seeds), or find them in drops and harvests.`);
+        } else if (room.kind !== 'farm') {
+          toast(`${name}: plant it on your farm (Map). Seeds only grow on soil.`);
+        } else {
+          selectBlock(typeId, index);
+          toast(`${name}: tap a soil cell to plant it. Punch a grown plant to harvest it.`);
         }
-        selectedSlot = index;
-        hotbar.setSelected(index);
-        toast(room.kind === 'farm' ? `${name}: tap an empty plot to plant.` : `${name}: plant them on your farm (Map).`);
         return;
       }
+      // Blocks (step BG5): select one; a tap on a free cell places it, a tap on a block punches it.
+      if (isBlockId(typeId)) {
+        const n = inventory.materials[typeId] ?? 0;
+        const type = getBlockType(typeId);
+        if (selectedBlock === typeId) {
+          selectBlock(null, null);
+          toast('Block put away.');
+        } else if (n === 0) {
+          toast(`No ${type.name} left. Punch blocks to get some back, or buy more in the Catalog (Blocks).`);
+        } else if (!type.placeIn.includes(room.kind)) {
+          toast(`${type.name} cannot go in the ${ROOM_NAMES[room.kind].toLowerCase()}.`);
+        } else {
+          selectBlock(typeId, index);
+          toast(`${type.name}: tap a free cell to place it. Tap a block to punch it.`);
+        }
+        return;
+      }
+      selectBlock(null, null);
       if (countInInventory(inventory.furniture, typeId) === 0) {
         toast(`No ${getFurnitureType(typeId).name} left in the bag.`);
         return;
@@ -930,7 +1047,14 @@ async function start(): Promise<void> {
   async function refreshInventory(): Promise<void> {
     inventory = await api.getInventory();
     const p = await api.getPlayer();
-    if (!newIntro.running) info.setGold(p.wallet.gold);
+    if (!newIntro.running) {
+      info.setGold(p.wallet.gold);
+      info.setGems(p.wallet.gems);
+    }
+    if (selectedBlock !== null && (inventory.materials[selectedBlock as keyof typeof inventory.materials] ?? 0) === 0) {
+      toast(`Out of ${getMaterialType(selectedBlock as SeedId).name}.`);
+      selectBlock(null, null);
+    }
     if (!dungeon.isActive) info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
     workshop.refresh(p);
     cooking.refresh(p);
@@ -941,6 +1065,8 @@ async function start(): Promise<void> {
     dungeonBadge.textContent = free ? 'free' : String(DUNGEON_KEY_COST);
     dungeonButton.title = free ? 'Dungeon: a free run (you have less than 10 gold)' : `Dungeon: the key costs ${DUNGEON_KEY_COST} gold`;
     walletGold = p.wallet.gold;
+    unlockedStyles = p.unlockedStyles;
+    paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, room);
     roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
     shelfPanel.refresh(shop, inventory);
@@ -958,6 +1084,11 @@ async function start(): Promise<void> {
         if (isSeedId(typeId)) {
           const n = materials[typeId] ?? 0;
           return { typeId, count: n, usable: n > 0 && room.kind === 'farm', name: getMaterialType(typeId).name };
+        }
+        if (isBlockId(typeId)) {
+          const n = materials[typeId] ?? 0;
+          const type = getBlockType(typeId);
+          return { typeId, count: n, usable: n > 0 && type.placeIn.includes(room.kind), name: type.name };
         }
         const type = getFurnitureType(typeId);
         const count = countInInventory(inventory.furniture, typeId);
@@ -1017,6 +1148,16 @@ async function start(): Promise<void> {
       sound.setVolume(v);
       savePrefs(storage, prefs);
     },
+    onCellGrid: (on) => {
+      prefs.cellGrid = on;
+      savePrefs(storage, prefs);
+      syncGrid();
+    },
+    onPopups: (on) => {
+      prefs.popups = on;
+      popups.setEnabled(on);
+      savePrefs(storage, prefs);
+    },
     onLighting: (on) => {
       prefs.lighting = on;
       atmosphere.setLighting(on);
@@ -1044,6 +1185,7 @@ async function start(): Promise<void> {
     backdrop.container.visible = !on && lightingOn;
     backdrop.refresh();
     sprite.container.visible = !on;
+    if (on) paint.end();
     hotbar.setHidden(on);
     runBar.setHidden(!on);
     if (!on) info.setRun(null);
@@ -1176,6 +1318,7 @@ async function start(): Promise<void> {
   /** Opens a room: draws it, puts the avatar in the door zone and plays the camera intro. */
   async function openRoom(roomId: number, intro = true): Promise<void> {
     placer.cancel();
+    paint.end();
     menu.close();
     bubbles.clear();
     chat.clear();
@@ -1183,6 +1326,7 @@ async function start(): Promise<void> {
     room = state.room;
     bounds = roomBoundsRect(room);
     view.setRoom(room);
+    cellGrid.setRoom(room);
     atmosphere.setRoom(room);
     backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
     itemViews.setRoom(room.id);
@@ -1221,6 +1365,161 @@ async function start(): Promise<void> {
     await openRoom(kind === 'hotel' ? p.hotelRoomId : kind === 'shop' ? p.shopRoomId : kind === 'lakeside' ? p.lakesideRoomId : p.farmRoomId);
   }
 
+  // ---------- Blocks: place and punch (step BG5) ----------
+  const BLOCK_REFUSALS: Partial<Record<string, string>> = {
+    door: 'Keep the door free.',
+    door_blocked: 'That would block the way in.',
+    counter_blocked: 'The counter needs a way behind it.',
+    wrong_room: 'That block cannot go here.',
+    empty: 'None left.',
+    not_buildable: 'You cannot build here.',
+    no_soil: 'Seeds only grow on soil. Paint soil in the Room panel (Paint soil).',
+    taken: '',
+  };
+  /** Why the selected block or seed does not fit in this cell (null = it fits); `standing` = avatars standing still. */
+  const selectedProblem = (c: number, r: number, standing: Point[]) =>
+    selectedBlock !== null && isSeedId(selectedBlock)
+      ? plantProblem(room, items, c, r, { standing, from: null })
+      : blockProblem(room, items, getBlockType(selectedBlock!), c, r, { standing, from: null });
+  /**
+   * Sends a place or punch to the GameAPI and draws what came back. `line` = a place hold along cells: out of
+   * reach or refused cells are skipped quietly (no walking, no toasts). Returns what a hold should do next.
+   */
+  const doBlock = async (kind: 'place' | 'hit', c: number, r: number, id: string | null, tries = 0, line = false): Promise<HoldResult> => {
+    const was = blockInCell(room, c, r)?.id ?? null;
+    const wasSeed = plantInCell(room, c, r)?.seed ?? null;
+    // Seeds are planted (step BG6), a plant is harvested by punching it; blocks are placed and punched.
+    const res: BlockResult =
+      kind === 'place' && id
+        ? isSeedId(id)
+          ? await api.plantSeed(c, r, id)
+          : await api.placeBlock(c, r, id)
+        : wasSeed
+          ? await api.hitPlant(c, r)
+          : await api.hitBlock(c, r);
+    if (res.kind === 'unripe') {
+      // A punch never hurts a young plant: it shakes and says when it will be ready.
+      plantViews.shake(c, r);
+      const mins = Math.max(1, Math.ceil(res.leftMs / 60_000));
+      toast(res.leftMs < 60_000 ? 'Not grown yet: ready in under a minute.' : `Not grown yet: ready in ${mins} min.`);
+      return 'stop';
+    }
+    if (res.kind === 'walk') {
+      if (line) return 'go';
+      // Too far: walk closer first, then do it (once more at most).
+      follow(res.path);
+      goal = null;
+      pendingBlock = tries < 2 ? { kind, c, r, tries: tries + 1 } : null;
+      return 'walk';
+    }
+    if (res.kind === 'refused') {
+      if (res.problem === 'cooldown') return 'retry';
+      const text = BLOCK_REFUSALS[res.problem];
+      if (text && !line) toast(text);
+      return line ? 'go' : 'stop';
+    }
+    room = res.room;
+    if (res.kind === 'planted') {
+      sound.play('pop');
+      void refreshHint();
+    } else if (res.kind === 'harvested') {
+      if (wasSeed) plantViews.harvestFx(c, r, wasSeed);
+      sound.play('pop');
+    } else if (res.kind === 'placed') sound.play('pop');
+    else if (res.kind === 'cracked') {
+      blockViews.punch(c, r);
+      sound.play('hit');
+    } else {
+      if (was) blockViews.breakFx(c, r, was);
+      sound.play('pop');
+    }
+    popups.show(res.gains);
+    roomChanged();
+    updateBlockGhost();
+    void refreshInventory();
+    return res.kind === 'broken' || res.kind === 'harvested' ? 'stop' : 'go';
+  };
+  /** A tap on cell p in play mode: punches a block there, or places the selected block. False = not for us. */
+  const blockTap = (p: Point): boolean => {
+    if (room.kind === 'lakeside') return false;
+    const { c, r } = cellOf(p);
+    if (blockInCell(room, c, r) || plantInCell(room, c, r)) {
+      void doBlock('hit', c, r, null);
+      return true;
+    }
+    if (selectedBlock === null) return false;
+    const standing = path.length === 0 && avatar.state !== 'walk' ? [{ x: avatar.x, y: avatar.y }] : [];
+    const problem = selectedProblem(c, r, standing);
+    if (problem === 'no_soil') {
+      toast(BLOCK_REFUSALS.no_soil!);
+      return false; // then the tap just walks there
+    }
+    if (problem === null) {
+      void doBlock('place', c, r, selectedBlock);
+      return true;
+    }
+    // Cells that are only wrong for a block fall through to walking and sitting; the rest say why.
+    if (BLOCK_REFUSALS[problem] && problem !== 'wrong_room' && problem !== 'empty' && problem !== 'not_buildable' && problem !== 'taken') {
+      toast(BLOCK_REFUSALS[problem]!);
+      return true;
+    }
+    return false;
+  };
+  /** The ghost of the selected block follows the pointer (green = fits). */
+  function updateBlockGhost(): void {
+    const at = marked === null ? null : cellOf(marked);
+    if (selectedBlock === null || at === null || build.on || placer.active || paint.active || room.kind === 'lakeside' || blockInCell(room, at.c, at.r) || plantInCell(room, at.c, at.r)) {
+      blockViews.showGhost(null);
+      plantViews.showGhost(null);
+      return;
+    }
+    const valid = selectedProblem(at.c, at.r, []) === null;
+    if (isSeedId(selectedBlock)) {
+      blockViews.showGhost(null);
+      plantViews.showGhost({ ...at, seed: selectedBlock, valid });
+    } else {
+      plantViews.showGhost(null);
+      blockViews.showGhost({ ...at, id: selectedBlock, valid });
+    }
+  }
+  // ---------- Hold to repeat (step BG5b) ----------
+  // A press on a block, a plant, a mine rock or a tree keeps hitting at that thing's cooldown until it
+  // breaks, the press ends, or the avatar is out of reach (it then walks closer and goes on). The first hit
+  // is on press. Holding still with a block selected places blocks (a drag along cells makes a line).
+  // Not for the dungeon fight and not for fishing. The timing is the pure holdTick (shared/src/hold.ts).
+  const holdBusyElsewhere = (): boolean =>
+    lakeside.fishing || placer.active || paint.active || build.on || blockers.on || panels.open !== null;
+  const hold = new HoldControl({
+    now: () => performance.now(),
+    walking: () => path.length > 0 || avatar.state === 'walk',
+    hit: async (t: HoldTarget): Promise<HoldResult> => {
+      if (t.kind === 'block' || t.kind === 'plant') return doBlock('hit', t.c, t.r, null, 0, false);
+      if (t.kind === 'line') return selectedBlock === null ? 'stop' : doBlock('place', t.c, t.r, selectedBlock, 0, true);
+      if (t.kind === 'tree') return lakeside.holdSwing(t.index);
+      if (t.kind === 'rock') return dungeon.holdRock(t.id);
+      return 'stop';
+    },
+  });
+  /** What a press on this screen point would hit (a held thing), or null. */
+  const holdTargetAt = (screen: Point): HoldTarget | null => {
+    if (dungeon.isActive) {
+      const id = dungeon.rockUnder(screenToWorld(screen, dungeon.camera));
+      return id === null ? null : { kind: 'rock', id };
+    }
+    if (holdBusyElsewhere()) return null;
+    const world = screenToWorld(screen, shown);
+    const { c, r } = cellOf(world);
+    if (room.kind !== 'lakeside' && blockInCell(room, c, r)) return { kind: 'block', c, r };
+    if (room.kind === 'farm' && plantInCell(room, c, r)) return { kind: 'plant', c, r };
+    const tree = lakeside.treeUnder(world);
+    return tree === null ? null : { kind: 'tree', index: tree };
+  }
+
+  // Escape puts the block away (after panels, placing and painting have had it).
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && selectedBlock !== null && panels.open === null && !placer.active && !paint.active && !build.on) selectBlock(null, null);
+  });
+
   // Shift turns snapping off (desktop).
   let shiftHeld = false;
   const onShift = (e: KeyboardEvent): void => {
@@ -1238,6 +1537,32 @@ async function start(): Promise<void> {
     getOverviewZoom: overviewZoom,
     getDevicePixelRatio: dpr,
     onGestureStart: () => intro.cancel(),
+    onPress: (screen) => {
+      const t = holdTargetAt(screen);
+      if (!t) return null;
+      if (!dungeon.isActive) {
+        marked = screenToWorld(screen, shown);
+        pendingBlock = null;
+        lakeside.cancel();
+      }
+      hold.start(t);
+      return 'repeat';
+    },
+    onHoldStill: (screen) => {
+      if (dungeon.isActive || selectedBlock === null || holdBusyElsewhere() || room.kind === 'lakeside') return false;
+      const { c, r } = cellOf(screenToWorld(screen, shown));
+      if (blockInCell(room, c, r) || plantInCell(room, c, r)) return false;
+      pendingBlock = null;
+      hold.start({ kind: 'line', c, r });
+      return true;
+    },
+    onHoldMove: (screen) => {
+      const last = hold.lastCell;
+      if (!last) return;
+      const here = cellOf(screenToWorld(screen, shown));
+      if (here.c !== last.c || here.r !== last.r) hold.push(cellsBetween(last, here).slice(1));
+    },
+    onHoldEnd: () => hold.stop(),
     onPoint: (screen, kind, target) => {
       if (dungeon.isActive) {
         if (kind !== 'tap') return;
@@ -1248,6 +1573,7 @@ async function start(): Promise<void> {
       marked = screenToWorld(screen, shown);
       cross.visible = label.visible;
       redraw();
+      updateBlockGhost();
       if (kind === 'hover') return;
       // While the line is out every tap on the room is a fishing tap (the bar's ✗ stops).
       if (lakeside.fishing && !placer.active) {
@@ -1255,6 +1581,13 @@ async function start(): Promise<void> {
           if (panels.open !== null) panels.close();
           else lakeside.fishTap();
         }
+        return;
+      }
+      if (paint.active) {
+        // Painting floors: a tap paints that cell (a drag paints a rectangle).
+        if (kind !== 'tap') return;
+        if (panels.open !== null) panels.close();
+        else paint.tap(marked);
         return;
       }
       if (placer.active) {
@@ -1298,8 +1631,9 @@ async function start(): Promise<void> {
         return;
       }
       // The farm (step 9b): plots (plant, harvest) and the cooking pot.
-      farm.cancel();
+      pendingBlock = null;
       lakeside.cancel();
+      if (blockTap(marked)) return;
       if (farm.tap(marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).
       if (lakeside.tap(marked)) return;
@@ -1330,7 +1664,7 @@ async function start(): Promise<void> {
       void walkTo(to);
     },
     getDragMode: (target) => {
-      if (dungeon.isActive || blockers.on || placer.active) return 'draw';
+      if (dungeon.isActive || blockers.on || placer.active || paint.active) return 'draw';
       // Build mode: a drag that starts on an item moves that item (no Move button, no ✓).
       const hit = build.on && panels.open === null ? roomItem(itemViews.uidOf(target)) : undefined;
       if (!hit) return 'pan';
@@ -1357,7 +1691,8 @@ async function start(): Promise<void> {
           placer.cancel();
           itemViews.shake(moved);
         }
-      } else if (blockers.on) blockers.draw(phase, world);
+      } else if (paint.active) paint.drag(phase, world);
+      else if (blockers.on) blockers.draw(phase, world);
     },
   });
 
@@ -1375,9 +1710,12 @@ async function start(): Promise<void> {
   app.ticker.add((ticker) => {
     if (dungeon.isActive) {
       control.update(ticker.deltaMS);
+      hold.tick();
       dungeon.frame(ticker.deltaMS);
       return;
     }
+    if (hold.active && (panels.open !== null || build.on)) hold.stop();
+    hold.tick();
     const step = intro.update(ticker.deltaMS, app.screen.width, app.screen.height);
     if (step) setCamera(step.camera, step.done);
     control.update(ticker.deltaMS);
@@ -1389,8 +1727,6 @@ async function start(): Promise<void> {
     itemViews.update(ticker.deltaMS);
     customers.update(ticker.deltaMS, clockMs);
     hops.update(ticker.deltaMS);
-    farm.update(clockMs);
-    if (path.length === 0 && avatar.state !== 'walk') farm.arrived();
     lakeside.update(ticker.deltaMS, clockMs);
     if (path.length === 0 && avatar.state !== 'walk') lakeside.arrived();
     roomFloats.update(ticker.deltaMS, (p) => worldToScreen(p, shown));
@@ -1405,6 +1741,16 @@ async function start(): Promise<void> {
     customers.feet(feet);
     atmosphere.update(ticker.deltaMS, clockMs, feet);
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));
+    blockViews.sync(room, Date.now());
+    blockViews.update(ticker.deltaMS);
+    plantViews.sync(room, Date.now());
+    plantViews.update(ticker.deltaMS, clockMs);
+    if (pendingBlock && path.length === 0 && avatar.state !== 'walk') {
+      const p = pendingBlock;
+      pendingBlock = null;
+      // A press still held goes on hitting by itself; only a released tap needs this one hit.
+      if (!hold.active) void doBlock(p.kind, p.c, p.r, selectedBlock, p.tries);
+    }
     view.update();
     // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).
     // The ✓ ↻ ✗ bar is only for a new item; an item being dragged is put down by letting go.
@@ -1415,6 +1761,7 @@ async function start(): Promise<void> {
     customers.heads(heads, AVATAR_H);
     for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, shown));
     bubbles.update(ticker.deltaMS, heads);
+    popups.update(heads.get(avatar.id) ?? null);
     floats.update(ticker.deltaMS, (p) => worldToScreen(p, shown));
     // Behind the counter: face the customers.
     if (serving?.state === 'walking' && path.length === 0) {

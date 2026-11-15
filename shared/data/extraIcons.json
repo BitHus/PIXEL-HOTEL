@@ -1,0 +1,16 @@
+{
+  "key": {
+    "shape": "key",
+    "colors": [
+      "gold",
+      "butter"
+    ]
+  },
+  "gems": {
+    "shape": "gem",
+    "colors": [
+      "cyan",
+      "white"
+    ]
+  }
+}

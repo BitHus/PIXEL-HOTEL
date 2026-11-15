@@ -6,7 +6,6 @@ import type { BookTab } from './book.ts';
 import type { BarId, CropId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
 import type { ChopKind } from './woodcut.ts';
-import type { Plot } from './farm.ts';
 import type { RoomLevel } from './config.ts';
 import type { Customer, ShopEvent } from './customers.ts';
 import type { ShelfSlotRef, StockPick } from './shop.ts';
@@ -18,6 +17,8 @@ import type { SeatSpot } from './seats.ts';
 import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
 import type { DungeonInput, DungeonRun, RunBag, RunPlace } from './dungeon/run.ts';
 import type { ShopGearId } from './gear.ts';
+import type { GainList } from './gains.ts';
+import type { BlockProblem } from './blocks.ts';
 
 export interface RoomState {
   room: Room;
@@ -82,6 +83,8 @@ export interface BuyResult {
   uid: number;
   /** True for the first catalog purchase of the game (it goes straight into placing). */
   first: boolean;
+  /** What the buy gave (step BG3). */
+  gains: GainList;
 }
 
 /** The run in progress (step 9). `paused` after a reload until dungeonResume. */
@@ -114,21 +117,20 @@ export interface RunResult {
 export interface RunUpdate {
   run: DungeonRun;
   result: RunResult | null;
+  /** What this call put in the run bag (chest, kill drop, mimic, rock), not what did not fit (step BG3). */
+  gains: GainList;
 }
 
-/** The farm as the client sees it (step 9b). `at` is the API's clock when it was read: stages are
- *  worked out with stageOf(plot, at + time since). */
+/** The farm as the client sees it (step BG6): counts for the Map card. The plants themselves are in Room.plants. */
 export interface FarmView {
   roomId: number;
   level: RoomLevel;
-  plots: Plot[];
+  /** Fully grown plants waiting to be punched. */
+  ripe: number;
+  growing: number;
+  /** Soil cells with nothing planted. */
+  free: number;
   at: number;
-}
-
-export interface HarvestResult {
-  farm: FarmView;
-  crop: CropId;
-  qty: number;
 }
 
 /** One tree as the client sees it (step 9f). */
@@ -151,6 +153,8 @@ export interface ChopUpdate {
   hits: number;
   /** What a felled tree gave. */
   loot?: Partial<Record<MaterialId, number>>;
+  /** The same as loot, as a gains list (empty unless the tree fell; step BG3). */
+  gains: GainList;
   lakeside: LakesideView;
 }
 
@@ -165,7 +169,27 @@ export interface CastPlan {
 export interface FishUpdate {
   session: FishSession;
   caught: { id: string; rank: Rank; cm: number | null; record: boolean } | null;
+  /** What the catch put in the bag: the fish or the fished-up thing (empty without a catch; step BG3). */
+  gains: GainList;
 }
+
+/**
+ * What a block request did (step BG5). 'placed', 'cracked' and 'broken' carry the room with its new
+ * block layer; 'walk' = the cell was out of reach, the avatar walks closer (the client asks again on
+ * arrival); 'refused' says why (a 'cooldown' is not an error).
+ */
+export type BlockResult =
+  | { kind: 'placed'; room: Room; c: number; r: number; gains: GainList }
+  | { kind: 'cracked'; room: Room; c: number; r: number; hits: number; hardness: number; gains: GainList }
+  | { kind: 'broken'; room: Room; c: number; r: number; gains: GainList }
+  /** A seed went into a soil cell (step BG6). */
+  | { kind: 'planted'; room: Room; c: number; r: number; gains: GainList }
+  /** A grown plant was punched and harvested: `gains` has what grew, the seed back and gems. */
+  | { kind: 'harvested'; room: Room; c: number; r: number; gains: GainList }
+  /** A plant that is not fully grown was punched: nothing happens, leftMs says how long it still needs. */
+  | { kind: 'unripe'; c: number; r: number; leftMs: number }
+  | { kind: 'walk'; path: Point[] }
+  | { kind: 'refused'; problem: BlockProblem };
 
 export interface GameAPI {
   /** The current player (gold, materials, rooms). */
@@ -226,6 +250,17 @@ export interface GameAPI {
   buyStyle(kind: StyleKind, id: string): Promise<boolean>;
   /** Puts an unlocked style on one of the player's rooms (free). */
   applyStyle(roomId: number, kind: StyleKind, id: string): Promise<Room | null>;
+  /** Paints the floor cells of a rectangle of cells (corners inclusive) with an unlocked floor style (free; step BG1). */
+  paintFloor(roomId: number, from: { c: number; r: number }, to: { c: number; r: number }, id: string): Promise<Room | null>;
+  /**
+   * Puts a block from the bag into a cell of the current room (step BG5). Only the room's owner;
+   * a cell beyond BLOCK_REACH answers 'walk' with the path to a spot near it.
+   */
+  placeBlock(c: number, r: number, blockId: string): Promise<BlockResult>;
+  /** One punch at the block in a cell (cooldown BLOCK_HIT_COOLDOWN_MS; the last hit breaks it). */
+  hitBlock(c: number, r: number): Promise<BlockResult>;
+  /** Buys blocks from the Catalog into the bag. Null = not sold or not enough gold. */
+  buyBlocks(blockId: string, qty: number): Promise<GainList | null>;
   /** Upgrades a room one level (the items keep their places). Null = max level or not enough gold. */
   upgradeRoom(roomId: number): Promise<Room | null>;
   getRoom(roomId: number): Promise<Room | null>;
@@ -247,20 +282,21 @@ export interface GameAPI {
   /** Pauses the run (the tab was hidden); dungeonResume goes on. */
   dungeonPause(): Promise<void>;
   dungeonResume(): Promise<void>;
-  /** Crafts a recipe (shared/data/recipes.json). False without all ingredients. */
-  craft(recipeId: string): Promise<boolean>;
-  /** Buys gear or a potion in the Blacksmith. False if owned, at the potion limit, or gold is short. */
-  buyGear(id: ShopGearId): Promise<boolean>;
+  /** Crafts a recipe (shared/data/recipes.json). Null without all ingredients; else what it made (a style recipe: empty list). */
+  craft(recipeId: string): Promise<GainList | null>;
+  /** Buys gear or a potion in the Blacksmith. Null if owned, at the potion limit, or gold is short. */
+  buyGear(id: ShopGearId): Promise<GainList | null>;
   // ---------- Step 9b: the farm and cooking ----------
+  /** Counts for the Map card (ripe, growing, free soil). */
   getFarm(): Promise<FarmView>;
-  /** Plants one seed from the bag on an empty plot. Null = refused (not empty, no seed). */
-  plant(plot: number, seed: SeedId): Promise<FarmView | null>;
-  /** Harvests a ripe plot into the bag (1 to 2 crops). Null = not ripe. */
-  harvest(plot: number): Promise<HarvestResult | null>;
-  /** Buys seeds from the catalog. False = not for sale or not enough gold. */
-  buySeeds(seed: SeedId, qty: number): Promise<boolean>;
-  /** Cooks one food at the pot. False without all ingredients. */
-  cook(food: FoodId): Promise<boolean>;
+  /** Plants one seed from the bag in a soil cell within BLOCK_REACH ('walk' when farther; 'refused' says why: no_soil, taken...). */
+  plantSeed(c: number, r: number, seed: SeedId): Promise<BlockResult>;
+  /** One punch at the plant in a cell (cooldown BLOCK_HIT_COOLDOWN_MS): a grown plant is harvested, an unripe one answers 'unripe' and is left alone. */
+  hitPlant(c: number, r: number): Promise<BlockResult>;
+  /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
+  buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
+  /** Cooks one food at the pot. Null without all ingredients. */
+  cook(food: FoodId): Promise<GainList | null>;
   // ---------- Step 9f: the lakeside (woodcutting and fishing) ----------
   getLakeside(): Promise<LakesideView>;
   /** One swing at a tree (the avatar must stand next to it, else null). 'cooldown' and 'regrowing' change nothing. */
@@ -282,8 +318,8 @@ export interface GameAPI {
   /** Starts a mine visit (free; from player level 3). Null if locked or a run is already going.
    *  The visit runs through getRun / dungeonInput / dungeonAdvance like a dungeon run. */
   mineStart(): Promise<DungeonRun | null>;
-  /** Smelts one bar (3 ore + the fee). False without the ore or the gold. */
-  smelt(bar: BarId): Promise<boolean>;
-  /** Makes the next gear piece at the forge (it replaces the one before). False if it cannot. */
-  forge(piece: GearId): Promise<boolean>;
+  /** Smelts one bar (3 ore + the fee). Null without the ore or the gold. */
+  smelt(bar: BarId): Promise<GainList | null>;
+  /** Makes the next gear piece at the forge (it replaces the one before). Null if it cannot. */
+  forge(piece: GearId): Promise<GainList | null>;
 }

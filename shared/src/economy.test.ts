@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { OFFLINE_MAX_MS } from './config.ts';
-import { applyStyle, buyCatalog, catalogPrice, isStyleUnlocked, unlockStyle, upgradeCost, upgradeRoom } from './economy.ts';
-import { canPickUp, canPlace, footprintRect, getFurnitureType } from './furniture.ts';
+import { applyStyle, buyCatalog, catalogPrice, isStyleUnlocked, paintFloor, unlockStyle, upgradeCost, upgradeRoom } from './economy.ts';
+import { canPickUp, canPlace, footprintRect, getFurnitureType, poseAtCell } from './furniture.ts';
 import { applyChange } from './ledger.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
-import { doorRect, doorZoneRect, rectsTouch } from './room.ts';
+import { dominantFloorStyle, doorRect, doorZoneRect, floorStyleAt, rectsOverlap } from './room.ts';
 import { seededRng } from './rng.ts';
 import { putOnShelf } from './shop.ts';
 import { ledgerGold } from './testState.ts';
@@ -37,6 +37,37 @@ describe('catalog', () => {
 });
 
 describe('styles', () => {
+  it('painting cells (BG1): one cell or a rectangle with an unlocked floor, free, only own style rules', () => {
+    let s = unlockStyle(fresh(), 'floor', 'wood_planks', 1)!;
+    const hotel = s.player.hotelRoomId;
+    const gold = s.player.wallet.gold;
+    // A style you do not own cannot be painted.
+    expect(paintFloor(fresh(), hotel, { c: 1, r: 1 }, { c: 1, r: 1 }, 'wood_planks')).toBeNull();
+    s = paintFloor(s, hotel, { c: 1, r: 1 }, { c: 1, r: 1 }, 'wood_planks')!;
+    s = paintFloor(s, hotel, { c: 5, r: 8 }, { c: 3, r: 6 }, 'wood_planks')!; // a rectangle, corners in any order
+    const room = s.rooms.find((r) => r.id === hotel)!;
+    expect(floorStyleAt(room, 1, 1)).toBe('wood_planks');
+    expect(floorStyleAt(room, 4, 7)).toBe('wood_planks');
+    expect(floorStyleAt(room, 0, 0)).toBe('bare');
+    expect(Object.keys(room.floorCells!)).toHaveLength(1 + 9);
+    expect(s.player.wallet.gold).toBe(gold); // free
+    // Nothing on the floor in the rectangle (outside the room): refused.
+    expect(paintFloor(s, hotel, { c: 90, r: 90 }, { c: 91, r: 91 }, 'wood_planks')).toBeNull();
+    // A whole-floor style clears the painted cells; the lakeside cannot be painted.
+    const whole = applyStyle(s, hotel, 'floor', 'bare')!.rooms.find((r) => r.id === hotel)!;
+    expect(whole.floorCells).toBeUndefined();
+    expect(paintFloor(s, s.player.lakesideRoomId, { c: 1, r: 1 }, { c: 1, r: 1 }, 'wood_planks')).toBeNull();
+  });
+
+  it('the shop appeal follows the floor style that covers most cells', () => {
+    let s = unlockStyle(rich(500), 'floor', 'wood_planks', 1)!;
+    const shop = s.player.shopRoomId;
+    s = paintFloor(s, shop, { c: 0, r: 0 }, { c: 17, r: 4 }, 'wood_planks')!; // 18 x 5 of 18 x 10 cells: half
+    expect(dominantFloorStyle(s.rooms.find((r) => r.id === shop)!)).toBe('bare');
+    s = paintFloor(s, shop, { c: 0, r: 5 }, { c: 4, r: 5 }, 'wood_planks')!;
+    expect(dominantFloorStyle(s.rooms.find((r) => r.id === shop)!)).toBe('wood_planks');
+  });
+
   it('a new player has only the bare styles', () => {
     const s = fresh();
     expect(s.player.unlockedStyles).toEqual(['floor:bare', 'wall:bare']);
@@ -95,10 +126,10 @@ describe('room upgrades (section 5)', () => {
     const hotel = s.rooms.find((r) => r.id === s.player.hotelRoomId)!;
     // Put the crate where the level 2 door zone will be (only possible by hand: it is off the old floor).
     const crate = s.items.find((i) => i.typeId === 'crate')!;
-    s = { ...s, items: s.items.map((i) => (i.uid === crate.uid ? { ...i, roomId: hotel.id, x: 352, y: 470 } : i)) };
+    s = { ...s, items: s.items.map((i) => (i.uid === crate.uid ? { ...i, roomId: hotel.id, x: 368, y: 448 } : i)) };
     s = upgradeRoom(s, hotel.id, 1)!;
     const grown = s.rooms.find((r) => r.id === hotel.id)!;
-    expect(rectsTouch(footprintRect({ x: 352, y: 470, facing: 'down' }, getFurnitureType('crate')), doorZoneRect(grown))).toBe(true);
+    expect(rectsOverlap(footprintRect({ x: 368, y: 448, facing: 'down' }, getFurnitureType('crate')), doorZoneRect(grown))).toBe(true);
     expect(s.items.find((i) => i.uid === crate.uid)?.roomId).toBeNull();
   });
 });
@@ -124,14 +155,15 @@ describe('room upgrades in shaped rooms (step 7b)', () => {
       const room = s.rooms.find((r) => r.id === hotel)!;
       // Put the table and chair somewhere valid in the hotel room.
       const spots = [
-        { x: 120, y: 260 },
-        { x: 300, y: 200 },
-        { x: 160, y: 300 },
+        { col: 3, row: 7 },
+        { col: 8, row: 5 },
+        { col: 4, row: 9 },
       ];
       const inv = s.items.filter((i) => i.roomId === null);
       let k = 0;
       for (const item of inv) {
-        const spot = spots.find((p) => canPlace(room, s.items.filter((o) => o.uid !== item.uid), getFurnitureType(item.typeId), p.x, p.y, 'down'));
+        const type = getFurnitureType(item.typeId);
+        const spot = spots.map((p) => poseAtCell(type, 'down', p.col, p.row)).find((p) => canPlace(room, s.items.filter((o) => o.uid !== item.uid), type, p.x, p.y, 'down'));
         expect(spot, `${shape} ${item.typeId}`).toBeDefined();
         s = { ...s, items: s.items.map((i) => (i.uid === item.uid ? { ...i, roomId: hotel, x: spot!.x, y: spot!.y } : i)) };
         k++;
