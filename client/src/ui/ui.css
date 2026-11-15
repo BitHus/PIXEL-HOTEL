@@ -3384,3 +3384,271 @@
 .tap-card .tap-chips { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
 .tap-card .tap-chips .btn.on { background: var(--orange, #f77622); }
 .tap-levels { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; }
+
+/* ---------- ART-MB1: the Inn name (field in character creation, plate in the info panel) ----------
+   Markup the coder produces (plain class names, no other structure needed):
+   creation:  <label class="inn-field"><span class="inn-field-label">Name your inn</span>
+                <input class="chat-input name-input inn-name-input" maxlength=16>
+                <span class="inn-field-count">7/16</span></label>      (count optional; .is-full when at max)
+              the problem text keeps using .newgame-problem.
+   info panel: <div class="info-inn" title="..."><span class="info-inn-text">The Inn</span></div>
+              as the FIRST child of .info-panel (before .info-gold). */
+.inn-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  column-gap: 6px;
+  row-gap: 3px;
+  flex: none;
+}
+
+.inn-field-label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 16px;
+  color: var(--wood);
+}
+
+/* A little hanging-sign glyph (a bar with a plate under it) before the label, drawn in CSS pixels. */
+.inn-field-label::before {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(var(--outline), var(--outline)) 0 0 / 14px 2px no-repeat,
+    linear-gradient(var(--outline), var(--outline)) 2px 2px / 2px 4px no-repeat,
+    linear-gradient(var(--outline), var(--outline)) 10px 2px / 2px 4px no-repeat,
+    linear-gradient(var(--wood), var(--wood)) 0 6px / 14px 8px no-repeat;
+  box-shadow: inset 0 0 0 1px var(--outline), inset 0 -2px 0 rgba(24, 20, 37, 0.35);
+  image-rendering: pixelated;
+}
+
+.inn-name-input {
+  grid-column: 1;
+  min-width: 0;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  /* Reads as a plate to be engraved: a slightly darker, inset field. */
+  box-shadow: inset 0 2px 0 rgba(62, 39, 49, 0.28);
+}
+
+.inn-name-input::placeholder {
+  color: var(--wood-light);
+  font-weight: 400;
+}
+
+.inn-name-input:focus-visible {
+  outline: 2px solid var(--select);
+  outline-offset: 1px;
+}
+
+.inn-field-count {
+  grid-column: 2;
+  align-self: center;
+  min-width: 34px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--wood-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.inn-field-count.is-full {
+  color: var(--no);
+  font-weight: 700;
+}
+
+/* The plate: dark wood board with cream letters and four nail pixels, hung on top of the info panel. */
+.info-inn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px -2px 3px;
+  padding: 1px 12px 2px;
+  background: var(--wood);
+  color: var(--cream);
+  box-shadow:
+    inset 0 0 0 1px var(--outline),
+    inset 0 1px 0 1px var(--wood-light),
+    0 1px 0 rgba(24, 20, 37, 0.45);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 15px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 0 var(--outline);
+  max-width: 190px;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-inn:empty {
+  display: none;
+}
+
+.info-inn-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Nails at the left and right end. */
+.info-inn::before,
+.info-inn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin-top: -2px;
+  background: var(--wood-hi);
+  box-shadow: 1px 1px 0 var(--outline);
+}
+
+.info-inn::before {
+  left: 4px;
+}
+
+.info-inn::after {
+  right: 4px;
+}
+
+/* Phones: one px smaller, panels that start under the info panel keep their offset (--info-h grows by the plate). */
+@media (max-width: 600px) {
+  .info-inn {
+    font-size: 12px;
+    max-width: 150px;
+    padding: 0 10px 1px;
+  }
+}
+
+/* ---------- ART-MA: Carpentry tab (Workshop panel) ----------
+   A row whose recipe lacks blocks or materials ('missing', set by workshopPanel.ts): greyed icon and
+   name, a hatched left edge, short needs stay red. Nothing moves; the Craft button is disabled already. */
+.workshop-panel .catalog-row.missing {
+  position: relative;
+  background-image: repeating-linear-gradient(135deg, rgba(62, 39, 49, 0.07) 0 4px, transparent 4px 8px);
+}
+
+.workshop-panel .catalog-row.missing::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: var(--wood-light);
+  opacity: 0.6;
+}
+
+.workshop-panel .catalog-row.missing .slot-icon {
+  filter: grayscale(0.85) brightness(0.9);
+  opacity: 0.75;
+}
+
+.workshop-panel .catalog-row.missing .catalog-name,
+.workshop-panel .catalog-row.missing .catalog-sub {
+  opacity: 0.7;
+}
+
+/* A craftable row gets a warm edge so the ready ones stand out in a long list. */
+.workshop-panel .catalog-row:not(.missing) .recipe-needs .need:not(.short) {
+  color: var(--ok);
+}
+
+/* ---------- Step T1 (ART-T1): the Taps panel (ui/tapsPanel.ts) ----------
+   Classes for the coder: .taps-panel (on the panel body), .taps-list, .tap-row (+ .empty), .tap-head, .tap-name,
+   .tap-count, .tap-level > .tap-fill (set --fill: 0..1 or width in %), .tap-actions, .tap-hint. Level bars are
+   12 stepped segments (TAP_CAP) with a 1 px dark gap, amber beer, no gradient. */
+.taps-panel .taps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tap-row {
+  display: grid;
+  grid-template-columns: var(--slot) 1fr;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 6px;
+  background: var(--parch);
+  border: var(--px) solid var(--outline);
+  box-shadow: inset 0 var(--px) 0 var(--wood-hi);
+}
+.tap-row.empty .slot {
+  opacity: 0.55;
+}
+.tap-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.tap-name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tap-count {
+  color: var(--text);
+  font-weight: 700;
+  flex: none;
+}
+.tap-level {
+  grid-column: 2;
+  position: relative;
+  height: 10px;
+  background: var(--night);
+  border: var(--px) solid var(--outline);
+  overflow: hidden;
+}
+.tap-fill {
+  height: 100%;
+  width: var(--fill-pct, 0%);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(100% / 12 - 1px), var(--outline) calc(100% / 12 - 1px) calc(100% / 12)),
+    linear-gradient(var(--warm) 0 60%, #d77643 60% 100%);
+  border-right: var(--px) solid #fee761;
+  transition: width 0.25s steps(6);
+}
+.tap-level.low .tap-fill {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(100% / 12 - 1px), var(--outline) calc(100% / 12 - 1px) calc(100% / 12)),
+    linear-gradient(var(--no) 0 60%, #7a1d28 60% 100%);
+  border-right-color: #e43b44;
+}
+.tap-row.empty .tap-level::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 3px, rgba(255, 255, 255, 0.08) 3px 4px);
+}
+.tap-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tap-actions .btn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+.tap-hint {
+  margin: 4px 0 0;
+  color: var(--text);
+  opacity: 0.8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tap-fill {
+    transition: none;
+  }
+}

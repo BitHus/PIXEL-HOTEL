@@ -18,6 +18,8 @@ export interface InfoPanel {
   setGold(gold: number): void;
   /** The gems next to the gold (step BG5). */
   setGems(gems: number): void;
+  /** The Inn's name (MB-1), the first line of the panel (class info-inn; the artist styles the plate). */
+  setInnName(name: string): void;
   setRoom(kind: RoomKind): void;
   /** Level and xp (next = total xp for the next level, null at the top level). */
   setStats(level: number, xp: number, next: number | null, prev: number): void;
@@ -69,7 +71,9 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
   const lantern = bar('lantern-bar', pixelIcon('lantern'));
   lantern.root.hidden = true;
   lantern.root.title = 'Lantern: when it goes out, you walk out with everything';
-  info.append(gold, line, lantern.root, hp.root);
+  const inn = el('div', 'info-inn');
+  inn.title = 'Your Inn';
+  info.append(inn, gold, line, lantern.root, hp.root);
   box.append(info);
   parent.appendChild(box);
   return {
@@ -86,6 +90,10 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
     },
     setGems(n) {
       gemText.textContent = String(n);
+    },
+    setInnName(n) {
+      inn.textContent = n;
+      inn.hidden = n === '';
     },
     setRoom(kind) {
       name.textContent = ROOM_NAMES[kind];

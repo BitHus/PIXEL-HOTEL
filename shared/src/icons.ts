@@ -15,6 +15,10 @@ export const ICON_SHAPES = [
   // furniture silhouettes
   'chair', 'sofa', 'table', 'lamp', 'shelf', 'bed', 'rug', 'plant', 'box', 'barrel', 'bench', 'sign',
   'banner', 'torch', 'throne', 'jar', 'anchor', 'net', 'chandelier', 'counter', 'stool', 'tank', 'stove',
+  // carpentry (M-A)
+  'fireplace', 'oven', 'jug', 'planter', 'post', 'cabinet', 'pillar',
+  // tavern bar and kitchen (ART-T1)
+  'register', 'taps', 'sink', 'hatch', 'pantry',
 ] as const;
 
 export type IconShape = (typeof ICON_SHAPES)[number];

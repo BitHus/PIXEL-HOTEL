@@ -13,10 +13,18 @@ export interface Recipe {
   /** A furniture type id, or a style id. */
   makes: string;
   makesKind: 'furniture' | 'floor' | 'wall';
+  /** Which Workshop tab lists it: 'carpentry' (MA-1: furniture made from blocks); without it, the Crafting tab. */
+  station?: 'carpentry';
+  /** Materials and BLOCK ids alike: blocks are stackable items in Player.materials (group 'block'), so canCraft and craft treat them like any material. */
   inputs: Partial<Record<MaterialId, number>>;
 }
 
 export const RECIPES = recipeData as Recipe[];
+
+/** The recipes of one Workshop tab. */
+export function recipesAt(station: 'carpentry' | 'crafting'): Recipe[] {
+  return RECIPES.filter((r) => (r.station ?? 'crafting') === station);
+}
 
 export function getRecipe(id: string): Recipe {
   const r = RECIPES.find((x) => x.id === id);

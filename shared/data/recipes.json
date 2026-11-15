@@ -20,5 +20,17 @@
   {"id": "pearl_chandelier", "makes": "pearl_chandelier", "makesKind": "furniture", "inputs": {"pearl": 2, "amber": 1}},
   {"id": "sunken_throne", "makes": "sunken_throne", "makesKind": "furniture", "inputs": {"sunken_crown": 1, "pearl": 1, "driftwood": 4}},
   {"id": "lake_pebbles", "makes": "lake_pebbles", "makesKind": "floor", "inputs": {"shell": 3, "driftwood": 2}},
-  {"id": "reed_wall", "makes": "reed_wall", "makesKind": "wall", "inputs": {"driftwood": 4, "resin": 1}}
+  {"id": "reed_wall", "makes": "reed_wall", "makesKind": "wall", "inputs": {"driftwood": 4, "resin": 1}},
+  {"id": "plank_stool", "makes": "plank_stool", "makesKind": "furniture", "station": "carpentry", "inputs": {"planks": 2}},
+  {"id": "plank_bench", "makes": "plank_bench", "makesKind": "furniture", "station": "carpentry", "inputs": {"planks": 4, "cloth": 1}},
+  {"id": "plank_table", "makes": "plank_table", "makesKind": "furniture", "station": "carpentry", "inputs": {"planks": 6, "wood": 2}},
+  {"id": "stone_fireplace", "makes": "stone_fireplace", "makesKind": "furniture", "station": "carpentry", "inputs": {"stone": 8, "wood": 2}},
+  {"id": "glass_lamp", "makes": "glass_lamp", "makesKind": "furniture", "station": "carpentry", "inputs": {"glass": 3, "wood": 1}},
+  {"id": "brick_oven", "makes": "brick_oven", "makesKind": "furniture", "station": "carpentry", "inputs": {"brick": 8, "stone": 2}},
+  {"id": "thatch_rug", "makes": "thatch_rug", "makesKind": "furniture", "station": "carpentry", "inputs": {"thatch": 6, "cloth": 1}},
+  {"id": "clay_jug", "makes": "clay_jug", "makesKind": "furniture", "station": "carpentry", "inputs": {"clay": 3}},
+  {"id": "stone_planter", "makes": "stone_planter", "makesKind": "furniture", "station": "carpentry", "inputs": {"stone": 3, "dirt": 2}},
+  {"id": "lantern_post", "makes": "lantern_post", "makesKind": "furniture", "station": "carpentry", "inputs": {"lantern_block": 2, "planks": 2}},
+  {"id": "glass_cabinet", "makes": "glass_cabinet", "makesKind": "furniture", "station": "carpentry", "inputs": {"glass": 4, "planks": 4}},
+  {"id": "brick_pillar", "makes": "brick_pillar", "makesKind": "furniture", "station": "carpentry", "inputs": {"brick": 4, "stone": 1}}
 ]

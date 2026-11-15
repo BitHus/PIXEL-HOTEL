@@ -357,10 +357,94 @@ const DRAW: Record<IconShape, Draw> = {
     p.rect(5, 11, 22, 18, dk(a)); p.rect(5, 8, 22, 4, a); p.rect(7, 5, 6, 4, DARK); p.rect(15, 5, 6, 4, DARK);
     p.rect(21, 3, 4, 6, a); p.rect(9, 16, 14, 9, DARK); p.rect(11, 19, 10, 5, b); p.rect(13, 17, 6, 3, CREAM); p.rect(5, 27, 22, 2, DARK);
   },
+  // ---- carpentry (M-A) ----
+  fireplace: (p, a, b) => {
+    p.rect(3, 4, 26, 3, dk(a)); p.rect(5, 7, 22, 21, a); p.rect(3, 26, 26, 3, dk(a));
+    for (const y of [11, 16, 21]) p.rect(5, y, 22, 1, dk(a));
+    p.rect(11, 12, 10, 1, dk(a)); p.rect(8, 17, 8, 1, dk(a)); p.rect(18, 22, 7, 1, dk(a));
+    p.poly([[9, 27], [9, 14], [12, 11], [20, 11], [23, 14], [23, 27]], DARK);
+    p.poly([[16, 14], [21, 22], [19, 27], [13, 27], [11, 22]], b); p.poly([[16, 19], [18, 23], [17, 27], [15, 27], [14, 23]], CREAM); p.rect(10, 26, 12, 1, dk(b));
+  },
+  oven: (p, a, b) => {
+    p.rect(3, 26, 26, 3, dk(a)); p.oval(16, 16, 13, 12, a); p.rect(3, 16, 26, 11, a); p.rect(5, 8, 10, 2, lt(a));
+    p.rect(3, 20, 26, 1, dk(a)); p.rect(3, 15, 26, 1, dk(a)); p.rect(9, 9, 1, 6, dk(a)); p.rect(18, 9, 1, 6, dk(a)); p.rect(14, 16, 1, 4, dk(a)); p.rect(23, 16, 1, 4, dk(a));
+    p.poly([[10, 27], [10, 20], [13, 17], [19, 17], [22, 20], [22, 27]], DARK); p.poly([[12, 27], [13, 22], [16, 20], [19, 22], [20, 27]], b); p.rect(14, 24, 4, 3, CREAM);
+    p.rect(22, 2, 5, 8, dk(a)); p.rect(22, 2, 5, 2, a);
+  },
+  jug: (p, a, b) => {
+    p.rect(12, 3, 8, 4, b); p.rect(11, 3, 10, 1, dk(b)); p.rect(13, 6, 6, 4, a); p.oval(16, 19, 10, 10, a); p.rect(6, 12, 20, 12, a);
+    p.rect(5, 12, 22, 2, lt(a)); p.rect(7, 14, 3, 9, lt(a)); p.rect(8, 18, 16, 1, b); p.rect(8, 22, 16, 1, b); p.rect(10, 27, 12, 2, dk(a));
+    p.rect(24, 9, 5, 3, a); p.rect(27, 9, 2, 10, a); p.rect(24, 17, 5, 3, a);
+  },
+  planter: (p, a, b) => {
+    p.oval(9, 11, 4, 6, b); p.oval(16, 9, 4, 7, b); p.oval(23, 11, 4, 6, b); p.oval(12, 15, 3, 4, lt(b)); p.oval(20, 15, 3, 4, lt(b));
+    p.rect(6, 8, 2, 2, PALETTE[8]); p.rect(15, 5, 2, 2, PALETTE[10]); p.rect(24, 9, 2, 2, PALETTE[10]);
+    p.rect(3, 17, 26, 3, lt(a)); p.rect(4, 20, 24, 8, a); p.rect(4, 20, 24, 1, dk(a)); p.rect(4, 24, 24, 1, dk(a)); p.rect(10, 20, 1, 8, dk(a)); p.rect(16, 25, 1, 3, dk(a)); p.rect(22, 20, 1, 8, dk(a));
+    p.rect(4, 27, 24, 2, dk(a));
+  },
+  post: (p, a, b) => {
+    p.rect(14, 12, 4, 18, DARK); p.rect(10, 28, 12, 2, DARK); p.rect(15, 13, 1, 15, WOOD);
+    p.rect(8, 3, 16, 3, DARK); p.poly([[8, 6], [24, 6], [22, 20], [10, 20]], DARK);
+    p.poly([[10, 7], [22, 7], [20, 19], [12, 19]], b); p.poly([[14, 9], [18, 9], [17, 16], [15, 16]], CREAM); p.rect(15, 10, 2, 3, WHITE);
+    p.rect(12, 20, 8, 2, a); p.rect(11, 2, 10, 1, a);
+  },
+  cabinet: (p, a, b) => {
+    p.rect(5, 2, 22, 3, dk(a)); p.rect(4, 4, 24, 25, a); p.rect(4, 4, 24, 1, lt(a)); p.rect(6, 6, 20, 22, b); p.rect(15, 6, 2, 22, a);
+    p.rect(6, 15, 20, 1, a); p.rect(7, 7, 2, 7, WHITE); p.rect(10, 7, 2, 3, WHITE);
+    p.rect(8, 18, 4, 6, CREAM); p.rect(18, 17, 6, 7, PALETTE[10]); p.rect(19, 19, 4, 2, dk(PALETTE[10]));
+    p.rect(13, 16, 1, 3, a); p.rect(18, 16, 1, 3, a); p.rect(5, 28, 22, 2, dk(a));
+  },
+  pillar: (p, a, b) => {
+    p.rect(6, 2, 20, 5, lt(a)); p.rect(6, 5, 20, 2, dk(a)); p.rect(9, 7, 14, 18, a);
+    p.rect(9, 7, 3, 18, lt(a)); p.rect(20, 7, 3, 18, dk(a)); p.rect(9, 12, 14, 1, dk(a)); p.rect(9, 18, 14, 1, dk(a)); p.rect(15, 7, 1, 5, dk(a)); p.rect(12, 13, 1, 5, dk(a)); p.rect(17, 19, 1, 6, dk(a));
+    p.rect(6, 25, 20, 5, lt(a)); p.rect(6, 28, 20, 2, dk(a)); p.rect(4, 29, 24, 1, b);
+  },
+  // ---- tavern bar and kitchen (ART-T1) ----
+  register: (p, a, b) => {
+    // Till: a slanted screen strip on top, a key block, a brass drawer and a small bell.
+    p.poly([[6, 6], [26, 6], [28, 13], [4, 13]], DARK); p.poly([[8, 7], [24, 7], [25, 11], [7, 11]], CREAM); p.rect(10, 9, 3, 1, DARK); p.rect(15, 9, 5, 1, DARK);
+    p.rect(4, 12, 24, 5, lt(a)); for (const x of [7, 11, 15, 19, 23]) { p.rect(x, 13, 3, 1, b); p.rect(x, 15, 3, 1, b); }
+    p.rect(4, 17, 24, 11, a); p.rect(6, 19, 20, 7, dk(a)); p.rect(13, 21, 6, 2, b); p.rect(4, 27, 24, 2, dk(a));
+    p.rect(23, 3, 4, 2, b); p.rect(24, 2, 2, 1, b);
+  },
+  taps: (p, a, b) => {
+    // Two taps on a bar stand: a trough, two pipes with handles and spouts, a drip tray.
+    p.rect(4, 24, 24, 3, DARK); p.rect(5, 26, 22, 3, a);
+    p.rect(3, 21, 26, 4, lt(a)); p.rect(3, 21, 26, 1, WHITE);
+    for (const x of [7, 19]) {
+      p.rect(x + 1, 11, 4, 10, PALETTE[21]); p.rect(x + 1, 11, 1, 10, PALETTE[20]); p.rect(x, 7, 6, 4, a);
+      p.rect(x + 1, 4, 4, 4, b); p.rect(x + 2, 3, 2, 1, b);
+      p.rect(x - 1, 14, 3, 2, PALETTE[21]); p.rect(x + 2, 16, 2, 5, PALETTE[10]);
+    }
+  },
+  sink: (p, a, b) => {
+    // A stone basin on a counter, a tall faucet and a drip of water.
+    p.rect(21, 3, 3, 9, PALETTE[21]); p.rect(14, 3, 10, 3, PALETTE[21]); p.rect(14, 5, 2, 3, PALETTE[20]); p.rect(15, 9, 1, 2, PALETTE[17]);
+    p.rect(3, 12, 26, 4, lt(a)); p.rect(5, 13, 22, 3, b); p.rect(5, 13, 22, 1, WHITE);
+    p.rect(3, 16, 26, 12, a); p.rect(3, 16, 26, 1, dk(a)); p.rect(5, 18, 10, 9, dk(a)); p.rect(17, 18, 10, 9, dk(a)); p.rect(13, 22, 2, 2, b); p.rect(17, 22, 2, 2, b);
+    p.rect(3, 27, 26, 2, DARK);
+  },
+  hatch: (p, a, b) => {
+    // A pass-through window: frame, open dark hole with a lit shelf, two shutter leaves and a sill.
+    p.rect(3, 3, 26, 3, a); p.rect(3, 3, 26, 1, lt(a)); p.rect(3, 6, 4, 18, a); p.rect(25, 6, 4, 18, a);
+    p.rect(7, 6, 18, 18, DARK); p.rect(9, 8, 14, 9, b); p.rect(9, 8, 14, 1, WHITE); p.rect(9, 17, 14, 2, PALETTE[10]);
+    p.rect(11, 12, 3, 4, CREAM); p.rect(17, 11, 4, 5, PALETTE[8]);
+    p.rect(2, 24, 28, 3, lt(a)); p.rect(2, 27, 28, 2, dk(a));
+    p.rect(7, 6, 1, 18, dk(a)); p.rect(24, 6, 1, 18, dk(a));
+  },
+  pantry: (p, a, b) => {
+    // A shelf cabinet with three rows of crops (turnip, carrot, herb, pumpkin).
+    p.rect(3, 2, 26, 27, a); p.rect(3, 2, 26, 1, lt(a)); p.rect(5, 4, 22, 23, dk(a));
+    for (const y of [11, 19]) p.rect(5, y, 22, 2, a);
+    p.rect(5, 27, 22, 2, a);
+    p.oval(9, 8, 3, 3, CREAM); p.rect(8, 4, 2, 2, PALETTE[13]); p.oval(16, 8, 3, 3, PALETTE[9]); p.rect(15, 4, 2, 2, PALETTE[13]); p.oval(23, 8, 3, 3, CREAM); p.rect(22, 4, 2, 2, PALETTE[13]);
+    p.rect(7, 14, 4, 5, PALETTE[9]); p.rect(13, 14, 4, 5, PALETTE[9]); p.rect(19, 14, 6, 5, b); p.rect(20, 13, 4, 1, PALETTE[12]);
+    p.oval(9, 23, 3, 3, PALETTE[12]); p.oval(16, 23, 3, 3, PALETTE[12]); p.oval(23, 23, 3, 3, PALETTE[10]); p.rect(22, 20, 2, 1, PALETTE[13]);
+  },
 };
 
 /** Shapes with a shiny surface: they get a small glint near the top-left. */
-const GLOSSY = new Set<IconShape>(['gem', 'potion', 'orb', 'ring', 'jar', 'bottle', 'mug', 'bar', 'ore', 'helmet', 'armor', 'sword', 'crown', 'heart', 'key', 'tank', 'lamp', 'pumpkin', 'plate', 'bowl']);
+const GLOSSY = new Set<IconShape>(['gem', 'potion', 'orb', 'ring', 'jar', 'bottle', 'mug', 'bar', 'ore', 'helmet', 'armor', 'sword', 'crown', 'heart', 'key', 'tank', 'lamp', 'pumpkin', 'plate', 'bowl', 'register']);
 
 /** The outline on the light side: a very dark version of the colour it borders (a warm, coloured outline). */
 function mixDark(c: string): string {

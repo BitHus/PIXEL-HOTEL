@@ -81,8 +81,10 @@ These reuse the quest event counters from 9i, so they are cheap.
     Shown on a trophy shelf or display case in the hotel room; a tab in the Book.
 
 ## PHASE 4 - Art (step 6)
-Now the feature set is stable enough to draw once.
-4.1 docs/STYLE.md and a test set: the avatar, 5 pieces of furniture, one floor, one wall.
+Changed 15 Nov (owner): art is now INCREMENTAL. Aseprite sprites (docs/PLAN-SPRITES.md, style in docs/ART-STYLE.md) replace
+code-drawn art piece by piece, alongside the feature work; code art stays as the fallback. First proof: the tavern register.
+The list below is the order for the rest, not a gate.
+4.1 docs/ART-STYLE.md (done) and a test set: the register first, then the avatar, 5 pieces of furniture, one floor, one wall.
 4.2 Avatar: clothing, hats, walk and sit frames.
 4.3 Furniture and styles (home, shop, crypt, lake).
 4.4 Outdoors: farm, lakeside, crops, trees, water.

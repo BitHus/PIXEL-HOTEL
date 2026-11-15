@@ -18,7 +18,7 @@ import {
   type BarId,
   type GearPiece,
   type GearSlot,
-  RECIPES,
+  recipesAt,
   findStyle,
   getFurnitureType,
   getMaterialType,
@@ -36,7 +36,7 @@ import { panelShell, priceTag, tabBar } from './panelShell.ts';
 import { pixelIcon, type IconName } from './pixelIcons.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
-export type WorkshopTab = 'crafting' | 'blacksmith' | 'forge';
+export type WorkshopTab = 'crafting' | 'carpentry' | 'blacksmith' | 'forge';
 
 export interface WorkshopHooks {
   craft(recipe: Recipe): void;
@@ -60,6 +60,18 @@ const START_PIECE: Record<GearSlot, [string, string]> = {
   axe: ['Basic axe', 'Each swing counts 1.'],
   rod: ['Basic rod', 'The normal catch box and the base odds for rare fish.'],
 };
+
+/** The sub line of a furniture recipe: what it is good for, in a few words. */
+export function furnitureSub(typeId: string): string {
+  const t = getFurnitureType(typeId);
+  const bits = ['Furniture'];
+  if (t.seats.length > 0) bits.push(t.seats.length === 1 ? '1 seat' : `${t.seats.length} seats`);
+  if (t.light) bits.push('light');
+  if (t.surface) bits.push('surface');
+  if (t.appeal > 0) bits.push(`appeal ${t.appeal}`);
+  if (t.placeIn !== 'both') bits.push(`${t.placeIn} only`);
+  return bits.join(', ');
+}
 
 export function recipeName(r: Recipe): string {
   if (r.makesKind === 'furniture') return getFurnitureType(r.makes).name;
@@ -97,6 +109,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
     shell.tabs,
     [
       ['crafting', 'hammer', 'Crafting'],
+      ['carpentry', 'chair', 'Carpentry'],
       ['blacksmith', 'potion', 'Blacksmith'],
       ['forge', 'workshop', 'Forge'],
     ] as const,
@@ -123,7 +136,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
     const row = el('div', 'catalog-row');
     const icon = r.makesKind === 'furniture' ? img(furnitureIconUrl(r.makes)) : img(stylePreviewUrl(r.makesKind, r.makes));
     const info = el('div', 'catalog-info');
-    const kind = r.makesKind === 'furniture' ? 'Furniture' : r.makesKind === 'floor' ? 'Floor, yours forever' : 'Wall, yours forever';
+    const kind = r.makesKind === 'furniture' ? furnitureSub(r.makes) : r.makesKind === 'floor' ? 'Floor, yours forever' : 'Wall, yours forever';
     const needs = el('div', 'recipe-needs');
     let ok = true;
     for (const [id, n] of Object.entries(r.inputs) as [MaterialId, number][]) {
@@ -136,6 +149,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
     const owned = r.makesKind !== 'furniture' && p.unlockedStyles.includes(styleKey(r.makesKind, r.makes));
     const b = textButton(owned ? 'Owned' : 'Craft', () => hooks.craft(r));
     b.disabled = owned || !ok;
+    row.classList.toggle('missing', !owned && !ok);
     row.append(iconSlot(icon), info, b);
     return row;
   };
@@ -218,7 +232,10 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
     if (!p) return;
     if (tab === 'crafting') {
       list.append(el('div', 'panel-info', 'Make crypt and lake furniture and styles from the materials you bring back.'));
-      for (const r of RECIPES) list.append(recipeRow(r, p));
+      for (const r of recipesAt('crafting')) list.append(recipeRow(r, p));
+    } else if (tab === 'carpentry') {
+      list.append(el('div', 'panel-info', 'Turn blocks into furniture. No gold and no fee: just the blocks and a few materials. Pieces you cannot afford yet are greyed out.'));
+      for (const r of recipesAt('carpentry')) list.append(recipeRow(r, p));
     } else if (tab === 'blacksmith') {
       list.append(el('div', 'panel-info', 'Potions go with you into the dungeon and the mine. Swords and armor are made at the Forge.'));
       for (const g of GEAR_TYPES) list.append(gearRow(g, p));

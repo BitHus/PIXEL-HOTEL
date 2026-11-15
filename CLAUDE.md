@@ -223,7 +223,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Palette: Endesga 32; the hex list lives only in shared/palette.ts. Light from the top-left. 1 px
   dark outline. No anti-aliasing. Nearest-neighbour scaling only.
 - Sprite sizes: docs/BRIEF.md 12 (avatar 32x64, floor texture 64x64, blocks and icons 32x32).
-  Anchor = bottom center of the footprint. Art is drawn in code from boxes until step 6.
+  Anchor = bottom center of the footprint. Art is code-drawn boxes (the fallback) or Aseprite PNGs per piece (docs/PLAN-SPRITES.md, docs/ART-STYLE.md).
   ITEM ICONS: every item has data icon { shape, colors } (palette NAMES); render/drawIcon.ts draws it.
 - UI: HTML/CSS over the canvas, local open-license pixel font. Layout, frame style and patterns
   are in docs/UI-REFERENCE.md: read it before any step that adds or changes UI.
@@ -254,7 +254,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - At the end of each step: update CURRENT STATE below (at most 15 lines) and any rule that
   changed (here and in docs/BRIEF.md); put new files, conventions and measurements in
   docs/NOTES.md under the right heading. Keep this file under 250 lines.
-- Do not generate art with any tool unless I ask for it in that step.
+- Art tools: only the Aseprite plugin (owner approved 15 Nov, docs/PLAN-SPRITES.md); no other art generation unless I ask.
 - I work with Claude Code on my phone or PC. Every push to main is deployed by GitHub Pages
   (https://bithus.github.io/pixel-hotel/). Commit and push at the end of every step.
 
@@ -271,7 +271,7 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   bar Sell tab, four loops tested; NOTES S2) are done. S3 (rebalance: SELL_RATES per group, a faster start, splice strict, the tavern gem tip, 3 seats,
   gold tables in `npm run simulate`; save v23; NOTES S3) is done. T1 (the bar with taps and a register, the kitchen zone with prep tables, taps hold drinks, the pour step; save v24; NOTES T1) is done. Next: K2 (ripening: casks feed the taps), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 24. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 25 (24 = taps and the register, 25 = the Inn name). LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -319,7 +319,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 24) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 25) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

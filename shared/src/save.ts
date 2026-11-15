@@ -2,7 +2,7 @@
 // storage and used for Export / Import. Old versions are migrated step by step with MIGRATIONS;
 // a version without a migration path is refused ('too_old'), and the caller resets with a message.
 
-import { CUSTOMER_FIRST_ID, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
+import { CUSTOMER_FIRST_ID, DEFAULT_INN_NAME, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
 import { addBarFittings, addShopStartItems, addStove, addTavern } from './newPlayer.ts';
@@ -316,6 +316,11 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       return { ...state, tavern: { ...state.tavern, taps: [] } };
     }
   },
+  // 24 -> 25 (MB-1): the Inn has a name. Existing saves get the default "The Inn". Nothing else changes.
+  24: (state) => {
+    if (!isObject(state) || !isObject(state.player)) return state;
+    return { ...state, player: { ...state.player, innName: typeof state.player.innName === 'string' ? state.player.innName : DEFAULT_INN_NAME } };
+  },
 };
 
 /** The storage key for a save version. */
@@ -369,7 +374,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
   if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
-  if (!Array.isArray(p.unlockedClothing) || !Array.isArray(p.splicesFound) || !isObject(p.clothingSpares) || !isObject(p.packsOpened) || typeof x.playerCreated !== 'boolean') return false;
+  if (!Array.isArray(p.unlockedClothing) || !Array.isArray(p.splicesFound) || !isObject(p.clothingSpares) || !isObject(p.packsOpened) || typeof x.playerCreated !== 'boolean' || typeof p.innName !== 'string') return false;
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
   if (!Array.isArray(x.hotbar) || x.hotbar.length !== HOTBAR_SLOTS) return false;
   if (!x.hotbar.every((h) => h === null || typeof h === 'string')) return false;

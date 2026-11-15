@@ -3886,10 +3886,10 @@
       ]
     },
     "icon": {
-      "shape": "box",
+      "shape": "register",
       "colors": [
         "gold",
-        "walnut"
+        "oak"
       ]
     }
   },
@@ -3920,6 +3920,11 @@
     "rank": "common",
     "inCatalog": true,
     "taps": true,
+    "light": {
+      "radius": 40,
+      "color": 10,
+      "flicker": 0.2
+    },
     "art": {
       "boxes": [
         {
@@ -3997,10 +4002,10 @@
       ]
     },
     "icon": {
-      "shape": "barrel",
+      "shape": "taps",
       "colors": [
         "steel",
-        "orange"
+        "gold"
       ]
     }
   },
@@ -4278,10 +4283,10 @@
       ]
     },
     "icon": {
-      "shape": "shelf",
+      "shape": "pantry",
       "colors": [
-        "lime",
-        "oak"
+        "oak",
+        "lime"
       ]
     }
   },
@@ -4365,9 +4370,9 @@
       ]
     },
     "icon": {
-      "shape": "tank",
+      "shape": "sink",
       "colors": [
-        "silver",
+        "steel",
         "sky"
       ]
     }
@@ -4461,10 +4466,10 @@
       ]
     },
     "icon": {
-      "shape": "sign",
+      "shape": "hatch",
       "colors": [
-        "oak",
-        "walnut"
+        "walnut",
+        "butter"
       ]
     }
   }

@@ -666,9 +666,10 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 24 and the migration exists', () => {
-    expect(SAVE_VERSION).toBe(24);
+  it('SAVE_VERSION is 25 (24 = the Inn name, 23 -> 24 = the bar fittings) and both migrations exist', () => {
+    expect(SAVE_VERSION).toBe(25);
     expect(typeof MIGRATIONS[23]).toBe('function');
+    expect(typeof MIGRATIONS[24]).toBe('function');
   });
 
   it('the tavern gets a register and a tap stand ON the bar, side by side; the taps start empty; the drinks in the bag stay in the bag', () => {
@@ -747,5 +748,21 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
     const base = createNewPlayer(undefined, 1);
     const { bag: _b, hintsDone: _h, tavern: _t, ...v1 } = base;
     expect(readSave(JSON.stringify({ version: 1, savedAt: 0, state: v1 })).ok).toBe(true);
+  });
+});
+
+describe('migrates a version 24 save (MB-1, the Inn name)', () => {
+  it('gives an old save the default Inn name, keeps a name that is already there, and does not migrate twice', () => {
+    const base = createNewPlayer(undefined, 1);
+    const { innName: _gone, ...player } = base.player;
+    const old = { ...base, player };
+    const r = readSave(JSON.stringify({ version: 24, savedAt: 9, state: old }));
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 24 });
+    if (!r.ok) return;
+    expect(r.state.player.innName).toBe('The Inn');
+    expect({ ...r.state.player, innName: undefined }).toEqual({ ...base.player, innName: undefined });
+    expect(r.state.items).toEqual(base.items);
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
+    expect(MIGRATIONS[24]!({ ...old, player: { ...player, innName: 'Mine' } })).toMatchObject({ player: { innName: 'Mine' } });
   });
 });

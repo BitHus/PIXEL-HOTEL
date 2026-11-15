@@ -8,6 +8,9 @@ import { materialIconUrl } from './itemIcon.ts';
 import { iconBox, panelShell } from './panelShell.ts';
 import { rankName } from './rank.ts';
 
+/** A tap with this many mugs or fewer shows the red level bar. */
+const TAP_LOW_MUGS = 3;
+
 export const TAPS_HINT = 'Load a tap with a brewed drink: guests can only order a drink that is on a tap.';
 export const TAP_EMPTY_TEXT = 'Tap is empty';
 
@@ -36,16 +39,18 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
 
   const card = (c: TapCard, n: number): HTMLElement => {
     const key = `${c.standUid}:${c.slot}`;
-    const row = el('div', `catalog-row tap-card${c.mugs === 0 ? ' off' : ''}`);
-    const info = el('div', 'catalog-info');
-    const name = c.drink ? rankName('div', 'catalog-name', `Tap ${n}: ${getMaterialType(c.drink).name}`, c.drink) : el('div', 'catalog-name', `Tap ${n}: empty`);
-    const track = el('div', 'bar-track');
-    const fill = el('div', 'bar-fill');
-    fill.style.width = `${Math.round((c.mugs / TAP_CAP) * 100)}%`;
-    track.append(fill);
-    info.append(name, track, el('div', 'catalog-sub', c.mugs > 0 ? `${c.mugs} of ${TAP_CAP} mugs left.` : `${TAP_EMPTY_TEXT}. A guest who wants this drink waits until you load it.`));
+    // The artist's classes (ui.css, ART-T1): .tap-row (+ .empty) > slot, .tap-head (.tap-name, .tap-count), .tap-level (+ .low) > .tap-fill (--fill-pct), .tap-actions.
+    const row = el('div', `tap-row tap-card${c.mugs === 0 ? ' empty' : ''}`);
+    const head = el('div', 'tap-head');
+    const name = c.drink ? rankName('span', 'tap-name', `Tap ${n}: ${getMaterialType(c.drink).name}`, c.drink) : el('span', 'tap-name', `Tap ${n}: empty`);
+    head.append(name, el('span', 'tap-count', `${c.mugs}/${TAP_CAP}`));
+    const level = el('div', `tap-level${c.mugs > 0 && c.mugs <= TAP_LOW_MUGS ? ' low' : ''}`);
+    const fill = el('div', 'tap-fill');
+    fill.style.setProperty('--fill-pct', `${Math.round((c.mugs / TAP_CAP) * 100)}%`);
+    level.append(fill);
 
-    const controls = el('div', 'tap-controls');
+    const controls = el('div', 'tap-controls tap-actions');
+    controls.append(el('p', 'tap-hint', c.mugs > 0 ? `${c.mugs} of ${TAP_CAP} mugs left.` : `${TAP_EMPTY_TEXT}. A guest who wants this drink waits until you load it.`));
     // Load: the drink (an empty tap lets you choose), a number and the buttons.
     const opt = c.options.find((o) => o.drink === picked.get(key)?.drink) ?? c.options[0];
     if (opt) {
@@ -77,8 +82,7 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
     if (c.mugs > 0) {
       controls.append(textButton('Unload 1', () => hooks.unload(c.standUid, c.slot, 1)), textButton('Unload all', () => hooks.unload(c.standUid, c.slot, 'all')));
     }
-    info.append(controls);
-    row.append(iconBox(c.drink ? materialIconUrl(c.drink) : materialIconUrl('root_ale'), c.drink ? '' : 'dim'), info);
+    row.append(iconBox(c.drink ? materialIconUrl(c.drink) : materialIconUrl('root_ale'), c.drink ? '' : 'dim'), head, level, controls);
     return row;
   };
 

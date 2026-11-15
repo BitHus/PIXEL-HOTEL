@@ -96,7 +96,7 @@ describe('no auto selling', () => {
         return statSync(p).isDirectory() ? walk(p) : /\.ts$/.test(f) && !/\.test\.ts$/.test(f) ? [p] : [];
       });
     const files = [...walk(join(root, 'shared/src')), ...walk(join(root, 'client/src'))];
-    const users = files.filter((f) => /(?<![.\w])sell\(\s*(?:h\.)?state\b/.test(readFileSync(f, 'utf8')) && !/shared\/src\/trader\.ts$/.test(f)).map((f) => f.slice(root.length + 1));
+    const users = files.map((f) => f.split(String.fromCharCode(92)).join('/')).filter((f) => /(?<![.\w])sell\(\s*(?:h\.)?state\b/.test(readFileSync(f, 'utf8')) && !/shared\/src\/trader\.ts$/.test(f)).map((f) => f.slice(root.length + 1));
     expect(users).toEqual(['client/src/api/traderApi.ts']);
   });
 });

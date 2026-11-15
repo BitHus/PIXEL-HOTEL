@@ -6,6 +6,7 @@ import { PALETTE, roomBoundsRect } from '@pixel-hotel/shared';
 import { LocalGameAPI } from '../api/localGameAPI.ts';
 import { browserStorage } from '../api/saveStorage.ts';
 import { RoomView } from '../render/roomView.ts';
+import { loadSprites } from '../render/spriteStore.ts';
 import { runNewGameSetup } from '../ui/newGame.ts';
 import { applyRankColors } from '../ui/rank.ts';
 import { RoomAtmosphere } from '../render/roomAtmosphere.ts';
@@ -61,6 +62,8 @@ export async function setupCore(g: G0) {
     resolution: window.devicePixelRatio || 1,
     autoDensity: true,
   });
+  // Furniture sprite PNGs (docs/PLAN-SPRITES.md): loaded once, before the first room opens; with none it resolves at once.
+  await loadSprites();
   /** Real screen px per CSS px. Zoom settles where zoom * dpr is whole. */
   const dpr = (): number => app.renderer.resolution;
   host.appendChild(app.canvas);

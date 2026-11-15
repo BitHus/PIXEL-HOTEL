@@ -4,7 +4,8 @@
 //
 // PLACEHOLDER ART: real pixel art replaces the drawing per item in phase 4 (docs/NOTES.md BG2).
 
-import { Texture } from 'pixi.js';
+import { Sprite, Texture } from 'pixi.js';
+import { spriteTexture } from './spriteStore.ts';
 import { getFurnitureType, getMaterialType, iconKey, type Icon, type IconShape, type LootRef, type PaletteName, type Rank } from '@pixel-hotel/shared';
 import { ICON_SIZE, iconPixels } from './iconPixels.ts';
 
@@ -63,6 +64,19 @@ export function iconTexture(icon: Icon, rank?: Rank, size = ICON_SIZE): Texture 
     textures.set(key, tex);
   }
   return tex;
+}
+
+/**
+ * A sprite showing an item's icon, `size` px square: its PNG (assets/sprites/icons/<id>.png, or blocks/<id>.png) when it has one, else the code icon.
+ * The room-side twin of the id-aware functions in ui/itemIcon.ts (docs/PLAN-ART-UPGRADE.md section 0).
+ */
+export function iconSpriteFor(id: string, icon: Icon, rank?: Rank, size = ICON_SIZE): Sprite {
+  const tex = spriteTexture('icons', id) ?? spriteTexture('blocks', id);
+  if (!tex) return new Sprite(iconTexture(icon, rank, size));
+  const s = new Sprite(tex);
+  s.width = size;
+  s.height = size;
+  return s;
 }
 
 /** The icon of a shop good (a stackable material or a furniture item). */

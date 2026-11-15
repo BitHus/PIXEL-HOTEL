@@ -148,6 +148,7 @@ late.hotbar = hotbar;
       info.setGold(p.wallet.gold);
       info.setGems(p.wallet.gems);
     }
+    info.setInnName(p.innName);
     if (st.selectedBlock !== null && (st.inventory.materials[st.selectedBlock as keyof typeof st.inventory.materials] ?? 0) === 0) {
       toast(`Out of ${getMaterialType(st.selectedBlock as SeedId).name}.`);
       selectBlock(null, null);

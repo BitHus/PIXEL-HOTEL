@@ -6,7 +6,7 @@
 import { Container, Sprite } from 'pixi.js';
 import { COIN_ICON, GEM_ICON, footprintRect, getFurnitureType, getMaterialType, isTable, materialGroup, type FurnitureItem, type Icon, type MaterialId, type Mess, type Point } from '@pixel-hotel/shared';
 import { itemDepthKey } from './depthOrder.ts';
-import { iconTexture } from './drawIcon.ts';
+import { iconSpriteFor, iconTexture } from './drawIcon.ts';
 import { surfaceHeight } from './furnitureArt.ts';
 import type { RoomView } from './roomView.ts';
 
@@ -107,7 +107,7 @@ export class TableMess {
       }
       if (m.dish !== null) {
         const x = both ? 6 : 0;
-        const d = new Sprite(iconTexture(m.full ? getMaterialType(m.dish).icon : emptyDishIcon(m.dish), undefined, DISH_PX));
+        const d = m.full ? iconSpriteFor(m.dish, getMaterialType(m.dish).icon, undefined, DISH_PX) : new Sprite(iconTexture(emptyDishIcon(m.dish), undefined, DISH_PX));
         d.position.set(x - DISH_PX / 2, -DISH_PX);
         container.addChild(d);
         dishAt = { x: mx + x, y: my - top - DISH_PX / 2 };
