@@ -23,8 +23,8 @@ const OUTLINE = PALETTE[6];
 
 /** Spout positions (dx, dy from the stand's anchor, in px) for the two taps of a tap_stand. */
 export const TAP_SPOUTS = [
-  { dx: -8, dy: -13 },
-  { dx: 8, dy: -13 },
+  { dx: -8, dy: -19 },
+  { dx: 7, dy: -19 },
 ] as const;
 
 interface Pour {
@@ -118,7 +118,7 @@ export class PourEffects {
 const MUG_W = 8;
 const MUG_H = 9;
 /** Distance from the spout down to the mug's bottom. */
-const MUG_DROP = 14;
+const MUG_DROP = 9;
 const FADE_MS = 150;
 
 /**
