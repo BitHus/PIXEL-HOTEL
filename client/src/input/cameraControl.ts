@@ -152,18 +152,15 @@ export function attachCameraControl(
 
   const movePress = (p: Point): void => {
     if (!press) return;
-    if (press.hold === 'line') {
+    if (press.hold) {
+      // Sliding while holding never pans: a line follows the pointer, a repeating hit moves on to
+      // whatever the finger slides over (the room stays put).
       hooks.onHoldMove?.(p);
       press.last = p;
       return;
     }
     if (!press.drag) {
       if (Math.hypot(p.x - press.start.x, p.y - press.start.y) < TAP_MAX_MOVE_PX) return;
-      if (press.hold === 'repeat') {
-        // Moved past the tap limit: a pan, not a punch.
-        press.hold = null;
-        hooks.onHoldEnd?.();
-      }
       press.drag = hooks.getDragMode?.(press.target, press.start) ?? 'pan';
       if (press.drag === 'draw') hooks.onDraw?.('start', press.start);
     }

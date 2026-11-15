@@ -1581,6 +1581,14 @@ async function start(): Promise<void> {
       return true;
     },
     onHoldMove: (screen) => {
+      if (hold.repeating) {
+        const t = holdTargetAt(screen);
+        if (t) {
+          if (!dungeon.isActive) marked = screenToWorld(screen, shown);
+          hold.retarget(t);
+        }
+        return;
+      }
       const last = hold.lastCell;
       if (!last) return;
       const here = cellOf(screenToWorld(screen, shown));
