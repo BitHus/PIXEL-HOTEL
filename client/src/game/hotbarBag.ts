@@ -14,7 +14,7 @@ import type { G10 } from './ctx.ts';
 export async function setupHotbarBag(g: G10) {
   const {
     toast, menu, placer, viewCenter, build, blockViews, plantViews, syncGrid, ui, panels, api, side, info,
-    runBar, newIntro, dungeon, workshop, cooking, book, refreshTravel, dungeonBadge, dungeonButton, paintBar,
+    runBar, newIntro, dungeon, workshop, cooking, brewing, book, refreshTravel, dungeonBadge, dungeonButton, paintBar,
     paint, paintableStyles, prefs, catalog, roomPanel, shelfPanel, st, late,
   } = g;
   late.refreshInventory = refreshInventory;
@@ -39,6 +39,7 @@ late.startPlacing = startPlacing;
   /** A block action waiting for the avatar to arrive (the cell was out of reach). */
   st.pendingBlock = null;
   st.pendingStove = null;
+  st.pendingBarrel = null;
   const selectBlock = (id: string | null, slot: number | null): void => {
     st.selectedBlock = id;
     selectedSlot = id === null ? null : slot;
@@ -147,6 +148,7 @@ late.hotbar = hotbar;
     if (!dungeon.isActive) info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
     workshop.refresh(p);
     cooking.refresh(p);
+    brewing.refresh(p.materials);
     if (panels.open === 'book') book.refresh(p);
     else side.setBookDot(newEntries(p.seen, p.bookOpenedAt).length > 0);
     if (panels.open === 'travel') void refreshTravel();

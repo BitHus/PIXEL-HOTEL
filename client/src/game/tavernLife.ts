@@ -2,9 +2,12 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, SERVE_QUEUE_MAX, brewReadyInMs, seatKey,
-  tavernSeats, type Guest, STOVE_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
+  REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, SERVE_QUEUE_MAX, seatKey,
+  tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
+  brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId,
 } from '@pixel-hotel/shared';
+import { createBrewingPanel } from '../ui/brewingPanel.ts';
+import { createMenuPanel } from '../ui/menuPanel.ts';
 import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
 import { CustomerViews, type Walker } from '../render/customerViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
@@ -53,6 +56,9 @@ export async function setupTavernLife(g: G9) {
     st.tavern = await api.getTavern();
     syncTavern();
     refreshCooks();
+    brewing.setBrews(st.tavern.brews);
+    maybeIntro();
+    if (panels.open === 'menu') void refreshMenu();
   }
   // ---------- The kitchen (step K1): stoves cook batches in real time; a tap collects or opens the Cooking panel ----------
   const cooking = createCookingPanel(ui, {
@@ -105,7 +111,98 @@ export async function setupTavernLife(g: G9) {
   // The countdown in the panel, and the "ready" moment.
   setInterval(() => {
     if (panels.open === 'cooking') cooking.tick();
+    if (panels.open === 'brewing') brewing.tick();
   }, 1000);
+  // ---------- Brewing (step 9t C): barrels brew drinks in real time; a tap collects or opens the Brewing panel ----------
+  const brewing = createBrewingPanel(ui, {
+    start: (barrelUid, drink) => {
+      void api.startBrew(barrelUid, drink).then(async (ok) => {
+        if (ok) sound.play('pop');
+        const d = getDrinkType(drink);
+        toast(ok ? `Brewing ${d.mugs} mugs of ${d.name}: ready in ${cookTimeText(d.minutes * 60_000)}.` : 'You need more crops, and a free barrel.');
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
+    collect: (barrelUid) => void collectBarrel(barrelUid),
+  });
+  panels.add('brewing', brewing.el);
+  /** Collects a ready brew (mugs into the bag, a popup); false when nothing was ready. */
+  async function collectBarrel(barrelUid: number): Promise<boolean> {
+    const r = await api.collectBrew(barrelUid);
+    if (!r) return false;
+    sound.play('pop');
+    popups.show(r.gains);
+    toast(`${r.mugs} x ${getDrinkType(r.drink as DrinkId).name} are in your bag. Put them on the menu at the bar.`);
+    await refreshTavern();
+    await late.refreshInventory();
+    panels.close();
+    return true;
+  }
+  /** The avatar is next to the barrel: a ready brew is collected, else the Brewing panel opens (progress or recipes). */
+  async function barrelArrived(uid: number): Promise<void> {
+    await refreshTavern();
+    const brew = brewOf(st.tavern.brews, uid);
+    if (brew && brewReady(brew, Date.now()) && (await collectBarrel(uid))) return;
+    brewing.open(uid);
+    brewing.refresh(st.inventory.materials);
+    brewing.setBrews(st.tavern.brews);
+    panels.show('brewing');
+  }
+  /** A tap on a brewing barrel: walk next to it (when farther than BARREL_REACH_PX), then collect or open the panel. */
+  const barrelTap = (barrel: FurnitureItem): void => {
+    const c = footprintCenter(barrel, barrel.typeId);
+    if (Math.hypot(st.avatar.x - c.x, st.avatar.y - c.y) <= BARREL_REACH_PX) {
+      st.pendingBarrel = null;
+      void barrelArrived(barrel.uid);
+      return;
+    }
+    void walkTo({ x: barrel.x, y: barrel.y + 16 }).then((ok) => {
+      if (!ok) toast('There is no way to the barrel.');
+      else st.pendingBarrel = barrel.uid;
+    });
+  };
+  // ---------- The Menu panel (step 9t C): tap the bar ----------
+  let menuRowsNow: MenuRowView[] = [];
+  const openOrdersNow = (): Guest[] => st.tavern.guests.filter((g) => g.phase === 'order' && g.order);
+  async function refreshMenu(): Promise<void> {
+    menuRowsNow = await api.getMenu();
+    menuPanel.update(openOrdersNow(), menuRowsNow, st.tavern.serveQueue);
+  }
+  const changeMenu = async (id: MaterialId, change: { on?: boolean; price?: number }): Promise<void> => {
+    const rows = await api.setMenuEntry(id, change);
+    if (!rows) {
+      toast('That did not work.');
+      return;
+    }
+    sound.play('click');
+    menuRowsNow = rows;
+    menuPanel.update(openOrdersNow(), rows, st.tavern.serveQueue);
+  };
+  const menuPanel = createMenuPanel(ui, {
+    serve: (guestId) => void serveTap(guestId).then(() => refreshMenu()),
+    toggle: (id, on) => void changeMenu(id, { on }),
+    step: (id, dir) => {
+      const row = menuRowsNow.find((r) => r.id === id);
+      if (row) void changeMenu(id, { price: stepPrice(row.price, row.baseValue, dir) });
+    },
+  });
+  panels.add('menu', menuPanel.el);
+  /** A tap on the bar: the Menu panel opens (Serve tab when orders wait, else Menu). Only in the tavern. */
+  const barTap = (): void => {
+    if (!inTavern()) return;
+    menuPanel.setTab(openOrdersNow().length > 0 ? 'serve' : 'menu');
+    void refreshMenu().then(() => panels.show('menu'));
+  };
+  // ---------- The one-time intro toast (old saves: TavernState.introSeen was false) ----------
+  let introShown = false;
+  function maybeIntro(): void {
+    if (introShown || st.tavern.introSeen || !inTavern()) return;
+    introShown = true;
+    toast(TAVERN_INTRO_OLD);
+    st.tavern = { ...st.tavern, introSeen: true };
+    void api.markTavernIntroSeen();
+  }
   /** A tap on a guest or an order bubble: the order is carried to the table (taps queue up, at most SERVE_QUEUE_MAX). */
   async function serveTap(guestId: number): Promise<void> {
     if (st.tavern.serveQueue.length >= SERVE_QUEUE_MAX) {
@@ -136,24 +233,11 @@ export async function setupTavernLife(g: G9) {
       return true;
     }
     if (hit && getFurnitureType(hit.typeId).brews) {
-      void brewTap(hit);
+      barrelTap(hit);
       return true;
     }
     return false;
   };
-  /** A tap on a brewing barrel: a ready brew is collected (mugs in the bag); else it says how long is left. */
-  async function brewTap(barrel: FurnitureItem): Promise<void> {
-    const r = await api.collectBrew(barrel.uid);
-    if (r) {
-      sound.play('pop');
-      popups.show(r.gains);
-      return;
-    }
-    await refreshTavern();
-    const brew = st.tavern.brews.find((b) => b.barrelUid === barrel.uid);
-    if (!brew) toast('The barrel is empty.');
-    else toast(`Brewing: ready in ${Math.max(1, Math.ceil(brewReadyInMs(brew, Date.now()) / 60_000))} min.`);
-  }
   st.seatedGuests = 0;
   api.onTavern((e) => {
     const on = inTavern();
@@ -229,5 +313,5 @@ export async function setupTavernLife(g: G9) {
     }
   });
 
-  return { guests, tableMess, orders, syncTavern, tavernTap, cooking, stoveArrived };
+  return { guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived };
 }

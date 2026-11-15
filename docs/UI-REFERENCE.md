@@ -259,6 +259,19 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   out without crops). Cooking: "3 x Roasted turnip", a progress bar and "Cooking: ready in 20 s. It cooks while the game is
   closed too." (counts down every second). Ready: "Ready!" and a Collect button. The farm has no cooking pot and its Map card
   never mentions cooking. The lunch box says "Cook on a stove in your tavern."
+- **Brewing panel (step 9t C).** Tap a brewing barrel in play mode: the avatar walks next to it (BARREL_REACH_PX), then a ready brew is
+  collected (popup + toast "6 x Root ale are in your bag. Put them on the menu at the bar.") or the Brewing barrel panel opens
+  (panelShell, title "Brewing barrel", a close x). Empty: one card per recipe in drinks.json (icon, rank-coloured name with what you own,
+  "6 mugs, 10 min. One mug is worth 9 gold.", the crops as "Turnip 1/2" with missing ones grey and struck through, a Brew button greyed
+  out without crops). Brewing: "6 mugs of Root ale", a progress bar and "Brewing: ready in 4 min. It brews while the game is closed too."
+  (counts down every second). Ready: "Ready!" and Collect. One brew per barrel; a second barrel brews at the same time.
+- **Menu panel (step 9t C).** Tap the bar (the counter) in play mode with no guest or coins on it (the avatar also walks behind the bar, as
+  before): the Bar panel with two icon tabs on its edge, Serve and Menu. It opens on Serve when an order waits, else on Menu.
+  Serve: one row per open order (item icon and name, "Waiting at a table." / "Waiting a long time!", a Serve button; "On the way" when queued);
+  none: a short explanation. Menu: a row for every drink and dish you own or have set: icon, name with stock, "Worth n gold." (or "Out of
+  stock: it is off the menu until you have more."), a price stepper (- / price / +, 44 px buttons, 10% of the baseValue per tap, 1 to 3 x),
+  the price hint (one of the four faces and a line: very cheap, fair, a bit high, too high), "Guests paid: 9, 9, 10" and an On/Off switch
+  (dishes start Off, drinks On). Off or out of stock rows are dimmed. An empty menu shows how to fill it: brew a drink, cook a dish.
 - **List panels (polish).** Workshop, Cooking, the shelf panel and the Map use the Map's card as
   the model: an icon, a title, one short line, and one action on the right.
 - **Placing furniture** (our own pattern, built in step 4b): the item appears as a ghost,

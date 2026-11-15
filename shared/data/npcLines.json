@@ -6,7 +6,7 @@
     "Smells like old wood in here.",
     "Just browsing, thanks!",
     "Is this place new?",
-    "Morning, shopkeeper!",
+    "Morning, innkeeper!",
     "Let's see what's in today."
   ],
   "browse": [
@@ -52,7 +52,7 @@
   ],
   "queue": [
     "Hello? Anyone here?",
-    "Shopkeeper? I'd like to pay!",
+    "Innkeeper? I'd like to pay!",
     "Is anybody minding the till?",
     "I'll just wait here then...",
     "Hellooo? Customer here!",
@@ -76,12 +76,12 @@
     "Off I go!"
   ],
   "lovely": [
-    "What a lovely shop!",
+    "What a lovely tavern!",
     "So cozy in here!",
     "I love what you did here.",
     "Nice place you've got!",
-    "Pretty shop, pretty things.",
-    "This shop has charm!"
+    "Pretty tavern, pretty things.",
+    "This tavern has charm!"
   ],
   "empty": [
     "Not much left...",

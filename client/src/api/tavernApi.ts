@@ -12,13 +12,18 @@ import {
   collectCoins,
   clearDish,
   collectBrew,
+  startBrew,
+  menuRows,
+  setMenu,
   collectCook,
   startCook,
   openOrders,
   GOLD_GAIN_ID,
   GUEST_SERVE_REACH_PX,
   findPath,
+  type DrinkId,
   type FoodId,
+  type MenuRowView,
   type GainList,
   type MaterialId,
   type TavernClientEvent,
@@ -31,7 +36,7 @@ import type { LocalGameAPI } from './localGameAPI.ts';
 export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
-    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, cooks: t.cooks, at: h.now() });
+    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, cooks: t.cooks, at: h.now(), introSeen: t.introSeen });
   },
 
   onTavern(h: LocalGameAPI, listener: (e: TavernClientEvent) => void): () => void {
@@ -68,6 +73,35 @@ export const tavernApi = {
     const gains = gainsSince(h.state, r.state);
     h.commit(r.state);
     return { drink: r.drink, mugs: r.mugs, gains };
+  },
+
+  async startBrew(h: LocalGameAPI, barrelUid: number, drink: DrinkId): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const next = startBrew(h.state, barrelUid, drink, h.now());
+    if (!next) return false;
+    h.commit(next);
+    return true;
+  },
+
+  menuRowViews(h: LocalGameAPI): MenuRowView[] {
+    const history = h.state.tavern.history;
+    return menuRows(h.state).map((r) => ({ id: r.id, on: r.on, price: r.price, baseValue: r.baseValue, stock: r.stock, history: [...(history[r.id] ?? [])] }));
+  },
+
+  async getMenu(h: LocalGameAPI): Promise<MenuRowView[]> {
+    return tavernApi.menuRowViews(h);
+  },
+
+  async setMenuEntry(h: LocalGameAPI, id: string, change: { on?: boolean; price?: number }): Promise<MenuRowView[] | null> {
+    const next = setMenu(h.state, id, change);
+    if (!next) return null;
+    h.commit(next);
+    return tavernApi.menuRowViews(h);
+  },
+
+  async markTavernIntroSeen(h: LocalGameAPI): Promise<void> {
+    if (h.state.tavern.introSeen) return;
+    h.commit({ ...h.state, tavern: { ...h.state.tavern, introSeen: true } });
   },
 
   async startCook(h: LocalGameAPI, stoveUid: number, food: FoodId, qty: number): Promise<boolean> {

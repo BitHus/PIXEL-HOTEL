@@ -54,6 +54,8 @@ export interface State {
   pendingBlock: { kind: 'place' | 'hit'; c: number; r: number; tries: number } | null;
   /** A stove the avatar is walking to (step K1): the tap is finished on arrival. */
   pendingStove: number | null;
+  /** A brewing barrel the avatar is walking to (step 9t C): the tap is finished on arrival. */
+  pendingBarrel: number | null;
   walkHold: boolean;
   walkHoldCell: string;
   shiftHeld: boolean;

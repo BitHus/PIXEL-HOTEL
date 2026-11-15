@@ -3,7 +3,7 @@
 // Methods are added in later steps as they are needed.
 
 import type { BookTab } from './book.ts';
-import type { BarId, CropId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
+import type { BarId, CropId, DrinkId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
 import type { ChopKind } from './woodcut.ts';
 import type { RoomLevel } from './config.ts';
@@ -91,6 +91,19 @@ export interface TavernView {
   cooks: Cook[];
   /** The API's clock when this was read (to count down a brew). */
   at: number;
+  /** False in an old save until markTavernIntroSeen (the one-time toast that explains the tavern). */
+  introSeen: boolean;
+}
+
+/** One row of the Menu panel: a drink or dish the player owns or has set, with its menu choice and the last prices paid. */
+export interface MenuRowView {
+  id: MaterialId;
+  on: boolean;
+  price: number;
+  baseValue: number;
+  stock: number;
+  /** The last prices guests paid (oldest first, at most MENU_HISTORY_LENGTH). */
+  history: number[];
 }
 
 /**
@@ -364,6 +377,18 @@ export interface GameAPI {
   tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean>;
   /** Collects the mugs of a ready brew from a barrel in the tavern. Null if it is not ready. */
   collectBrew(barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null>;
+  /**
+   * Starts a brew in an empty barrel that stands in the tavern: the crops leave the bag (ledger 'brew') and the drink
+   * brews in real time, also while the game is closed. False = refused (not in the tavern, not a free barrel, not a
+   * drink, crops short; nothing is taken).
+   */
+  startBrew(barrelUid: number, drink: DrinkId): Promise<boolean>;
+  /** The Menu panel's rows: every drink and dish the player owns or has set (on or off, price, stock, last prices). */
+  getMenu(): Promise<MenuRowView[]>;
+  /** Puts a drink or dish on or off the menu and / or sets its price (whole gold). The new rows, or null = refused. */
+  setMenuEntry(id: string, change: { on?: boolean; price?: number }): Promise<MenuRowView[] | null>;
+  /** The intro toast of the tavern was shown: it never shows again (also after a reload). */
+  markTavernIntroSeen(): Promise<void>;
   // ---------- Step 9b: the farm and cooking ----------
   /** Counts for the Map card (ripe, growing, free soil). */
   getFarm(): Promise<FarmView>;

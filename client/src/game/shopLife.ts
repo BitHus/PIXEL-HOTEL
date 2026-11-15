@@ -148,7 +148,7 @@ late.roomLevel = roomLevel;
               },
             });
           }
-        } else toast(`Sold for ${e.price} gold in your shop.`);
+        } else toast(`Sold for ${e.price} gold at your market corner.`);
         void late.refreshInventory();
         void refreshShop();
         break;

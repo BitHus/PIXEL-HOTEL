@@ -52,10 +52,14 @@ export const GUEST_SEAT_REACH_PX = 48;
 /** A seated guest orders after this long, ms. */
 export const GUEST_ORDER_AFTER_MIN_MS = 3000;
 export const GUEST_ORDER_AFTER_MAX_MS = 6000;
+/** A tap on a brewing barrel acts at once when the avatar is this close (px) to its centre; else the avatar walks next to it first. */
+export const BARREL_REACH_PX = 64;
 /** A guest waits this long for the order (only while the player is in the tavern), then leaves unhappy. */
 export const GUEST_PATIENCE_MS = 90_000;
 /** With this much patience left the guest calls for the order once. */
 export const GUEST_PATIENCE_WARN_MS = 35_000;
+/** When the tavern's appeal is at least REMARK_APPEAL_MIN, small talk at the table is a remark about the room ("What a lovely tavern!") with this chance. */
+export const GUEST_ROOM_REMARK_CHANCE = 0.3;
 /** A guest eats or drinks for this long, ms. */
 export const GUEST_EAT_MIN_MS = 20_000;
 export const GUEST_EAT_MAX_MS = 40_000;
@@ -80,4 +84,10 @@ export const AWAY_ORDERS_MAX = 3;
 export const GUEST_BROWSE_STALL_CHANCE = 0.25;
 /** The menu panel shows this many last prices paid per drink or dish. */
 export const MENU_HISTORY_LENGTH = 5;
+/** The Menu panel's price stepper moves by this share of the item's baseValue (at least 1 gold). */
+export const MENU_PRICE_STEP = 0.1;
+/** The stepper stops at this multiple of the baseValue (guests never pay that much; the panel says so). */
+export const MENU_PRICE_MAX_MULT = 3;
+/** The Menu panel's face for a price: the guest with the middle tolerance of CUSTOMER_TOLERANCE_MIN..MAX. */
+export const MENU_FACE_TOLERANCE = 1.1;
 

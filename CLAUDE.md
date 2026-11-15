@@ -8,12 +8,13 @@ A browser game. Parts:
   top and front of things). Walk as an avatar, chat in bubbles, build per cell (32 px build grid;
   wall items stay free along the back wall).
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
-- Shop: a shop room per player: loot on shelves with prices, NPC customers buy for gold, gold
+- Tavern (the shop room, step 9t): guests sit, order drinks and dishes from your menu, you serve them and tap their coins; the
+  Market corner (stall, shelves) sells loot to NPC customers. Brewing barrel (crops -> mugs) and stove (crops -> dishes). Gold
   buys furniture in the catalog.
 - Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
 - Lakeside (10d): chop trees for wood, fish in the lake.
-The loop: dungeon (loot) -> shop (gold) -> furniture; farm (food) -> stronger runs; mine (ore) ->
+The loop: dungeon (loot) -> tavern (gold) -> furniture; farm (food) -> stronger runs; mine (ore) ->
 better gear -> deeper runs. Every player starts with two small basic rooms (hotel room, shop).
 Working title: Pixel Hotel (placeholder; a real, original name before any public release).
 Original names, art and assets only. Never copy Habbo, Travellers Rest or any other game.
@@ -57,7 +58,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Floors and walls are unlockable styles (shared/data/styles.json). Rooms start 'bare'. A bought
   or crafted style is unlocked forever and applied to any own room for free. Price = baseValue * 3.
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
-- New player: an empty level 1 hotel room and a level 1 shop (the tavern) with a counter, one stall_table and one stove (K1: you cook there).
+- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a stall table, a round table with 2 stools, a brewing barrel (6 root ale ready) and one stove (K1: you cook there).
 - The counter: one per shop, movable, never picked up; the spot behind it must stay reachable.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
@@ -104,6 +105,12 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - One currency: gold (integer). Everything has a baseValue. New player (createNewPlayer): level
   1, 100 gold, bare styles, 4 wood and 2 cloth, no furniture in the inventory.
 - Goods sit on slots (stall_table 3, shelf 3, display case 4), one price per item.
+- TAVERN (9t, done): the shop room is the tavern (kind 'shop', same room id; the counter is the bar). GUESTS (alone, pairs, groups of 3,
+  every 45 s * 100 / (100 + appeal), never more than seats) sit at a table, order from the MENU (tap the bar: Serve and Menu tabs; each
+  drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest: the avatar
+  carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that you tap (nothing
+  automatic; unserved after 90 s = unhappy). Drinks: BREWING BARREL (tap it: Brewing panel, one brew at a time, real time, tap to
+  collect). Dishes: the stove (K1). Away: at most 3 seated orders. The Market corner (stall, shelves) and its queue of 3 stay as below.
 - shopAppeal = min(100, appeal of placed items (each type at most 3 times) + floor and wall
   style). A customer comes every 60 s * 100 / (100 + appeal) while there is stock.
 - A customer wants one category (materials, home / shop / crypt / lake furniture, food), has a
@@ -239,12 +246,11 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   splash, 9d (shop life) and fixes, 9e (ranks, Book), 9f (lakeside), 1.0 (housekeeping), BG1 (the
   32 px cell grid; NOTES BG1), BG2 (every item is a coloured square: icon { shape, colors } in the
   data, drawn by render/drawIcon.ts; NOTES BG2).
-- Step 9t (tavern): A (shared rules) and B (the room, guests, serving, coins in the client; NOTES STEP 9t)
-  done; K1 (the stove: cooking moved from the farm to the tavern; NOTES K1) done; C (brewing and Menu panels, toast, texts,
-  simulate-economy) next, on the cell grid.
+- Step 9t (tavern) is DONE: A (rules), B (room, guests, serving), K1 (stove), C (Brewing panel, bar Menu panel, tavern texts, one-time
+  intro toast, simulate-economy; NOTES 9t C). Tavern gold is brewing-limited at the start (0.1x to 0.25x of the old shop ceiling, NOTES 9t C).
 - BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
-  is done. Next: 9t C (brewing, Menu), then K2, then 9g.
+  is done. Next: K2 (ripening), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
 - DUNGEON_ROUND is 1. SAVE_VERSION is 21. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.

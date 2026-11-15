@@ -17,7 +17,7 @@ export interface PlaceCard {
   locked: string | null;
   /** The place the player is in now. */
   here: boolean;
-  /** A small badge on the card (step 9d: "2 waiting" on the Shop), or none. */
+  /** A small badge on the card (step 9d: "2 waiting" on the Tavern), or none. */
   badge?: string;
 }
 
@@ -28,7 +28,7 @@ export interface TravelPanel {
 
 const NAMES: Record<Place, [string, IconName]> = {
   hotel: ['Hotel room', 'house'],
-  shop: ['Shop', 'coin'],
+  shop: ['Tavern', 'coin'],
   farm: ['Farm', 'sprout'],
   lakeside: ['Lakeside', 'fish'],
   mine: ['Mine', 'hammer'],

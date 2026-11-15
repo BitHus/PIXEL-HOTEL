@@ -58,14 +58,19 @@ export const FIRST_BUY_POP_MS = 220;
 export const HINTS = [
   'Open the Catalog and buy something with your 100 gold.',
   'Place it in your room.',
-  'Put an item on the table in your shop and set a price.',
-  'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
+  'Put an item on the stall table in your tavern\'s market corner and set a price.',
+  'Your market corner has nothing left to sell. Tap the Dungeon button to find loot.',
   'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown (about 2 minutes). Breaking blocks, plants, chests and fish drop gems.',
   'Gems buy packs. With 30 gems open the Catalog, the Packs tab, and open a Basic Seeds Pack: its odds are on the card.',
   'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
   'Splice: plant one seed, then use a different seed on the same planted cell. Some pairs make a brand new seed (see the Book, Splice tab).',
 ] as const;
-/** The index of the dungeon hint in HINTS: it only shows while the shop has nothing for sale. */
+/** The one-time toast for an old save (TavernState.introSeen false): the shop became a tavern (step 9t). */
+export const TAVERN_INTRO_OLD =
+  'Your shop is a tavern now! Guests sit at a table, order from your menu, and wait for you: tap a guest to carry the order from the bar. Place the round table, the stools and the brewing barrel from your bag, tap the barrel to brew drinks from crops and tap the bar to set the menu. Cooking moved here too: dishes come from the stove.';
+/** A new game gets this short line after the intro. */
+export const TAVERN_INTRO_NEW = 'Welcome to your tavern! Guests sit and order: tap them to serve. Tap the bar for the menu and the barrel to brew.';
+/** The index of the dungeon hint in HINTS: it only shows while the market corner has nothing for sale. */
 export const DUNGEON_HINT = 3;
 /** The index of the farm hint (step 9b): done by planting anything. */
 export const FARM_HINT = 4;

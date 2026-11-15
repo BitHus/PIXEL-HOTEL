@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barrels, brewOf, brewReady, brewReadyInMs, collectBrew, returnOrphanBrews, startBrew } from './brewing.ts';
+import { barrels, brewCards, brewOf, brewReady, brewReadyInMs, collectBrew, returnOrphanBrews, startBrew } from './brewing.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { DRINK_TYPES, getMaterialType } from './materials.ts';
@@ -102,5 +102,18 @@ describe('brewing (step 9t)', () => {
     expect(back.player.materials).toEqual(ledgerMaterials(back));
     // Crops that only come back are no new finds.
     expect(back.player.seen.turnip?.count).toBe(4);
+  });
+
+  it('brewCards: one card per recipe with what the player owns, grey (short) when missing', () => {
+    const cards = brewCards({ turnip: 1, potato: 1 });
+    expect(cards.map((c) => c.id)).toEqual(DRINK_TYPES.map((d) => d.id));
+    const ale = cards.find((c) => c.id === 'root_ale')!;
+    expect(ale).toMatchObject({ minutes: 10, mugs: 6, value: 9, can: false });
+    expect(ale.inputs).toEqual([
+      { id: 'turnip', need: 2, have: 1, short: true },
+      { id: 'potato', need: 1, have: 1, short: false },
+    ]);
+    expect(brewCards({ turnip: 2, potato: 1 }).find((c) => c.id === 'root_ale')!.can).toBe(true);
+    expect(brewCards({}).every((c) => !c.can)).toBe(true);
   });
 });

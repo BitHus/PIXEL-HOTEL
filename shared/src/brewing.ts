@@ -6,7 +6,7 @@
 import { getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
-import { getDrinkType, isDrinkId } from './materials.ts';
+import { DRINK_TYPES, getDrinkType, isDrinkId } from './materials.ts';
 import type { DrinkId, FurnitureItem, MaterialId } from './types.ts';
 
 /** What is in a barrel: the drink and when it is ready (ms, the same clock as `now`). */
@@ -83,4 +83,33 @@ export function returnOrphanBrews(state: GameState, at: number): GameState {
     if (r) next = withBrews(r, r.tavern.brews.filter((b) => b.barrelUid !== brew.barrelUid));
   }
   return next;
+}
+
+export interface BrewInputRow {
+  id: MaterialId;
+  need: number;
+  have: number;
+  short: boolean;
+}
+
+export interface BrewCard {
+  id: DrinkId;
+  inputs: BrewInputRow[];
+  minutes: number;
+  mugs: number;
+  /** The value of one mug. */
+  value: number;
+  /** All inputs are in the bag. */
+  can: boolean;
+}
+
+/** One card per drink recipe for the Brewing panel: inputs with what the player owns, time, mugs, value. */
+export function brewCards(materials: Partial<Record<MaterialId, number>>): BrewCard[] {
+  return DRINK_TYPES.map((d) => {
+    const inputs = (Object.entries(d.inputs) as [MaterialId, number][]).map(([id, need]) => {
+      const have = materials[id] ?? 0;
+      return { id, need, have, short: have < need };
+    });
+    return { id: d.id, inputs, minutes: d.minutes, mugs: d.mugs, value: d.baseValue, can: inputs.every((i) => !i.short) };
+  });
 }

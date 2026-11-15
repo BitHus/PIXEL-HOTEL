@@ -25,7 +25,7 @@ export interface InfoPanel {
   setRun(run: { floor: number; maxFloors: number; hp: number; maxHp: number; lantern?: { leftMs: number; totalMs: number } } | null): void;
 }
 
-export const ROOM_NAMES: Record<RoomKind, string> = { hotel: 'Hotel room', shop: 'Shop', farm: 'Farm', lakeside: 'Lakeside' };
+export const ROOM_NAMES: Record<RoomKind, string> = { hotel: 'Hotel room', shop: 'Tavern', farm: 'Farm', lakeside: 'Lakeside' };
 
 function bar(cls: string, icon: HTMLElement | SVGSVGElement | null): { root: HTMLElement; fill: HTMLElement; text: HTMLElement } {
   const root = el('div', `info-bar ${cls}`);

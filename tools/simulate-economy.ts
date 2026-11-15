@@ -11,6 +11,11 @@ import {
   FOOD_TYPES,
   GUEST_BASE_INTERVAL_MS,
   GUEST_GROUP_WEIGHTS,
+  GUEST_EAT_MAX_MS,
+  GUEST_EAT_MIN_MS,
+  GUEST_ORDER_AFTER_MAX_MS,
+  GUEST_ORDER_AFTER_MIN_MS,
+  DRINK_TYPES,
   STOVE_BATCH_MAX,
   cookMs,
   getMaterialType,
@@ -241,3 +246,43 @@ for (const f of FOOD_TYPES) {
   );
 }
 console.log(`Crops are the real limit, not the stove: one stove can cook ${STOVE_BATCH_MAX} dishes every ${cookMs(FOOD_TYPES[0]!) / 1000} s, but a harvest of a common crop takes ${SEED_GROW_MS.common / 60_000} min. Guests ask for about ${GUESTS_PER_HOUR(0).toFixed(0)} items/h at appeal 0 and ${GUESTS_PER_HOUR(100).toFixed(0)}/h at appeal 100 (a group is ${AVG_GROUP.toFixed(2)} guests on average), so more than ${Math.ceil(GUESTS_PER_HOUR(100) / ((60 / 10) * STOVE_BATCH_MAX))} stove(s) visited every 10 min cannot sell their dishes through the menu alone.`);
+
+console.log('\n=== 9t C. Tavern income per hour (guests by appeal, seats, menu prices, brewing and cooking output) next to the old shop ===');
+// The old shop: one customer every 60 s * 100 / (100 + appeal), each buying one item of about SHOP_SALE gold (the figure the till line above uses).
+const SHOP_SALE = 22;
+const GOLD_PER_GEM_NOTE = 'gems: see BG9 1 (the tavern pays gold only; no new gem source)';
+// A guest holds a seat: the pause before the order, the player's walk to the bar and the table (about SERVE_S), the meal, and the walk out.
+const SERVE_S = 15;
+const STAY_S = (GUEST_ORDER_AFTER_MIN_MS + GUEST_ORDER_AFTER_MAX_MS) / 2000 + SERVE_S + (GUEST_EAT_MIN_MS + GUEST_EAT_MAX_MS) / 2000 + 5;
+const seatCap = (seats: number): number => (seats * 3600) / STAY_S;
+const mugsPerHour = (d: (typeof DRINK_TYPES)[number], barrels: number): number => barrels * d.mugs * (60 / Math.max(10, d.minutes));
+const cropCost = (inputs: Partial<Record<MaterialId, number>>): number => Object.entries(inputs).reduce((a, [id, n]) => a + (n ?? 0) * getMaterialType(id as MaterialId).baseValue, 0);
+// Gold per mug at the default menu price (baseValue; the tip is a share of it) and the net after the crops that went into it.
+console.log(pad('drink', 16) + pad('rank', 9) + pad('brew', 9) + pad('mugs', 6) + pad('price', 7) + pad('tip', 6) + pad('crop gold/mug', 15) + pad('net gold/mug', 14) + pad('mugs/h/barrel', 15) + 'net gold/h/barrel (visit every 10 min)');
+for (const d of DRINK_TYPES) {
+  const tip = d.baseValue * d.tip;
+  const perMug = cropCost(d.inputs) / d.mugs;
+  console.log(pad(d.id, 16) + pad(RANK_NAMES[d.rank], 9) + pad(`${d.minutes} min`, 9) + pad(d.mugs, 6) + pad(d.baseValue, 7) + pad(f1(tip), 6) + pad(f1(perMug), 15) + pad(f1(d.baseValue + tip - perMug), 14) + pad(f1(mugsPerHour(d, 1)), 15) + f1(mugsPerHour(d, 1) * (d.baseValue + tip - perMug)));
+}
+const avgMug = DRINK_TYPES.reduce((a, d) => a + d.baseValue + d.baseValue * d.tip, 0) / DRINK_TYPES.length;
+const rootAle = DRINK_TYPES[0]!;
+console.log(`\nA guest holds a seat about ${STAY_S.toFixed(0)} s (order pause, the carry, the meal, the walk out) so a seat serves at most ${seatCap(1).toFixed(0)} guests/h.`);
+console.log('Gold per hour = the smallest of: guests who arrive, guests the seats hold, mugs the barrels brew (every drink on the menu at its baseValue; the glowcap tip is counted). "x old shop" = tavern gold / (shop customers/h * ' + SHOP_SALE + ' gold).');
+console.log(pad('appeal', 8) + pad('guests/h', 10) + pad('seats', 7) + pad('barrels', 9) + pad('menu', 10) + pad('seat cap', 10) + pad('mug supply', 12) + pad('sold/h', 8) + pad('gold/h', 9) + pad('old shop', 10) + pad('x old shop', 12) + 'limit');
+for (const appeal of [0, 30, 60, 100]) {
+  for (const [seats, barrelsN, menu, price] of [[2, 1, 'root ale', rootAle.baseValue], [2, 1, 'mixed', avgMug], [6, 2, 'mixed', avgMug], [10, 4, 'mixed', avgMug]] as const) {
+    const arrive = GUESTS_PER_HOUR(appeal);
+    const cap = seatCap(seats);
+    const mugAvg = menu === 'root ale' ? mugsPerHour(rootAle, barrelsN) : (DRINK_TYPES.reduce((a, d) => a + mugsPerHour(d, 1), 0) / DRINK_TYPES.length) * barrelsN;
+    const sold = Math.min(arrive, cap, mugAvg);
+    const limit = sold === mugAvg ? 'brewing' : sold === cap ? 'seats' : 'guests';
+    const gold = sold * price;
+    const shop = CUSTOMERS_PER_HOUR(appeal) * SHOP_SALE;
+    console.log(pad(appeal, 8) + pad(f1(arrive), 10) + pad(seats, 7) + pad(barrelsN, 9) + pad(menu, 10) + pad(f1(cap), 10) + pad(f1(mugAvg), 12) + pad(f1(sold), 8) + pad(f1(gold), 9) + pad(f1(shop), 10) + pad(`${(gold / shop).toFixed(2)}x`, 12) + limit);
+  }
+}
+// Dishes from the stove (K1) go on the same menu: one stove visited every 10 min makes up to STOVE_BATCH_MAX * 6 dishes/h; each is worth its baseValue.
+const avgDish = FOOD_TYPES.reduce((a, f) => a + f.baseValue, 0) / FOOD_TYPES.length;
+console.log(`\nOne stove visited every 10 min adds up to ${STOVE_BATCH_MAX * 6} dishes/h worth ${f1(avgDish)} gold each on average (${f1(STOVE_BATCH_MAX * 6 * avgDish)} gold/h if guests ordered them all; dishes are off the menu until the player switches them on).`);
+console.log('REPORT (nothing retuned): the target is tavern gold/h within 0.5x to 2x of the old shop at the same appeal. Result: brewing is the limit in every row. A new game (2 stools, one barrel) earns about 0.1x to 0.25x of the old shop ceiling, 4 barrels 0.45x to 0.9x; guests and seats are never the limit. The old shop figure is a CEILING (it assumes loot for every customer, which the dungeon cannot supply), so the real gap is smaller, and the stove adds dishes. If the owner wants the start closer to 0.5x: more mugs per brew, or a shorter root ale time.');
+console.log(GOLD_PER_GEM_NOTE + '.');
