@@ -301,6 +301,16 @@ Tests: the helper, plus API paths still refusing out-of-reach and non-owner. Run
 Step BG6: seeds and farming by punching (owner's request; read BLOCKS-PLAN 3.6). Every block and crop can have a seed item. Plant a seed in a free soil cell of a farm room (not only fixed plots). 3 growth stages in real time, also while closed (time passed in); time by rank (config SEED_GROW_MS). Harvest = punch the grown tree: 1 to 4 blocks or crops, a chance for a seed, a chance for gems (BG4). Unharvested trees stay ready; no watering. The farm room becomes free-form (paths and fences from blocks). Migrate the old plots: crops.json become seeds, planted crops keep their progress, soil cells replace plots, the cooking pot stays. Food, cooking and brewing still use crops. Quests, hints and texts updated. Tests: growth over real time and a reload, harvest rolls with a fixed rng, the migration, ledger.
 ```
 
+## Step BG3b+4b - Finish popups and gems (planner's catch-up, 15 Nov)
+
+```
+Step BG3b+4b: finish what BG3 and BG4 left open (CLAUDE.md CURRENT STATE: popups are wired for blocks only; gems only drop from blocks). Read CLAUDE.md, docs/BLOCKS-PLAN.md sections 3.3 and 3.4, docs/NOTES.md (BG3, BG5, BG6) first. Plan first (max 8 lines); tests first; no art tools.
+1. POPUPS (BG3 B): wire ui/gainPopups.ts to every source that already returns a gains list: dungeon chest, enemy kill, mimic and boss, bank at the exit, fish catch and fished-up things, tree chop, mined ore, farm harvest (BG6), forge and crafting output, buying, quest or Book reward, and later pack opening. Works in rooms, the dungeon and the mine, readable at every zoom on a phone. Rendering only.
+2. GEMS (BG4): add the remaining sources to config GEMS and gemDrop(source, rank, rng): chest, kill, mimic and boss, mined rock, tree chop, fish catch, harvest, quest, Book reward. Small amounts; tuned later in BG9. Gem pickups (floor gems that fly to the avatar when near or tapped) for dungeon and mine and rooms; in the dungeon gems belong to the run (kept on Leave, half lost on death like gold). Everything through ledger.applyChange. Gains lists carry the gems so the popup shows them.
+3. tools/simulate-economy.ts prints gems per hour per source.
+Tests: gemDrop per source and rank with a fixed rng, the dungeon death rule for gems, every API path that gives items also returns its gems, the ledger adds up. Run the full test suite and typecheck, update CLAUDE.md (CURRENT STATE: BG3 and BG4 done), docs/NOTES.md, tick BG3 and BG4 in docs/ROADMAP.md, commit and push. Tell me what to try on my phone (chest, kill, fish, chop, mine, harvest, craft, die and check the gems).
+```
+
 ## Step BG7 - Splicing
 
 ```
