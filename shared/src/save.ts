@@ -5,7 +5,7 @@
 import { CUSTOMER_CALL_AFTER_MS, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
-import { addShopStartItems, addTavern } from './newPlayer.ts';
+import { addShopStartItems, addStove, addTavern } from './newPlayer.ts';
 import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { emptyShop } from './shop.ts';
 import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
@@ -23,7 +23,7 @@ export interface SaveFile {
 export type SaveProblem = 'bad_json' | 'not_a_save' | 'too_old' | 'too_new' | 'invalid';
 
 export type LoadResult =
-  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean }
+  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean; kitchenChanged: boolean }
   | { ok: false; problem: SaveProblem; version?: number };
 
 /**
@@ -267,6 +267,17 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || typeof state.hintsDone !== 'number') return state;
     return state.hintsDone >= 5 ? { ...state, hintsDone: state.hintsDone + 1 } : state;
   },
+  // 20 -> 21 (step K1, the tavern kitchen): cooking moves from the farm's pot to a stove in the tavern. The tavern
+  // gets an empty cooks list and one stove (on its start spot if free, else in the bag). Nothing is lost.
+  20: (state) => {
+    if (!isObject(state) || !isObject(state.tavern) || !Array.isArray(state.items) || !Array.isArray(state.rooms) || !Array.isArray(state.ledger) || !isObject(state.player)) return state;
+    try {
+      const at = isObject(state.shop) && typeof state.shop.updatedAt === 'number' ? state.shop.updatedAt : 0;
+      return addStove(state as unknown as GameState, at);
+    } catch {
+      return { ...state, tavern: { ...state.tavern, cooks: [] } };
+    }
+  },
 };
 
 /** The storage key for a save version. */
@@ -303,7 +314,7 @@ export function readSave(text: string): LoadResult {
     if (v === 13 && isObject(state) && Array.isArray(state.items)) returnedToBag = Math.max(0, was - placedCount(state.items as GameState['items']));
   }
   if (!isGameState(state)) return { ok: false, problem: 'invalid', version };
-  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16 };
+  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16, kitchenChanged: version < 21 };
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {
@@ -332,7 +343,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isInt(p.farmRoomId) || !x.rooms.every((r) => isObject(r) && isObject(r.plants) && isObject(r.blocks))) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   const t = x.tavern;
-  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.serveQueue)) return false;
+  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.serveQueue)) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }

@@ -12,10 +12,13 @@ import {
   collectCoins,
   clearDish,
   collectBrew,
+  collectCook,
+  startCook,
   openOrders,
   GOLD_GAIN_ID,
   GUEST_SERVE_REACH_PX,
   findPath,
+  type FoodId,
   type GainList,
   type MaterialId,
   type TavernClientEvent,
@@ -28,7 +31,7 @@ import type { LocalGameAPI } from './localGameAPI.ts';
 export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
-    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, at: h.now() });
+    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, cooks: t.cooks, at: h.now() });
   },
 
   onTavern(h: LocalGameAPI, listener: (e: TavernClientEvent) => void): () => void {
@@ -65,6 +68,23 @@ export const tavernApi = {
     const gains = gainsSince(h.state, r.state);
     h.commit(r.state);
     return { drink: r.drink, mugs: r.mugs, gains };
+  },
+
+  async startCook(h: LocalGameAPI, stoveUid: number, food: FoodId, qty: number): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const next = startCook(h.state, stoveUid, food, qty, h.now());
+    if (!next) return false;
+    h.commit(next);
+    return true;
+  },
+
+  async collectCook(h: LocalGameAPI, stoveUid: number): Promise<{ food: FoodId; qty: number; gains: GainList } | null> {
+    if (!h.inTavern()) return null;
+    const r = collectCook(h.state, stoveUid, h.now());
+    if (!r) return null;
+    const gains = gainsSince(h.state, r.state);
+    h.commit(r.state);
+    return { food: r.food, qty: r.qty, gains };
   },
 
   inTavern(h: LocalGameAPI): boolean {

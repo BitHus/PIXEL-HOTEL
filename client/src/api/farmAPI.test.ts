@@ -79,8 +79,12 @@ describe('the farm through the GameAPI', () => {
     expect(await again.getFarm()).toMatchObject({ ripe: 0, growing: 0, free: 12 });
     const m = (await again.getPlayer()).materials;
     expect((m.turnip ?? 0) + (m.potato ?? 0)).toBe(crops);
-    // Cook a stew: 2 potatoes + 1 turnip (the 3 potato plants gave at least 6).
-    expect(await again.cook('potato_stew')).toEqual([{ itemId: 'potato_stew', count: 1, rank: expect.any(String) }]);  // the ingredients used are not gains
+    // Cook a stew in the tavern (step K1): 2 potatoes + 1 turnip (the 3 potato plants gave at least 6); it takes a minute.
+    const stove = (await again.enterRoom((await again.getPlayer()).shopRoomId)).items.find((i) => i.typeId === 'stove')!;
+    expect(await again.startCook(stove.uid, 'potato_stew', 1)).toBe(true);
+    expect(await again.collectCook(stove.uid)).toBeNull(); // not ready yet
+    t += MIN;
+    expect((await again.collectCook(stove.uid))?.gains).toEqual([{ itemId: 'potato_stew', count: 1, rank: expect.any(String) }]); // the ingredients used are not gains
     expect((await again.getPlayer()).materials.potato_stew).toBe(1);
     const food = 'potato_stew';
     // Into the dungeon with the food in the lunch box; eat it to heal.
@@ -133,7 +137,7 @@ describe('the farm through the GameAPI', () => {
     expect(ledgerMaterials(end)).toEqual(end.player.materials);
   });
 
-  it('the cooking pot and a plant block walking; bare soil does not', async () => {
+  it('a plant blocks walking; bare soil does not; the old cooking pot spot is free (step K1)', async () => {
     t = 1000;
     const { api } = open(fresh());
     await api.buySeeds('turnip_seed', 1);
@@ -146,7 +150,6 @@ describe('the farm through the GameAPI', () => {
     const end = onPlant?.at(-1);
     expect(end && Math.floor(end.x / 32) === 5 && Math.floor(end.y / 32) === 3).toBe(false); // it stops next to the plant
     const toPot = await api.walk({ x: 464, y: 110 });
-    const potEnd = toPot?.at(-1);
-    expect(potEnd && !(potEnd.x > 448 && potEnd.x < 480 && potEnd.y > 96 && potEnd.y < 120)).toBe(true);
+    expect(toPot?.at(-1)).toEqual({ x: 464, y: 110 }); // where the pot stood: you can walk right there now
   });
 });

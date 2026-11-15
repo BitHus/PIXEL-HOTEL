@@ -15,7 +15,7 @@ const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addF
 describe('save files', () => {
   it('saving then loading gives an identical state', () => {
     const loaded = readSave(toSaveText(state, 3));
-    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false });
+    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false, kitchenChanged: false });
   });
   it('uses a versioned key', () => {
     expect(saveKey()).toBe(`pixel-hotel.save.v${SAVE_VERSION}`);
@@ -51,7 +51,7 @@ describe('save files', () => {
     expect(r.state.hintsDone).toBe(0);
     expect(r.state.shop.slots).toEqual([]);
     const inShop = r.state.items.filter((i) => i.roomId === r.state.player.shopRoomId).map((i) => i.typeId);
-    expect(inShop.sort()).toEqual(['counter', 'stall_table']);
+    expect(inShop.sort()).toEqual(['counter', 'stall_table', 'stove']); // the stove comes with migration 20 -> 21 (step K1)
     expect(new Set(r.state.items.map((i) => i.uid)).size).toBe(r.state.items.length);
   });
 
@@ -155,6 +155,7 @@ describe('save files', () => {
     expect(r).toMatchObject({ ok: true, migrated: true });
     if (!r.ok) return;
     expect(r.state.player.seen).toEqual({
+      stove: { count: 1, firstSeenAt: 0 }, // the kitchen's gift (step K1)
       wood: { count: 3, firstSeenAt: 0 },
       bone: { count: 7, firstSeenAt: 0 },
       counter: { count: 1, firstSeenAt: 0 },
@@ -450,5 +451,72 @@ describe('19 -> 20 (step BG9: the pack quest sits before the mine quest)', () =>
   it('the quest indexes keep their order: farm, pack, mine, splice', () => {
     expect([FARM_HINT, PACK_HINT, MINE_HINT, SPLICE_HINT]).toEqual([4, 5, 6, 7]);
     expect(HINTS).toHaveLength(8);
+  });
+});
+
+describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
+  /** What a version 20 save looked like: no stove, no cooks list, a farm with a planted turnip and some crops. */
+  const v20 = (): Record<string, unknown> => {
+    const base = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', materials: { turnip: 3, potato: 2 }, gold: 50 }, 2)!;
+    const farm = base.rooms.find((r) => r.kind === 'farm')!;
+    const planted = { ...base, rooms: base.rooms.map((r) => (r.id === farm.id ? { ...r, plants: { '3,2': { seed: 'turnip_seed', plantedAt: 5, readyAt: 125_005 } } } : r)) };
+    const items = planted.items.filter((i) => i.typeId !== 'stove');
+    const { cooks: _cooks, ...tavern } = planted.tavern;
+    const { stove: _seen, ...seen } = planted.player.seen;
+    return { ...planted, items, tavern, player: { ...planted.player, seen } };
+  };
+  const load = (state: unknown) => readSave(JSON.stringify({ version: 20, savedAt: 9, state }));
+
+  it('gives the tavern one stove on its start spot, an empty cooks list, and says so', () => {
+    const r = load(v20());
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 20, kitchenChanged: true });
+    if (!r.ok) return;
+    const stoves = r.state.items.filter((i) => i.typeId === 'stove');
+    expect(stoves).toHaveLength(1);
+    expect(stoves[0]).toMatchObject({ roomId: r.state.tavern.roomId, x: 240, y: 96, facing: 'down' });
+    expect(r.state.tavern.cooks).toEqual([]);
+    expect(r.state.ledger.at(-1)).toMatchObject({ reason: 'tavern_gift', note: 'cooking moved to the tavern' });
+    expect(r.state.player.seen.stove?.count).toBe(1);
+    // A new save from here on does not say it again.
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false, kitchenChanged: false });
+  });
+
+  it('puts the stove in the bag when its spot is taken', () => {
+    const s = v20() as unknown as ReturnType<typeof createNewPlayer>;
+    // Move the brewing barrel onto the stove's spot.
+    const items = s.items.map((i) => (i.typeId === 'brewing_barrel' ? { ...i, x: 240, y: 96 } : i));
+    const r = load({ ...s, items });
+    expect(r).toMatchObject({ ok: true, kitchenChanged: true });
+    if (!r.ok) return;
+    const stove = r.state.items.find((i) => i.typeId === 'stove')!;
+    expect(stove.roomId).toBeNull();
+    expect(r.state.bag.furniture.some((x) => x === 'stove') || r.state.hotbar.some((x) => x === 'stove')).toBe(true);
+  });
+
+  it('loses nothing: crops, gold, the planted turnip and the ledger stay; the old pot spot of the farm is free', () => {
+    const before = v20() as unknown as ReturnType<typeof createNewPlayer>;
+    const r = load(before);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.state.player.materials).toEqual(before.player.materials);
+    expect(r.state.player.wallet).toEqual(before.player.wallet);
+    expect(r.state.rooms.find((x) => x.kind === 'farm')!.plants).toEqual({ '3,2': { seed: 'turnip_seed', plantedAt: 5, readyAt: 125_005 } });
+    expect(r.state.items.filter((i) => i.typeId !== 'stove')).toEqual(before.items);
+    expect(r.state.ledger.slice(0, before.ledger.length)).toEqual(before.ledger);
+  });
+
+  it('a save that already has a stove keeps it (no second one)', () => {
+    const withStove = createNewPlayer(undefined, 1);
+    const { cooks: _c, ...tavern } = withStove.tavern;
+    const r = load({ ...withStove, tavern });
+    expect(r.ok && r.state.items.filter((i) => i.typeId === 'stove')).toHaveLength(1);
+  });
+
+  it('an old save from version 12 gets exactly one stove too', () => {
+    const r12 = createNewPlayer(undefined, 1);
+    const { tavern: _t, ...old } = { ...r12, items: r12.items.filter((i) => !['stove', 'round_table', 'bar_stool', 'brewing_barrel'].includes(i.typeId)) };
+    const r = readSave(JSON.stringify({ version: 12, savedAt: 9, state: old }));
+    expect(r).toMatchObject({ ok: true, kitchenChanged: true });
+    if (r.ok) expect(r.state.items.filter((i) => i.typeId === 'stove')).toHaveLength(1);
   });
 });

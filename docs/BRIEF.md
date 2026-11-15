@@ -17,11 +17,11 @@ A browser game with these parts:
 - Shop: each player has a shop room. They put loot on shelves and set prices. NPC customers
   walk in and buy for gold. Gold buys furniture in the catalog.
 - Farm (section 10b, steps 9b, BG6): a free-form outdoor room where the player plants seeds on soil,
-  harvests by punching, and cooks crops into food that heals or buffs them in the dungeon.
+  harvests by punching, and grows the crops that the tavern's stove cooks into food (heals or buffs in the dungeon, step K1).
 - Mine (section 10c, step 9c): a short click-to-mine trip for ore. Ore is smelted into bars
   at the forge, and bars upgrade weapons, armor and the pickaxe.
 - Lakeside (section 10d, step 9f): an outdoor place with a lake: chop trees for wood and fish
-  in the lake. Fish are food for the shop and the pot; bars also make an axe and fishing rods.
+  in the lake. Fish are food for the shop and the stove; bars also make an axe and fishing rods.
 The loop: dungeon (loot) -> shop (gold) -> furniture; farm (food) -> stronger dungeon runs;
 mine (ore) -> better gear -> deeper dungeon runs.
 Every player starts with two small, basic rooms: a hotel room and a shop. They sell loot in
@@ -132,7 +132,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   stone, cinder block), hardness 1 to 8. Blocks are items: they stack in Player.materials (group
   'block'), sit in the bag and the hotbar, are found in the Book (Blocks tab) and may stand on
   shop slots. A block may never stand on the door zone, outside the floor, on a cell with floor
-  furniture, on a plant or the cooking pot, on the cell of an avatar standing still, or on
+  furniture, on a plant, on the cell of an avatar standing still, or on
   a cell that would shut the door off from the middle of the room or the shopkeeper's spot behind
   the counter (refused: 'door_blocked', 'counter_blocked'). Blocks block walking (roomBlockers);
   the grids are rebuilt and walkers and customers re-path. Only the room's owner places or breaks.
@@ -460,7 +460,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   wall, and the door at the bottom. Sizes: level 1 576x384, level 2 704x480, level 3 832x576
   (upgrade 200 / 600 gold). The farm is unlocked from the start.
 - BG6 CHANGED THE FARM (owner's request): it is free-form. The fixed plots are gone; the only fixed thing
-  is the cooking pot. SOIL is a floor style ('soil', styles.json, free): a new farm has a 6 x 2 patch
+  is the cooking pot (K1: removed, nothing is fixed in the farm now). SOIL is a floor style ('soil', styles.json, free): a new farm has a 6 x 2 patch
   (config FARM_START_SOIL); Room > Paint soil paints soil, painting grass over it removes it (a cell with a
   plant stays soil). Decorations, paths and fences (blocks) go anywhere else.
 - SEEDS: every block (blocks.json seedId `<block>_seed`) and every crop (crops.json seed) has a seed item
@@ -469,7 +469,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   and splicing (BG7). The glowcap spore still only drops in the dungeon.
 - PLANTING: select a seed in the hotbar and tap a free soil cell of a farm room within BLOCK_REACH cells (farther:
   the avatar walks closer first; holding still 300 ms and dragging plants a line). One plant per cell. A plant
-  blocks its cell like a small block (nav grids rebuilt, never on the door zone, furniture, the pot, an avatar
+  blocks its cell like a small block (nav grids rebuilt, never on the door zone, furniture, an avatar
   standing still, nor where it would shut the door off). Plants are Room.plants { seed, plantedAt, readyAt }.
 - GROWTH: 3 stages in real time, also while the game is closed (times passed in, no Date.now in shared/): sprout
   (first half), small plant, full plant. Grow time by RANK of what grows (config SEED_GROW_MS): common 2 min,
@@ -496,8 +496,19 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - MIGRATION (save 15 -> 16): each old plot became a soil cell (snapped to the cell grid), each planted crop a plant
   with the same crop, planting time and time left; crops and seeds in the bag are unchanged (same ids); GameState.farm
   is gone; a toast explains the new farm once.
-- Cooking: a cooking pot stands in the farm at a fixed spot (not furniture, cannot be moved).
-  Tap it to open the Cooking panel. Recipes (shared/data/food.json): roasted turnip (1
+- Cooking (CHANGED IN K1, owner 15 Nov): there is no cooking pot in the farm any more. You cook on a STOVE in the tavern:
+  furniture 'stove' (1 cell, 32 x 32, a warm light, placeIn 'shop', rank common, baseValue 40 so 120 gold in the catalog; a
+  new game starts with one on its start spot next to the bar, shared/data/roomShapes.json shopStart.stove). A stove cooks ONE
+  batch at a time: 1 to STOVE_BATCH_MAX (4) dishes of one recipe; the time is per batch (food.json cookMs, default config
+  COOK_MS by rank: common 1 min, rare 3 min, ultra_rare and legendary 5 min; roasted turnip 20 s, potato stew 1 min, grilled
+  perch 30 s, carrot soup and carp stew 2 min, pumpkin pie 3 min, glowcap broth 4 min, eel pie 5 min). The crops of every
+  dish leave the bag when the batch starts (ledger 'cook'); the batch cooks in real time, also while the game is closed
+  (TavernState.cooks { stoveUid, food, qty, readyAt }, time passed in); a tap on the stove collects the dishes (ledger 'cook',
+  a gains list for the popup). Nothing is collected automatically; no burnt-food rule; a stove sold at the stall gives the
+  crops of its batch back; a stove picked up into the bag keeps its batch. More stoves cook batches in parallel. A tap on a
+  stove in play mode: the avatar walks next to it (STOVE_REACH_PX), then a ready batch is collected, else the Cooking panel
+  opens. Dishes feed the lunch box (effects unchanged), the tavern menu (guests order them) and the stall. Old saves
+  (migration 20 -> 21) get one stove in the tavern on its start spot (else in the bag) and a toast. Recipes (shared/data/food.json): roasted turnip (1
   turnip; heals 8 hp), potato stew (2 potato + 1 turnip; heals 15 hp), carrot soup (2 carrot
   + 1 potato; +1 attack for the rest of the run), pumpkin pie (1 pumpkin + 1 carrot; +10 max
   hp for the run), glowcap broth (1 glowcap + 1 potato; attack cooldown 350 -> 300 ms for the
@@ -563,7 +574,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - CATCHES (shared/data/fish.json): 12 fish (5 common, 4 rare, 2 ultra_rare, 1 legendary) and 6
   fished-up things: old boot and driftwood (common), shell and glass bottle (rare), pearl
   (ultra_rare), sunken crown (legendary). Fish have a size in cm; the Book keeps the biggest.
-- Fish are shop goods (category 'food'); three more recipes at the cooking pot use them: grilled
+- Fish are shop goods (category 'food'); three more recipes at the stove use them: grilled
   perch (heals 12), carp stew (+1 attack), eel pie (+10 max hp).
 - LAKE FURNITURE (crafted, not in the catalog, theme 'lake', category 'lake_furniture'): fish
   tank (stands on a surface, a fish swims in it), mounted fish and fishing net (wall), shell lamp
@@ -692,6 +703,6 @@ changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as writ
 - Social (online, phase 6): room names and visit-by-name, a lobby, locks and access lists, signs,
   portals; friends, guilds and trading only later with new safety rules.
 - Cooking happens in the TAVERN (owner, 15 Nov): a stove in the tavern cooks batches in real time from
-  crops; dishes go on the menu, in the lunch box and on the stall. The garden has no pot. (Step K1.)
+  crops; dishes go on the menu, in the lunch box and on the stall. The garden has no pot. (Step K1, done.)
 - Brewing and RIPENING (owner, 15 Nov): drinks brewed in the barrel can ripen in casks on a keg rack in real time:
   fresh -> aged -> vintage, worth more, ordered by taste guests; limited cask slots. (Step K2, after 9t C.)

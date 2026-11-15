@@ -1,4 +1,4 @@
-// Workshop, cooking, Book, farm, lakeside and the travel panel (R1 split of main.ts: part 8 of 17; the code is unchanged, only moved).
+// Workshop, Book, lakeside and the travel panel (R1 split of main.ts: part 8 of 17). The Cooking panel moved to the tavern part (step K1).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
@@ -6,11 +6,9 @@ import {
 } from '@pixel-hotel/shared';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from '../ui/workshopPanel.ts';
-import { FarmScreen } from '../farm/farmScreen.ts';
 import { LakesideScreen } from '../lakeside/lakesideScreen.ts';
 import { createFishBar } from '../ui/fishBar.ts';
 import { FloatTexts } from '../dungeon/floatTexts.ts';
-import { createCookingPanel } from '../ui/cookingPanel.ts';
 import { createBookPanel } from '../ui/bookPanel.ts';
 import { createTravelPanel, type PlaceCard } from '../ui/travelPanel.ts';
 import type { G7 } from './ctx.ts';
@@ -56,15 +54,7 @@ export async function setupCraftPanels(g: G7) {
   });
   panels.add('workshop', workshop.el);
 
-  // ---------- The farm, cooking and travel (step 9b) ----------
-  const cooking = createCookingPanel(ui, (food) => {
-    void api.cook(food.id).then(async (ok) => {
-      if (ok) popups.show(ok);
-      toast(ok ? `Cooked: ${food.name}. It is in your bag.` : 'You need more crops.');
-      await late.refreshInventory();
-    });
-  });
-  panels.add('cooking', cooking.el);
+  // ---------- The Book, the lakeside and travel ----------
   // ---------- The Book (step 9e) ----------
   const book = createBookPanel(ui, (tab, percent) => {
     void api.claimBookReward(tab, percent).then(async (claim) => {
@@ -83,9 +73,6 @@ export async function setupCraftPanels(g: G7) {
       await api.bookOpened();
       side.setBookDot(false);
     });
-  });
-  const farm = new FarmScreen(view, {
-    openCooking: () => panels.show('cooking'),
   });
   // ---------- The lakeside: woodcutting and fishing (step 9f) ----------
   /** Floating texts in the rooms (what a tree or a fish gave): the dungeon's FloatTexts, at world points. */
@@ -147,5 +134,5 @@ export async function setupCraftPanels(g: G7) {
     travel.refresh(cards);
   }
 
-  return { workshop, cooking, book, farm, roomFloats, lakeside, refreshTravel };
+  return { workshop, book, roomFloats, lakeside, refreshTravel };
 }

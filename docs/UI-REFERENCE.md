@@ -82,8 +82,8 @@ screenshots of it in the repo.
   Step 9d: while customers wait at the till, the Map button carries a small "n waiting" badge
   and the Shop card shows the same badge.
 - **Farm** (step 9b): in play mode the hotbar holds seeds too. A ripe plot shows a small
-  bouncing marker so the player sees it from far away. The cooking pot opens the Cooking
-  panel (same style as Crafting). In the dungeon the run HUD gets a food button next to the
+  bouncing marker so the player sees it from far away. The Cooking panel (K1) opens from a
+  STOVE in the tavern, not from the farm (see the Kitchen note below). In the dungeon the run HUD gets a food button next to the
   potion button, with a count.
 - **Mine** (step 9c): the lantern bar sits in the info panel where the dungeon shows the floor;
   the run bag shows ore stacks. The Workshop gets a third tab, Forge, with smelting on the left
@@ -252,6 +252,13 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   repeated "Hotel or shop" line: a small tag shows only when the item cannot go in the room
   the player is in. Seeds are the same cards; Buy 1 and Buy 5 are in the confirm panel.
   The Packs tab (BG8) has one wide card per pack (picture, gem price, every possible item as a rank-coloured chip with the odds in percent, an Open button that greys with "Need N more gems") and a "Your spares" card; the confirm panel there is priced in gems (BuyQuestion.currency).
+- **Kitchen (step K1).** Tap a stove in play mode: the avatar walks next to it, then a ready batch is collected (popup + toast
+  "3 x Roasted turnip are in your bag.") or the Stove panel opens (panelShell, title "Stove", a close x). Empty stove: a "Dishes
+  in this batch" row with - and + (1 to 4, the number on the Cook buttons follows it, capped by the crops in the bag) and one
+  card per recipe (icon, name, what it does and "Ready in 20 s.", the crops with have/need, short ones red, a Cook button greyed
+  out without crops). Cooking: "3 x Roasted turnip", a progress bar and "Cooking: ready in 20 s. It cooks while the game is
+  closed too." (counts down every second). Ready: "Ready!" and a Collect button. The farm has no cooking pot and its Map card
+  never mentions cooking. The lunch box says "Cook on a stove in your tavern."
 - **List panels (polish).** Workshop, Cooking, the shelf panel and the Map use the Map's card as
   the model: an icon, a title, one short line, and one action on the right.
 - **Placing furniture** (our own pattern, built in step 4b): the item appears as a ghost,

@@ -10,7 +10,7 @@ A browser game. Parts:
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
 - Shop: a shop room per player: loot on shelves with prices, NPC customers buy for gold, gold
   buys furniture in the catalog.
-- Farm (10b): grow crops in real time, cook food that heals or buffs in the dungeon.
+- Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
 - Lakeside (10d): chop trees for wood, fish in the lake.
 The loop: dungeon (loot) -> shop (gold) -> furniture; farm (food) -> stronger runs; mine (ore) ->
@@ -57,13 +57,13 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Floors and walls are unlockable styles (shared/data/styles.json). Rooms start 'bare'. A bought
   or crafted style is unlocked forever and applied to any own room for free. Price = baseValue * 3.
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
-- New player: an empty level 1 hotel room and a level 1 shop with a counter and one stall_table.
+- New player: an empty level 1 hotel room and a level 1 shop (the tavern) with a counter, one stall_table and one stove (K1: you cook there).
 - The counter: one per shop, movable, never picked up; the spot behind it must stay reachable.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
 - BLOCKS (BG5): Room.blocks = a foreground layer, one block per cell (shared/data/blocks.json, items
-  in the bag and hotbar). Never on the door zone, off the floor, on floor furniture, plants or
-  the pot, or under an avatar standing still. They block walking: a block that would shut the door
+  in the bag and hotbar). Never on the door zone, off the floor, on floor furniture, plants, or
+  under an avatar standing still. They block walking: a block that would shut the door
   off from the middle or the counter's staff spot is refused. In hotel, shop and farm only (owner).
 
 6. MOVEMENT
@@ -147,8 +147,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - THE BOOK: everything ever found (grey "???" until seen); 25 / 50 / 75 / 100% of a tab gives gold.
 
 10b. FARM
-- Outdoor room (kind 'farm', 3 levels, open from the start), FREE-FORM since BG6: no fixed plots, only
-  the cooking pot is fixed. SOIL = floor cells painted 'soil' (new farm: a 6 x 2 patch; the player paints
+- Outdoor room (kind 'farm', 3 levels, open from the start), FREE-FORM since BG6: no fixed plots and, since K1, nothing
+  fixed at all (the cooking pot is gone). SOIL = floor cells painted 'soil' (new farm: a 6 x 2 patch; the player paints
   or removes soil for free, Room > Paint soil). Every block and every crop has a SEED item (`<block>_seed`,
   crops.json seeds, icon = the seed shape in its colours). Select a seed, tap a soil cell in reach (BLOCK_REACH):
   one plant per cell, it blocks the cell like a small block. It grows in 3 stages (sprout, small, full) in real
@@ -161,8 +161,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   happens", nothing taken) for the longer grow time + SPLICE_BONUS_MS. Harvest gives the new seed (+ a small
   chance of a block or crop, gems 'splice'); results grow blocks, crops, drinks, furniture or clothes.
   Paths and fences are blocks. Hold to repeat: see INPUT.
-- Cooking recipes: shared/data/food.json. Up to 3 food items go into the dungeon (lunch box; lost
-  on death). Crops and food sell in the shop.
+- COOKING (K1, owner 15 Nov) happens in the TAVERN, never in the farm: a STOVE (furniture 'stove', 1 cell, light, placeIn
+  'shop', common, in the catalog; a new game starts with one next to the bar) cooks ONE batch at a time: 1 to STOVE_BATCH_MAX
+  (4) dishes of one recipe (shared/data/food.json, cookMs per batch; config COOK_MS = the default by rank; turnip roast 20 s,
+  stew 1 min, rarer up to 5 min; the first dish is ready within 30 s). Inputs go in (ledger 'cook'), the batch cooks in real
+  time also while the game is closed (TavernState.cooks, time passed in), and the player TAPS the stove to collect (a popup).
+  Nothing is collected by itself, no burnt food. More stoves = more batches in parallel. Tap a stove in play mode: the avatar
+  walks next to it, then a ready batch is collected, else the Cooking panel opens. Dishes: the lunch box (up to 3 into the
+  dungeon; lost on death), the tavern menu, the stall. Crops come from the bag.
 
 10c. MINE
 - Opens at player level 3. A dungeon-code visit (place 'mine'): free, 4 minutes of lantern,
@@ -234,12 +240,13 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   32 px cell grid; NOTES BG1), BG2 (every item is a coloured square: icon { shape, colors } in the
   data, drawn by render/drawIcon.ts; NOTES BG2).
 - Step 9t (tavern): A (shared rules) and B (the room, guests, serving, coins in the client; NOTES STEP 9t)
-  done; C (brewing and Menu panels, toast, texts, simulate-economy) next, on the cell grid.
+  done; K1 (the stove: cooking moved from the farm to the tavern; NOTES K1) done; C (brewing and Menu panels, toast, texts,
+  simulate-economy) next, on the cell grid.
 - BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
-  is done. Next: 9t B/C (the tavern client), then 9g.
+  is done. Next: 9t C (brewing, Menu), then K2, then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 20. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 21. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -287,7 +294,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 20) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 21) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers

@@ -424,6 +424,7 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   save.ts MIGRATIONS, or the game resets with a message (old save kept as the backup). When the
   GameState shape changes: bump SAVE_VERSION and add MIGRATIONS[old]. SAVE_VERSION is 2
   (MIGRATIONS[1] adds an empty bag layout; arrangeState fills it).
+- SAVE_VERSION is 21 (K1): MIGRATIONS[20] adds TavernState.cooks [] and one stove in the tavern (or the bag). Versions 14 to 20: see the BG sections and K1 below. (Older notes follow.)
 - SAVE_VERSION is 13: MIGRATIONS[12] (step 9t) adds GameState.tavern (introSeen false) and puts a
   round table, 2 bar stools and a brewing barrel with root ale ready in the bag (newPlayer.ts
   addTavern, ledger 'tavern_gift').
@@ -960,6 +961,7 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 ## Farm and cooking (step 9b)
 
+- CHANGED IN K1 (see the K1 section at the end): the cooking POT is gone; you cook on a STOVE in the tavern, in real time (cook() is replaced by startCook / collectCook). Read the K1 section first.
 - CHANGED IN BG6 (see the BG6 section at the end): the fixed plots, Plot / FarmState, plantPlot / harvestPlot and GameState.farm are GONE (seeds are planted on soil cells and punched, Room.plants). The cooking pot, crops, food, cooking and the lunch box below still hold. Read the BG6 section first.
 
 - Step 9b (farm and cooking, section 10b):
@@ -1544,3 +1546,30 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 - Proof: tests 934/934 unchanged; a scripted LocalGameAPI scenario (seeded rng, fixed clock; about 590 kB of results) hashes the same before and after; built main chunk 702.03 -> 713.95 kB (+1.7%, gzip 215.5 -> 219.4); old and new builds load a seeded save in headless Chromium and visit farm, lakeside, shop, mine, dungeon with no console errors.
 - Left alone: the tavern files in shared/ (tavern.ts, guests.ts, brewing.ts). The tavern calls in LocalGameAPI moved to api/tavernApi.ts unchanged, so a branch that edits them in localGameAPI.ts will conflict: move its edit into tavernApi.ts.
 
+## K1: the tavern kitchen (step K1, owner 15 Nov; docs/INN-PLAN.md M-D; changes CLAUDE.md 1, 5, 10b)
+- COOKING MOVED to the tavern: the farm's pot is gone (config COOKING_POT, COOKING_POT_LIGHT, farmLayout potRect, farm/farmScreen.ts, farmArt.drawPot, the pot shadow and fire in render/roomAtmosphere.ts). The farm has no fixed blockers
+  and no noPlaceRects (farmLayout.fixedBlockers / noPlaceRects stay as functions, the lakeside still has its fixed blockers); the old pot cell (c 14, r 3) takes soil, plants, blocks and furniture. The farm has no FarmScreen part any more
+  (game/craftPanels.ts, game/roomFlow.ts, game/pointerInput.ts lost their farm calls).
+- DATA: furniture.json 'stove' (shop_furniture, theme tavern, placeIn 'shop', 32 x 32, common, baseValue 40, inCatalog, `cooks: true` (FurnitureType.cooks), light { radius 64, color 9, flicker 1 }, icon { shape 'stove', colors steel, orange }). New icon shape
+  'stove' (icons.ts ICON_SHAPES, drawn in render/iconPixels.ts). food.json: `cookMs` per recipe (turnip roast 20 s, potato stew 1 min, grilled perch 30 s, carrot soup and carp stew 2 min, pumpkin pie 3 min,
+  glowcap broth 4 min, eel pie 5 min; FoodType.cookMs optional, default config COOK_MS by rank). The time is PER BATCH, not per dish (an owner's call to check: it is the reading of "turnip roast about 20 s"). Config (config/farm.ts): COOK_MS,
+  STOVE_BATCH_MAX 4, STOVE_REACH_PX 64; config.ts TAVERN_START_ITEMS gained { key 'stove', x 240, y 96 }; roomShapes.json shopStart.stove for every shop shape (right of the counter: square_shop 240/96, long 176/96, l_shape 240/96, plus 400/96,
+  wide_hall 304/96; a test places every start item on every shape).
+- SHARED (cooking.ts, rewritten; the old instant cook() is gone): Cook { stoveUid, food, qty, readyAt }, cookMs(food), cookOf, cookReady, cookReadyInMs, stoves(items, roomId), batchInputs, canCook(food, state, qty), canCookWith / maxBatchWith(materials, food),
+  startCook(state, stoveUid, food, qty, at) (stove must stand in the tavern, be empty, qty 1 to 4, crops short = null; ledger 'cook' once), collectCook(state, stoveUid, at) (null before readyAt; dishes in, ledger 'cook', stove free), returnOrphanCooks
+  (a stove that no longer exists gives the batch's crops back; a stove in the bag keeps its batch, like the barrel). TavernState.cooks (emptyTavern gives []); save.ts isGameState requires it. LedgerReason stays 'cook'.
+  No Date.now in shared/: the client passes the clock (LocalGameAPI.now = Date.now). Nothing steps the batches: readyAt is compared with `at`, so closed-game time just works.
+- MIGRATION 20 -> 21 (SAVE_VERSION 21, tests in save.test.ts, newPlayer.ts addStove): tavern.cooks = []; ONE stove (ledger 'tavern_gift', note 'cooking moved to the tavern') on shopStart.stove when canPlace says yes, else in the bag (then arrangeState);
+  a save that already has a stove keeps it. LoadResult.kitchenChanged (version < 21) -> LocalGameAPI adds a toast ("Cooking has moved: you cook on a stove in your tavern now (the farm has no pot any more)", plus "A stove is in your bag: place it in the tavern." when it
+  went to the bag). addTavern (migration 12 -> 13) no longer gifts a stove (migration 20 does), so an old save gets exactly one. Planted crops, bag, gold and ledger are untouched (tested). The older tests that counted start items or seen entries gained the stove.
+- GAMEAPI: cook(food) is gone; startCook(stoveUid, food, qty): Promise<boolean> and collectCook(stoveUid): Promise<{ food, qty, gains } | null> (both only while the player is in the tavern, api/tavernApi.ts); TavernView.cooks. roomsApi.setItems runs returnOrphanCooks next to returnOrphanBrews.
+- CLIENT: ui/cookingPanel.ts rewritten (title "Stove": stepper - / + for the batch size, a card per recipe with its time, progress bar and countdown while cooking, Collect when ready; hooks start / collect). The panel and the stove tap live in game/tavernLife.ts
+  (stoveTap: within STOVE_REACH_PX of the stove's footprint centre it acts at once, else walkTo the cell in front and set st.pendingStove; gameLoop.ts calls stoveArrived when the walk ends; stoveArrived collects a ready batch (popup, toast), else opens the panel;
+  a 1 s interval ticks the countdown while the panel is open; any new tap drops a pending stove walk). The lunch box says "Cook on a stove in your tavern." Text of HINTS needed no change: the quest hints never mentioned the pot; the farm's Map card (craftPanels
+  refreshTravel) only counts plants and soil.
+- ECONOMY (tools/simulate-economy.ts, section K1; run npm run simulate): the stove is never the limit, crops are. A stove visited every 10 min makes 24 dishes/h; gold per dish through the menu (default price = baseValue) is only 4 to 15 gold ABOVE the crop value
+  (roasted turnip 14 vs 10 crop gold, potato stew 48 vs 42, pumpkin pie 80 vs 72, eel pie 140 vs 125), so cooking is about as good as selling the crops, plus the dungeon buffs. Those food baseValues date from step 9b; 9t C and the economy re-balance (2.2) may raise them.
+- CHECKED BY HAND in headless Chromium (1000 x 700) with a version 20 save (6 turnips, 4 potatoes): the toast, the stove placed right of the bar and lit, a tap on it (walks, opens the Stove panel), batch of 3 roasted turnips, the countdown, Ready, a tap collects them
+  (toast, bag). No console errors. NOT checked: a real phone, a stove in the bag after migration, two stoves, the lunch box in a real run.
+- Tests: shared/src/cooking.test.ts (recipes and times, the stove, start spots on every shape, inputs and batch limits, real time to the millisecond, nothing automatic, across a save and reload, two stoves, orphan and bag stoves, ledger), save.test.ts (20 -> 21: placed,
+  bag, nothing lost, no second stove, v12), farm.test.ts / blocks.test.ts (no pot), client/src/api/farmAPI.test.ts and lakesideAPI.test.ts (cook through the API in the tavern, the old pot cell is walkable).

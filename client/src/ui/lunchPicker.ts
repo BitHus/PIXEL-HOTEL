@@ -31,7 +31,7 @@ export function createLunchPicker(materials: Partial<Record<MaterialId, number>>
   const draw = (): void => {
     const owned = FOOD_TYPES.filter((f) => (materials[f.id] ?? 0) > 0);
     if (owned.length === 0) {
-      root.replaceChildren(el('div', 'catalog-sub', 'Lunch box: no food yet. Cook at the pot on your farm.'));
+      root.replaceChildren(el('div', 'catalog-sub', 'Lunch box: no food yet. Cook on a stove in your tavern.'));
       return;
     }
     const box = el('div', 'lunch-box');

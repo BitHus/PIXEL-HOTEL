@@ -353,6 +353,10 @@ const DRAW: Record<IconShape, Draw> = {
     p.rect(4, 24, 24, 3, PALETTE[2]); p.line(8, 24, 8, 17, PALETTE[9]); p.line(23, 24, 24, 15, PALETTE[9]);
     p.oval(15, 17, 4, 3, PALETTE[9]); p.poly([[19, 17], [23, 14], [23, 20]], PALETTE[9]); p.rect(11, 12, 2, 2, WHITE); p.rect(20, 11, 1, 1, WHITE);
   },
+  stove: (p, a, b) => {
+    p.rect(5, 11, 22, 18, dk(a)); p.rect(5, 8, 22, 4, a); p.rect(7, 5, 6, 4, DARK); p.rect(15, 5, 6, 4, DARK);
+    p.rect(21, 3, 4, 6, a); p.rect(9, 16, 14, 9, DARK); p.rect(11, 19, 10, 5, b); p.rect(13, 17, 6, 3, CREAM); p.rect(5, 27, 22, 2, DARK);
+  },
 };
 
 /** Shapes with a shiny surface: they get a small glint near the top-left. */
