@@ -4,7 +4,6 @@ import { catalogPrice } from './economy.ts';
 import { behindPoint, getFurnitureType, staffZone } from './furniture.ts';
 import { inStaffZone } from './npcNav.ts';
 import { applyChange } from './ledger.ts';
-import { createNewPlayer } from './newPlayer.ts';
 import { seededRng } from './rng.ts';
 import {
   chooseOrder,
@@ -26,7 +25,7 @@ import {
   type Guest,
   type MenuOffer,
 } from './tavern.ts';
-import { withAle, withItem, withLongTable } from './tavernTest.ts';
+import { legacyStart, withAle, withItem, withLongTable } from './tavernTest.ts';
 import { ledgerGold } from './testState.ts';
 import type { GameState } from './gameState.ts';
 
@@ -114,7 +113,7 @@ describe('the menu (step 9t)', () => {
 
 describe('seats at tables (step 9t)', () => {
   it('a seat counts when a table is next to it: the two start stools at the round table', () => {
-    const s = createNewPlayer(undefined, 0);
+    const s = legacyStart();
     const table = s.items.find((i) => i.typeId === 'round_table')!;
     const seats = tavernSeats(s.items, s.tavern.roomId);
     expect(seats.map((k) => k.tableUid)).toEqual([table.uid, table.uid]);
@@ -127,7 +126,7 @@ describe('seats at tables (step 9t)', () => {
 
   it('on the cell grid: a stool on a cell side by side with a table cell is a seat, a diagonal or a gap away is not', () => {
     // The round table fills the cells x 416..480, y 160..224 (columns 13-14, rows 5-6).
-    let s = createNewPlayer(undefined, 0);
+    let s = legacyStart();
     const table = s.items.find((i) => i.typeId === 'round_table')!;
     s = withItem(s, 70, 'bar_stool', 432, 160, 'up'); // the cell above the table, turned away from it
     s = withItem(s, 71, 'bar_stool', 400, 160); // the cell above the table's left corner: diagonal
@@ -142,7 +141,7 @@ describe('seats at tables (step 9t)', () => {
   });
 
   it('a chair in the open is no tavern seat; a stool at the bar is, but never behind it', () => {
-    let s = createNewPlayer(undefined, 0);
+    let s = legacyStart();
     const bar = s.items.find((i) => i.typeId === 'counter')!;
     const type = getFurnitureType('counter');
     s = withItem(s, 60, 'chair', 300, 280); // far from every table
@@ -156,7 +155,7 @@ describe('seats at tables (step 9t)', () => {
   });
 
   it('a group sits together when a table has room, else spread; too few seats = none', () => {
-    const s = withLongTable(createNewPlayer(undefined, 0));
+    const s = withLongTable(legacyStart());
     const free = freeTavernSeats(s.tavern, tavernSeats(s.items, s.tavern.roomId));
     expect(free.length).toBe(5);
     for (let seed = 1; seed <= 20; seed++) {
@@ -177,7 +176,7 @@ describe('seats at tables (step 9t)', () => {
     let s = withAle();
     const seats = tavernSeats(s.items, s.tavern.roomId);
     const seat = seats[0]!;
-    s = { ...s, tavern: { ...s.tavern, mess: [{ id: 1, seatUid: seat.uid, seatIndex: seat.index, x: seat.spot.x, y: seat.spot.y, coins: 9, dish: 'root_ale' }], nextMessId: 2 } };
+    s = { ...s, tavern: { ...s.tavern, mess: [{ id: 1, seatUid: seat.uid, seatIndex: seat.index, x: seat.spot.x, y: seat.spot.y, coins: 9, gems: 0, dish: 'root_ale' }], nextMessId: 2 } };
     expect(freeTavernSeats(s.tavern, seats).map((k) => k.uid)).toEqual([seats[1]!.uid]);
     expect(tavernCounts(s.tavern)).toEqual({ orders: 0, coins: 1, dishes: 1 });
     // The coins: only when the player takes them, through the ledger.

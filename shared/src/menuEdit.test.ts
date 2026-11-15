@@ -18,8 +18,8 @@ describe('the Menu panel rules (step 9t C)', () => {
     expect(stepPrice(100, 140, -1)).toBe(86);
   });
 
-  it('on/off: drinks start on, dishes start off; the switch flips and is saved in the menu', () => {
-    let s = give(fresh(), { root_ale: 3, roasted_turnip: 2 });
+  it('on/off: drinks start on, dishes start off (a new game has the early dish roasted turnip on, S3); the switch flips and is saved in the menu', () => {
+    let s = give({ ...fresh(), tavern: { ...fresh().tavern, menu: {} } }, { root_ale: 3, roasted_turnip: 2 });
     const on = (id: string) => menuRows(s).find((r) => r.id === id)!.on;
     expect([on('root_ale'), on('roasted_turnip')]).toEqual([true, false]);
     s = toggleMenu(s, 'roasted_turnip')!;

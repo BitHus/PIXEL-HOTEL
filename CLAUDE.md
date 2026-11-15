@@ -58,7 +58,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Floors and walls are unlockable styles (shared/data/styles.json). Rooms start 'bare'. A bought
   or crafted style is unlocked forever and applied to any own room for free. Price = baseValue * 3.
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
-- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a stall table (decor), a round table with 2 stools, a brewing barrel (6 root ale ready) and one stove (K1: you cook there).
+- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a bar stool in front of it (S3: replaces the old stall table, so 3 seats), a round table with 2 stools, a brewing barrel (7 root ale ready) and one stove (K1: you cook there); the early dish roasted turnip is on the menu.
 - The counter (the bar): one per tavern, movable, never picked up; the spot behind it must stay reachable.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
@@ -114,12 +114,18 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   Stall table, shelf and display case are plain DECOR (no slots, no prices); goods that were on them went back to the bag (ledger reason
   'shop_closed'). GOLD sources: tavern guests (main), dungeon run gold, the trader (S2: tap-to-sell Sell tab on the bar; never automatic).
 - THE TRADER (S2): the bar's panel has Serve, Menu, Sell. Sell lists materials, blocks, seeds, crops, fish, ore, bars, spare clothes and
-  furniture NOT placed; each row: icon, count, gold per piece, Sell 1 / Sell all. Price = baseValue * SELL_RATE (config, 0.3, at least 1
+  furniture NOT placed; each row: icon, count, gold per piece, Sell 1 / Sell all. Price = baseValue * the rate of its group (S3: SELL_RATES in
+  config: crops 0.1, seeds 0.2, wood and loot 0.3, blocks 0.3, fish and things 0.4, bars 0.5, ore 0.85, splice results 0.05; at least 1
   gold); spare clothes keep SPARE_SELL. Food, drinks (menu, lunch box), worn gear, placed items and the counter never list. Selling
   more than 5 pieces (SELL_CONFIRM_QTY), any ultra_rare or legendary thing, or a hotbar item asks first (confirmBuy). Ledger reason
   'sell' (pure rule shared/src/trader.ts; GameAPI.getSellRows / sell), gold popup, no Book find. Nothing ever sells by itself. Closed
   loops in balance.ts: ingredients sold < the dish or brew; a bought catalog block sells back for less; a pack sold back < its gems at the
-  gold-per-gem floor; a splice result sold back < its seeds plus cell-time (gold alone is NOT closed for 6 furniture results, NOTES S2).
+  gold-per-gem floor; a splice result and its seed sold back <= the GOLD of its starter seeds (S3, strict); selling crops never beats guests, run gold or the mine.
+- GOLD BALANCE (S3, balance.ts, `npm run simulate`): a mixed hour is about 375 gold (new), 480 (level 3), 630 (level 8); tavern guests, dungeon run gold
+  and the trader are each 10% to 50% of it (now about 45% / 14% / 40%). A new game earns about 220 gold in its first 30 minutes and 460 in its
+  first hour at the tavern (7 root ale per 8-minute brew, roasted turnip on the menu, 3 seats), plus a few dozen per first run.
+- TAVERN GEM TIP (S3): a guest who did not have to call out for the order sometimes leaves a gem with the coins (GEMS.tavern chance 5% x
+  TAVERN_GEM_CHANCE_MULT by the rank of the order: rare 2.5, ultra rare 5, legendary 10). Mess.gems; one tap takes coins and gem; popup.
 - tavernAppeal = min(100, appeal of placed items, decor too (each type at most 3 times) + floor and wall style). It sets the guest rate.
 - Guests walk 72 px/s (+-10%), at most GUEST_MAX, talk lines from shared/data/npcLines.json; behind the bar is staff only.
 - Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
@@ -252,9 +258,10 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
 - BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
   is done. S1 (the shop is the tavern: loot customers, slots and prices removed; stalls are decor; save v22; NOTES S1) and S2 (the trader:
-  bar Sell tab, SELL_RATE 0.3, four loops tested; NOTES S2) are done. Next: S3 (rebalance gold and gems), K2 (ripening), then 9g.
+  bar Sell tab, four loops tested; NOTES S2) are done. S3 (rebalance: SELL_RATES per group, a faster start, splice strict, the tavern gem tip, 3 seats,
+  gold tables in `npm run simulate`; save v23; NOTES S3) is done. Next: T1 (taps, register, kitchen), K2 (ripening), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 22. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 23. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -302,7 +309,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 22) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 23) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

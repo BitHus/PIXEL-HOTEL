@@ -47,10 +47,10 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.hotbar).toEqual(Array(HOTBAR_SLOTS).fill(null));
   });
 
-  it('puts the bar, the stall_table, a round table, 2 stools and a brewing barrel in the shop, at their fixed spots', () => {
+  it('puts the bar, a bar stool in front of it, a round table with 2 stools, a brewing barrel and a stove in the shop, at their fixed spots; no stall table (S3)', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
-    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table', 'stove']);
-    for (const start of SHOP_START_ITEMS) {
+    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stove']);
+    for (const start of SHOP_START_ITEMS.filter((x) => x.typeId === 'counter')) {
       expect(shop.find((i) => i.typeId === start.typeId)).toMatchObject({ x: start.x, y: start.y, facing: start.facing });
     }
     const shopRoom = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
@@ -115,14 +115,14 @@ describe('a new player from character creation (step 7b)', () => {
     expect(lookAllowed(START_LOOK)).toBe(true);
   });
 
-  it('every shop shape has a counter (with room behind it) and a stall_table that fit', () => {
+  it('every shop shape has a counter (with room behind it), a bar stool in front of it and a round table with two stools that fit', () => {
     for (const shape of shapesFor('shop')) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const shop = s.items.filter((i) => i.roomId === room.id);
-      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table', 'stove']);
-      // Both stools are seats at the round table, and guests can walk to them.
-      expect(tavernSeats(s.items, room.id).map((x) => x.tableUid), shape.id).toEqual([3, 3]);
+      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stove']);
+      // Three seats (S3): one at the bar (table = the counter, uid 1) and both stools at the round table (uid 3).
+      expect(tavernSeats(s.items, room.id).map((x) => x.tableUid), shape.id).toEqual([1, 3, 3]);
       for (const i of shop) {
         const others = s.items.filter((o) => o.uid !== i.uid);
         expect(canPlace(room, others, getFurnitureType(i.typeId), i.x, i.y, i.facing), `${shape.id} ${i.typeId}`).toBe(true);

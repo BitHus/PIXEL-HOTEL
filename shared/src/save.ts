@@ -301,6 +301,11 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     }
     return next;
   },
+  // 22 -> 23 (step S3): a table spot can hold a gem a happy guest tipped (Mess.gems). Every pile on a table gets 0 gems. Nothing is lost.
+  22: (state) => {
+    if (!isObject(state) || !isObject(state.tavern) || !Array.isArray(state.tavern.mess)) return state;
+    return { ...state, tavern: { ...state.tavern, mess: state.tavern.mess.map((m) => (isObject(m) ? { ...m, gems: typeof m.gems === 'number' ? m.gems : 0 } : m)) } };
+  },
 };
 
 /** The storage key for a save version. */

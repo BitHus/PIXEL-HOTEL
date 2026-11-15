@@ -22,6 +22,7 @@ import { FARM_START_SOIL, SOIL_STYLE,
   START_WALL_STYLE,
   START_XP,
   SHOP_START_ITEMS,
+  TAVERN_START_DISH,
   TAVERN_START_DRINK,
   TAVERN_START_ITEMS,
 } from './config.ts';
@@ -34,6 +35,7 @@ import { createRoom, defaultShape, getRoomShape, paintFloorCells, shapesFor, typ
 import { cleanDisplayName, lookAllowed } from './clothing.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { emptyTavern } from './tavern.ts';
+import { getFoodType } from './materials.ts';
 import type { FurnitureItem } from './types.ts';
 import type { MaterialId, StyleKind } from './types.ts';
 
@@ -98,11 +100,17 @@ function startFarmRoom(room: Room): Room {
   return paintFloorCells(room, { c, r }, { c: c + w - 1, r: r + h - 1 }, SOIL_STYLE);
 }
 
+/** A new tavern's menu (step S3): the early dish is on from the start, so the stove has something to do in the first minutes (a dish only sells while it is in stock). */
+function startMenu(): Record<string, { on: boolean; price: number }> {
+  const dish = getFoodType(TAVERN_START_DISH);
+  return { [dish.id]: { on: true, price: dish.baseValue } };
+}
+
 export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at = 0): GameState {
   const shopStart = getRoomShape(config.shopShape).shopStart;
   // The bar and the stall table, then the tavern's round table, two stools and the brewing barrel.
   const startItems: FurnitureItem[] = [
-    ...SHOP_START_ITEMS.map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.typeId] ?? { x: s.x, y: s.y }, facing: s.facing })),
+    ...SHOP_START_ITEMS.filter((s) => s.typeId !== 'stall_table').map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.typeId] ?? { x: s.x, y: s.y }, facing: s.facing })),
     ...TAVERN_START_ITEMS.map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.key] ?? { x: s.x, y: s.y }, facing: s.facing })),
   ].map((s, k) => ({ uid: k + 1, typeId: s.typeId, ownerId: config.playerId, roomId: config.shopRoomId, x: s.at.x, y: s.at.y, facing: s.facing, onItemUid: null }));
   const barrel = startItems.find((i) => i.typeId === 'brewing_barrel');
@@ -148,7 +156,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     run: null,
     lakeside: emptyLakeside(config.lakesideRoomId),
     // The start barrel holds a brew that is ready to collect.
-    tavern: { ...emptyTavern(config.shopRoomId, at), brews: barrel ? [{ barrelUid: barrel.uid, drink: TAVERN_START_DRINK, readyAt: at }] : [] },
+    tavern: { ...emptyTavern(config.shopRoomId, at), menu: startMenu(), brews: barrel ? [{ barrelUid: barrel.uid, drink: TAVERN_START_DRINK, readyAt: at }] : [] },
     playerCreated: false,
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);
@@ -205,7 +213,7 @@ export function arrangeState(state: GameState): GameState {
  * empty with introSeen false, so the game explains it once.
  */
 export function addTavern(state: GameState, at: number): GameState {
-  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.filter((i) => i.typeId !== 'stove').map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
+  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.filter((i) => i.typeId !== 'stove' && i.key !== 'stool_bar').map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
   if (!gift) throw new Error('cannot add the tavern');
   const barrel = gift.items.find((i) => i.typeId === 'brewing_barrel' && i.uid >= state.nextUid);
   return {

@@ -9,7 +9,7 @@ import { NPC_LINES } from './npcTalk.ts';
 import { seededRng } from './rng.ts';
 import { readSave, toSaveText } from './save.ts';
 import { clearDish, collectCoins, openOrders, pickUpOrder, requestServe, seatKey, setMenu, tavernSeats } from './tavern.ts';
-import { runTavern, serveAll, tavernWorld, tidy, withAle, withItem, withLongTable } from './tavernTest.ts';
+import { runTavern, serveAll, tavernWorld, tidy, legacyStart, withAle, withItem, withLongTable } from './tavernTest.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
 
 const MIN = 60_000;
@@ -96,7 +96,7 @@ describe('guests: seating and groups (step 9t)', () => {
   it('no free seat: they stand a moment, say so and leave', () => {
     let s = withAle();
     // Both table spots still have coins on them.
-    const mess = tavernSeats(s.items, s.tavern.roomId).map((k, i) => ({ id: i + 1, seatUid: k.uid, seatIndex: k.index, x: k.spot.x, y: k.spot.y, coins: 9, dish: null }));
+    const mess = tavernSeats(s.items, s.tavern.roomId).map((k, i) => ({ id: i + 1, seatUid: k.uid, seatIndex: k.index, x: k.spot.x, y: k.spot.y, coins: 9, gems: 0, dish: null }));
     s = { ...s, tavern: { ...s.tavern, mess, nextMessId: 3 } };
     const said: string[] = [];
     let came = 0;
@@ -116,7 +116,7 @@ describe('guests: seating and groups (step 9t)', () => {
   it('an empty menu: guests still come in, sit, say so and leave without leaving anything', () => {
     const said: string[] = [];
     let sat = false;
-    const s = runTavern(createNewPlayer(undefined, 0), 0, 4 * MIN, seededRng(6), true, (x, e) => {
+    const s = runTavern(legacyStart(), 0, 4 * MIN, seededRng(6), true, (x, e) => {
       sat ||= x.tavern.guests.some((g) => g.seated && g.phase === 'no_menu');
       for (const ev of e) if (ev.t === 'say') said.push(ev.text);
       expect(e.some((ev) => ev.t === 'order' || ev.t === 'coins')).toBe(false);
@@ -124,7 +124,7 @@ describe('guests: seating and groups (step 9t)', () => {
     expect(sat).toBe(true);
     expect(said.some((line) => NPC_LINES.no_menu.includes(line))).toBe(true);
     expect(s.tavern.mess).toEqual([]);
-    expect(s.ledger.length).toBe(createNewPlayer(undefined, 0).ledger.length);
+    expect(s.ledger.length).toBe(legacyStart().ledger.length);
   });
 });
 
@@ -228,7 +228,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
     expect(ale(s)).toBe(6 - openOrders(s.tavern).length);
     expect(s.player.materials).toEqual(ledgerMaterials(s));
     // Being put back is not a new find for the Book.
-    expect(s.player.seen.root_ale?.count).toBe(6);
+    expect(s.player.seen.root_ale?.count).toBe(7); // the Book saw the 7 mugs of the start barrel (withAle then took one away)
   });
 
   it('a seat taken away under a waiting guest: the order goes back and they leave', () => {

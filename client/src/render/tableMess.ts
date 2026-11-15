@@ -4,7 +4,7 @@
 // what lies under a tap. Rendering only; the rules (and what lies where) are shared/src/tavern.ts.
 
 import { Container, Sprite } from 'pixi.js';
-import { COIN_ICON, footprintRect, getFurnitureType, getMaterialType, isTable, materialGroup, type FurnitureItem, type Icon, type MaterialId, type Mess, type Point } from '@pixel-hotel/shared';
+import { COIN_ICON, GEM_ICON, footprintRect, getFurnitureType, getMaterialType, isTable, materialGroup, type FurnitureItem, type Icon, type MaterialId, type Mess, type Point } from '@pixel-hotel/shared';
 import { itemDepthKey } from './depthOrder.ts';
 import { iconTexture } from './drawIcon.ts';
 import { surfaceHeight } from './furnitureArt.ts';
@@ -36,6 +36,8 @@ interface Entry {
   messId: number | null;
   spot: Point;
   coins: number;
+  /** Gems a happy guest tipped (drawn next to the coins, taken with them). */
+  gems: number;
   dish: MaterialId | null;
   full: boolean;
 }
@@ -57,8 +59,8 @@ export class TableMess {
   /** Shows these table spots: what guests left, and what is being eaten now (call when either or the items change). */
   sync(list: readonly Mess[], meals: readonly Meal[], items: readonly FurnitureItem[]): void {
     const entries: Entry[] = [
-      ...list.map((m): Entry => ({ key: `m${m.id}`, uid: 1_000_000 + m.id, messId: m.id, spot: { x: m.x, y: m.y }, coins: m.coins, dish: m.dish, full: false })),
-      ...meals.map((e): Entry => ({ key: `e${e.guestId}`, uid: 2_000_000 + Math.abs(e.guestId), messId: null, spot: e.spot, coins: 0, dish: e.item, full: true })),
+      ...list.map((m): Entry => ({ key: `m${m.id}`, uid: 1_000_000 + m.id, messId: m.id, spot: { x: m.x, y: m.y }, coins: m.coins, gems: m.gems ?? 0, dish: m.dish, full: false })),
+      ...meals.map((e): Entry => ({ key: `e${e.guestId}`, uid: 2_000_000 + Math.abs(e.guestId), messId: null, spot: e.spot, coins: 0, gems: 0, dish: e.item, full: true })),
     ];
     const ids = new Set(entries.map((e) => e.key));
     for (const [id, s] of this.shown) {
@@ -76,7 +78,7 @@ export class TableMess {
         return mx >= r.x - 1 && mx <= r.x + r.w + 1 && my >= r.y - 1 && my <= r.y + r.h + 1;
       });
       const top = table ? surfaceHeight(getFurnitureType(table.typeId)) : 0;
-      const key = `${mx},${my},${top},${m.coins > 0 ? coinPile(m.coins) : 0},${m.dish ?? ''},${table?.uid ?? 0},${m.full}`;
+      const key = `${mx},${my},${top},${m.coins > 0 ? coinPile(m.coins) : 0},${m.gems},${m.dish ?? ''},${table?.uid ?? 0},${m.full}`;
       let s = this.shown.get(m.key);
       if (s?.key === key) continue;
       if (s) {
@@ -96,6 +98,12 @@ export class TableMess {
           container.addChild(c);
         }
         coinsAt = { x: mx + x, y: my - top - COIN_PX / 2 };
+        if (m.gems > 0) {
+          // The tipped gem lies beside the coins and is taken with them (one tap).
+          const g = new Sprite(iconTexture(GEM_ICON, undefined, COIN_PX));
+          g.position.set(x + COIN_PX / 2 + 1, -COIN_PX);
+          container.addChild(g);
+        }
       }
       if (m.dish !== null) {
         const x = both ? 6 : 0;

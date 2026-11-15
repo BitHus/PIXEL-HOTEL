@@ -6,6 +6,14 @@
 import {
   BALANCE_TARGETS,
   BLOCK_DROPS,
+  FIRST_GUEST_DELAY_MS,
+  GUEST_BASE_INTERVAL_MS,
+  GUEST_EAT_MAX_MS,
+  GUEST_EAT_MIN_MS,
+  GUEST_GROUP_WEIGHTS,
+  GUEST_ORDER_AFTER_MAX_MS,
+  GUEST_ORDER_AFTER_MIN_MS,
+  TAVERN_START_DRINK,
   CATALOG_PRICE_MULT,
   ENEMY_GEM_RANK,
   GEMS,
@@ -30,12 +38,15 @@ import { RANKS } from './ranks.ts';
 import { getLootTable, rollLoot, type LootTableId } from './dungeon/loot.ts';
 import { CATCH_TYPES } from './fish.ts';
 import { fellLoot } from './woodcut.ts';
+import { DUNGEON_KEY_COST } from './config.ts';
+import { coinsFor } from './tavern.ts';
+import { getDrinkType, getFoodType } from './materials.ts';
 import { ROCK_ORE_MAX, ROCK_ORE_MIN, RARE_DROP_CHANCE } from './config.ts';
 import { isMaterialId } from './materials.ts';
 import type { MaterialId, Rng } from './types.ts';
 import { seedGrowMs, seedGrows, seedRank } from './seeds.ts';
 import { SPLICE_RECIPES } from './splice.ts';
-import type { GemSource } from './gems.ts';
+import { tavernTipGems, type GemSource } from './gems.ts';
 import type { Rank, SeedId } from './types.ts';
 
 const mean = (min: number, max: number): number => (min + max) / 2;
@@ -197,6 +208,7 @@ export function mixedBySource(stage: Stage): Map<GemSource, number> {
   const acts = activities(stage);
   const out = new Map<GemSource, number>();
   for (const a of acts) for (const l of a.lines) out.set(l.source, (out.get(l.source) ?? 0) + lineGemsPerHour(l, 1 / acts.length));
+  out.set('tavern', tavernTipGemsPerHour(stage)); // the small tip of a happy guest (step S3)
   return out;
 }
 
@@ -470,6 +482,24 @@ function lootTraderGold(table: LootTableId, rng: Rng, n = 600): number {
   return total / n;
 }
 
+/** Gold the loot table DROPS as gold (run gold), averaged over `n` seeded rolls. */
+function lootDroppedGold(table: LootTableId, rng: Rng, n = 600): number {
+  let total = 0;
+  for (let i = 0; i < n; i++) for (const l of rollLoot(getLootTable(table), rng)) if (l.item === 'gold') total += l.qty;
+  return total / n;
+}
+
+/** Run gold ONE event of a dungeon line drops (the gold that goes into the bag; the trader value of the rest is in lineTraderGoldPerEvent). */
+function lineRunGoldPerEvent(line: GemLine, rng: Rng): number {
+  switch (line.source) {
+    case 'chest': return lootDroppedGold(line.mix[0]![0] === 'common' ? 'wooden_chest' : 'golden_chest', rng);
+    case 'kill': return RARE_DROP_CHANCE * lootDroppedGold(line.note.startsWith('skeleton') ? 'skeleton' : 'slime', rng);
+    case 'mimic': return lootDroppedGold('mimic', rng);
+    case 'boss': return lootDroppedGold('bone_king', rng);
+    default: return 0;
+  }
+}
+
 /** Trader gold for ONE event of a line (a chest opened, a plant harvested, a rock mined, a tree felled, a fish caught). Blocks are not counted: they are building stock. */
 function lineTraderGoldPerEvent(line: GemLine, rng: Rng): number {
   const weights = line.mix.reduce((a, [, w]) => a + w, 0);
@@ -483,7 +513,8 @@ function lineTraderGoldPerEvent(line: GemLine, rng: Rng): number {
       return byRank((rank) => {
         const crops = CROP_TYPES.filter((c) => c.rank === rank);
         const pool = crops.length > 0 ? crops : CROP_TYPES.filter((c) => c.rank === 'common');
-        return harvestYield(rank) * (pool.reduce((a, c) => a + materialSellPrice(c.id), 0) / pool.length);
+        // Net of the seed: a bought seed comes back with SEED_BACK_CHANCE only (step S3).
+        return harvestYield(rank) * (pool.reduce((a, c) => a + materialSellPrice(c.id), 0) / pool.length) - (pool.reduce((a, c) => a + (c.seedPrice ?? 0), 0) / pool.length) * (1 - SEED_BACK_CHANCE);
       });
     case 'rock': return ((ROCK_ORE_MIN + ROCK_ORE_MAX) / 2) * materialSellPrice(line.note.startsWith('mithril') ? 'mithril_ore' : line.note.startsWith('iron') ? 'iron_ore' : 'copper_ore');
     case 'chop': {
@@ -512,4 +543,152 @@ export function surplusGoldPerHour(stage: Stage, rng: Rng): { id: string; label:
 export function mixedSurplusGoldPerHour(stage: Stage, rng: Rng): number {
   const all = activities(stage).length;
   return surplusGoldPerHour(stage, rng).reduce((a, x) => a + x.gold, 0) / all;
+}
+
+
+// ====================================================================================================================
+// ---------- Step S3: gold per hour by SOURCE, the first hour, and the tavern gem tip ----------
+// ====================================================================================================================
+// Gold sources of a mixed hour: tavern GUESTS, the DUNGEON (run gold in the bag, minus the keys, plus the loot sold at the trader), the MINE (ore sold), the FARM
+// (crops sold, net of the seeds) and the LAKE (wood and fish sold). Everything the trader pays is counted as surplus, so those four are CEILINGS (crops, ore and
+// wood also feed cooking, brewing and crafting); the guest gold is a CEILING too (every mug and dish is sold). The ASSUMPTIONS below are in one place.
+
+/** The player is at the tavern (serving, brewing, cooking, tapping coins) this share of a mixed hour; the barrels brew and the guests wait meanwhile. The more there is to do (more activities open), the less time is spent at the bar. */
+export const TAVERN_ATTENTION_BY_STAGE: Record<Stage, number> = { new: 0.4, level3: 0.35, level8: 0.3 };
+/** Dungeon runs per hour of FOCUSED crypt play (a key costs DUNGEON_KEY_COST gold; round 1 runs are short, round 2 runs are longer). */
+export function runsPerHour(stage: Stage): number {
+  return stage === 'level8' ? 4 : 7;
+}
+/** The player visits the barrel and the stove every this many minutes (a brew or batch is collected and the next one started). */
+export const VISIT_EVERY_MIN = 10;
+
+export interface TavernSetup {
+  seats: number;
+  barrels: number;
+  /** Dishes the stoves deliver per hour (crops permitting). */
+  dishesPerHour: number;
+  appeal: number;
+}
+
+/** What a typical player of a stage has built in the tavern (ASSUMPTION; the new game's setup is the real one: 3 seats, 1 barrel, 1 stove). */
+export function tavernSetup(stage: Stage): TavernSetup {
+  return stage === 'new' ? { seats: 3, barrels: 1, dishesPerHour: 6, appeal: 10 } : stage === 'level3' ? { seats: 4, barrels: 1, dishesPerHour: 8, appeal: 30 } : { seats: 6, barrels: 2, dishesPerHour: 9, appeal: 60 };
+}
+
+const AVG_GROUP = GUEST_GROUP_WEIGHTS.reduce((sum, w, i) => sum + w * (i + 1), 0) / GUEST_GROUP_WEIGHTS.reduce((a, b) => a + b, 0);
+/** Guests who arrive per hour at an appeal (a group every GUEST_BASE_INTERVAL_MS * 100 / (100 + appeal)). */
+export function guestsPerHour(appeal: number): number {
+  return (3_600_000 / (GUEST_BASE_INTERVAL_MS * (100 / (100 + appeal)))) * AVG_GROUP;
+}
+/** The seconds a guest holds a seat (the pause before the order, the carry, the meal, the walk out). */
+const SERVE_S = 15;
+export const GUEST_STAY_S = (GUEST_ORDER_AFTER_MIN_MS + GUEST_ORDER_AFTER_MAX_MS) / 2000 + SERVE_S + (GUEST_EAT_MIN_MS + GUEST_EAT_MAX_MS) / 2000 + 5;
+/** Guests the seats can hold per hour. */
+export function seatCapPerHour(seats: number): number {
+  return (seats * 3600) / GUEST_STAY_S;
+}
+/** Mugs one barrel gives per hour when it is visited every VISIT_EVERY_MIN minutes. */
+export function mugsPerHour(drinkId: string, barrels = 1): number {
+  const d = getDrinkType(drinkId as never);
+  return barrels * d.mugs * (60 / Math.max(VISIT_EVERY_MIN, d.minutes));
+}
+/** The gold a guest leaves for one drink at the menu price (its base value) plus the tip. */
+function drinkGold(id: string): number {
+  return coinsFor(id as never, getDrinkType(id as never).baseValue);
+}
+
+/** What the tavern earns per hour at FULL attention: the smaller of the guests who come, the seats and the supply, at the average drink and dish. */
+export function guestGoldPerHour(stage: Stage): { gold: number; sold: number; limit: 'guests' | 'seats' | 'supply' } {
+  const t = tavernSetup(stage);
+  // The new game brews root ale and roasts turnips; later players brew every drink and cook every dish.
+  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : DRINK_TYPES;
+  const dishes = stage === 'new' ? FOOD_TYPES.filter((f) => f.id === 'roasted_turnip') : FOOD_TYPES;
+  const mugs = (drinks.reduce((a, d) => a + mugsPerHour(d.id), 0) / drinks.length) * t.barrels;
+  const mugPrice = drinks.reduce((a, d) => a + drinkGold(d.id), 0) / drinks.length;
+  const dishPrice = dishes.reduce((a, f) => a + f.baseValue, 0) / dishes.length;
+  const supply = mugs + t.dishesPerHour;
+  const arrive = guestsPerHour(t.appeal);
+  const cap = seatCapPerHour(t.seats);
+  const sold = Math.min(arrive, cap, supply);
+  const limit = sold === supply ? 'supply' : sold === cap ? 'seats' : 'guests';
+  return { gold: sold * ((mugs * mugPrice + t.dishesPerHour * dishPrice) / supply), sold, limit };
+}
+
+// ---------- The first hour of a new game (target: BALANCE_TARGETS.firstHour) ----------
+
+/** The first visit to the start barrel (walk in, read the hint, collect, brew again) happens this many minutes into the game. */
+export const FIRST_VISIT_MIN = 2;
+/** The early dish: a batch of this many roasted turnips is ready every FIRST_DISH_EVERY_MIN minutes from FIRST_DISH_FROM_MIN (the first turnips grow ~10 min). */
+export const FIRST_DISH_BATCH = 2;
+export const FIRST_DISH_EVERY_MIN = 20;
+export const FIRST_DISH_FROM_MIN = 14;
+
+/**
+ * Expected tavern gold of a new game after `minutes`: the start barrel's root ale is collected at the first visit and a new brew goes in at once; every
+ * VISIT_EVERY_MIN minutes after it the brew is collected and started again; every drink is sold when guests are there (they arrive faster than the supply).
+ */
+export function firstHourGold(minutes: number): { gold: number; mugs: number; dishes: number; guests: number } {
+  const ale = getDrinkType(TAVERN_START_DRINK);
+  const visits = minutes < FIRST_VISIT_MIN ? 0 : 1 + Math.floor((minutes - FIRST_VISIT_MIN) / VISIT_EVERY_MIN);
+  const mugs = visits === 0 ? 0 : ale.mugs * visits; // the start barrel is one brew; each later visit collects the brew started at the one before
+  const dishes = minutes < FIRST_DISH_FROM_MIN ? 0 : FIRST_DISH_BATCH * (1 + Math.floor((minutes - FIRST_DISH_FROM_MIN) / FIRST_DISH_EVERY_MIN));
+  const guests = Math.max(0, minutes * 60_000 - FIRST_GUEST_DELAY_MS) / 60_000 * (guestsPerHour(tavernSetup('new').appeal) / 60);
+  const sold = Math.min(guests, mugs + dishes);
+  const share = mugs + dishes > 0 ? sold / (mugs + dishes) : 0;
+  return { gold: share * (mugs * drinkGold(TAVERN_START_DRINK) + dishes * getFoodType('roasted_turnip').baseValue), mugs, dishes, guests };
+}
+
+// ---------- Gold per hour by source ----------
+
+export type GoldSourceId = 'guests' | 'dungeon' | 'trader';
+export interface GoldSource {
+  id: GoldSourceId;
+  label: string;
+  /** Gold per hour of FOCUSED play there (guests: full attention; trader: the dearest single activity). */
+  focused: number;
+  /** Gold per hour of a MIXED hour. */
+  mixed: number;
+}
+
+/** Run gold per hour of a FOCUSED crypt hour: the gold the chests and kills drop, minus the keys (round 2 at level 8). The loot that is not gold is the trader's. */
+export function runGoldPerHour(stage: Stage, rng: Rng): number {
+  const a = activities(stage).find((x) => x.id === 'crypt')!;
+  return a.lines.reduce((sum, l) => sum + l.perHour * lineRunGoldPerEvent(l, rng), 0) - runsPerHour(stage) * DUNGEON_KEY_COST;
+}
+
+/** What the trader pays per hour of a FOCUSED hour in each activity (crypt loot, mine ore, farm crops net of seeds, lake wood and fish), and in a mixed hour. */
+export function traderByActivity(stage: Stage, rng: Rng): { id: string; focused: number; mixed: number }[] {
+  const share = 1 / activities(stage).length;
+  return surplusGoldPerHour(stage, rng).map((x) => ({ id: x.id, focused: x.gold, mixed: x.gold * share }));
+}
+
+/** Gold per hour by SOURCE for a stage (INN-PLAN 5: tavern guests, dungeon run gold, the trader): focused and mixed (equal time in every open activity; the tavern at TAVERN_ATTENTION). */
+export function goldBySource(stage: Stage, rng: Rng): GoldSource[] {
+  const guests = guestGoldPerHour(stage).gold;
+  const run = runGoldPerHour(stage, rng);
+  const trade = traderByActivity(stage, rng);
+  return [
+    { id: 'guests', label: 'Tavern guests', focused: guests, mixed: guests * TAVERN_ATTENTION_BY_STAGE[stage] },
+    { id: 'dungeon', label: 'Dungeon run gold (minus keys)', focused: run, mixed: run / activities(stage).length },
+    { id: 'trader', label: 'The trader (loot, ore, crops, wood, fish sold)', focused: Math.max(...trade.map((x) => x.focused)), mixed: trade.reduce((a, x) => a + x.mixed, 0) },
+  ];
+}
+
+/** The mixed hour's gold in all, and the biggest and smallest share of one source. */
+export function goldShares(stage: Stage, rng: Rng): { total: number; biggest: { id: GoldSourceId; share: number }; smallest: { id: GoldSourceId; share: number } } {
+  const rows = goldBySource(stage, rng);
+  const total = rows.reduce((a, r) => a + r.mixed, 0);
+  const by = [...rows].sort((a, b) => b.mixed - a.mixed);
+  return { total, biggest: { id: by[0]!.id, share: by[0]!.mixed / total }, smallest: { id: by[by.length - 1]!.id, share: by[by.length - 1]!.mixed / total } };
+}
+
+// ---------- The tavern gem tip ----------
+
+/** Expected gems per hour from the tavern tip: the sold items of a stage, each at the chance of its rank (a happy guest only; HAPPY_SHARE of the guests). */
+export const HAPPY_SHARE = 0.8;
+export function tavernTipGemsPerHour(stage: Stage): number {
+  const t = guestGoldPerHour(stage);
+  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : DRINK_TYPES;
+  const avg = drinks.reduce((a, d) => a + tavernTipGems(d.rank), 0) / drinks.length;
+  return t.sold * HAPPY_SHARE * avg * TAVERN_ATTENTION_BY_STAGE[stage];
 }

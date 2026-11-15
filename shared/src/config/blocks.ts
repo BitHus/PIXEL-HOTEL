@@ -52,7 +52,14 @@ export const GEMS = {
   quest: { chance: 1, min: 2, max: 2 },
   /** A Book reward (the tier's rank: BOOK_GEM_RANK). */
   book: { chance: 1, min: 2, max: 3 },
+  /**
+   * The tip a happy tavern guest leaves with the coins (step S3). `chance` is the BASE chance for a common drink or dish; the rank of what they
+   * ordered multiplies the chance (TAVERN_GEM_CHANCE_MULT), the amount stays min to max. Aged and vintage drinks (K2) will use the higher ranks.
+   */
+  tavern: { chance: 0.05, min: 1, max: 1 },
 } as const;
+/** The chance of the tavern gem tip is GEMS.tavern.chance times this, by the rank of the drink or dish ordered (never over 1). */
+export const TAVERN_GEM_CHANCE_MULT = { common: 1, rare: 2.5, ultra_rare: 5, legendary: 10 } as const;
 /** The rank an enemy counts as for its gems (a mimic and the boss have their own sources). */
 export const ENEMY_GEM_RANK = { slime: 'common', bat: 'common', skeleton: 'rare', bone_king: 'ultra_rare' } as const;
 /** The rank a mine rock counts as for its gems. */

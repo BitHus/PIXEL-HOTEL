@@ -20,3 +20,8 @@ export function ledgerMaterials(state: GameState): Partial<Record<MaterialId, nu
   }
   return out;
 }
+
+/** Sum of the ledger's gem changes (must equal the wallet's gems). */
+export function ledgerGems(state: GameState): number {
+  return state.ledger.reduce((a, e) => a + (e.gemsDelta ?? 0), 0);
+}

@@ -91,6 +91,22 @@ export const BOOK_REWARD_STEPS = [25, 50, 75, 100] as const;
 // ---------- The trader (step S2, docs/INN-PLAN.md section 5) ----------
 /** What the trader pays for a surplus thing: baseValue * SELL_RATE (at least 1 gold). Low on purpose: using a thing always beats selling it (balance.ts tests). */
 export const SELL_RATE = 0.3;
+/**
+ * The trader's rate PER GROUP (step S3): baseValue * rate, at least 1 gold. Crops pay least (they are for brewing and cooking, and a seed costs gold),
+ * ore and fish pay more (they cost time at the mine and the lake and are not cooked or brewed as much), loot and wood sit between. A thing made only
+ * by SPLICING (its result seed, its furniture, its clothes) has its own low rate: its chain costs time and seeds, so selling it never beats keeping it.
+ */
+export const SELL_RATES = {
+  block: SELL_RATE,
+  material: 0.3,
+  ore: 0.85,
+  seed: 0.2,
+  crop: 0.1,
+  bar: 0.5,
+  fish: 0.4,
+  thing: 0.4,
+  splice: 0.05,
+} as const;
 /** Selling MORE than this many pieces in one tap asks first (ui/confirmBuy.ts). Ultra rare and legendary things always ask. */
 export const SELL_CONFIRM_QTY = 5;
 /** The Bag counts as filling when this many different stacks are sellable; the first time, a hint says "Sell what you do not need at the bar". */

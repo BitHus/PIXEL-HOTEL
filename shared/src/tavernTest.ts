@@ -7,6 +7,7 @@ import type { GameState } from './gameState.ts';
 import { deliverOrder, stepTavern, type TavernEvent, type TavernWorld } from './guests.ts';
 import { buildNavGrid } from './nav.ts';
 import { createNewPlayer } from './newPlayer.ts';
+import { applyChange } from './ledger.ts';
 import { clearDish, collectCoins, openOrders, pickUpOrder, requestServe } from './tavern.ts';
 import type { Facing, Rng } from './types.ts';
 
@@ -19,10 +20,21 @@ export function tavernWorld(s: GameState, playerHere = true): TavernWorld {
   return { room, items: s.items, grid: gridFor.grid, playerHere };
 }
 
-/** A new game whose start barrel was emptied: 6 root ale in the bag (on the menu at 9 gold). */
-export function withAle(): GameState {
+/**
+ * The tavern start the rules tests were written with, before step S3: two stools at the round table (no bar stool), an empty menu setting
+ * (drinks on, dishes off). The real new game (3 seats, the early dish on, 7 mugs) is tested in newPlayer.test.ts and tavernStart.test.ts.
+ */
+export function legacyStart(): GameState {
   const s = createNewPlayer(undefined, 0);
-  return collectBrew(s, s.items.find((i) => i.typeId === 'brewing_barrel')!.uid, 0)!.state;
+  const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'counter' && c.y + 32 === i.y && c.x === i.x))!;
+  return { ...s, items: s.items.filter((i) => i.uid !== barStool.uid), tavern: { ...s.tavern, menu: {} } };
+}
+
+/** The legacy start with its barrel emptied: 6 root ale in the bag (on the menu at 9 gold). The start barrel gives 7 mugs now; one goes back. */
+export function withAle(): GameState {
+  const s = legacyStart();
+  const got = collectBrew(s, s.items.find((i) => i.typeId === 'brewing_barrel')!.uid, 0)!.state;
+  return applyChange(got, { reason: 'debug', materials: { root_ale: -1 } }, 0)!;
 }
 
 export function withItem(s: GameState, uid: number, typeId: string, x: number, y: number, facing: Facing = 'down'): GameState {

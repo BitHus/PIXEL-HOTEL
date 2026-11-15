@@ -15,7 +15,7 @@ const withCrops = (s: GameState): GameState => applyChange(s, { reason: 'debug',
 describe('brewing (step 9t)', () => {
   it('has the four drinks of the brief, as stackable goods that sell as food', () => {
     expect(DRINK_TYPES.map((d) => [d.id, d.inputs, d.minutes, d.mugs])).toEqual([
-      ['root_ale', { turnip: 2, potato: 1 }, 10, 6],
+      ['root_ale', { turnip: 2, potato: 1 }, 8, 7],
       ['carrot_cider', { carrot: 3 }, 20, 6],
       ['pumpkin_stout', { pumpkin: 1, potato: 2 }, 45, 8],
       ['glowcap_tonic', { glowcap: 1, carrot: 1 }, 30, 4],
@@ -26,17 +26,17 @@ describe('brewing (step 9t)', () => {
     }
   });
 
-  it('a new game starts with one barrel holding 6 root ale ready to collect', () => {
+  it('a new game starts with one barrel holding 7 root ale ready to collect', () => {
     const s = fresh();
     const uid = barrelUid(s);
     expect(barrels(s.items, s.tavern.roomId).map((b) => b.uid)).toEqual([uid]);
     expect(s.tavern.brews).toEqual([{ barrelUid: uid, drink: 'root_ale', readyAt: 1000 }]);
     const got = collectBrew(s, uid, 1000)!;
-    expect(got).toMatchObject({ drink: 'root_ale', mugs: 6 });
-    expect(got.state.player.materials.root_ale).toBe(6);
+    expect(got).toMatchObject({ drink: 'root_ale', mugs: 7 });
+    expect(got.state.player.materials.root_ale).toBe(7);
     expect(got.state.tavern.brews).toEqual([]);
-    expect(got.state.ledger.at(-1)).toMatchObject({ reason: 'brew', materials: { root_ale: 6 } });
-    expect(got.state.player.seen.root_ale?.count).toBe(6);
+    expect(got.state.ledger.at(-1)).toMatchObject({ reason: 'brew', materials: { root_ale: 7 } });
+    expect(got.state.player.seen.root_ale?.count).toBe(7);
     // An empty barrel gives nothing.
     expect(collectBrew(got.state, uid, 2000)).toBeNull();
   });
@@ -105,7 +105,7 @@ describe('brewing (step 9t)', () => {
     const cards = brewCards({ turnip: 1, potato: 1 });
     expect(cards.map((c) => c.id)).toEqual(DRINK_TYPES.map((d) => d.id));
     const ale = cards.find((c) => c.id === 'root_ale')!;
-    expect(ale).toMatchObject({ minutes: 10, mugs: 6, value: 9, can: false });
+    expect(ale).toMatchObject({ minutes: 8, mugs: 7, value: 9, can: false });
     expect(ale.inputs).toEqual([
       { id: 'turnip', need: 2, have: 1, short: true },
       { id: 'potato', need: 1, have: 1, short: false },

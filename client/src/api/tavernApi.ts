@@ -18,6 +18,7 @@ import {
   collectCook,
   startCook,
   openOrders,
+  GEMS_GAIN_ID,
   GOLD_GAIN_ID,
   GUEST_SERVE_REACH_PX,
   findPath,
@@ -215,7 +216,7 @@ export const tavernApi = {
         const r = collectCoins(h.state, task.messId, now);
         if (!r) return;
         h.commit(h.hintDone(r.state, 2)); // quest 3: earn gold by serving a guest
-        h.emitTavern({ t: 'collected', messId: task.messId, coins: r.coins, spot, gains: [gain(GOLD_GAIN_ID, r.coins)] });
+        h.emitTavern({ t: 'collected', messId: task.messId, coins: r.coins, spot, gains: [gain(GOLD_GAIN_ID, r.coins), ...(r.gems > 0 ? [{ itemId: GEMS_GAIN_ID, count: r.gems, rank: 'common' as const }] : [])] });
       } else {
         const next = clearDish(h.state, task.messId);
         if (!next) return;

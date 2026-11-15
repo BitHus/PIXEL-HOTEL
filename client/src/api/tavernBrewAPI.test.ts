@@ -31,19 +31,19 @@ describe('brewing through the GameAPI (step 9t C)', () => {
   it('collect the starting root ale, brew a new batch: inputs out, ready later, collect gives the mugs and a gains list', async () => {
     const { api } = await inTavern(stateWith({ turnip: 4, potato: 2 }));
     const uid = barrelOf(api).uid;
-    expect((await api.collectBrew(uid))?.mugs).toBe(6); // the new game's batch
+    expect((await api.collectBrew(uid))?.mugs).toBe(7); // the new game's batch
     expect(await api.startBrew(uid, 'root_ale')).toBe(true);
     const p = await api.getPlayer();
     expect(p.materials.turnip).toBe(2);
     expect(p.materials.potato).toBe(1);
-    expect((await api.getTavern()).brews).toEqual([{ barrelUid: uid, drink: 'root_ale', readyAt: t + 10 * MIN }]);
+    expect((await api.getTavern()).brews).toEqual([{ barrelUid: uid, drink: 'root_ale', readyAt: t + 8 * MIN }]); // root ale takes 8 minutes since S3
     expect(await api.collectBrew(uid)).toBeNull(); // not ready
-    t += 10 * MIN - 1;
+    t += 8 * MIN - 1;
     expect(await api.collectBrew(uid)).toBeNull();
     t += 1;
     const got = (await api.collectBrew(uid))!;
-    expect(got).toMatchObject({ drink: 'root_ale', mugs: 6 });
-    expect(got.gains.some((g) => g.itemId === 'root_ale' && g.count === 6)).toBe(true);
+    expect(got).toMatchObject({ drink: 'root_ale', mugs: 7 });
+    expect(got.gains.some((g) => g.itemId === 'root_ale' && g.count === 7)).toBe(true);
     const end = api.snapshot();
     expect(ledgerMaterials(end)).toEqual(end.player.materials);
   });
@@ -94,8 +94,10 @@ describe('the menu through the GameAPI (step 9t C)', () => {
     const { api } = await inTavern(stateWith({ roasted_turnip: 2 }));
     await api.collectBrew(barrelOf(api).uid);
     let rows = await api.getMenu();
-    expect(rows.find((r) => r.id === 'root_ale')).toMatchObject({ on: true, stock: 6, price: 9 });
-    expect(rows.find((r) => r.id === 'roasted_turnip')).toMatchObject({ on: false, stock: 2 });
+    expect(rows.find((r) => r.id === 'root_ale')).toMatchObject({ on: true, stock: 7, price: 9 });
+    expect(rows.find((r) => r.id === 'roasted_turnip')).toMatchObject({ on: true, stock: 2 }); // the early dish is on in a new game (S3)
+    rows = (await api.setMenuEntry('roasted_turnip', { on: false }))!;
+    expect(rows.find((r) => r.id === 'roasted_turnip')?.on).toBe(false);
     rows = (await api.setMenuEntry('roasted_turnip', { on: true }))!;
     expect(rows.find((r) => r.id === 'roasted_turnip')?.on).toBe(true);
     rows = (await api.setMenuEntry('roasted_turnip', { price: 20 }))!;
@@ -113,7 +115,9 @@ describe('the menu through the GameAPI (step 9t C)', () => {
     t += 60_000;
     expect((await api.collectCook(stove.uid))?.qty).toBe(2);
     const row = (await api.getMenu()).find((r) => r.id === 'roasted_turnip')!;
-    expect(row).toMatchObject({ on: false, stock: 2 });
+    expect(row).toMatchObject({ on: true, stock: 2 }); // on from the start (S3)
+    const off = (await api.setMenuEntry('roasted_turnip', { on: false }))!;
+    expect(off.find((r) => r.id === 'roasted_turnip')?.on).toBe(false);
     const on = (await api.setMenuEntry('roasted_turnip', { on: true }))!;
     expect(on.find((r) => r.id === 'roasted_turnip')?.on).toBe(true);
   });

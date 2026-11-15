@@ -84,6 +84,8 @@ export interface Mess {
   x: number;
   y: number;
   coins: number;
+  /** The gems a happy guest left with the coins (step S3); taken together with them. */
+  gems: number;
   /** The empty mug or plate (what was served), or null. */
   dish: MaterialId | null;
 }
@@ -386,14 +388,15 @@ export function serveStops(state: GameState, guestId: number): { bar: Point; tab
 
 // ---------- Coins and dishes ----------
 
-/** The player takes the coins of a table spot (ledger 'tavern'). Null if there are none. */
-export function collectCoins(state: GameState, messId: number, at: number): { state: GameState; coins: number } | null {
+/** The player takes the coins (and the gems a happy guest tipped, step S3) of a table spot, in one change (ledger 'tavern'). Null if there are no coins. */
+export function collectCoins(state: GameState, messId: number, at: number): { state: GameState; coins: number; gems: number } | null {
   const mess = state.tavern.mess.find((m) => m.id === messId);
   if (!mess || mess.coins <= 0) return null;
-  const paid = applyChange(state, { reason: 'tavern', gold: mess.coins, note: 'coins from a table' }, at);
+  const gems = mess.gems ?? 0;
+  const paid = applyChange(state, { reason: 'tavern', gold: mess.coins, ...(gems > 0 ? { gems } : {}), note: gems > 0 ? 'coins and a gem from a table' : 'coins from a table' }, at);
   if (!paid) return null;
-  const rest = paid.tavern.mess.flatMap((m) => (m.id !== messId ? [m] : m.dish ? [{ ...m, coins: 0 }] : []));
-  return { state: withTavern(paid, { mess: rest }), coins: mess.coins };
+  const rest = paid.tavern.mess.flatMap((m) => (m.id !== messId ? [m] : m.dish ? [{ ...m, coins: 0, gems: 0 }] : []));
+  return { state: withTavern(paid, { mess: rest }), coins: mess.coins, gems };
 }
 
 /** The player clears the empty mug or plate of a table spot. Null if there is none. */

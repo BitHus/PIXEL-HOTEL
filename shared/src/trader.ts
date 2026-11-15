@@ -5,7 +5,8 @@
 // stack at all), anything placed in a room, the one-of-a-kind counter (noPickup), clothes that are not spares.
 // Price: baseValue * SELL_RATE (at least 1 gold); a spare piece of clothing keeps SPARE_SELL (BG8). Things in the hotbar WARN before selling.
 
-import { GOLD_GAIN_ID, SELL_CONFIRM_QTY, SELL_HINT_STACKS, SELL_RATE, SPARE_SELL } from './config.ts';
+import { GOLD_GAIN_ID, SELL_CONFIRM_QTY, SELL_HINT_STACKS, SELL_RATE, SELL_RATES, SPARE_SELL } from './config.ts';
+import { SPLICE_SEEDS } from './spliceData.ts';
 import { getFurnitureType, canPickUp } from './furniture.ts';
 import { gain, type GainList } from './gains.ts';
 import type { GameState } from './gameState.ts';
@@ -46,21 +47,36 @@ export type SellWarning = 'many' | 'rare' | 'hotbar';
 /** Material groups the trader buys. Food and drinks are for the menu and the lunch box; they never list. */
 const SELLABLE_GROUPS = new Set(['block', 'material', 'seed', 'crop', 'fish', 'thing']);
 
-/** The gold for one piece at the trader: baseValue * SELL_RATE, at least 1. */
-export function sellPrice(baseValue: number): number {
-  return Math.max(1, Math.round(baseValue * SELL_RATE));
+/** The gold for one piece at the trader: baseValue * the rate (SELL_RATE by default), at least 1. */
+export function sellPrice(baseValue: number, rate: number = SELL_RATE): number {
+  return Math.max(1, Math.round(baseValue * rate));
+}
+
+/** Seeds only splicing makes, and the furniture only those seeds grow: they sell at the low SELL_RATES.splice (step S3). */
+const SPLICE_SEED_IDS: ReadonlySet<string> = new Set(SPLICE_SEEDS.map((x) => x.id));
+const SPLICE_FURNITURE_IDS: ReadonlySet<string> = new Set(SPLICE_SEEDS.flatMap((x) => (x.grows.kind === 'furniture' ? [x.grows.id] : [])));
+const ORE_IDS: ReadonlySet<string> = new Set(['copper_ore', 'iron_ore', 'mithril_ore']);
+const BAR_IDS: ReadonlySet<string> = new Set(['copper_bar', 'iron_bar', 'mithril_bar']);
+
+/** The rate the trader pays for a stackable thing, by its group (step S3): crops least, ore and fish more, splice results lowest. */
+export function materialSellRate(id: string): number {
+  if (SPLICE_SEED_IDS.has(id)) return SELL_RATES.splice;
+  if (ORE_IDS.has(id)) return SELL_RATES.ore;
+  if (BAR_IDS.has(id)) return SELL_RATES.bar;
+  const g = getMaterialType(id as MaterialId).group;
+  return g === 'block' ? SELL_RATES.block : g === 'seed' ? SELL_RATES.seed : g === 'crop' ? SELL_RATES.crop : g === 'fish' ? SELL_RATES.fish : g === 'thing' ? SELL_RATES.thing : SELL_RATES.material;
 }
 
 /** The trader's price of one material (0 = it is not bought). */
 export function materialSellPrice(id: string): number {
   if (!isMaterialId(id) || !SELLABLE_GROUPS.has(getMaterialType(id).group)) return 0;
-  return sellPrice(getMaterialType(id).baseValue);
+  return sellPrice(getMaterialType(id).baseValue, materialSellRate(id));
 }
 
-/** The trader's price of one furniture type (0 = never bought: the counter). */
+/** The trader's price of one furniture type (0 = never bought: the counter). Furniture that only splicing grows has the low splice rate. */
 export function furnitureSellPrice(typeId: string): number {
   const t = getFurnitureType(typeId);
-  return t.noPickup ? 0 : sellPrice(t.baseValue);
+  return t.noPickup ? 0 : sellPrice(t.baseValue, SPLICE_FURNITURE_IDS.has(typeId) ? SELL_RATES.splice : SELL_RATE);
 }
 
 /** One spare piece of clothing sells for baseValue * SPARE_SELL (BG8; whole gold, rounded down). */

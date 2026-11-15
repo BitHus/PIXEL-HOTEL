@@ -28,7 +28,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -58,9 +58,9 @@ export const FIRST_BUY_POP_MS = 220;
 export const HINTS = [
   'Open the Catalog and buy something with your 100 gold.',
   'Place it in your room.',
-  'Earn gold in your tavern: tap a guest who waits with an order to serve them, then tap the coins they leave on the table.',
-  'Tap the Dungeon button to find loot: use it to cook, brew, craft and build.',
-  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown (about 2 minutes). Breaking blocks, plants, chests and fish drop gems.',
+  'Earn gold in your tavern: tap a guest who waits with an order to serve them, then tap the coins they leave. Brew root ale at the barrel or cook a roasted turnip at the stove to have more to serve.',
+  'Tap the Dungeon button for a run: chests and slimes give gold and loot to cook, brew, craft and build with. What you will not use, sell at the bar: tap the bar and open the Sell tab.',
+  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown (about 2 minutes). Punching blocks, plants and chests, and catching fish, drop gems.',
   'Gems buy packs. With 30 gems open the Catalog, the Packs tab, and open a Basic Seeds Pack: its odds are on the card.',
   'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
   'Splice: plant one seed, then use a different seed on the same planted cell. Some pairs make a brand new seed (see the Book, Splice tab).',

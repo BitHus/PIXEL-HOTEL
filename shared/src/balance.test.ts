@@ -8,6 +8,13 @@ import { BLOCK_TYPES } from './blockTypes.ts';
 import {
   STAGES,
   activities,
+  firstHourGold,
+  goldBySource,
+  goldShares,
+  guestGoldPerHour,
+  runGoldPerHour,
+  tavernTipGemsPerHour,
+  traderByActivity,
   bestCropGoldPerCellMinute,
   biggestShare,
   blockBuyBack,
@@ -30,7 +37,10 @@ import {
   seedRatio,
   starterSeeds,
 } from './balance.ts';
-import { BALANCE_TARGETS, PACKS, SPARE_SELL } from './config.ts';
+import { BALANCE_TARGETS, PACKS, SELL_RATES, SPARE_SELL } from './config.ts';
+import { CROP_TYPES, getMaterialType } from './materials.ts';
+import { getFurnitureType } from './furniture.ts';
+import { materialSellPrice, furnitureSellPrice } from './trader.ts';
 import { PACK_TYPES } from './packs.ts';
 import { seededRng } from './rng.ts';
 import { SPLICE_RECIPES } from './splice.ts';
@@ -160,6 +170,12 @@ describe('the trader closes its loops', () => {
       expect(r.productSold, r.seed).toBeLessThanOrEqual(r.cost);
     }
   });
+  it('STRICT (S3): a splice result and its seed sold back never pay more than the GOLD of the starter seeds it took', () => {
+    for (const r of spliceSellLoops()) {
+      expect(r.seedSold, r.seed).toBeLessThanOrEqual(r.gold);
+      expect(r.productSold, r.seed).toBeLessThanOrEqual(r.gold);
+    }
+  });
 });
 
 describe('what surplus sells for in an hour (a report for S3, not a target)', () => {
@@ -171,5 +187,94 @@ describe('what surplus sells for in an hour (a report for S3, not a target)', ()
       expect(mixedSurplusGoldPerHour(stage, seededRng(7))).toBe(a);
       for (const x of surplusGoldPerHour(stage, seededRng(7))) expect(x.gold, x.id).toBeGreaterThanOrEqual(0);
     }
+  });
+});
+
+// ---------- Step S3: gold per hour by source, the first hour, selling never beats using ----------
+describe('gold sources of a mixed hour (S3)', () => {
+  for (const stage of STAGES) {
+    it(`${stage}: tavern guests, dungeon run gold and the trader are each between ${BALANCE_TARGETS.minGoldShare * 100}% and ${BALANCE_TARGETS.maxGoldShare * 100}% of the gold`, () => {
+      for (const row of goldBySource(stage, seededRng(11))) {
+        const share = row.mixed / goldShares(stage, seededRng(11)).total;
+        expect(share, `${row.id} ${Math.round(share * 100)}%`).toBeGreaterThanOrEqual(BALANCE_TARGETS.minGoldShare);
+        expect(share, `${row.id} ${Math.round(share * 100)}%`).toBeLessThanOrEqual(BALANCE_TARGETS.maxGoldShare);
+      }
+    });
+    it(`${stage}: selling crops never beats the tavern guests, the dungeon run gold or the mine (focused hours)`, () => {
+      const rows = traderByActivity(stage, seededRng(11));
+      const farm = rows.find((r) => r.id === 'farm')!.focused;
+      expect(farm).toBeGreaterThanOrEqual(0); // surplus crops are worth something, never a loss
+      expect(farm).toBeLessThan(guestGoldPerHour(stage).gold);
+      expect(farm).toBeLessThan(runGoldPerHour(stage, seededRng(11)));
+      const mine = rows.find((r) => r.id === 'mine');
+      if (mine) expect(farm).toBeLessThan(mine.focused);
+    });
+    it(`${stage}: no trader activity (loot, ore, crops, wood, fish) out-earns the tavern at full attention`, () => {
+      for (const r of traderByActivity(stage, seededRng(11))) expect(r.focused, r.id).toBeLessThan(guestGoldPerHour(stage).gold);
+    });
+  }
+  it('the mixed hour grows with the stage: new < level 3 < level 8', () => {
+    const t = (s: (typeof STAGES)[number]): number => goldShares(s, seededRng(11)).total;
+    expect(t('level3')).toBeGreaterThan(t('new'));
+    expect(t('level8')).toBeGreaterThan(t('level3'));
+  });
+});
+
+describe('the first hour of a new game (S3)', () => {
+  it('the first 30 minutes of the tavern are inside the target', () => {
+    const g = firstHourGold(30).gold;
+    expect(g).toBeGreaterThanOrEqual(BALANCE_TARGETS.firstHalfHourGold.min);
+    expect(g).toBeLessThanOrEqual(BALANCE_TARGETS.firstHalfHourGold.max);
+  });
+  it('the first hour is inside 300 to 500 gold', () => {
+    const g = firstHourGold(60).gold;
+    expect(g).toBeGreaterThanOrEqual(BALANCE_TARGETS.firstHourGold.min);
+    expect(g).toBeLessThanOrEqual(BALANCE_TARGETS.firstHourGold.max);
+  });
+  it('gold only grows with time, and guests are never the limit (the supply of mugs and dishes is)', () => {
+    let last = -1;
+    for (let m = 0; m <= 60; m += 5) {
+      const x = firstHourGold(m);
+      expect(x.gold).toBeGreaterThanOrEqual(last);
+      expect(x.mugs + x.dishes).toBeLessThanOrEqual(x.guests);
+      last = x.gold;
+    }
+  });
+  it('brewing is still worth doing: a brew sells for much more than the crops in it would at the trader', () => {
+    const rows = brewSellLoops().find((b) => b.id === 'root_ale')!;
+    expect(rows.made).toBeGreaterThan(rows.sold * 5);
+  });
+});
+
+describe('selling never beats using (S3)', () => {
+  it('every sellable stackable thing worth more than 2 gold pays at most the maxSellShare of its value', () => {
+    for (const t of [...CROP_TYPES.map((c) => c.id), 'wood', 'cloth', 'bone', 'copper_ore', 'iron_ore', 'mithril_ore', 'copper_bar', 'iron_bar', 'mithril_bar', 'pebble_perch', 'lantern_carp', 'amber', 'resin', 'turnip_seed', 'amberbud_seed']) {
+      const base = getMaterialType(t as never).baseValue;
+      if (base <= 2) continue;
+      expect(materialSellPrice(t), t).toBeLessThanOrEqual(Math.ceil(base * BALANCE_TARGETS.maxSellShare));
+    }
+  });
+  it('crops pay the least of the groups, ore and fish pay more, splice results pay the least of all', () => {
+    expect(SELL_RATES.crop).toBeLessThanOrEqual(SELL_RATES.material);
+    expect(SELL_RATES.crop).toBeLessThan(SELL_RATES.ore);
+    expect(SELL_RATES.crop).toBeLessThan(SELL_RATES.fish);
+    expect(SELL_RATES.splice).toBeLessThan(SELL_RATES.crop);
+    expect(SELL_RATES.ore).toBeGreaterThanOrEqual(SELL_RATES.material);
+    expect(SELL_RATES.bar).toBeLessThan(SELL_RATES.ore); // selling ore beats smelting it just to sell the bar: bars are for gear
+  });
+  it('furniture that only splicing grows pays the low splice rate', () => {
+    for (const id of ['vine_bench', 'gilded_chair', 'honey_table', 'ember_lamp', 'heartwood_throne']) expect(furnitureSellPrice(id), id).toBeLessThanOrEqual(Math.max(1, Math.round(getFurnitureType(id).baseValue * SELL_RATES.splice)));
+  });
+  it('seed -> plant -> sell: the crops of one harvest sell for no more than the seed cost (selling never makes gold by planting)', () => {
+    for (const crop of CROP_TYPES.filter((c) => c.seedPrice !== null)) {
+      const sold = materialSellPrice(crop.id) * ((crop.rank === 'common' ? 3 : crop.rank === 'rare' ? 2.5 : 1.5));
+      expect(sold, crop.id).toBeLessThanOrEqual(crop.seedPrice!);
+    }
+  });
+});
+
+describe('the tavern gem tip in the gem tables (S3)', () => {
+  it('is a small source: under 5% of the gems of a mixed hour at every stage', () => {
+    for (const stage of STAGES) expect(tavernTipGemsPerHour(stage) / mixedGemsPerHour(stage), stage).toBeLessThan(0.05);
   });
 });
