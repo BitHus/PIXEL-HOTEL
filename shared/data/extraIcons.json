@@ -12,5 +12,12 @@
       "cyan",
       "white"
     ]
+  },
+  "coin": {
+    "shape": "coin",
+    "colors": [
+      "gold",
+      "butter"
+    ]
   }
 }

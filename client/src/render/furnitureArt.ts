@@ -79,10 +79,56 @@ export function furnitureRects(type: FurnitureType, facing: Facing, role?: ArtBo
   for (const b of boxes) {
     const color = tint.get(b.color) ?? PALETTE[b.color] ?? PALETTE[0];
     if (b.w <= 0) continue;
-    if (b.d > 0) out.push([b.dx, b.dy - b.z - b.h - b.d, b.w, b.d, color]);
-    if (b.h > 0) out.push([b.dx, b.dy - b.z - b.h, b.w, b.h, shade(color, FRONT_SHADE)]);
+    const topY = b.dy - b.z - b.h - b.d;
+    const frontY = b.dy - b.z - b.h;
+    const front = shade(color, FRONT_SHADE);
+    if (b.d > 0) out.push([b.dx, topY, b.w, b.d, color]);
+    if (b.h > 0) out.push([b.dx, frontY, b.w, b.h, front]);
+    detail(out, b, color, front, topY, frontY);
   }
   return out;
+}
+
+/** A small deterministic number per box, so knots and grain sit in the same place every frame. */
+function hash(b: ArtBox): number {
+  return Math.abs((b.dx * 73856093) ^ (b.dy * 19349663) ^ (b.z * 83492791) ^ (b.w * 2654435761)) >>> 0;
+}
+
+/**
+ * Surface detail on one box (drawn inside its faces, so the silhouette and outline stay the same):
+ * - flat things (rugs, cloth): an inset border band and a lighter inner field;
+ * - wide tops: plank seams along the long side, with an offset every other plank;
+ * - fronts: vertical board lines, a lit edge under the top and a dark foot line.
+ * Small boxes (legs, knobs) stay plain.
+ */
+function detail(out: ArtRect[], b: ArtBox, color: string, front: string, topY: number, frontY: number): void {
+  const seam = shade(color, 0.86);
+  const lit = shade(color, 1.18);
+  const h = hash(b);
+  if (b.h === 0 && b.d >= 16 && b.w >= 16) {
+    // Rug / flat cover: a woven border and a fringe of short stripes on the two short ends.
+    out.push([b.dx + 2, topY + 2, b.w - 4, 1, lit], [b.dx + 2, topY + b.d - 3, b.w - 4, 1, seam]);
+    out.push([b.dx + 2, topY + 2, 1, b.d - 4, lit], [b.dx + b.w - 3, topY + 2, 1, b.d - 4, seam]);
+    for (let x = b.dx + 3; x < b.dx + b.w - 3; x += 4) out.push([x, topY, 1, 1, seam], [x, topY + b.d - 1, 1, 1, lit]);
+    return;
+  }
+  if (b.d >= 8 && b.w >= 12) {
+    // Top: plank seams every 4 px across the depth, each plank's seam shifted a little.
+    for (let y = topY + 4, i = 0; y < topY + b.d - 1; y += 4, i++) {
+      const shift = (h >> (i % 8)) % 5;
+      out.push([b.dx + 1, y, b.w - 2, 1, seam]);
+      const nx = b.dx + 3 + ((shift * 7 + i * 5) % Math.max(1, b.w - 6));
+      out.push([nx, y - 2, 1, 2, seam]);
+    }
+    out.push([b.dx + 1, topY + 1, Math.max(1, b.w - 2), 1, lit]);
+  }
+  if (b.h >= 6 && b.w >= 8) {
+    // Front: a lit lip under the top, vertical boards every 8 px, a dark foot line.
+    out.push([b.dx + 1, frontY, b.w - 2, 1, shade(color, 0.95)]);
+    for (let x = b.dx + 7; x < b.dx + b.w - 3; x += 8) out.push([x, frontY + 2, 1, b.h - 3, shade(front, 0.88)]);
+    out.push([b.dx + 1, frontY + b.h - 2, b.w - 2, 1, shade(front, 0.8)]);
+    if (b.w >= 16 && b.h >= 8) out.push([b.dx + 3 + (h % Math.max(1, b.w - 8)), frontY + 3 + (h % Math.max(1, b.h - 6)), 2, 1, shade(front, 0.75)]);
+  }
 }
 
 /**

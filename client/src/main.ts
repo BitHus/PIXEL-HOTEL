@@ -122,7 +122,11 @@ import { confirmBuy } from './ui/confirmBuy.ts';
 import { createPackFlow } from './ui/packOpening.ts';
 import { furnitureIconUrl, materialIconUrl } from './ui/itemIcon.ts';
 import { stylePreviewUrl } from './render/styleArt.ts';
-import { CustomerViews } from './render/customerViews.ts';
+import { CustomerViews, type Walker } from './render/customerViews.ts';
+import { TableMess, type Meal } from './render/tableMess.ts';
+import { createOrderBubbles, type OrderMark } from './ui/orderBubbles.ts';
+import { SERVE_QUEUE_MAX, brewReadyInMs, seatKey, tavernSeats, type Guest, type TavernView } from '@pixel-hotel/shared';
+import { drawGood } from './render/slotGoods.ts';
 import { ItemHops } from './render/itemHops.ts';
 import { goodSpot } from './render/slotGoods.ts';
 import { createShelfPanel } from './ui/shelfPanel.ts';
@@ -470,7 +474,10 @@ async function start(): Promise<void> {
     const hidden = hiddenUids();
     itemViews.sync(items, hidden);
     atmosphere.setItems(items, hidden);
+    onItemsSynced();
   };
+  /** Set by the tavern block below: guests, orders and table coins follow the items. */
+  let onItemsSynced: () => void = () => {};
   /** What is on screen now (for the intro's coins). */
   const shown0 = (): Camera => shown;
   /** Applies items from the GameAPI (null = refused). */
@@ -876,11 +883,19 @@ async function start(): Promise<void> {
   const mapBadge = document.createElement('span');
   mapBadge.className = 'btn-badge map-badge';
   mapButton.appendChild(mapBadge);
+  /** Customers at the till, and (step 9t) orders to serve and coins on the tables, as one badge on the Map button. */
+  let tillWaiting = 0;
+  const updateBadge = (): void => {
+    const orders = tavern.guests.filter((g) => g.phase === 'order' && g.order).length;
+    const coins = tavern.mess.filter((m) => m.coins > 0).length;
+    const parts = [tillWaiting > 0 ? `${tillWaiting} waiting` : '', orders > 0 ? `${orders} ${orders === 1 ? 'order' : 'orders'}` : '', coins > 0 ? `${coins} ${coins === 1 ? 'coin pile' : 'coin piles'}` : ''].filter(Boolean);
+    mapBadge.hidden = parts.length === 0;
+    mapBadge.textContent = parts.join(', ');
+    mapButton.title = parts.length > 0 ? `Map: travel (${parts.join(', ')} in your tavern)` : 'Map: travel';
+  };
   const showWaiting = (list: readonly Customer[]): void => {
-    const n = waitingCount(list);
-    mapBadge.hidden = n === 0;
-    mapBadge.textContent = `${n} waiting`;
-    mapButton.title = n > 0 ? `Map: travel (${n} waiting in your shop)` : 'Map: travel';
+    tillWaiting = waitingCount(list);
+    updateBadge();
   };
   /** A world point on a placed item: slot `index` of its goods (bottom middle). */
   const slotPoint = (shelfUid: number, index: number): Point | null => {
@@ -979,6 +994,160 @@ async function start(): Promise<void> {
       case 'slots':
         void refreshShop();
         void refreshInventory();
+        break;
+    }
+  });
+
+  // ---------- The tavern (step 9t): guests, orders, coins on the tables ----------
+  let tavern: TavernView = await api.getTavern();
+  const guests = new CustomerViews(view);
+  const tableMess = new TableMess(view);
+  /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
+  const walkers = (list: readonly Guest[]): Walker[] =>
+    list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing }));
+  const inTavern = (): boolean => room.id === tavern.roomId;
+  const orders = createOrderBubbles(ui, (id) => void serveTap(id));
+  /** The open orders for the order bubbles: queued or carried ones are dimmed, a guest with little patience is urgent. */
+  const orderMarks = (): OrderMark[] =>
+    tavern.guests.flatMap((g) =>
+      g.phase === 'order' && g.order ? [{ guestId: g.id, item: g.order.item, urgent: g.warned, taken: tavern.serveQueue.includes(g.id) || tavern.holding?.guestId === g.id }] : [],
+    );
+  /** What guests eat or drink now, on their table spots (the served item stays there until they leave). */
+  const meals = (): Meal[] => {
+    const seats = tavernSeats(items, tavern.roomId);
+    return tavern.guests.flatMap((g) => {
+      const seat = g.phase === 'eat' && g.order && g.seat ? seats.find((k) => seatKey(k) === seatKey(g.seat!)) : undefined;
+      return seat && g.order ? [{ guestId: g.id, item: g.order.item, spot: seat.spot }] : [];
+    });
+  };
+  /** Draws the tavern as it is now (guests, coins and dishes, order bubbles, the Map badge). */
+  const syncTavern = (): void => {
+    const on = inTavern();
+    guests.sync(on ? walkers(tavern.guests) : [], room.id, items);
+    tableMess.sync(on ? tavern.mess : [], on ? meals() : [], items);
+    orders.sync(on ? orderMarks() : []);
+    updateBadge();
+  };
+  onItemsSynced = syncTavern;
+  async function refreshTavern(): Promise<void> {
+    tavern = await api.getTavern();
+    syncTavern();
+  }
+  /** A tap on a guest or an order bubble: the order is carried to the table (taps queue up, at most SERVE_QUEUE_MAX). */
+  async function serveTap(guestId: number): Promise<void> {
+    if (tavern.serveQueue.length >= SERVE_QUEUE_MAX) {
+      toast(`${SERVE_QUEUE_MAX} orders are waiting to be carried already.`);
+      return;
+    }
+    if (!(await api.serveGuest(guestId))) toast('There is no way to the bar.');
+    else sound.play('click');
+    await refreshTavern();
+  }
+  /** A tap on something of the tavern: a guest with an order, coins or a dish on a table, a brewing barrel. True when handled. */
+  const tavernTap = (world: Point, hit: FurnitureItem | undefined): boolean => {
+    if (!inTavern()) return false;
+    const gid = guests.at(world);
+    const guest = gid === null ? undefined : tavern.guests.find((g) => g.id === gid);
+    if (guest?.phase === 'order' && guest.order) {
+      void serveTap(guest.id);
+      return true;
+    }
+    const m = tableMess.at(world);
+    if (m) {
+      if (tavern.holding || tavern.serveQueue.length > 0) toast('Serve the orders first.');
+      else void api.tidyTable(m.messId, m.what).then((ok) => ok || toast('There is no way to that table.'));
+      return true;
+    }
+    if (hit && getFurnitureType(hit.typeId).brews) {
+      void brewTap(hit);
+      return true;
+    }
+    return false;
+  };
+  /** A tap on a brewing barrel: a ready brew is collected (mugs in the bag); else it says how long is left. */
+  async function brewTap(barrel: FurnitureItem): Promise<void> {
+    const r = await api.collectBrew(barrel.uid);
+    if (r) {
+      sound.play('pop');
+      popups.show(r.gains);
+      return;
+    }
+    await refreshTavern();
+    const brew = tavern.brews.find((b) => b.barrelUid === barrel.uid);
+    if (!brew) toast('The barrel is empty.');
+    else toast(`Brewing: ready in ${Math.max(1, Math.ceil(brewReadyInMs(brew, Date.now()) / 60_000))} min.`);
+  }
+  let seatedGuests = 0;
+  api.onTavern((e) => {
+    const on = inTavern();
+    switch (e.t) {
+      case 'guests': {
+        // The door bell for new arrivals; a soft murmur when three or more sit.
+        if (on && e.guests.some((g) => !tavern.guests.some((o) => o.id === g.id))) sound.play('bell');
+        const sitting = e.guests.filter((g) => g.seated).length;
+        if (on && sitting >= 3 && seatedGuests < 3) sound.play('murmur');
+        seatedGuests = sitting;
+        tavern = { ...tavern, guests: e.guests };
+        syncTavern();
+        void refreshTavern();
+        break;
+      }
+      case 'say':
+        if (on) sayBubble(e.guestId, e.text);
+        break;
+      case 'order':
+        if (on) bubbles.addNode(e.guestId, pixelIcon(e.reaction), REACTION_BUBBLE_MS);
+        void refreshInventory(); // the unit leaves the bag when the guest orders
+        break;
+      case 'refuse':
+        if (on) bubbles.addNode(e.guestId, pixelIcon(e.reaction), REACTION_BUBBLE_MS);
+        break;
+      case 'sip':
+        if (on) guests.gesture(e.guestId, 'nod');
+        break;
+      case 'unhappy':
+        if (on) bubbles.addNode(e.guestId, pixelIcon('frown'), REACTION_BUBBLE_MS);
+        void refreshTavern();
+        void refreshInventory(); // the unserved order is back in the bag
+        break;
+      case 'coins':
+        void refreshTavern();
+        break;
+      case 'to_stall':
+        // They walk on past the market stall as a shop customer.
+        void api.getShop().then((s) => {
+          shop = s;
+          shopCustomers = s.customers;
+          customers.sync(room.id === shop.roomId ? s.customers : [], room.id, items);
+        });
+        break;
+      case 'walk':
+        follow(e.path);
+        goal = null;
+        break;
+      case 'holding':
+        sprite.setHeld(e.item ? drawGood({ kind: 'material', id: e.item, qty: 1 }) : null);
+        void refreshTavern();
+        break;
+      case 'served':
+        sound.play('clink');
+        sprite.gesture('hand');
+        void refreshTavern();
+        void refreshInventory();
+        break;
+      case 'collected':
+        sound.play('coin');
+        popups.show(e.gains);
+        void refreshTavern();
+        void refreshInventory(); // the gold shows in the info panel
+        break;
+      case 'cleared':
+        sound.play('pop');
+        void refreshTavern();
+        break;
+      case 'queue':
+        tavern = { ...tavern, serveQueue: e.queue };
+        syncTavern();
         break;
     }
   });
@@ -1402,6 +1571,13 @@ async function start(): Promise<void> {
     showWaiting(shop.customers);
     serving = null;
     customers.sync(room.id === shop.roomId ? shop.customers : [], room.id, items);
+    guests.clear();
+    tableMess.clear();
+    orders.clear();
+    sprite.setHeld(null);
+    seatedGuests = 0;
+    tavern = await api.getTavern();
+    syncTavern();
     await refreshShop();
     await refreshInventory();
     await refreshHint();
@@ -1419,6 +1595,7 @@ async function start(): Promise<void> {
     door: 'Keep the door free.',
     door_blocked: 'That would block the way in.',
     counter_blocked: 'The counter needs a way behind it.',
+    seat_blocked: 'Guests could not get to a seat then.',
     wrong_room: 'That block cannot go here.',
     empty: 'None left.',
     not_buildable: 'You cannot build here.',
@@ -1740,6 +1917,8 @@ async function start(): Promise<void> {
       if (farm.tap(marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).
       if (lakeside.tap(marked)) return;
+      // The tavern (step 9t): a guest with an order, coins or a dish on a table, a brewing barrel.
+      if (tavernTap(marked, hit)) return;
       // The counter: walk behind it (like sitting); waiting customers pay while you stand there.
       if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
         void serveAt(hit.uid).then((ok) => {
@@ -1829,6 +2008,7 @@ async function start(): Promise<void> {
     avatar = seating.update(avatar, ticker.deltaMS);
     itemViews.update(ticker.deltaMS);
     customers.update(ticker.deltaMS, clockMs);
+    guests.update(ticker.deltaMS, clockMs);
     hops.update(ticker.deltaMS);
     lakeside.update(ticker.deltaMS, clockMs);
     if (path.length === 0 && avatar.state !== 'walk') lakeside.arrived();
@@ -1842,6 +2022,7 @@ async function start(): Promise<void> {
     feet.length = 0;
     if (sprite.container.visible && (avatar.state === 'walk' || avatar.state === 'idle')) feet.push(avatar);
     customers.feet(feet);
+    guests.feet(feet);
     atmosphere.update(ticker.deltaMS, clockMs, feet);
     view.objects.setKey(sprite.container, avatarDepthKey(avatar, roomItem(seating.seated?.uid ?? null)));
     blockViews.sync(room, Date.now());
@@ -1862,7 +2043,9 @@ async function start(): Promise<void> {
     heads.clear();
     heads.set(avatar.id, worldToScreen({ x: avatar.x, y: avatar.y - AVATAR_H }, shown));
     customers.heads(heads, AVATAR_H);
+    guests.heads(heads, AVATAR_H);
     for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, shown));
+    orders.update(heads);
     bubbles.update(ticker.deltaMS, heads);
     popups.update(heads.get(avatar.id) ?? null);
     gemFly.update(heads.get(avatar.id) ?? null);

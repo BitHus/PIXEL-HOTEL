@@ -9,7 +9,7 @@ export const ICON_SHAPES = [
   // goods
   'ore', 'bar', 'fish', 'leaf', 'mushroom', 'log', 'potion', 'bread', 'mug', 'gem', 'seed', 'block',
   'cloth', 'bone', 'boot', 'key', 'ring', 'plate', 'bottle', 'shell', 'blob', 'wing', 'fang', 'skull',
-  'crown', 'heart', 'orb', 'root', 'pumpkin', 'bowl', 'hinge', 'tongue', 'dust', 'acorn', 'driftwood',
+  'coin', 'crown', 'heart', 'orb', 'root', 'pumpkin', 'bowl', 'hinge', 'tongue', 'dust', 'acorn', 'driftwood',
   // gear and clothing
   'sword', 'armor', 'pickaxe', 'axe', 'rod', 'helmet', 'shirt', 'hat', 'trousers', 'skirt', 'hair',
   // furniture silhouettes

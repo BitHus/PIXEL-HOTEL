@@ -94,6 +94,26 @@ import {
   buyCatalog,
   canPickUp,
   catchUpShop,
+  catchUpTavern,
+  stepTavern,
+  repathGuests,
+  deliverOrder,
+  requestServe,
+  pickUpOrder,
+  serveStops,
+  cancelServe,
+  collectCoins,
+  clearDish,
+  collectBrew,
+  returnOrphanBrews,
+  openOrders,
+  GOLD_GAIN_ID,
+  GUEST_SERVE_REACH_PX,
+  type MaterialId,
+  type TavernClientEvent,
+  type TavernEvent,
+  type TavernView,
+  type TavernWorld,
   putOnShelf,
   repathCustomers,
   returnOrphanLoot,
@@ -215,7 +235,15 @@ interface WalkState {
   serving?: { uid: number; x: number; y: number; facing: Facing } | null;
   /** The item and seat index the avatar is sitting or lying on. */
   seated: { uid: number; index: number } | null;
+  /** Step 9t: what this walk is for while serving or tidying a table (a new walk of any other kind drops it). */
+  task?: TavernTask | undefined;
 }
+
+/** The player's tavern errand: to the bar for an order, to the guest's table with it, or to a table spot to tidy it. */
+export type TavernTask =
+  | { stage: 'bar' }
+  | { stage: 'table'; guestId: number }
+  | { stage: 'mess'; messId: number; what: 'coins' | 'dish' };
 
 export class LocalGameAPI implements GameAPI, LocalSaves {
   private state: GameState;
@@ -225,6 +253,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   private chatId = 0;
   private readonly chatListeners = new Set<(line: ChatLine) => void>();
   private readonly shopListeners = new Set<(e: ShopEvent) => void>();
+  private readonly tavernListeners = new Set<(e: TavernClientEvent) => void>();
+  /** True while the own avatar is on a tavern errand (walkState.task); a walk of any other kind ends it. */
+  private errand = false;
   /** The shop room's navigation grid (customers), rebuilt when its furniture changes. */
   private shopGrid: NavGrid | null = null;
   private clock = 0;
@@ -357,7 +388,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const type = getFurnitureType(item.typeId);
     const avatar = this.standingAvatar(item);
     // Seats taken by others: shop customers waiting on a seat (other players come in step 10).
-    const taken = this.state.currentRoomId === this.state.shop.roomId ? this.state.shop.customers.flatMap((c) => (c.seat?.uid === uid ? [c.seat.index] : [])) : [];
+    const taken = this.state.currentRoomId === this.state.shop.roomId ? [...this.state.shop.customers, ...this.state.tavern.guests].flatMap((c) => (c.seat?.uid === uid ? [c.seat.index] : [])) : [];
     const plan = planSit(this.grid, avatar, item, type, tap ?? null, taken);
     if (!plan) return null;
     const { path, seat } = plan;
@@ -728,6 +759,136 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return next ? this.commitGains(next) : null;
   }
 
+  // ---------- The tavern (step 9t) ----------
+
+  async getTavern(): Promise<TavernView> {
+    const t = this.state.tavern;
+    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, at: this.now() });
+  }
+
+  onTavern(listener: (e: TavernClientEvent) => void): () => void {
+    this.tavernListeners.add(listener);
+    return () => this.tavernListeners.delete(listener);
+  }
+
+  async serveGuest(guestId: number): Promise<boolean> {
+    if (!this.inTavern()) return false;
+    const next = requestServe(this.state, guestId);
+    if (!next) return false;
+    this.commit(next);
+    this.emitTavern({ t: 'queue', queue: [...next.tavern.serveQueue] });
+    if (this.errand) return true; // The queue is worked off after the order the avatar is carrying.
+    if (this.nextServe()) return true;
+    this.dropServe();
+    return false;
+  }
+
+  async tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean> {
+    if (!this.inTavern()) return false;
+    const mess = this.state.tavern.mess.find((m) => m.id === messId);
+    if (!mess || (what === 'coins' ? mess.coins <= 0 : mess.dish === null)) return false;
+    // With an order in the hands, or orders queued, serving comes first.
+    const t = this.state.tavern;
+    if (t.holding || t.serveQueue.length > 0) return false;
+    return this.startErrand({ x: mess.x, y: mess.y }, { stage: 'mess', messId, what });
+  }
+
+  async collectBrew(barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null> {
+    if (!this.inTavern()) return null;
+    const r = collectBrew(this.state, barrelUid, this.now());
+    if (!r) return null;
+    const gains = gainsSince(this.state, r.state);
+    this.commit(r.state);
+    return { drink: r.drink, mugs: r.mugs, gains };
+  }
+
+  private inTavern(): boolean {
+    return this.state.currentRoomId === this.state.tavern.roomId;
+  }
+
+  /** Walks the own avatar to a spot for an errand. False when there is no way within reach of it. */
+  private startErrand(to: Point, task: TavernTask): boolean {
+    const avatar = this.standingAvatar(to);
+    const path = findPath(this.grid, avatar, to);
+    const end = path?.[path.length - 1];
+    if (!path || !end || Math.hypot(end.x - to.x, end.y - to.y) > GUEST_SERVE_REACH_PX) return false;
+    this.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: this.now(), sitOn: null, seated: null, task };
+    this.errand = true;
+    this.emitTavern({ t: 'walk', path });
+    return true;
+  }
+
+  /** Starts the next queued order: to the bar. False when nobody waits any more or there is no way. */
+  private nextServe(): boolean {
+    const t = this.state.tavern;
+    const open = openOrders(t).map((g) => g.id);
+    const id = t.serveQueue.find((i) => open.includes(i));
+    if (id === undefined) return false;
+    const stops = serveStops(this.state, id);
+    return stops !== null && this.startErrand(stops.bar, { stage: 'bar' });
+  }
+
+  /** Forgets the queue and the order in the hands (the orders stay open). */
+  private dropServe(): void {
+    this.errand = false;
+    if (this.state.tavern.serveQueue.length === 0 && this.state.tavern.holding === null) return;
+    this.commit(cancelServe(this.state));
+    this.emitTavern({ t: 'queue', queue: [] });
+    this.emitTavern({ t: 'holding', item: null });
+  }
+
+  /** Called every clock tick: an errand that arrived does its job (pick up, put down, collect) and the next one starts. */
+  private runErrand(): void {
+    if (!this.errand) return;
+    this.avatarNow();
+    const w = this.walkState;
+    // Another kind of walk replaced the errand (a tap on the floor, a seat, another room): forget it.
+    if (!w.task) return this.dropServe();
+    if (w.path.length > 0) return;
+    const task = w.task;
+    this.walkState = { ...w, task: undefined };
+    this.errand = false;
+    const now = this.now();
+    if (task.stage === 'bar') {
+      const r = pickUpOrder(this.state);
+      if (!r) {
+        if (!this.nextServe()) this.dropServe();
+        return;
+      }
+      this.commit(r.state);
+      this.emitTavern({ t: 'holding', item: r.item });
+      this.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
+      const stops = serveStops(this.state, r.guestId);
+      if (!stops || !this.startErrand(stops.table, { stage: 'table', guestId: r.guestId })) this.dropServe();
+    } else if (task.stage === 'table') {
+      const spot = serveStops(this.state, task.guestId)?.table;
+      const d = deliverOrder(this.state, this.rng);
+      if (d && spot) {
+        this.commit(d.state);
+        this.emitTavern({ t: 'served', guestId: d.guestId, item: d.item, spot });
+      } else if (this.state.tavern.holding) {
+        this.commit(cancelServe(this.state));
+      }
+      this.emitTavern({ t: 'holding', item: null });
+      if (!this.nextServe()) this.dropServe();
+    } else {
+      const mess = this.state.tavern.mess.find((m) => m.id === task.messId);
+      if (!mess) return;
+      const spot = { x: mess.x, y: mess.y };
+      if (task.what === 'coins') {
+        const r = collectCoins(this.state, task.messId, now);
+        if (!r) return;
+        this.commit(r.state);
+        this.emitTavern({ t: 'collected', messId: task.messId, coins: r.coins, spot, gains: [gain(GOLD_GAIN_ID, r.coins)] });
+      } else {
+        const next = clearDish(this.state, task.messId);
+        if (!next) return;
+        this.commit(next);
+        this.emitTavern({ t: 'cleared', messId: task.messId, spot });
+      }
+    }
+  }
+
   async getLakeside(): Promise<LakesideView> {
     return this.lakesideView();
   }
@@ -893,15 +1054,17 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
    */
   update(): void {
     const now = this.now();
-    const shop = this.state.shop;
-    if (now - shop.updatedAt > SHOP_CATCH_UP_GAP_MS) {
+    this.runErrand();
+    if (now - this.state.shop.updatedAt > SHOP_CATCH_UP_GAP_MS || now - this.state.tavern.updatedAt > SHOP_CATCH_UP_GAP_MS) {
       this.catchUp();
       this.save();
       this.emit({ t: 'customers', customers: this.state.shop.customers });
       this.emit({ t: 'slots' });
+      this.emitTavern({ t: 'guests', guests: this.state.tavern.guests });
       return;
     }
     const events: ShopEvent[] = [];
+    const tavernEvents: TavernEvent[] = [];
     let s = this.state;
     while (s.shop.updatedAt + SHOP_TICK_MS <= now) {
       const at = s.shop.updatedAt + SHOP_TICK_MS;
@@ -909,11 +1072,19 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       s = { ...r.state, shop: { ...r.state.shop, updatedAt: at } };
       events.push(...r.events);
     }
+    // The guests (step 9t) step on the same clock.
+    while (s.tavern.updatedAt + SHOP_TICK_MS <= now) {
+      const at = s.tavern.updatedAt + SHOP_TICK_MS;
+      const r = stepTavern(s, this.tavernWorld(s), SHOP_TICK_MS, this.rng, at);
+      s = r.state;
+      tavernEvents.push(...r.events);
+    }
     if (s === this.state) return;
     // Only events change what is worth saving; walking positions are not saved every step.
-    if (events.length > 0) this.commit(s);
+    if (events.length > 0 || tavernEvents.length > 0) this.commit(s);
     else this.state = s;
     for (const e of events) this.emit(e);
+    for (const e of tavernEvents) this.emitTavern(e);
   }
 
   /** Debug (Blockers mode): rectangles that block walking in the current room (not saved). */
@@ -973,6 +1144,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     for (const l of this.shopListeners) l(e);
   }
 
+  private emitTavern(e: TavernClientEvent): void {
+    for (const l of this.tavernListeners) l(e);
+  }
+
   /** Marks hint `index` done when it is the one showing (hints go one at a time). */
   private hintDone(state: GameState, index: number): GameState {
     const next = completeQuest(state, index, this.now(), this.rng);
@@ -1019,6 +1194,14 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   /** The gap is done with maths (catchUpShop): no sales; the line fills up (at most QUEUE_MAX). */
   private catchUp(): void {
     this.state = catchUpShop(this.state, this.shopWorld(this.state), this.now(), this.rng).state;
+    // Step 9t: the guests too (maths only: open orders wait, who was eating has paid).
+    this.state = catchUpTavern(this.state, this.tavernWorld(this.state), this.now(), this.rng).state;
+    this.errand = false;
+  }
+
+  private tavernWorld(state: GameState): TavernWorld {
+    const w = this.shopWorld(state);
+    return { room: w.room, items: state.items, grid: w.grid, playerHere: state.currentRoomId === w.room.id, ...(w.seatsTaken ? { seatsTaken: w.seatsTaken } : {}) };
   }
 
   private layout(): SlotLayout {
@@ -1062,10 +1245,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
 
   private setItems(items: FurnitureItem[]): FurnitureItem[] {
     // A table, shelf or case that left the shop gives its goods back to the bag.
-    let next = returnOrphanLoot({ ...this.state, items }, this.now());
+    let next = returnOrphanBrews(returnOrphanLoot({ ...this.state, items }, this.now()), this.now());
     if (this.state.currentRoomId === next.shop.roomId) {
       this.shopGrid = null;
-      next = repathCustomers(next, this.shopWorld(next));
+      next = repathGuests(repathCustomers(next, this.shopWorld(next)), this.tavernWorld(next));
     }
     const slotsBefore = this.state.shop.slots.length;
     this.commit(next);
@@ -1113,7 +1296,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.grid = this.buildGrid();
     this.shopGrid = null;
     if (this.state.currentRoomId === this.state.shop.roomId) {
-      this.commit(repathCustomers(this.state, this.shopWorld(this.state)));
+      this.commit(repathGuests(repathCustomers(this.state, this.shopWorld(this.state)), this.tavernWorld(this.state)));
     }
   }
 

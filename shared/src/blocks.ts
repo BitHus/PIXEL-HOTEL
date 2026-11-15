@@ -8,16 +8,17 @@
 // Blocks are items in the bag (Player.materials, group 'block'); every change goes through
 // ledger.applyChange. Only the room's owner changes the room.
 
-import { BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BUILD_CELL } from './config.ts';
+import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BUILD_CELL } from './config.ts';
 import { getBlockType, isBlockId, type BlockCell, type BlockLookup, type BlockType } from './blockTypes.ts';
-import { footprintRect, getFurnitureType, behindPoint, behindReachable, doorReachesMiddle, roomBlockers, type FurnitureLookup } from './furniture.ts';
+import { footprintRect, getFurnitureType, behindPoint, behindReachable, doorPoint, doorReachesMiddle, roomBlockers, type FurnitureLookup } from './furniture.ts';
 import { noPlaceRects, fixedBlockers } from './farmLayout.ts';
-import { cellCenter, isCellFree, nearestFreeCell, reachableCells, type NavGrid } from './nav.ts';
+import { buildNavGrid, cellAt, cellCenter, isCellFree, nearestFreeCell, reachableCells, type NavGrid } from './nav.ts';
+import { seatKey, tavernSeats } from './tavern.ts';
 import type { GameState } from './gameState.ts';
 import { blockGemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
 import { blockInCell, blockKey, cellOf, cellOnFloor, cellRectOf, doorZoneRect, plantInCell, rectsOverlap, type Room, type RoomKind } from './room.ts';
-import type { FurnitureItem, MaterialId, Point, Rng } from './types.ts';
+import type { FurnitureItem, MaterialId, Point, Rect, Rng } from './types.ts';
 
 export type BlockProblem =
   | 'not_owner' // not the player's room
@@ -32,6 +33,7 @@ export type BlockProblem =
   | 'avatar' // an avatar stands still there
   | 'door_blocked' // the door would no longer reach the middle
   | 'counter_blocked' // the spot behind the counter would no longer be reachable
+  | 'seat_blocked' // a tavern seat guests can reach now would be cut off from the door
   | 'reach' // too far from the avatar (the client walks closer first)
   | 'no_block' // nothing to hit there
   | 'cooldown' // too soon after the last hit (not an error)
@@ -103,8 +105,33 @@ export function cellProblem(
     const t = types(counter.typeId);
     if (t.servedFromBehind && !behindReachable(room, blockers, behindPoint(counter, t))) return 'counter_blocked';
   }
+  // The tavern (step 9t): guests walk on the same cells, so no seat they can reach now may be cut off.
+  if (room.kind === 'shop') {
+    const before = reachableSeatKeys(room, items, roomBlockers(room, items, types));
+    const after = reachableSeatKeys(room, items, blockers);
+    if ([...before].some((k) => !after.has(k))) return 'seat_blocked';
+  }
   if (ctx.from && !inReach(ctx.from, c, r)) return 'reach';
   return null;
+}
+
+/** The tavern seats a guest can walk to from the door with these blockers (the walk ends within GUEST_SEAT_REACH_PX of the seat). */
+export function reachableSeatKeys(room: Room, items: readonly FurnitureItem[], blockers: readonly Rect[]): Set<string> {
+  const out = new Set<string>();
+  const seats = tavernSeats(items, room.id);
+  if (seats.length === 0) return out;
+  const grid = buildNavGrid(room, blockers);
+  const door = cellAt(grid, doorPoint(room));
+  if (!isCellFree(grid, door.c, door.r)) return out;
+  const reach = reachableCells(grid, door.r * grid.cols + door.c);
+  for (const seat of seats) {
+    const i = nearestFreeCell(grid, seat, (k) => reach[k] === true);
+    if (i === null) continue;
+    const col = i % grid.cols;
+    const centre = { x: (col + 0.5) * grid.cell, y: ((i - col) / grid.cols + 0.5) * grid.cell };
+    if (Math.hypot(centre.x - seat.x, centre.y - seat.y) <= GUEST_SEAT_REACH_PX) out.add(seatKey(seat));
+  }
+  return out;
 }
 
 export function roomOf(state: GameState, roomId: number): Room | null {

@@ -179,6 +179,14 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   phase 4 (a sprite per item id wins over the shape); the data stays as the fallback.
 - CHECK BY EYE: render all icons on one sheet (a vite-node script over iconGroups() + iconPixels()).
 
+- ART PASS (furniture look): furnitureArt.ts `detail()` adds plank seams, a lit top edge, vertical boards, a
+  foot line and a knot to every box, and a woven border plus fringe to flat things (rugs); the shape and
+  outline do not change. iconPixels.ts: 21 furniture icons redrawn bigger (slatted chair, cushioned sofa,
+  filled bookshelf, bed with pillows, patterned rug, potted plant, crate, barrel, throne, counter, tank...).
+  Keep the outer 1 px ring free (a test checks it). ui.css .slot: wooden inner frame line, bottom shade,
+  rank corner studs (::after). CHECK BY EYE: `npx tsx tools/art-sheet.ts out.ppm 2` (a contact sheet of
+  every furniture icon and room sprite; tools/icon-sheet.ts does the same for the other shapes; convert the PPM to PNG).
+
 ## File lists: client/ (steps 1 to 5b)
 
 - client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling). Opens
@@ -585,6 +593,42 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
     guests.test.ts (seating and groups, the serve chain, patience, the away rule, the ledger),
     brewing.test.ts (real time, reload, orphan brews), save.test.ts (migration 12),
     customers.test.ts (tavern seats), tavernTest.ts (helpers, not exported).
+- STEP 9t, PART B (the tavern in the client, on the 32 px cell grid and the block world):
+  - Seats are cells: GUEST_TABLE_NEAR_PX is 16 (half a cell), so a stool counts when its cell is side by
+    side with a table cell (the bar counts as a table); a diagonal or a one-cell gap is no seat. A guest
+    on a seat looks toward the table spot (TavernSeat.facing = dominant axis to the spot), whichever way
+    the stool is turned. Wall items (menu board, mug shelf) stay free along the back wall.
+  - Blocks: guests walk on the shop grid that includes the blocks (LocalGameAPI.shopGrid), repathGuests
+    runs when blocks or items change. New refusal 'seat_blocked' (blocks.ts, reachableSeatKeys): a block that
+    would cut a tavern seat guests can reach now off from the door is refused (like door_blocked and
+    counter_blocked); toast "Guests could not get to a seat then."
+  - GameAPI (shared/src/api.ts): getTavern (TavernView: guests, mess, serveQueue, holding, brews, at),
+    onTavern (TavernClientEvent = the guests' TavernEvent + own-avatar events walk, holding, served,
+    collected, cleared, queue), serveGuest(guestId), tidyTable(messId, 'coins' | 'dish'), collectBrew(barrelUid).
+    LocalGameAPI.update() steps stepTavern next to stepShop (same 100 ms clock, same catch-up gap, then
+    catchUpTavern), returnOrphanBrews and repathGuests run when items or blocks change.
+  - The player's errand (LocalGameAPI.runErrand, WalkState.task): serveGuest queues the order (requestServe,
+    at most SERVE_QUEUE_MAX) and the avatar walks to the bar's staff spot (stage 'bar'), picks the order up
+    (pickUpOrder), walks to the guest's table spot (stage 'table'), puts it down (deliverOrder), then the next
+    queued order. tidyTable walks to a table spot (stage 'mess') and takes the coins or clears the dish.
+    A walk of any other kind (floor tap, sit, other room) drops the errand: the queue and the hands are empty,
+    the orders stay open. tidyTable is refused while orders are queued or carried. Taps, never hold.
+  - Gold taken from a table is a gain with the id 'gold' (GOLD_GAIN_ID, new icon shape 'coin', COIN_ICON in
+    extraIcons.json): one popup per collection. Collected mugs are a normal gains list. No new gem source.
+  - Client: render/tableMess.ts (coins, the empty mug or plate, and the meal being eaten, drawn right after the
+    table they lie on, tap hit test `at`), ui/orderBubbles.ts (an HTML bubble with the item's icon beside the
+    guest's head, 44 px, dimmed when queued or carried, red border when the guest called for the order),
+    render/customerViews.ts now takes any Walker (shop customers and guests; `sitFacing` for guests, `at` for
+    taps). main.ts: the tavern block (tavernTap: guest with an order, coins or dish, brewing barrel),
+    sounds 'clink' (an order lands) and 'murmur' (3 or more guests sit), the Map badge says "n waiting, n orders,
+    n coin piles". A tap on a brewing barrel collects a ready brew (the brewing panel is part C).
+  - Not changed in B: the GameState shape (SAVE_VERSION stays 20; the 12 -> 13 migration of part A already
+    gives old saves the table, 2 stools and the barrel in the bag).
+  - Checked with a headless browser (1000 x 700): a guest sits, orders, the avatar fetches the mug at the bar
+    (it shows in the hands), puts it on the table, the guest drinks, leaves coins and the mug, a tap takes
+    the coins (+gold, popup) and another clears the mug.
+  - Tests: client/src/api/tavernAPI.test.ts (the chain through the API), tavern.test.ts (cell seats, facing),
+    blocks.test.ts (seat_blocked).
 - LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
   logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
   client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts

@@ -124,6 +124,22 @@ describe('seats at tables (step 9t)', () => {
     for (const k of seats) expect(Math.abs(k.spot.x - table.x)).toBeLessThanOrEqual(24);
   });
 
+  it('on the cell grid: a stool on a cell side by side with a table cell is a seat, a diagonal or a gap away is not', () => {
+    // The round table fills the cells x 416..480, y 160..224 (columns 13-14, rows 5-6).
+    let s = createNewPlayer(undefined, 0);
+    const table = s.items.find((i) => i.typeId === 'round_table')!;
+    s = withItem(s, 70, 'bar_stool', 432, 160, 'up'); // the cell above the table, turned away from it
+    s = withItem(s, 71, 'bar_stool', 400, 160); // the cell above the table's left corner: diagonal
+    s = withItem(s, 72, 'bar_stool', 368, 192); // one cell away from the left stool: a gap
+    const seats = tavernSeats(s.items, s.tavern.roomId);
+    expect(seats.map((k) => k.uid).sort((a, b) => a - b)).toEqual([4, 5, 70]);
+    const above = seats.find((k) => k.uid === 70)!;
+    expect(above.tableUid).toBe(table.uid);
+    // A guest looks at the table, whichever way the stool was turned.
+    expect(above.facing).toBe('down');
+    for (const k of seats.filter((x) => x.uid !== 70)) expect(['left', 'right']).toContain(k.facing);
+  });
+
   it('a chair in the open is no tavern seat; a stool at the bar is, but never behind it', () => {
     let s = createNewPlayer(undefined, 0);
     const bar = s.items.find((i) => i.typeId === 'counter')!;

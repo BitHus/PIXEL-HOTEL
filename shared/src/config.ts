@@ -778,10 +778,16 @@ export const GUEST_MAX = 8;
 export const GUEST_GROUP_WEIGHTS = [5, 4, 2] as const;
 /** The members of a group walk in this far behind each other, px. */
 export const GUEST_GROUP_GAP_PX = 16;
-/** A seat is a tavern seat when a table (a surface item, or the bar) is at most this far from it, px. */
-export const GUEST_TABLE_NEAR_PX = 32;
+/**
+ * A seat is a tavern seat when a table (a surface item, or the bar) is at most this far from the
+ * seat's centre, px. On the 32 px cell grid (BG1) that is a stool on a cell right next to a table
+ * cell (side by side, not diagonal): half a cell.
+ */
+export const GUEST_TABLE_NEAR_PX = 16;
 /** The table spot of a seat lies this far inside the table's edge, px. */
 export const TABLE_SPOT_INSET_PX = 8;
+/** The avatar's errand (an order to a table, coins to take) counts as reachable when the walk ends this close to the spot, px. */
+export const GUEST_SERVE_REACH_PX = 48;
 /** A seat counts as reachable when the walk to it ends at most this far from it, px. */
 export const GUEST_SEAT_REACH_PX = 48;
 /** A seated guest orders after this long, ms. */
@@ -916,6 +922,8 @@ export const BALANCE_TARGETS = {
 } as const;
 /** The id a gem gain has in a gains list (gems are a currency, not an item). */
 export const GEMS_GAIN_ID = 'gems';
+/** The gain id of gold taken from a tavern table (step 9t); other gold is not a gain (the wallet shows it). */
+export const GOLD_GAIN_ID = 'gold';
 /** Popups above the avatar's head (step BG3 B): how long one stays, and how many show at once. */
 export const POPUP_MS = 1200;
 export const POPUP_MAX = 5;
