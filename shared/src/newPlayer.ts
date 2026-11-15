@@ -207,11 +207,30 @@ export function arrangeState(state: GameState): GameState {
  * empty with introSeen false, so the game explains it once.
  */
 export function addTavern(state: GameState, at: number): GameState {
-  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
+  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.filter((i) => i.typeId !== 'stove').map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
   if (!gift) throw new Error('cannot add the tavern');
   const barrel = gift.items.find((i) => i.typeId === 'brewing_barrel' && i.uid >= state.nextUid);
   return {
     ...gift,
     tavern: { ...emptyTavern(gift.player.shopRoomId, at), introSeen: false, brews: barrel ? [{ barrelUid: barrel.uid, drink: TAVERN_START_DRINK, readyAt: at }] : [] },
   };
+}
+
+/**
+ * The kitchen for an old save (step K1, migration 20 -> 21): cooking moved from the farm's pot to the tavern, so
+ * the tavern gets ONE stove (ledger 'tavern_gift'). It goes on its start spot (the shape's shopStart) when that
+ * spot is free, else into the bag. Nothing else changes: planted crops, the bag and the farm stay as they are.
+ * A save that already has a stove keeps it (no second one).
+ */
+export function addStove(state: GameState, at: number): GameState {
+  const base: GameState = { ...state, tavern: { ...state.tavern, cooks: state.tavern.cooks ?? [] } };
+  if (base.items.some((i) => getFurnitureType(i.typeId).cooks)) return base;
+  const gift = applyChange(base, { reason: 'tavern_gift', addFurniture: ['stove'], note: 'cooking moved to the tavern' }, at);
+  if (!gift) throw new Error('cannot add the stove');
+  const stove = gift.items.find((i) => i.typeId === 'stove' && i.uid >= base.nextUid);
+  const room = gift.rooms.find((r) => r.id === gift.tavern.roomId);
+  const spot = room ? getRoomShape(room.shape).shopStart?.stove : undefined;
+  if (!stove || !room || !spot || !canPlace(room, gift.items.filter((i) => i.uid !== stove.uid), getFurnitureType('stove'), spot.x, spot.y, 'down')) return arrangeState(gift);
+  const placed = { ...stove, roomId: room.id, x: spot.x, y: spot.y, facing: 'down' as const };
+  return arrangeState({ ...gift, items: gift.items.map((i) => (i.uid === stove.uid ? placed : i)) });
 }

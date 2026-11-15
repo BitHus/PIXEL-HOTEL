@@ -7,13 +7,11 @@
 // outside the room, a mild ambient shade on it, and every light takes that shade away with a soft
 // round falloff (blend 'erase'). On top, every light adds its own warm colour with the same
 // falloff (one sprite per light, blend 'add'), so things near a flame get brighter, not flatter.
-// Outdoors (the farm) it is day: no shade and no pools from furniture, only the pot's small fire glow.
+// Outdoors (the farm) it is day: no shade and no pools from furniture.
 
 import { Container, Graphics, RenderTexture, Sprite, Texture, type Renderer } from 'pixi.js';
 import {
   AMBIENT_LIGHT,
-  COOKING_POT,
-  COOKING_POT_LIGHT,
   DUST_PER_LIGHT,
   LIGHT_PIXEL,
   LIGHT_STEP_MS,
@@ -166,13 +164,8 @@ export class RoomAtmosphere {
       const s = shadowSize(f.w, f.h);
       drawShadow(g, Math.round(item.x) + SHADOW_DX, Math.round(item.y), s.rx, s.ry);
     }
-    // Daylight outdoors: furniture gives no light pools there (only the pot's fire, below).
+    // Daylight outdoors: furniture gives no light pools there.
     this.lights = OUTDOOR_KINDS.includes(room.kind) ? [] : itemLights(items, room.id, getFurnitureType, hidden);
-    if (room.kind === 'farm') {
-      const s = shadowSize(COOKING_POT.w, COOKING_POT.d);
-      drawShadow(g, COOKING_POT.x + SHADOW_DX, COOKING_POT.y, s.rx, s.ry);
-      this.lights.push({ x: COOKING_POT.x, y: COOKING_POT.y - 2, light: COOKING_POT_LIGHT, seed: -77 });
-    }
     this.syncSpecks();
     this.dirty = true;
   }

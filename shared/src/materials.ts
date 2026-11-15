@@ -40,7 +40,7 @@ export type FoodEffect =
   | { kind: 'max_hp'; amount: number }
   | { kind: 'attack_cooldown'; amount: number };
 
-/** A food recipe (food.json): cooked at the farm's pot from crops. */
+/** A food recipe (food.json): cooked on a stove in the tavern from crops (step K1). */
 export interface FoodType {
   id: FoodId;
   name: string;
@@ -50,6 +50,8 @@ export interface FoodType {
   color: number;
   icon: Icon;
   rank: Rank;
+  /** Time for one batch on a stove, ms (real time); without it config COOK_MS by rank. */
+  cookMs?: number;
 }
 
 /** A drink (drinks.json, step 9t): brewed in a brewing barrel from crops, in real time. */

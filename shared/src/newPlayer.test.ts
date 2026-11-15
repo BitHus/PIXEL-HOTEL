@@ -49,7 +49,7 @@ describe('createNewPlayer (brief section 9)', () => {
 
   it('puts the bar, the stall_table, a round table, 2 stools and a brewing barrel in the shop, at their fixed spots', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
-    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table']);
+    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table', 'stove']);
     for (const start of SHOP_START_ITEMS) {
       expect(shop.find((i) => i.typeId === start.typeId)).toMatchObject({ x: start.x, y: start.y, facing: start.facing });
     }
@@ -119,7 +119,7 @@ describe('a new player from character creation (step 7b)', () => {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const shop = s.items.filter((i) => i.roomId === room.id);
-      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table']);
+      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table', 'stove']);
       // Both stools are seats at the round table, and guests can walk to them.
       expect(tavernSeats(s.items, room.id).map((x) => x.tableUid), shape.id).toEqual([3, 3]);
       for (const i of shop) {

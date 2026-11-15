@@ -23,6 +23,7 @@ export const TAVERN_START_ITEMS = [
   { key: 'stool_left', typeId: 'bar_stool', x: 400, y: 192, facing: 'right' },
   { key: 'stool_right', typeId: 'bar_stool', x: 496, y: 192, facing: 'left' },
   { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 496, y: 64, facing: 'down' },
+  { key: 'stove', typeId: 'stove', x: 240, y: 96, facing: 'down' },
 ] as const;
 /** The drink that is ready in the start barrel. */
 export const TAVERN_START_DRINK = 'root_ale' as const;

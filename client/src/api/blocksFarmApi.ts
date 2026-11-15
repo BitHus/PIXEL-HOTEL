@@ -9,7 +9,6 @@ import {
   approachSpot,
   placeBlock,
   hitBlock,
-  cook,
   hitPlant,
   inReach,
   plantSeed,
@@ -116,11 +115,6 @@ export const blocksFarmApi = {
     const at = h.now();
     const counts = room ? farmCounts(room, at) : { ripe: 0, growing: 0, free: 0 };
     return { roomId: h.state.player.farmRoomId, level: (room?.level ?? 1) as RoomLevel, ...counts, at };
-  },
-
-  async cook(h: LocalGameAPI, food: FoodId): Promise<GainList | null> {
-    const next = cook(h.state, food, h.now());
-    return next ? h.commitGains(next) : null;
   },
 
   /** A block cell is out of reach: walk to a spot near it; the client asks again on arrival. */

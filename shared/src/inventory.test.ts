@@ -11,16 +11,16 @@ describe('inventory stacks', () => {
   const s = applyChange(createNewPlayer(), { reason: 'debug', addFurniture: ['chair', 'table', 'chair', 'rug', 'chair'] }, 5)!;
 
   it('adds new items to the inventory with fresh uids and logs them', () => {
-    // uids 1 to 6 are the tavern's start furniture (bar, stall table, round table, 2 stools, barrel).
+    // uids 1 to 7 are the tavern's start furniture (bar, stall table, round table, 2 stools, barrel, stove).
     expect(s.items.filter((i) => i.roomId === null).map((i) => [i.uid, i.typeId, i.roomId])).toEqual([
-      [7, 'chair', null],
-      [8, 'table', null],
-      [9, 'chair', null],
-      [10, 'rug', null],
-      [11, 'chair', null],
+      [8, 'chair', null],
+      [9, 'table', null],
+      [10, 'chair', null],
+      [11, 'rug', null],
+      [12, 'chair', null],
     ]);
-    expect(s.nextUid).toBe(12);
-    expect(s.ledger.at(-1)).toMatchObject({ reason: 'debug', goldDelta: 0, furnitureUids: [7, 8, 9, 10, 11] });
+    expect(s.nextUid).toBe(13);
+    expect(s.ledger.at(-1)).toMatchObject({ reason: 'debug', goldDelta: 0, furnitureUids: [8, 9, 10, 11, 12] });
   });
 
   it('stacks furniture by type with the right counts', () => {
@@ -48,7 +48,7 @@ describe('inventory stacks', () => {
   it('placing takes an item out of the inventory; picking up puts it back', () => {
     const room = s.rooms[0]!;
     const uid = nextInventoryUid(s.items, 'chair')!;
-    expect(uid).toBe(7);
+    expect(uid).toBe(8);
     const placed = confirmPlacing(room, s.items, startNewPlacing('chair', { x: 100, y: 100 }, uid), owner)!;
     expect(placed).toHaveLength(s.items.length); // no new item was created
     expect(placed.find((i) => i.uid === uid)?.roomId).toBe(room.id);

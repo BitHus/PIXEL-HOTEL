@@ -21,8 +21,16 @@ export const LEGACY_FARM_PLOTS_PER_LEVEL = [6, 12, 20] as const;
 export const FARM_START_SOIL = { c: 2, r: 2, w: 6, h: 2 } as const;
 /** The floor style ids of the farm's ground (styles.json): soil takes seeds, grass is the rest. Both are free. */
 export const SOIL_STYLE = 'soil';
-/** The cooking pot: a fixed spot in the farm (anchor = bottom middle of its footprint), w x d px. */
-export const COOKING_POT = { x: 464, y: 128, w: 32, d: 32 } as const;
+/**
+ * Cooking in the tavern (step K1): how long ONE batch takes on a stove, by the rank of the recipe, ms (real time, also
+ * while the game is closed). A recipe in food.json may set its own cookMs (the turnip roast takes 20 s, so the first
+ * dish of a new game is ready within 30 s); this is the default for one without. The time is per batch, not per dish.
+ */
+export const COOK_MS = { common: 60_000, rare: 3 * 60_000, ultra_rare: 5 * 60_000, legendary: 5 * 60_000 } as const;
+/** The avatar counts as next to a stove (its footprint centre) within this many px (step K1). */
+export const STOVE_REACH_PX = 64;
+/** A stove holds one batch at a time: 1 to this many dishes of ONE recipe. More stoves cook more batches in parallel. */
+export const STOVE_BATCH_MAX = 4;
 /**
  * How long a planted seed takes to be fully grown, by the rank of the thing it grows (step BG6). Real time, also
  * while the game is closed. The first harvest of a starter seed (common) is within about 2 minutes.

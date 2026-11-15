@@ -122,11 +122,11 @@ describe('where a block may stand', () => {
     expect(blockProblem(hotel(s), s.items, shopOnly, 3, 3, free)).toBe('wrong_room');
     expect(blockProblem(shop(s), s.items, shopOnly, 3, 3, free)).toBeNull();
   });
-  it('works in the farm (also on soil, step BG6), but not on the cooking pot', () => {
+  it('works in the farm (also on soil, step BG6), also where the cooking pot stood (step K1)', () => {
     const s = rich();
     const farm = roomOf(s, s.player.farmRoomId);
     expect(blockProblem(farm, s.items, getBlockType('dirt'), 2, 2, free)).toBeNull(); // a soil cell: a block may stand there
-    expect(blockProblem(farm, s.items, getBlockType('dirt'), 14, 3, free)).toBe('fixed'); // the pot (464, 128)
+    expect(blockProblem(farm, s.items, getBlockType('dirt'), 14, 3, free)).toBeNull(); // where the pot stood (464, 128): free since step K1
     expect(blockProblem(farm, s.items, getBlockType('dirt'), 8, 8, free)).toBeNull();
   });
 });

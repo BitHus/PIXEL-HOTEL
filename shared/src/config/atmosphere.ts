@@ -3,8 +3,7 @@
  * The ambient shade per room kind: this palette color lies over the room with `strength` as its
  * alpha (0 = off). Kept low: the room is bright and warm everywhere, lights only add a soft halo
  * (the owner approved this indoor look after 9d: keep it). Outdoors (OUTDOOR_KINDS: the farm,
- * later the lakeside) it is day: no shade and no light pools from furniture, only a tiny glow on
- * the fire under the pot.
+ * later the lakeside) it is day: no shade and no light pools from furniture.
  */
 export const AMBIENT_LIGHT = {
   hotel: { color: 5, strength: 0.14 },
@@ -24,8 +23,6 @@ export const LIGHT_STEP_MS = 120;
 /** A full flicker changes the radius and the brightness by at most these parts. */
 export const FLICKER_RADIUS = 0.07;
 export const FLICKER_BRIGHTNESS = 0.16;
-/** The cooking pot's fire on the farm. */
-export const COOKING_POT_LIGHT = { radius: 26, color: 9, flicker: 1 } as const;
 /** Dust specks per light pool, and the most on screen at once. */
 export const DUST_PER_LIGHT = 4;
 export const DUST_MAX = 28;

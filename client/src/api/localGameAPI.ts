@@ -9,7 +9,7 @@
 // most QUEUE_MAX, at their queue spots).
 
 import {
-  gainsSince, smelt, buySeeds, openPack, sellSpare, buyBlocks, placeBlock, hitBlock, cook, claimBookReward, fishStep,
+  gainsSince, smelt, buySeeds, openPack, sellSpare, buyBlocks, placeBlock, hitBlock, claimBookReward, fishStep,
   hitPlant, plantSeed, spliceSeed, buyGear, SHOP_CATCH_UP_GAP_MS, SHOP_TICK_MS, applyStyle, paintFloor, buyCatalog,
   catchUpShop, catchUpTavern, stepTavern, collectBrew, putOnShelf, setPrice, stepShop, takeFromShelf, upgradeRoom,
   configForChoice, SAVE_BACKUP_KEY, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
@@ -125,7 +125,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
         const farm = r.farmChanged
           ? ' The farm is free-form now: your old plots are soil cells. Select a seed and tap soil to plant, punch a grown plant to harvest it.'
           : '';
-        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}`);
+        const kitchen = r.kitchenChanged
+          ? ` Cooking has moved: you cook on a stove in your tavern now (the farm has no pot any more).${r.state.items.some((i) => i.typeId === 'stove' && i.roomId === null) ? ' A stove is in your bag: place it in the tavern.' : ''}`
+          : '';
+        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}${kitchen}`);
       }
       return start(
         createNewPlayer(undefined, now()),
@@ -250,6 +253,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async serveGuest(guestId: number): Promise<boolean> { return tavernApi.serveGuest(this, guestId); }
   async tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean> { return tavernApi.tidyTable(this, messId, what); }
   async collectBrew(barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null> { return tavernApi.collectBrew(this, barrelUid); }
+  async startCook(stoveUid: number, food: FoodId, qty: number): Promise<boolean> { return tavernApi.startCook(this, stoveUid, food, qty); }
+  async collectCook(stoveUid: number): Promise<{ food: FoodId; qty: number; gains: GainList } | null> { return tavernApi.collectCook(this, stoveUid); }
   inTavern(): boolean { return tavernApi.inTavern(this); }
 
   startErrand(to: Point, task: TavernTask): boolean { return tavernApi.startErrand(this, to, task); }
@@ -268,7 +273,6 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async fishStop(): Promise<void> { return lakesideApi.fishStop(this); }
   async bookOpened(): Promise<void> { return progressApi.bookOpened(this); }
   async claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null> { return progressApi.claimBookReward(this, tab, percent); }
-  async cook(food: FoodId): Promise<GainList | null> { return blocksFarmApi.cook(this, food); }
 
   /** Saves a new state and returns what it gave (the items the ledger wrote since the old state). */
   commitGains(next: GameState): GainList {

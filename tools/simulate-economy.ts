@@ -8,6 +8,13 @@
 
 import {
   BLOCK_BREAKS_CEILING_PER_HOUR,
+  FOOD_TYPES,
+  GUEST_BASE_INTERVAL_MS,
+  GUEST_GROUP_WEIGHTS,
+  STOVE_BATCH_MAX,
+  cookMs,
+  getMaterialType,
+  type MaterialId,
   BLOCK_DROPS,
   BLOCK_TYPES,
   BALANCE_TARGETS,
@@ -217,3 +224,20 @@ for (const id of results) {
 }
 console.log('Wall clock = branches planted in parallel in their own cells; a splice cell takes the longer seed time + SPLICE_BONUS_MS. Value per cell-min must stay under a plain crop cell, else a chain makes value from nothing.');
 console.log('Time by result rank (fastest result of each rank):' + (['common', 'rare', 'ultra_rare', 'legendary'] as const).map((rk) => { const ids = results.filter((i) => seedRank(i) === rk); return ids.length ? ` ${RANK_NAMES[rk]} ${hr(Math.min(...ids.map((i) => ch.get(i)!.ms)) / 3_600_000)}-${hr(Math.max(...ids.map((i) => ch.get(i)!.ms)) / 3_600_000)}` : ''; }).join(';'));
+
+console.log('\n=== K1. The tavern kitchen: dishes per hour per stove and gold per dish through the menu ===');
+const AVG_GROUP = GUEST_GROUP_WEIGHTS.reduce((sum, w, i) => sum + w * (i + 1), 0) / GUEST_GROUP_WEIGHTS.reduce((a, b) => a + b, 0);
+const GUESTS_PER_HOUR = (appeal: number): number => (3_600_000 / (GUEST_BASE_INTERVAL_MS * (100 / (100 + appeal)))) * AVG_GROUP;
+console.log(pad('dish', 16) + pad('rank', 11) + pad('cook', 8) + pad('crops/dish', 12) + pad('crop gold', 11) + pad('menu price', 12) + pad('gold/dish', 11) + pad('dishes/h/stove', 16) + pad('(visit every 10 min)', 21) + 'gold/h/stove');
+for (const f of FOOD_TYPES) {
+  const batch = STOVE_BATCH_MAX;
+  const cropsPerDish = Object.values(f.inputs).reduce((a, n) => a + (n ?? 0), 0);
+  const cropGold = Object.entries(f.inputs).reduce((a, [id, n]) => a + (n ?? 0) * getMaterialType(id as MaterialId).baseValue, 0);
+  const perHourBusy = (batch * 3_600_000) / cookMs(f);
+  // A player who looks in every 10 minutes: a batch takes max(cook time, the next visit).
+  const perHourVisits = batch * (60 / Math.max(10, cookMs(f) / 60_000));
+  console.log(
+    pad(f.id, 16) + pad(RANK_NAMES[f.rank], 11) + pad(`${cookMs(f) / 1000} s`, 8) + pad(cropsPerDish, 12) + pad(cropGold, 11) + pad(f.baseValue, 12) + pad(f.baseValue - cropGold, 11) + pad(f1(perHourBusy), 16) + pad(f1(perHourVisits), 21) + f1(perHourVisits * (f.baseValue - cropGold)),
+  );
+}
+console.log(`Crops are the real limit, not the stove: one stove can cook ${STOVE_BATCH_MAX} dishes every ${cookMs(FOOD_TYPES[0]!) / 1000} s, but a harvest of a common crop takes ${SEED_GROW_MS.common / 60_000} min. Guests ask for about ${GUESTS_PER_HOUR(0).toFixed(0)} items/h at appeal 0 and ${GUESTS_PER_HOUR(100).toFixed(0)}/h at appeal 100 (a group is ${AVG_GROUP.toFixed(2)} guests on average), so more than ${Math.ceil(GUESTS_PER_HOUR(100) / ((60 / 10) * STOVE_BATCH_MAX))} stove(s) visited every 10 min cannot sell their dishes through the menu alone.`);

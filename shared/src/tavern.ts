@@ -17,6 +17,7 @@
 import { GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TABLE_SPOT_INSET_PX } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
+import type { Cook } from './cooking.ts';
 import { inStaffZone, staffZones } from './customerPlan.ts';
 import { behindPoint, footprintRect, getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
@@ -102,6 +103,8 @@ export interface TavernState {
   mess: Mess[];
   nextMessId: number;
   brews: Brew[];
+  /** Batches cooking on stoves (step K1, cooking.ts). */
+  cooks: Cook[];
   /** Guests the player tapped: their orders wait to be carried, in this order. */
   serveQueue: number[];
   /** The order in the player's hands. */
@@ -124,6 +127,7 @@ export function emptyTavern(roomId: number, at: number): TavernState {
     mess: [],
     nextMessId: 1,
     brews: [],
+    cooks: [],
     serveQueue: [],
     holding: null,
     history: {},

@@ -38,6 +38,7 @@ late.startPlacing = startPlacing;
   st.selectedBlock = null;
   /** A block action waiting for the avatar to arrive (the cell was out of reach). */
   st.pendingBlock = null;
+  st.pendingStove = null;
   const selectBlock = (id: string | null, slot: number | null): void => {
     st.selectedBlock = id;
     selectedSlot = id === null ? null : slot;

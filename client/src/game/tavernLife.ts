@@ -3,8 +3,9 @@
 
 import {
   REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, SERVE_QUEUE_MAX, brewReadyInMs, seatKey,
-  tavernSeats, type Guest,
+  tavernSeats, type Guest, STOVE_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
 } from '@pixel-hotel/shared';
+import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
 import { CustomerViews, type Walker } from '../render/customerViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
 import { createOrderBubbles, type OrderMark } from '../ui/orderBubbles.ts';
@@ -14,7 +15,7 @@ import type { G9 } from './ctx.ts';
 
 export async function setupTavernLife(g: G9) {
   const {
-    api, view, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, customers, follow, sprite, st, late,
+    api, view, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, customers, follow, sprite, st, late, panels, walkTo,
   } = g;
 
   // ---------- The tavern (step 9t): guests, orders, coins on the tables ----------
@@ -51,7 +52,60 @@ export async function setupTavernLife(g: G9) {
   async function refreshTavern(): Promise<void> {
     st.tavern = await api.getTavern();
     syncTavern();
+    refreshCooks();
   }
+  // ---------- The kitchen (step K1): stoves cook batches in real time; a tap collects or opens the Cooking panel ----------
+  const cooking = createCookingPanel(ui, {
+    start: (stoveUid, food, qty) => {
+      void api.startCook(stoveUid, food.id, qty).then(async (ok) => {
+        if (ok) sound.play('pop');
+        toast(ok ? `Cooking ${qty} x ${food.name}: ready in ${cookTimeText(cookMs(food))}.` : 'You need more crops.');
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
+    collect: (stoveUid) => void collectStove(stoveUid),
+  });
+  panels.add('cooking', cooking.el);
+  const refreshCooks = (): void => cooking.setCooks(st.tavern.cooks);
+  /** Collects a ready batch (dishes into the bag, a popup); false when nothing was ready. */
+  async function collectStove(stoveUid: number): Promise<boolean> {
+    const r = await api.collectCook(stoveUid);
+    if (!r) return false;
+    sound.play('pop');
+    popups.show(r.gains);
+    toast(`${r.qty} x ${getFoodType(r.food).name} are in your bag.`);
+    await refreshTavern();
+    await late.refreshInventory();
+    panels.close();
+    return true;
+  }
+  /** The avatar is next to the stove: a ready batch is collected, else the Cooking panel opens (progress or recipes). */
+  async function stoveArrived(uid: number): Promise<void> {
+    await refreshTavern();
+    const cook = cookOf(st.tavern.cooks, uid);
+    if (cook && cookReady(cook, Date.now()) && (await collectStove(uid))) return;
+    cooking.open(uid);
+    cooking.setCooks(st.tavern.cooks);
+    panels.show('cooking');
+  }
+  /** A tap on a stove: walk next to it (when farther than STOVE_REACH_PX), then collect or open the panel. */
+  const stoveTap = (stove: FurnitureItem): void => {
+    const c = footprintCenter(stove, stove.typeId);
+    if (Math.hypot(st.avatar.x - c.x, st.avatar.y - c.y) <= STOVE_REACH_PX) {
+      st.pendingStove = null;
+      void stoveArrived(stove.uid);
+      return;
+    }
+    void walkTo({ x: stove.x, y: stove.y + 16 }).then((ok) => {
+      if (!ok) toast('There is no way to the stove.');
+      else st.pendingStove = stove.uid;
+    });
+  };
+  // The countdown in the panel, and the "ready" moment.
+  setInterval(() => {
+    if (panels.open === 'cooking') cooking.tick();
+  }, 1000);
   /** A tap on a guest or an order bubble: the order is carried to the table (taps queue up, at most SERVE_QUEUE_MAX). */
   async function serveTap(guestId: number): Promise<void> {
     if (st.tavern.serveQueue.length >= SERVE_QUEUE_MAX) {
@@ -75,6 +129,10 @@ export async function setupTavernLife(g: G9) {
     if (m) {
       if (st.tavern.holding || st.tavern.serveQueue.length > 0) toast('Serve the orders first.');
       else void api.tidyTable(m.messId, m.what).then((ok) => ok || toast('There is no way to that table.'));
+      return true;
+    }
+    if (hit && getFurnitureType(hit.typeId).cooks) {
+      stoveTap(hit);
       return true;
     }
     if (hit && getFurnitureType(hit.typeId).brews) {
@@ -171,5 +229,5 @@ export async function setupTavernLife(g: G9) {
     }
   });
 
-  return { guests, tableMess, orders, syncTavern, tavernTap };
+  return { guests, tableMess, orders, syncTavern, tavernTap, cooking, stoveArrived };
 }

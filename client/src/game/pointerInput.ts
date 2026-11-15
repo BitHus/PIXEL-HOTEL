@@ -9,7 +9,7 @@ export async function setupPointerInput(g: G15) {
   const {
     app, dungeon, setCamera, overviewZoom, dpr, intro, holdTargetAt, lakeside, hold, holdBusyElsewhere, menu,
     steerWalk, panels, cross, label, redraw, updateBlockGhost, placer, paint, roomItem, itemViews, build,
-    openMenu, api, applyItems, sound, blockTap, farm, tavernTap, serveAt, toast, shelfPanel, sitOn, walkTo,
+    openMenu, api, applyItems, sound, blockTap, tavernTap, serveAt, toast, shelfPanel, sitOn, walkTo,
     blockers, st,
   } = g;
 
@@ -138,11 +138,11 @@ export async function setupPointerInput(g: G15) {
         panels.close();
         return;
       }
-      // The farm (step 9b): plots (plant, harvest) and the cooking pot.
+      // Plants and blocks (hold to repeat) come first; the stove walk is dropped by any new tap.
       st.pendingBlock = null;
+      st.pendingStove = null;
       lakeside.cancel();
       if (blockTap(st.marked)) return;
-      if (farm.tap(st.marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).
       if (lakeside.tap(st.marked)) return;
       // The tavern (step 9t): a guest with an order, coins or a dish on a table, a brewing barrel.

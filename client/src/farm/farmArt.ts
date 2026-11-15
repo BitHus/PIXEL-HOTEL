@@ -1,9 +1,9 @@
 // The farm's placeholder art (steps 9b, BG6), drawn in code from boxes like the furniture: a plant in
-// its stage (sprout, small plant, full plant in the colours of its crop or block), the
-// cooking pot and the bouncing ripe marker. Light from the top-left: top faces lighter, fronts darker.
+// its stage (sprout, small plant, full plant in the colours of its crop or block) and the
+// bouncing ripe marker (the cooking pot is gone since step K1: you cook on a stove in the tavern). Light from the top-left: top faces lighter, fronts darker.
 
 import { Graphics } from 'pixi.js';
-import { COOKING_POT, PALETTE, getMaterialType, paletteColor, seedProduct, type PaletteName, type PlantStage, type SeedId } from '@pixel-hotel/shared';
+import { PALETTE, getMaterialType, paletteColor, seedProduct, type PaletteName, type PlantStage, type SeedId } from '@pixel-hotel/shared';
 import { DARK_WARM } from '../render/bareStyles.ts';
 import { shade } from '../render/colors.ts';
 
@@ -57,21 +57,6 @@ export function drawPlantArt(g: Graphics, seed: SeedId, stage: PlantStage, withS
     box(g, cx + x, base + y, 5, 3, 3, main);
     g.rect(cx + x, base + y - 6, 3, 1).fill(shade(accent, 1.2));
   }
-}
-
-/** The cooking pot at its fixed spot: a dark iron pot on three stones, with a little steam. */
-export function drawPot(): Graphics {
-  const g = new Graphics();
-  const { w, d } = COOKING_POT;
-  // Drawn relative to the anchor (bottom middle of the footprint).
-  box(g, -w / 2, 0, w, d - 4, 4, PALETTE[22]);
-  box(g, -w / 2 + 2, -4, w - 4, d - 8, 18, PALETTE[24]);
-  g.rect(-w / 2 + 5, -4 - 18 - (d - 8) + 2, w - 10, d - 12).fill(PALETTE[1]);
-  g.rect(-4, -40, 2, 4).fill(PALETTE[20]);
-  g.rect(1, -46, 2, 5).fill(PALETTE[20]);
-  // A warm glow under the pot.
-  g.rect(-6, -3, 12, 2).fill(PALETTE[9]);
-  return g;
 }
 
 /** The ripe marker: a small warm arrow pointing down, its tip at (0, 0). */

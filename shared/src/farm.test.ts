@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BLOCK_HIT_COOLDOWN_MS, BUILD_CELL, COOKING_POT, FARM_START_SOIL, SEED_BACK_CHANCE, SEED_GROW_MS, SEED_YIELD, SOIL_STYLE } from './config.ts';
+import { BLOCK_HIT_COOLDOWN_MS, BUILD_CELL, FARM_START_SOIL, SEED_BACK_CHANCE, SEED_GROW_MS, SEED_YIELD, SOIL_STYLE } from './config.ts';
 import { blockProblem, placeBlock, type BlockContext } from './blocks.ts';
 import { getBlockType } from './blockTypes.ts';
 import { buySeeds, farmCounts, growthStage, harvestPlant, hitPlant, isSoil, plantProblem, plantSeed, readyInMs, seedGrowMs, seedProduct, seedRank, soilCells } from './farm.ts';
-import { noPlaceRects, potRect } from './farmLayout.ts';
+import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { CROP_TYPES, getMaterialType, isSeedId } from './materials.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
@@ -144,26 +144,31 @@ describe('planting', () => {
     expect(plantProblem(farmRoom(withBlock.state), withBlock.state.items, SOIL.c + 2, SOIL.r, free)).toBe('taken');
   });
 
-  it('never on the cooking pot, the door zone, or furniture; reach is checked last', () => {
+  it('the farm has no fixed blockers any more (the pot is gone, step K1): its old cell takes soil and a plant', () => {
     const s = rich();
     const room = farmRoom(s);
-    const pot = potRect();
-    const potCell = { c: Math.floor(pot.x / BUILD_CELL), r: Math.floor(pot.y / BUILD_CELL) };
-    const soiled = paintFloor(s, farmId(s), potCell, potCell, SOIL_STYLE)!;
-    expect(plantProblem(farmRoom(soiled), soiled.items, potCell.c, potCell.r, free)).toBe('fixed');
+    expect(fixedBlockers(room)).toEqual([]);
+    expect(noPlaceRects(room)).toEqual([]);
+    const oldPot = { c: 14, r: 3 }; // where the pot stood (x 448 to 480, y 96 to 128)
+    const soiled = paintFloor(s, farmId(s), oldPot, oldPot, SOIL_STYLE)!;
+    expect(plantProblem(farmRoom(soiled), soiled.items, oldPot.c, oldPot.r, free)).toBeNull();
+  });
+
+  it('never on the door zone or furniture; reach is checked last', () => {
+    const s = rich();
+    const room = farmRoom(s);
     expect(plantProblem(room, s.items, SOIL.c, SOIL.r, { standing: [], from: { x: 500, y: 300 } })).toBe('reach');
     expect(plantProblem(room, s.items, SOIL.c, SOIL.r, { standing: [], from: { x: (SOIL.c + 0.5) * 32, y: (SOIL.r + 0.5) * 32 } })).toBeNull();
   });
 
-  it('decorations go around and on soil, never on the pot', () => {
+  it('decorations go around and on soil, also where the pot stood', () => {
     const s = rich();
     const room = farmRoom(s);
     const plant = getFurnitureType('plant');
     expect(canPlace(room, s.items, plant, 496, 320, 'down')).toBe(true);
-    expect(canPlace(room, s.items, plant, COOKING_POT.x, COOKING_POT.y, 'down')).toBe(false);
+    expect(canPlace(room, s.items, plant, 464, 128, 'down')).toBe(true);
     expect(canPlace(room, s.items, getFurnitureType('shelf'), 480, 320, 'down')).toBe(false); // shop furniture does not go on the farm
-    expect(roomBlockers(room, s.items)).toEqual([potRect()]);
-    expect(noPlaceRects(room)).toEqual([potRect()]);
+    expect(roomBlockers(room, s.items)).toEqual([]);
   });
 });
 

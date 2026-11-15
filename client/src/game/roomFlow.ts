@@ -11,7 +11,7 @@ import type { G13 } from './ctx.ts';
 export async function setupRoomFlow(g: G13) {
   const {
     api, newIntro, syncItems, hint, info, sprite, uiRoot, itemViews, shown0, refreshHint, placer, paint, menu,
-    bubbles, chat, view, cellGrid, atmosphere, blockers, seating, roomChanged, roomLevels, farm, roomFloats,
+    bubbles, chat, view, cellGrid, atmosphere, blockers, seating, roomChanged, roomLevels, roomFloats,
     lakeside, floats, customers, hops, showWaiting, guests, tableMess, orders, syncTavern, refreshShop,
     refreshInventory, startIntro, fit, st, late,
   } = g;
@@ -124,7 +124,6 @@ export async function setupRoomFlow(g: G13) {
     roomChanged();
     info.setRoom(st.room.kind);
     roomLevels.set(st.room.id, st.room.level);
-    await farm.enter(st.room);
     roomFloats.clear();
     await lakeside.enter(st.room);
     floats.clear();

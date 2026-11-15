@@ -189,8 +189,13 @@ describe('fishing through the GameAPI', () => {
     expect(await api.forge('copper_reel_rod')).not.toBeNull();
     expect((await api.getPlayer()).gear).toContain('copper_reel_rod');
     // Cooking: grilled perch heals, carp stew gives +1 attack.
-    expect(await api.cook('grilled_perch')).not.toBeNull();
-    expect(await api.cook('carp_stew')).not.toBeNull();
+    const stove = (await api.enterRoom((await api.getPlayer()).shopRoomId)).items.find((i) => i.typeId === 'stove')!;
+    expect(await api.startCook(stove.uid, 'grilled_perch', 1)).toBe(true);
+    t += 60_000;
+    expect(await api.collectCook(stove.uid)).not.toBeNull();
+    expect(await api.startCook(stove.uid, 'carp_stew', 1)).toBe(true);
+    t += 120_000;
+    expect(await api.collectCook(stove.uid)).not.toBeNull();
     const m = (await api.getPlayer()).materials;
     expect(m.grilled_perch).toBe(1);
     expect(m.carp_stew).toBe(1);

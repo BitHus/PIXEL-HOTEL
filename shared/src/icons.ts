@@ -14,7 +14,7 @@ export const ICON_SHAPES = [
   'sword', 'armor', 'pickaxe', 'axe', 'rod', 'helmet', 'shirt', 'hat', 'trousers', 'skirt', 'hair',
   // furniture silhouettes
   'chair', 'sofa', 'table', 'lamp', 'shelf', 'bed', 'rug', 'plant', 'box', 'barrel', 'bench', 'sign',
-  'banner', 'torch', 'throne', 'jar', 'anchor', 'net', 'chandelier', 'counter', 'stool', 'tank',
+  'banner', 'torch', 'throne', 'jar', 'anchor', 'net', 'chandelier', 'counter', 'stool', 'tank', 'stove',
 ] as const;
 
 export type IconShape = (typeof ICON_SHAPES)[number];

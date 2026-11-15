@@ -10,7 +10,7 @@ export async function setupGameLoop(g: G16) {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews, customers,
     guests, hops, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
     doBlock, placeBar, menu, orders, bubbles, popups, gemFly, floats, tillCoins, splashGone, openRoom,
-    playNewGameIntro, api, setDungeonMode, notice, toast, st,
+    playNewGameIntro, stoveArrived, api, setDungeonMode, notice, toast, st,
   } = g;
 
   app.renderer.on('resize', fit);
@@ -64,6 +64,11 @@ export async function setupGameLoop(g: G16) {
     blockViews.update(ticker.deltaMS);
     plantViews.sync(st.room, Date.now());
     plantViews.update(ticker.deltaMS, clockMs);
+    if (st.pendingStove !== null && st.path.length === 0 && st.avatar.state !== 'walk') {
+      const uid = st.pendingStove;
+      st.pendingStove = null;
+      void stoveArrived(uid);
+    }
     if (st.pendingBlock && st.path.length === 0 && st.avatar.state !== 'walk') {
       const p = st.pendingBlock;
       st.pendingBlock = null;

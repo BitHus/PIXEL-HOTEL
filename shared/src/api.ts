@@ -22,6 +22,7 @@ import type { PackFind } from './packs.ts';
 import type { BlockProblem } from './blocks.ts';
 import type { Guest, Mess } from './tavern.ts';
 import type { Brew } from './brewing.ts';
+import type { Cook } from './cooking.ts';
 import type { TavernEvent } from './guests.ts';
 
 export interface RoomState {
@@ -86,6 +87,8 @@ export interface TavernView {
   holding: { guestId: number; item: MaterialId } | null;
   /** What brews in the barrels (barrel uid, drink, the time it is ready). */
   brews: Brew[];
+  /** What cooks on the stoves (stove uid, dish, how many, the time it is ready; step K1). */
+  cooks: Cook[];
   /** The API's clock when this was read (to count down a brew). */
   at: number;
 }
@@ -381,8 +384,14 @@ export interface GameAPI {
   sellSpare(clothingId: string, qty: number): Promise<number | null>;
   /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
   buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
-  /** Cooks one food at the pot. Null without all ingredients. */
-  cook(food: FoodId): Promise<GainList | null>;
+  /**
+   * Starts a batch on an empty stove in the tavern (step K1): `qty` dishes (1 to STOVE_BATCH_MAX) of one recipe; the
+   * crops leave the bag and the batch cooks in real time, also while the game is closed. False = refused (not a free
+   * stove in the tavern, unknown recipe, bad count, crops short).
+   */
+  startCook(stoveUid: number, food: FoodId, qty: number): Promise<boolean>;
+  /** Collects the dishes of a ready batch from a stove (nothing is collected by itself). Null if it is not ready. */
+  collectCook(stoveUid: number): Promise<{ food: FoodId; qty: number; gains: GainList } | null>;
   // ---------- Step 9f: the lakeside (woodcutting and fishing) ----------
   getLakeside(): Promise<LakesideView>;
   /** One swing at a tree (the avatar must stand next to it, else null). 'cooldown' and 'regrowing' change nothing. */

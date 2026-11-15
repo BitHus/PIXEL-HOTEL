@@ -8,6 +8,7 @@ import {
   canPickUp,
   repathGuests,
   returnOrphanBrews,
+  returnOrphanCooks,
   repathCustomers,
   returnOrphanLoot,
   unlockStyle,
@@ -189,7 +190,7 @@ export const roomsApi = {
 
   setItems(h: LocalGameAPI, items: FurnitureItem[]): FurnitureItem[] {
     // A table, shelf or case that left the shop gives its goods back to the bag.
-    let next = returnOrphanBrews(returnOrphanLoot({ ...h.state, items }, h.now()), h.now());
+    let next = returnOrphanCooks(returnOrphanBrews(returnOrphanLoot({ ...h.state, items }, h.now()), h.now()), h.now());
     if (h.state.currentRoomId === next.shop.roomId) {
       h.shopGrid = null;
       next = repathGuests(repathCustomers(next, h.shopWorld(next)), h.tavernWorld(next));
@@ -223,7 +224,7 @@ export const roomsApi = {
   },
 
   buildGrid(h: LocalGameAPI): NavGrid {
-    // The furniture plus fixed blockers (the farm's cooking pot).
+    // The furniture plus fixed blockers (the lakeside's water and trees).
     return buildNavGrid(h.room(), [...h.debugRects, ...roomBlockers(h.room(), h.state.items)]);
   },
 };
