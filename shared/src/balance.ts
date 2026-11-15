@@ -4,6 +4,7 @@
 // The ACTIVITY rates (how often a player does a thing per hour) are ASSUMPTIONS, written here in one place.
 
 import {
+  BALANCE_TARGETS,
   BLOCK_DROPS,
   CATALOG_PRICE_MULT,
   ENEMY_GEM_RANK,
@@ -21,10 +22,18 @@ import {
 import { BLOCK_TYPES, getBlockType, isBlockId } from './blockTypes.ts';
 import { getClothing } from './clothing.ts';
 import { getFurnitureType } from './furniture.ts';
-import { CROP_TYPES, getMaterialType } from './materials.ts';
+import { CROP_TYPES, DRINK_TYPES, FOOD_TYPES, getMaterialType } from './materials.ts';
+import { blockPrice } from './economy.ts';
+import { clothingSellPrice, furnitureSellPrice, materialSellPrice } from './trader.ts';
 import { getPack, packOdds, packPool, type PackItem, type PackType } from './packs.ts';
 import { RANKS } from './ranks.ts';
-import { seedGrowMs, seedGrows } from './seeds.ts';
+import { getLootTable, rollLoot, type LootTableId } from './dungeon/loot.ts';
+import { CATCH_TYPES } from './fish.ts';
+import { fellLoot } from './woodcut.ts';
+import { ROCK_ORE_MAX, ROCK_ORE_MIN, RARE_DROP_CHANCE } from './config.ts';
+import { isMaterialId } from './materials.ts';
+import type { MaterialId, Rng } from './types.ts';
+import { seedGrowMs, seedGrows, seedRank } from './seeds.ts';
 import { SPLICE_RECIPES } from './splice.ts';
 import type { GemSource } from './gems.ts';
 import type { Rank, SeedId } from './types.ts';
@@ -388,4 +397,119 @@ export function cheapestGoldPerGem(): number {
   let best = Infinity;
   for (const b of BLOCK_TYPES) if (b.inCatalog) best = Math.min(best, (b.baseValue * CATALOG_PRICE_MULT) / gemsPerBoughtBlock(b.id));
   return best;
+}
+
+// ---------- The trader (step S2): selling must never open a loop ----------
+
+/** Gold the trader pays for a bundle of ingredients (a recipe's inputs). */
+export function ingredientsSellGold(inputs: Partial<Record<string, number>>): number {
+  return Object.entries(inputs).reduce((a, [id, n]) => a + materialSellPrice(id) * (n ?? 0), 0);
+}
+
+/** For each dish: the trader's gold for its ingredients against the dish's own value (menu price at its baseValue). Selling the crops must pay less. */
+export function dishSellLoops(): { id: string; sold: number; made: number }[] {
+  return FOOD_TYPES.map((f) => ({ id: f.id, sold: ingredientsSellGold(f.inputs), made: f.baseValue }));
+}
+
+/** The same for one brew: the ingredients sold against all the mugs it gives at their baseValue. */
+export function brewSellLoops(): { id: string; sold: number; made: number }[] {
+  return DRINK_TYPES.map((d) => ({ id: d.id, sold: ingredientsSellGold(d.inputs), made: d.baseValue * d.mugs }));
+}
+
+/** Buying a catalog block and selling it back: gold paid and gold received (always a loss). */
+export function blockBuyBack(): { id: string; paid: number; back: number }[] {
+  return BLOCK_TYPES.filter((b) => b.inCatalog).map((b) => ({ id: b.id, paid: blockPrice(b.id), back: materialSellPrice(b.id) }));
+}
+
+/** Gold the trader pays for one pack item (a clothes piece as a spare). */
+export function itemTraderGold(item: PackItem): number {
+  return item.kind === 'clothing' ? clothingSellPrice(item.id) : materialSellPrice(item.id);
+}
+
+/** Expected gold from selling a whole pack's contents at the trader, and what the pack's gems are worth at the gold-per-gem floor. */
+export function packTraderBack(pack: PackType): { sold: number; peakPiece: number; gemValue: number } {
+  const chances = itemChances(pack);
+  return {
+    sold: pack.rolls * chances.reduce((a, { item, p }) => a + p * itemTraderGold(item), 0),
+    peakPiece: Math.max(0, ...chances.map(({ item }) => itemTraderGold(item))),
+    gemValue: pack.gemPrice * BALANCE_TARGETS.minGoldPerGem,
+  };
+}
+
+/**
+ * For every spliced result: the trader's gold for the SEED and for what it grows (one harvest), against what the chain costs: the gold of its
+ * starter seeds (`gold`) plus its cell-minutes at the best plain crop rate (`cost`, the same measure as the BG9 splice test). The gold alone is
+ * NOT enough to close the loop for furniture results (NOTES S2): their time is what pays for them.
+ */
+export function spliceSellLoops(): { seed: SeedId; seedSold: number; productSold: number; gold: number; cost: number }[] {
+  const ch = chains();
+  const start = starterSeeds();
+  const out: { seed: SeedId; seedSold: number; productSold: number; gold: number; cost: number }[] = [];
+  const rate = bestCropGoldPerCellMinute();
+  for (const seed of new Set(SPLICE_RECIPES.map((r) => r.result))) {
+    if (start.has(seed)) continue;
+    const g = seedGrows(seed);
+    const productSold =
+      g.kind === 'material' ? materialSellPrice(g.id) * harvestYield(seedRank(seed)) : g.kind === 'furniture' ? furnitureSellPrice(g.id) : clothingSellPrice(g.id);
+    const c = ch.get(seed)!;
+    out.push({ seed, seedSold: materialSellPrice(seed), productSold, gold: c.gold, cost: c.gold + (c.cellMs / 60_000) * rate });
+  }
+  return out;
+}
+
+// ---------- What selling surplus adds to a mixed hour (step S2; ASSUMPTIONS, an upper bound: it counts everything as surplus) ----------
+
+/** Gold the trader pays for the sellable part of what a loot table gives, averaged over `n` seeded rolls (gold drops are not sold: they are gold already). */
+function lootTraderGold(table: LootTableId, rng: Rng, n = 600): number {
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    for (const l of rollLoot(getLootTable(table), rng)) {
+      total += isMaterialId(l.item) ? materialSellPrice(l.item) * l.qty : l.item === 'gold' ? 0 : furnitureSellPrice(l.item) * l.qty;
+    }
+  }
+  return total / n;
+}
+
+/** Trader gold for ONE event of a line (a chest opened, a plant harvested, a rock mined, a tree felled, a fish caught). Blocks are not counted: they are building stock. */
+function lineTraderGoldPerEvent(line: GemLine, rng: Rng): number {
+  const weights = line.mix.reduce((a, [, w]) => a + w, 0);
+  const byRank = (f: (rank: Rank) => number): number => line.mix.reduce((a, [rank, w]) => a + (w / weights) * f(rank), 0);
+  switch (line.source) {
+    case 'chest': return lootTraderGold(line.mix[0]![0] === 'common' ? 'wooden_chest' : 'golden_chest', rng);
+    case 'kill': return RARE_DROP_CHANCE * lootTraderGold(line.note.startsWith('skeleton') ? 'skeleton' : 'slime', rng);
+    case 'mimic': return lootTraderGold('mimic', rng);
+    case 'boss': return lootTraderGold('bone_king', rng);
+    case 'harvest':
+      return byRank((rank) => {
+        const crops = CROP_TYPES.filter((c) => c.rank === rank);
+        const pool = crops.length > 0 ? crops : CROP_TYPES.filter((c) => c.rank === 'common');
+        return harvestYield(rank) * (pool.reduce((a, c) => a + materialSellPrice(c.id), 0) / pool.length);
+      });
+    case 'rock': return ((ROCK_ORE_MIN + ROCK_ORE_MAX) / 2) * materialSellPrice(line.note.startsWith('mithril') ? 'mithril_ore' : line.note.startsWith('iron') ? 'iron_ore' : 'copper_ore');
+    case 'chop': {
+      let total = 0;
+      for (let i = 0; i < 600; i++) for (const [id, n] of Object.entries(fellLoot(rng)) as [MaterialId, number][]) total += materialSellPrice(id) * n;
+      return total / 600;
+    }
+    case 'fish':
+      return byRank((rank) => {
+        const catches = CATCH_TYPES.filter((c) => c.rank === rank);
+        const w = catches.reduce((a, c) => a + c.weight, 0);
+        return w === 0 ? 0 : catches.reduce((a, c) => a + (c.weight / w) * materialSellPrice(c.id), 0);
+      });
+    default: return 0;
+  }
+}
+
+/** Trader gold per hour of one FOCUSED hour in each open activity of a stage (no blocks: they are not surplus). */
+export function surplusGoldPerHour(stage: Stage, rng: Rng): { id: string; label: string; gold: number }[] {
+  return activities(stage)
+    .filter((a) => a.id !== 'blocks')
+    .map((a) => ({ id: a.id, label: a.label, gold: a.lines.reduce((sum, l) => sum + l.perHour * lineTraderGoldPerEvent(l, rng), 0) }));
+}
+
+/** Trader gold per hour of a MIXED hour: equal time in each open activity (blocks counted as an activity with 0 surplus, as in the gem tables). */
+export function mixedSurplusGoldPerHour(stage: Stage, rng: Rng): number {
+  const all = activities(stage).length;
+  return surplusGoldPerHour(stage, rng).reduce((a, x) => a + x.gold, 0) / all;
 }

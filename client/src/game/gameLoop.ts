@@ -1,15 +1,15 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { AVATAR_H, WALK_BOB_MS, tillPoint, getFurnitureType, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { AVATAR_H, WALK_BOB_MS, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
 import { avatarDepthKey } from '../render/depthOrder.ts';
 import type { G16 } from './ctx.ts';
 
 export async function setupGameLoop(g: G16) {
   const {
-    app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews, customers,
-    guests, hops, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
-    doBlock, placeBar, menu, orders, bubbles, popups, gemFly, floats, tillCoins, splashGone, openRoom,
+    app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
+    guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
+    doBlock, placeBar, menu, orders, bubbles, popups, gemFly, splashGone, openRoom,
     playNewGameIntro, stoveArrived, barrelArrived, api, setDungeonMode, notice, toast, st,
   } = g;
 
@@ -42,9 +42,7 @@ export async function setupGameLoop(g: G16) {
     if (st.path.length === 0 && seating.goal !== null) st.avatar = seating.arrive(st.avatar, roomItem(seating.goal.uid));
     st.avatar = seating.update(st.avatar, ticker.deltaMS);
     itemViews.update(ticker.deltaMS);
-    customers.update(ticker.deltaMS, clockMs);
     guests.update(ticker.deltaMS, clockMs);
-    hops.update(ticker.deltaMS);
     lakeside.update(ticker.deltaMS, clockMs);
     if (st.path.length === 0 && st.avatar.state !== 'walk') lakeside.arrived();
     roomFloats.update(ticker.deltaMS, (p) => worldToScreen(p, st.shown));
@@ -56,7 +54,6 @@ export async function setupGameLoop(g: G16) {
     lastStepBeat = beat;
     feet.length = 0;
     if (sprite.container.visible && (st.avatar.state === 'walk' || st.avatar.state === 'idle')) feet.push(st.avatar);
-    customers.feet(feet);
     guests.feet(feet);
     atmosphere.update(ticker.deltaMS, clockMs, feet);
     view.objects.setKey(sprite.container, avatarDepthKey(st.avatar, roomItem(seating.seated?.uid ?? null)));
@@ -87,23 +84,17 @@ export async function setupGameLoop(g: G16) {
     menu.follow(menu.uid === null ? null : itemViews.screenBounds(menu.uid));
     heads.clear();
     heads.set(st.avatar.id, worldToScreen({ x: st.avatar.x, y: st.avatar.y - AVATAR_H }, st.shown));
-    customers.heads(heads, AVATAR_H);
     guests.heads(heads, AVATAR_H);
     for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, st.shown));
     orders.update(heads);
     bubbles.update(ticker.deltaMS, heads);
     popups.update(heads.get(st.avatar.id) ?? null);
     gemFly.update(heads.get(st.avatar.id) ?? null);
-    floats.update(ticker.deltaMS, (p) => worldToScreen(p, st.shown));
-    // Behind the counter: face the customers.
+    // Behind the bar: face the room.
     if (st.serving?.state === 'walking' && st.path.length === 0) {
       st.serving = { ...st.serving, state: 'there' };
       st.avatar = { ...st.avatar, facing: st.serving.facing };
     }
-    // Someone waits at the till and nobody serves: a coin marker above the till.
-    const counterItem = st.room.id === st.shop.roomId ? st.items.find((i) => i.roomId === st.room.id && getFurnitureType(i.typeId).servedFromBehind) : undefined;
-    const waiting = counterItem !== undefined && st.serving?.state !== 'there' && st.shopCustomers.some((c) => c.phase === 'pay');
-    tillCoins.update(ticker.deltaMS, (p) => worldToScreen(p, st.shown), waiting && counterItem ? tillPoint(counterItem) : null);
   });
 
   await splashGone;

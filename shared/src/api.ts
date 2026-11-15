@@ -3,12 +3,10 @@
 // Methods are added in later steps as they are needed.
 
 import type { BookTab } from './book.ts';
-import type { BarId, CropId, DrinkId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SaleRecord, SeedId, ShopSlot, StyleKind } from './types.ts';
+import type { BarId, CropId, DrinkId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SeedId, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
 import type { ChopKind } from './woodcut.ts';
 import type { RoomLevel } from './config.ts';
-import type { Customer, ShopEvent } from './customers.ts';
-import type { ShelfSlotRef, StockPick } from './shop.ts';
 import type { NewPlayerChoice } from './newPlayer.ts';
 import type { Avatar, AvatarLook } from './avatar.ts';
 import type { Room } from './room.ts';
@@ -24,6 +22,7 @@ import type { Guest, Mess } from './tavern.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
 import type { TavernEvent } from './guests.ts';
+import type { SellKind, SellResult, SellRow } from './trader.ts';
 
 export interface RoomState {
   room: Room;
@@ -64,17 +63,6 @@ export interface SitResult {
  */
 export type ItemsResult = FurnitureItem[] | null;
 
-/** The shop as the client sees it (step 7). */
-export interface ShopView {
-  roomId: number;
-  /** Filled slots (empty slots are not listed). */
-  slots: ShopSlot[];
-  /** The last 5 sale prices per material / furniture type id. */
-  saleHistory: Record<string, number[]>;
-  appeal: number;
-  customers: Customer[];
-}
-
 /** The tavern as the client sees it (step 9t). */
 export interface TavernView {
   roomId: number;
@@ -89,6 +77,8 @@ export interface TavernView {
   brews: Brew[];
   /** What cooks on the stoves (stove uid, dish, how many, the time it is ready; step K1). */
   cooks: Cook[];
+  /** The tavern's appeal 0..100 (placed items, decor too, plus the styles; it sets how fast guests come). */
+  appeal: number;
   /** The API's clock when this was read (to count down a brew). */
   at: number;
   /** False in an old save until markTavernIntroSeen (the one-time toast that explains the tavern). */
@@ -303,18 +293,9 @@ export interface GameAPI {
   needsNewPlayer(): Promise<boolean>;
   /** Starts the game with the chosen name, look and room shapes. False = not allowed. */
   createPlayer(choice: NewPlayerChoice): Promise<boolean>;
-  // ---------- Step 7: shop, catalog, rooms ----------
-  /** The player's shop. */
-  getShop(): Promise<ShopView>;
-  /** Puts one unit from the bag on an empty slot with a price. Null = refused. */
-  putOnShelf(slot: ShelfSlotRef, pick: StockPick, price: number): Promise<ShopView | null>;
-  /** Takes the item on a slot back to the bag. */
-  takeFromShelf(slot: ShelfSlotRef): Promise<ShopView | null>;
-  setPrice(slot: ShelfSlotRef, price: number): Promise<ShopView | null>;
-  /** Walk behind the shop's counter; while the avatar stands there, waiting customers pay. Null = no way there. */
+  // ---------- Step 7: catalog, rooms ----------
+  /** Walk behind the bar (the staff spot, where orders are carried from). Null = no way there. */
   serve(uid: number): Promise<ServeResult | null>;
-  /** Shop events (customers, reactions, sales at the till, slot changes). Returns an unsubscribe function. */
-  onShop(listener: (e: ShopEvent) => void): () => void;
   /** Buys a catalog furniture item into the bag. Null = not in the catalog or not enough gold. */
   buyCatalog(typeId: string): Promise<BuyResult | null>;
   /** Buys a catalog style (unlocks it forever). False = refused. */
@@ -407,6 +388,10 @@ export interface GameAPI {
   openPack(packId: string): Promise<PackOpenResult | null>;
   /** Sells spare copies of a piece of clothing for gold (config SPARE_SELL). Returns the gold paid; null = fewer spares than that. */
   sellSpare(clothingId: string, qty: number): Promise<number | null>;
+  /** The trader's list (step S2, the bar's Sell tab): what the player may sell, with the gold for one piece. Nothing sells by itself. */
+  getSellRows(): Promise<SellRow[]>;
+  /** Sells `qty` pieces of one thing for gold (ledger 'sell'): the gold and its popup list, or null = refused (nothing changes). Only a tap calls it. */
+  sell(kind: SellKind, id: string, qty: number): Promise<SellResult | null>;
   /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
   buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
   /**

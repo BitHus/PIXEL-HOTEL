@@ -16,9 +16,9 @@ export interface Change {
   materials?: Partial<Record<MaterialId, number>>;
   /** New furniture items (type ids), added to the inventory. */
   addFurniture?: string[];
-  /** Furniture items (uids) taken out of the game state (put on a shop slot). Must be in the inventory. */
+  /** Furniture items (uids) taken out of the game state (set aside). Must be in the inventory. */
   removeFurniture?: number[];
-  /** Furniture items put back into the inventory with their old uid (taken off a shop slot). */
+  /** Furniture items put back into the inventory with their old uid (given back). */
   returnFurniture?: { uid: number; typeId: string }[];
   /** Clothing copies gained, by id (step BG8; ids may repeat). The first copy of a piece unlocks it for good, later copies become spares. */
   addClothing?: string[];
@@ -32,8 +32,8 @@ export interface Change {
   note?: string;
 }
 
-/** Changes with these reasons only move things the player already has (off a shop slot): no finds. */
-const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf', 'tavern_order'];
+/** Changes with these reasons only move things the player already has (off a shop slot, step S1): no finds. */
+const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf', 'shop_closed', 'tavern_order'];
 
 /**
  * Applies a change and writes it to the ledger. Null if gold or a material would go below 0, or a

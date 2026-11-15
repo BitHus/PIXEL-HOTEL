@@ -16,7 +16,6 @@ import {
   spliceSeed,
   farmCounts,
   repathGuests,
-  repathCustomers,
   findPath,
   type GainList,
   type BlockResult,
@@ -126,13 +125,13 @@ export const blocksFarmApi = {
     return { kind: 'walk', path };
   },
 
-  /** A block was placed or broken: save, rebuild the grids and send the customers round the new walls. */
+  /** A block was placed or broken: save, rebuild the grids and send the guests round the new walls. */
   commitBlocks(h: LocalGameAPI, next: GameState): void {
     h.commit(next);
     h.grid = h.buildGrid();
-    h.shopGrid = null;
-    if (h.state.currentRoomId === h.state.shop.roomId) {
-      h.commit(repathGuests(repathCustomers(h.state, h.shopWorld(h.state)), h.tavernWorld(h.state)));
+    h.tavernGrid = null;
+    if (h.state.currentRoomId === h.state.tavern.roomId) {
+      h.commit(repathGuests(h.state, h.tavernWorld(h.state)));
     }
   },
 };

@@ -9,7 +9,6 @@
 //   level of its shape (whose floor contains the old one), every item keeps its position, the door
 //   moves to the new level's door, and an item standing in the new door zone goes back to the
 //   inventory (with what stands on it).
-// - Shop catch-up: customers.ts catchUpShop (step 9d: it only fills the queue; no gold).
 
 import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, SOIL_STYLE, type RoomLevel } from './config.ts';
 import { keepSoilUnderPlants, plantsOverlapping } from './farm.ts';
@@ -19,7 +18,6 @@ import { applyChange } from './ledger.ts';
 import { BLOCK_TYPES, getBlockType } from './blockTypes.ts';
 import { blocksOverlapping } from './blocks.ts';
 import { doorZoneRect, paintFloorCells, paintWholeFloor, rectsOverlap, roomAtLevel, type Room } from './room.ts';
-import { returnOrphanLoot } from './shop.ts';
 import { findStyle, stylePrice } from './styles.ts';
 import { GEAR_TYPES, type ShopGearId } from './gear.ts';
 import { styleKey } from './newPlayer.ts';
@@ -120,7 +118,7 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
     const fp = footprintRect(i, t);
     if (rectsOverlap(fp, zone)) items = pickUpItem(items, i.uid);
   }
-  let next = returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items }, at);
+  let next: GameState = { ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items };
   // Blocks (step BG5) on the new door zone go back to the bag, and so do the seeds of plants there (BG6); if the
   // door still cannot reach the middle of the grown room, all of its blocks do.
   const room2 = next.rooms.find((r) => r.id === roomId) ?? grown;

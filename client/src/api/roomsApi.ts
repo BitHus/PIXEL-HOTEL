@@ -9,8 +9,6 @@ import {
   repathGuests,
   returnOrphanBrews,
   returnOrphanCooks,
-  repathCustomers,
-  returnOrphanLoot,
   unlockStyle,
   upgradeRoom,
   lookAllowed,
@@ -146,7 +144,7 @@ export const roomsApi = {
     if (!next) return null;
     h.commit(next);
     h.grid = h.buildGrid();
-    h.shopGrid = null;
+    h.tavernGrid = null;
     return h.roomById(roomId);
   },
 
@@ -189,16 +187,14 @@ export const roomsApi = {
   },
 
   setItems(h: LocalGameAPI, items: FurnitureItem[]): FurnitureItem[] {
-    // A table, shelf or case that left the shop gives its goods back to the bag.
-    let next = returnOrphanCooks(returnOrphanBrews(returnOrphanLoot({ ...h.state, items }, h.now()), h.now()), h.now());
-    if (h.state.currentRoomId === next.shop.roomId) {
-      h.shopGrid = null;
-      next = repathGuests(repathCustomers(next, h.shopWorld(next)), h.tavernWorld(next));
+    // A barrel or stove that left the tavern gives its crops back to the bag.
+    let next = returnOrphanCooks(returnOrphanBrews({ ...h.state, items }, h.now()), h.now());
+    if (h.state.currentRoomId === next.tavern.roomId) {
+      h.tavernGrid = null;
+      next = repathGuests(next, h.tavernWorld(next));
     }
-    const slotsBefore = h.state.shop.slots.length;
     h.commit(next);
     h.grid = h.buildGrid();
-    if (next.shop.slots.length !== slotsBefore) h.emit({ t: 'slots' });
     // The seat moved or was picked up: stand up next to it on a free spot.
     h.avatarNow();
     const w = h.walkState;

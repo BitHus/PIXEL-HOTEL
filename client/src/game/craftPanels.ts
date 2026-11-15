@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  waitingCount, getMaterialType, MINE_UNLOCK_LEVEL, MINE_LANTERN_MS, type Room, DUNGEON_KEY_COST,
+  getMaterialType, MINE_UNLOCK_LEVEL, MINE_LANTERN_MS, type Room, DUNGEON_KEY_COST,
 } from '@pixel-hotel/shared';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from '../ui/workshopPanel.ts';
@@ -108,9 +108,11 @@ export async function setupCraftPanels(g: G7) {
   async function refreshTravel(): Promise<void> {
     const p = await api.getPlayer();
     const f = await api.getFarm();
-    const s = await api.getShop();
-    const forSale = s.slots.filter((x) => x.loot).length;
-    const waiting = waitingCount(s.customers);
+    const t = await api.getTavern();
+    const seated = t.guests.filter((g) => g.seated).length;
+    const orders = t.guests.filter((g) => g.phase === 'order' && g.order).length;
+    const coinPiles = t.mess.filter((m) => m.coins > 0).length;
+    const badge = [orders > 0 ? `${orders} ${orders === 1 ? 'order' : 'orders'}` : '', coinPiles > 0 ? `${coinPiles} ${coinPiles === 1 ? 'coin pile' : 'coin piles'}` : ''].filter(Boolean).join(', ');
     const farmStatus =
       f.ripe > 0 ? `${f.ripe} ${f.ripe === 1 ? 'plant' : 'plants'} ready to harvest` : f.growing > 0 ? `${f.growing} growing` : `${f.free} free soil cells`;
     const lake = await api.getLakeside();
@@ -121,8 +123,8 @@ export async function setupCraftPanels(g: G7) {
       { place: 'hotel', status: `Your room, level ${late.roomLevel(p.hotelRoomId)}`, locked: null, here: st.room.id === p.hotelRoomId },
       {
         place: 'shop',
-        status: forSale > 0 ? `${forSale} ${forSale === 1 ? 'item' : 'items'} for sale` : 'Nothing for sale',
-        badge: waiting > 0 ? `${waiting} waiting` : undefined,
+        status: `Tavern level ${late.roomLevel(p.shopRoomId)}: ${seated > 0 ? `${seated} ${seated === 1 ? 'guest' : 'guests'} waiting` : 'no guests yet'}`,
+        badge: badge || undefined,
         locked: null,
         here: st.room.id === p.shopRoomId,
       },

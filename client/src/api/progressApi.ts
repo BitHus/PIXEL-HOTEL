@@ -35,10 +35,10 @@ export const progressApi = {
 
   async currentHint(h: LocalGameAPI): Promise<string | null> {
     const i = h.state.hintsDone;
-    // The dungeon hint only shows while the shop has nothing for sale (and no run is going).
+    // The dungeon hint only shows while no run is going.
     // The mine hint (step 9c) waits until the mine opens.
     if (i === MINE_HINT && h.state.player.level < MINE_UNLOCK_LEVEL) return null;
-    if (i === DUNGEON_HINT) return !h.state.run && !h.state.shop.slots.some((s) => s.loot) ? (HINTS[i] ?? null) : null;
+    if (i === DUNGEON_HINT) return !h.state.run ? (HINTS[i] ?? null) : null;
     return HINTS[i] ?? null;
   },
 

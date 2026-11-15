@@ -1037,7 +1037,7 @@
 }
 
 /* ---------- Step 7: shelf panel, catalog, room panel, hints, sales ---------- */
-.shelf-rows,
+
 .catalog-list {
   display: flex;
   flex-direction: column;
@@ -1064,65 +1064,15 @@
   gap: 2px;
 }
 
-.shelf-name,
+
 .catalog-name {
   font-weight: 700;
 }
 
-.shelf-history,
+
 .catalog-sub {
   font-size: 14px;
   color: var(--text);
-}
-
-/* One card per slot: icon | name, sale history | Take, and the price row under it. */
-.shelf-sub {
-  min-height: 0;
-}
-
-.shelf-card {
-  display: grid;
-  grid-template-columns: var(--slot) minmax(0, 1fr) auto;
-  grid-template-areas:
-    'icon name take'
-    'icon hist take'
-    'price price price';
-  column-gap: 6px;
-  row-gap: 3px;
-  align-items: center;
-  padding: 4px;
-  background: var(--slot-bg);
-  border: 1px solid var(--wood);
-  box-shadow:
-    inset 1px 1px 0 var(--wood-mid),
-    inset -1px -1px 0 var(--cream);
-}
-
-.shelf-card.empty {
-  background: transparent;
-  box-shadow: none;
-  border-style: dashed;
-}
-
-.shelf-card .slot.empty {
-  opacity: 0.6;
-}
-
-.shelf-card .shelf-name {
-  grid-area: name;
-  align-self: end;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shelf-card .shelf-history {
-  grid-area: hist;
-  align-self: start;
-}
-
-.shelf-take {
-  grid-area: take;
 }
 
 .price-row {
@@ -1193,21 +1143,6 @@
   margin: 0;
 }
 
-.shelf-choose {
-  grid-area: price;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, var(--slot));
-  gap: var(--px);
-  padding: 4px;
-  background: var(--cream);
-  border: 1px solid var(--wood);
-}
-
-.shelf-choose .slot {
-  padding: 0;
-  font: inherit;
-}
-
 .catalog-price {
   display: flex;
   align-items: center;
@@ -1271,7 +1206,7 @@
     inset 0 0 0 3px var(--warm);
 }
 
-/* The quest card (shopFeedback.ts createHintBox): opens from the quest button at the top of the
+/* The quest card (hintBox.ts createHintBox): opens from the quest button at the top of the
    right-edge column, to its left, with a small tail pointing at the button. */
 .quest-card {
   position: absolute;
@@ -1397,105 +1332,9 @@
   height: 24px;
 }
 
-.sale-float {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--warm);
-  text-shadow:
-    1px 0 var(--outline),
-    -1px 0 var(--outline),
-    0 1px var(--outline),
-    0 -1px var(--outline);
-  white-space: nowrap;
-  pointer-events: none;
-  transform-origin: center bottom;
-}
-
-.sale-float .pixel-icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* The counter (step 7): a coin marker above the till while a customer waits to pay, and coins
-   hopping out of the till while one pays. */
-.till-marker {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 6px 2px 4px;
-  font-weight: 700;
-  color: var(--no);
-  animation: till-bob 0.8s steps(2) infinite;
-}
-
-.till-marker[hidden] {
-  display: none;
-}
-
-.till-marker .pixel-icon {
-  width: 18px;
-  height: 18px;
-}
-
-@keyframes till-bob {
+@keyframes order-bob {
   50% {
     margin-top: -4px;
-  }
-}
-
-.till-coins {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 60px;
-  height: 48px;
-  pointer-events: none;
-}
-
-.till-coin {
-  position: absolute;
-  bottom: 0;
-  left: 22px;
-  width: 16px;
-  height: 16px;
-  animation: till-hop var(--pay-ms) steps(9) both;
-}
-
-.till-coin .pixel-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.till-coin.c1 {
-  --dx: -18px;
-  animation-delay: calc(var(--pay-ms) * 0.15);
-}
-
-.till-coin.c2 {
-  --dx: 18px;
-  animation-delay: calc(var(--pay-ms) * 0.3);
-}
-
-@keyframes till-hop {
-  0% {
-    transform: translate(0, 0);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  45% {
-    transform: translate(calc(var(--dx, 0px) * 0.6), -34px);
-  }
-  100% {
-    transform: translate(var(--dx, 0px), -8px);
-    opacity: 0;
   }
 }
 
@@ -3459,7 +3298,7 @@
   border: var(--px) solid var(--outline);
   pointer-events: auto;
   cursor: pointer;
-  animation: till-bob 0.8s steps(2) infinite;
+  animation: order-bob 0.8s steps(2) infinite;
 }
 
 .order-bubble[hidden] {
@@ -3526,4 +3365,16 @@
 }
 .menu-switch.on {
   color: var(--ok);
+}
+
+/* The bar's Sell tab (step S2): the two buttons stack on the right of a row. */
+.sell-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+.sell-buttons .btn {
+  min-height: var(--touch);
+  white-space: nowrap;
 }

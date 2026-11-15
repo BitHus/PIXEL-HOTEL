@@ -200,11 +200,10 @@ describe('fishing through the GameAPI', () => {
     expect(m.grilled_perch).toBe(1);
     expect(m.carp_stew).toBe(1);
     expect(m.pebble_perch).toBeUndefined();
-    // Fish and the new foods can be put on the shop table.
-    const shop = await api.getShop();
-    const table = (await api.enterRoom((await api.getPlayer()).shopRoomId)).items.find((i) => i.typeId === 'stall_table')!;
-    expect(shop.slots).toEqual([]);
-    expect(await api.putOnShelf({ shelfUid: table.uid, index: 0 }, { kind: 'material', id: 'grilled_perch' }, 30)).not.toBeNull();
+    // Fish and the new foods can go on the tavern menu (step S1: nothing is sold at the stall any more).
+    await api.enterRoom((await api.getPlayer()).shopRoomId);
+    const rows = await api.getMenu();
+    expect(rows.some((r) => r.id === 'grilled_perch')).toBe(true);
   });
 
   it('a walk to the water needs a reachable cast spot; the nearest one to the tap is used', async () => {

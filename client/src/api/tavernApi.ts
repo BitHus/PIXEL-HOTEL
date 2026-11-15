@@ -21,6 +21,12 @@ import {
   GOLD_GAIN_ID,
   GUEST_SERVE_REACH_PX,
   findPath,
+  tavernAppeal,
+  buildNavGrid,
+  itemBlockers,
+  blockRects,
+  type GameState,
+  type TavernWorld,
   type DrinkId,
   type FoodId,
   type MenuRowView,
@@ -36,7 +42,18 @@ import type { LocalGameAPI } from './localGameAPI.ts';
 export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
-    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, cooks: t.cooks, at: h.now(), introSeen: t.introSeen });
+    const room = h.roomById(t.roomId);
+    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, cooks: t.cooks, appeal: room ? tavernAppeal(room, h.state.items) : 0, at: h.now(), introSeen: t.introSeen });
+  },
+
+  /** What a guest step needs: the room, its items, the nav grid (rebuilt when the furniture changes) and the seats the player holds. */
+  tavernWorld(h: LocalGameAPI, state: GameState): TavernWorld {
+    const room = state.rooms.find((r) => r.id === state.tavern.roomId);
+    if (!room) throw new Error('tavern room missing');
+    h.tavernGrid ??= buildNavGrid(room, [...itemBlockers(state.items, room.id), ...blockRects(room)]);
+    // The own avatar's seat in the tavern (guests do not sit there).
+    const seated = state.currentRoomId === room.id ? h.walkState.seated : null;
+    return { room, items: state.items, grid: h.tavernGrid, playerHere: state.currentRoomId === room.id, seatsTaken: seated ? [seated] : [] };
   },
 
   onTavern(h: LocalGameAPI, listener: (e: TavernClientEvent) => void): () => void {
@@ -197,7 +214,7 @@ export const tavernApi = {
       if (task.what === 'coins') {
         const r = collectCoins(h.state, task.messId, now);
         if (!r) return;
-        h.commit(r.state);
+        h.commit(h.hintDone(r.state, 2)); // quest 3: earn gold by serving a guest
         h.emitTavern({ t: 'collected', messId: task.messId, coins: r.coins, spot, gains: [gain(GOLD_GAIN_ID, r.coins)] });
       } else {
         const next = clearDish(h.state, task.messId);

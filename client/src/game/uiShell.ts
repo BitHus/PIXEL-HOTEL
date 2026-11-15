@@ -13,7 +13,7 @@ import { createGemFly } from '../ui/gemFly.ts';
 import { createChatBubbles } from '../ui/chatBubbles.ts';
 import { createToast } from '../ui/toast.ts';
 import { iconButton } from '../ui/dom.ts';
-import { createHintBox, createSaleFloats, createTillCoins } from '../ui/shopFeedback.ts';
+import { createHintBox } from '../ui/hintBox.ts';
 import { createRunBar } from '../ui/runBar.ts';
 import { DungeonScreen } from '../dungeon/dungeonScreen.ts';
 import type { G3 } from './ctx.ts';
@@ -41,8 +41,6 @@ export async function setupUiShell(g: G3) {
   st.unlockedStyles = [];
   const info = createInfoPanel(ui);
   const hint = createHintBox(ui, info.column);
-  const floats = createSaleFloats(ui);
-  const tillCoins = createTillCoins(ui);
   // Play mode (default: taps walk and sit) or build mode (taps open item menus, never walk).
   const build = createBuildMode(ui, {
     onChange: (on) => {
@@ -109,5 +107,5 @@ export async function setupUiShell(g: G3) {
     st.avatar.look,
   );
 
-  return { toast, popups, gemFly, flyGems, bubbles, label, blockerButtons, panels, info, hint, floats, tillCoins, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
+  return { toast, popups, gemFly, flyGems, bubbles, label, blockerButtons, panels, info, hint, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
 }

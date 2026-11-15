@@ -9,7 +9,7 @@ export async function setupPointerInput(g: G15) {
   const {
     app, dungeon, setCamera, overviewZoom, dpr, intro, holdTargetAt, lakeside, hold, holdBusyElsewhere, menu,
     steerWalk, panels, cross, label, redraw, updateBlockGhost, placer, paint, roomItem, itemViews, build,
-    openMenu, api, applyItems, sound, blockTap, tavernTap, barTap, serveAt, toast, shelfPanel, sitOn, walkTo,
+    openMenu, api, applyItems, sound, blockTap, tavernTap, barTap, serveAt, toast, sitOn, walkTo,
     blockers, st,
   } = g;
 
@@ -148,21 +148,14 @@ export async function setupPointerInput(g: G15) {
       if (lakeside.tap(st.marked)) return;
       // The tavern (step 9t): a guest with an order, coins or a dish on a table, a brewing barrel.
       if (tavernTap(st.marked, hit)) return;
-      // The counter: walk behind it (like sitting); waiting customers pay while you stand there.
+      // The bar: its Menu panel opens and the avatar walks behind it (the staff spot, like sitting).
       if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
         barTap();
         void serveAt(hit.uid).then((ok) => {
           if (ok) return;
           itemViews.shake(hit.uid);
-          toast('There is no way to get behind the counter.');
+          toast('There is no way to get behind the bar.');
         });
-        return;
-      }
-      // A table, shelf or case in the shop: its panel (goods, prices, sale history).
-      if (hit && getFurnitureType(hit.typeId).slots > 0 && st.room.id === st.shop.roomId) {
-        shelfPanel.show(hit);
-        shelfPanel.refresh(st.shop, st.inventory);
-        panels.show('shelf');
         return;
       }
       // An item with seats: walk to its nearest free side, then sit or lie (it shakes if no seat

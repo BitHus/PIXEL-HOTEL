@@ -4,12 +4,14 @@
 import {
   REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, SERVE_QUEUE_MAX, seatKey,
   tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
-  brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId,
+  brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
 } from '@pixel-hotel/shared';
 import { createBrewingPanel } from '../ui/brewingPanel.ts';
 import { createMenuPanel } from '../ui/menuPanel.ts';
+import { confirmBuy } from '../ui/confirmBuy.ts';
+import { sellDetail, sellRowIcon } from '../ui/sellTab.ts';
 import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
-import { CustomerViews, type Walker } from '../render/customerViews.ts';
+import { GuestViews, type Walker } from '../render/guestViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
 import { createOrderBubbles, type OrderMark } from '../ui/orderBubbles.ts';
 import { drawGood } from '../render/slotGoods.ts';
@@ -18,12 +20,12 @@ import type { G9 } from './ctx.ts';
 
 export async function setupTavernLife(g: G9) {
   const {
-    api, view, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, customers, follow, sprite, st, late, panels, walkTo,
+    api, view, ui, updateBadge, toast, sound, popups, sayBubble, bubbles, follow, sprite, st, late, panels, walkTo,
   } = g;
 
   // ---------- The tavern (step 9t): guests, orders, coins on the tables ----------
   st.tavern = await api.getTavern();
-  const guests = new CustomerViews(view);
+  const guests = new GuestViews(view);
   const tableMess = new TableMess(view);
   /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
   const walkers = (list: readonly Guest[]): Walker[] =>
@@ -167,8 +169,27 @@ export async function setupTavernLife(g: G9) {
   const openOrdersNow = (): Guest[] => st.tavern.guests.filter((g) => g.phase === 'order' && g.order);
   async function refreshMenu(): Promise<void> {
     menuRowsNow = await api.getMenu();
+    menuPanel.setSellRows(await api.getSellRows());
     menuPanel.update(openOrdersNow(), menuRowsNow, st.tavern.serveQueue);
   }
+  /** The trader (step S2): a tap on Sell 1 / Sell all. Asks first for many pieces, very rare things and hotbar items; nothing else sells itself. */
+  const sellTap = async (row: SellRow, qty: number): Promise<void> => {
+    if (sellWarning(row, qty) !== null) {
+      const ok = await confirmBuy(ui, { name: `${row.name} x${qty}`, detail: sellDetail(row, qty), price: row.unit * qty, image: sellRowIcon(row), title: 'Sell this?', yes: 'Sell' });
+      if (!ok) return;
+    }
+    const res = await api.sell(row.kind, row.id, qty);
+    if (!res) {
+      toast('That could not be sold.');
+      await refreshMenu();
+      return;
+    }
+    sound.play('coin');
+    popups.show(res.gains);
+    toast(`Sold ${qty} x ${row.name} for ${res.gold} gold.`);
+    await late.refreshInventory();
+    await refreshMenu();
+  };
   const changeMenu = async (id: MaterialId, change: { on?: boolean; price?: number }): Promise<void> => {
     const rows = await api.setMenuEntry(id, change);
     if (!rows) {
@@ -186,6 +207,7 @@ export async function setupTavernLife(g: G9) {
       const row = menuRowsNow.find((r) => r.id === id);
       if (row) void changeMenu(id, { price: stepPrice(row.price, row.baseValue, dir) });
     },
+    sell: (row, qty) => void sellTap(row, qty),
   });
   panels.add('menu', menuPanel.el);
   /** A tap on the bar: the Menu panel opens (Serve tab when orders wait, else Menu). Only in the tavern. */
@@ -273,14 +295,6 @@ export async function setupTavernLife(g: G9) {
         break;
       case 'coins':
         void refreshTavern();
-        break;
-      case 'to_stall':
-        // They walk on past the market stall as a shop customer.
-        void api.getShop().then((s) => {
-          st.shop = s;
-          st.shopCustomers = s.customers;
-          customers.sync(st.room.id === st.shop.roomId ? s.customers : [], st.room.id, st.items);
-        });
         break;
       case 'walk':
         follow(e.path);

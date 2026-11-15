@@ -3,7 +3,7 @@
 
 import {
   countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId,
-  type SeedId, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries,
+  type SeedId, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries, SELL_HINT_STACKS, SELL_HINT_TEXT,
 } from '@pixel-hotel/shared';
 import { createHotbar } from '../ui/hotbar.ts';
 import { createBagPanel } from '../ui/bagPanel.ts';
@@ -15,7 +15,7 @@ export async function setupHotbarBag(g: G10) {
   const {
     toast, menu, placer, viewCenter, build, blockViews, plantViews, syncGrid, ui, panels, api, side, info,
     runBar, newIntro, dungeon, workshop, cooking, brewing, book, refreshTravel, dungeonBadge, dungeonButton, paintBar,
-    paint, paintableStyles, prefs, catalog, roomPanel, shelfPanel, st, late,
+    paint, paintableStyles, prefs, catalog, roomPanel, st, late,
   } = g;
   late.refreshInventory = refreshInventory;
 
@@ -134,9 +134,16 @@ late.hotbar = hotbar;
   // Panels start under the info panel (phone) and end above the hotbar or the run bag.
   watchLayout(ui, info.panel, [hotbar.el, runBar.el]);
 
+  /** The "Sell what you do not need at the bar" hint shows once per visit, when the bag fills (step S2). */
+  let sellHinted = false;
   async function refreshInventory(): Promise<void> {
     st.inventory = await api.getInventory();
+    if (!sellHinted && (await api.getSellRows()).length >= SELL_HINT_STACKS) {
+      sellHinted = true;
+      toast(SELL_HINT_TEXT);
+    }
     const p = await api.getPlayer();
+    st.tavern = { ...st.tavern, appeal: (await api.getTavern()).appeal };
     if (!newIntro.running) {
       info.setGold(p.wallet.gold);
       info.setGems(p.wallet.gems);
@@ -159,8 +166,7 @@ late.hotbar = hotbar;
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares });
-    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.shop.appeal : null);
-    shelfPanel.refresh(st.shop, st.inventory);
+    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null);
     const materials = st.inventory.materials;
     const usable = (typeId: string): boolean =>
       countInInventory(st.inventory.furniture, typeId) > 0 && fitsRoomKind(getFurnitureType(typeId), st.room);

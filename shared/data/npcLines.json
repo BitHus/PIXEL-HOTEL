@@ -1,23 +1,4 @@
 {
-  "enter": [
-    "Hello there!",
-    "Good day to you!",
-    "Ooh, let's have a look.",
-    "Smells like old wood in here.",
-    "Just browsing, thanks!",
-    "Is this place new?",
-    "Morning, innkeeper!",
-    "Let's see what's in today."
-  ],
-  "browse": [
-    "Hmm, interesting...",
-    "Is this any good?",
-    "I could use one of these.",
-    "Not bad, not bad.",
-    "What would my aunt say?",
-    "This looks well made.",
-    "Hm. Decisions, decisions."
-  ],
   "cheap": [
     "What a bargain!",
     "That cheap? I'll take it!",
@@ -50,31 +31,6 @@
     "My purse just fainted.",
     "Not in a hundred years!"
   ],
-  "queue": [
-    "Hello? Anyone here?",
-    "Innkeeper? I'd like to pay!",
-    "Is anybody minding the till?",
-    "I'll just wait here then...",
-    "Hellooo? Customer here!",
-    "Ahem! Ready to pay!",
-    "Should I ring a bell?"
-  ],
-  "pay": [
-    "Here you go.",
-    "Thanks a lot!",
-    "Keep the change... oh, no change.",
-    "Pleasure doing business!",
-    "Here's the gold.",
-    "Thank you kindly!"
-  ],
-  "leave": [
-    "Have a nice day!",
-    "Bye now!",
-    "I'll be back!",
-    "See you around!",
-    "Lovely, thanks!",
-    "Off I go!"
-  ],
   "lovely": [
     "What a lovely tavern!",
     "So cozy in here!",
@@ -82,60 +38,6 @@
     "Nice place you've got!",
     "Pretty tavern, pretty things.",
     "This tavern has charm!"
-  ],
-  "empty": [
-    "Not much left...",
-    "Slim pickings today.",
-    "Did someone buy it all?",
-    "Bit empty in here.",
-    "Are you restocking soon?",
-    "The shelves look lonely."
-  ],
-  "smalltalk": [
-    "Lovely weather today, isn't it?",
-    "Have you tried the stew next door?",
-    "Did you hear about the old crypt?",
-    "My feet are killing me.",
-    "Do you come here often?",
-    "I heard the baker got a cat.",
-    "Nice boots! Where from?",
-    "Busy day in town, hm?"
-  ],
-  "smalltalk_reply": [
-    "Oh, absolutely!",
-    "Ha! You don't say.",
-    "Hm, I'm not so sure.",
-    "That's what I heard too.",
-    "Really? Tell me more.",
-    "Could be worse, could be rain.",
-    "Now and then, yes.",
-    "You always say that."
-  ],
-  "smalltalk_end": [
-    "Well, take care now!",
-    "Ha, true enough.",
-    "I'll remember that.",
-    "Good talking to you.",
-    "Right, back to looking.",
-    "See you around!"
-  ],
-  "remark": [
-    "I do like the smell of wood.",
-    "Now where did I put my purse?",
-    "La la la... hm hm...",
-    "I should buy mother something.",
-    "Was that a mouse just now?",
-    "So much to see!",
-    "My cousin would love this place.",
-    "I could stay here all day."
-  ],
-  "window": [
-    "Just looking today.",
-    "Maybe next time.",
-    "Nothing for me today, thanks.",
-    "I'll come back with more coin.",
-    "Only having a look around.",
-    "Hm, I'll think about it."
   ],
   "no_seat": [
     "No free seat? Shame.",

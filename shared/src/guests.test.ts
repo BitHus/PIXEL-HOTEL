@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AWAY_ORDERS_MAX, GUEST_EAT_MAX_MS, GUEST_EAT_MIN_MS, GUEST_MAX, GUEST_PATIENCE_MS, SHOP_TICK_MS } from './config.ts';
-import { stepShop } from './customers.ts';
-import { inStaffZone, staffZones } from './customerPlan.ts';
+import { inStaffZone, staffZones } from './npcNav.ts';
 import type { GameState } from './gameState.ts';
 import { catchUpTavern, deliverOrder, rollGroupSize, stepTavern, type TavernEvent } from './guests.ts';
 import { applyChange } from './ledger.ts';
@@ -9,7 +8,6 @@ import { createNewPlayer } from './newPlayer.ts';
 import { NPC_LINES } from './npcTalk.ts';
 import { seededRng } from './rng.ts';
 import { readSave, toSaveText } from './save.ts';
-import { putOnShelf } from './shop.ts';
 import { clearDish, collectCoins, openOrders, pickUpOrder, requestServe, seatKey, setMenu, tavernSeats } from './tavern.ts';
 import { runTavern, serveAll, tavernWorld, tidy, withAle, withItem, withLongTable } from './tavernTest.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
@@ -244,13 +242,10 @@ describe('guests: the order and serve chain (step 9t)', () => {
     expect(n).toBeGreaterThan(0);
   });
 
-  it('the ledger still adds up after a long evening, and guests sometimes look at the stall on the way out', () => {
+  it('the ledger still adds up after a long evening, and every guest keeps a different id', () => {
     let s = applyChange(withLongTable(withAle()), { reason: 'debug', materials: { root_ale: 60, glowcap_tonic: 20, wood: 20 } }, 0)!;
-    const stall = s.items.find((i) => i.typeId === 'stall_table')!;
-    for (let index = 0; index < 3; index++) s = putOnShelf(s, { shelfUid: stall.uid, index }, { kind: 'material', id: 'wood' }, 1, 0)!;
     const rng = seededRng(31);
     const hand = seededRng(32);
-    let toStall = 0;
     let coins = 0;
     let served = 0;
     const ids = new Set<number>();
@@ -258,17 +253,9 @@ describe('guests: the order and serve chain (step 9t)', () => {
       const r = stepTavern(s, tavernWorld(s), SHOP_TICK_MS, rng, t);
       s = r.state;
       for (const e of r.events) {
-        if (e.t === 'to_stall') {
-          toStall++;
-          // The same person is a shop customer now, on the way to the goods.
-          expect(s.shop.customers.some((c) => c.id === e.guestId && c.buys)).toBe(true);
-          expect(s.tavern.guests.some((g) => g.id === e.guestId)).toBe(false);
-        }
         if (e.t === 'order') served++;
       }
-      const w = tavernWorld(s);
-      s = stepShop(s, { room: w.room, items: w.items, grid: w.grid, cashier: true }, SHOP_TICK_MS, rng, t).state;
-      for (const c of [...s.tavern.guests, ...s.shop.customers]) ids.add(c.id);
+      for (const c of s.tavern.guests) ids.add(c.id);
       s = serveAll(s, hand);
       // The player clears a table every now and then.
       if (t % 20_000 === 0) {
@@ -278,11 +265,10 @@ describe('guests: the order and serve chain (step 9t)', () => {
           s = clearDish(paid.state, m.id)!;
         }
       }
-      const both = [...s.tavern.guests.map((g) => g.id), ...s.shop.customers.map((c) => c.id)];
+      const both = s.tavern.guests.map((g) => g.id);
       expect(new Set(both).size).toBe(both.length);
     }
     expect(served).toBeGreaterThan(20);
-    expect(toStall).toBeGreaterThan(0);
     expect(coins).toBeGreaterThan(0);
     expect(s.ledger.filter((e) => e.reason === 'tavern').reduce((a, e) => a + e.goldDelta, 0)).toBe(coins);
     expect(ledgerGold(s)).toBe(s.player.wallet.gold);

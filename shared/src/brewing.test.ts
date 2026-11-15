@@ -5,7 +5,6 @@ import { applyChange } from './ledger.ts';
 import { DRINK_TYPES, getMaterialType } from './materials.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { readSave, toSaveText } from './save.ts';
-import { lootCategory, putOnShelf } from './shop.ts';
 import { ledgerMaterials } from './testState.ts';
 
 const MIN = 60_000;
@@ -24,7 +23,6 @@ describe('brewing (step 9t)', () => {
     expect(DRINK_TYPES.find((d) => d.id === 'glowcap_tonic')!.tip).toBeGreaterThan(0);
     for (const d of DRINK_TYPES) {
       expect(getMaterialType(d.id)).toMatchObject({ group: 'drink', baseValue: d.baseValue, rank: d.rank });
-      expect(lootCategory({ kind: 'material', id: d.id, qty: 1 })).toBe('food');
     }
   });
 
@@ -92,10 +90,9 @@ describe('brewing (step 9t)', () => {
     const inBag = { ...s, items: s.items.map((i) => (i.uid === uid ? { ...i, roomId: null } : i)) };
     expect(returnOrphanBrews(inBag, 3000)).toBe(inBag);
     expect(collectBrew(inBag, uid, 2000 + 60 * MIN)).toBeNull();
-    // On a stall slot the barrel is no longer one of the player's items.
-    const stall = inBag.items.find((i) => i.typeId === 'stall_table')!;
-    const onSale = putOnShelf(inBag, { shelfUid: stall.uid, index: 0 }, { kind: 'furniture', typeId: 'brewing_barrel' }, 50, 3000)!;
-    const back = returnOrphanBrews(onSale, 3000);
+    // A barrel that is gone (no longer one of the player's items) gives the crops back.
+    const gone = { ...inBag, items: inBag.items.filter((i) => i.uid !== uid) };
+    const back = returnOrphanBrews(gone, 3000);
     expect(back.tavern.brews).toEqual([]);
     expect(back.player.materials.turnip).toBe(4);
     expect(back.player.materials.potato).toBe(4);

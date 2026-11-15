@@ -37,7 +37,7 @@ export async function setupPlacing(g: G5) {
     st.items = next;
     syncItems();
     roomChanged();
-    void late.refreshInventory().then(late.refreshShop).then(late.refreshHint);
+    void late.refreshInventory().then(late.refreshHint);
     return true;
   };
   const placer: Placer = new Placer(
@@ -78,7 +78,6 @@ late.placer = placer;
       view.setRoom(st.room);
       atmosphere.setRoom(st.room);
       sound.play('pop');
-      await late.refreshShop();
       return true;
     },
     onChange: () => {

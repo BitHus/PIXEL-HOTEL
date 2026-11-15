@@ -191,7 +191,7 @@ describe('blocks through the GameAPI', () => {
       expect(['placed', 'walk']).toContain(res.kind);
     }
     t += 5000;
-    const view = await api.getShop();
+    const view = await api.getTavern();
     expect(view.roomId).toBe(s.player.shopRoomId);
     const counter = (await api.getItems()).find((i) => i.typeId === 'counter')!;
     expect(await api.serve(counter.uid)).not.toBeNull();

@@ -65,8 +65,6 @@ export interface FurnitureType {
   category: string;
   theme: string;
   placeIn: PlaceIn;
-  /** Shelves: how many items it holds, else 0. */
-  slots: number;
   /** Shop decoration value, else 0. */
   appeal: number;
   /** Footprint on the floor in px. */
@@ -204,32 +202,12 @@ export interface MaterialType {
   group: MaterialGroup;
 }
 
-/** What a customer can want. */
-export type ShopCategory = 'materials' | 'home_furniture' | 'shop_furniture' | 'crypt_furniture' | 'lake_furniture' | 'food';
-
-/** A thing for sale on a shop slot: one unit of a material, or one furniture item (taken out of
- *  GameState.items while it is on the slot, and put back when taken off). */
+/** One thing: a unit of a material, or one furniture item (a drawn item in the hand, a hop, an icon). */
 export type LootRef =
   | { kind: 'material'; id: MaterialId; qty: number }
   | { kind: 'furniture'; uid: number; typeId: string };
 
-export interface ShopSlot {
-  /** uid of the table, shelf or case that owns this slot. */
-  shelfUid: number;
-  index: number;
-  /** null = empty slot. */
-  loot: LootRef | null;
-  price: number;
-}
-
 export type Reaction = 'big_smile' | 'smile' | 'shrug' | 'frown';
-
-export interface SaleRecord {
-  /** Material id or furniture type id. */
-  typeId: string;
-  price: number;
-  at: number;
-}
 
 export interface Wallet {
   gold: number;
@@ -248,6 +226,7 @@ export type LedgerReason =
   | 'potion'
   | 'craft'
   | 'shelf'
+  | 'shop_closed'
   | 'style'
   | 'seeds'
   | 'plant'
@@ -275,6 +254,8 @@ export type LedgerReason =
   // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.
   | 'pack'
   | 'spare_sale'
+  // The trader at the bar (step S2): surplus things sold for gold, only when the player taps.
+  | 'sell'
   | 'debug';
 
 export interface LedgerEntry {

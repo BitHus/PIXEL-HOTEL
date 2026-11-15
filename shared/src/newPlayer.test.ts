@@ -60,8 +60,9 @@ describe('createNewPlayer (brief section 9)', () => {
     }
   });
 
-  it('starts an empty shop with the first customer 10 s away, and no hints done', () => {
-    expect(s.shop).toMatchObject({ roomId: s.player.shopRoomId, slots: [], customers: [], nextCustomerInMs: 10_000, updatedAt: 1234 });
+  it('starts a tavern with no guests yet, no shop state, and no hints done', () => {
+    expect('shop' in s).toBe(false);
+    expect(s.tavern).toMatchObject({ roomId: s.player.shopRoomId, guests: [], nextGuestId: -1, updatedAt: 1234 });
     expect(s.hintsDone).toBe(0);
   });
 

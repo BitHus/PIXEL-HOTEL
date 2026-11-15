@@ -1,4 +1,4 @@
-// Shelf, pack, catalog and room panels (R1 split of main.ts: part 7 of 17; the code is unchanged, only moved).
+// Pack, catalog and room panels (R1 split of main.ts: part 7 of 17; the shelf panel went in step S1).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
@@ -10,7 +10,6 @@ import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createPackFlow } from '../ui/packOpening.ts';
 import { furnitureIconUrl, materialIconUrl } from '../ui/itemIcon.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
-import { createShelfPanel } from '../ui/shelfPanel.ts';
 import { WHERE, createCatalogPanel, growText } from '../ui/catalogPanel.ts';
 import { createRoomPanel } from '../ui/roomPanel.ts';
 import { type Place } from '../ui/travelPanel.ts';
@@ -23,18 +22,7 @@ export async function setupShopPanels(g: G6) {
     st, late,
   } = g;
 
-  // ---------- Shop, catalog and room panels (step 7) ----------
-  const shelfPanel = createShelfPanel(ui, {
-    put: (slot, pick, price) => void api.putOnShelf(slot, pick, price).then((r) => (r ? afterShopChange() : toast('That cannot go there.'))),
-    take: (slot) => void api.takeFromShelf(slot).then(afterShopChange),
-    setPrice: (slot, price) => void api.setPrice(slot, price).then((r) => (r ? afterShopChange() : toast('Prices are whole gold, 1 or more.'))),
-  });
-  panels.add('shelf', shelfPanel.el, undefined, () => shelfPanel.clear());
-  const afterShopChange = async (): Promise<void> => {
-    await late.refreshInventory();
-    await late.refreshShop();
-    await late.refreshHint();
-  };
+  // ---------- Catalog and room panels (step 7) ----------
   // Packs (step BG8): ask, pop, popups, toast with "Wear it".
   const packFlow = createPackFlow({
     ui,
@@ -143,7 +131,6 @@ export async function setupShopPanels(g: G6) {
           atmosphere.setRoom(st.room);
         }
         toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
-        await late.refreshShop();
         await late.refreshInventory();
         await late.refreshHint();
       });
@@ -185,12 +172,11 @@ export async function setupShopPanels(g: G6) {
           view.setRoom(st.room);
           atmosphere.setRoom(st.room);
         }
-        await late.refreshShop();
         await late.refreshInventory();
       });
     },
   });
   panels.add('room', roomPanel.el);
 
-  return { shelfPanel, catalog, roomPanel };
+  return { catalog, roomPanel };
 }

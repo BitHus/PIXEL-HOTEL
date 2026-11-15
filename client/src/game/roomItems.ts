@@ -1,4 +1,4 @@
-// Furniture, shop and room views (R1 split of main.ts: part 3 of 17; the code is unchanged, only moved).
+// Furniture and room views (R1 split of main.ts: part 3 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import { buildNavGrid, roomBlockers, standUpSpot, type FurnitureItem } from '@pixel-hotel/shared';
@@ -7,8 +7,6 @@ import { BlockersDebug } from '../debug/blockers.ts';
 import { ItemViews } from '../render/itemViews.ts';
 import { BlockViews } from '../render/blockViews.ts';
 import { PlantViews } from '../farm/plantViews.ts';
-import { CustomerViews } from '../render/customerViews.ts';
-import { ItemHops } from '../render/itemHops.ts';
 import type { G2 } from './ctx.ts';
 
 export async function setupRoomItems(g: G2) {
@@ -21,11 +19,6 @@ export async function setupRoomItems(g: G2) {
   const itemViews = new ItemViews(view, st.room.id);
   const blockViews = new BlockViews(view);
   const plantViews = new PlantViews(view);
-  /** The shop (goods on the slots, prices, sale history, customers). */
-  st.shop = await api.getShop();
-  const customers = new CustomerViews(view);
-  // Step 9d: items hopping from a slot to a customer's hands, onto the counter and back.
-  const hops = new ItemHops(view.markerLayer);
   const roomItem = (uid: number | null): FurnitureItem | undefined =>
     uid === null ? undefined : st.items.find((i) => i.uid === uid && i.roomId === st.room.id);
 
@@ -57,5 +50,5 @@ export async function setupRoomItems(g: G2) {
   sprite.container.eventMode = 'none';
   app.stage.addChild(cross);
 
-  return { itemViews, blockViews, plantViews, customers, hops, roomItem, blockers, roomChanged, cross };
+  return { itemViews, blockViews, plantViews, roomItem, blockers, roomChanged, cross };
 }

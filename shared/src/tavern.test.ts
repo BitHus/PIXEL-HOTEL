@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SERVE_QUEUE_MAX } from './config.ts';
 import { catalogPrice } from './economy.ts';
 import { behindPoint, getFurnitureType, staffZone } from './furniture.ts';
-import { inStaffZone } from './customerPlan.ts';
+import { inStaffZone } from './npcNav.ts';
 import { applyChange } from './ledger.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { seededRng } from './rng.ts';

@@ -32,7 +32,6 @@ import { applyChange } from './ledger.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { createRoom, defaultShape, getRoomShape, paintFloorCells, shapesFor, type Room } from './room.ts';
 import { cleanDisplayName, lookAllowed } from './clothing.ts';
-import { emptyShop } from './shop.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { emptyTavern } from './tavern.ts';
 import type { FurnitureItem } from './types.ts';
@@ -145,7 +144,6 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     currentRoomId: config.hotelRoomId,
     nextUid: startItems.length + 1,
     ledger: [],
-    shop: emptyShop(config.shopRoomId, at),
     hintsDone: 0,
     run: null,
     lakeside: emptyLakeside(config.lakesideRoomId),

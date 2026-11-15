@@ -7,7 +7,7 @@
 // A seated guest orders after a moment (tavern.ts chooseOrder: the menu price rule). The order
 // waits until the player brings it (deliverOrder); then the guest eats or drinks for 20 to 40 s
 // (sips, talk with the table), leaves coins and the empty mug or plate on the table spot and walks
-// out, sometimes past the market stall (they become a shop customer). A guest who waits longer than
+// out. A guest who waits longer than
 // GUEST_PATIENCE_MS leaves unhappy and pays nothing (the order goes back to the bag).
 // AWAY RULE: nothing happens without the player. The patience only runs while the player is in the
 // tavern (TavernWorld.playerHere). While the player is elsewhere, or the game was closed
@@ -19,10 +19,8 @@ import { walkAvatar, type Avatar } from './avatar.ts';
 import {
   AWAY_ORDERS_MAX,
   CUSTOMER_ENTER_PAUSE_MS,
-  CUSTOMER_MAX_IN_SHOP,
   CUSTOMER_SPEED_VARIATION,
   CUSTOMER_WALK_SPEED,
-  GUEST_BROWSE_STALL_CHANCE,
   GUEST_EAT_MAX_MS,
   GUEST_EAT_MIN_MS,
   GUEST_GROUP_GAP_PX,
@@ -44,18 +42,17 @@ import {
   GUEST_TALK_MIN_MS,
   HURRIED_SPEED_BONUS,
   OFFLINE_MAX_MS,
-  QUEUE_MAX,
   REMARK_APPEAL_MIN,
 } from './config.ts';
-import { npcGrid, npcPath, staffZones } from './customerPlan.ts';
-import { buyerCount, customerLook, outsidePoint, rollKind, stallVisitor } from './customers.ts';
+import { guestLook, outsidePoint, rollGuestKind, rollTolerance } from './guestLook.ts';
+import { npcGrid, npcPath, staffZones } from './npcNav.ts';
 import { doorPoint } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import type { NavGrid } from './nav.ts';
 import { maybeSay, reactionMoment, talkChance, type NpcMoment, type TalkMoment } from './npcTalk.ts';
 import type { Room } from './room.ts';
-import { chooseCategory, hasStock, rollTolerance, shopAppeal } from './shop.ts';
+import { tavernAppeal } from './appeal.ts';
 import {
   chooseOrder,
   coinsFor,
@@ -99,9 +96,7 @@ export type TavernEvent =
   /** A guest finished: coins and the empty dish lie on the table spot. */
   | { t: 'coins'; guestId: number; mess: Mess }
   /** A guest waited too long and leaves without paying. */
-  | { t: 'unhappy'; guestId: number }
-  /** A guest who finished goes to look at the market stall (they are a shop customer now). */
-  | { t: 'to_stall'; guestId: number };
+  | { t: 'unhappy'; guestId: number };
 
 /** A guest as an avatar (for drawing and walking). */
 export function guestAvatar(g: Guest, roomId: number): Avatar {
@@ -123,13 +118,13 @@ export function rollGroupSize(rng: Rng): number {
 const between = (rng: Rng, lo: number, hi: number): number => lo + Math.floor(rng() * (hi - lo));
 
 function newGuest(id: number, groupId: number, rng: Rng, at: Point, seat: TavernSeat | null): Guest {
-  const kind = rollKind(rng);
+  const kind = rollGuestKind(rng);
   let speed = CUSTOMER_WALK_SPEED * (1 + (rng() * 2 - 1) * CUSTOMER_SPEED_VARIATION);
   if (kind === 'hurried') speed *= 1 + HURRIED_SPEED_BONUS;
   return {
     id,
     kind,
-    look: customerLook(id),
+    look: guestLook(id),
     x: at.x,
     y: at.y,
     facing: 'up',
@@ -221,7 +216,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
   // The guest timer.
   let left = s.tavern.nextGuestInMs - dtMs;
   if (left <= 0) {
-    left += guestIntervalMs(shopAppeal(w.room, w.items));
+    left += guestIntervalMs(tavernAppeal(w.room, w.items));
     const here = s.tavern.guests;
     let n = Math.min(rollGroupSize(rng), Math.min(GUEST_MAX, seats.length) - here.length);
     // Away: only while fewer than AWAY_ORDERS_MAX sit (or will sit) with an open order.
@@ -229,20 +224,20 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
     const picks = n > 0 ? pickSeats(reachable(g, door, freeTavernSeats(s.tavern, seats, w.seatsTaken)), n, rng) : null;
     if (n > 0 && (picks || w.playerHere)) {
       const out = outsidePoint(w.room);
-      let id = s.shop.nextCustomerId;
+      let id = s.tavern.nextGuestId;
       const first = id;
       const group: Guest[] = [];
       for (let k = 0; k < n; k++) {
         const c = newGuest(id--, first, rng, { x: out.x, y: out.y + k * GUEST_GROUP_GAP_PX }, picks?.[k] ?? null);
         group.push({ ...c, path: [door], waitMs: CUSTOMER_ENTER_PAUSE_MS + k * 250 });
       }
-      s = { ...withTavern(s, { guests: [...here, ...group] }), shop: { ...s.shop, nextCustomerId: id } };
+      s = withTavern(s, { guests: [...here, ...group], nextGuestId: id });
       changed = true;
     }
   }
   s = withTavern(s, { nextGuestInMs: Math.max(0, left) });
 
-  const roomAppeal = shopAppeal(w.room, w.items);
+  const roomAppeal = tavernAppeal(w.room, w.items);
   const all = s.tavern.guests;
   const out: Guest[] = [];
   /** Maybe a line at the table: a toast or a word about the drink while eating with someone, else small talk. */
@@ -344,13 +339,6 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
         if (m.mess) events.push({ t: 'coins', guestId: c.id, mess: m.mess });
         sayOut(c, 'thanks', 'leave');
         changed = true;
-        const shop = s.shop;
-        if (rng() < GUEST_BROWSE_STALL_CHANCE && hasStock(shop) && buyerCount(shop.customers) < QUEUE_MAX && shop.customers.length < CUSTOMER_MAX_IN_SHOP) {
-          // On the way out past the market stall: from here on they are a shop customer.
-          s = { ...s, shop: { ...shop, customers: [...shop.customers, stallVisitor(c, chooseCategory(shop, rng))] } };
-          events.push({ t: 'to_stall', guestId: c.id });
-          continue;
-        }
         c = leave(c);
       } else {
         if (c.sipInMs <= 0) {
@@ -411,14 +399,14 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
   s = withTavern(s, { guests: kept });
   const gap = Math.max(0, at - state.tavern.updatedAt);
   const span = Math.min(gap, OFFLINE_MAX_MS);
-  const interval = guestIntervalMs(shopAppeal(w.room, w.items));
+  const interval = guestIntervalMs(tavernAppeal(w.room, w.items));
   const cap = Math.min(GUEST_MAX, seats.length);
   const g = npcGrid(w.grid, staffZones(w.items, w.room.id));
   const usable = reachable(g, doorPoint(w.room), seats);
   let wait = s.tavern.nextGuestInMs;
   let t = 0;
   let arrived = 0;
-  let id = s.shop.nextCustomerId;
+  let id = s.tavern.nextGuestId;
   while (t + wait <= span) {
     t += wait;
     wait = interval;
@@ -439,5 +427,5 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
     }
   }
   if (t < span) wait -= span - t;
-  return { state: { ...withTavern(s, { nextGuestInMs: Math.max(0, wait), updatedAt: at }), shop: { ...s.shop, nextCustomerId: id } }, arrived };
+  return { state: withTavern(s, { nextGuestInMs: Math.max(0, wait), updatedAt: at, nextGuestId: id }), arrived };
 }

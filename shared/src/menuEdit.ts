@@ -4,7 +4,7 @@
 import { MENU_FACE_TOLERANCE, MENU_PRICE_MAX_MULT, MENU_PRICE_STEP } from './config.ts';
 import type { GameState } from './gameState.ts';
 import { menuEntry, menuRows, setMenu } from './tavern.ts';
-import { decide } from './shop.ts';
+import { decide } from './prices.ts';
 import { getMaterialType } from './materials.ts';
 import type { MaterialId, Reaction } from './types.ts';
 
