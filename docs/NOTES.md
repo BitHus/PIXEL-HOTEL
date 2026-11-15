@@ -185,7 +185,7 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   filled bookshelf, bed with pillows, patterned rug, potted plant, crate, barrel, throne, counter, tank...).
   Keep the outer 1 px ring free (a test checks it). ui.css .slot: wooden inner frame line, bottom shade,
   rank corner studs (::after). CHECK BY EYE: `npx tsx tools/art-sheet.ts out.ppm 2` (a contact sheet of
-  every furniture icon and room sprite; convert the PPM to PNG).
+  every furniture icon and room sprite; tools/icon-sheet.ts does the same for the other shapes; convert the PPM to PNG).
 
 ## File lists: client/ (steps 1 to 5b)
 
