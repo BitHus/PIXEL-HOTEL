@@ -4,10 +4,11 @@
 // be placed. RENDERING ONLY: what stands where, and how hard it is, comes from the room (the rules
 // are in shared/src/blocks.ts). Art is placeholder boxes drawn in code (palette names from the data).
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import { BUILD_CELL, blockList, crackStage, getBlockType, paletteColor, type BlockType, type PaletteName, type Room } from '@pixel-hotel/shared';
 import type { DepthKey } from './depthOrder.ts';
 import type { RoomView } from './roomView.ts';
+import { spriteTexture } from './spriteStore.ts';
 
 const SHAKE_MS = 140;
 const PUFF_MS = 420;
@@ -35,6 +36,12 @@ function speckles(id: string, n: number): { x: number; y: number }[] {
     out.push({ x: 3 + ((h >>> 3) % 24), y: TOP + 2 + ((h >>> 11) % 15) });
   }
   return out;
+}
+
+/** The block's PNG (assets/sprites/blocks/<id>.png, 32 x 32; the same picture is the item icon, ui/itemIcon.ts) as a sprite, or null: the code cube is drawn then. */
+export function blockSprite(id: string): Sprite | null {
+  const tex = spriteTexture('blocks', id);
+  return tex ? new Sprite(tex) : null;
 }
 
 /** Draws one block cube on a 32 x 32 cell (top-left at 0, 0). */
@@ -132,6 +139,7 @@ export class BlockViews {
   private readonly bits: Bit[] = [];
   private readonly ghost = new Container();
   private readonly ghostArt = new Graphics();
+  private ghostSprite: Sprite | null = null;
   private readonly ghostFrame = new Graphics();
   private ghostFor = '';
 
@@ -162,8 +170,9 @@ export class BlockViews {
       const type = getBlockType(block.id);
       if (!v) {
         const node = new Container();
-        const art = new Graphics();
-        drawBlockArt(art, type);
+        // A block PNG when there is one (step H2), else the code cube; the crack stages stay code-drawn on top.
+        const art = blockSprite(block.id) ?? new Graphics();
+        if (art instanceof Graphics) drawBlockArt(art, type);
         const cracks = new Graphics();
         node.addChild(art, cracks);
         node.position.set(c * BUILD_CELL, r * BUILD_CELL);
@@ -249,12 +258,16 @@ export class BlockViews {
     if (key !== this.ghostFor) {
       this.ghostFor = key;
       this.ghostArt.clear();
-      drawBlockArt(this.ghostArt, getBlockType(at.id));
+      this.ghostSprite?.destroy();
+      this.ghostSprite = blockSprite(at.id);
+      if (this.ghostSprite) this.ghost.addChildAt(this.ghostSprite, 0);
+      else drawBlockArt(this.ghostArt, getBlockType(at.id));
     }
     this.ghostFrame.clear();
     const color = paletteColor(at.valid ? 'lime' : 'red');
     this.ghostFrame.rect(0, 0, BUILD_CELL, BUILD_CELL).stroke({ width: 2, color, alignment: 1 });
     this.ghostArt.alpha = at.valid ? 0.55 : 0.3;
+    if (this.ghostSprite) this.ghostSprite.alpha = at.valid ? 0.55 : 0.3;
     this.ghost.position.set(at.c * BUILD_CELL, at.r * BUILD_CELL);
     this.ghost.visible = true;
   }

@@ -5,7 +5,7 @@ tasks with art-upgrade hooks, and every artist task can start before its hook ex
 after the hook is merged). Common rules for EVERY prompt: read CLAUDE.md, docs/TEAM.md, docs/PLAN-1B.md, docs/PLAN-SPRITES.md, docs/PLAN-ART-UPGRADE.md;
 small Edit replacements in shared JSON, never whole-file rewrites, keep CRLF; coder runs `npm test` and `npm run typecheck` before saying done, artist
 runs the plugin `validate`; the manager commits locally, nobody pushes; end with a PAUSE NOTE in docs/PLAN-1B.md if stopped early.
-State now (K2a DONE, SAVE_VERSION 26; branch claude/inn-1b-rebased, REBASED onto origin/main's own T1, 15 Nov): SAVE_VERSION 25 (24 = origin T1: taps and bar fittings, 25 = the Inn name MB-1).
+State now (K2a and H2 DONE, SAVE_VERSION 26; branch claude/inn-1b-rebased, REBASED onto origin/main's own T1, 15 Nov): SAVE_VERSION 25 (24 = origin T1: taps and bar fittings, 25 = the Inn name MB-1).
 Taps/kitchen are origin's: shared/src/taps.ts (Tap, loadTap, unloadTap, mugsOnTaps, stockFor, tapCards), kitchen.ts, tavern.ts pourOrder/menuStock, render/pourFx.ts, ui/tapsPanel.ts (wears the artist's .tap-row classes).
 The old K2a work is in git stash (reference only): it used OUR taps names (drinkStock, refundMug, tapViews, activeTaps); re-port it onto origin's taps API.
 Save versions still reserved: K2a 26, MB-2 27, 9g-2 28, 9g-4 29, 9i-1 30, 9h-2 31.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BLOCK_TYPES } from '@pixel-hotel/shared';
 import { neededFacings, parseSpriteName, parseSpritePath, plantComplete, spriteComplete } from './spriteIndex.ts';
 
 describe('sprite names', () => {
@@ -53,5 +54,12 @@ describe('sprite paths by kind (PLAN-ART-UPGRADE section 0)', () => {
     expect(plantComplete(['1', '2'])).toBe(false);
     expect(plantComplete(['1', '2', '3'])).toBe(true);
     expect(plantComplete([])).toBe(false);
+  });
+});
+
+describe('block sprites (step H2)', () => {
+  it('a file blocks/<id>.png is looked up by the block id: every block id is a valid file name, and the first five staged drafts are real blocks', () => {
+    for (const b of BLOCK_TYPES) expect(parseSpritePath(`x/blocks/${b.id}.png`), b.id).toEqual({ kind: 'blocks', id: b.id, variant: '' });
+    for (const id of ['dirt', 'planks', 'stone', 'glass', 'clay']) expect(BLOCK_TYPES.some((b) => b.id === id), id).toBe(true);
   });
 });
