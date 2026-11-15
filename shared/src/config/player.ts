@@ -60,7 +60,7 @@ export const FIRST_BUY_POP_MS = 220;
 export const HINTS = [
   'Open the Catalog and buy something with your 100 gold.',
   'Place it in your room.',
-  'Earn gold in your tavern: tap a guest who waits with an order to serve them, then tap the coins they leave. Brew root ale at the barrel and load it on a tap (tap the tap stand on the bar), or cook a roasted turnip at the stove. Tap the register for the menu.',
+  'Earn gold in your tavern: tap a guest who waits with an order to serve them, then tap the coins they leave. Your 7 root ale are already on a tap, so guests can order at once. Brew more at the barrel and load the tap again (tap the tap stand on the bar), or cook a roasted turnip at the stove. Tap the register for the menu.',
   'Tap the Dungeon button for a run: chests and slimes give gold and loot to cook, brew, craft and build with. What you will not use, sell at the bar: tap the bar and open the Sell tab.',
   'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown (about 2 minutes). Punching blocks, plants and chests, and catching fish, drop gems.',
   'Gems buy packs. With 30 gems open the Catalog, the Packs tab, and open a Basic Seeds Pack: its odds are on the card.',

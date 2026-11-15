@@ -14,9 +14,13 @@ export interface Prefs {
   cellGrid: boolean;
   /** Show what you got as small icons above the avatar's head (step BG3 B). */
   popups: boolean;
+  /** Show the display name above each avatar (step 9g-1). */
+  nameTags: boolean;
+  /** True once the one-time Inn door hint toast was shown (step MB-3): it never shows again on this device. */
+  doorHintSeen: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false };
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -34,6 +38,8 @@ export function parsePrefs(text: string | null): Prefs {
     lighting: typeof o.lighting === 'boolean' ? o.lighting : DEFAULT_PREFS.lighting,
     cellGrid: typeof o.cellGrid === 'boolean' ? o.cellGrid : DEFAULT_PREFS.cellGrid,
     popups: typeof o.popups === 'boolean' ? o.popups : DEFAULT_PREFS.popups,
+    nameTags: typeof o.nameTags === 'boolean' ? o.nameTags : DEFAULT_PREFS.nameTags,
+    doorHintSeen: typeof o.doorHintSeen === 'boolean' ? o.doorHintSeen : DEFAULT_PREFS.doorHintSeen,
   };
 }
 

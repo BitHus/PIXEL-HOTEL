@@ -10,6 +10,7 @@ import type { RoomLevel } from './config.ts';
 import type { NewPlayerChoice } from './newPlayer.ts';
 import type { Avatar, AvatarLook } from './avatar.ts';
 import type { Room } from './room.ts';
+import type { ActiveEmote } from './emotes.ts';
 import type { ChatLine } from './gameState.ts';
 import type { SeatSpot } from './seats.ts';
 import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
@@ -413,6 +414,15 @@ export interface GameAPI {
   openPack(packId: string): Promise<PackOpenResult | null>;
   /** Sells spare copies of a piece of clothing for gold (config SPARE_SELL). Returns the gold paid; null = fewer spares than that. */
   sellSpare(clothingId: string, qty: number): Promise<number | null>;
+  /** Buys a catalog hat for gold (step 9g-1, baseValue * 3) and unlocks it. Null = not sold, already owned or not enough gold. */
+  buyHat(hatId: string): Promise<boolean>;
+  /**
+   * Plays an emote (step 9g-1): { kind, untilMs } (the game clock). Transient, never saved. Null = unknown kind or the avatar is not standing still.
+   * Walking or sitting ends it: `currentEmote()` then gives null.
+   */
+  emote(kind: string): Promise<ActiveEmote | null>;
+  /** The emote playing now, or null. */
+  currentEmote(): Promise<ActiveEmote | null>;
   /** The trader's list (step S2, the bar's Sell tab): what the player may sell, with the gold for one piece. Nothing sells by itself. */
   getSellRows(): Promise<SellRow[]>;
   /** Sells `qty` pieces of one thing for gold (ledger 'sell'): the gold and its popup list, or null = refused (nothing changes). Only a tap calls it. */

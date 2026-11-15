@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BOOK_REWARD_STEPS, RARE_DROP_CHANCE } from './config.ts';
 import { BOOK_REWARDS, BOOK_TABS, bookEntries, bookProgress, bookRewards, bookTotal, claimBookReward, newEntries, openBook, sourceOf } from './book.ts';
-import { craft, getRecipe } from './crafting.ts';
+import { getClothing } from './clothing.ts';
+import { craft,getRecipe } from './crafting.ts';
 import { buyCatalog } from './economy.ts';
 import { getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
@@ -158,9 +159,10 @@ describe('the Book (step 9e)', () => {
       expect(BOOK_REWARDS[tab].map((r) => r.percent)).toEqual([...BOOK_REWARD_STEPS]);
       for (const r of BOOK_REWARDS[tab]) {
         expect(r.gold).toBeGreaterThan(0);
-        expect(r.hat).toBeNull();
+        if (r.hat !== null) expect(getClothing(r.hat)?.slot).toBe('hat');
       }
     }
+    expect(BOOK_TABS.flatMap((t) => BOOK_REWARDS[t]).filter((r) => r.hat !== null).map((r) => r.hat)).toEqual(['tavern_keeper_hat', 'gold_crown']);
     let s = fresh();
     expect(bookRewards(s.player, 'enemies').map((r) => r.state)).toEqual(['locked', 'locked', 'locked', 'locked']);
     expect(claimBookReward(s, 'enemies', 25, 5000, () => 0.9999)).toBeNull();
@@ -175,6 +177,14 @@ describe('the Book (step 9e)', () => {
     expect(claimBookReward(paid, 'enemies', 25, 6000, () => 0.9999)).toBeNull();
     expect(claimBookReward(paid, 'enemies', 50, 6000, () => 0.9999)).toBeNull();
     expect(RARE_DROP_CHANCE).toBe(0.1);
+  });
+
+  it('a reward with a hat unlocks it and still pays gold (step 9g-1)', () => {
+    const s = fresh();
+    const full = { ...s, player: { ...s.player, seen: bookEntries('furniture').reduce((m, e) => addSeen(m, e.key, 0, 4000), s.player.seen) } };
+    const got = claimBookReward(full, 'furniture', 25, 5000, () => 0.9999)!;
+    expect(got.player.unlockedClothing).toContain('tavern_keeper_hat');
+    expect(got.player.wallet.gold).toBeGreaterThan(full.player.wallet.gold);
   });
 
   it('has a Fish tab with every fish and fished-up thing (step 9f), grey until caught, with the size range', () => {

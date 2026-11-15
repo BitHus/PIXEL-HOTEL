@@ -47,7 +47,7 @@
     {
       "percent": 25,
       "gold": 40,
-      "hat": null
+      "hat": "tavern_keeper_hat"
     },
     {
       "percent": 50,
@@ -106,7 +106,7 @@
     {
       "percent": 100,
       "gold": 350,
-      "hat": null
+      "hat": "gold_crown"
     }
   ],
   "fish": [

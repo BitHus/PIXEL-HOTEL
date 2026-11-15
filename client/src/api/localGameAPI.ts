@@ -22,6 +22,7 @@ import {
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
   type Player, type Point, type Rect, type Room, type RoomState, type SitResult,
 } from '@pixel-hotel/shared';
+import type { ActiveEmote } from '@pixel-hotel/shared';
 import type { SaveStorage } from './saveStorage.ts';
 import { type SaveResult, type TavernTask, type WalkState } from './apiShared.ts';
 import { walkApi } from './walkApi.ts';
@@ -58,6 +59,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   grid: NavGrid;
   debugRects: Rect[] = [];
   chatId = 0;
+  /** The emote playing now (step 9g-1): transient, not saved. */
+  emoteNow: ActiveEmote | null = null;
   readonly chatListeners = new Set<(line: ChatLine) => void>();
   readonly tavernListeners = new Set<(e: TavernClientEvent) => void>();
   /** True while the own avatar is on a tavern errand (walkState.task); a walk of any other kind ends it. */
@@ -241,6 +244,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> { return blocksFarmApi.spliceSeed(this, c, r, seed); }
   async openPack(packId: string): Promise<PackOpenResult | null> { return packsApi.openPack(this, packId); }
   async sellSpare(clothingId: string, qty: number): Promise<number | null> { return packsApi.sellSpare(this, clothingId, qty); }
+  async buyHat(hatId: string): Promise<boolean> { return packsApi.buyHat(this, hatId); }
+  async emote(kind: string): Promise<ActiveEmote | null> { return roomsApi.emote(this, kind); }
+  async currentEmote(): Promise<ActiveEmote | null> { return roomsApi.currentEmote(this); }
   async getSellRows(): Promise<SellRow[]> { return traderApi.getSellRows(this); }
   async sell(kind: SellKind, id: string, qty: number): Promise<SellResult | null> { return traderApi.sell(this, kind, id, qty); }
   async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> { return blocksFarmApi.buySeeds(this, seed, qty); }

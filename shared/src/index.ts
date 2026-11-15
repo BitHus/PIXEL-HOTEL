@@ -38,6 +38,8 @@ export * from './npcNav.ts';
 export * from './npcTalk.ts';
 export * from './economy.ts';
 export * from './clothing.ts';
+export * from './emotes.ts';
+export * from './hats.ts';
 export * from './text.ts';
 export * from './levels.ts';
 export * from './gear.ts';

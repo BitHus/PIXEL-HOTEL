@@ -3,6 +3,11 @@
 
 import {
   roomBlockers,
+  emoteAllowed,
+  emoteAfterState,
+  emoteAt,
+  startEmote,
+  type ActiveEmote,
   innTravel,
   type Avatar,
   applyStyle,
@@ -132,6 +137,17 @@ export const roomsApi = {
     const l = h.layout();
     if (tab !== 'furniture' && tab !== 'materials') return l;
     return h.setLayout(how === 'sort' ? sortBag(l, tab) : stackBag(l, tab)) ?? l;
+  },
+
+  async emote(h: LocalGameAPI, kind: string): Promise<ActiveEmote | null> {
+    const e = emoteAllowed(h.walkState.avatar.state) ? startEmote(kind, h.now()) : null;
+    h.emoteNow = e;
+    return e;
+  },
+
+  async currentEmote(h: LocalGameAPI): Promise<ActiveEmote | null> {
+    h.emoteNow = emoteAfterState(emoteAt(h.emoteNow, h.now()), h.walkState.avatar.state);
+    return h.emoteNow;
   },
 
   async setLook(h: LocalGameAPI, look: AvatarLook): Promise<AvatarLook> {

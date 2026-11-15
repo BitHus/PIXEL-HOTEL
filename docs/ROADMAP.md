@@ -148,6 +148,22 @@ The long-term goal: a real online hotel.
 - Trading, a player marketplace, player shops, a friends list: section 9 and 13 say not in v1.
   Only after phase 6 (online), with new safety rules.
 
+## IDEAS FROM RESEARCH (lead, 16 Nov; NOT planned, owner confirms; details and fit checks in docs/RESEARCH-GAMES.md)
+Inspiration only from Growtopia, Travellers Rest, Habbo Hotel and Pixel Worlds; nothing is copied. Existing steps above are unchanged.
+Proposed order (each is its own step if the owner approves):
+1. RN-1 Inn Renown: named ranks from the One Inn score unlock guest rooms, menu tiers, staff (after M-C). [coder] + rank badge [artist]
+2. RG-1 Regulars: 6 to 8 named repeat guests with tastes, a Book tab, a small tip bonus (save bump). [coder] + guest looks [artist]
+3. BD-1 Board orders: optional commissions, no timers, no daily reset (inside 9i). [coder] + board prop and UI [artist]
+4. SM-1 Slow makers: hen coop, beehive, cheese press, real-time producers like casks; a balance test each (first slice of 5.3). [coder] + props [artist]
+5. JR-1 Recipe journal: discover and track recipes in the Book. [coder] + silhouettes [artist]
+6. TB-1 Titles and badges: cosmetic, from event counters (inside 3.2). [coder] + badge icons [artist]
+7. PT-1 Pastimes: darts, dice, bard stool as usable decor (after 9g-2). [coder] + three pieces [artist]
+8. SE-1 Returning seasons: yearly events, earned by play, never missable (inside 7.3). [coder] + decor [artist]
+9. AM-1 Anti-macro guardrails: server rate limits and speed checks, with step 10. [coder]
+10. SF-1 Safe visits first: mute, report, filter and chat-off visits before any public chat (phase 6). [coder] + UI [artist]
+HELD for the owner (conflicts with CLAUDE.md sections 9 and 13): trading and a marketplace, PvP.
+REJECTED: real-money gems or items, daily login rewards, limited offers, lucky wheels.
+
 ## IDEA POOL (not planned yet)
 Item descriptions and comparison, favourites, search in the bag, a pet that sits on your head,
 candles that burn down, a rare rainbow, shooting stars, footprints in snow, hidden passages, a

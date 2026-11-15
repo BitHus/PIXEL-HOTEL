@@ -5,7 +5,9 @@
 // free and unlocked clothing (selectableClothing); colours are swatches from config LOOK_COLORS.
 // Every tap calls onChange at once, so the preview updates the moment a choice is made.
 
-import { LOOK_COLORS, PALETTE, SLOT_FIELD, selectableClothing, type AvatarLook, type ClothingSlot } from '@pixel-hotel/shared';
+import { HATS, LOOK_COLORS, PALETTE, RANK_COLORS, SLOT_FIELD, hatWearable, selectableClothing, type AvatarLook, type ClothingSlot } from '@pixel-hotel/shared';
+import { partBounds } from '../render/avatarParts.ts';
+import { hatBoxes } from '../render/hatParts.ts';
 import { el, textButton } from './dom.ts';
 import { tabBar } from './panelShell.ts';
 import type { IconName } from './pixelIcons.ts';
@@ -20,7 +22,7 @@ export interface LookPickers {
 }
 
 type ColorField = 'skin' | 'hair' | 'shirt' | 'legs' | 'shoes';
-type Row = { kind: 'color'; field: ColorField; list: readonly number[]; label: string } | { kind: 'style'; slot: ClothingSlot; label: string };
+type Row = { kind: 'color'; field: ColorField; list: readonly number[]; label: string } | { kind: 'style'; slot: ClothingSlot; label: string } | { kind: 'hat' };
 
 const TABS: { name: string; icon: IconName; rows: Row[] }[] = [
   { name: 'Body', icon: 'avatar', rows: [{ kind: 'color', field: 'skin', list: LOOK_COLORS.skin, label: 'Skin tone' }] },
@@ -49,10 +51,40 @@ const TABS: { name: string; icon: IconName; rows: Row[] }[] = [
     ],
   },
   { name: 'Shoes', icon: 'shoe', rows: [{ kind: 'color', field: 'shoes', list: LOOK_COLORS.shoes, label: 'Shoes colour' }] },
+  // Hats (step 9g-1): only in the Avatar panel (a new character owns none). The tab icon is a placeholder until the artist draws a hat icon.
+  { name: 'Hat', icon: 'hair', rows: [{ kind: 'hat' }] },
 ];
 
+/** A hat on a small canvas, 2 canvas px per art px; `locked` = the grey silhouette. */
+function hatCanvas(id: string, locked: boolean): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.className = 'hat-preview';
+  const ps = hatBoxes(id, 'down', locked);
+  if (!ps) return c;
+  const [x0, y0, x1, y1] = partBounds(ps);
+  const k = 2;
+  c.width = (x1 - x0) * k;
+  c.height = (y1 - y0) * k;
+  const ctx = c.getContext('2d');
+  if (!ctx) return c;
+  ctx.imageSmoothingEnabled = false;
+  const dark = PALETTE[6] ?? '#000';
+  for (const [x, y, w, h] of ps) {
+    ctx.fillStyle = dark;
+    ctx.fillRect((x - 1 - x0) * k, (y - 1 - y0) * k, (w + 2) * k, (h + 2) * k);
+  }
+  for (const [x, y, w, h, col] of ps) {
+    ctx.fillStyle = col;
+    ctx.fillRect((x - x0) * k, (y - y0) * k, w * k, h * k);
+  }
+  return c;
+}
+
 /** `tabsHost`: where the icon tabs go (a panel's tab row); default: a tab row of its own. */
-export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost?: HTMLElement): LookPickers {
+export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost?: HTMLElement, withHats = false): LookPickers {
+  const tabDefs = withHats ? TABS : TABS.filter((t) => !t.rows.some((r) => r.kind === 'hat'));
+  /** The hat being browsed in the Hat tab: 0 = no hat, then HATS in data order (locked ones too, as silhouettes). */
+  let hatAt = 0;
   const box = el('div', 'look-pickers');
   const tabs = tabsHost ?? el('div', 'panel-tabs look-tabs');
   const body = el('div', 'look-body');
@@ -63,14 +95,14 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
 
   const markTab = tabBar(
     tabs,
-    TABS.map((t, i) => [String(i), t.icon, t.name] as const),
+    tabDefs.map((t, i) => [String(i), t.icon, t.name] as const),
     (i) => {
       tab = Number(i);
       draw();
     },
   );
 
-  const row = (l: AvatarLook, r: Row): HTMLElement => {
+  const row = (l: AvatarLook, r: Exclude<Row, { kind: 'hat' }>): HTMLElement => {
     const out = el('div', 'look-row');
     if (r.kind === 'style') {
       const options = selectableClothing(r.slot, unlocked);
@@ -106,12 +138,42 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
     return out;
   };
 
+  const hatRow = (l: AvatarLook): HTMLElement => {
+    const out = el('div', 'look-row hat-row');
+    const n = HATS.length + 1;
+    const hat = hatAt === 0 ? null : HATS[hatAt - 1]!;
+    const owned = hat === null || hatWearable(hat.id, unlocked);
+    const step = (d: number): void => {
+      hatAt = (hatAt + d + n) % n;
+      draw();
+    };
+    const prev = textButton('◀', () => step(-1), 'look-step small');
+    prev.setAttribute('aria-label', 'Previous hat');
+    const next = textButton('▶', () => step(1), 'look-step small');
+    next.setAttribute('aria-label', 'Next hat');
+    const plate = el('span', 'look-value plate light');
+    plate.append(el('span', 'look-kind', `Hat ${hatAt}`), el('span', '', hat ? (owned ? hat.name : '???') : 'No hat'));
+    if (hat && owned) plate.style.color = PALETTE[RANK_COLORS[hat.rank]] ?? '';
+    const stepper = el('div', 'look-stepper');
+    stepper.append(prev, plate, next);
+    out.appendChild(stepper);
+    if (hat) out.appendChild(hatCanvas(hat.id, !owned));
+    if (hat && !owned) out.appendChild(el('div', 'hat-hint', hat.unlock ?? ''));
+    const wearing = (l.hat ?? '') === (hat?.id ?? '');
+    if (owned) {
+      const b = textButton(wearing ? 'Worn' : hat ? 'Wear' : 'Take off', () => set({ ...l, hat: hat?.id ?? '' }), 'look-wear');
+      b.disabled = wearing;
+      out.appendChild(b);
+    }
+    return out;
+  };
+
   const draw = (): void => {
     markTab(String(tab));
     body.replaceChildren();
     const l = look;
     if (!l) return;
-    for (const r of TABS[tab]?.rows ?? []) body.appendChild(row(l, r));
+    for (const r of tabDefs[tab]?.rows ?? []) body.appendChild(r.kind === 'hat' ? hatRow(l) : row(l, r));
   };
 
   const set = (next: AvatarLook): void => {

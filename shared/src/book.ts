@@ -157,7 +157,7 @@ export function claimBookReward(state: GameState, tab: BookTab, percent: number,
   if (!reward || reward.state !== 'ready') return null;
   // Gems (step BG4): the tier's rank (25 common ... 100 legendary) sets the amount.
   const gems = gemDrop('book', BOOK_GEM_RANK[percent as keyof typeof BOOK_GEM_RANK] ?? 'common', rng);
-  const next = applyChange(state, { reason: 'book_reward', gold: reward.gold, ...(gems > 0 ? { gems } : {}), note: `book ${rewardKey(tab, percent)}` }, at);
+  const next = applyChange(state, { reason: 'book_reward', gold: reward.gold, ...(gems > 0 ? { gems } : {}), ...(reward.hat ? { addClothing: [reward.hat] } : {}), note: `book ${rewardKey(tab, percent)}` }, at);
   if (!next) return null;
   return { ...next, player: { ...next.player, bookRewards: [...next.player.bookRewards, rewardKey(tab, percent)] } };
 }

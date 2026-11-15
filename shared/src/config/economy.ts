@@ -111,3 +111,7 @@ export const SELL_RATES = {
 export const SELL_CONFIRM_QTY = 5;
 /** The Bag counts as filling when this many different stacks are sellable; the first time, a hint says "Sell what you do not need at the bar". */
 export const SELL_HINT_STACKS = 24;
+
+// ---------- Emotes (step 9g-1) ----------
+/** How long each emote plays before the avatar returns to normal, ms. Walking cancels it at once. */
+export const EMOTE_MS = { wave: 2000, dance: 4000, laugh: 2500, cheer: 2000, sleep: 6000 } as const;

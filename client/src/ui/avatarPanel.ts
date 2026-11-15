@@ -22,7 +22,7 @@ export function createAvatarPanel(parent: HTMLElement, onChange: (look: AvatarLo
   const pickers = createLookPickers((look) => {
     preview.setLook(look);
     onChange(look);
-  }, shell.tabs);
+  }, shell.tabs, true);
   const stage = el('div', 'avatar-stage small');
   stage.appendChild(preview.el);
   const name = el('div', 'plate avatar-name');

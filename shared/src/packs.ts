@@ -64,7 +64,7 @@ export function packPool(pool: PackPool): PackItem[] {
       return { kind: 'material', id, name: m.name, rank: m.rank };
     });
   }
-  return CLOTHING.filter((c) => !c.free).map((c) => ({ kind: 'clothing', id: c.id, name: c.name, rank: c.rank }));
+  return CLOTHING.filter((c) => !c.free && c.pack !== false).map((c) => ({ kind: 'clothing', id: c.id, name: c.name, rank: c.rank }));
 }
 
 /** One line of the odds on a pack card: a rank, its chance in percent, and the things it can be. */

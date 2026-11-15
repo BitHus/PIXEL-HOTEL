@@ -2,11 +2,12 @@
 // about a quarter of the height) on a 32x64 canvas, feet at (0, 0). Down, up and right are drawn;
 // left is right mirrored. This shape is the approved base: clothing styles (step 7b,
 // clothing.json) only change the hair, top and bottoms boxes, never the body's size.
-// Pure data (no Pixi): the room sprite, the lying drawing and the HTML previews all use it.
+// Boxes only (the hat boxes come from hatParts.ts, step 9g-1; drawn after the hair): the room sprite, the lying drawing and the HTML previews all use it.
 
 import { PALETTE, type AvatarLook } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
 import { shade } from './colors.ts';
+import { hatBoxes } from './hatParts.ts';
 
 /** A box relative to the feet (0, 0); y grows down, so the figure has negative y. */
 export type Part = [x: number, y: number, w: number, h: number, color: string];
@@ -109,15 +110,20 @@ function torsoBoxes(look: AvatarLook, facing: Facing3): Part[] {
   return t;
 }
 
+/** The worn hat's boxes (none when no hat or an unknown id). Hats sit on the head layer only. */
+function hatOn(look: AvatarLook, facing: Facing3): Part[] {
+  return look.hat ? (hatBoxes(look.hat, facing) ?? []) : [];
+}
+
 export function avatarBoxes(look: AvatarLook, facing: Facing3): AvatarBoxes {
   const skin = color(look.skin);
   const legs = bottomsBoxes(look, facing);
   const head: Part[] = facing === 'right' ? [[-2, -46, 4, 2, skin], [-5, -60, 11, 14, skin]] : [[-2, -46, 4, 2, skin], [-6, -60, 12, 14, skin]];
   if (facing === 'right') {
-    return { legs, upper: [...torsoBoxes(look, facing), ...head, ...hairBoxes(look, facing)], arm: armBoxes(look, -2, 4, 0.8) };
+    return { legs, upper: [...torsoBoxes(look, facing), ...head, ...hairBoxes(look, facing), ...hatOn(look, facing)], arm: armBoxes(look, -2, 4, 0.8) };
   }
   const arms = [...armBoxes(look, -10, 3, 0.8), ...armBoxes(look, 7, 3, 0.8)];
-  return { legs, upper: [...arms, ...torsoBoxes(look, facing), ...head, ...hairBoxes(look, facing)], arm: [] };
+  return { legs, upper: [...arms, ...torsoBoxes(look, facing), ...head, ...hairBoxes(look, facing), ...hatOn(look, facing)], arm: [] };
 }
 
 /** All boxes for one facing, back to front. */

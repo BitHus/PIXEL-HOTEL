@@ -17,6 +17,8 @@ export interface AvatarLook {
   bottoms: string;
   legs: number;
   shoes: number;
+  /** A hat (clothing id, step 9g-1); missing or empty = no hat. Only an owned hat is allowed (lookAllowed). */
+  hat?: string;
 }
 
 export type AvatarState = 'idle' | 'walk' | 'sit' | 'lie';
