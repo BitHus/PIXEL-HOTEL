@@ -4,10 +4,11 @@
 // depth-sorted list. A guest at a table sits (drawn right after the seat, like the own avatar), and
 // short gestures (a nod at a sip) play.
 
-import { CUSTOMER_WALK_SPEED, walkAvatar, type Avatar, type AvatarLook, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_WALK_SPEED, getFurnitureType, walkAvatar, type Avatar, type AvatarLook, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import { AvatarSprite, type Gesture } from './avatarSprite.ts';
 import { avatarDepthKey } from './depthOrder.ts';
 import { idleShift } from './atmosphere.ts';
+import { seatLiftFor } from './furnitureArt.ts';
 import type { RoomView } from './roomView.ts';
 
 interface Shown {
@@ -88,6 +89,7 @@ export class GuestViews {
       const sitting = s.seat !== null && s.path.length === 0;
       if (sitting) s.avatar = { ...s.avatar, state: 'sit', facing: s.sitFacing ?? s.seat!.facing };
       s.sprite.update(s.avatar, timeMs);
+      s.sprite.setSeatLift(sitting ? seatLiftFor(getFurnitureType(s.seat!.typeId)) : 0);
       // Standing guests shift a little now and then (atmosphere step).
       s.sprite.setShift(s.path.length === 0 && !sitting ? idleShift(id, timeMs) : 0);
       this.view.objects.setKey(s.sprite.container, avatarDepthKey(s.avatar, sitting ? s.seat! : undefined));

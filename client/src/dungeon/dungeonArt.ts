@@ -174,11 +174,10 @@ export function drawBlocks(map: DungeonMap, place: RunPlace = 'crypt', clockMs =
           if (v === 1) px(g, fx - 3, fy - 1, 3, 1, SEAM);
         } else if (v === 2 && crypt) {
           // A puddle: dark water with a pale glint.
-          px(g, fx, fy + 1, 11, 5, P.ink);
-          px(g, fx + 1, fy, 9, 7, P.ink);
-          px(g, fx + 1, fy + 1, 9, 5, P.navy);
-          px(g, fx + 2, fy + 1, 3, 1, P.sky);
-          px(g, fx + 7, fy + 4, 2, 1, shade(P.sky, 0.7));
+          blob(g, fx + 6, fy + 3, 7, 4, P.ink);
+          blob(g, fx + 6, fy + 3, 6, 3, P.navy);
+          px(g, fx + 3, fy + 1, 3, 1, P.sky);
+          px(g, fx + 8, fy + 4, 2, 1, shade(P.sky, 0.7));
         } else if (v === 3 && crypt) {
           // Scattered bones: a long bone and a small skull.
           px(g, fx, fy + 3, 8, 2, P.ink);

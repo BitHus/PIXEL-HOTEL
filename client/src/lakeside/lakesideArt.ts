@@ -1,6 +1,11 @@
-// The lakeside's placeholder art (step 9f), drawn in code like the farm's: the lake with a sandy
-// rim and slow ripples, the wooden pier, trees (standing, a stump, a sapling while it grows
-// back), bushes, and the bobber. Light from the top-left; dark warm outlines, no anti-aliasing.
+// The lakeside's art (step 9f, look v1 = A16), drawn in code like the farm's; the PNG hooks of C15 fall back
+// to these. Bright, lush, chunky and Growtopia-like with warm dark outlines: a lake with a rounded shore
+// (dry sand, wet sand, a foam line, shallows, a deeper middle, a shadow under the pier), a railed pier with a
+// lantern post and rope posts, three kinds of tree in two leaf shades (oak, pine, birch), three bushes, a better
+// stump and sapling, decor pieces for the coder to place (reeds, cattails, flowers, stones, mushrooms, tufts,
+// lily pads) and the bobber, rings and a splash as small pre-built Graphics. Light from the top-left; no
+// anti-aliasing (whole rows and rects only). Medieval touches: rope-wrapped posts, an iron lantern, a nailed deck.
+// Palette only from shared/palette.ts (shade() is the placeholder shading helper).
 
 import { Graphics } from 'pixi.js';
 import { LAKE_BUSHES, LAKE_PIER, LAKE_WATER, PALETTE, type Point } from '@pixel-hotel/shared';
@@ -8,161 +13,538 @@ import { DARK_WARM } from '../render/bareStyles.ts';
 import { shade } from '../render/colors.ts';
 import { hash01 } from '../render/atmosphere.ts';
 
-const WATER = shade(PALETTE[16], 1.25);
-const WATER_LIGHT = shade(PALETTE[17], 0.95);
-const WATER_DEEP = shade(PALETTE[16], 0.85);
-const SAND = shade(PALETTE[2], 0.95);
-const WOOD = PALETTE[4];
-const LEAF = PALETTE[13];
-const LEAF_RIM = PALETTE[15];
+const WOOD = PALETTE[4]!;
+const SAND_DRY = shade(PALETTE[2]!, 0.97);
+const SAND_WET = shade(PALETTE[3]!, 0.92);
+const FOAM = PALETTE[19]!;
+const SHALLOW = shade(PALETTE[17]!, 1.08);
+const WATER_MID = shade(PALETTE[17]!, 0.92);
+const WATER_DEEP = shade(PALETTE[17]!, 0.72);
+const WATER_DEEPEST = shade(PALETTE[17]!, 0.56);
+const SKY_GLINT = PALETTE[18]!;
 
-/** The water under the pier too (the pier's gap is water, but the pier is walkable on top). */
-const UNDER_PIER = { x: LAKE_WATER[0]!.x, y: LAKE_WATER[0]!.y + LAKE_WATER[0]!.h, w: LAKE_PIER.x + LAKE_PIER.w - LAKE_WATER[0]!.x, h: LAKE_WATER[1]!.y - (LAKE_WATER[0]!.y + LAKE_WATER[0]!.h) };
+/** The whole lake: the bounding box of the water rectangles (they cover it fully: the pier's gap is water). */
+const LAKE = (() => {
+  const x0 = Math.min(...LAKE_WATER.map((r) => r.x));
+  const y0 = Math.min(...LAKE_WATER.map((r) => r.y));
+  const x1 = Math.max(...LAKE_WATER.map((r) => r.x + r.w));
+  const y1 = Math.max(...LAKE_WATER.map((r) => r.y + r.h));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+})();
+
+/** A flat colour, or a colour with alpha. */
+type Fill = string | { color: string; alpha: number };
 
 /** A round pixel blob (whole rows, no smooth edge). */
-function blob(g: Graphics, cx: number, cy: number, r: number, color: string): void {
+function blob(g: Graphics, cx: number, cy: number, r: number, color: Fill): void {
   for (let dy = -r; dy <= r; dy++) {
     const half = Math.round(Math.sqrt(r * r - dy * dy));
     if (half > 0) g.rect(cx - half, cy + dy, half * 2, 1).fill(color);
   }
 }
 
-/** The lake: a sandy rim, the water, a lighter top edge and a darker bottom edge on every rectangle. */
+/** A flat oval of whole rows (rx wide, ry tall). */
+function oval(g: Graphics, cx: number, cy: number, rx: number, ry: number, color: Fill): void {
+  for (let i = 0; i < ry * 2; i++) {
+    const dy = i + 0.5 - ry;
+    const hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy / ry) * (dy / ry))));
+    if (hw > 0) g.rect(cx - hw, cy - ry + i, hw * 2, 1).fill(color);
+  }
+}
+
+function px(g: Graphics, x: number, y: number, w: number, h: number, color: Fill): void {
+  g.rect(x, y, w, h).fill(color);
+}
+
+/** A rectangle with stepped round corners (radius r), as whole rows. */
+function rrect(g: Graphics, x: number, y: number, w: number, h: number, r: number, color: string): void {
+  for (let dy = 0; dy < h; dy++) {
+    const t = Math.min(dy, h - 1 - dy);
+    let inset = 0;
+    if (t < r) {
+      const d = r - t - 0.5;
+      inset = r - Math.round(Math.sqrt(Math.max(0, r * r - d * d)));
+    }
+    g.rect(x + inset, y + dy, w - inset * 2, 1).fill(color);
+  }
+}
+
+/** Grows (d > 0) or shrinks (d < 0) the lake rectangle by d px on every side. */
+function grown(d: number): { x: number; y: number; w: number; h: number } {
+  return { x: LAKE.x - d, y: LAKE.y - d, w: LAKE.w + d * 2, h: LAKE.h + d * 2 };
+}
+
+/**
+ * The lake: a dark rim, dry sand, wet sand, a white foam line, shallows, mid water, a deeper middle and the deepest
+ * heart, all with rounded corners; a lighter north-west edge and a darker south-east edge; pebbles on the sand; a
+ * dark patch of shade under the pier. The pier itself is drawn by drawPier on top.
+ */
 export function drawLake(g: Graphics): void {
   g.clear();
-  const rects = [...LAKE_WATER, UNDER_PIER];
-  for (const r of rects) g.rect(r.x - 4, r.y - 4, r.w + 8, r.h + 8).fill(DARK_WARM);
-  for (const r of rects) g.rect(r.x - 3, r.y - 3, r.w + 6, r.h + 6).fill(SAND);
-  for (const r of rects) {
-    g.rect(r.x, r.y, r.w, r.h).fill(WATER);
-    g.rect(r.x, r.y + r.h - 6, r.w, 6).fill(WATER_DEEP);
-    g.rect(r.x, r.y, r.w, 2).fill(WATER_LIGHT);
+  const layers: [number, number, string][] = [
+    [7, 18, DARK_WARM],
+    [6, 17, SAND_DRY],
+    [3, 13, SAND_WET],
+    [1, 10, shade(SAND_WET, 0.85)],
+    [0, 9, FOAM],
+    [-2, 8, SHALLOW],
+    [-9, 14, WATER_MID],
+    [-26, 22, WATER_DEEP],
+    [-58, 28, WATER_DEEPEST],
+  ];
+  for (const [d, r, color] of layers) {
+    const q = grown(d);
+    rrect(g, q.x, q.y, q.w, q.h, r, color);
   }
-  // The outer corners are cut a little (no hard square lake).
-  for (const r of LAKE_WATER) {
-    for (const [cx, cy] of [[r.x, r.y], [r.x + r.w - 3, r.y], [r.x, r.y + r.h - 3], [r.x + r.w - 3, r.y + r.h - 3]] as const) {
-      if (cx < UNDER_PIER.x + 1 && cy >= UNDER_PIER.y - 1 && cy <= UNDER_PIER.y + UNDER_PIER.h) continue;
-      g.rect(cx, cy, 3, 3).fill(SAND);
+  // Light from the top-left: a lighter band inside the north-west shallows, a darker one inside the south-east.
+  const sh = grown(-2);
+  px(g, sh.x + 12, sh.y, sh.w - 24, 2, shade(SHALLOW, 1.22));
+  px(g, sh.x, sh.y + 12, 2, sh.h - 24, shade(SHALLOW, 1.15));
+  px(g, sh.x + 12, sh.y + sh.h - 2, sh.w - 24, 2, shade(SHALLOW, 0.8));
+  px(g, sh.x + sh.w - 2, sh.y + 12, 2, sh.h - 24, shade(SHALLOW, 0.85));
+  // Foam flecks along the foam line.
+  for (let i = 0; i < 60; i++) {
+    const t = hash01(i, 11) * (LAKE.w * 2 + LAKE.h * 2 - 80) + 40;
+    let x: number;
+    let y: number;
+    if (t < LAKE.w) { x = LAKE.x + t; y = LAKE.y + 2; }
+    else if (t < LAKE.w + LAKE.h) { x = LAKE.x + LAKE.w - 4; y = LAKE.y + (t - LAKE.w); }
+    else if (t < LAKE.w * 2 + LAKE.h) { x = LAKE.x + (t - LAKE.w - LAKE.h); y = LAKE.y + LAKE.h - 4; }
+    else { x = LAKE.x + 2; y = LAKE.y + (t - LAKE.w * 2 - LAKE.h); }
+    px(g, Math.round(x), Math.round(y), 3, 1, FOAM);
+  }
+  // Pebbles and shells on the dry sand.
+  for (let i = 0; i < 70; i++) {
+    const side = Math.floor(hash01(i, 21) * 4);
+    const u = hash01(i, 22);
+    const off = 3 + Math.floor(hash01(i, 23) * 3);
+    let x: number;
+    let y: number;
+    if (side === 0) { x = LAKE.x + 16 + u * (LAKE.w - 32); y = LAKE.y - off - 1; }
+    else if (side === 1) { x = LAKE.x + LAKE.w + off - 1; y = LAKE.y + 16 + u * (LAKE.h - 32); }
+    else if (side === 2) { x = LAKE.x + 16 + u * (LAKE.w - 32); y = LAKE.y + LAKE.h + off - 1; }
+    else { x = LAKE.x - off - 1; y = LAKE.y + 16 + u * (LAKE.h - 32); }
+    const kind = hash01(i, 24);
+    const rx = Math.round(x);
+    const ry = Math.round(y);
+    if (kind < 0.55) { px(g, rx, ry, 3, 2, shade(SAND_DRY, 0.72)); px(g, rx, ry, 2, 1, shade(SAND_DRY, 0.95)); }
+    else if (kind < 0.85) { px(g, rx, ry, 2, 2, shade(PALETTE[21]!, 0.9)); px(g, rx, ry, 1, 1, PALETTE[20]!); }
+    else { px(g, rx, ry, 3, 2, PALETTE[30]!); px(g, rx + 1, ry, 1, 2, PALETTE[29]!); }
+  }
+  // The shade of the pier on the water: a dark patch under the deck and a soft strip just south of it.
+  const p = LAKE_PIER;
+  const lakeL = LAKE.x;
+  px(g, lakeL, p.y + 2, p.x + p.w - lakeL, p.h, { color: PALETTE[24]!, alpha: 0.3 });
+  px(g, Math.max(lakeL, p.x), p.y + p.h + 4, p.x + p.w - Math.max(lakeL, p.x) + 4, 5, { color: PALETTE[24]!, alpha: 0.22 });
+  px(g, p.x + p.w - 6, p.y + p.h + 9, 14, 3, { color: PALETTE[24]!, alpha: 0.14 });
+}
+
+/**
+ * Ripples and sun glints on the water: short light lines that come and go, and white sparkles that twinkle
+ * (stepped every 250 ms; the coder may animate the whole layer with a tile strip later).
+ */
+export function drawRipples(g: Graphics, clockMs: number): void {
+  g.clear();
+  const step = Math.floor(clockMs / 250);
+  const inner = grown(-14);
+  for (let i = 0; i < 34; i++) {
+    const phase = (step + Math.floor(hash01(i, 1) * 10)) % 10;
+    if (phase > 4) continue;
+    const x = inner.x + Math.floor(hash01(i, 3) * (inner.w - 24));
+    const y = inner.y + Math.floor(hash01(i, 4) * (inner.h - 6));
+    const w = 4 + phase * 2;
+    g.rect(x, y, w, 1).fill({ color: PALETTE[19]!, alpha: phase === 0 || phase === 4 ? 0.22 : 0.5 });
+    if (phase === 2 && i % 3 === 0) g.rect(x + 2, y + 1, Math.max(2, w - 4), 1).fill({ color: SKY_GLINT, alpha: 0.3 });
+  }
+  for (let i = 0; i < 18; i++) {
+    const on = (step + Math.floor(hash01(i, 7) * 6)) % 6;
+    if (on > 1) continue;
+    const x = inner.x + 6 + Math.floor(hash01(i, 8) * (inner.w - 12));
+    const y = inner.y + 6 + Math.floor(hash01(i, 9) * (inner.h - 12));
+    g.rect(x, y, 1, 1).fill(PALETTE[19]!);
+    if (on === 0) {
+      g.rect(x - 1, y, 3, 1).fill({ color: PALETTE[19]!, alpha: 0.6 });
+      g.rect(x, y - 1, 1, 3).fill({ color: PALETTE[19]!, alpha: 0.6 });
     }
   }
 }
 
-/** Ripples on the water: short light lines that come and go (stepped every 500 ms). */
-export function drawRipples(g: Graphics, clockMs: number): void {
-  g.clear();
-  const step = Math.floor(clockMs / 500);
-  const rects = [...LAKE_WATER, UNDER_PIER];
-  for (let i = 0; i < 22; i++) {
-    const phase = (step + Math.floor(hash01(i, 1) * 8)) % 8;
-    if (phase > 3) continue;
-    const r = rects[Math.floor(hash01(i, 2) * rects.length)]!;
-    const x = r.x + 8 + Math.floor(hash01(i, 3) * (r.w - 24));
-    const y = r.y + 8 + Math.floor(hash01(i, 4) * (r.h - 20));
-    const w = 4 + phase * 2;
-    g.rect(x, y, w, 1).fill({ color: PALETTE[19], alpha: phase === 0 || phase === 3 ? 0.25 : 0.45 });
-  }
-}
-
-/** The pier: boards across, posts at the shore end and the far end. */
+/**
+ * The pier: a nailed plank deck with lit tops, rope-wrapped posts at the shore end, side rails with a rope (none at the
+ * casting end, where you stand and cast), and a lantern post at the far corner. The deck's own footprint is unchanged.
+ */
 export function drawPier(g: Graphics): void {
   g.clear();
   const p = LAKE_PIER;
+  const railEnd = p.x + p.w - 22; // the rails stop here: the casting end stays open
   g.rect(p.x - 1, p.y - 1, p.w + 2, p.h + 6).fill(DARK_WARM);
   for (let x = p.x; x < p.x + p.w; x += 8) {
     const odd = ((x - p.x) / 8) % 2 === 1;
-    g.rect(x, p.y, 7, p.h).fill(odd ? shade(WOOD, 0.92) : shade(WOOD, 1.05));
-    g.rect(x, p.y, 7, 1).fill(shade(WOOD, 1.25));
-    g.rect(x + 7, p.y, 1, p.h).fill(shade(WOOD, 0.6));
-    g.rect(x + 2, p.y + 9 + ((x / 8) % 3) * 4, 1, 1).fill(shade(WOOD, 0.7));
+    px(g, x, p.y, 7, p.h, odd ? shade(WOOD, 0.92) : shade(WOOD, 1.08));
+    px(g, x, p.y, 7, 1, shade(WOOD, 1.3));
+    px(g, x, p.y, 1, p.h, shade(WOOD, 1.15));
+    px(g, x + 7, p.y, 1, p.h, shade(WOOD, 0.55));
+    px(g, x + 2, p.y + 9 + ((x / 8) % 3) * 4, 1, 1, shade(WOOD, 0.65)); // a knot
+    px(g, x + 3, p.y + 2, 1, 1, PALETTE[21]!); // nails along both long edges
+    px(g, x + 3, p.y + p.h - 3, 1, 1, PALETTE[21]!);
   }
-  // The front edge, lower than the boards, in shade.
-  g.rect(p.x, p.y + p.h, p.w, 4).fill(shade(WOOD, 0.55));
-  // Posts.
-  for (const [x, y] of [[p.x + 2, p.y - 2], [p.x + p.w - 6, p.y - 2], [p.x + 2, p.y + p.h - 4], [p.x + p.w - 6, p.y + p.h - 4]] as const) {
-    g.rect(x - 1, y - 1, 6, 8).fill(DARK_WARM);
-    g.rect(x, y, 4, 6).fill(shade(WOOD, 0.8));
-    g.rect(x, y, 1, 6).fill(shade(WOOD, 1.15));
+  // The front edge of the deck, lower than the boards, in shade, with the beam ends.
+  px(g, p.x, p.y + p.h, p.w, 5, shade(WOOD, 0.55));
+  px(g, p.x, p.y + p.h, p.w, 1, shade(WOOD, 0.8));
+  for (let x = p.x + 8; x < p.x + p.w; x += 32) px(g, x, p.y + p.h + 1, 4, 4, shade(WOOD, 0.4));
+  // Side rails: posts every 32 px, a wooden top rail and a rope sagging between them.
+  const rails: number[] = [];
+  for (let x = p.x + 4; x < railEnd; x += 32) rails.push(x);
+  for (const y of [p.y - 2, p.y + p.h - 4]) {
+    const front = y > p.y;
+    px(g, p.x + 4, y - 1, railEnd - p.x - 2, 4, DARK_WARM);
+    px(g, p.x + 4, y, railEnd - p.x - 2, 2, shade(WOOD, front ? 1.0 : 0.85));
+    px(g, p.x + 4, y, railEnd - p.x - 2, 1, shade(WOOD, 1.3));
+    for (const x of rails) {
+      px(g, x - 1, y - 9, 6, 13, DARK_WARM);
+      px(g, x, y - 8, 4, 11, shade(WOOD, 0.8));
+      px(g, x, y - 8, 1, 11, shade(WOOD, 1.2));
+      px(g, x, y - 8, 4, 2, shade(WOOD, 1.3)); // cap
+    }
+    // The rope: cream, one px sag between posts.
+    for (let i = 0; i + 1 < rails.length; i++) {
+      const a = rails[i]! + 4;
+      const b = rails[i + 1]!;
+      px(g, a, y - 5, b - a, 1, PALETTE[2]!);
+      px(g, a + 6, y - 4, b - a - 12, 1, shade(PALETTE[2]!, 0.7));
+    }
   }
+  // Rope-wrapped posts at the shore end (a coil of cream bands).
+  for (const y of [p.y - 2, p.y + p.h - 4]) {
+    px(g, p.x + 4, y - 6, 4, 1, PALETTE[2]!);
+    px(g, p.x + 4, y - 4, 4, 1, shade(PALETTE[2]!, 0.7));
+  }
+  // The far posts (stand on the casting end) and a lantern post on the north-east corner.
+  for (const [x, y] of [[p.x + p.w - 6, p.y + p.h - 4], [p.x + p.w - 6, p.y - 2]] as const) {
+    px(g, x - 1, y - 1, 6, 8, DARK_WARM);
+    px(g, x, y, 4, 6, shade(WOOD, 0.8));
+    px(g, x, y, 1, 6, shade(WOOD, 1.15));
+  }
+  const lx = p.x + p.w - 5;
+  const ly = p.y - 2;
+  px(g, lx - 1, ly - 25, 6, 28, DARK_WARM);
+  px(g, lx, ly - 24, 4, 26, shade(WOOD, 0.8));
+  px(g, lx, ly - 24, 1, 26, shade(WOOD, 1.2));
+  px(g, lx + 4, ly - 24, 7, 2, DARK_WARM); // iron arm
+  px(g, lx + 4, ly - 24, 7, 1, PALETTE[21]!);
+  px(g, lx + 7, ly - 23, 6, 9, DARK_WARM); // the lantern
+  px(g, lx + 8, ly - 22, 4, 7, PALETTE[10]!);
+  px(g, lx + 9, ly - 21, 2, 4, PALETTE[11]!);
+  px(g, lx + 6, ly - 24, 8, 1, PALETTE[22]!);
+  g.rect(lx - 6, ly - 28, 26, 22).fill({ color: PALETTE[9]!, alpha: 0.12 });
+  g.rect(lx - 2, ly - 25, 18, 16).fill({ color: PALETTE[10]!, alpha: 0.16 });
 }
 
 export type TreeLook = 'tree' | 'stump' | 'sapling';
 
-/** A tree at its anchor (the bottom middle of the trunk, 0, 0): trunk and crown; a stump; or a sapling. `hits`: notches in the trunk. */
-export function drawTree(look: TreeLook, hits: number): Graphics {
+/** Tree kinds: 0 oak, 1 pine, 2 birch; each in two leaf shades (the second set is 3, 4, 5). */
+export const TREE_VARIANTS = 6;
+/** Which variant tree number `i` is (the coder places them in C15; the mix is stable). */
+export function treeVariantOf(i: number): number {
+  return [0, 1, 2, 3, 1, 5, 0, 4][((i % 8) + 8) % 8]!;
+}
+
+interface Leaf {
+  rim: string;
+  body: string;
+  lit: string;
+  dark: string;
+}
+const LEAF_LIGHT: Leaf = { rim: PALETTE[14]!, body: PALETTE[13]!, lit: PALETTE[12]!, dark: PALETTE[15]! };
+const LEAF_DARK: Leaf = { rim: PALETTE[14]!, body: shade(PALETTE[12]!, 0.78), lit: PALETTE[12]!, dark: PALETTE[15]! };
+
+/** A trunk of half-width hw, x from -hw to hw, rows y0..0, with bark lines and roots. */
+function trunk(g: Graphics, hw: number, h: number, bark: string, lit: string, dark: string, birch: boolean): void {
+  px(g, -hw - 1, -h, hw * 2 + 2, h, DARK_WARM);
+  px(g, -hw, -h, hw * 2, h - 1, bark);
+  px(g, -hw, -h, Math.max(2, Math.floor(hw / 2)), h - 1, lit);
+  px(g, hw - Math.max(2, Math.floor(hw / 2)), -h, Math.max(2, Math.floor(hw / 2)), h - 1, dark);
+  if (birch) {
+    for (const y of [-h + 4, -h + 10, -h + 17, -4]) px(g, -hw + 1, y, 3 + (y % 3), 2, PALETTE[25]!);
+    px(g, hw - 4, -h + 7, 3, 1, PALETTE[25]!);
+  } else {
+    for (const y of [-h + 5, -h + 12, -h + 19]) px(g, -1, y, 1, 4, shade(dark, 0.7));
+    px(g, -2, -12, 3, 3, shade(dark, 0.6));
+    px(g, -1, -11, 1, 1, shade(bark, 1.1));
+  }
+  // The roots.
+  px(g, -hw - 3, -3, 4, 3, DARK_WARM);
+  px(g, -hw - 2, -3, 3, 2, bark);
+  px(g, hw - 1, -3, 4, 3, DARK_WARM);
+  px(g, hw, -3, 3, 2, dark);
+}
+
+/**
+ * A tree at its anchor (the bottom middle of the trunk, 0, 0): trunk and crown; a stump; or a sapling. `hits`: notches in the
+ * trunk. `variant` 0 to 5: oak, pine, birch in a fresh and a deep leaf shade (see treeVariantOf); the default is the old oak.
+ */
+export function drawTree(look: TreeLook, hits: number, variant = 0): Graphics {
   const g = new Graphics();
-  // A soft shadow on the grass.
-  g.ellipse(2, 1, 16, 4).fill({ color: DARK_WARM, alpha: 0.25 });
+  const kind = ((variant % 3) + 3) % 3; // 0 oak, 1 pine, 2 birch
+  const leaf = variant >= 3 ? LEAF_DARK : LEAF_LIGHT;
+  // A soft shadow on the grass, long and to the right (light from the top-left).
+  oval(g, 4, 1, kind === 1 ? 16 : 20, 4, { color: DARK_WARM, alpha: 0.3 });
   if (look === 'tree') {
-    g.rect(-7, -26, 14, 26).fill(DARK_WARM);
-    g.rect(-6, -26, 12, 25).fill(shade(WOOD, 0.8));
-    g.rect(-6, -26, 4, 25).fill(shade(WOOD, 1.1));
-    g.rect(2, -26, 4, 25).fill(shade(WOOD, 0.6));
-    // The roots.
-    g.rect(-9, -3, 4, 3).fill(shade(WOOD, 0.8));
-    g.rect(5, -3, 4, 3).fill(shade(WOOD, 0.65));
-    // The crown: a big blob with two smaller ones, a dark rim, light from the top-left.
-    const parts: [number, number, number][] = [[0, -50, 20], [-14, -40, 13], [14, -41, 13]];
-    for (const [x, y, r] of parts) blob(g, x, y + 2, r, shade(LEAF_RIM, 0.8));
-    for (const [x, y, r] of parts) blob(g, x, y, r, LEAF_RIM);
-    for (const [x, y, r] of parts) blob(g, x - 1, y - 1, r - 2, LEAF);
-    blob(g, -7, -57, 6, shade(LEAF, 1.25));
-    blob(g, 9, -46, 4, shade(LEAF, 0.85));
-    blob(g, -15, -44, 3, shade(LEAF, 1.2));
+    const hw = kind === 2 ? 5 : kind === 1 ? 4 : 7;
+    const th = kind === 1 ? 20 : 26;
+    const bark = kind === 2 ? PALETTE[2]! : shade(WOOD, 0.8);
+    const lit = kind === 2 ? PALETTE[19]! : shade(WOOD, 1.2);
+    const dark = kind === 2 ? PALETTE[21]! : shade(WOOD, 0.58);
+    trunk(g, hw, th, bark, lit, dark, kind === 2);
+    if (kind === 0) {
+      // Oak: a broad crown of three clumps, a dark underside, lit clumps top-left, leaf clusters on the rim.
+      const parts: [number, number, number][] = [[0, -50, 20], [-14, -40, 13], [14, -41, 13]];
+      for (const [x, y, r] of parts) blob(g, x, y + 2, r + 1, DARK_WARM);
+      for (const [x, y, r] of parts) blob(g, x, y + 2, r, leaf.dark);
+      for (const [x, y, r] of parts) blob(g, x, y, r, leaf.rim);
+      for (const [x, y, r] of parts) blob(g, x - 1, y - 1, r - 2, leaf.body);
+      blob(g, -7, -57, 7, leaf.lit);
+      blob(g, -17, -45, 4, leaf.lit);
+      blob(g, 9, -46, 4, shade(leaf.body, 0.85));
+      blob(g, 16, -38, 4, shade(leaf.body, 0.8));
+      for (const [x, y] of [[-3, -63], [5, -55], [-10, -49], [12, -50], [0, -44], [-16, -38]] as const) px(g, x, y, 2, 2, leaf.rim);
+      for (const [x, y] of [[-12, -60], [-4, -66], [-1, -52]] as const) px(g, x, y, 2, 1, shade(leaf.lit, 1.2));
+    } else if (kind === 1) {
+      // Pine: four stepped tiers, wide at the bottom, lit left edges, dark right edges, a tip.
+      const tiers: [number, number, number][] = [[-12, 18, 15], [-27, 14, 13], [-41, 10, 12], [-54, 6, 11]];
+      for (const [by, hwid, th2] of tiers) {
+        for (let i = 0; i < th2; i++) {
+          const half = Math.round(hwid * ((i + 1) / th2));
+          px(g, -half - 1, by - th2 + i, half * 2 + 2, 1, DARK_WARM);
+        }
+        px(g, -hwid - 1, by, hwid * 2 + 2, 1, DARK_WARM);
+      }
+      for (const [by, hwid, th2] of tiers) {
+        for (let i = 0; i < th2; i++) {
+          const half = Math.round(hwid * ((i + 1) / th2));
+          px(g, -half, by - th2 + i, half * 2, 1, leaf.rim);
+          px(g, -half, by - th2 + i, Math.max(1, Math.round(half * 0.55)), 1, leaf.body);
+          px(g, -half + 1, by - th2 + i, Math.max(1, Math.round(half * 0.25)), 1, leaf.lit);
+        }
+        px(g, -hwid, by, hwid * 2, 2, leaf.dark);
+      }
+      px(g, -1, -70, 2, 6, DARK_WARM);
+      px(g, 0, -69, 1, 4, leaf.lit);
+    } else {
+      // Birch: two light oval crowns on a slim white trunk with dark marks.
+      for (const [x, y, rx, ry] of [[-5, -44, 12, 14], [7, -38, 11, 12], [0, -56, 10, 10]] as const) oval(g, x, y + 1, rx + 1, ry + 1, DARK_WARM);
+      for (const [x, y, rx, ry] of [[-5, -44, 12, 14], [7, -38, 11, 12], [0, -56, 10, 10]] as const) oval(g, x, y, rx, ry, leaf.body);
+      oval(g, -8, -50, 7, 7, leaf.lit);
+      oval(g, 3, -58, 5, 4, leaf.lit);
+      oval(g, 9, -35, 6, 5, shade(leaf.body, 0.85));
+      for (const [x, y] of [[-12, -40], [-2, -46], [4, -52], [8, -42]] as const) px(g, x, y, 2, 2, leaf.rim);
+    }
     // The notches the axe left (one per hit, alternating sides).
+    const w = hw;
     for (let i = 0; i < Math.min(hits, 4); i++) {
       const y = -6 - i * 5;
-      if (i % 2 === 0) g.rect(-6, y, 5, 2).fill(shade(PALETTE[2], 0.95));
-      else g.rect(1, y, 5, 2).fill(shade(PALETTE[2], 0.95));
-      g.rect(i % 2 === 0 ? -6 : 1, y + 2, 5, 1).fill(shade(WOOD, 0.45));
+      const left = i % 2 === 0;
+      px(g, left ? -w : 1, y, w - 1, 2, shade(PALETTE[2]!, 0.95));
+      px(g, left ? -w : 1, y + 2, w - 1, 1, shade(WOOD, 0.45));
     }
   } else {
-    // The stump: a short trunk with a lighter top showing the rings.
-    g.rect(-8, -9, 16, 9).fill(DARK_WARM);
-    g.rect(-7, -6, 14, 6).fill(shade(WOOD, 0.75));
-    g.rect(-7, -6, 4, 6).fill(shade(WOOD, 1.05));
-    g.rect(-7, -9, 14, 4).fill(shade(PALETTE[3], 0.95));
-    g.rect(-4, -8, 8, 2).fill(shade(PALETTE[3], 0.7));
-    g.rect(-1, -8, 2, 1).fill(shade(PALETTE[3], 0.55));
+    // The stump: a short trunk with a lighter top showing the growth rings, moss on the shaded side, a mushroom.
+    px(g, -9, -9, 18, 9, DARK_WARM);
+    px(g, -8, -6, 16, 6, shade(WOOD, 0.72));
+    px(g, -8, -6, 5, 6, shade(WOOD, 1.1));
+    px(g, 4, -6, 4, 6, shade(WOOD, 0.55));
+    oval(g, 0, -8, 9, 4, DARK_WARM);
+    oval(g, 0, -8, 8, 3, shade(PALETTE[3]!, 0.98));
+    oval(g, 0, -8, 5, 2, shade(PALETTE[3]!, 0.78));
+    px(g, -1, -9, 2, 1, shade(PALETTE[3]!, 0.6));
+    px(g, 4, -5, 4, 2, kind === 2 ? PALETTE[12]! : PALETTE[14]!);
+    if (look === 'stump') {
+      px(g, -11, -3, 3, 2, DARK_WARM);
+      px(g, -10, -3, 2, 1, shade(WOOD, 0.7));
+      px(g, 8, -4, 2, 3, PALETTE[2]!);
+      px(g, 7, -6, 4, 2, PALETTE[8]!);
+      px(g, 8, -6, 1, 1, PALETTE[19]!);
+    }
     if (look === 'sapling') {
-      g.rect(-1, -18, 2, 10).fill(shade(WOOD, 0.9));
-      blob(g, 0, -20, 5, LEAF_RIM);
-      blob(g, 0, -20, 4, LEAF);
-      blob(g, -1, -21, 2, shade(LEAF, 1.25));
+      // A young tree: a thin stem, a few leaves in the shade of the variant, a wooden stake with a tie.
+      px(g, -1, -22, 3, 14, DARK_WARM);
+      px(g, 0, -22, 1, 14, shade(WOOD, 1.05));
+      px(g, 1, -22, 1, 14, shade(WOOD, 0.7));
+      blob(g, 0, -24, 6, DARK_WARM);
+      blob(g, 0, -24, 5, leaf.rim);
+      blob(g, -1, -25, 4, leaf.body);
+      blob(g, -2, -26, 2, leaf.lit);
+      px(g, -8, -18, 4, 3, leaf.body);
+      px(g, 5, -15, 4, 3, shade(leaf.body, 0.85));
+      px(g, -9, -18, 1, 3, DARK_WARM);
+      px(g, 9, -15, 1, 3, DARK_WARM);
+      px(g, 6, -16, 2, 10, shade(WOOD, 0.9));
+      px(g, 5, -8, 4, 1, PALETTE[2]!);
     }
   }
   return g;
 }
 
-/** A bush (decoration): a dark rim, a lighter body and a few berries. */
+/**
+ * A bush (decoration), three kinds by the seed: 0 round with white flowers, 1 berry bush, 2 a bush with yellow and rose
+ * flowers. Dark rim, light from the top-left.
+ */
 export function drawBush(seed: number): Graphics {
   const g = new Graphics();
-  g.ellipse(2, 1, 12, 3).fill({ color: DARK_WARM, alpha: 0.22 });
-  blob(g, -5, -6, 7, LEAF_RIM);
-  blob(g, 5, -6, 7, LEAF_RIM);
-  blob(g, 0, -9, 8, LEAF_RIM);
-  blob(g, -5, -6, 6, LEAF);
-  blob(g, 5, -6, 6, shade(LEAF, 0.9));
-  blob(g, -1, -10, 6, shade(LEAF, 1.1));
-  blob(g, -3, -12, 2, shade(LEAF, 1.3));
-  if (hash01(seed, 5) > 0.45) {
-    for (const [x, y] of [[-6, -5], [4, -8], [7, -3]] as const) g.rect(x, y, 2, 2).fill(PALETTE[8]);
-  }
+  const kind = Math.floor(hash01(seed, 5) * 3) % 3;
+  const leaf = kind === 1 ? LEAF_DARK : LEAF_LIGHT;
+  oval(g, 3, 1, 13, 3, { color: DARK_WARM, alpha: 0.35 });
+  blob(g, -5, -6, 8, DARK_WARM);
+  blob(g, 5, -6, 8, DARK_WARM);
+  blob(g, 0, -9, 9, DARK_WARM);
+  blob(g, -5, -6, 7, leaf.rim);
+  blob(g, 5, -6, 7, leaf.rim);
+  blob(g, 0, -9, 8, leaf.rim);
+  blob(g, -5, -6, 6, leaf.body);
+  blob(g, 5, -6, 6, shade(leaf.body, 0.9));
+  blob(g, -1, -10, 6, shade(leaf.body, 1.1));
+  blob(g, -3, -12, 3, leaf.lit);
+  blob(g, -9, -7, 2, leaf.lit);
+  const spots: [number, number][] = [[-7, -5], [3, -9], [7, -4], [-2, -12], [-9, -9], [10, -8]];
+  if (kind === 0) for (const [x, y] of spots) { px(g, x, y, 2, 2, PALETTE[19]!); px(g, x, y + 1, 1, 1, PALETTE[2]!); }
+  else if (kind === 1) for (const [x, y] of spots) { px(g, x, y, 2, 2, PALETTE[8]!); px(g, x, y, 1, 1, PALETTE[29]!); }
+  else for (const [i, [x, y]] of spots.entries()) px(g, x, y, 2, 2, i % 2 === 0 ? PALETTE[11]! : PALETTE[29]!);
   return g;
 }
 
 /** Where the bushes stand (anchors). */
 export const BUSHES: readonly Point[] = LAKE_BUSHES;
 
+// ---------- Decor pieces (the coder places them in C15: never on water, the pier, a tree or the door zone) ----------
+
+/** Reeds on the shore: a clump of three to five blades with seed heads; `seed` picks the blades. Base at (0, 0). */
+export function drawReeds(seed: number): Graphics {
+  const g = new Graphics();
+  oval(g, 1, 1, 8, 2, { color: DARK_WARM, alpha: 0.3 });
+  const n = 3 + Math.floor(hash01(seed, 1) * 3);
+  for (let i = 0; i < n; i++) {
+    const x = -6 + i * 3 + Math.floor(hash01(seed, 2 + i) * 2);
+    const h = 12 + Math.floor(hash01(seed, 9 + i) * 8);
+    const lean = i % 2 === 0 ? 0 : 1;
+    px(g, x - 1, -h, 4, h, DARK_WARM);
+    px(g, x, -h + 1, 2, h - 1, PALETTE[13]!);
+    px(g, x, -h + 1, 1, h - 1, PALETTE[12]!);
+    px(g, x + lean, -h - 2, 2, 3, DARK_WARM);
+    px(g, x + lean, -h - 1, 2, 2, PALETTE[4]!);
+  }
+  return g;
+}
+
+/** A cattail: a tall stem with a brown sausage head. Base at (0, 0). */
+export function drawCattail(seed: number): Graphics {
+  const g = new Graphics();
+  oval(g, 1, 1, 6, 2, { color: DARK_WARM, alpha: 0.3 });
+  for (const [i, x] of [-4, 0, 4].entries()) {
+    const h = 18 + ((seed + i * 5) % 3) * 4;
+    px(g, x - 1, -h, 3, h, DARK_WARM);
+    px(g, x, -h + 1, 1, h - 1, PALETTE[13]!);
+    px(g, x - 2, -h - 6, 5, 8, DARK_WARM);
+    px(g, x - 1, -h - 5, 3, 6, PALETTE[5]!);
+    px(g, x - 1, -h - 5, 1, 6, PALETTE[4]!);
+    px(g, x, -h - 8, 1, 3, PALETTE[3]!);
+  }
+  return g;
+}
+
+/** A flower in a tuft of leaves: kind 0 yellow, 1 rose, 2 white, 3 orchid (blue-violet); `seed` picks a petal count. Base at (0, 0). */
+export function drawFlower(kind = 0, seed = 0): Graphics {
+  const g = new Graphics();
+  const petal = [PALETTE[11]!, PALETTE[29]!, PALETTE[19]!, PALETTE[28]!][((kind % 4) + 4) % 4]!;
+  const heart = kind === 0 || kind === 2 ? PALETTE[9]! : PALETTE[11]!;
+  px(g, -4, -3, 3, 3, DARK_WARM);
+  px(g, 1, -3, 3, 3, DARK_WARM);
+  px(g, -3, -3, 2, 2, PALETTE[13]!);
+  px(g, 1, -3, 2, 2, PALETTE[12]!);
+  px(g, 0, -9, 1, 7, DARK_WARM);
+  px(g, 0, -8, 1, 6, PALETTE[13]!);
+  const n = hash01(seed, 4) > 0.5 ? 1 : 0;
+  px(g, -3, -13 - n, 7, 5, DARK_WARM);
+  px(g, -2, -14 - n, 5, 7, DARK_WARM);
+  px(g, -2, -12 - n, 5, 3, petal);
+  px(g, -1, -13 - n, 3, 5, petal);
+  px(g, -1, -11 - n, 1, 1, heart);
+  px(g, 0, -12 - n, 1, 1, shade(petal, 1.2));
+  return g;
+}
+
+/** A small stone: grey, lit top-left, mossy on the shaded side for some seeds. Base at (0, 0). */
+export function drawStone(seed = 0): Graphics {
+  const g = new Graphics();
+  const s = 1 + (seed % 3);
+  oval(g, 1, 1, 6 + s * 2, 2, { color: DARK_WARM, alpha: 0.3 });
+  oval(g, 0, -3 - s, 6 + s * 2, 3 + s, DARK_WARM);
+  oval(g, 0, -3 - s, 5 + s * 2, 2 + s, PALETTE[21]!);
+  oval(g, -1, -4 - s, 3 + s, 1 + s, PALETTE[20]!);
+  px(g, 3 + s, -2 - s, 3, 2, PALETTE[22]!);
+  if (seed % 2 === 0) px(g, 1 + s, -4 - s, 4, 2, PALETTE[14]!);
+  return g;
+}
+
+/** A mushroom pair: a red cap with white dots on a cream stalk. Base at (0, 0). */
+export function drawMushroom(seed = 0): Graphics {
+  const g = new Graphics();
+  oval(g, 1, 1, 8, 2, { color: DARK_WARM, alpha: 0.3 });
+  const cap = seed % 2 === 0 ? PALETTE[8]! : PALETTE[4]!;
+  const small = (x: number, h: number): void => {
+    px(g, x - 2, -h, 5, h, DARK_WARM);
+    px(g, x - 1, -h + 1, 3, h - 1, PALETTE[2]!);
+    oval(g, x, -h - 1, 5, 3, DARK_WARM);
+    oval(g, x, -h - 1, 4, 2, cap);
+    px(g, x - 2, -h - 2, 2, 1, shade(cap, 1.3));
+    px(g, x + 1, -h - 2, 1, 1, PALETTE[19]!);
+    px(g, x - 2, -h - 1, 1, 1, PALETTE[19]!);
+  };
+  small(-3, 6);
+  small(5, 4);
+  return g;
+}
+
+/** A tall grass tuft: five blades in two greens. Base at (0, 0). */
+export function drawTuft(seed = 0): Graphics {
+  const g = new Graphics();
+  for (let i = 0; i < 5; i++) {
+    const x = -5 + i * 2;
+    const h = 6 + Math.floor(hash01(seed, i) * 5);
+    px(g, x - 1, -h, 3, h, DARK_WARM);
+    px(g, x, -h + 1, 1, h - 1, i % 2 === 0 ? PALETTE[12]! : PALETTE[13]!);
+  }
+  return g;
+}
+
+/** A lily pad on the water: a round leaf with a notch, and sometimes a white flower. Centre at (0, 0). */
+export function drawLilyPad(seed = 0): Graphics {
+  const g = new Graphics();
+  oval(g, 1, 1, 9, 5, { color: DARK_WARM, alpha: 0.3 });
+  oval(g, 0, 0, 9, 5, DARK_WARM);
+  oval(g, 0, 0, 8, 4, PALETTE[13]!);
+  oval(g, -2, -1, 5, 2, PALETTE[12]!);
+  px(g, 3, 0, 6, 1, SHALLOW); // the notch
+  if (seed % 3 === 0) {
+    px(g, -1, -4, 5, 4, DARK_WARM);
+    px(g, 0, -3, 3, 2, PALETTE[19]!);
+    px(g, 1, -3, 1, 1, PALETTE[11]!);
+  }
+  return g;
+}
+
+// ---------- Fishing pieces (built once; the coder moves them) ----------
+
 /** The bobber at (0, 0): a white and red float. `dip`: it is pulled under (a bite). */
 export function drawBobber(dip: boolean): Graphics {
   const g = new Graphics();
   // A ring on the water.
-  g.rect(-6, 1, 12, 1).fill({ color: PALETTE[19], alpha: 0.5 });
-  g.rect(-4, 2, 8, 1).fill({ color: PALETTE[19], alpha: 0.35 });
+  g.rect(-6, 1, 12, 1).fill({ color: PALETTE[19]!, alpha: 0.5 });
+  g.rect(-4, 2, 8, 1).fill({ color: PALETTE[19]!, alpha: 0.35 });
   const y = dip ? 2 : 0;
   g.rect(-3, -6 + y, 6, 8).fill(DARK_WARM);
-  g.rect(-2, -5 + y, 4, 3).fill(PALETTE[8]);
-  g.rect(-2, -2 + y, 4, 3).fill(PALETTE[19]);
+  g.rect(-2, -5 + y, 4, 3).fill(PALETTE[8]!);
+  g.rect(-2, -2 + y, 4, 3).fill(PALETTE[19]!);
+  g.rect(-2, -5 + y, 1, 3).fill(PALETTE[29]!);
   g.rect(-1, -8 + y, 2, 3).fill(DARK_WARM);
   return g;
 }
@@ -171,9 +553,53 @@ export function drawBobber(dip: boolean): Graphics {
 export function drawBang(): Graphics {
   const g = new Graphics();
   g.rect(-4, -17, 8, 17).fill(DARK_WARM);
-  g.rect(-3, -16, 6, 11).fill(PALETTE[10]);
-  g.rect(-3, -3, 6, 3).fill(PALETTE[10]);
+  g.rect(-3, -16, 6, 11).fill(PALETTE[10]!);
+  g.rect(-3, -3, 6, 3).fill(PALETTE[10]!);
+  g.rect(-3, -16, 1, 11).fill(PALETTE[11]!);
   g.rect(-1, -14, 2, 7).fill(DARK_WARM);
   g.rect(-1, -3, 2, 2).fill(DARK_WARM);
+  return g;
+}
+
+/** A ring on the water for step 0 to 3 (it grows and fades): centre (0, 0), flat oval of whole rows. Built once per step. */
+export function drawRing(step: number): Graphics {
+  const g = new Graphics();
+  const s = Math.max(0, Math.min(3, Math.round(step)));
+  const rx = 4 + s * 4;
+  const ry = 2 + s * 2;
+  const a = [0.9, 0.7, 0.45, 0.25][s]!;
+  for (let i = 0; i < ry * 2; i++) {
+    const dy = i + 0.5 - ry;
+    const hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy / ry) * (dy / ry))));
+    if (hw <= 0) continue;
+    const edge = i === 0 || i === ry * 2 - 1 ? hw : 2;
+    g.rect(-hw, -ry + i, edge, 1).fill({ color: PALETTE[19]!, alpha: a });
+    if (edge !== hw) g.rect(hw - 2, -ry + i, 2, 1).fill({ color: PALETTE[19]!, alpha: a });
+  }
+  return g;
+}
+
+/** A splash for frame 0 to 3: droplets thrown up and out, then falling; centre (0, 0) on the water. Built once per frame. */
+export function drawSplash(frame: number): Graphics {
+  const g = new Graphics();
+  const f = Math.max(0, Math.min(3, Math.round(frame)));
+  const white = PALETTE[19]!;
+  const cyan = SKY_GLINT;
+  if (f === 0) {
+    px(g, -1, -6, 3, 6, white);
+    px(g, -4, -3, 2, 3, cyan);
+    px(g, 3, -3, 2, 3, cyan);
+  } else if (f === 1) {
+    for (const [x, y] of [[-6, -10], [-2, -13], [3, -12], [7, -9], [0, -8]] as const) px(g, x, y, 2, 2, white);
+    px(g, -4, -5, 2, 3, cyan);
+    px(g, 3, -5, 2, 3, cyan);
+    px(g, -1, -6, 3, 6, cyan);
+  } else if (f === 2) {
+    for (const [x, y] of [[-9, -7], [-5, -9], [5, -9], [9, -6], [-1, -10]] as const) px(g, x, y, 2, 2, cyan);
+    px(g, -7, -3, 3, 1, white);
+    px(g, 4, -3, 3, 1, white);
+  } else {
+    for (const [x, y] of [[-10, -2], [-6, -3], [6, -3], [10, -2]] as const) px(g, x, y, 2, 1, cyan);
+  }
   return g;
 }

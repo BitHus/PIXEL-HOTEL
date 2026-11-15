@@ -6,6 +6,7 @@
 import { Graphics } from 'pixi.js';
 import { PALETTE, paletteColor, type ArtBox, type Facing, type FurnitureType, type Rect } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
+import { SIT_DROP } from './avatarParts.ts';
 import { shade } from './colors.ts';
 
 /** How much darker a box's front face is than its top face. */
@@ -186,4 +187,17 @@ export function roleFloorRects(type: FurnitureType, facing: Facing, role: NonNul
   return boxes
     .filter((b) => b.role === role)
     .map((b) => ({ x: mirror ? -(b.dx + b.w) : b.dx, y: b.dy - b.d, w: b.w, h: b.d }));
+}
+
+/** How high the seat of this type is above the floor: the top of the tallest box under its first seat spot (0 without seats, px). */
+export function seatHeight(type: FurnitureType): number {
+  const s = type.seats[0];
+  if (!s) return 0;
+  const under = artBoxes(type).filter((b) => b.role === undefined && s.dx >= b.dx && s.dx <= b.dx + b.w && s.dy > b.dy - b.d && s.dy <= b.dy);
+  return Math.max(0, ...under.map((b) => b.z + b.h));
+}
+
+/** How many px higher than the standard seated pose (SIT_DROP) this type's seat is: the avatar is raised by it. */
+export function seatLiftFor(type: FurnitureType): number {
+  return Math.max(0, seatHeight(type) - SIT_DROP);
 }

@@ -3,13 +3,13 @@
 
 import type { Rank } from '@pixel-hotel/shared';
 
-export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found';
+export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found' | 'cast' | 'splash' | 'reelTick' | 'rustle';
 
 /** The ping of a find, by rank: the rarer, the higher (G5, B5, E6, G6). */
 const FOUND_HZ: Record<Rank, number> = { common: 784, rare: 988, ultra_rare: 1319, legendary: 1568 };
 
 /** The same sound is never started twice within this many ms. */
-const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90 };
+const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120 };
 
 type Wave = OscillatorType;
 
@@ -71,7 +71,7 @@ export class Sound {
   }
 
   /** `rank` only matters for 'found': a rank-pitched ping, rarer = higher. */
-  play(name: SoundName, rank: Rank = 'common'): void {
+  play(name: SoundName, rank: Rank = 'common', pitch = 0): void {
     const ctx = this.ctx;
     if (!ctx || !this.master || !this.enabled || this.volume <= 0 || ctx.state !== 'running') return;
     const nowMs = ctx.currentTime * 1000;
@@ -141,6 +141,23 @@ export class Sound {
         // Steps going down: a falling note and a soft scuff.
         this.tone('sine', 330, 165, 0.35, 0.08);
         this.hiss(0.12, 0.06, 'lowpass', 500);
+        break;
+      case 'cast':
+        // A rod swish: a quick falling hiss.
+        this.hiss(0.18, 0.08, 'bandpass', 2400);
+        this.tone('sine', 520, 260, 0.12, 0.04);
+        break;
+      case 'splash':
+        this.hiss(0.22, 0.1, 'bandpass', 1100);
+        this.tone('sine', 420, 180, 0.12, 0.05);
+        break;
+      case 'reelTick': {
+        const hz = 440 + 760 * Math.max(0, Math.min(1, pitch));
+        this.tone('triangle', hz, hz, 0.05, 0.07);
+        break;
+      }
+      case 'rustle':
+        this.hiss(0.16, 0.07, 'highpass', 3000);
         break;
       case 'found':
         this.tone('triangle', FOUND_HZ[rank], FOUND_HZ[rank], 0.16, 0.08);

@@ -57,6 +57,8 @@ export class AvatarSprite {
   /** The held-item layer (section 8; step 9d): what the avatar carries, in its hands. */
   private readonly held = new Container();
   private shiftPx = 0;
+  /** Extra px a seated avatar sits higher (a seat taller than SIT_DROP, seatLiftFor). */
+  private seatLift = 0;
   /** The emote pose (step 9g-1): whole-px body offset and the symbol above the head. Arm lift and head bob need split layers (artist). */
   private emoteDx = 0;
   private emoteDy = 0;
@@ -150,6 +152,13 @@ export class AvatarSprite {
     this.place();
   }
 
+  /** Raises a seated avatar by this many px (0 = none). */
+  setSeatLift(px: number): void {
+    if (px === this.seatLift) return;
+    this.seatLift = px;
+    this.place();
+  }
+
   /** A small sideways shift of the body in whole px (idle customers; 0 = none). */
   setShift(px: number): void {
     this.shiftPx = px;
@@ -159,9 +168,10 @@ export class AvatarSprite {
   /** Puts the body (shift, bob, gesture) and the held item in place. */
   private place(): void {
     const g = gestureOffset(this.gestureNow, this.lastTimeMs, this.last.facing);
-    this.body.position.set(this.shiftPx + g.body.x + this.emoteDx, this.bobPx + g.body.y + this.emoteDy);
+    const lift = this.last.state === 'sit' ? this.seatLift : 0;
+    this.body.position.set(this.shiftPx + g.body.x + this.emoteDx, this.bobPx + g.body.y + this.emoteDy - lift);
     const hand = this.handOffset();
-    this.held.position.set(hand.x + this.shiftPx + g.hand.x, hand.y + this.bobPx + g.hand.y);
+    this.held.position.set(hand.x + this.shiftPx + g.hand.x, hand.y + this.bobPx + g.hand.y - lift);
     // Seen from behind, the item is in front of the avatar, so the body hides it.
     this.container.setChildIndex(this.held, this.last.facing === 'up' ? 0 : this.container.children.length - 1);
   }

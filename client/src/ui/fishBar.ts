@@ -32,7 +32,7 @@ export interface FishBar {
   readonly shown: boolean;
   show(on: boolean): void;
   /** The bobber state: phase and the fish's rank (its colour on the catch bar), and the reel while a fish is hooked. */
-  set(phase: FishPhase, rank: Rank, reel?: ReelView): void;
+  set(phase: FishPhase, rank: Rank, reel?: ReelView, feedback?: { catching: boolean; draining: boolean; tension: number }): void;
 }
 
 const TEXT: Record<FishPhase, string> = {
@@ -114,7 +114,7 @@ export function createFishBar(parent: HTMLElement, hooks: FishBarHooks): FishBar
       if (!on) hold(false);
       if (on) this.set('wait', 'common');
     },
-    set(phase, rank, reel) {
+    set(phase, rank, reel, feedback) {
       text.textContent = TEXT[phase];
       root.dataset.phase = phase;
       const inReel = phase === 'reel' && reel !== undefined;
@@ -125,13 +125,19 @@ export function createFishBar(parent: HTMLElement, hooks: FishBarHooks): FishBar
       tap.querySelector('.fish-tap-text')!.textContent = phase === 'bite' ? 'Tap!' : 'Hold!';
       setRank(meter, null, inReel ? rank : null);
       setRank(track, null, inReel ? rank : null);
-      if (!reel || !inReel) return;
+      if (!inReel) {
+        track.classList.remove('catching', 'draining');
+        return;
+      }
       box.style.left = pct(reel.boxPos - reel.boxSize / 2);
       box.style.width = pct(reel.boxSize);
       fish.style.left = pct(reel.fishPos);
       fill.style.width = `${Math.max(0, Math.min(100, (reel.fill / FISH_REEL_FULL) * 100))}%`;
       // The box goes green while the fish is inside it.
-      track.classList.toggle('catching', Math.abs(reel.fishPos - reel.boxPos) <= reel.boxSize / 2);
+      const f = feedback ?? { catching: Math.abs(reel.fishPos - reel.boxPos) <= reel.boxSize / 2, draining: false, tension: 0 };
+      track.classList.toggle('catching', f.catching);
+      track.classList.toggle('draining', f.draining);
+      track.style.setProperty('--tension', f.tension.toFixed(2));
     },
   };
 }

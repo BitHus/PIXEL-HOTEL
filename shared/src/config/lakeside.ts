@@ -79,3 +79,24 @@ export const FISH_REEL_MAX_MS = 45_000;
 /** Tree crowns sway this many px at most (whole px, off with reduce effects), and a hit puffs this many leaves. */
 export const FX_TREE_SWAY_PX = 1;
 export const FX_LEAF_PUFF = 5;
+/** C13: fishing and tree juice (look only, never rules). The reel shows "draining" when the catch bar is under this fraction of full and falling. */
+export const FX_REEL_DRAIN_FRACTION = 0.15;
+/** Wait nibbles: a dip of the bobber may start in every window of FX_NIBBLE_EVERY_MS (chance FX_NIBBLE_CHANCE), lasts FX_NIBBLE_MS. Cosmetic: the real bite is fishing.ts. */
+export const FX_NIBBLE_EVERY_MS = 1800;
+export const FX_NIBBLE_CHANCE = 0.45;
+export const FX_NIBBLE_MS = 160;
+/** The cast: the bobber flies from the rod to the water in FX_CAST_MS (arc FX_CAST_ARC_PX high). */
+export const FX_CAST_MS = 360;
+export const FX_CAST_ARC_PX = 26;
+/** A bite: the bobber dunks and the "!" pops in this long, ms. */
+export const FX_BITE_MS = 260;
+/** Ring ripples on the water live this long, ms. */
+export const FX_RING_MS = 700;
+/** The catch: the fish flies to the avatar in FX_CATCH_FLY_MS, then is held up for FX_CATCH_HOLD_MS. */
+export const FX_CATCH_FLY_MS = 500;
+export const FX_CATCH_HOLD_MS = 600;
+export const FX_CATCH_ARC_PX = 30;
+/** A lost fish: the line goes slack and the bobber shakes this long, ms. */
+export const FX_SLACK_MS = 450;
+/** The catch flash (ultra rare, legendary), ms. */
+export const FX_CATCH_FLASH_MS = 500;

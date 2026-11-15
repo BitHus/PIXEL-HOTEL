@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FURNITURE_TYPES, LIE_HEAD_PX, footprintRect, headPoint, seatSpots, type ArtBox, type Facing } from '@pixel-hotel/shared';
-import { boxesForFacing, iconStylePixels, roleFloorRects } from './furnitureArt.ts';
+import { boxesForFacing, iconStylePixels, roleFloorRects, seatHeight, seatLiftFor, surfaceHeight } from './furnitureArt.ts';
 
 /** The floor rect of a box relative to the anchor. */
 const floorOf = (b: ArtBox) => ({ x: b.dx, y: b.dy - b.d, w: b.w, h: b.d });
@@ -55,5 +55,21 @@ describe('icon style (room art looks like the item icon)', () => {
     expect(px.get('-1,0')).toBe(px.get('0,-1')); // outline colour
     expect(px.get('0,0')).not.toBe('#808080'); // lighter top-left edge
     expect(px.get('1,1')).toBe('#808080'); // the inside stays flat
+  });
+});
+
+describe('heights match the sprites (ART-REDO R1 and R2)', () => {
+  const type = (id: string) => FURNITURE_TYPES.find((t) => t.id === id)!;
+  it('surface heights', () => {
+    expect(surfaceHeight(type('round_table'))).toBe(26);
+    expect(surfaceHeight(type('table'))).toBe(26);
+    expect(surfaceHeight(type('long_table'))).toBe(26);
+  });
+  it('seat heights, and the avatar is raised past the standard pose', () => {
+    expect(seatHeight(type('bar_stool'))).toBe(24);
+    expect(seatHeight(type('chair'))).toBe(18);
+    expect(seatLiftFor(type('bar_stool'))).toBe(10);
+    expect(seatLiftFor(type('chair'))).toBe(4);
+    expect(seatLiftFor(type('table'))).toBe(0);
   });
 });

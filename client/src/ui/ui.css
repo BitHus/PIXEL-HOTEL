@@ -3861,3 +3861,60 @@
 .look-wear:disabled {
   opacity: 0.6;
 }
+
+/* ---------- A17: dungeon feedback overlays and the crit number (the code toggles display, opacity and classes) ---------- */
+
+/* Big hit: a larger outlined number in butter yellow with an orange rim (text like -6!). */
+.float-crit {
+  color: #fee761;
+  font-size: 22px;
+  letter-spacing: 1px;
+  text-shadow:
+    2px 0 #be4a2f,
+    -2px 0 #be4a2f,
+    0 2px #be4a2f,
+    0 -2px #be4a2f,
+    2px 2px #733e39,
+    -2px -2px #733e39,
+    2px -2px #733e39,
+    -2px 2px #733e39,
+    0 0 6px #f77622;
+}
+
+/* The screen edge flashes red when the player is hit; the code sets display and fades opacity over about 320 ms. */
+.hurt-edge {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 4px rgba(228, 59, 68, 0.55),
+    inset 0 0 36px 10px rgba(228, 59, 68, 0.7),
+    inset 0 0 90px 24px rgba(162, 38, 51, 0.55);
+}
+
+/* Under 30 percent hp: a dark red vignette that breathes like a slow heartbeat (two beats, then a rest). */
+.low-hp {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(24, 20, 37, 0) 48%, rgba(162, 38, 51, 0.5) 100%);
+  animation: low-hp-beat 1.4s steps(14, end) infinite;
+}
+
+@keyframes low-hp-beat {
+  0% { opacity: 0.45; }
+  10% { opacity: 1; }
+  22% { opacity: 0.55; }
+  34% { opacity: 0.9; }
+  50% { opacity: 0.45; }
+  100% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .low-hp {
+    animation: none;
+    opacity: 0.7;
+  }
+}

@@ -14,6 +14,7 @@ import {
   type SeatSpot,
 } from '@pixel-hotel/shared';
 import type { AvatarSprite } from './avatarSprite.ts';
+import { seatLiftFor } from './furnitureArt.ts';
 
 export interface SeatGoal {
   uid: number;
@@ -49,6 +50,7 @@ export class Seating {
       this.sprite.setLying(getFurnitureType(item.typeId), item.facing, item.x - seat.x, item.y - seat.y);
       return { ...avatar, x: seat.x, y: seat.y, facing: seat.facing, state: seat.pose };
     }
+    this.sprite.setSeatLift(seatLiftFor(getFurnitureType(item.typeId)));
     this.slide = { from: { x: avatar.x, y: avatar.y }, ms: 0 };
     return { ...avatar, facing: seat.facing, state: seat.pose };
   }
