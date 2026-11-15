@@ -19,15 +19,32 @@ cooking (9b), mine and forge (9c), UI polish, atmosphere (light, shadows, sound)
 shop life (9d), ranks and the Book (9e), the lakeside: fishing and woodcutting (9f), housekeeping
 (1.0: CLAUDE.md shortened; the full brief is docs/BRIEF.md, earlier steps' details docs/NOTES.md).
 
+## PHASE 1A - The block world (owner's decision, 15 Nov; full design: docs/BLOCKS-PLAN.md)
+Inspired by Growtopia and Pixel Worlds: a cell grid, blocks you place and punch, seeds that grow
+and can be spliced, gems from everything, packs bought with gems, items as coloured squares,
+and pickups that float above the head. It goes BEFORE the rest of phase 1, because the tavern
+(9t B and C) and the livelier hotel (9g) are built on how things are placed. Pause them until BG1
+is done. All prompts [prompt ready] in docs/NEXT-STEPS.md. Owner confirms the open questions
+(BLOCKS-PLAN section 5) and the pack fairness rules (section 4, row 3) before BG1 and BG8.
+BG1 Cell grid (32 px): rooms, furniture, floors and walls per cell, navigation on cells, migration.
+BG2 Item icons: every item a rough shape and colour in a 32x32 square, drawn in code.
+BG3 Gain popups: items and gems float above the avatar's head (chest, kill, fish, harvest, pack).
+BG4 Gems: the second currency, dropped by everything, through the ledger.
+BG5 Blocks and punching: place and break blocks by hits; drops, seeds, gems.
+BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates.
+BG7 Splicing: two seeds make a new one; a Splice tab in the Book.
+BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible.
+BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools.
+
 ## PHASE 1 - Finish the core game
 The loops that are planned must all exist before anything else is added.
 1.0 Housekeeping: shorten CLAUDE.md. [done]
 1.1 Step 9f - Lakeside: fishing and woodcutting. [done]
 1.2 Step 9t - The tavern: the shop becomes a tavern (owner's decision, 14 Nov). Guests sit, order
     drinks and dishes, the player serves and collects the coins; brewing; the loot stall stays as
-    a market corner. [prompt ready; part A (shared rules) done, B and C to do]
+    a market corner. [prompt ready; part A (shared rules) done, B and C PAUSED until BG1 is done]
 1.3 Step 9g - Livelier hotel: hats, emotes, usable furniture, the cat, room stars, visitors.
-    [prompt ready]
+    [prompt ready; after BG1, placement rules are cell based]
 1.4 Step 9h - Dungeon round 2 (3 floors, boss) and two more dungeon types. [prompt ready]
 1.5 Step 9i - The questline: chapters, progress, rewards, daily tasks. [prompt ready]
 
@@ -81,11 +98,15 @@ Never copy another game; no screenshots of other games in the repo.
 ## PHASE 6 - Online (step 10 and on; after depth, owner's decision)
 The long-term goal: a real online hotel.
 6.1 Server, accounts (username + password), saves on the server, RemoteGameAPI.
-6.2 Visiting rooms: see other players walk, sit, emote; public room chat with the filter, report
+6.2 Visiting rooms (by room name, like typing a world name; see BLOCKS-PLAN 3.9): see other players walk, sit, emote; public room chat with the filter, report
     and mute (section 13).
 6.3 A lobby / town square as the shared place to meet; a room list.
 6.4 Room ratings, room contests, leaderboards, profiles with showcases, titles and badges.
-6.5 A small private test with friends; fix list.
+6.5 Room locks and access lists (open / friends / private; visitor, builder, admin), signs, a
+    notice board, doors and portals between rooms, the tavern bar serving real players.
+6.6 A small private test with friends; fix list.
+6.7 Only after 6.6 and with new safety rules: friends list, guilds, a safe two-sided trade
+    window, a player market. Gems stay untradable.
 
 ## PHASE 7 - A bigger world
 7.1 Tavern 2: guest rooms to rent, staff to hire (a barkeep, a waiter), a bigger menu, a
@@ -102,6 +123,10 @@ The long-term goal: a real online hotel.
 8.3 Windows desktop app; Steam page; a public test; launch.
 
 ## NEEDS THE OWNER'S DECISION (conflicts with CLAUDE.md; do not build until decided)
+- Packs with random contents (BG8): section 13 says no loot boxes. Planner's advice: allow only
+  with gems earned in play, visible odds and no repeats of owned clothes (BLOCKS-PLAN 3.8).
+- Gems as a second currency next to gold (section 9): asked for; gold stays the tavern money.
+- The block world answers a to d in BLOCKS-PLAN section 5.
 - Mystery boxes: section 13 says no loot boxes. Only as a free reward with visible odds, or not.
 - Trading, a player marketplace, player shops, a friends list: section 9 and 13 say not in v1.
   Only after phase 6 (online), with new safety rules.

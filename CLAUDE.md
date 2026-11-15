@@ -207,7 +207,9 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   part B (room, guests and serving in the client) and part C (brewing and Menu panels, intro toast,
   texts, economy tool, brief sections 1 and 5, UI-REFERENCE) are next. The game does not show it yet.
 - Not done: step 6 (art, docs/STYLE.md), step 10 (server; server/src/index.ts is a placeholder).
-  Next (docs/ROADMAP.md): 9t (tavern), 9g (livelier hotel), 9h (dungeon round 2), 9i (questline).
+  Next (docs/ROADMAP.md): BG1-BG9, then 9t B/C, 9g, 9h, 9i.
+- PLANNED, not built (owner 15 Nov): block world BG1-BG9, docs/BLOCKS-PLAN.md (cells, gems, packs,
+  splicing). 9t B/C and 9g wait for BG1. Sections 4-7, 9, 13 stay valid until a BG step.
 - DUNGEON_ROUND is 1. SAVE_VERSION is 13. The game runs on LocalGameAPI only. All art is
   placeholder boxes drawn in code. The indoor lighting look is approved: keep it.
 

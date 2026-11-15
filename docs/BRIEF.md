@@ -570,3 +570,20 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - I work with Claude Code on my phone or on my PC. The repo is on GitHub and every push to
   main is deployed by GitHub Pages (https://bithus.github.io/pixel-hotel/), so I can test the
   game on my phone through that link. Commit and push at the end of every step.
+
+
+15. THE BLOCK WORLD (PLANNED, owner's decision 15 Nov; full design docs/BLOCKS-PLAN.md)
+Not built yet. When a BG step builds a part, it moves that part into the sections above and
+changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as written.
+- Inspiration: Growtopia and Pixel Worlds (block grid, punching, seeds, splicing, gems, packs,
+  locks and access, visit by name), next to Travellers Rest and Habbo. Never copy names or art.
+- Building per cell: BUILD_CELL 32 px; rooms, floors, walls, furniture and navigation on cells.
+- Blocks: place and break by hits; drops, seeds, gems. Seeds grow in real time; two seeds splice
+  into a new one (fixed table). Farming = plant and punch.
+- Gems: second currency, dropped by everything, not tradable, never bought with real money.
+  Gold stays the tavern money. Packs (random blocks, seeds, common clothes, rare clothes) cost gems;
+  odds shown; clothes packs never repeat owned pieces.
+- Items are coloured squares with a rough shape (drawn in code) until real art.
+- Everything you gain floats above the avatar's head for about 1.2 s (icon + count, rank colour).
+- Social (online, phase 6): room names and visit-by-name, a lobby, locks and access lists, signs,
+  portals; friends, guilds and trading only later with new safety rules.
