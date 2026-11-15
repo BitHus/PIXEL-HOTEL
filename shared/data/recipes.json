@@ -32,5 +32,7 @@
   {"id": "stone_planter", "makes": "stone_planter", "makesKind": "furniture", "station": "carpentry", "inputs": {"stone": 3, "dirt": 2}},
   {"id": "lantern_post", "makes": "lantern_post", "makesKind": "furniture", "station": "carpentry", "inputs": {"lantern_block": 2, "planks": 2}},
   {"id": "glass_cabinet", "makes": "glass_cabinet", "makesKind": "furniture", "station": "carpentry", "inputs": {"glass": 4, "planks": 4}},
-  {"id": "brick_pillar", "makes": "brick_pillar", "makesKind": "furniture", "station": "carpentry", "inputs": {"brick": 4, "stone": 1}}
+  {"id": "brick_pillar", "makes": "brick_pillar", "makesKind": "furniture", "station": "carpentry", "inputs": {"brick": 4, "stone": 1}},
+  {"id": "spice_bundle", "makes": "spice_bundle", "makesKind": "furniture", "inputs": {"wood": 1, "cloth": 1, "turnip": 2}},
+  {"id": "antler_mount", "makes": "antler_mount", "makesKind": "furniture", "inputs": {"bone": 6, "wood": 2}}
 ]

@@ -18,6 +18,7 @@ import carpentryData from '../data/furniture/carpentry.json';
 import dungeon2Data from '../data/furniture/dungeon2.json';
 import suiteData from '../data/furniture/suite.json';
 import tavern2Data from '../data/furniture/tavern2.json';
+import tavern3Data from '../data/furniture/tavern3.json';
 import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_DEPTH_PX,
   STAFF_ZONE_SIDE_PX, SNAP } from './config.ts';
@@ -32,6 +33,7 @@ export const FURNITURE_TYPES = [
   ...(furnitureData as FurnitureType[]),
   ...(carpentryData as FurnitureType[]),
   ...(tavern2Data as FurnitureType[]),
+  ...(tavern3Data as FurnitureType[]),
   ...(suiteData as FurnitureType[]),
   ...(dungeon2Data as FurnitureType[]),
 ];

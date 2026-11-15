@@ -156,8 +156,8 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
       for (const s of STYLE_TYPES.filter((x) => x.inCatalog)) list.appendChild(styleCard(s));
       return;
     }
-    const category = tab === 'home' ? 'home_furniture' : 'shop_furniture';
-    for (const t of catalogTypes().filter((x) => x.category === category)) list.appendChild(furnitureCard(t));
+    const categories = tab === 'home' ? ['home_furniture', 'suite_furniture'] : ['shop_furniture'];
+    for (const t of catalogTypes().filter((x) => categories.includes(x.category))) list.appendChild(furnitureCard(t));
   };
 
   return {

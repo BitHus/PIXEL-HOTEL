@@ -16,6 +16,7 @@ something to look forward to, and the hotel and shop show what the player has ac
 Rule: the game must be fun and good-looking in a browser BEFORE it gets bigger or online. Depth that feeds the existing loops beats new areas.
 NOW (in progress): C6 hats and emotes finish; art redo of furniture and icons (docs/ART-REDO.md, icons match models); keg rack side view.
 1. Playtest 2.1 + first-hour pass 2.3 (a real hour in a browser, one fix list; the owner or a browser-capable tester). Nothing else beats finding what is broken.
+1b. OUTDOORS REWORK (owner 16 Nov: the dungeon and the fishing/lakeside look ugly; art and vibes, runs in parallel with 1): docs/PLAN-REWORK-OUTDOORS.md, tasks C11 to C16 (hooks + fx, dungeon juice, fishing/lake juice, crypt light, lakeside ambient, effects settings) and A15 to A23 (code-art crypt and lake now, PNG tiles/enemies/water/trees when the plugin is back), prompts in docs/QUEUE.md. Look and feel only: no rule and no save change. It goes before 2 (9g-2 and the rest) in both lanes.
 2. 9g-2 usable furniture and the cat (save 28), with PT-1 pastimes folded in; 9g-3 room stars; M-C One Inn score. These make the hotel and tavern feel alive.
 3. 9i questline with BD-1 board orders (no timers): gives the player direction; fixes the first hour.
 4. Art rounds continue every cycle (4.2 to 4.6): floors, walls, crops, food, tools, plants, avatar clothing. Art is always one lane busy.

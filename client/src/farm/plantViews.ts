@@ -4,7 +4,7 @@
 // harvested, and the ghost of the seed about to be planted. RENDERING ONLY: what grows where and when it is
 // ripe comes from the room (rules: shared/src/farm.ts). Art is placeholder boxes drawn in code (farmArt.ts).
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, type Sprite } from 'pixi.js';
 import {
   BUILD_CELL,
   RIPE_MARKER_BOB_MS,
@@ -22,6 +22,7 @@ import {
 import type { DepthKey } from '../render/depthOrder.ts';
 import type { RoomView } from '../render/roomView.ts';
 import { drawPlantArt, drawRipeMarker } from './farmArt.ts';
+import { plantSprite } from './plantSprite.ts';
 
 const SHAKE_MS = 160;
 const PUFF_MS = 420;
@@ -34,6 +35,8 @@ interface PlantView {
   r: number;
   node: Container;
   art: Graphics;
+  /** H4: the PNG of this stage when sprites/plants has the set; the code art above is then empty. */
+  sprite: Sprite | null;
   marker: Graphics | null;
   stage: PlantStage;
   shakeMs: number;
@@ -85,14 +88,13 @@ export class PlantViews {
         node.addChild(art);
         node.position.set(c * BUILD_CELL, r * BUILD_CELL);
         node.eventMode = 'none';
-        v = { seed: plant.seed, withSeed: plant.with ?? null, c, r, node, art, marker: null, stage, shakeMs: 0 };
-        drawPlantArt(art, plant.seed, stage, plant.with ?? null);
+        v = { seed: plant.seed, withSeed: plant.with ?? null, c, r, node, art, sprite: null, marker: null, stage, shakeMs: 0 };
+        this.paint(v);
         this.views.set(key, v);
         this.view.objects.add(node, this.keyOf(c, r));
       } else if (stage !== v.stage) {
         v.stage = stage;
-        v.art.clear();
-        drawPlantArt(v.art, v.seed, stage, v.withSeed);
+        this.paint(v);
       }
       if (stage === 'full' && !v.marker) {
         v.marker = drawRipeMarker();
@@ -104,6 +106,20 @@ export class PlantViews {
       if (live.has(key)) continue;
       this.drop(v);
       this.views.delete(key);
+    }
+  }
+
+  /** Draws the plant's current stage: from sprites/plants when present (H4), else the code art. */
+  private paint(v: PlantView): void {
+    v.sprite?.destroy();
+    v.sprite = null;
+    v.art.clear();
+    const sprite = plantSprite(v.seed, v.stage);
+    if (sprite) {
+      v.sprite = sprite;
+      v.node.addChildAt(sprite, 0);
+    } else {
+      drawPlantArt(v.art, v.seed, v.stage, v.withSeed);
     }
   }
 
