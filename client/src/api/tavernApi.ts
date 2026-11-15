@@ -1,0 +1,160 @@
+// LocalGameAPI helpers: the tavern (step 9t): serving errands and the tavern calls. Each method takes the API
+// instance first and does what the class method of the same name did (R1 split: no change in behaviour).
+
+import {
+  gain,
+  gainsSince,
+  deliverOrder,
+  requestServe,
+  pickUpOrder,
+  serveStops,
+  cancelServe,
+  collectCoins,
+  clearDish,
+  collectBrew,
+  openOrders,
+  GOLD_GAIN_ID,
+  GUEST_SERVE_REACH_PX,
+  findPath,
+  type GainList,
+  type MaterialId,
+  type TavernClientEvent,
+  type TavernView,
+  type Point,
+} from '@pixel-hotel/shared';
+import type { TavernTask } from './apiShared.ts';
+import type { LocalGameAPI } from './localGameAPI.ts';
+
+export const tavernApi = {
+  async getTavern(h: LocalGameAPI): Promise<TavernView> {
+    const t = h.state.tavern;
+    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, at: h.now() });
+  },
+
+  onTavern(h: LocalGameAPI, listener: (e: TavernClientEvent) => void): () => void {
+    h.tavernListeners.add(listener);
+    return () => h.tavernListeners.delete(listener);
+  },
+
+  async serveGuest(h: LocalGameAPI, guestId: number): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const next = requestServe(h.state, guestId);
+    if (!next) return false;
+    h.commit(next);
+    h.emitTavern({ t: 'queue', queue: [...next.tavern.serveQueue] });
+    if (h.errand) return true; // The queue is worked off after the order the avatar is carrying.
+    if (h.nextServe()) return true;
+    h.dropServe();
+    return false;
+  },
+
+  async tidyTable(h: LocalGameAPI, messId: number, what: 'coins' | 'dish'): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const mess = h.state.tavern.mess.find((m) => m.id === messId);
+    if (!mess || (what === 'coins' ? mess.coins <= 0 : mess.dish === null)) return false;
+    // With an order in the hands, or orders queued, serving comes first.
+    const t = h.state.tavern;
+    if (t.holding || t.serveQueue.length > 0) return false;
+    return h.startErrand({ x: mess.x, y: mess.y }, { stage: 'mess', messId, what });
+  },
+
+  async collectBrew(h: LocalGameAPI, barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null> {
+    if (!h.inTavern()) return null;
+    const r = collectBrew(h.state, barrelUid, h.now());
+    if (!r) return null;
+    const gains = gainsSince(h.state, r.state);
+    h.commit(r.state);
+    return { drink: r.drink, mugs: r.mugs, gains };
+  },
+
+  inTavern(h: LocalGameAPI): boolean {
+    return h.state.currentRoomId === h.state.tavern.roomId;
+  },
+
+  /** Walks the own avatar to a spot for an errand. False when there is no way within reach of it. */
+  startErrand(h: LocalGameAPI, to: Point, task: TavernTask): boolean {
+    const avatar = h.standingAvatar(to);
+    const path = findPath(h.grid, avatar, to);
+    const end = path?.[path.length - 1];
+    if (!path || !end || Math.hypot(end.x - to.x, end.y - to.y) > GUEST_SERVE_REACH_PX) return false;
+    h.walkState = { avatar: { ...avatar, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: h.now(), sitOn: null, seated: null, task };
+    h.errand = true;
+    h.emitTavern({ t: 'walk', path });
+    return true;
+  },
+
+  /** Starts the next queued order: to the bar. False when nobody waits any more or there is no way. */
+  nextServe(h: LocalGameAPI): boolean {
+    const t = h.state.tavern;
+    const open = openOrders(t).map((g) => g.id);
+    const id = t.serveQueue.find((i) => open.includes(i));
+    if (id === undefined) return false;
+    const stops = serveStops(h.state, id);
+    return stops !== null && h.startErrand(stops.bar, { stage: 'bar' });
+  },
+
+  /** Forgets the queue and the order in the hands (the orders stay open). */
+  dropServe(h: LocalGameAPI): void {
+    h.errand = false;
+    if (h.state.tavern.serveQueue.length === 0 && h.state.tavern.holding === null) return;
+    h.commit(cancelServe(h.state));
+    h.emitTavern({ t: 'queue', queue: [] });
+    h.emitTavern({ t: 'holding', item: null });
+  },
+
+  /** Called every clock tick: an errand that arrived does its job (pick up, put down, collect) and the next one starts. */
+  runErrand(h: LocalGameAPI): void {
+    if (!h.errand) return;
+    h.avatarNow();
+    const w = h.walkState;
+    // Another kind of walk replaced the errand (a tap on the floor, a seat, another room): forget it.
+    if (!w.task) return h.dropServe();
+    if (w.path.length > 0) return;
+    const task = w.task;
+    h.walkState = { ...w, task: undefined };
+    h.errand = false;
+    const now = h.now();
+    if (task.stage === 'bar') {
+      const r = pickUpOrder(h.state);
+      if (!r) {
+        if (!h.nextServe()) h.dropServe();
+        return;
+      }
+      h.commit(r.state);
+      h.emitTavern({ t: 'holding', item: r.item });
+      h.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
+      const stops = serveStops(h.state, r.guestId);
+      if (!stops || !h.startErrand(stops.table, { stage: 'table', guestId: r.guestId })) h.dropServe();
+    } else if (task.stage === 'table') {
+      const spot = serveStops(h.state, task.guestId)?.table;
+      const d = deliverOrder(h.state, h.rng);
+      if (d && spot) {
+        h.commit(d.state);
+        h.emitTavern({ t: 'served', guestId: d.guestId, item: d.item, spot });
+      } else if (h.state.tavern.holding) {
+        h.commit(cancelServe(h.state));
+      }
+      h.emitTavern({ t: 'holding', item: null });
+      if (!h.nextServe()) h.dropServe();
+    } else {
+      const mess = h.state.tavern.mess.find((m) => m.id === task.messId);
+      if (!mess) return;
+      const spot = { x: mess.x, y: mess.y };
+      if (task.what === 'coins') {
+        const r = collectCoins(h.state, task.messId, now);
+        if (!r) return;
+        h.commit(r.state);
+        h.emitTavern({ t: 'collected', messId: task.messId, coins: r.coins, spot, gains: [gain(GOLD_GAIN_ID, r.coins)] });
+      } else {
+        const next = clearDish(h.state, task.messId);
+        if (!next) return;
+        h.commit(next);
+        h.emitTavern({ t: 'cleared', messId: task.messId, spot });
+      }
+    }
+  },
+
+  emitTavern(h: LocalGameAPI, e: TavernClientEvent): void {
+    for (const l of h.tavernListeners) l(e);
+  },
+};
