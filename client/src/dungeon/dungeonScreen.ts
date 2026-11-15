@@ -147,6 +147,24 @@ export class DungeonScreen {
     this.input(chest ? { t: 'click_point', x: chest.x, y: chest.y } : { t: 'click_point', x: p.x, y: p.y });
   }
 
+  /** Hold to repeat (BG5b): the mine rock under a point, or null. Only in the mine; fights stay one hit per tap. */
+  rockUnder(p: Point): number | null {
+    const run = this.run;
+    if (!this.active || this.halted || !run || run.status !== 'active' || run.place !== 'mine') return null;
+    if (this.view.enemyAt(run, p)) return null;
+    return this.view.rockAt(run, p)?.id ?? null;
+  }
+
+  /** One held swing: asks again for the same rock (the step function keeps the 400 ms cooldown). 'stop' = it is gone. */
+  holdRock(id: number): 'go' | 'stop' | 'retry' {
+    const run = this.run;
+    if (!this.active || this.halted || !run || run.status !== 'active' || !run.rocks.some((x) => x.id === id)) return 'stop';
+    // Too early by the run's own clock: the click would be ignored, so wait (the hold keeps its place).
+    if (run.timeMs + run.carryMs < run.player.pickReadyAt && run.player.targetRockId === id) return 'retry';
+    this.input({ t: 'click_rock', id });
+    return 'go';
+  }
+
   potion(): void {
     const run = this.run;
     if (!run || this.halted) return;

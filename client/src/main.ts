@@ -76,6 +76,7 @@ import {
   MINE_HINT,
   xpForNextLevel,
   newEntries,
+  cellsBetween,
 } from '@pixel-hotel/shared';
 import './ui/ui.css';
 import { LocalGameAPI } from './api/localGameAPI.ts';
@@ -83,6 +84,7 @@ import { browserStorage } from './api/saveStorage.ts';
 import { RoomView } from './render/roomView.ts';
 import { createCursorCross } from './render/cursorCross.ts';
 import { attachCameraControl } from './input/cameraControl.ts';
+import { HoldControl, type HoldResult, type HoldTarget } from './input/holdControl.ts';
 import { CameraIntro } from './input/cameraIntro.ts';
 import { createDebugLabel } from './ui/debugLabel.ts';
 import { AvatarSprite } from './render/avatarSprite.ts';
@@ -1374,21 +1376,26 @@ async function start(): Promise<void> {
     empty: 'No blocks left.',
     not_buildable: 'You cannot build here.',
   };
-  /** Sends a place or punch to the GameAPI and draws what came back. */
-  const doBlock = async (kind: 'place' | 'hit', c: number, r: number, id: string | null, tries = 0): Promise<void> => {
+  /**
+   * Sends a place or punch to the GameAPI and draws what came back. `line` = a place hold along cells: out of
+   * reach or refused cells are skipped quietly (no walking, no toasts). Returns what a hold should do next.
+   */
+  const doBlock = async (kind: 'place' | 'hit', c: number, r: number, id: string | null, tries = 0, line = false): Promise<HoldResult> => {
     const was = blockInCell(room, c, r)?.id ?? null;
     const res: BlockResult = kind === 'place' && id ? await api.placeBlock(c, r, id) : await api.hitBlock(c, r);
     if (res.kind === 'walk') {
+      if (line) return 'go';
       // Too far: walk closer first, then do it (once more at most).
       follow(res.path);
       goal = null;
       pendingBlock = tries < 2 ? { kind, c, r, tries: tries + 1 } : null;
-      return;
+      return 'walk';
     }
     if (res.kind === 'refused') {
+      if (res.problem === 'cooldown') return 'retry';
       const text = BLOCK_REFUSALS[res.problem];
-      if (text) toast(text);
-      return;
+      if (text && !line) toast(text);
+      return line ? 'go' : 'stop';
     }
     room = res.room;
     if (res.kind === 'placed') sound.play('pop');
@@ -1403,6 +1410,7 @@ async function start(): Promise<void> {
     roomChanged();
     updateBlockGhost();
     void refreshInventory();
+    return res.kind === 'broken' ? 'stop' : 'go';
   };
   /** A tap on cell p in play mode: punches a block there, or places the selected block. False = not for us. */
   const blockTap = (p: Point): boolean => {
@@ -1436,6 +1444,38 @@ async function start(): Promise<void> {
     const valid = blockProblem(room, items, getBlockType(selectedBlock), at.c, at.r, { standing: [], from: null }) === null;
     blockViews.showGhost({ ...at, id: selectedBlock, valid });
   }
+  // ---------- Hold to repeat (step BG5b) ----------
+  // A press on a block, a plant, a mine rock or a tree keeps hitting at that thing's cooldown until it
+  // breaks, the press ends, or the avatar is out of reach (it then walks closer and goes on). The first hit
+  // is on press. Holding still with a block selected places blocks (a drag along cells makes a line).
+  // Not for the dungeon fight and not for fishing. The timing is the pure holdTick (shared/src/hold.ts).
+  const holdBusyElsewhere = (): boolean =>
+    lakeside.fishing || placer.active || paint.active || build.on || blockers.on || panels.open !== null;
+  const hold = new HoldControl({
+    now: () => performance.now(),
+    walking: () => path.length > 0 || avatar.state === 'walk',
+    hit: async (t: HoldTarget): Promise<HoldResult> => {
+      if (t.kind === 'block') return doBlock('hit', t.c, t.r, null, 0, false);
+      if (t.kind === 'line') return selectedBlock === null ? 'stop' : doBlock('place', t.c, t.r, selectedBlock, 0, true);
+      if (t.kind === 'tree') return lakeside.holdSwing(t.index);
+      if (t.kind === 'rock') return dungeon.holdRock(t.id);
+      return 'stop';
+    },
+  });
+  /** What a press on this screen point would hit (a held thing), or null. */
+  const holdTargetAt = (screen: Point): HoldTarget | null => {
+    if (dungeon.isActive) {
+      const id = dungeon.rockUnder(screenToWorld(screen, dungeon.camera));
+      return id === null ? null : { kind: 'rock', id };
+    }
+    if (holdBusyElsewhere()) return null;
+    const world = screenToWorld(screen, shown);
+    const { c, r } = cellOf(world);
+    if (room.kind !== 'lakeside' && blockInCell(room, c, r)) return { kind: 'block', c, r };
+    const tree = lakeside.treeUnder(world);
+    return tree === null ? null : { kind: 'tree', index: tree };
+  }
+
   // Escape puts the block away (after panels, placing and painting have had it).
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && selectedBlock !== null && panels.open === null && !placer.active && !paint.active && !build.on) selectBlock(null, null);
@@ -1458,6 +1498,33 @@ async function start(): Promise<void> {
     getOverviewZoom: overviewZoom,
     getDevicePixelRatio: dpr,
     onGestureStart: () => intro.cancel(),
+    onPress: (screen) => {
+      const t = holdTargetAt(screen);
+      if (!t) return null;
+      if (!dungeon.isActive) {
+        marked = screenToWorld(screen, shown);
+        pendingBlock = null;
+        farm.cancel();
+        lakeside.cancel();
+      }
+      hold.start(t);
+      return 'repeat';
+    },
+    onHoldStill: (screen) => {
+      if (dungeon.isActive || selectedBlock === null || holdBusyElsewhere() || room.kind === 'lakeside') return false;
+      const { c, r } = cellOf(screenToWorld(screen, shown));
+      if (blockInCell(room, c, r)) return false;
+      pendingBlock = null;
+      hold.start({ kind: 'line', c, r });
+      return true;
+    },
+    onHoldMove: (screen) => {
+      const last = hold.lastCell;
+      if (!last) return;
+      const here = cellOf(screenToWorld(screen, shown));
+      if (here.c !== last.c || here.r !== last.r) hold.push(cellsBetween(last, here).slice(1));
+    },
+    onHoldEnd: () => hold.stop(),
     onPoint: (screen, kind, target) => {
       if (dungeon.isActive) {
         if (kind !== 'tap') return;
@@ -1606,9 +1673,12 @@ async function start(): Promise<void> {
   app.ticker.add((ticker) => {
     if (dungeon.isActive) {
       control.update(ticker.deltaMS);
+      hold.tick();
       dungeon.frame(ticker.deltaMS);
       return;
     }
+    if (hold.active && (panels.open !== null || build.on)) hold.stop();
+    hold.tick();
     const step = intro.update(ticker.deltaMS, app.screen.width, app.screen.height);
     if (step) setCamera(step.camera, step.done);
     control.update(ticker.deltaMS);
@@ -1641,7 +1711,8 @@ async function start(): Promise<void> {
     if (pendingBlock && path.length === 0 && avatar.state !== 'walk') {
       const p = pendingBlock;
       pendingBlock = null;
-      void doBlock(p.kind, p.c, p.r, selectedBlock, p.tries);
+      // A press still held goes on hitting by itself; only a released tap needs this one hit.
+      if (!hold.active) void doBlock(p.kind, p.c, p.r, selectedBlock, p.tries);
     }
     view.update();
     // The floating bars and bubbles follow the ghost, the item and the avatar (the camera may move).

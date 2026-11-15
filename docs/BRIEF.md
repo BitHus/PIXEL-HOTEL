@@ -138,7 +138,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   the grids are rebuilt and walkers and customers re-path. Only the room's owner places or breaks.
   Reach: BLOCK_REACH = 3 cells from the avatar (centre to centre); farther, the GameAPI answers
   with a walk to a spot near the cell and the client asks again on arrival. Punching: one hit
-  per tap, cooldown BLOCK_HIT_COOLDOWN_MS = 250; a block takes `hardness` hits; a half-broken
+  per tap (or held: HOLD TO REPEAT, see section 6 INPUT), cooldown BLOCK_HIT_COOLDOWN_MS = 250; a block takes `hardness` hits; a half-broken
   block heals after BLOCK_HEAL_MS = 6000 without a hit; cracks are drawn per stage (rendering
   only). A broken block drops itself back to the bag (always), its seed (BLOCK_SEED_CHANCE, if it
   has a seedId), its extra drops (blocks.json drops) and sometimes gems (gemDrop('block', rank),
@@ -146,6 +146,12 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   ('block_place', 'block_break'). The Catalog sells dirt, planks, stone and glass (Blocks tab,
   baseValue * 3, 1 or a pack of BLOCK_PACK); the rest comes from punching and later splicing.
   Input: see CLAUDE.md INPUT (play mode places and punches; Build mode moves furniture).
+  HOLD TO REPEAT (BG5b): pressing and holding on a block, a grown plant, a mine rock or a tree
+  repeats the hit at that thing's cooldown (250 / 250 / 400 / 400 ms), first hit on press, until it
+  breaks, the press ends, or the avatar is out of reach (it walks closer and goes on). A press that
+  moves 8 px is a pan; two fingers never hit. Holding still 300 ms with a block selected places blocks;
+  dragging then places a line (one per cell, HOLD_PLACE_MS = 150, only cells in reach, same rules). Not for the
+  dungeon fight (one hit per tap, no auto-attack) and not for fishing.
 - GEMS (started in BG5, BG4 finishes it): Player.wallet.gems (integer), ledger gemsDelta, shown in
   the info panel next to gold; never traded or sold. A known loop: place and punch the same block
   forever gives gems for free (gems have no use until packs, BG8; balance in BG9).

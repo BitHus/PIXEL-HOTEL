@@ -216,7 +216,8 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
 - Step BG3 is HALF done: A (gains lists, shared/src/gains.ts) done; B: the popup module exists
   (ui/gainPopups.ts, Settings "Popups"), wired for blocks only; chest, kill, fish, harvest next.
 - BG4 (gems) STARTED inside BG5: wallet.gems, ledger gemsDelta, gemDrop (block source), info panel.
-  BG5 (blocks and punching) is done (NOTES BG5). Next: BG4 other sources, BG6-BG9, then 9t B/C, 9g.
+  BG5 (blocks and punching) and BG5b (hold to repeat) are done (NOTES BG5, BG5b). Next: BG6 (seeds),
+  BG4 other sources, BG7-BG9, then 9t B/C, 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
 - DUNGEON_ROUND is 1. SAVE_VERSION is 15. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
@@ -245,7 +246,13 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
 - INPUT: a press is a TAP only if it moved under 8 px and lasted under 300 ms; else a drag or
   long press, which never walks or punches. PLAY MODE: with a block selected in the hotbar a tap on
   a free cell places it; a tap on a block punches it (also with a block selected); any other tap
-  walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. BUILD MODE (Build
+  walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. HOLD TO
+  REPEAT (BG5b): a press on a block, a grown plant, a mine rock or a tree hits at once and keeps hitting at that
+  thing's cooldown (blocks 250 ms, rock and tree 400 ms) until it breaks, the press ends or the avatar is out of
+  reach (it walks closer, then goes on); moving 8 px = a pan, which never hits; two fingers never hit. With a block
+  selected, holding still 300 ms on free floor places blocks, dragging then makes a line (one per cell, in reach,
+  the usual rules). NOT for the dungeon fight (one hit per tap) and NOT for fishing. Pure helper
+  shared/src/hold.ts holdTick; the client only feeds pointer events. BUILD MODE (Build
   button or B; furniture only): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
   up), a tap on a free spot moves the selected item there. PAINT MODE (Room > Paint cells): tap =
   one cell, drag = rectangle. One finger pans, two fingers pinch-zoom, the wheel zooms. A tap on

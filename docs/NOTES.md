@@ -1241,3 +1241,40 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 - CHECKED BY EYE (headless Chromium, 900 x 640): place 5 dirt blocks, punch one (it breaks, a chip
   floats up), stone cracks after 2 hits, glass and lantern art. A bug found that way: the hotbar
   did not accept blocks (fitsArea) and the popup chip was stretched by a CSS order clash; both fixed.
+
+## BG5b: hold to repeat (step BG5b)
+
+- CHANGES THE INPUT RULE (CLAUDE.md INPUT, BRIEF section 6a): a press on a block, grown plant (BG6), mine
+  rock or standing tree is a HOLD: it hits at once and repeats at that thing's cooldown until it breaks
+  (the API answers 'broken' / 'felled' / the rock is gone), the press ends, or it moves past
+  TAP_MAX_MOVE_PX (then it is a pan and never hits). A second finger cancels the hold. The press never
+  taps afterwards, so a short tap is exactly one hit (made on press, not on release). A tap on a far block
+  still walks closer and hits once on arrival (pendingBlock, only when no hold is running).
+  NOT for the dungeon fight (click_enemy stays one hit per tap) and NOT for fishing (the reel has its own taps).
+- PURE: shared/src/hold.ts: HoldState { active, lastHitAt }, holdStart, holdStop, holdMoved (pan check),
+  holdTick(state, nowMs, cooldownMs) -> { state, hit } (first tick hits; one hit per call; next hit a full
+  cooldown after the last one, never earlier, so the API cooldown never refuses it; a long stall gives one
+  hit, no burst), cellsBetween(a, b) (cells a fast drag passed over, no gaps). Config HOLD_PLACE_START_MS
+  (= TAP_MAX_MS), HOLD_PLACE_MS 150. Tests: shared/src/hold.test.ts (8), client/src/input/holdControl.test.ts (6),
+  blocksAPI.test.ts (held punching with no refused hits, out of reach = walk).
+- CLIENT: input/cameraControl.ts has new hooks onPress (returns 'repeat' to claim the press), onHoldStill
+  (after HOLD_PLACE_START_MS still: true = a 'line' hold, moves then do not pan), onHoldMove, onHoldEnd.
+  input/holdControl.ts HoldControl keeps the HoldState and sends ONE request per hit via deps.hit (-> GameAPI);
+  answers: 'go', 'stop', 'walk' (waits until the avatar stopped walking, then goes on), 'retry' (too early:
+  the cooldown is not used up, asked again next frame; used for the API's 'cooldown' refusal and the mine's own
+  clock). main.ts: holdTargetAt (block / tree / rock under a press), doBlock returns a HoldResult, the ticker
+  calls hold.tick() (also in the dungeon). Rooms: hold is off while a panel, build, paint, placing, blockers or
+  fishing is on. Mine: DungeonScreen.rockUnder / holdRock send click_rock again (the step function keeps its
+  400 ms cooldown; the screen waits while run.timeMs < pickReadyAt). Trees: LakesideScreen.treeUnder /
+  holdSwing (walks next to the tree when too far, then the hold goes on); a felled tree ends the hold.
+- PLACING: with a block selected, a short tap places one block as before. Holding still 300 ms on a free
+  cell starts a line: the first block goes down, and the cells the pointer crosses are queued (cellsBetween)
+  and placed one per 150 ms; cells out of reach, taken or refused are skipped quietly (no walking, no toast).
+  Why 300 ms and not "on press": a press on free floor with a block selected must still be able to start a
+  pan, or every pan would drop a stray block.
+- CHECK BY HAND (owner): PC: hold the mouse on a stone block (it cracks and breaks, no clicking), hold on a
+  tree, hold on a mine rock, hold on far blocks (walks, then hits), hold with dirt selected and drag along the
+  floor (a line). Phone: finger hold on a block, a drag that starts on a block pans (one hit may land first), two-finger
+  pinch never keeps punching.
+- KNOWN: the first hit happens on press, so a pan that starts on a block or a tree gives one hit before the pan
+  (the owner asked for hit-on-press). Not run on a real phone by the AI.

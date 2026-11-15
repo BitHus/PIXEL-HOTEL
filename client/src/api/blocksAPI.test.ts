@@ -1,6 +1,6 @@
 // Step BG5: blocks and punching through the GameAPI (LocalGameAPI).
 import { describe, expect, it } from 'vitest';
-import { BLOCK_HIT_COOLDOWN_MS, applyChange, createNewPlayer, saveKey, seededRng, toSaveText, type GameState } from '@pixel-hotel/shared';
+import { BLOCK_HIT_COOLDOWN_MS, applyChange, holdStart, holdTick, createNewPlayer, saveKey, seededRng, toSaveText, type GameState } from '@pixel-hotel/shared';
 import { ledgerGold, ledgerMaterials } from '../../../shared/src/testState.ts';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
@@ -83,6 +83,40 @@ describe('blocks through the GameAPI', () => {
     expect(hits).toEqual(['cracked', 'cracked', 'cracked', 'broken']);
     expect((await api.getInventory()).materials.stone).toBe(30);
     expect(await api.hitBlock(9, 9)).toEqual({ kind: 'refused', problem: 'no_block' });
+  });
+
+  it('a held press (holdTick on a 16 ms clock) breaks a block with no refused hits, and stops on release', async () => {
+    t = 1000;
+    const s = fresh();
+    const { api } = open(s);
+    await api.enterRoom(s.player.hotelRoomId);
+    await api.placeBlock(9, 9, 'stone'); // 4 hits
+    let h = holdStart();
+    const kinds: string[] = [];
+    let frames = 0;
+    for (let now = 0; now < 3000 && kinds[kinds.length - 1] !== 'broken'; now += 16, frames++) {
+      t += 16;
+      const r = holdTick(h, now, BLOCK_HIT_COOLDOWN_MS);
+      h = r.state;
+      if (r.hit) kinds.push((await api.hitBlock(9, 9)).kind);
+    }
+    expect(kinds).toEqual(['cracked', 'cracked', 'cracked', 'broken']); // never 'refused' (cooldown)
+    expect(frames * 16).toBeLessThan(4 * (BLOCK_HIT_COOLDOWN_MS + 16));
+    // Released: no more ticks, so no more requests; the cell is free.
+    expect(await api.hitBlock(9, 9)).toEqual({ kind: 'refused', problem: 'no_block' });
+  });
+
+  it('a held press out of reach gets a walk answer and changes nothing', async () => {
+    t = 1000;
+    const s = fresh();
+    const { api } = open(s);
+    await api.enterRoom(s.player.hotelRoomId);
+    await api.placeBlock(9, 9, 'dirt');
+    t += 60_000;
+    const far = await api.hitBlock(9, 2); // nothing there: refused before any walk
+    expect(far).toEqual({ kind: 'refused', problem: 'no_block' });
+    expect(await api.placeBlock(9, 2, 'dirt')).toMatchObject({ kind: 'walk' }); // too far: walks, places nothing
+    expect((await api.getRoom(s.player.hotelRoomId))!.blocks['9,2']).toBeUndefined();
   });
 
   it('breaking can give gems and an item through the gains list and the ledger', async () => {

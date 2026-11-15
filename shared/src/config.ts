@@ -818,3 +818,9 @@ export const POPUP_MAX = 5;
 export const BLOCK_CRACK_STAGES = 4;
 /** Blocks are bought one at a time or in a pack of this many (Catalog > Blocks). */
 export const BLOCK_PACK = 10;
+
+// ---------- Hold to repeat (step BG5b) ----------
+/** A press on empty floor with a block selected becomes a "place" hold after this many ms of not moving (a short tap places one). */
+export const HOLD_PLACE_START_MS = TAP_MAX_MS;
+/** While a place hold runs, one block is placed at most every this many ms (a drag along cells makes a line). */
+export const HOLD_PLACE_MS = 150;
