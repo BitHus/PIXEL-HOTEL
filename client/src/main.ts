@@ -1524,6 +1524,17 @@ async function start(): Promise<void> {
       return 'stop';
     },
   });
+  // HOLD TO WALK: holding still on the floor walks to the pointer and follows it while the press lasts.
+  let walkHold = false;
+  let walkHoldCell = '';
+  const steerWalk = (screen: Point): void => {
+    marked = screenToWorld(screen, shown);
+    const { c, r } = cellOf(marked);
+    const key = `${c},${r}`;
+    if (key === walkHoldCell && walkHold) return;
+    walkHoldCell = key;
+    void walkTo(marked);
+  };
   /** What a press on this screen point would hit (a held thing), or null. */
   const holdTargetAt = (screen: Point): HoldTarget | null => {
     if (dungeon.isActive) {
@@ -1580,7 +1591,21 @@ async function start(): Promise<void> {
       hold.start({ kind: 'line', c, r });
       return true;
     },
+    onWalkHold: (screen) => {
+      if (dungeon.isActive || selectedBlock !== null || holdBusyElsewhere() || lakeside.fishing || menu.uid !== null) return false;
+      if (hold.active) return false;
+      walkHold = true;
+      walkHoldCell = "";
+      pendingBlock = null;
+      lakeside.cancel();
+      steerWalk(screen);
+      return true;
+    },
     onHoldMove: (screen) => {
+      if (walkHold) {
+        steerWalk(screen);
+        return;
+      }
       if (hold.repeating) {
         const t = holdTargetAt(screen);
         if (t) {
@@ -1594,7 +1619,10 @@ async function start(): Promise<void> {
       const here = cellOf(screenToWorld(screen, shown));
       if (here.c !== last.c || here.r !== last.r) hold.push(cellsBetween(last, here).slice(1));
     },
-    onHoldEnd: () => hold.stop(),
+    onHoldEnd: () => {
+      walkHold = false;
+      hold.stop();
+    },
     onPoint: (screen, kind, target) => {
       if (dungeon.isActive) {
         if (kind !== 'tap') return;
