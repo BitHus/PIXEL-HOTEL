@@ -337,3 +337,25 @@ Tests: odds over many rolls with a fixed rng match the table, a duplicate gives 
 ```
 Step BG9: balance the block world with tools/simulate-economy.ts (gems per hour from each source, pack prices, grow times, how fast the first clothes pack is reachable, no infinite loops like seed -> block -> seed with a net gain). Print a table; tune config only; keep the first hour feeling generous. Update the first-hour hints and the quests with the block world (planting, splicing, opening a pack). Tick everything in the ROADMAP.
 ```
+
+# Inn steps (planner's merge proposal, 15 Nov; read docs/INN-PLAN.md first; owner confirms section 3)
+
+Every prompt: read CLAUDE.md, docs/INN-PLAN.md, docs/NOTES.md (the parts named), docs/UI-REFERENCE.md. Plan first (max 8 lines), tests first, SAVE_VERSION bump + migration test when state changes, typecheck + tests, update CLAUDE.md / BRIEF / NOTES, tick ROADMAP, commit and push, say what to try on my phone. No art tools; original names.
+
+## Step R1 - Refactor (no behaviour change)
+
+```
+Step R1: split the biggest files by part, with NO change in behaviour. Targets: client/src/main.ts (1 893 lines), client/src/api/localGameAPI.ts (1 181), shared/src/config.ts (931, split by topic into shared/src/config/*.ts re-exported from config.ts so imports keep working). Rules: no file over about 500 lines after; each new file one purpose; every existing test passes unchanged; no renames of exported names; no UI or rule changes. First write down the split in docs/NOTES.md (max 15 lines), then do it in small commits. Run the full tests and typecheck after every move and compare a save file before and after (same state in, same state out). Tell me what to try on my phone: play five minutes in every place and check nothing changed.
+```
+
+## Step M-A - Carpentry (blocks become furniture)
+
+```
+Step M-A: carpentry (INN-PLAN M-A). Add about 12 furniture types made from blocks and materials in shared/data/furniture.json (inCatalog false, placeIn by use, icon from BG2, colours from the block they are made of) and recipes in shared/data/recipes.json: for example planks + cloth -> plank bench, stone -> stone fireplace (a light), glass + planks -> glass lamp (a light), brick -> brick oven (decor for the tavern), thatch -> thatch rug, clay -> clay jug (on-surface), planks -> stool and a round table. Costs use blocks and a few materials and no gold; crafting needs no fee. A Carpentry tab in the existing Workshop panel (ui/workshopPanel.ts) listing recipes with the blocks you own (grey when missing). Crafting returns a gains list (popup), goes through the ledger, items show in the Book (furniture tab) and the Book rank rules. Appeal and baseValue for the new pieces follow the existing furniture scale. Tests: every recipe's inputs and output exist, recipes are not cheaper than catalog equivalents, the ledger, the Book. Do not touch the tavern rules or room rules.
+```
+
+## Step M-B - The connected Inn
+
+```
+Step M-B: one Inn with doors (INN-PLAN M-B). 1. An Inn name chosen in character creation (max 16, same character rules, default "The Inn"), saved in the state, shown in the info panel. 2. Doors between own zones: the hotel room (suite), the shop (tavern) and the farm (garden) each get a door spot to their neighbours (data: shared/data/innDoors.json, in cells on the room edge; door cells are blocked for items like the door zone today and never covered by blocks). Walking onto a door spot changes the room with a short fade (the existing room switch) and arrives at the matching door of the other room. The Map stays as fast travel and still lists dungeon, mine and lakeside. 3. A walking order suite - tavern - garden; the lakeside, mine and dungeon stay on the Map only. 4. Migration: existing rooms get door spots; items and blocks on them go to the bag with a toast. Tests: door spots valid per shape and level, nothing on them, travel keeps the avatar and run state rules (no door during a run), the migration. Customers, guests and blocks must not break (door_blocked rules still hold).
+```

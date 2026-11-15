@@ -37,6 +37,16 @@ BG7 Splicing: two seeds make a new one; a Splice tab in the Book. [done, NOTES B
 BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible. [done, NOTES BG8]
 BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools. [done, NOTES BG9]
 
+## PHASE 1B - One Inn (planner's proposal, 15 Nov; docs/INN-PLAN.md; owner confirms before it starts)
+Merge the block world, the tavern and the personal room into one flow: a garden, a tavern and a
+private suite connected by doors, with expeditions out of the inn. Proposed order:
+0.1 PLAYTEST (phase 2.1 brought forward): one full hour from a new game, one fix list, fix it.
+0.2 R1 Refactor: split main.ts, localGameAPI.ts and config.ts; no behaviour change. [prompt ready]
+0.3 9t B and C (tavern in the game), then M-A Carpentry (blocks -> furniture) [prompt ready],
+    M-B Connected Inn (doors, an Inn name) [prompt ready].
+0.4 9g livelier suite, then M-C One Inn score (tavern + suite stars + garden beauty), M-E suite
+    showcase; 9i questline follows the flow. After that 9h and phase 2.2 rebalancing.
+
 ## PHASE 1 - Finish the core game
 The loops that are planned must all exist before anything else is added.
 1.0 Housekeeping: shorten CLAUDE.md. [done]
