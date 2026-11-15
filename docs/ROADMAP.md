@@ -33,7 +33,7 @@ BG4 Gems: the second currency, dropped by everything, through the ledger. [done:
 BG5 Blocks and punching: place and break blocks by hits; drops, seeds, gems. [done]
 BG5b Hold to repeat: hold a press to keep punching / chopping / mining and to place block lines. [done]
 BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates. [done]
-BG7 Splicing: two seeds make a new one; a Splice tab in the Book.
+BG7 Splicing: two seeds make a new one; a Splice tab in the Book. [done, NOTES BG7]
 BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible.
 BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools.
 

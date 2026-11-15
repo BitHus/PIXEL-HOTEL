@@ -452,7 +452,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - SEEDS: every block (blocks.json seedId `<block>_seed`) and every crop (crops.json seed) has a seed item
   with a seed icon in its colours; they stack in the bag and the hotbar. Basic crop seeds are sold in the
   Catalog (Seeds tab, gold); block seeds drop from broken blocks (BLOCK_SEED_CHANCE), harvests (SEED_BACK_CHANCE)
-  and later splicing (BG7). The glowcap spore still only drops in the dungeon.
+  and splicing (BG7). The glowcap spore still only drops in the dungeon.
 - PLANTING: select a seed in the hotbar and tap a free soil cell of a farm room within BLOCK_REACH cells (farther:
   the avatar walks closer first; holding still 300 ms and dragging plants a line). One plant per cell. A plant
   blocks its cell like a small block (nav grids rebuilt, never on the door zone, furniture, the pot, an avatar
@@ -465,6 +465,17 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   gemDrop('harvest', rank) gems. The plant goes, the cell is free again. Punching an unripe plant does nothing
   (a shake and "ready in n min"), so a tap never destroys it. All results go through the gains list and ledger
   (reasons 'plant', 'harvest'). Pure functions: plantSeed, growthStage, harvestPlant, hitPlant (shared/src/farm.ts).
+- SPLICING (BG7): select a seed and tap a planted, unripe, not yet spliced cell: the second seed is used up and
+  the cell grows the NEW seed of the pair (shared/data/splice.json { a, b, result }, a + b = b + a, about 40
+  recipes, chains of 2 to 3 steps, a result is never lower in rank than the lower input). The clock restarts:
+  readyAt = now + max(grow time of both, SEED_GROW_MS by rank) + SPLICE_BONUS_MS (config, 1 min). No random
+  failure: a pair not in the table, and a seed with itself, answer "nothing happens" and take nothing. A ripe
+  spliced plant is harvested by punching: exactly the result seed (no seed back), a SPLICE_BONUS_CHANCE (25%)
+  chance of one block or crop of either seed, gemDrop 'splice' (result rank). Splice seeds (spliceSeeds.json) grow
+  a drink or good, a furniture item (to the inventory) or a clothing piece (unlocked forever; a repeat harvest
+  gives the seed back). The Book's Splice tab: found recipes "[a] + [b] = [result]", the rest "???" with one
+  ingredient shown once that seed has been seen; a recipe is found when its result is first harvested
+  (Player.splicesFound); 25 / 50 / 75 / 100 % pay gold and gems (bookRewards.json). Quest hint 6 teaches it.
 - Crops (shared/data/crops.json): turnip (seed 4 gold, worth 10), potato (seed 6, worth 16), carrot (seed 8,
   worth 22), pumpkin (seed 15, rare, worth 50), glowcap mushroom (no seed for sale; 1 glowcap spore drops from 5%
   of dungeon chests; ultra_rare, worth 40). crops.json growMinutes is LEGACY (only the save migration uses it).

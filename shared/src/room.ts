@@ -34,6 +34,8 @@ export interface Plant {
   plantedAt: number;
   /** When it is fully grown (plantedAt + the grow time of its rank; a migrated old crop keeps its own). */
   readyAt: number;
+  /** Step BG7: the second seed spliced into this cell. The cell then grows the new seed of the pair (splice.ts). */
+  with?: SeedId;
 }
 
 export interface Room {

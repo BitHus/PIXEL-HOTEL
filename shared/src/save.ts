@@ -250,6 +250,11 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     const bag = (b: unknown) => (isObject(b) ? { gems: 0, ...b } : b);
     return { ...state, run: { ...run, bag: bag(run.bag), banked: bag(run.banked), lost: bag(run.lost), pickups: Array.isArray(run.pickups) ? run.pickups : [] } };
   },
+  // 17 -> 18 (step BG7, splicing): the player has found no splice recipes yet.
+  17: (state) => {
+    if (!isObject(state) || !isObject(state.player)) return state;
+    return { ...state, player: { ...state.player, splicesFound: Array.isArray(state.player.splicesFound) ? state.player.splicesFound : [] } };
+  },
 };
 
 /** The storage key for a save version. */
@@ -303,7 +308,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
   if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
-  if (!Array.isArray(p.unlockedClothing) || typeof x.playerCreated !== 'boolean') return false;
+  if (!Array.isArray(p.unlockedClothing) || !Array.isArray(p.splicesFound) || typeof x.playerCreated !== 'boolean') return false;
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
   if (!Array.isArray(x.hotbar) || x.hotbar.length !== HOTBAR_SLOTS) return false;
   if (!x.hotbar.every((h) => h === null || typeof h === 'string')) return false;

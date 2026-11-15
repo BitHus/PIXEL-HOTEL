@@ -10,15 +10,16 @@ import { ENEMY_TABLES, LOOT_TABLES, getLootTable, type EnemyTableId } from './du
 import { BLOCK_TYPES } from './blockTypes.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
 import type { GameState } from './gameState.ts';
-import { MATERIAL_TYPES } from './materials.ts';
+import { CROP_TYPES, MATERIAL_TYPES } from './materials.ts';
 import { enemyKey } from './seen.ts';
+import { SPLICE_RECIPES, SPLICE_SEEDS, isSpliceResult, pairKey } from './splice.ts';
 import { BOOK_GEM_RANK } from './config.ts';
 import { gemDrop } from './gems.ts';
 import type { Rank, Rng, SeenMap } from './types.ts';
 
-export type BookTab = 'materials' | 'blocks' | 'furniture' | 'food' | 'fish' | 'enemies';
-export const BOOK_TABS: readonly BookTab[] = ['materials', 'blocks', 'furniture', 'food', 'fish', 'enemies'];
-export const BOOK_TAB_NAMES: Record<BookTab, string> = { materials: 'Materials', blocks: 'Blocks', furniture: 'Furniture', food: 'Food and crops', fish: 'Fish', enemies: 'Enemies' };
+export type BookTab = 'materials' | 'blocks' | 'furniture' | 'food' | 'fish' | 'enemies' | 'splice';
+export const BOOK_TABS: readonly BookTab[] = ['materials', 'blocks', 'furniture', 'food', 'fish', 'enemies', 'splice'];
+export const BOOK_TAB_NAMES: Record<BookTab, string> = { materials: 'Materials', blocks: 'Blocks', furniture: 'Furniture', food: 'Food and crops', fish: 'Fish', enemies: 'Enemies', splice: 'Splice' };
 
 export const ENEMY_NAMES: Record<EnemyTableId, string> = { slime: 'Slime', bat: 'Bat', skeleton: 'Skeleton', mimic: 'Mimic', bone_king: 'Bone King' };
 /** The Book's rank for an enemy type (how hard it is to meet). */
@@ -29,7 +30,7 @@ export interface BookEntry {
   key: string;
   /** The material id, furniture type id or enemy type (for the icon). */
   id: string;
-  kind: 'material' | 'furniture' | 'enemy';
+  kind: 'material' | 'furniture' | 'enemy' | 'recipe';
   name: string;
   rank: Rank;
   /** Where it comes from: "Drops from: Slime", "Catalog", "Crafted", "Farm", ... */
@@ -38,6 +39,8 @@ export interface BookEntry {
   drops?: string[];
   /** Fish: the size range of a catch in cm (the Book shows the biggest caught). */
   cm?: { min: number; max: number };
+  /** Splice recipes: the two ingredients (seed ids); `id` is the result. */
+  recipe?: { a: string; b: string };
 }
 
 /** The enemy types whose table drops this item. */
@@ -49,6 +52,9 @@ const ORES = ['copper_ore', 'iron_ore', 'mithril_ore', 'gem'];
 const TREE_DROPS = ['wood', 'resin', 'amber', 'golden_acorn'];
 const BARS = ['copper_bar', 'iron_bar', 'mithril_bar'];
 const START_FURNITURE = ['counter', 'stall_table'];
+/** Furniture and clothes only a splice seed grows (their source is "Splicing"). */
+const FURNITURE_GROWN = new Set(SPLICE_SEEDS.flatMap((s) => (s.grows.kind === 'furniture' ? [s.grows.id] : [])));
+const CLOTHING_GROWN = new Set(SPLICE_SEEDS.flatMap((s) => (s.grows.kind === 'clothing' ? [s.grows.id] : [])));
 
 /** Where a material or furniture type comes from, as one short line. */
 export function sourceOf(id: string): string {
@@ -62,7 +68,9 @@ export function sourceOf(id: string): string {
   if (isCatchId(id)) parts.push('Fishing');
   if (BARS.includes(id)) parts.push('Forge');
   const material = MATERIAL_TYPES.find((m) => m.id === id);
-  if (material?.group === 'seed' && id !== 'glowcap_spore') parts.push('Catalog');
+  if (material?.group === 'seed' && id !== 'glowcap_spore' && !isSpliceResult(id) && CROP_TYPES.some((c) => c.seed === id && c.seedPrice !== null)) parts.push('Catalog');
+  if (material?.group === 'seed' && BLOCK_TYPES.some((b) => b.seedId === id)) parts.push('Punching blocks');
+  if (isSpliceResult(id) || FURNITURE_GROWN.has(id) || CLOTHING_GROWN.has(id)) parts.push('Splicing');
   if (material?.group === 'crop') parts.push('Farm');
   if (material?.group === 'food') parts.push('Cooked');
   if (material?.group === 'drink') parts.push('Brewed');
@@ -79,6 +87,12 @@ export function sourceOf(id: string): string {
 
 /** The entries of a tab, in data order. */
 export function bookEntries(tab: BookTab): BookEntry[] {
+  if (tab === 'splice') {
+    return SPLICE_RECIPES.map((r) => {
+      const m = MATERIAL_TYPES.find((x) => x.id === r.result)!;
+      return { key: pairKey(r.a, r.b), id: r.result, kind: 'recipe' as const, name: m.name, rank: m.rank, source: 'Splicing', recipe: { a: r.a, b: r.b } };
+    });
+  }
   if (tab === 'enemies') {
     return ENEMY_TABLES.map((t) => ({ key: enemyKey(t), id: t, kind: 'enemy' as const, name: ENEMY_NAMES[t], rank: ENEMY_RANKS[t], source: t === 'mimic' ? 'Dungeon chests' : 'Dungeon', drops: getLootTable(t).drops.map((d) => d.item) }));
   }
@@ -94,14 +108,15 @@ export interface BookProgress {
   total: number;
 }
 
-export function bookProgress(seen: SeenMap, tab: BookTab): BookProgress {
+/** `splices` = Player.splicesFound: the Splice tab counts those (its entries are recipes, not finds). */
+export function bookProgress(seen: SeenMap, tab: BookTab, splices: readonly string[] = []): BookProgress {
   const entries = bookEntries(tab);
-  return { found: entries.filter((e) => seen[e.key] !== undefined).length, total: entries.length };
+  return { found: entries.filter((e) => (tab === 'splice' ? splices.includes(e.key) : seen[e.key] !== undefined)).length, total: entries.length };
 }
 
 /** All tabs together, and the whole book in percent (rounded down, 100 only when complete). */
-export function bookTotal(seen: SeenMap): BookProgress & { percent: number } {
-  const all = BOOK_TABS.map((t) => bookProgress(seen, t));
+export function bookTotal(seen: SeenMap, splices: readonly string[] = []): BookProgress & { percent: number } {
+  const all = BOOK_TABS.map((t) => bookProgress(seen, t, splices));
   const found = all.reduce((a, p) => a + p.found, 0);
   const total = all.reduce((a, p) => a + p.total, 0);
   return { found, total, percent: total > 0 ? Math.floor((found * 100) / total) : 0 };
@@ -109,7 +124,7 @@ export function bookTotal(seen: SeenMap): BookProgress & { percent: number } {
 
 /** The entries first seen after the Book was last opened (the "New!" marks and the button's dot). */
 export function newEntries(seen: SeenMap, openedAt: number): string[] {
-  return BOOK_TABS.flatMap((t) => bookEntries(t)).filter((e) => (seen[e.key]?.firstSeenAt ?? -Infinity) > openedAt).map((e) => e.key);
+  return BOOK_TABS.filter((t) => t !== 'splice').flatMap((t) => bookEntries(t)).filter((e) => (seen[e.key]?.firstSeenAt ?? -Infinity) > openedAt).map((e) => e.key);
 }
 
 /** A reward for filling a tab: gold now, and a hat later (step 9g fills the hats in; null until then). */
@@ -128,8 +143,8 @@ export function rewardKey(tab: BookTab, percent: number): string {
 export type RewardState = 'locked' | 'ready' | 'taken';
 
 /** Every reward of a tab with its state: locked (not far enough), ready to claim, or taken. */
-export function bookRewards(player: { seen: SeenMap; bookRewards: readonly string[] }, tab: BookTab): (BookReward & { state: RewardState })[] {
-  const p = bookProgress(player.seen, tab);
+export function bookRewards(player: { seen: SeenMap; bookRewards: readonly string[]; splicesFound?: readonly string[] }, tab: BookTab): (BookReward & { state: RewardState })[] {
+  const p = bookProgress(player.seen, tab, player.splicesFound ?? []);
   return BOOK_REWARDS[tab].map((r) => ({
     ...r,
     state: player.bookRewards.includes(rewardKey(tab, r.percent)) ? 'taken' : p.total > 0 && p.found * 100 >= r.percent * p.total ? 'ready' : 'locked',

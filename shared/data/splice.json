@@ -1,0 +1,202 @@
+[
+  {
+    "a": "dirt_seed",
+    "b": "turnip_seed",
+    "result": "clay_seed"
+  },
+  {
+    "a": "dirt_seed",
+    "b": "planks_seed",
+    "result": "thatch_seed"
+  },
+  {
+    "a": "stone_seed",
+    "b": "clay_seed",
+    "result": "brick_seed"
+  },
+  {
+    "a": "potato_seed",
+    "b": "carrot_seed",
+    "result": "flaxbloom_seed"
+  },
+  {
+    "a": "turnip_seed",
+    "b": "thatch_seed",
+    "result": "flaxbloom_seed"
+  },
+  {
+    "a": "stone_seed",
+    "b": "planks_seed",
+    "result": "glass_seed"
+  },
+  {
+    "a": "clay_seed",
+    "b": "thatch_seed",
+    "result": "lantern_block_seed"
+  },
+  {
+    "a": "stone_seed",
+    "b": "dirt_seed",
+    "result": "mossy_stone_seed"
+  },
+  {
+    "a": "turnip_seed",
+    "b": "carrot_seed",
+    "result": "pumpkin_seed"
+  },
+  {
+    "a": "potato_seed",
+    "b": "planks_seed",
+    "result": "hopvine_seed"
+  },
+  {
+    "a": "carrot_seed",
+    "b": "clay_seed",
+    "result": "honeybloom_seed"
+  },
+  {
+    "a": "planks_seed",
+    "b": "brick_seed",
+    "result": "vine_bench_seed"
+  },
+  {
+    "a": "dirt_seed",
+    "b": "potato_seed",
+    "result": "mohawk_seed"
+  },
+  {
+    "a": "thatch_seed",
+    "b": "stone_seed",
+    "result": "baggy_seed"
+  },
+  {
+    "a": "pumpkin_seed",
+    "b": "potato_seed",
+    "result": "honeybloom_seed"
+  },
+  {
+    "a": "lantern_block_seed",
+    "b": "thatch_seed",
+    "result": "vine_bench_seed"
+  },
+  {
+    "a": "mossy_stone_seed",
+    "b": "dirt_seed",
+    "result": "baggy_seed"
+  },
+  {
+    "a": "glass_seed",
+    "b": "carrot_seed",
+    "result": "mohawk_seed"
+  },
+  {
+    "a": "brick_seed",
+    "b": "glass_seed",
+    "result": "lantern_block_seed"
+  },
+  {
+    "a": "pumpkin_seed",
+    "b": "clay_seed",
+    "result": "hopvine_seed"
+  },
+  {
+    "a": "lantern_block_seed",
+    "b": "carrot_seed",
+    "result": "honeybloom_seed"
+  },
+  {
+    "a": "mossy_stone_seed",
+    "b": "turnip_seed",
+    "result": "hopvine_seed"
+  },
+  {
+    "a": "vine_bench_seed",
+    "b": "dirt_seed",
+    "result": "mohawk_seed"
+  },
+  {
+    "a": "pumpkin_seed",
+    "b": "lantern_block_seed",
+    "result": "gilded_chair_seed"
+  },
+  {
+    "a": "mossy_stone_seed",
+    "b": "glass_seed",
+    "result": "honey_table_seed"
+  },
+  {
+    "a": "hopvine_seed",
+    "b": "honeybloom_seed",
+    "result": "spiritbrew_seed"
+  },
+  {
+    "a": "vine_bench_seed",
+    "b": "mossy_stone_seed",
+    "result": "ember_lamp_seed"
+  },
+  {
+    "a": "mohawk_seed",
+    "b": "baggy_seed",
+    "result": "tunic_seed"
+  },
+  {
+    "a": "pumpkin_seed",
+    "b": "hopvine_seed",
+    "result": "amberbud_seed"
+  },
+  {
+    "a": "lantern_block_seed",
+    "b": "glass_seed",
+    "result": "cinder_block_seed"
+  },
+  {
+    "a": "pumpkin_seed",
+    "b": "honeybloom_seed",
+    "result": "glowcap_spore"
+  },
+  {
+    "a": "vine_bench_seed",
+    "b": "hopvine_seed",
+    "result": "honey_table_seed"
+  },
+  {
+    "a": "baggy_seed",
+    "b": "glass_seed",
+    "result": "gilded_chair_seed"
+  },
+  {
+    "a": "cinder_block_seed",
+    "b": "pumpkin_seed",
+    "result": "ember_lamp_seed"
+  },
+  {
+    "a": "glowcap_spore",
+    "b": "hopvine_seed",
+    "result": "spiritbrew_seed"
+  },
+  {
+    "a": "tunic_seed",
+    "b": "honeybloom_seed",
+    "result": "amberbud_seed"
+  },
+  {
+    "a": "cinder_block_seed",
+    "b": "mossy_stone_seed",
+    "result": "gilded_chair_seed"
+  },
+  {
+    "a": "glowcap_spore",
+    "b": "glass_seed",
+    "result": "honey_table_seed"
+  },
+  {
+    "a": "gilded_chair_seed",
+    "b": "honey_table_seed",
+    "result": "heartwood_throne_seed"
+  },
+  {
+    "a": "cinder_block_seed",
+    "b": "glowcap_spore",
+    "result": "heartwood_throne_seed"
+  }
+]

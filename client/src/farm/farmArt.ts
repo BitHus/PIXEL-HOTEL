@@ -18,17 +18,19 @@ function box(g: Graphics, x: number, y: number, w: number, d: number, h: number,
 }
 
 /** The two colours of what a seed grows (the icon colours of the crop or the block), as hex. */
-function plantColors(seed: SeedId): { main: string; accent: string } {
+function plantColors(seed: SeedId, withSeed: SeedId | null = null): { main: string; accent: string } {
   const [c0, c1] = getMaterialType(seedProduct(seed)).icon.colors as [PaletteName, PaletteName | undefined];
-  return { main: paletteColor(c0), accent: paletteColor(c1 ?? c0) };
+  // A spliced cell (step BG7) shows both seeds: the second one's main colour is the accent.
+  const w = withSeed ? (getMaterialType(seedProduct(withSeed)).icon.colors[0] as PaletteName) : null;
+  return { main: paletteColor(c0), accent: paletteColor(w ?? c1 ?? c0) };
 }
 
 /**
  * A plant in its stage on one 32 x 32 cell (top-left at 0, 0; the stem stands at the bottom middle): a sprout, a
  * small plant, then the full plant with its crop or block colour showing. Placeholder art in code.
  */
-export function drawPlantArt(g: Graphics, seed: SeedId, stage: PlantStage): void {
-  const { main, accent } = plantColors(seed);
+export function drawPlantArt(g: Graphics, seed: SeedId, stage: PlantStage, withSeed: SeedId | null = null): void {
+  const { main, accent } = plantColors(seed, withSeed);
   const cx = 16;
   const base = 30;
   g.ellipse(cx, base, 8, 2).fill({ color: DARK_WARM, alpha: 0.35 });

@@ -27,7 +27,7 @@ describe('the mine through the GameAPI', () => {
     const run = await api.mineStart();
     expect(run?.place).toBe('mine');
     expect(await api.mineStart()).toBeNull(); // one at a time
-    expect(await api.currentHint()).toBeNull();
+    expect(await api.currentHint()).not.toMatch(/mine/); // the next quest (splicing) shows instead
     expect((await api.getPlayer()).wallet.gold).toBe(500); // free
   });
 

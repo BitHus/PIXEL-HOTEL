@@ -6,38 +6,25 @@
 // (SEED_YIELD blocks or crops by rank, a chance for the seed back, a chance for gems); an unripe plant is
 // never harmed. Everything that changes the bag or the wallet goes through ledger.applyChange. Pure.
 
-import { BUILD_CELL, PLANT_SPROUT_SHARE, SEED_BACK_CHANCE, SEED_GROW_MS, SEED_YIELD, SOIL_STYLE, BLOCK_HIT_COOLDOWN_MS } from './config.ts';
-import { getBlockType, isBlockId } from './blockTypes.ts';
+import { BUILD_CELL, PLANT_SPROUT_SHARE, SEED_BACK_CHANCE, SEED_YIELD, SPLICE_BONUS_CHANCE, SOIL_STYLE, BLOCK_HIT_COOLDOWN_MS } from './config.ts';
 import { cellProblem, inReach, roomOf, withRoom, type BlockContext, type BlockProblem } from './blocks.ts';
 import { getFurnitureType, type FurnitureLookup } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { gemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
-import { CROP_TYPES, cropOfSeed, getMaterialType, isSeedId } from './materials.ts';
+import { CROP_TYPES, isSeedId } from './materials.ts';
+import { seedGrowMs, seedGrows, seedRank } from './seeds.ts';
+import { pairKey } from './spliceData.ts';
+import { recipeFor, spliceGrowMs } from './splice.ts';
 import { rngInt } from './rng.ts';
 import { blockKey, cellOnFloor, floorStyleAt, plantInCell, plantList, type Plant, type Room } from './room.ts';
-import type { FurnitureItem, MaterialId, Point, Rank, Rng, SeedId } from './types.ts';
+import type { FurnitureItem, MaterialId, Point, Rng, SeedId } from './types.ts';
 
 export type PlantStage = 'sprout' | 'small' | 'full';
 
-// ---------- What a seed is ----------
+// ---------- What a seed is (seeds.ts) ----------
 
-/** The block or crop a seed grows (a block seed: `<block>_seed`; a crop seed: its crop). */
-export function seedProduct(seed: SeedId): MaterialId {
-  const block = seed.endsWith('_seed') ? seed.slice(0, -'_seed'.length) : null;
-  if (block !== null && isBlockId(block)) return block;
-  return cropOfSeed(seed).id;
-}
-
-/** The rank of a seed = the rank of what it grows. */
-export function seedRank(seed: SeedId): Rank {
-  return getMaterialType(seedProduct(seed)).rank;
-}
-
-/** How long a fresh plant of this seed takes to be fully grown, ms (config SEED_GROW_MS by rank). */
-export function seedGrowMs(seed: SeedId): number {
-  return SEED_GROW_MS[seedRank(seed)];
-}
+export { seedGrows, seedGrowMs, seedProduct, seedRank } from './seeds.ts';
 
 // ---------- Soil ----------
 
@@ -118,24 +105,84 @@ export function plantSeed(
   return { ok: true, state: withRoom(paid, { ...room, plants: { ...room.plants, [blockKey(c, r)]: plant } }) };
 }
 
+// ---------- Splicing (step BG7) ----------
+
+export type SpliceSeedResult = { ok: true; state: GameState } | { ok: false; problem: BlockProblem };
+
+/**
+ * Uses a second seed on a planted cell: the cell then grows the pair's new seed for the longer of the two grow
+ * times plus SPLICE_BONUS_MS (the clock restarts now). Refused with nothing taken: 'nothing_happens' (the pair is
+ * not in the table, or it is the same seed twice: both seeds stay), 'already_spliced', 'ripe' (harvest it first),
+ * 'no_plant', 'empty'. Only the room's owner. The seed is used up through the ledger (reason 'splice').
+ */
+export function spliceSeed(state: GameState, roomId: number, c: number, r: number, seed: string, at: number): SpliceSeedResult {
+  const room = roomOf(state, roomId);
+  if (!room || room.ownerId !== state.player.id) return { ok: false, problem: 'not_owner' };
+  if (!Number.isInteger(c) || !Number.isInteger(r) || !isSeedId(seed)) return { ok: false, problem: 'no_plant' };
+  const plant = plantInCell(room, c, r);
+  if (!plant) return { ok: false, problem: 'no_plant' };
+  if (plant.with) return { ok: false, problem: 'already_spliced' };
+  if (isRipe(plant, at)) return { ok: false, problem: 'ripe' };
+  if ((state.player.materials[seed] ?? 0) < 1) return { ok: false, problem: 'empty' };
+  const recipe = recipeFor(plant.seed, seed);
+  if (!recipe) return { ok: false, problem: 'nothing_happens' };
+  const paid = applyChange(state, { reason: 'splice', materials: { [seed]: -1 }, note: `${plant.seed}+${seed}@${blockKey(c, r)}` }, at);
+  if (!paid) return { ok: false, problem: 'empty' };
+  const spliced: Plant = { seed: plant.seed, with: seed, plantedAt: at, readyAt: at + spliceGrowMs(plant.seed, seed) };
+  return { ok: true, state: withRoom(paid, { ...room, plants: { ...room.plants, [blockKey(c, r)]: spliced } }) };
+}
+
 // ---------- Harvest ----------
 
 export interface HarvestRoll {
-  /** What grew: a block or a crop. */
-  item: MaterialId;
+  /** What grew: a block, a crop or another good (null: furniture, clothes, or nothing from a splice). */
+  item: MaterialId | null;
   qty: number;
-  /** True = the seed comes back too. */
+  /** Furniture type id that grew (a furniture seed), or null. */
+  furniture: string | null;
+  /** Clothing id that grew (a clothes seed; unlocked forever), or null. */
+  clothing: string | null;
+  /** True = the seed comes back too (never for a splice: its seed is the result). */
   seedBack: boolean;
   gems: number;
+  /** A spliced plant: the NEW seed it gives, and the pair key of the recipe (the Book's found list). */
+  result: SeedId | null;
+  recipe: string | null;
 }
 
-/** What a fully grown plant gives. Rolls in this order: the amount, the seed back, the gems. */
-export function harvestPlant(plant: Plant, rng: Rng): HarvestRoll {
+/**
+ * What a fully grown plant gives. Plain plant: rolls in this order: the amount (blocks, crops, goods; furniture and
+ * clothes are always one), the seed back, the gems. A spliced plant gives its NEW seed (one), a small chance
+ * (SPLICE_BONUS_CHANCE) of one block or crop of either seed (rolls: the chance, which of the two), and gems
+ * (source 'splice', the result's rank). Clothes already unlocked always give the seed back (nothing is wasted).
+ */
+export function harvestPlant(plant: Plant, rng: Rng, unlockedClothing: readonly string[] = []): HarvestRoll {
+  if (plant.with) {
+    const result = recipeFor(plant.seed, plant.with)?.result ?? null;
+    let item: MaterialId | null = null;
+    if (rng() < SPLICE_BONUS_CHANCE) {
+      const g = seedGrows(rng() < 0.5 ? plant.seed : plant.with);
+      if (g.kind === 'material') item = g.id;
+    }
+    const gems = result ? gemDrop('splice', seedRank(result), rng) : 0;
+    return { item, qty: item ? 1 : 0, furniture: null, clothing: null, seedBack: false, gems, result, recipe: pairKey(plant.seed, plant.with) };
+  }
   const rank = seedRank(plant.seed);
+  const grows = seedGrows(plant.seed);
   const y = SEED_YIELD[rank];
-  const qty = rngInt(rng, y.min, y.max);
-  const seedBack = rng() < SEED_BACK_CHANCE;
-  return { item: seedProduct(plant.seed), qty, seedBack, gems: gemDrop('harvest', rank, rng) };
+  const qty = grows.kind === 'material' ? rngInt(rng, y.min, y.max) : 1;
+  let seedBack = rng() < SEED_BACK_CHANCE;
+  if (grows.kind === 'clothing' && unlockedClothing.includes(grows.id)) seedBack = true;
+  return {
+    item: grows.kind === 'material' ? grows.id : null,
+    qty,
+    furniture: grows.kind === 'furniture' ? grows.id : null,
+    clothing: grows.kind === 'clothing' ? grows.id : null,
+    seedBack,
+    gems: gemDrop('harvest', rank, rng),
+    result: null,
+    recipe: null,
+  };
 }
 
 export type HitPlantResult =
@@ -146,7 +193,8 @@ export type HitPlantResult =
  * One punch at the plant in a cell. Needs the owner, a plant and reach. A plant that is not fully grown is
  * left alone (problem 'unripe', with the time left): a tap can never destroy it. 'cooldown' (nothing changes)
  * when the last punch was under BLOCK_HIT_COOLDOWN_MS ago. A grown plant is harvested: the plant goes, the
- * cell is free again, the result goes through the ledger (reason 'harvest').
+ * cell is free again, the result goes through the ledger (reason 'harvest', or 'splice' for a spliced plant;
+ * a found recipe is added to Player.splicesFound, a clothes seed unlocks its piece).
  */
 export function hitPlant(
   state: GameState,
@@ -165,18 +213,29 @@ export function hitPlant(
   if (from && !inReach(from, c, r)) return { ok: false, problem: 'reach' };
   if (!isRipe(plant, at)) return { ok: false, problem: 'unripe', leftMs: readyInMs(plant, at) };
   if (at - lastHitAt < BLOCK_HIT_COOLDOWN_MS) return { ok: false, problem: 'cooldown' };
-  const roll = harvestPlant(plant, rng);
-  const materials: Partial<Record<MaterialId, number>> = { [roll.item]: roll.qty };
+  const roll = harvestPlant(plant, rng, state.player.unlockedClothing);
+  const materials: Partial<Record<MaterialId, number>> = {};
+  if (roll.item && roll.qty > 0) materials[roll.item] = roll.qty;
+  if (roll.result) materials[roll.result] = (materials[roll.result] ?? 0) + 1;
   if (roll.seedBack) materials[plant.seed] = (materials[plant.seed] ?? 0) + 1;
   const paid = applyChange(
     state,
-    { reason: 'harvest', materials, ...(roll.gems > 0 ? { gems: roll.gems } : {}), note: `${plant.seed}@${blockKey(c, r)}` },
+    {
+      reason: roll.result ? 'splice' : 'harvest',
+      materials,
+      ...(roll.furniture ? { addFurniture: [roll.furniture] } : {}),
+      ...(roll.gems > 0 ? { gems: roll.gems } : {}),
+      note: `${plant.seed}${plant.with ? `+${plant.with}` : ''}@${blockKey(c, r)}`,
+    },
     at,
   );
   if (!paid) return { ok: false, problem: 'no_plant' };
   const plants = { ...room.plants };
   delete plants[blockKey(c, r)];
-  return { ok: true, state: withRoom(paid, { ...room, plants }), roll, seed: plant.seed };
+  let player = paid.player;
+  if (roll.clothing && !player.unlockedClothing.includes(roll.clothing)) player = { ...player, unlockedClothing: [...player.unlockedClothing, roll.clothing] };
+  if (roll.recipe && !player.splicesFound.includes(roll.recipe)) player = { ...player, splicesFound: [...player.splicesFound, roll.recipe] };
+  return { ok: true, state: withRoom({ ...paid, player }, { ...room, plants }), roll, seed: plant.seed };
 }
 
 /** The plants of a room whose cells overlap a rectangle (the door zone after an upgrade). */

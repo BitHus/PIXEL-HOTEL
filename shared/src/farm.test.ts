@@ -211,7 +211,7 @@ describe('harvest by punching', () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(plantInCell(farmRoom(r.state), SOIL.c, SOIL.r)).toBeNull();
-    expect(r.roll).toEqual({ item: 'turnip', qty: 3, seedBack: false, gems: 0 });
+    expect(r.roll).toMatchObject({ item: 'turnip', qty: 3, seedBack: false, gems: 0 });
     expect(r.state.player.materials.turnip).toBe(3);
     expect(r.state.player.materials.turnip_seed).toBe(4); // 5 - 1 planted, none back
     expect(r.state.ledger.at(-1)).toMatchObject({ reason: 'harvest' });
@@ -223,8 +223,8 @@ describe('harvest by punching', () => {
   it('rolls with a fixed rng: amount by rank, the seed back by chance, gems by chance', () => {
     const turnip: Plant = { seed: 'turnip_seed', plantedAt: 0, readyAt: 1 };
     // rng order: amount, seed back, gems (chance, then size).
-    expect(harvestPlant(turnip, seq(0, 0, 0, 0))).toEqual({ item: 'turnip', qty: SEED_YIELD.common.min, seedBack: true, gems: 1 });
-    expect(harvestPlant(turnip, seq(0.99, SEED_BACK_CHANCE, 0.99))).toEqual({ item: 'turnip', qty: SEED_YIELD.common.max, seedBack: false, gems: 0 });
+    expect(harvestPlant(turnip, seq(0, 0, 0, 0))).toMatchObject({ item: 'turnip', qty: SEED_YIELD.common.min, seedBack: true, gems: 1 });
+    expect(harvestPlant(turnip, seq(0.99, SEED_BACK_CHANCE, 0.99))).toMatchObject({ item: 'turnip', qty: SEED_YIELD.common.max, seedBack: false, gems: 0 });
     const cinder: Plant = { seed: 'cinder_block_seed' as never, plantedAt: 0, readyAt: 1 };
     const roll = harvestPlant(cinder, seq(0.99, 0.99, 0, 0));
     expect(roll.item).toBe('cinder_block');

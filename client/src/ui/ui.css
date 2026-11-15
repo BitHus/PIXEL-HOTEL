@@ -3195,3 +3195,17 @@
   image-rendering: pixelated;
   opacity: 0;
 }
+
+/* The Book's Splice tab (step BG7): "[a] + [b] = [result]" in one row per recipe card. */
+.book-recipe {
+  grid-column: 1 / -1;
+}
+.book-recipe-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.book-recipe-sign {
+  font-family: var(--font);
+  color: var(--ink-dim, inherit);
+}

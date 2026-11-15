@@ -60,7 +60,10 @@ import {
   type LakesideView,
   type BookTab,
   hitPlant,
+  inReach,
   plantSeed,
+  SPLICE_HINT,
+  spliceSeed,
   farmCounts,
   roomBlockers,
   type FarmView,
@@ -684,8 +687,21 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     }
     this.lastBlockHitAt = now;
     const gains = gainsSince(this.state, res.state);
+    const clothing = res.state.player.unlockedClothing.find((id) => !this.state.player.unlockedClothing.includes(id));
+    const recipe = res.state.player.splicesFound.find((k) => !this.state.player.splicesFound.includes(k));
     this.commitBlocks(res.state);
-    return { kind: 'harvested', room: this.roomById(room.id)!, c, r, gains };
+    return { kind: 'harvested', room: this.roomById(room.id)!, c, r, gains, ...(clothing ? { clothing } : {}), ...(recipe ? { recipe } : {}) };
+  }
+
+  /** A second seed on a planted cell (step BG7): within reach, else the avatar walks closer first. */
+  async spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const res = spliceSeed(this.state, room.id, c, r, seed, this.now());
+    if (!res.ok) return { kind: 'refused', problem: res.problem };
+    if (!inReach(me, c, r)) return this.walkCloser(me, c, r);
+    this.commitBlocks(this.hintDone(res.state, SPLICE_HINT));
+    return { kind: 'spliced', room: this.roomById(room.id)!, c, r, gains: [] };
   }
 
   async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> {

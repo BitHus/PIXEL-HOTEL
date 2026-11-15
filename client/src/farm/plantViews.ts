@@ -28,6 +28,8 @@ const PUFF_MS = 420;
 
 interface PlantView {
   seed: SeedId;
+  /** The second spliced-in seed (step BG7): it tints the plant's accent colour. */
+  withSeed: SeedId | null;
   c: number;
   r: number;
   node: Container;
@@ -71,7 +73,7 @@ export class PlantViews {
       const key = `${c},${r}`;
       live.add(key);
       let v = this.views.get(key);
-      if (v && v.seed !== plant.seed) {
+      if (v && (v.seed !== plant.seed || v.withSeed !== (plant.with ?? null))) {
         this.drop(v);
         this.views.delete(key);
         v = undefined;
@@ -83,14 +85,14 @@ export class PlantViews {
         node.addChild(art);
         node.position.set(c * BUILD_CELL, r * BUILD_CELL);
         node.eventMode = 'none';
-        v = { seed: plant.seed, c, r, node, art, marker: null, stage, shakeMs: 0 };
-        drawPlantArt(art, plant.seed, stage);
+        v = { seed: plant.seed, withSeed: plant.with ?? null, c, r, node, art, marker: null, stage, shakeMs: 0 };
+        drawPlantArt(art, plant.seed, stage, plant.with ?? null);
         this.views.set(key, v);
         this.view.objects.add(node, this.keyOf(c, r));
       } else if (stage !== v.stage) {
         v.stage = stage;
         v.art.clear();
-        drawPlantArt(v.art, v.seed, stage);
+        drawPlantArt(v.art, v.seed, stage, v.withSeed);
       }
       if (stage === 'full' && !v.marker) {
         v.marker = drawRipeMarker();

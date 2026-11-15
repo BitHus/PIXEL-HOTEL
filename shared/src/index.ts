@@ -42,6 +42,8 @@ export * from './gear.ts';
 export * from './crafting.ts';
 export * from './dungeon/index.ts';
 export * from './farmLayout.ts';
+export * from './seeds.ts';
+export * from './splice.ts';
 export * from './farm.ts';
 export * from './cooking.ts';
 export * from './forge.ts';

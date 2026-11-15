@@ -9,6 +9,7 @@ import foodData from '../data/food.json';
 import drinkData from '../data/drinks.json';
 import { CATCH_TYPES } from './fish.ts';
 import { BLOCK_TYPES } from './blockTypes.ts';
+import { SPLICE_SEEDS } from './spliceData.ts';
 import type { Icon } from './icons.ts';
 import type { CropId, DrinkId, FoodId, MaterialGroup, MaterialId, MaterialType, Rank, SeedId } from './types.ts';
 
@@ -89,6 +90,8 @@ export const MATERIAL_TYPES: MaterialType[] = [
     rank: b.rank,
     group: 'seed',
   })),
+  // The seeds only splicing makes (step BG7).
+  ...SPLICE_SEEDS.map((s): MaterialType => ({ id: s.id, name: s.name, baseValue: s.baseValue, color: 0, icon: s.icon, rank: s.rank, group: 'seed' })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, icon: c.seedIcon, rank: c.rank, group: 'seed' })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, icon: c.icon, rank: c.rank, group: 'crop' })),
   ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, icon: f.icon, rank: f.rank, group: 'food' })),

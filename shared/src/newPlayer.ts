@@ -128,6 +128,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       seen: {},
       bookOpenedAt: at,
       bookRewards: [],
+      splicesFound: [],
     },
     look: { ...config.look },
     rooms: [

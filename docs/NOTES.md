@@ -1366,6 +1366,35 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   the pile is gone, a gem chip floats above the head, the run's gems go from 2 to 3. NOT checked on a real phone, nor the
   lakeside / room gem fly.
 
+## BG7: splicing (step BG7)
+
+- DATA: shared/data/splice.json (40 recipes { a, b, result }, seed ids), spliceSeeds.json (13 new seeds { id, name, rank,
+  baseValue, icon (seed shape), grows { kind material | furniture | clothing, id } }: flaxbloom (cloth), hopvine (root_ale),
+  honeybloom (carrot_cider), amberbud (amber), spiritbrew (glowcap_broth), vine_bench / gilded_chair / honey_table /
+  ember_lamp / heartwood_throne (new furniture, cloned art, inCatalog false, in furniture.json), mohawk / baggy / tunic
+  (the three hidden clothes of clothing.json). Many results are the existing seeds (clay, thatch, brick, glass, lantern,
+  mossy, cinder, pumpkin, glowcap). bookRewards.json got `splice` (60 / 150 / 300 / 700 gold, gems by BOOK_GEM_RANK).
+  The recipe names and pairs are original (not copied from any game).
+- SHARED (pure): spliceData.ts (data, pairKey; no other imports so materials.ts can read it), seeds.ts (seedGrows,
+  seedProduct, seedRank, seedGrowMs, moved out of farm.ts, which re-exports them), splice.ts (splice(a, b), recipeFor,
+  spliceGrowMs, isSpliceResult, recipesWith, recipeHint). farm.ts: spliceSeed (ledger 'splice'), harvestPlant(plant, rng,
+  unlockedClothing) and hitPlant (spliced plants: the result seed + bonus + gems, found recipe, furniture, clothes).
+  Plant.with = the second seed; Player.splicesFound = pair keys. HarvestRoll gained furniture, clothing, result, recipe
+  (item is null for furniture and clothes). BlockProblem: nothing_happens, already_spliced, ripe.
+- BOOK: BookTab 'splice'; entries are recipes (kind 'recipe', key = pairKey, id = the result, recipe { a, b }); bookProgress /
+  bookTotal take the found list as a last argument; bookRewards reads player.splicesFound; no "New!" marks for recipes.
+  sourceOf: 'Splicing' for results (seeds, furniture, clothes); block seeds say 'Punching blocks' (they said 'Catalog').
+- SAVE: SAVE_VERSION 18, MIGRATIONS[17] adds splicesFound [] (tests in splice.test.ts).
+- API: GameAPI.spliceSeed(c, r, seed) -> 'spliced' | 'walk' | refused; 'harvested' may carry clothing and recipe.
+  Client (main.ts hitOrSplice): with a seed selected, a tap or hold on a young plant splices; a ripe or spliced plant is
+  punched as before. Toasts: spliced, recipe found, clothes unlocked, nothing happens. A spliced plant's accent colour is
+  the second seed's (farmArt). bookPanel recipeCard + ui.css .book-recipe. Quest hint index SPLICE_HINT = 6 (last).
+- TESTS: shared/src/splice.test.ts (the table: symmetric, one result per pair, ranks, reachable from the starters, value
+  cap, items and icons; spliceSeed; harvests; furniture and clothes seeds; Book; migration), client/src/api/spliceAPI.test.ts.
+  Older tests adjusted: home furniture tests now filter inCatalog, atmosphere lights, seats list, mine hint.
+- NOT CHECKED: the screen by eye (a headless screenshot was blocked), a real phone. Balance numbers (seed values, SPLICE_*
+  config, GEMS.splice) are first guesses for BG9.
+
 ## BG4c: block drops like Growtopia (owner's request, 15 Nov)
 
 - A broken block no longer always returns itself: every part is its own roll (config BLOCK_DROPS by the block's rank):
