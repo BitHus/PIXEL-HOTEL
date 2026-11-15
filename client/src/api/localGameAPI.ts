@@ -11,7 +11,7 @@ import {
   gainsSince, smelt, buySeeds, openPack, sellSpare, buyBlocks, placeBlock, hitBlock, claimBookReward, fishStep,
   hitPlant, plantSeed, spliceSeed, buyGear, SHOP_CATCH_UP_GAP_MS, SHOP_TICK_MS, applyStyle, paintFloor, buyCatalog,
   catchUpTavern, stepTavern, collectBrew, upgradeRoom,
-  configForChoice, TAVERN_BAR_NOTICE, SAVE_BACKUP_KEY, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
+  configForChoice, TAVERN_BAR_NOTICE, innDoorNotice, SAVE_BACKUP_KEY, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
   saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type GainList, type BarId, type GearId,
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
@@ -131,7 +131,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
         const bar = r.barChanged
           ? ` ${TAVERN_BAR_NOTICE}${r.state.items.some((i) => (i.typeId === 'register' || i.typeId === 'tap_stand') && i.roomId === null) ? ' The bar had no free cell for everything: the rest is in your bag.' : ''}`
           : '';
-        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}${kitchen}${closed}${bar}`);
+        const doors = r.doorsChanged > 0 ? ` ${innDoorNotice(r.doorsChanged)}` : '';
+        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}${kitchen}${closed}${bar}${doors}`);
       }
       return start(
         createNewPlayer(undefined, now()),
@@ -172,6 +173,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   async enterRoom(roomId: number): Promise<RoomState> { return roomsApi.enterRoom(this, roomId); }
+  async useDoor(doorId: string): Promise<RoomState | null> { return roomsApi.useDoor(this, doorId); }
   async walk(to: Point): Promise<Point[] | null> { return walkApi.walk(this, to); }
   async sit(uid: number, tap?: Point): Promise<SitResult | null> { return walkApi.sit(this, uid, tap); }
   async serve(uid: number): Promise<ServeResult | null> { return walkApi.serve(this, uid); }

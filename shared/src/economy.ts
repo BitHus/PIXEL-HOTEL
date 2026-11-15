@@ -16,6 +16,7 @@ import { FURNITURE_TYPES, doorReachesMiddle, footprintRect, getFurnitureType, pi
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { BLOCK_TYPES, getBlockType } from './blockTypes.ts';
+import { clearDoorSpots } from './innDoorClear.ts';
 import { blocksOverlapping } from './blocks.ts';
 import { doorZoneRect, paintFloorCells, paintWholeFloor, rectsOverlap, roomAtLevel, type Room } from './room.ts';
 import { findStyle, stylePrice } from './styles.ts';
@@ -124,6 +125,8 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   const room2 = next.rooms.find((r) => r.id === roomId) ?? grown;
   next = returnBlocks(next, roomId, blocksOverlapping(room2, zone), at);
   next = returnPlants(next, roomId, plantsOverlapping(next.rooms.find((r) => r.id === roomId) ?? grown, zone), at);
+  // Door spots of the new level (step MB-2): whatever stands there goes back too.
+  next = clearDoorSpots(next, roomId, at).state;
   const room3 = next.rooms.find((r) => r.id === roomId) ?? grown;
   if (!doorReachesMiddle(room3, roomBlockers(room3, next.items))) {
     next = returnBlocks(next, roomId, Object.keys(room3.blocks).map((k) => {

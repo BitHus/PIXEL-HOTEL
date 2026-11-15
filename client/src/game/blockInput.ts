@@ -18,6 +18,7 @@ export async function setupBlockInput(g: G14) {
   const BLOCK_REFUSALS: Partial<Record<string, string>> = {
     door: 'Keep the door free.',
     door_blocked: 'That would block the way in.',
+    inn_door: 'Keep the doorway free.',
     counter_blocked: 'The counter needs a way behind it.',
     seat_blocked: 'Guests could not get to a seat then.',
     wrong_room: 'That block cannot go here.',

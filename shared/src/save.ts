@@ -10,6 +10,7 @@ import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
+import { clearDoorSpots } from './innDoorClear.ts';
 import { applyChange, type Change } from './ledger.ts';
 import type { LootRef, Player } from './types.ts';
 import type { GameState } from './gameState.ts';
@@ -23,7 +24,7 @@ export interface SaveFile {
 export type SaveProblem = 'bad_json' | 'not_a_save' | 'too_old' | 'too_new' | 'invalid';
 
 export type LoadResult =
-  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean; kitchenChanged: boolean; shopClosed: boolean; barChanged: boolean }
+  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean; kitchenChanged: boolean; shopClosed: boolean; barChanged: boolean; doorsChanged: number }
   | { ok: false; problem: SaveProblem; version?: number };
 
 /**
@@ -326,6 +327,18 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || !isObject(state.tavern)) return state;
     return { ...state, tavern: { ...state.tavern, casks: Array.isArray(state.tavern.casks) ? state.tavern.casks : [] } };
   },
+  // 26 -> 27 (step MB-2, Inn doors): every hotel, tavern and farm room has door spots now. Furniture, blocks and plants standing on a spot go back to
+  // the bag (ledger 'door_spot'; a plant gives its seed); nothing else changes.
+  26: (state) => {
+    if (!isObject(state) || !Array.isArray(state.items) || !Array.isArray(state.rooms) || !Array.isArray(state.ledger) || !isObject(state.player)) return state;
+    try {
+      let next = state as unknown as GameState;
+      for (const room of next.rooms) next = clearDoorSpots(next, room.id, 0).state;
+      return next;
+    } catch {
+      return state;
+    }
+  },
 };
 
 /** The storage key for a save version. */
@@ -354,15 +367,25 @@ export function readSave(text: string): LoadResult {
   if (version > SAVE_VERSION) return { ok: false, problem: 'too_new', version };
   let state: unknown = file.state;
   let returnedToBag = 0;
+  let doorsChanged = 0;
   for (let v = version; v < SAVE_VERSION; v++) {
     const migrate = MIGRATIONS[v];
     if (!migrate) return { ok: false, problem: 'too_old', version };
     const was = v === 13 && isObject(state) && Array.isArray(state.items) ? placedCount(state.items as GameState['items']) : 0;
+    const spotWas = v === 26 ? onRooms(state) : 0;
     state = migrate(state);
+    if (v === 26) doorsChanged = Math.max(0, spotWas - onRooms(state));
     if (v === 13 && isObject(state) && Array.isArray(state.items)) returnedToBag = Math.max(0, was - placedCount(state.items as GameState['items']));
   }
   if (!isGameState(state)) return { ok: false, problem: 'invalid', version };
-  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16, kitchenChanged: version < 21, shopClosed: version < 22, barChanged: version < 24 };
+  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16, kitchenChanged: version < 21, shopClosed: version < 22, barChanged: version < 24, doorsChanged };
+}
+
+/** Furniture placed in rooms plus blocks and plants (to count what a migration sent back to the bag). */
+function onRooms(state: unknown): number {
+  if (!isObject(state) || !Array.isArray(state.items) || !Array.isArray(state.rooms)) return 0;
+  const layers = (state.rooms as unknown[]).reduce<number>((n, r) => n + (isObject(r) ? Object.keys(isObject(r.blocks) ? r.blocks : {}).length + Object.keys(isObject(r.plants) ? r.plants : {}).length : 0), 0);
+  return placedCount(state.items as GameState['items']) + layers;
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {

@@ -1,139 +1,165 @@
-# QUEUE: the next tasks as ready-to-paste prompts (lead, 15 Nov, after T1a/T1b)
+# QUEUE: the next tasks as ready-to-paste prompts (lead, 16 Nov, after K2b, H2, A1/A3)
 
-How to use: each prompt is self-contained. Paste it to the coder or the artist. The two lanes never wait: the queue below alternates feature
-tasks with art-upgrade hooks, and every artist task can start before its hook exists (it drafts in art-src/staging/ and exports to the final folder only
-after the hook is merged). Common rules for EVERY prompt: read CLAUDE.md, docs/TEAM.md, docs/PLAN-1B.md, docs/PLAN-SPRITES.md, docs/PLAN-ART-UPGRADE.md;
-small Edit replacements in shared JSON, never whole-file rewrites, keep CRLF; coder runs `npm test` and `npm run typecheck` before saying done, artist
-runs the plugin `validate`; the manager commits locally, nobody pushes; end with a PAUSE NOTE in docs/PLAN-1B.md if stopped early.
-State now (K2a and H2 DONE, SAVE_VERSION 26; branch claude/inn-1b-rebased, REBASED onto origin/main's own T1, 15 Nov): SAVE_VERSION 25 (24 = origin T1: taps and bar fittings, 25 = the Inn name MB-1).
-Taps/kitchen are origin's: shared/src/taps.ts (Tap, loadTap, unloadTap, mugsOnTaps, stockFor, tapCards), kitchen.ts, tavern.ts pourOrder/menuStock, render/pourFx.ts, ui/tapsPanel.ts (wears the artist's .tap-row classes).
-The old K2a work is in git stash (reference only): it used OUR taps names (drinkStock, refundMug, tapViews, activeTaps); re-port it onto origin's taps API.
-Save versions still reserved: K2a 26, MB-2 27, 9g-2 28, 9g-4 29, 9i-1 30, 9h-2 31.
+How to use: each prompt is self-contained. Paste it to the coder or the artist. The two lanes never wait: every coder task has an artist task that can start before it (stubs first, drafts in art-src/staging/).
+Common rules for EVERY prompt: read CLAUDE.md, docs/TEAM.md, docs/PLAN-1B.md, docs/PLAN-SPRITES.md, docs/PLAN-ART-UPGRADE.md; small Edit replacements in shared JSON, never whole-file rewrites, keep CRLF;
+coder runs `npm test` and `npm run typecheck` before saying done (and `npm run simulate` when gold, gems or appeal move; balance.test.ts must stay green; retune config only); the manager commits locally, nobody pushes;
+end with a PAUSE NOTE in docs/PLAN-1B.md if stopped early. Artist: sprite work needs the Aseprite plugin (`preflight` first); tasks marked CODE-ART need NO plugin (code-drawn art, CSS, UI) and are the only ones to run while the plugin is not attached.
+No new rule in shared/ without a test. A new GameState field = bump SAVE_VERSION + MIGRATIONS entry + test.
+
+## STATUS (16 Nov)
+DONE: C1 T1c, H1 loader kinds + icon hook, C2 K2a (SAVE 26), H2 block tiles from PNG, C3 K2b (cask panel); artist A1 blocks R2, A2 ART-K2 (tier band, cask CSS, keg_rack), A3 blocks R3.
+IN PROGRESS: C4 MB-2 Inn doors rules (SAVE_VERSION is 27 in the tree already).
+CHECK BY THE MANAGER (one look, 5 minutes): the block PNGs of A1/A3 are on branch claude/inn-1b-rebased (none under client/src/assets/sprites/blocks/ in the rebased tree when this was written; the artist works in the old folder); the user has not yet signed the STYLE LOCK on R2.
+Save versions: 27 MB-2 (in progress), 28 9g-2, 29 9g-4, 30 9i-1, 31 9h-2. Everything before 9g-2 has NO bump unless a task says so; if one needs a bump it renumbers the later ones.
 
 ## Order at a glance
-Coder:  C1 T1c leftovers | H1 R1 loader kinds + icon hook | C2 K2a | H2 block tile hook | C3 K2b | C4 MB-2 | H3 floor/wall hook | C5 MB-3 | C6 9g-1
-Artist: A1 blocks R2 | A2 ART-K2 | A3 blocks R3 | A4 ART-MB2 | A5 floors R4 | A6 ART-9g1
-Tester: after every coder feature round (K2b, MB-3, 9g-1 at least): the 10-step smoke route at the end.
-Hooks (H1 to H3) touch a few files in client/src/render/ (the artist's folder): while an H task runs, the artist does not edit the files it names.
+Coder:  C4 MB-2 (now) | H3 floor/wall hook | C5 MB-3 | G1 gameplay fix pass (from the tester list) | N1 content batch 1 (data) + H4 plant hook | C6 9g-1 hats/emotes | C7 9h-1 dungeon round 2 | C8 9g-3 room stars | C9 9g-2 usable furniture + cat (SAVE 28) | C10 9g-4 visitors (SAVE 29) | then MC, ME, 9i, 9h-2.. (outlines at the end)
+Artist (no plugin now): B1 doors stub + fade | B2 hat/emote stubs + code hats | B3 hotel starter set code models | B4 plant stages in code + trees | B5 icon shape upgrade (tools, crops, drinks) | B6 phone UI audit
+Artist (plugin back): A5 floors | A7 walls | A8 crop icons | A9 drinks + food icons | A10 tools icons | A11 tavern core sprites | A12 hotel starter sprites | A13 plants | A14 hats
+Tester: after G1-start (to produce the fix list), after C5, after C6, after C7: the 10-step smoke route at the end.
+Hooks (H3, H4) touch a few files in client/src/render/ (the artist's folder): while an H task runs, the artist does not edit the files it names.
 
 ## CODER QUEUE
 
-### C1 T1c leftovers (IN PROGRESS: finish, do not restart)
-GOAL: close T1 (docs/NEXT-STEPS "Step T1" items 2 to 6). FILES: client/src/ui/tapsPanel.ts, menuPanel.ts, game/tavernLife.ts, gameLoop.ts, texts, tools/simulate-economy.ts.
-CHECKLIST (tick what exists, do the rest): tap_stand tap = walk next to it then the Taps panel (Load/Unload a stack or number); register tap opens Serve/Menu/Sell;
-Menu panel shows tap levels and the "Load a tap" hint; the avatar's serve errand walks to the taps, calls the artist's `playPour(itemViews, tapUid)`
-(client/src/render/pourEffect.ts) for POUR_MS, then carries the mug; "Tap is empty" keeps the order open; Room panel calls `drawKitchenTint(layer, rects)` (render/kitchenTint.ts) with the
-tavern's kitchen zone rects; barCoinPoint (shared/src/bar.ts) follows the register; intro toast and hints; simulate-economy prints pours per hour, mugs per tap, dishes per batch with prep tables.
-TESTS: client/src/api/tapsAPI.test.ts already exists: add the pour chain and the empty-tap case if missing. DONE WHEN: npm test + typecheck green; by hand: load a tap, a guest orders, the pour plays, the tap count drops.
-SAVE: none. PARALLEL: artist A1 (blocks, staging only).
+### C4 MB-2 Inn doors: rules and data (IN PROGRESS, SAVE 27: finish, do not restart)
+Spec: the previous queue text is kept in git history (docs/QUEUE.md at commit before 16 Nov) and in docs/PLAN-1B.md MB-2: shared/data/innDoors.json, shared/src/innDoors.ts (innDoorSpots, doorAt, innTravel), spots blocked like the door zone, npcNav keeps guests off them,
+MIGRATIONS[26] moves things off door spots to the bag (ledger 'door_spot'), GameAPI.useDoor(doorId). DONE WHEN: tests + typecheck green, spots valid on 5 shapes x 3 levels. PARALLEL: artist B1.
 
-### H1 Art upgrade R1: one loader, several kinds (small, about 1 h)
-GOAL: PLAN-ART-UPGRADE section 0. Generalise client/src/render/spriteStore.ts + spriteIndex.ts from furniture to kinds furniture | icons | blocks | floors | walls | plants
-(folders client/src/assets/sprites/<kind>/, name = id, `spriteFor(kind, id, facing?)`). Fix the known bug: the regex in parseSpriteName lost a backslash (check it with a test for `register.png`, `counter_up.png`, `prep_table_right.png`, rejects `x_left.png`).
-Icon hook: in client/src/ui/itemIcon.ts each id-level function (furnitureIconUrl, materialIconUrl, clothingIconUrl, gearIconUrl, gainIconUrl, potionIconUrl, keyIconUrl, gemIconUrl)
-first asks spriteFor('icons', id) and otherwise calls drawIcon as today; list the callers that use iconTexture/iconDataUrl with an Icon but no id (popups, Book, hotbar, pack cards) in NOTES and hook those that know the id.
-Tests: spriteIndex.test.ts (names per kind, completeness), spriteAssets.test.ts extended per kind (icons: 32x32 and a transparent 1 px ring; blocks 32x32; floors/walls 64x64; plants width 32; furniture: existing formula).
-FILES: client/src/render/spriteStore.ts, spriteIndex.ts (+ tests), client/src/ui/itemIcon.ts. Not touched: furniture.ts, shared/. SAVE: none.
-PARALLEL: artist A1 (staging). DONE WHEN: with zero icon PNGs nothing changes (full suite green); a dummy 32x32 `dirt.png` in sprites/icons shows in the bag (remove it after the check).
-
-### C2 K2a Ripening: rules and API (SAVE 26)
-GOAL: drinks can ripen in casks on a keg rack: fresh, aged, vintage (docs/NEXT-STEPS "Step K2" items 1, 2, 3, 5, 6; INN-PLAN M-D2). Do NOT start before C1 and H1 are merged.
-STALE PARTS FIXED: casks interact with TAPS now. Aged/vintage mugs are plain drink ids, so `isDrinkId` (shared/src/materials.ts) must accept `<drink>_aged` and `<drink>_vintage`; then loadTap/unloadTap/pourMug/drinkStock in shared/src/taps.ts work unchanged (test it).
-BUILD: config (shared/src/config.ts tavern block): RIPEN = [{ tier 'aged', valueMult 1.6, tipMult 1.5 }, { tier 'vintage', valueMult 3, tipMult 2.5 }], afterMin by the BASE drink's rank:
-common 30 / 180, rare 120 / 480, ultra_rare 240 / 960, legendary 480 / 1920 (numbers are starting values; keep them in config); CASK_SLOTS 3; TASTE_AGED_CHANCE 0.25.
-Tier items derived from drinks.json by a loader (not hand-copied): id `<id>_aged`, `<id>_vintage`, name "Aged root ale", baseValue = base * valueMult (rounded), rank = base rank (vintage one step up at most), icon = base icon (the tier band is drawn by the artist's option, A2).
-Casks as data on the keg rack: FurnitureType flag `casks: true` on keg_rack (like `taps`/`cooks`; the type is in shared/data/furniture.json, id keg_rack, check its cells), TavernState.casks: { rackUid, slot, drink, mugs, startedAt }[] in shared/src/tavern.ts (emptyTavern gives []; save.ts isGameState requires it).
-New shared/src/casks.ts (pure, like taps.ts): fillCask(state, rackUid, slot, drink, qty, at) (one FRESH drink, qty 1..that drink's brew mugs, ledger 'cask_fill'), caskTier(cask, at) (exact boundaries), collectCask(state, rackUid, slot, at) (the tier item at the CURRENT tier, fresh if too early, ledger 'cask_collect', gains list, slot free), caskViews(state), returnOrphanCasks (a rack that is gone gives mugs back, a rack in the bag keeps them).
-Guests: shared/src/guests.ts taste trait: with TASTE_AGED_CHANCE a guest orders an aged/vintage drink if one is on a tap, accepts a price up to tolerance x valueMult; guestTip uses tipMult; the S3 gem tip uses the item's rank (already supported). Menu rule: tier items are menu rows like any drink and only sell while on a tap (T1a rule).
-Book: tier items are finds (check where drinks show: shared/src/book.ts / client ui Book; add a Drinks tab if none).
-GameAPI + api/tavernApi.ts: getCasks, fillCask, collectCask. SAVE 26: MIGRATIONS[25] adds casks: [] (test: nothing else changes, no second migration).
-TESTS (shared/src/casks.test.ts + tavernApi tests): boundaries to the millisecond, across a save and reload, early collect gives fresh, slot limits, a full tavern flow cask -> tap -> pour -> taste guest pays more (fixed rng), the menu price rule for tiers, ledger adds up, migration, balance.test.ts still green.
-ECONOMY: tools/simulate-economy.ts prints gold per mug for fresh / aged / vintage; target aged 1.4 to 1.7x and vintage 2.5 to 3x the gold of fresh for the same mugs including the wait; tune config only; if S3 targets (BALANCE_TARGETS) fail, report instead of retuning them.
-FILES: shared/src/casks.ts (+test), tavern.ts, guests.ts, materials.ts, config.ts, save.ts, types.ts, newPlayer.ts, shared/src/api.ts, client/src/api/tavernApi.ts, localGameAPI.ts (delegation), shared/data/furniture.json (casks flag on keg_rack: ONE small Edit), tools/simulate-economy.ts.
-PARALLEL: artist A2 (ART-K2: stubs and CSS first). DONE WHEN: suite + typecheck green and the economy table printed in the report.
-
-### H2 Art upgrade R2 hook: blocks drawn from PNG (small)
-GOAL: the room draws a block from sprites/blocks/<id>.png when it exists (same picture for the world tile and the item icon through the icon hook for kind 'blocks'); crack stages stay code-drawn on top; no PNG = today's code tile.
-FILES: the client code that draws blocks in a room (find it: grep Room.blocks in client/src/render, probably roomView/blockViews), client/src/ui/itemIcon.ts (materialIconUrl for group 'block' asks kind 'blocks' first). Not touched: shared/.
-TESTS: spriteAssets (blocks 32x32 exist and match a blocks.json id), a render-free test for the lookup. PARALLEL: artist A2/A3. DONE WHEN: a dummy dirt.png shows as tile and icon, removed afterwards.
-
-### C3 K2b Cask panel (client)
-GOAL: K2 item 4. Needs C2 merged and the artist's A2 stubs (`tier` option on drawIcon/iconTexture/iconDataUrl, CSS classes .cask-list .cask-card .cask-bar .cask-tier .cask-fill).
-BUILD: client/src/ui/caskPanel.ts via ui/panelShell.ts: 3 slot cards (icon with tier band, drink, mugs, time bar, tier chip fresh/aged/vintage, Fill and Collect buttons; Fill picks a drink and a count from the bag), a 1 s interval ticking the bars while open (like the stove panel in game/tavernLife.ts), keg_rack tap routing: walk next to it (like STOVE_REACH_PX/BARREL_REACH_PX, add CASK_REACH_PX to config) then open the panel; Menu panel shows tiers; texts at reading pace; the old-save toast line.
-TESTS: client/src/ui/*.test.ts for the pure text helpers (like sellTab.test.ts), a tavernApi cask round trip through LocalGameAPI. FILES: ui/caskPanel.ts, game/tavernLife.ts, gameLoop.ts (arrival), sideButtons none, texts.
-PARALLEL: artist A3 (blocks). DONE WHEN: by hand brew -> fill -> close game -> collect aged -> load on a tap -> a taste guest orders it. Then TESTER route and the owner's CP-1 playtest (see decisions).
-
-### C4 MB-2 Inn doors: rules and data (SAVE 27)
-GOAL: one connected Inn (docs/NEXT-STEPS "Step M-B", INN-PLAN M-B). Walking order suite (kind 'hotel') - tavern (kind 'shop') - garden (kind 'farm'); lakeside, mine, dungeon stay Map only.
-DESIGN (decided by the lead, small): an Inn door is a 2-cell wide doorway in the BACK WALL BAND at a cell column given by data; its SPOT is the 2 x 1 floor cells right in front of it (the room's first row under that wall). The spot is blocked for floor furniture, blocks and plants like the door zone, wall items may not overlap that x range, guests (npcGrid) never use it, and it never touches the main door zone or the kitchen zone (T1b), the bar's staff spot or the start items.
-DATA: shared/data/innDoors.json: per room kind and shape/level (hotel/shop use roomShapes.json shapes x levels 1..3; the farm uses its own sizes, derive from room w/h): list of { id 'suite_to_tavern' | 'tavern_to_suite' | 'tavern_to_garden' | 'garden_to_tavern', col, row 0, w 2 }. The suite has one door (to the tavern), the tavern two, the garden one. Pick columns so every shape and level has an up-facing floor edge at that column (test).
-RULES: shared/src/innDoors.ts (pure): innDoorSpots(room), doorAt(room, cell), innTravel(state, fromRoomId, doorId) -> { roomId, cell, facing } or null (null while a run/mine/lakeside session is active; the arrival cell is the matching door's spot, the avatar then steps one cell down); canPlace/blocks/plants/wall-item rules reject the spot (extend roomBlockers and the block/plant placement checks, reasons 'inn_door'); upgrade and migration move things off new spots.
-SAVE 27: MIGRATIONS[26]: items, blocks and plants standing on door spots go back to the bag (ledger reason 'door_spot'; a plant gives its seed), a toast text; nothing else changes. Test it.
-TESTS: spots valid on all 5 shapes x 3 levels for hotel and shop and the 3 farm levels (on floor, in front of a back wall, no overlap with door zone, kitchen zone, start items, staff spot), nothing placeable there, reachable from the main door, door_blocked/counter_blocked rules still hold, innTravel refuses during a run and keeps the avatar's state, migration, guests never path through spots, ledger.
-FILES: shared/data/innDoors.json, shared/src/innDoors.ts (+test), furniture.ts/blocks placement checks, npcNav.ts, save.ts, types.ts, config.ts, shared/src/api.ts (GameAPI.useDoor(doorId)), client/src/api/roomsApi.ts or walkApi.ts. No UI.
-PARALLEL: artist A4 (ART-MB2 stub first). DONE WHEN: tests + typecheck green.
-
-### H3 Art upgrade R3 hook: floors and walls from PNG (small)
+### H3 Art upgrade R3 hook: floors and walls from PNG (small, do right after C4)
 GOAL: the room view uses sprites/floors/<styleId>.png (64x64, seamless) and sprites/walls/<styleId>.png (64x64, repeats sideways) when present, else the code textures (render/bareStyles.ts etc.). Painted cells (Room.floorCells) already draw as runs of tiling sprites: reuse that path.
-FILES: the room view code in client/src/render (roomView*.ts, bareStyles.ts), spriteStore kinds 'floors' and 'walls' (already generalised in H1). TESTS: asset sizes. PARALLEL: artist A5. DONE WHEN: a dummy 64x64 wood_planks.png tiles in the tavern with no seam gaps at zoom 1 and 3, removed afterwards.
+FILES: the room view code in client/src/render (roomView*.ts, bareStyles.ts), spriteStore kinds 'floors' and 'walls' (generalised in H1). TESTS: asset sizes (64x64) and the lookup without rendering. SAVE: none.
+PARALLEL: artist B1, A5 (floors, staging). DONE WHEN: a dummy 64x64 wood_planks.png tiles in the tavern with no seam gaps at zoom 1 and 3, removed afterwards; with zero PNGs nothing changes.
 
-### C5 MB-3 Inn doors: client (needs C4 + the artist's A4 stub `drawInnDoor`)
+### C5 MB-3 Inn doors: client (needs C4 and the artist's B1 stub `drawInnDoor`)
 GOAL: stepping onto a door spot changes rooms with the existing short fade and arrives at the matching door; the Map stays as fast travel.
-BUILD: game/roomFlow.ts and pointerInput.ts: a walk whose GOAL is a door spot (tap on the doorway, or hold-walk ending on it), or a path that ends on it, calls api.useDoor(doorId); never on a path that only crosses it; not during a run, the mine or fishing; arrival through the existing openRoom path and camera intro (skip the intro zoom on door travel: short eased camera); guests and the tavern clock keep running as for Map travel (check tavernApi catch-up still holds); door visuals via `drawInnDoor(layer, door)` (render/innDoors.ts); a tap on a doorway with a panel open only closes the panel; hint toast once ("Doors lead to the tavern and the garden"); Map cards unchanged.
-TESTS: roomsApi/walkApi tests (useDoor moves the avatar and room, refused in a run, arrival cell right), a pointer helper test if one exists for goal detection. FILES: game/roomFlow.ts, pointerInput.ts, api/roomsApi.ts, texts.
-PARALLEL: artist A5 (floors, staging). DONE WHEN: by hand suite -> tavern -> garden and back, a reload keeps the room, no console errors. TESTER route after it.
+BUILD: game/roomFlow.ts and pointerInput.ts: a walk whose GOAL is a door spot (tap on the doorway, or hold-walk ending on it) calls api.useDoor(doorId); never on a path that only crosses it; not during a run, the mine or fishing;
+arrival through the existing openRoom path (skip the intro zoom on door travel: short eased camera); guests and the tavern clock keep running as for Map travel (check tavernApi catch-up still holds); door visuals via `drawInnDoor(layer, door)` (render/innDoors.ts);
+a tap on a doorway with a panel open only closes the panel; hint toast once ("Doors lead to the tavern and the garden"), reading pace; Map cards unchanged.
+TESTS: roomsApi/walkApi tests (useDoor moves avatar and room, refused in a run, arrival cell right, tavern clock catch-up after a door trip), a pointer helper test for goal detection. FILES: game/roomFlow.ts, pointerInput.ts, api/roomsApi.ts, texts. SAVE: none.
+DONE WHEN: by hand suite -> tavern -> garden and back, reload keeps the room, no console errors. TESTER route after it.
 
-### C6 9g-1 Hats and emotes (no save bump if unlock uses Player.unlockedClothing)
-GOAL: 9g items 1 and 2 (docs/NEXT-STEPS "Step 9g"), refreshed. Hats stay OUT of the clothes packs (decided): add a flag in clothing.json (`pack: false`) honoured by the pack pools in shared/src/packs.ts, with a test that Common/Rare pools do not change and balance.test.ts still passes.
-DATA: shared/data/clothing.json slot 'hat', none free, with rank and unlock source (use only sources that already have an event hook): straw_hat common catalog; wool_cap common catalog; cook_cap common catalog; feather_cap rare catalog (a new Clothes tab in the Catalog; catalog price = baseValue x 3); tavern_keeper_hat rare, Book reward 25% (bookRewards.json); fisher_hat rare, first rare fish caught; skull_cap rare, skeleton drop (loot table); flower_crown ultra_rare, a splice clothing seed (splice.json + spliceSeeds.json); knight_helm ultra_rare, first Bone King kill; gold_crown legendary, Book reward 100%; sunken_crown_hat legendary, catching the sunken crown; miner_lamp_cap rare, 10th mine visit. A hat the player does not own shows as a grey silhouette with the hint text in the Avatar panel.
-EMOTES: shared/src/emotes.ts (pure: kinds wave, dance, laugh, cheer, sleep; duration config EMOTE_MS; cancelled by walking), GameAPI.emote(kind) -> { kind, untilMs } (transient avatar field, NOT saved), client/src/ui/emoteButton.ts next to the chat button (a small menu), Settings pref nameTags (client/src/api/prefs.ts) and the name tag toggle; the client calls the artist's stubs `hatPart(id)` and `emotePose(kind, t)`.
-TESTS: hat data valid (12 ids unique, slot hat, unlock source exists), unlock grants for each event path with a fixed state, locked hats not wearable, pack pools unchanged, emote cancel rule, prefs. FILES: shared/data/clothing.json, bookRewards.json, loot.json, splice*.json, shared/src/clothing.ts, packs.ts, emotes.ts, api, ui/emoteButton.ts, avatarPanel logic, prefs.
-PARALLEL: artist A6 (stubs first). DONE WHEN: suite green, by hand: buy a hat, wear it, emote, toggle name tags.
+### G1 Gameplay fix pass (this is the owner's "fix gameplay"; CP-1 was never held)
+GOAL: the first hour plays well. Input: the tester's report (docs/FIXLIST.md, written by the manager from the tester agent's output; if it does not exist yet, build it first by running the smoke route yourself at 1000x700 and 420x760 and writing the list, ordered by severity).
+RULES: take the top 8 items, crashes and stuck states first; one commit per item with a test where it is a rule (shared/ or api/); client-only layout problems get a note for the artist instead.
+CHECK THESE SUSPECTS even if the list lacks them (each: reproduce, fix or write "fine" in NOTES):
+1. Offline catch-up with taps, casks and the stove: close 2 minutes, reopen: seats fill only, casks keep the exact tier, no mug is lost or duplicated (ledger adds up).
+2. A guest whose drink runs out on the tap mid-order: the order stays open, no softlock, a clear toast; same for a stand picked up while an order is in flight.
+3. Hold-to-walk and hold-to-punch near the bar, kitchen zone and door spots (C4): no accidental door travel (C5), no walking into the staff zone by guests.
+4. The first 10 minutes of a NEW game: every hint exists and reads at reading pace, the 7 root ale are on a tap, the first guest arrives within about 45 s, nothing needs a menu you cannot find (roadmap 2.3). Write what is unclear; fix text and hint order only.
+5. Panels at 420x760: all panels end above the hotbar, buttons at least 44 px, Escape/back works; list layout bugs for the artist (B6) instead of fixing CSS.
+6. Save/load: a v1.. save from each earlier SAVE_VERSION still migrates (migration tests exist; add a fixture-based test for 24, 25, 26 if missing).
+FILES: whatever the item names; no new feature. SAVE: none (if a fix needs one, stop and tell the manager). DONE WHEN: suite + typecheck green, the fix list is ticked in docs/FIXLIST.md, `npm run simulate` unchanged. PARALLEL: artist B3 or B6.
 
-## ARTIST QUEUE (each: Aseprite plugin, `preflight` first; quality gate of PLAN-ART-UPGRADE section 6; ramps in art-src/RAMPS.md)
+### N1 Content batch 1: tavern and suite decor (data only, no bump) + H4 plant stage hook
+GOAL: new things to buy and place, from PLAN-ART-UPGRADE section 4 ("data only" items), with fallback box art so the artist can improve them later.
+DATA: new file shared/data/furniture/tavern3.json (the loader merges every file in the folder; ids unique across files): barrel_table (1x1 surface, common, catalog), hanging_lantern (wall, light, common, catalog), tankard_rack (wall, common, catalog), dartboard (wall, rare, catalog, decor only),
+spice_bundle (wall, common, craft recipe from wood/cloth + a crop), antler_mount (wall, rare, crafted: recipe from bone + wood; inCatalog false), window_curtains (wall, 2 cells, common, catalog), writing_desk (2x1 surface, rare, catalog), potted_flowers (1x1 onSurface, common, catalog).
+Appeal small (1 to 3), placeIn per item (tavern ones 'shop', suite ones 'hotel'; curtains and potted_flowers both), icon { shape, colors } from existing shapes, art = simple boxes (copy the style of a neighbour), baseValue on the existing scale; catalog price = baseValue x 3.
+Names original. Recipes in recipes.json (no gold). The Book picks them up automatically (check the furniture tab shows 9 new greyed entries).
+H4 (small, same task): plants stage hook: the farm draws a plant from sprites/plants/<id>_<1|2|3>.png when present (spriteFor('plants', id, stage)), else today's code art; test for the naming, no PNG = no change.
+TESTS: all 9 types valid (furniture tests), ids unique, wall items valid along a back wall, onSurface rules, recipes craftable from a fixed inventory, balance.test.ts green (appeal feeds guest rate: if a number moves BALANCE_TARGETS, lower the appeal values, do not retune S3).
+FILES: shared/data/furniture/tavern3.json, recipes.json, client/src/render plant draw code (hook only), tests. SAVE: none. PARALLEL: artist B3/B4. DONE WHEN: suite green; by hand: buy a dartboard, hang it, place potted flowers on a table.
 
-### A1 R2 blocks (IN PROGRESS in art-src/staging/blocks)
-IDS (blocks.json, 32 x 32 each, one cube showing top and front, fills the cell, 1 px dark outline, light top-left): dirt (walnut/oak), planks (oak/sand), stone (slate/steel), glass (cyan/white, see-through look with a bright highlight), clay (clay/rust).
-Keep the colours of each block's icon.colors so old saves look related. EXPORT to client/src/assets/sprites/blocks/<id>.png (32x32, no trim) ONLY after H2 is merged; until then stay in staging (the sprites folder test would not know them). Sources: art-src/aseprite/<id>.aseprite.
-DONE WHEN: five PNGs pass validate and pixel-critic, a contact sheet is shown, in-game at zoom 3 after H2. User signs the style lock on this round. Coder in parallel: C1, then H1.
+### C6 9g-1 Hats and emotes (no bump if unlock uses Player.unlockedClothing; do after the artist's B2 stubs)
+GOAL: 9g items 1 and 2 (docs/NEXT-STEPS "Step 9g", refreshed). Hats stay OUT of the clothes packs (decided): add a flag in clothing.json (`pack: false`) honoured by the pack pools in shared/src/packs.ts, with a test that the Common/Rare pools do not change and balance.test.ts still passes.
+DATA: shared/data/clothing.json slot 'hat', none free, with rank and unlock source (only sources that already have an event hook): straw_hat common catalog; wool_cap common catalog; cook_cap common catalog; feather_cap rare catalog (a new Clothes tab in the Catalog; catalog price = baseValue x 3);
+tavern_keeper_hat rare, Book reward 25% (bookRewards.json); fisher_hat rare, first rare fish caught; skull_cap rare, skeleton drop (loot table); flower_crown ultra_rare, a splice clothing seed (splice.json + spliceSeeds.json); knight_helm ultra_rare, first Bone King kill;
+gold_crown legendary, Book reward 100%; sunken_crown_hat legendary, catching the sunken crown; miner_lamp_cap rare, 10th mine visit. A hat the player does not own shows as a grey silhouette with the hint text in the Avatar panel.
+EMOTES: shared/src/emotes.ts (pure: wave, dance, laugh, cheer, sleep; duration config EMOTE_MS; cancelled by walking), GameAPI.emote(kind) -> { kind, untilMs } (transient avatar field, NOT saved), client/src/ui/emoteButton.ts next to the chat button (a small menu),
+Settings pref nameTags (client/src/api/prefs.ts) and the name tag toggle; the client calls the artist's `hatPart(id)` and `emotePose(kind, t)`.
+TESTS: hat data valid (12 ids unique, slot hat, unlock source exists), unlock grants per event path with a fixed state, locked hats not wearable, pack pools unchanged, emote cancel rule, prefs.
+FILES: shared/data/clothing.json, bookRewards.json, loot.json, splice*.json, shared/src/clothing.ts, packs.ts, emotes.ts, api, ui/emoteButton.ts, avatar panel logic, prefs. PARALLEL: artist B2 first, then A14.
+DONE WHEN: suite green; by hand: buy a hat, wear it, emote, toggle name tags.
 
-### A2 ART-K2 (before C3 K2b)
-STUBS FIRST in the first commit, signatures fixed: client/src/render/drawIcon.ts gets an optional trailing `tier?: 'aged' | 'vintage'` on drawIcon, iconDataUrl and iconTexture (a 3 px band across the middle of the mug, gold for aged and red for vintage, cached per tier); ui.css classes .cask-list .cask-card .cask-bar .cask-fill .cask-tier (+ .tier-aged .tier-vintage); tell the coder in the commit note.
-THEN ART: keg_rack sprite (read its cells in shared/data/furniture.json; show three casks, id keg_rack, down/up/right as its facings list says), plus the code `art` fields for tier mugs not needed. Export sprites/furniture/keg_rack*.png. FILES: render/drawIcon.ts, iconPixels.ts if needed, ui.css, art-src/aseprite/keg_rack.aseprite, assets/sprites/furniture.
-DONE WHEN: validate + pixel-critic + in-game check next to the stove and the barrel. Coder in parallel: C2 (K2a, shared only) then H2.
+### C7 9h-1 Dungeon round 2 (new content; touches dungeon files only, no bump)
+GOAL: DUNGEON_ROUND = 2: three floors, 5 to 8 rooms, all enemies, mimics, the Bone King as end boss (docs/NEXT-STEPS "Step 9h" item 1; PLAN-1B 9h-1). Config switch, the generator and step() already support it.
+DO: run `npm run simulate:dungeon` (slow, minutes) per gear tier and tune ENEMIES/loot in config and data only to 60 to 75% survival; check the floor 3 end flow in the client (boss room, bank, exit, Go deeper / Leave texts, key cost);
+run `npm run simulate` and keep balance.test.ts green: run gold per hour feeds the S3 gold shares (target 10% to 50% each). If the shares fail, tune run gold down and report the numbers instead of touching BALANCE_TARGETS.
+TESTS: existing dungeon tests under round 2, a deterministic full-run test with a fixed seed (3 floors, boss reachable), death rule (half run gold lost) still holds. FILES: shared/src/config (DUNGEON_ROUND, ENEMIES), shared/data/loot.json, tools/simulate-dungeon.ts, client/src/dungeon only for end-flow fixes. SAVE: none.
+PARALLEL: artist B3/B5. DONE WHEN: suite green, survival table in the report, by hand: a 3-floor run to the boss. Ask the owner before leaving round 2 switched on (decision 4).
 
-### A3 R3 blocks
-IDS: thatch (butter/sand), lantern_block (orange/butter, glowing; it is a light block), brick (red/crimson), mossy_stone (forest/slate), cinder_block (ink/crimson). 32x32, same rules, export after H2. Coder in parallel: H2 then C3.
+### C8 9g-3 Room stars (no bump, derived)
+GOAL: shared/src/roomScore.ts (pure): furniture value by rank, variety of types and themes, lights, rugs, wall items, style not bare, capped -> 1 to 5 stars with config thresholds and one tip ("add a light"); shown in the Room panel for the HOTEL room only. The 9g-3 prompt also lists N1's new suite pieces (curtains, desk, potted flowers) as part of variety.
+TESTS: monotone, capped, empty room 1 star, each tip appears. FILES: shared/src/roomScore.ts (+test), config, client/src/ui Room panel logic. PARALLEL: artist B3. DONE WHEN: suite green; by hand: stars rise as you decorate.
 
-### A4 ART-MB2 (before C5)
-STUB FIRST: client/src/render/innDoors.ts exports `drawInnDoor(layer: Container, door: { id: string; x: number; y: number; w: number })` (world px of the doorway in the back wall band, w = 64) with three code-drawn looks keyed by the door id prefix (suite wood door with a small star, tavern oak double door with a warm glow, garden arched gate with leaves) plus a warm arrival light; also `.room-fade` CSS in ui.css for the fade (respect prefers-reduced-motion).
-THEN Aseprite drafts in art-src/staging/doors: three 64x64 doorway sprites (kept for a later hook; not exported yet). FILES: render/innDoors.ts, ui.css, art-src/staging/doors. Coder in parallel: C4 then H3.
+### C9 9g-2 Usable furniture and the cat (SAVE 28)
+GOAL: FurnitureType.use 'toggle' | 'music' | 'fire' | 'none' (item state on/off, saved: SAVE 28 with MIGRATIONS[27] adding the state, test), music box tune as data played by client audio, wall clock (real time passed in, no Date.now in shared), mirror opens the Avatar panel,
+pet basket + cat (shared/src/pet.ts pure wander/sit/sleep/follow with rng and time passed in; the cat position is NOT saved, only adopted + name). stone_fireplace gets `use: fire`, glass_lamp and lantern_post `use: toggle` (M-A pieces). Catalog: clock, mirror, music box, pet basket.
+TESTS: use state toggles and persists, migration, cat steps deterministic with fixed rng, clock uses passed time, mirror action. FILES: shared/src (furniture types, pet.ts, save, types), shared/data/furniture/suite.json, client/src/audio, ui. PARALLEL: artist stub `drawCat(view, state)` then the cat art (add as B-task when this starts).
 
-### A5 R4 floors (before in-game check needs H3)
-IDS (styles.json): bare, wood_planks, stone_tiles, red_carpet, soil. 64 x 64, SEAMLESS (check by tiling 3x3 in Aseprite tiled mode; no visible seam, no obvious repeat blotches), 3 to 4 shades per material, top-left light is irrelevant on flats but keep the same ramps; bare stays plain and dull on purpose. Stage in art-src/staging/floors; export to sprites/floors/<id>.png after H3. Coder in parallel: C5 (MB-3).
+### C10 9g-4 Visitors and the guestbook (SAVE 29, dep C8 and K2 merged)
+Spec: PLAN-1B 9g-4: shared/src/visitors.ts (arrival by stars, at most 2, walk on the hotel nav grid, look at things, sit on free seats, lines in npcLines.json, leave a coin tip that must be tapped: hotel-side Mess state, SAVE 29 + MIGRATIONS[28]), reuse guestLook and npcNav, guestbook item (last 10 lines).
 
-### A6 ART-9g1 (before C6)
-STUBS FIRST: client/src/render/hatParts.ts `hatPart(id): Container | null` and client/src/render/emoteAnim.ts `emotePose(kind, tMs)` (returns small offsets/overlays; the box avatar shape is NOT changed, hats sit on the head layer only).
-THEN ART (code-drawn on the box avatar for now, the avatar is still the approved box): the 12 hats of C6 (ids as listed there), a grey locked silhouette variant, the five emote poses with the zzz bubble, the name tag plate, ui.css for .emote-btn / .emote-menu / .nametag. Files: render/hatParts.ts, emoteAnim.ts, avatarSprite.ts (artist only), ui.css. Coder in parallel: C5 or C6.
-DONE WHEN: a contact sheet of the 12 hats at game size and in the avatar panel.
+### Later coder tasks (write the prompt when reached; outlines in docs/PLAN-1B.md)
+MC Inn score (no bump; weight the tavern part so S3 numbers stay inside BALANCE_TARGETS) | ME suite showcase (hat stand, splice shelf, Book plaque; derived) | CP-2 playtest | 9i-1 questline rules (SAVE 30, L) | 9i-2 quest UI | 9i-3 chapters | 9h-2 dungeon themes (SAVE 31) | 9h-3 Sunken Cave | 9h-4 Overgrown Ruins | 9h-5 room features | 9h-6 theme furniture sets | phase 2.2 economy pass.
 
-## TESTER LANE (agent ~/.claude/agents/tester.md; no code changes; run after K2b, MB-3, 9g-1 and any large art round)
+## ARTIST QUEUE
+
+### CODE-ART tasks (NO Aseprite plugin needed: run these now)
+
+#### B1 ART-MB2 stub and fade (before C5; CODE-ART)
+STUB FIRST: client/src/render/innDoors.ts exports `drawInnDoor(layer: Container, door: { id: string; x: number; y: number; w: number })` (world px of the doorway in the back wall band, w = 64) with three code-drawn looks keyed by the door id prefix (suite wood door with a small star, tavern oak double door with a warm glow, garden arched gate with leaves), plus a warm arrival light;
+`.room-fade` CSS in ui.css for the fade (respect prefers-reduced-motion). Tell the coder in the commit note. FILES: render/innDoors.ts (+ a small render test if the folder has such tests), ui.css. Palette only from shared/palette.ts. DONE WHEN: a contact sheet of the three doors at zoom 1 and 3 (tools/art-sheet.ts) and `npm test` for client/src/render green.
+
+#### B2 ART-9g1 stubs and code hats (before C6; CODE-ART)
+STUBS FIRST in the first commit: client/src/render/hatParts.ts `hatPart(id): Container | null` and client/src/render/emoteAnim.ts `emotePose(kind, tMs)` (small offsets/overlays; the box avatar shape is NOT changed, hats sit on the head layer only).
+THEN: the 12 hats of C6 drawn in code on the box avatar, a grey locked silhouette variant, the five emote poses with the zzz bubble, the name tag plate, ui.css for .emote-btn / .emote-menu / .nametag. Files: render/hatParts.ts, emoteAnim.ts, avatarSprite.ts (artist only), ui.css.
+DONE WHEN: a contact sheet of the 12 hats at game size and in the Avatar panel; hats fit all 4 hair styles without clipping.
+
+#### B3 Better models in code: the hotel starter set (CODE-ART, no coder dependency)
+GOAL: the pieces a new player sees first stop looking like plain boxes. In render/furnitureArt.ts and the `art` fields of the first 12 types of shared/data/furniture.json (bed, sofa, chair, bookshelf, lamp, plant, rug, desk, table, wardrobe and the rest of that list):
+add the details of the mood (docs/ART-STYLE.md, docs/mood.png as reference only): pillow and blanket folds, cushions, book spines in 3 colours, a lamp shade glow, leaf clusters, rug borders and tassels, wood grain stripes, a dark warm 1 px outline, light top-left, Endesga 32 only.
+RULES: footprints, facings and anchors do not change (tests enforce them); only `art`, `icon`, `light` fields, small Edits, no reformatting. Do 6 pieces per commit; show a contact sheet (tools/art-sheet.ts) per commit.
+Also the new N1 pieces (when tavern3.json lands): replace their fallback boxes with the same quality. DONE WHEN: all furniture tests green, contact sheet of before/after for the 12 pieces in the final report, in-game check at zoom 3 in the hotel room.
+
+#### B4 Plants and trees in code (CODE-ART; prepares H4 and the lakeside)
+GOAL: better looking farm and lake without PNGs. Three growth stages per crop (sprout, small, full) for the 5 crops with clearly different silhouettes (turnip top, potato leaves, carrot fronds, pumpkin vine with fruit, glowcap with a soft glow), block-seed plants keep their colour; ripe plants get a tiny sparkle for ultra_rare and legendary;
+the 8 lakeside trees: 3 tree variants, trunk, layered leaf clusters, a stump stage for chopped trees; reeds, flowers and stones as ground decor on the lakeside and farm borders. Files: client/src/farm/*, client/src/lakeside/* draw code only (no rules), ui.css not needed.
+DONE WHEN: contact sheet of the 15 stages, farm and lakeside screenshot-style sheet, `npm test` for client green.
+
+#### B5 Icon shape upgrade (CODE-ART)
+GOAL: better code icons for what is on screen most (PLAN-ART-UPGRADE section 1, priority 1 to 2): tools and gear (pickaxes, axes, rods, swords, armor), health potion, key, gems, the 5 crops, 4 drinks (mug with foam) and 8 food dishes. Change only render/iconPixels.ts DRAW functions (and shared/src/icons.ts if a new shape name is needed: the test demands both).
+RULES: 32x32, free 1 px ring, rank frame is drawn by the game, Endesga 32, light top-left, each shape recolourable by the data colours (do not hardcode colours that data should set). Contact sheet with tools/icon-sheet.ts before/after. DONE WHEN: icons tests green, the sheet in the report; the Book silhouettes still read.
+
+#### B6 Phone UI audit and polish (CODE-ART)
+GOAL: docs/UI-REFERENCE.md compliance at 420x760 and 1000x700, from the list G1 produces (and a first own pass now): Taps panel, Cask panel, Menu/Sell tabs, Brewing, Cooking, Avatar panel with hats later, Catalog tabs.
+CHECK AND FIX IN ui.css ONLY: buttons at least 44 px, panels end above the hotbar, no text clipped at the longest strings (Inn name of 16 characters, the longest drink name, 3 digit counts), focus and active states visible, the tier chips and bars readable, prefers-reduced-motion respected, no font-family outside var(--font). Class-name or markup changes = a note to the coder, not an edit.
+DONE WHEN: a list of fixed items with before/after screenshots descriptions in the report.
+
+### PLUGIN tasks (Aseprite plugin must be attached; `preflight` first; quality gate of PLAN-ART-UPGRADE section 6; ramps in art-src/RAMPS.md). NOT possible until it is attached.
+
+#### A5 R4 floors (after H3 for the in-game check; stage first)
+IDS (styles.json): bare, wood_planks, stone_tiles, red_carpet, soil. 64 x 64, SEAMLESS (tile 3x3 in Aseprite tiled mode), 3 to 4 shades per material; bare stays plain and dull on purpose. Stage in art-src/staging/floors; export to sprites/floors/<id>.png after H3.
+
+#### A7 R5 walls
+IDS: bare, plaster, wood_panels, brick; 64 x 64, repeats sideways, the band is 64 tall, a dark outline at the floor foot. Then the counter sprite polish (no baked till). Export after H3.
+
+#### A8 R6 crop icons (5): turnip, potato, carrot, pumpkin, glowcap. 32x32 icons in sprites/icons/<id>.png (free ring). After the first export check the seed look (seeds stay code from the parent colours).
+#### A9 R7 drinks 4 + roasted turnip and the other dishes (8): icons, plus the aged/vintage band stays a code overlay.
+#### A10 R8 tools 5 (steel pickaxe, steel axe, three rods) then swords/armor/potion/key/gems.
+#### A11 Tavern core sprites in groups of 5: round_table, long_table, bar stool, stove, brewing_barrel, then mug_shelf, menu_board (wall: facing down only), the start chairs/stools. Facings per their facings list; the sheet size formula of PLAN-SPRITES.
+#### A12 Hotel starter set sprites (the 12 pieces B3 improved in code; match their shapes so the swap is not a jump), then A13 plants stages (15 PNGs, after H4), then A14 hats as sprites (only after the U1 avatar decision; until then hats stay code).
+Each: validate + pixel-critic + in-game check at zoom 3 and 1, contact sheet shown to the lead. DONE WHEN per round: 5 PNGs pass, the spriteAssets test is green.
+
+## TESTER LANE (agent ~/.claude/agents/tester.md; no code changes; run after G1-start, C5, C6, C7 and any large art round)
 SMOKE ROUTE (10 steps; report each as PASS/FAIL with a screenshot, plus console errors and any 404 for a sprite):
 1. `npm run dev`, open the page at 1000x700, then once at 420x760 (phone). Console must be clean; note load time.
 2. New game: character creation (type an Inn name of 16 characters), pick shapes, watch the intro (a tap skips it).
-3. Tavern look: the bar with register and tap stand, a bar stool, a round table with 2 stools, the stove, a barrel with 7 root ale; sprites show (no box placeholders where a PNG exists).
+3. Tavern look: the bar with register and tap stand, a bar stool, a round table with 2 stools, the stove, a barrel with 7 root ale; sprites show (no box placeholders where a PNG exists; the block PNGs in the bag and placed).
 4. Tap the barrel (walks next to it) and collect; tap the tap stand: Taps panel; Load all root ale into a tap; reopen and check the mug count.
-5. Tap the register: Menu tab: root ale and roasted turnip On; wait for a guest (guests come about every 45 s); tap the guest: the avatar goes to the tap, pours, carries the mug; tap the coins.
+5. Tap the register: Menu tab: root ale and roasted turnip On; wait for a guest (about every 45 s); tap the guest: the avatar goes to the tap, pours, carries the mug; tap the coins.
 6. Stove: cook a roasted turnip (needs a turnip: do step 8 first if the bag has none); Collect when ready.
 7. Build mode (B): move a stool, rotate, pick up and place again; Room panel shows the kitchen zone tint; place a prep table next to the stove in the zone and check the batch size grows.
-8. Map -> Farm: paint nothing, plant a turnip seed on soil, punch a block, place a block; Map -> Dungeon: one run, fight one slime, Leave.
-9. Doors (after MB-3): walk suite -> tavern -> garden and back; Map travel still works. Casks (after K2b): fill a cask, collect early.
-10. Reload the page: the same room, gold, taps, casks, Inn name; close the tab for 2 minutes and reopen to check the offline catch-up (seats only); final console and layout check at 420x760 (panels end above the hotbar, 44 px buttons).
-OUTPUT: a short list of crashes, missing sprites, layout problems and anything that felt wrong, ordered by severity, to the manager.
+8. Map -> Farm: plant a turnip seed on soil, punch a block, place a block; Map -> Dungeon: one run, fight one slime, Leave.
+9. Doors (after C5): walk suite -> tavern -> garden and back; Map travel still works. Casks: fill a cask, collect early (fresh), load an aged mug on a tap.
+10. Reload the page: same room, gold, taps, casks, Inn name; close the tab for 2 minutes and reopen to check the offline catch-up (seats only); final console and layout check at 420x760 (panels end above the hotbar, 44 px buttons).
+OUTPUT: a short list of crashes, missing sprites, layout problems and anything that felt wrong, ordered by severity, to the manager, who saves it as docs/FIXLIST.md for G1.
 
 ## DECISIONS FOR THE USER (recommendations)
-1. CP-1 playtest: after C3 (K2b) the whole tavern loop exists. Recommended: yes, ask the user for the one-hour playtest then, before C6/9g (hats, avatar related).
-2. K2 balance numbers (valueMult 1.6/3, wait times): the lead set them from the K2 prompt targets; recommended: accept, tune in config only after CP-1. Only ask if the economy table shows a source over 50%.
-3. U1 pixel avatar: hats in C6/A6 are drawn on the CURRENT box avatar. Recommended: yes, do that now; if U1 is approved later the hats get redrawn with the avatar.
-4. Push to GitHub: still the user's call (a push deploys). Recommended: ask after CP-1 passes.
-Everything else in this queue is decided (door design, hat list, tier numbers, folders).
+1. STYLE LOCK on art round R2 (first blocks, the register, one icon): the user signs it once. Recommended: look at the contact sheet and sign; later rounds follow it.
+2. CP-1 playtest: the whole tavern loop exists now (taps, casks, kitchen). Recommended: ask the user for the one-hour playtest right after G1, before C6/9g.
+3. Dungeon round 2 on (C7): changes run gold and the gold shares. Recommended: yes after the simulation shows 60 to 75% survival and the shares inside targets.
+4. U1 pixel avatar: hats in C6/B2 are drawn on the CURRENT box avatar. Recommended: yes, do that now; redraw hats if U1 is approved later (last art step, prototype first).
+5. The plugin: the Aseprite plugin is not attached now. Recommended: run all CODE-ART tasks (B1 to B6) meanwhile; they improve the look without it and none is wasted (sprites replace code art piece by piece).
+6. Push to GitHub: still the user's call (a push deploys). Recommended: ask after CP-1 passes and G1 is done.
+Everything else in this queue is decided (door design, hat list, tier numbers, folders, content list).

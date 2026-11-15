@@ -6,6 +6,7 @@ import { applyChange } from './ledger.ts';
 import { FARM_HINT, HINTS, MINE_HINT, PACK_HINT, SAVE_VERSION, SPLICE_HINT } from './config.ts';
 import { canPlace, footprintRect, getFurnitureType, isOnGrid } from './furniture.ts';
 import { createRoom, plantInCell, floorStyleAt } from './room.ts';
+import { innDoorSpots } from './innDoors.ts';
 import { growthStage, soilCells } from './farm.ts';
 import { SOIL_STYLE } from './config.ts';
 import { testRun } from './dungeon/testRun.ts';
@@ -16,7 +17,7 @@ const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addF
 describe('save files', () => {
   it('saving then loading gives an identical state', () => {
     const loaded = readSave(toSaveText(state, 3));
-    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false, kitchenChanged: false, shopClosed: false, barChanged: false });
+    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false, kitchenChanged: false, shopClosed: false, barChanged: false, doorsChanged: 0 });
   });
   it('uses a versioned key', () => {
     expect(saveKey()).toBe(`pixel-hotel.save.v${SAVE_VERSION}`);
@@ -666,8 +667,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 26 (23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(26);
+  it('SAVE_VERSION is 27 (23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(27);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');
@@ -765,5 +766,44 @@ describe('migrates a version 24 save (MB-1, the Inn name)', () => {
     expect(r.state.items).toEqual(base.items);
     expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
     expect(MIGRATIONS[24]!({ ...old, player: { ...player, innName: 'Mine' } })).toMatchObject({ player: { innName: 'Mine' } });
+  });
+});
+
+describe('migrates a version 26 save (MB-2, Inn doors)', () => {
+  it('sends furniture, blocks and plants on a door spot back to the bag, keeps everything else, and does not migrate twice', () => {
+    const base = createNewPlayer(undefined, 1);
+    const hotel = base.rooms.find((r) => r.kind === 'hotel')!;
+    const farm = base.rooms.find((r) => r.kind === 'farm')!;
+    const spot = innDoorSpots(hotel)[0]!;
+    const fspot = innDoorSpots(farm)[0]!;
+    const uid = base.nextUid;
+    const chair = { uid, typeId: 'chair', ownerId: base.player.id, roomId: hotel.id, x: spot.col * 32 + 16, y: (spot.row + 1) * 32, facing: 'down' as const, onItemUid: null };
+    const keep = { ...chair, uid: uid + 1, x: 16, y: 320 };
+    const old = {
+      ...base,
+      nextUid: uid + 2,
+      items: [...base.items, chair, keep],
+      rooms: base.rooms.map((r) =>
+        r.id === hotel.id
+          ? { ...r, blocks: { [`${spot.col},${spot.row}`]: { id: 'planks', hits: 0, hitAt: 0 } } }
+          : r.id === farm.id
+            ? { ...r, plants: { [`${fspot.col},${fspot.row}`]: { seed: 'turnip_seed', plantedAt: 0, readyAt: 9 } } }
+            : r,
+      ),
+    };
+    const r = readSave(JSON.stringify({ version: 26, savedAt: 9, state: old }));
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 26, doorsChanged: 3 });
+    if (!r.ok) return;
+    expect(r.state.items.find((i) => i.uid === uid)!.roomId).toBeNull();
+    expect(r.state.items.find((i) => i.uid === uid + 1)!.roomId).toBe(hotel.id);
+    expect(r.state.rooms.find((x) => x.id === hotel.id)!.blocks).toEqual({});
+    expect(r.state.rooms.find((x) => x.id === farm.id)!.plants).toEqual({});
+    expect(r.state.player.materials).toMatchObject({ planks: 1, turnip_seed: 1 });
+    expect(r.state.ledger.some((e) => e.reason === 'door_spot')).toBe(true);
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false, doorsChanged: 0 });
+    // A save with nothing on the spots changes nothing.
+    const clean = readSave(JSON.stringify({ version: 26, savedAt: 9, state: base }));
+    expect(clean).toMatchObject({ ok: true, doorsChanged: 0 });
+    if (clean.ok) expect(clean.state).toEqual(base);
   });
 });

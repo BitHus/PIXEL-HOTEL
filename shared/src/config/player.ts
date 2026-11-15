@@ -30,7 +30,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -78,6 +78,12 @@ export const TAVERN_INTRO_NEW = 'Welcome to your tavern! Guests sit and order: t
  */
 export const TAVERN_BAR_NOTICE =
   'Your bar has a register and beer taps now: tap the tap stand and load a brewed drink onto a tap, because guests only order drinks that are on a tap. Tap the register for the menu. The tavern has a kitchen corner too, where guests never go: a prep table next to the stove makes bigger batches.';
+/**
+ * The opening notice of an old save (step MB-2, version below 27): the rooms have Inn doors now. `n` things that stood on a door spot went back to the bag.
+ */
+export function innDoorNotice(n: number): string {
+  return `Your rooms have doors to each other now (suite, tavern, garden). ${n} ${n === 1 ? 'thing' : 'things'} that stood on a door spot went back to your bag.`;
+}
 /** The index of the dungeon hint in HINTS: it shows while no run is going. */
 export const DUNGEON_HINT = 3;
 /** The index of the farm hint (step 9b): done by planting anything. */

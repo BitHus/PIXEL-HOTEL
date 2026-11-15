@@ -260,6 +260,8 @@ export type LedgerReason =
   | 'block_place'
   | 'block_break'
   | 'block_return'
+  // Inn doors (step MB-2): things that stood on a door spot go back to the bag.
+  | 'door_spot'
   // The tavern (step 9t): brewing, an order taken out of the bag (and put back when the guest
   // leaves unserved), the coins collected from a table, the furniture an old save gets.
   | 'brew'

@@ -257,8 +257,8 @@ describe('wall items stay free (BG1: only floor items go per cell)', () => {
   });
 
   it('a wall item is not in the way of the door zone or floor items', () => {
-    const torch = item('wall_torch', 288, 0);
-    expect(can([torch], 'chair', 9, 0)).toBe(true);
+    const torch = item('wall_torch', 432, 0);
+    expect(can([torch], 'chair', 13, 0)).toBe(true);
   });
 });
 

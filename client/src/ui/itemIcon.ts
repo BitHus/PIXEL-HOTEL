@@ -75,6 +75,6 @@ export function packIconUrl(icon: Icon): string {
 /** A plain drink's icon with the ripening band of its tier (step K2b; the band comes from the artist's `tier` option of iconDataUrl, A2). Fresh = the plain icon. */
 export function caskIconUrl(drink: MaterialId, tier: 'fresh' | 'aged' | 'vintage'): string {
   if (tier === 'fresh') return materialIconUrl(drink);
-  const withTier = iconDataUrl as (icon: Icon, rank?: Rank, tier?: 'aged' | 'vintage') => string;
-  return withTier(getMaterialType(drink).icon, getMaterialType(drink).rank, tier);
+  const type = getMaterialType(drink);
+  return iconDataUrl(type.icon, type.rank, tier);
 }

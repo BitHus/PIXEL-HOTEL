@@ -3,6 +3,8 @@
 
 import {
   roomBlockers,
+  innTravel,
+  type Avatar,
   applyStyle,
   paintFloor,
   canPickUp,
@@ -56,6 +58,25 @@ export const roomsApi = {
     return {
       room: { ...room },
       items: h.state.items.filter((i) => i.roomId === roomId).map((i) => ({ ...i })),
+      avatars: [{ ...h.walkState.avatar }],
+    };
+  },
+
+  async useDoor(h: LocalGameAPI, doorId: string): Promise<RoomState | null> {
+    if (h.fish !== null) return null;
+    const trip = innTravel(h.state, h.state.currentRoomId, doorId);
+    if (!trip) return null;
+    const room = h.state.rooms.find((r) => r.id === trip.roomId);
+    if (!room) return null;
+    h.commit({ ...h.state, currentRoomId: trip.roomId });
+    h.debugRects = [];
+    const p = h.state.player;
+    const avatar: Avatar = { id: p.id, name: p.name, look: { ...h.state.look }, roomId: room.id, x: trip.point.x, y: trip.point.y, facing: trip.facing, state: 'walk' };
+    h.walkState = { avatar, path: [trip.stepTo], at: h.now(), sitOn: null, seated: null };
+    h.grid = h.buildGrid();
+    return {
+      room: { ...room },
+      items: h.state.items.filter((i) => i.roomId === room.id).map((i) => ({ ...i })),
       avatars: [{ ...h.walkState.avatar }],
     };
   },

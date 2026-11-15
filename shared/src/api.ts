@@ -269,6 +269,11 @@ export interface GameAPI {
   currentRoomId(): Promise<number>;
   /** Enter a room and get its full state. The own avatar stands in the door zone. */
   enterRoom(roomId: number): Promise<RoomState>;
+  /**
+   * Step through an Inn door of the current room (step MB-2: suite - tavern - garden). The own avatar arrives on the matching door spot of the
+   * other room and steps one cell down. Null = refused (no such door here, a dungeon or mine run is going, or the other room is missing).
+   */
+  useDoor(doorId: string): Promise<RoomState | null>;
   /** Ask to walk to a world point. Returns the path (world points, starting at the avatar) or null. */
   walk(to: Point): Promise<Point[] | null>;
   /**

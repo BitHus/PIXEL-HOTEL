@@ -8,6 +8,7 @@
 // Blocks are items in the bag (Player.materials, group 'block'); every change goes through
 // ledger.applyChange. Only the room's owner changes the room.
 
+import { innDoorSpotRects } from './innDoors.ts';
 import { kitchenZone } from './kitchen.ts';
 import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BUILD_CELL } from './config.ts';
 import { getBlockType, isBlockId, type BlockCell, type BlockLookup, type BlockType } from './blockTypes.ts';
@@ -28,6 +29,7 @@ export type BlockProblem =
   | 'empty' // none of this block in the bag
   | 'floor' // the cell is not (all) floor
   | 'door' // on the door zone
+  | 'inn_door' // on the spot in front of an Inn door (step MB-2)
   | 'taken' // a block is already there
   | 'furniture' // floor furniture is there
   | 'fixed' // the farm's plots or the cooking pot
@@ -95,6 +97,7 @@ export function cellProblem(
   if (!cellOnFloor(room, c, r)) return 'floor';
   const cell = cellRectOf(c, r);
   if (rectsOverlap(cell, doorZoneRect(room))) return 'door';
+  if (innDoorSpotRects(room).some((x) => rectsOverlap(cell, x))) return 'inn_door';
   if (blockInCell(room, c, r) || plantInCell(room, c, r)) return 'taken';
   if (floorFurniture(room, items, types).some((i) => rectsOverlap(cell, footprintRect(i, types(i.typeId))))) return 'furniture';
   if ([...noPlaceRects(room), ...fixedBlockers(room)].some((x) => rectsOverlap(cell, x))) return 'fixed';

@@ -23,6 +23,7 @@ import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_SIDE_PX, SNAP } from './config.ts';
 import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
+import { innDoorSpotRects, innDoorwayRects } from './innDoors.ts';
 import { blockRects, doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, wallBands, type Room } from './room.ts';
 import type { Facing, FurnitureItem, FurnitureType, Point, Rect } from './types.ts';
 
@@ -208,12 +209,16 @@ export function canPlace(
   if (type.wall) {
     // On a back wall band: the anchor is on the band's bottom edge, the item fully on that band.
     if (!wallBands(room).some((b) => y === b.y + b.h && fp.x >= b.x && fp.x + fp.w <= b.x + b.w)) return false;
+    // An Inn door (step MB-2): no wall item over the doorway.
+    if (innDoorwayRects(room).some((d) => rectsOverlap(fp, d))) return false;
     return !items.some(
       (o) => o.roomId === room.id && types(o.typeId).wall && rectsOverlap(fp, footprintRect(o, types(o.typeId))),
     );
   }
   if (!isOnGrid({ x, y, facing }, type) || !rectInsideFloor(room, fp)) return false;
   if (rectsOverlap(fp, doorZoneRect(room))) return false;
+  // The spots of the Inn doors stay free like the door zone (step MB-2).
+  if (innDoorSpotRects(room).some((r) => rectsOverlap(fp, r))) return false;
   // The farm's plots and cooking pot (step 9b): nothing on them, not even a rug.
   if (noPlaceRects(room).some((r) => rectsOverlap(fp, r))) return false;
   if (!type.blocks) return true;

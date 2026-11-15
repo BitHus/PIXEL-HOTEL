@@ -49,6 +49,8 @@ export * from './splice.ts';
 export * from './farm.ts';
 export * from './cooking.ts';
 export * from './kitchen.ts';
+export * from './innDoors.ts';
+export * from './innDoorClear.ts';
 export * from './taps.ts';
 export * from './casks.ts';
 export * from './forge.ts';
