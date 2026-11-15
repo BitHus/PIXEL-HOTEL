@@ -1532,7 +1532,7 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   hold-to-punch player eats supply, not gems: 1800 breaks an hour on unlimited common blocks would be 675 gems/h but needs a seed ratio
   of 1 or more or about 250 blocks (1500 gold) an hour, both now closed.
 
-## R1: file split (step R1: no change in behaviour; main.ts 2 076 -> 51 lines, localGameAPI.ts 1 364 -> 432, config.ts 939 -> 82)
+## R1: file split (step R1: no change in behaviour; main.ts 2 076 -> 48 lines, localGameAPI.ts 1 364 -> 432, config.ts 939 -> 82)
 - shared/src/config/{world,economy,dungeon,farm,lakeside,mine,clientInput,player,atmosphere,blocks,packs}.ts: the constants by topic; config.ts re-exports all and keeps the tavern (9t) numbers.
 - client/src/api/localGameAPI.ts: the class (state, clock, open, chat, saves entry); every GameAPI method delegates to `<area>Api.method(this, ...)`. Members the helpers use are public (no `private`).
 - api/walkApi.ts (walk, sit, serve, avatar position), roomsApi.ts (rooms, furniture, bag, styles, painting), shopApi.ts, blocksFarmApi.ts (blocks, plants, splice, seeds, cooking), dungeonApi.ts (dungeon, mine, forge), lakesideApi.ts, packsApi.ts, progressApi.ts (Book, hints, gains), tavernApi.ts (9t: calls and errands), savesApi.ts (export/import/backup); apiShared.ts (WalkState, TavernTask, SaveResult).
