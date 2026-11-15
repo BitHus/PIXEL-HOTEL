@@ -7,7 +7,7 @@
 import { rankName } from './rank.ts';
 import {
   FOOD_TYPES, STOVE_BATCH_MAX, cookMs, cookReadyInMs, getFoodType, getMaterialType, maxBatchWith,
-  type Cook, type FoodEffect, type FoodType, type MaterialId, type Player,
+  cookYield, type Cook, type FoodEffect, type FoodType, type MaterialId, type Player,
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
@@ -28,6 +28,8 @@ export interface CookingPanel {
   refresh(player: Player): void;
   /** What cooks now (all stoves); call after anything changed. */
   setCooks(cooks: readonly Cook[]): void;
+  /** The prep bonus of the open stove (step T1): extra dishes per batch from prep tables next to it in the kitchen zone. */
+  setBonus(bonus: number): void;
   /** Counts the time down (call about once a second while the panel is open). */
   tick(): void;
 }
@@ -64,6 +66,7 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
   let player: Player | null = null;
   let cooks: readonly Cook[] = [];
   let qty = 1;
+  let bonus = 0;
 
   const row = (f: FoodType, p: Player): HTMLElement => {
     const r = el('div', 'catalog-row');
@@ -94,7 +97,8 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
       const food = getFoodType(mine.food);
       const left = cookReadyInMs(mine, Date.now());
       const box = el('div', 'panel-info cook-state');
-      box.append(el('div', 'catalog-name', `${mine.qty} x ${food.name}`));
+      box.append(el('div', 'catalog-name', `${cookYield(mine)} x ${food.name}`));
+      if ((mine.bonus ?? 0) > 0) box.append(el('div', 'catalog-sub', `${mine.qty} from the crops and ${mine.bonus} from the prep table${mine.bonus === 1 ? '' : 's'}.`));
       if (left > 0) {
         const total = cookMs(food);
         const track = el('div', 'bar-track');
@@ -114,8 +118,8 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     const plus = textButton('+', () => { qty = Math.min(STOVE_BATCH_MAX, qty + 1); render(); }, 'cook-step');
     minus.disabled = qty <= 1;
     plus.disabled = qty >= STOVE_BATCH_MAX;
-    step.append(el('span', 'cook-qty-label', 'Dishes in this batch'), minus, el('span', 'cook-qty', String(qty)), plus);
-    top.replaceChildren(step, el('div', 'panel-info', `A stove cooks one batch at a time, up to ${STOVE_BATCH_MAX} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`));
+    step.append(el('span', 'cook-qty-label', 'Dishes in this batch'), minus, el('span', 'cook-qty', bonus > 0 ? `${qty} + ${bonus}` : String(qty)), plus);
+    top.replaceChildren(step, el('div', 'panel-info', bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).'), el('div', 'panel-info', `A stove cooks one batch at a time, up to ${STOVE_BATCH_MAX} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`));
     list.replaceChildren(...(player ? FOOD_TYPES.map((f) => row(f, player!)) : []));
   };
 
@@ -125,6 +129,7 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     open(u) { uid = u; render(); },
     refresh(p) { player = p; render(); },
     setCooks(c) { cooks = c; render(); },
+    setBonus(b) { bonus = b; render(); },
     tick() { if (uid !== null && cooks.some((c) => c.stoveUid === uid)) render(); },
   };
 }

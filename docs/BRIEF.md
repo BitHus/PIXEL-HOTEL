@@ -115,8 +115,9 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   704x384, level 3 is 832x448.
 - Every new player gets two basic rooms: a hotel room (level 1) and a shop room (level 1).
   The hotel room starts completely empty. The tavern (kind 'shop') starts with the bar (the counter), a stall_table,
-  a round table with 2 stools, a brewing barrel (6 root ale ready) and a stove, at fixed positions from the shape's data.
-- The counter (step 7): every shop has exactly one counter with a cash register (till) on top.
+  a round table with 2 stools, an idle brewing barrel and a stove (inside the kitchen zone), at fixed positions from the shape's data (a bar stool
+  in front of the bar since S3, no stall table), and, since T1, a register and a tap stand standing ON the bar with the 7 root ale loaded on the first tap.
+- The counter (step 7): every shop has exactly one counter. Since T1 it is a SURFACE item (3 cells, one level) and the cash register is its own piece, 'register', standing on it.
   It is placed at the start (near the back wall with room behind it, left of center) and can be
   moved and rotated in build mode, but never picked up or sold (FurnitureType.noPickup). The
   spot behind it (where the player serves) must stay reachable from the door: a placement that
@@ -267,7 +268,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - One currency: gold (integer). Every loot and furniture type has a baseValue (gold).
 - A new player is created by one shared function, createNewPlayer. They get: level 1 with 0
   xp; 100 gold; only the bare floor and bare wall unlocked, used in both rooms; 4 wood and 2
-  cloth; an empty hotel room; a shop room (section 5) with a counter and one
+  cloth; an empty hotel room; a shop room (section 5) with a counter, a register and a tap stand on it (T1) and one
   a bar stool in front of it (step S3; it replaces the old stall table) already placed at their fixed positions. No furniture in the inventory.
 - The loop: serve guests in the tavern -> gold -> buy furniture for the hotel room or the tavern, or upgrade a room. Loot, ore,
   fish and crops are for USE (cook, brew, craft, build, plant, splice); surplus goes to the trader (step S2, below).
@@ -336,6 +337,11 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   time, mugs, value; one brew per barrel; more barrels = more at once; a ready brew is collected by the tap); tap the bar = the Menu panel (tabs Serve and Menu: On/Off,
   a price stepper of 10% of the baseValue between 1 and 3 x, stock, the price face and a hint; out of stock = off the menu; an empty menu says how to fill it).
   Tavern texts say Tavern; old saves get one intro toast (introSeen), new games a short line. Details: STEP 9t and 9t C in the notes.
+  STEP T1 (the bar with taps, the register and the kitchen; NOTES T1): tap the REGISTER on the bar = the bar's panel (Serve / Menu / Sell) and collected coins fly into it; tap a TAP STAND = the
+  Taps panel (2 taps per stand, each holds one brewed drink, at most 12 mugs; Load from the bag by a number or Fill, Unload gives them back; ledger reason 'tap'). A drink is on the menu only while
+  a tap holds it (the Menu tab shows the tap levels and a hint to load a tap; dishes still come from the bag). Serving a drink: the avatar walks behind the bar to the taps, pours for 800 ms (a small
+  pour animation, a pour sound and a clink), the tap drops by one, then it carries the mug to the guest. An empty tap says "Tap is empty" and the order stays open. Old saves (v23 to v24) get a
+  register and a tap stand on the bar (or in the bag, with a toast); the drinks in their bag stay there until loaded.
 
 10. DUNGEON
 - Real-time and click-driven in the same top-down view: clicking fast is the game. A run is
@@ -481,7 +487,10 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   a gains list for the popup). Nothing is collected automatically; no burnt-food rule; a stove that is gone gives the
   crops of its batch back; a stove picked up into the bag keeps its batch. More stoves cook batches in parallel. A tap on a
   stove in play mode: the avatar walks next to it (STOVE_REACH_PX), then a ready batch is collected, else the Cooking panel
-  opens. Dishes feed the lunch box (effects unchanged), the tavern menu (guests order them). Old saves
+  opens. THE KITCHEN (T1): a staff-only KITCHEN ZONE (shared/data/roomShapes.json `kitchen`, a cell rectangle per tavern shape and level; level 1 a small corner right of the bar around the stove, levels 2 and 3 grow it)
+  keeps guests out (npcGrid and tavernSeats); the owner may build in it. Kitchen furniture (placeIn 'shop', catalog): prep_table (surface, 2 x 1 cells), pantry (shelf with crop colours), sink,
+  serving_hatch (decor that marks the pass). Each prep_table inside the zone and sharing an edge with a stove inside the zone adds +1 dish per batch (config PREP_BONUS, at most +2; fixed when the
+  batch starts; a stove outside the zone works without it). Dishes feed the lunch box (effects unchanged), the tavern menu (guests order them). Old saves
   (migration 20 -> 21) get one stove in the tavern on its start spot (else in the bag) and a toast. Recipes (shared/data/food.json): roasted turnip (1
   turnip; heals 8 hp), potato stew (2 potato + 1 turnip; heals 15 hp), carrot soup (2 carrot
   + 1 potato; +1 attack for the rest of the run), pumpkin pie (1 pumpkin + 1 carrot; +10 max
@@ -684,6 +693,5 @@ changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as writ
   for use (cook, brew, craft, gear, build, plant, splice); surplus is sold by tapping at the trader (Sell tab on
   the bar, low rate). Gold comes from guests, dungeon run gold and the trader; gems from play and a small tavern tip.
   (Step S1 is done, NOTES S1; S2 the trader and S3 the rebalance follow.)
-- THE BAR AND THE KITCHEN (owner, 15 Nov): the bar carries a REGISTER and TAP STANDS (2 taps each, 12 mugs per tap, loaded
-  from the bag; drinks are served by pouring); the KITCHEN is a staff-only zone with prep tables that enlarge stove batches.
-  (Step T1, after S1 to S3.)
+- THE BAR AND THE KITCHEN (owner, 15 Nov; step T1 is DONE, NOTES T1): the bar carries a REGISTER and TAP STANDS (2 taps each, 12 mugs per tap, loaded
+  from the bag; drinks are served by pouring); the KITCHEN is a staff-only zone with prep tables that enlarge stove batches. K2 (ripening) puts casks on the taps next.

@@ -13,7 +13,7 @@ import { getFurnitureType, behindPoint } from './furniture.ts';
 import { footprintCenter } from './placing.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
-import { isDrinkId } from './materials.ts';
+import { DRINK_TYPES, isDrinkId } from './materials.ts';
 import type { Guest, TavernState } from './tavern.ts';
 import type { FurnitureItem, MaterialId, Point } from './types.ts';
 
@@ -128,4 +128,32 @@ export function pourStop(state: GameState, drink: string): { tap: Tap; stand: Fu
   const bar = barOf(state);
   if (!tap || !stand || !bar) return null;
   return { tap, stand, at: pourPoint(bar, stand) };
+}
+
+/** One tap as the Taps panel shows it. */
+export interface TapCard {
+  standUid: number;
+  slot: number;
+  /** The drink on it, or null for an empty tap. */
+  drink: MaterialId | null;
+  mugs: number;
+  cap: number;
+  /** What can be loaded onto it now: the drinks in the bag that fit (an empty tap: any; a tap with a drink: that one), with how many fit. */
+  options: { drink: MaterialId; inBag: number; fits: number }[];
+}
+
+/** The cards of the Taps panel: every tap of every stand on the bar, from the taps and the bag (pure, tested). */
+export function tapCards(standUids: readonly number[], taps: readonly Tap[], materials: Partial<Record<MaterialId, number>>): TapCard[] {
+  const drinksInBag = DRINK_TYPES.filter((d) => (materials[d.id] ?? 0) > 0);
+  return standUids.flatMap((standUid) =>
+    Array.from({ length: TAP_SLOTS }, (_, slot): TapCard => {
+      const tap = tapOf(taps, standUid, slot);
+      const mugs = tap?.mugs ?? 0;
+      const options = drinksInBag
+        .filter((d) => !tap || tap.drink === d.id)
+        .map((d) => ({ drink: d.id as MaterialId, inBag: materials[d.id] ?? 0, fits: Math.max(0, Math.min(materials[d.id] ?? 0, TAP_CAP - mugs)) }))
+        .filter((o) => o.fits > 0);
+      return { standUid, slot, drink: tap?.drink ?? null, mugs, cap: TAP_CAP, options };
+    }),
+  );
 }

@@ -149,11 +149,13 @@ export async function setupPointerInput(g: G15) {
       // The tavern (step 9t): a guest with an order, coins or a dish on a table, a brewing barrel.
       if (tavernTap(st.marked, hit)) return;
       // The bar: its Menu panel opens and the avatar walks behind it (the staff spot, like sitting).
-      if (hit && getFurnitureType(hit.typeId).servedFromBehind) {
+      // The register on the bar (step T1) does the same as the bar itself.
+      const barItem = hit && getFurnitureType(hit.typeId).till ? roomItem(hit.onItemUid) : hit;
+      if (barItem && getFurnitureType(barItem.typeId).servedFromBehind) {
         barTap();
-        void serveAt(hit.uid).then((ok) => {
+        void serveAt(barItem.uid).then((ok) => {
           if (ok) return;
-          itemViews.shake(hit.uid);
+          itemViews.shake(barItem.uid);
           toast('There is no way to get behind the bar.');
         });
         return;

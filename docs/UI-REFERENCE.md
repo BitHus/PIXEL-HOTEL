@@ -272,6 +272,16 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   stock: it is off the menu until you have more."), a price stepper (- / price / +, 44 px buttons, 10% of the baseValue per tap, 1 to 3 x),
   the price hint (one of the four faces and a line: very cheap, fair, a bit high, too high), "Guests paid: 9, 9, 10" and an On/Off switch
   (dishes start Off, drinks On). Off or out of stock rows are dimmed. An empty menu shows how to fill it: brew a drink, cook a dish.
+- **Taps panel and the register (step T1).** The bar carries two small pieces drawn from boxes: the REGISTER (gold box with a grey till) and the TAP STAND (grey stand with
+  two spouts over the bar). A tap on the register opens the Bar panel exactly like a tap on the bar (and the avatar walks behind it); collected coins fly from the table into the
+  register (up to three small coins), then the gold counts up as before. A tap on the tap stand opens the **Taps panel** (panelShell, title "Taps", a close x): a short hint ("Load a tap
+  with a brewed drink: guests can only order a drink that is on a tap."), then one card per tap ("Tap 1: Root ale", an orange level bar, "7 of 12 mugs left." or "Tap is empty. A guest who
+  wants this drink waits until you load it."). Controls on a card: chips to choose the drink (an empty tap lists every brewed drink in the bag with its count), a - / "5 mugs" / + stepper,
+  Load, Fill (as many as fit), and Unload 1 / Unload all (only with mugs on the tap). A tap that holds a drink loads only that drink. The Menu tab of the Bar panel starts with the tap levels
+  ("Root ale 7/12 | ...", or the same hint when nothing is loaded) and a Taps button; a drink row reads "Root ale (7 on tap)" and "Not on a tap: load it to serve it." Pour: the avatar stands behind the
+  bar level with the stand, a mug fills under a thin stream for 0.8 s (a hiss, then a clink when the full mug is lifted); empty tap: the toast "Tap is empty: Root ale is not on a tap. The order waits."
+  (taps text in ui/tapsPanel.ts). The **kitchen zone** is a faint orange tint under the build grid (it shows when the grid does: while placing or painting); the Room panel of the tavern says
+  "Kitchen 3 x 3 cells (staff only)" and explains the prep table bonus. The Stove panel shows "Dishes in this batch 4 + 2" and a line about prep tables; a running batch shows "6 x Roasted turnip".
 - **List panels (polish).** Workshop, Cooking, the shelf panel and the Map use the Map's card as
   the model: an icon, a title, one short line, and one action on the right.
 - **Placing furniture** (our own pattern, built in step 4b): the item appears as a ghost,

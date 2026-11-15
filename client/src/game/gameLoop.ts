@@ -10,7 +10,7 @@ export async function setupGameLoop(g: G16) {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
     guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
     doBlock, placeBar, menu, orders, bubbles, popups, gemFly, splashGone, openRoom,
-    playNewGameIntro, stoveArrived, barrelArrived, api, setDungeonMode, notice, toast, st,
+    playNewGameIntro, stoveArrived, barrelArrived, pour, api, setDungeonMode, notice, toast, st,
   } = g;
 
   app.renderer.on('resize', fit);
@@ -43,6 +43,7 @@ export async function setupGameLoop(g: G16) {
     st.avatar = seating.update(st.avatar, ticker.deltaMS);
     itemViews.update(ticker.deltaMS);
     guests.update(ticker.deltaMS, clockMs);
+    pour.update();
     lakeside.update(ticker.deltaMS, clockMs);
     if (st.path.length === 0 && st.avatar.state !== 'walk') lakeside.arrived();
     roomFloats.update(ticker.deltaMS, (p) => worldToScreen(p, st.shown));

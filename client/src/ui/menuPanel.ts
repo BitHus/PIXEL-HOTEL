@@ -6,13 +6,14 @@
 //         prices guests paid show beside it. An empty menu says how to fill it (brew, cook).
 // The rules (step, switch, hint) are in shared/src/menuEdit.ts; this file only draws them.
 
-import { EMPTY_MENU_HELP, MENU_HISTORY_LENGTH, priceHint, priceCeiling, getMaterialType, type Guest, type MenuRowView, type MaterialId, type SellRow } from '@pixel-hotel/shared';
+import { EMPTY_MENU_HELP, MENU_HISTORY_LENGTH, TAP_CAP, isDrinkId, priceHint, priceCeiling, getMaterialType, type Guest, type MenuRowView, type MaterialId, type SellRow, type Tap } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { sellTabContent } from './sellTab.ts';
 import { materialIconUrl } from './itemIcon.ts';
 import { iconBox, panelShell, tabBar } from './panelShell.ts';
 import { pixelIcon } from './pixelIcons.ts';
 import { rankName } from './rank.ts';
+import { TAPS_HINT } from './tapsPanel.ts';
 
 export type MenuTab = 'serve' | 'menu' | 'sell';
 
@@ -25,6 +26,8 @@ export interface MenuHooks {
   step(id: MaterialId, dir: 1 | -1): void;
   /** The player tapped Sell 1 or Sell all on a row of the Sell tab. */
   sell(row: SellRow, qty: number): void;
+  /** Open the Taps panel (step T1: drinks are served from the taps). */
+  openTaps(): void;
 }
 
 export interface MenuPanel {
@@ -32,7 +35,7 @@ export interface MenuPanel {
   /** The tab to show first when the panel opens. */
   setTab(tab: MenuTab): void;
   /** Redraw with the open orders (guests in phase 'order') and the menu rows. */
-  update(orders: readonly Guest[], rows: readonly MenuRowView[], queued: readonly number[]): void;
+  update(orders: readonly Guest[], rows: readonly MenuRowView[], queued: readonly number[], taps?: readonly Tap[]): void;
   /** Redraw the Sell tab with the trader's list. */
   setSellRows(rows: readonly SellRow[]): void;
 }
@@ -46,6 +49,7 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
   let rows: readonly MenuRowView[] = [];
   let queued: readonly number[] = [];
   let sellRows: readonly SellRow[] = [];
+  let taps: readonly Tap[] = [];
   const mark = tabBar(
     shell.tabs,
     [['serve', 'food', 'Serve'], ['menu', 'coin', 'Menu'], ['sell', 'bag', 'Sell']] as const,
@@ -82,8 +86,8 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     hintLine.append(pixelIcon(hint.face), el('span', '', ` ${hint.text}`));
     const last = r.history.slice(-MENU_HISTORY_LENGTH);
     info.append(
-      rankName('div', 'catalog-name', `${getMaterialType(r.id).name} (${r.stock})`, r.id),
-      el('div', 'catalog-sub', r.stock === 0 ? 'Out of stock: it is off the menu until you have more.' : `Worth ${r.baseValue} gold.`),
+      rankName('div', 'catalog-name', isDrinkId(r.id) ? `${getMaterialType(r.id).name} (${r.stock} on tap)` : `${getMaterialType(r.id).name} (${r.stock})`, r.id),
+      el('div', 'catalog-sub', r.stock === 0 ? (isDrinkId(r.id) ? 'Not on a tap: load it to serve it.' : 'Out of stock: it is off the menu until you have more.') : `Worth ${r.baseValue} gold.`),
       price,
       hintLine,
       el('div', 'catalog-sub', last.length > 0 ? `Guests paid: ${last.join(', ')}` : 'Nobody paid for it yet.'),
@@ -110,7 +114,12 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
       return;
     }
     const empty = !rows.some((r) => r.on && r.stock > 0);
+    // The taps at a glance (step T1): what each holds, and a way to the Taps panel.
+    const levels = el('div', 'panel-info tap-levels');
+    levels.append(el('div', '', taps.length > 0 ? taps.map((t) => `${getMaterialType(t.drink).name} ${t.mugs}/${TAP_CAP}`).join('  |  ') : TAPS_HINT));
+    levels.append(textButton('Taps', () => hooks.openTaps()));
     list.replaceChildren(
+      levels,
       ...(empty ? [el('div', 'panel-info', EMPTY_MENU_HELP)] : [el('div', 'panel-info', 'Guests order what is on the menu and in stock. If a price is too high they take something cheaper, or nothing.')]),
       ...rows.map(menuRow),
     );
@@ -120,7 +129,7 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
   return {
     el: shell.el,
     setTab(t) { tab = t; draw(); },
-    update(o, r, q) { orders = o; rows = r; queued = q; draw(); },
+    update(o, r, q, t) { orders = o; rows = r; queued = q; if (t) taps = t; draw(); },
     setSellRows(r) { sellRows = r; if (tab === 'sell') draw(); },
   };
 }

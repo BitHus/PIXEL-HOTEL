@@ -59,4 +59,4 @@ export function menuIsEmpty(state: GameState): boolean {
 }
 
 /** The line the Menu panel shows when the menu is empty: how to fill it. */
-export const EMPTY_MENU_HELP = 'Guests ask "Nothing to drink?". Brew a drink at a barrel (tap it) or cook a dish at a stove, then switch it on here.';
+export const EMPTY_MENU_HELP = 'Guests ask "Nothing to drink?". Brew a drink at a barrel and load it on a tap (tap the tap stand), or cook a dish at a stove, then switch it on here.';

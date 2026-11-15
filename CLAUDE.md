@@ -8,8 +8,8 @@ A browser game. Parts:
   top and front of things). Walk as an avatar, chat in bubbles, build per cell (32 px build grid;
   wall items stay free along the back wall).
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
-- Tavern (the shop room, step 9t; S1: nobody buys loot at a stall any more): guests sit, order drinks and dishes from your menu, you
-  serve them and tap their coins. Brewing barrel (crops -> mugs) and stove (crops -> dishes). Gold comes from guests and dungeon run
+- Tavern (the shop room, step 9t; S1: nobody buys loot at a stall any more; T1: a real bar and kitchen): guests sit, order drinks and dishes from your menu, you
+  serve them and tap their coins. The bar carries a REGISTER and TAP STANDS (drinks are poured from taps); a staff-only KITCHEN corner has the stove and prep tables. Brewing barrel (crops -> mugs, loaded on taps) and stove (crops -> dishes). Gold comes from guests and dungeon run
   gold and the trader (S2: tap-to-sell Sell tab on the bar) and buys furniture in the catalog. Items are for USE: cook, brew, craft, build, plant.
 - Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
@@ -58,8 +58,9 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Floors and walls are unlockable styles (shared/data/styles.json). Rooms start 'bare'. A bought
   or crafted style is unlocked forever and applied to any own room for free. Price = baseValue * 3.
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
-- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a bar stool in front of it (S3: replaces the old stall table, so 3 seats), a round table with 2 stools, a brewing barrel (7 root ale ready) and one stove (K1: you cook there); the early dish roasted turnip is on the menu.
-- The counter (the bar): one per tavern, movable, never picked up; the spot behind it must stay reachable.
+- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a REGISTER and a TAP STAND standing on the bar (T1; the 7 root ale of a new game are loaded on the first tap), a bar stool in front of it (S3: replaces the old stall table, so 3 seats), a round table with 2 stools, an idle brewing barrel and one stove (K1: you cook there, inside the kitchen zone); the early dish roasted turnip is on the menu.
+- The counter (the bar): one per tavern, movable, never picked up; the spot behind it must stay reachable. T1: it is a SURFACE item (one level): the register and tap stands are onSurface pieces on its 3 cells.
+- KITCHEN ZONE (T1): per tavern shape and level a cell rectangle (shared/data/roomShapes.json `kitchen`, level 1 a small corner next to the bar, levels 2 and 3 grow it). Staff only like behind the bar: guests never walk or sit there (npcGrid, tavernSeats); the owner's blocks and furniture are allowed. Shown as a faint tint while placing and in the Room panel.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
 - BLOCKS (BG5): Room.blocks = a foreground layer, one block per cell (shared/data/blocks.json, items
@@ -81,7 +82,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   cell (even widths: the left of the two centre cells); rotation swaps w and d, keeps the anchor
   cell. Valid if: on floor cells, no overlap with another blocking item (rugs and floor decor
   overlap anything), not on the door zone, the door still reaches the middle. onSurface items sit
-  on a cell of a surface item (one level). WALL items stay free: any x along a back wall band,
+  on a cell of a surface item (one level): the bar and the prep table are surfaces; the register, tap stands, mugs and plates sit on them (T1). WALL items stay free: any x along a back wall band,
   4 px snap (Shift = none), anchor y = the band's foot.
 - Draw order: floor, rugs, back wall, then ONE list of items and avatars sorted by y, x, uid; an
   item on a surface right after the item under it.
@@ -109,7 +110,16 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   Menu tabs; each drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest:
   the avatar carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that you tap (nothing
   automatic; unserved after 90 s = unhappy). Drinks: BREWING BARREL (tap it: Brewing panel, one brew at a time, real time, tap to
-  collect). Dishes: the stove (K1). Away: at most 3 seated orders; offline catch-up only fills seats (looks back at most 8 h).
+  collect) and TAPS (T1, below). Dishes: the stove (K1). Away: at most 3 seated orders; offline catch-up only fills seats (looks back at most 8 h).
+- THE BAR AND THE TAPS (T1, owner 15 Nov): the REGISTER (furniture 'register', onSurface, till) and TAP STANDS ('tap_stand', onSurface, TAP_SLOTS = 2 taps each; more stands
+  in the catalog) stand ON the bar. Tap the register = the bar's panel (Serve / Menu / Sell); collected coins fly into it. Tap a stand = the Taps panel (ui/panelShell.ts): each tap
+  shows its drink and mugs (max TAP_CAP = 12); Load moves mugs of ONE drink from the bag (a number or Fill; ledger 'tap'), Unload gives them back (TavernState.taps, shared/src/taps.ts).
+  A DRINK is on the menu only while a tap holds at least one mug (menu stock = mugs on taps; an open order only reserves a mug); dishes still come from the bag and the stove. SERVING a
+  drink: the avatar walks to the taps (stage 'bar'), POURS (POUR_MS 800 ms: a pour animation and sound), the tap drops by one, then it carries the mug on. An empty tap says "Tap is empty" and
+  the order stays open. A stand that leaves the bar gives its mugs back. Old saves (version 24) get a register and a tap stand on the bar (else in the bag), drinks stay in the bag.
+- KITCHEN EFFECT (T1): each prep table (surface; kitchen pieces prep_table, pantry, sink, serving_hatch, placeIn 'shop') inside the kitchen zone and cell-adjacent to a stove inside it adds
+  +1 dish per batch (PREP_BONUS max +2; fixed when the batch starts, the inputs stay those of the batch). A stove outside the zone works without the bonus. Taps, register and kitchen
+  pieces count for tavern appeal like other decor (each type at most 3 times).
 - NO SELLING TO LOOT CUSTOMERS (S1, owner 15 Nov): window-shoppers, buyers, the till queue, prices on slots and the stall sales are gone.
   Stall table, shelf and display case are plain DECOR (no slots, no prices); goods that were on them went back to the bag (ledger reason
   'shop_closed'). GOLD sources: tavern guests (main), dungeon run gold, the trader (S2: tap-to-sell Sell tab on the bar; never automatic).
@@ -123,7 +133,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   gold-per-gem floor; a splice result and its seed sold back <= the GOLD of its starter seeds (S3, strict); selling crops never beats guests, run gold or the mine.
 - GOLD BALANCE (S3, balance.ts, `npm run simulate`): a mixed hour is about 375 gold (new), 480 (level 3), 630 (level 8); tavern guests, dungeon run gold
   and the trader are each 10% to 50% of it (now about 45% / 14% / 40%). A new game earns about 220 gold in its first 30 minutes and 460 in its
-  first hour at the tavern (7 root ale per 8-minute brew, roasted turnip on the menu, 3 seats), plus a few dozen per first run.
+  first hour at the tavern (7 root ale per 8-minute brew, roasted turnip on the menu, 3 seats), plus a few dozen per first run. T1 keeps these numbers (the start ale is on a tap; the pour adds 0.8 s; the best kitchen lifts the guest share to 51%, cap 55% with prep tables).
 - TAVERN GEM TIP (S3): a guest who did not have to call out for the order sometimes leaves a gem with the coins (GEMS.tavern chance 5% x
   TAVERN_GEM_CHANCE_MULT by the rank of the order: rare 2.5, ultra rare 5, legendary 10). Mess.gems; one tap takes coins and gem; popup.
 - tavernAppeal = min(100, appeal of placed items, decor too (each type at most 3 times) + floor and wall style). It sets the guest rate.
@@ -177,7 +187,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   Paths and fences are blocks. Hold to repeat: see INPUT.
 - COOKING (K1, owner 15 Nov) happens in the TAVERN, never in the farm: a STOVE (furniture 'stove', 1 cell, light, placeIn
   'shop', common, in the catalog; a new game starts with one next to the bar) cooks ONE batch at a time: 1 to STOVE_BATCH_MAX
-  (4) dishes of one recipe (shared/data/food.json, cookMs per batch; config COOK_MS = the default by rank; turnip roast 20 s,
+  (4) dishes of one recipe (+ the T1 prep bonus up to +2 from prep tables in the kitchen zone next to it) (shared/data/food.json, cookMs per batch; config COOK_MS = the default by rank; turnip roast 20 s,
   stew 1 min, rarer up to 5 min; the first dish is ready within 30 s). Inputs go in (ledger 'cook'), the batch cooks in real
   time also while the game is closed (TavernState.cooks, time passed in), and the player TAPS the stove to collect (a popup).
   Nothing is collected by itself, no burnt food. More stoves = more batches in parallel. Tap a stove in play mode: the avatar
@@ -259,9 +269,9 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
   is done. S1 (the shop is the tavern: loot customers, slots and prices removed; stalls are decor; save v22; NOTES S1) and S2 (the trader:
   bar Sell tab, four loops tested; NOTES S2) are done. S3 (rebalance: SELL_RATES per group, a faster start, splice strict, the tavern gem tip, 3 seats,
-  gold tables in `npm run simulate`; save v23; NOTES S3) is done. Next: T1 (taps, register, kitchen), K2 (ripening), then 9g.
+  gold tables in `npm run simulate`; save v23; NOTES S3) is done. T1 (the bar with taps and a register, the kitchen zone with prep tables, taps hold drinks, the pour step; save v24; NOTES T1) is done. Next: K2 (ripening: casks feed the taps), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 23. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 24. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -309,7 +319,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 23) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 24) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

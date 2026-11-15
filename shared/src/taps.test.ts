@@ -6,7 +6,7 @@ import { applyChange } from './ledger.ts';
 import { stepTavern } from './guests.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { seededRng } from './rng.ts';
-import { loadRoom, loadTap, mugsOnTaps, returnOrphanTaps, stockFor, tapFor, unloadTap, tapStands, pourPoint, barOf, type Tap } from './taps.ts';
+import { loadRoom, loadTap, mugsOnTaps, returnOrphanTaps, stockFor, tapCards, tapFor, unloadTap, tapStands, pourPoint, barOf, type Tap } from './taps.ts';
 import { menuOffers, menuRows, nextOrder, openOrders, pourOrder, requestServe, serveStops } from './tavern.ts';
 import { runTavern, serveAll, tavernWorld, withAle, withLongTable } from './tavernTest.ts';
 import { ledgerMaterials } from './testState.ts';
@@ -251,5 +251,22 @@ describe('helpers', () => {
   it('the Tap type holds a stand, a slot, one drink and mugs', () => {
     const t: Tap = { standUid: 1, slot: 0, drink: 'root_ale', mugs: 1 };
     expect(t.mugs).toBe(1);
+  });
+});
+
+describe('the Taps panel cards (pure)', () => {
+  it('one card per tap: an empty tap offers every drink in the bag that fits, a tap with a drink only that drink', () => {
+    const mats = { root_ale: 20, carrot_cider: 3, wood: 4 };
+    const cards = tapCards([5], [{ standUid: 5, slot: 0, drink: 'root_ale', mugs: 9 }], mats);
+    expect(cards).toHaveLength(TAP_SLOTS);
+    expect(cards[0]).toEqual({ standUid: 5, slot: 0, drink: 'root_ale', mugs: 9, cap: TAP_CAP, options: [{ drink: 'root_ale', inBag: 20, fits: 3 }] });
+    expect(cards[1]).toMatchObject({ slot: 1, drink: null, mugs: 0, options: [{ drink: 'root_ale', inBag: 20, fits: 12 }, { drink: 'carrot_cider', inBag: 3, fits: 3 }] });
+  });
+
+  it('a full tap and an empty bag offer nothing; two stands give four cards', () => {
+    const cards = tapCards([1, 2], [{ standUid: 1, slot: 0, drink: 'root_ale', mugs: 12 }], { root_ale: 5 });
+    expect(cards).toHaveLength(2 * TAP_SLOTS);
+    expect(cards[0]!.options).toEqual([]);
+    expect(tapCards([1], [], {})[0]!.options).toEqual([]);
   });
 });

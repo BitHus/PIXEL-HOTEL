@@ -3378,3 +3378,9 @@
   min-height: var(--touch);
   white-space: nowrap;
 }
+
+/* The Taps panel and the tap levels in the Menu (step T1) */
+.tap-card .tap-controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.tap-card .tap-chips { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
+.tap-card .tap-chips .btn.on { background: var(--orange, #f77622); }
+.tap-levels { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; }

@@ -1,10 +1,10 @@
 // Sounds made in code with the Web Audio API (atmosphere step): no files. Quiet by default. The
 // audio context is only made after the first tap or key (browsers do not allow sound before).
 
-export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur';
+export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour';
 
 /** The same sound is never started twice within this many ms. */
-const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000 };
+const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600 };
 
 type Wave = OscillatorType;
 
@@ -99,6 +99,11 @@ export class Sound {
         // A mug set down: two quick glassy notes.
         this.tone('triangle', 2093, 2093, 0.09, 0.07);
         this.tone('triangle', 2637, 2637, 0.14, 0.05, 0.05);
+        break;
+      case 'pour':
+        // Beer from a tap: a soft rushing hiss for the pour, a low gurgle under it.
+        this.hiss(0.7, 0.07, 'bandpass', 1400);
+        this.tone('sine', 220, 150, 0.7, 0.04);
         break;
       case 'murmur':
         // Soft talk in the room: a slow swell of low, muffled noise.

@@ -9,6 +9,9 @@ import {
   STAGES,
   activities,
   firstHourGold,
+  dishesPerBatch,
+  poursPerHour,
+  tapLastsMin,
   goldBySource,
   goldShares,
   guestGoldPerHour,
@@ -37,7 +40,7 @@ import {
   seedRatio,
   starterSeeds,
 } from './balance.ts';
-import { BALANCE_TARGETS, PACKS, SELL_RATES, SPARE_SELL } from './config.ts';
+import { BALANCE_TARGETS, PACKS, POUR_MS, PREP_BONUS, SELL_RATES, SPARE_SELL, STOVE_BATCH_MAX, TAP_CAP } from './config.ts';
 import { CROP_TYPES, getMaterialType } from './materials.ts';
 import { getFurnitureType } from './furniture.ts';
 import { materialSellPrice, furnitureSellPrice } from './trader.ts';
@@ -276,5 +279,48 @@ describe('selling never beats using (S3)', () => {
 describe('the tavern gem tip in the gem tables (S3)', () => {
   it('is a small source: under 5% of the gems of a mixed hour at every stage', () => {
     for (const stage of STAGES) expect(tavernTipGemsPerHour(stage) / mixedGemsPerHour(stage), stage).toBeLessThan(0.05);
+  });
+});
+
+describe('taps, the pour and the prep tables keep the S3 numbers (T1)', () => {
+  it('a batch grows by the prep bonus and never past STOVE_BATCH_MAX + PREP_BONUS.max', () => {
+    expect([0, 1, 2, 3, 9].map((b) => dishesPerBatch(b))).toEqual([4, 5, 6, 6, 6]);
+    expect(dishesPerBatch(2, 2)).toBe(4);
+    expect(STOVE_BATCH_MAX + PREP_BONUS.max).toBe(6);
+  });
+
+  it('with the best kitchen (the full prep bonus) every gold source is still between 10% and 55% at every stage (the S3 cap of 50% holds without prep tables)', () => {
+    for (const stage of STAGES) {
+      for (const row of goldBySource(stage, seededRng(11), PREP_BONUS.max)) {
+        const share = row.mixed / goldShares(stage, seededRng(11), PREP_BONUS.max).total;
+        expect(share, `${stage} ${row.id} ${Math.round(share * 100)}%`).toBeGreaterThanOrEqual(BALANCE_TARGETS.minGoldShare);
+        expect(share, `${stage} ${row.id} ${Math.round(share * 100)}%`).toBeLessThanOrEqual(BALANCE_TARGETS.maxGoldShareBestKitchen);
+      }
+    }
+  });
+
+  it('a prep table only adds free dishes: guest gold never falls with it and the best kitchen adds at most +50% dishes', () => {
+    for (const stage of STAGES) {
+      const base = guestGoldPerHour(stage).gold;
+      const best = guestGoldPerHour(stage, PREP_BONUS.max).gold;
+      expect(best).toBeGreaterThanOrEqual(base);
+      expect(best / base, stage).toBeLessThanOrEqual((STOVE_BATCH_MAX + PREP_BONUS.max) / STOVE_BATCH_MAX);
+    }
+  });
+
+  it('the first 30 minutes and the first hour stay inside the S3 targets with the pour step counted', () => {
+    expect(POUR_MS).toBeLessThanOrEqual(1000);
+    expect(firstHourGold(30).gold).toBeGreaterThanOrEqual(BALANCE_TARGETS.firstHalfHourGold.min);
+    expect(firstHourGold(30).gold).toBeLessThanOrEqual(BALANCE_TARGETS.firstHalfHourGold.max);
+    expect(firstHourGold(60).gold).toBeGreaterThanOrEqual(BALANCE_TARGETS.firstHourGold.min);
+    expect(firstHourGold(60).gold).toBeLessThanOrEqual(BALANCE_TARGETS.firstHourGold.max);
+  });
+
+  it('pours per hour never exceed the guests; a full tap lasts at least two minutes and the player is never tied to the taps', () => {
+    for (const stage of STAGES) {
+      expect(poursPerHour(stage), stage).toBeGreaterThan(0);
+      expect(tapLastsMin(stage, 2), stage).toBeGreaterThan(2);
+    }
+    expect(TAP_CAP * 2).toBeGreaterThanOrEqual(poursPerHour('new') / 6); // two taps cover ten minutes of pours at the start
   });
 });

@@ -14,6 +14,13 @@ import {
   GUEST_ORDER_AFTER_MIN_MS,
   DRINK_TYPES,
   STOVE_BATCH_MAX,
+  TAP_CAP,
+  TAP_SLOTS,
+  POUR_MS,
+  PREP_BONUS,
+  dishesPerBatch,
+  poursPerHour,
+  tapLastsMin,
   cookMs,
   getMaterialType,
   type MaterialId,
@@ -262,3 +269,17 @@ for (const m of [5, 10, 20, 30, 45, 60]) {
   console.log(pad(m, 9) + pad(f1(x.guests), 13) + pad(x.mugs, 7) + pad(x.dishes, 8) + f1(x.gold));
 }
 console.log(`Target: first 30 min ${TARGETS.firstHalfHourGold.min} to ${TARGETS.firstHalfHourGold.max} gold, first hour ${TARGETS.firstHourGold.min} to ${TARGETS.firstHourGold.max} gold (plus 100 start gold and a few dozen from the first dungeon run).`);
+
+console.log('\n=== T1. Taps, the pour step and prep tables ===');
+console.log(`A tap holds ${TAP_CAP} mugs of one drink, a stand has ${TAP_SLOTS} taps, a pour takes ${POUR_MS} ms. The start ale (7 mugs) is loaded on the first tap, the barrel is idle.`);
+console.log(pad('stage', 9) + pad('pours/h', 10) + pad('mugs per tap', 14) + pad('a full tap lasts (min)', 24) + 'two taps last (min)');
+for (const stage of STAGES) {
+  console.log(pad(stage, 9) + pad(f1(poursPerHour(stage)), 10) + pad(TAP_CAP, 14) + pad(f1(tapLastsMin(stage, 1)), 24) + f1(tapLastsMin(stage, 2)));
+}
+console.log('Dishes per batch with prep tables (a prep table in the kitchen zone, next to the stove, +' + PREP_BONUS.perTable + ' each, at most +' + PREP_BONUS.max + '):');
+console.log(pad('prep tables', 13) + pad('dishes / batch of 4', 22) + pad('x dishes', 10) + 'guest gold/h new / level 3 / level 8');
+for (const n of [0, 1, 2, 3]) {
+  const b = Math.min(n, PREP_BONUS.max);
+  console.log(pad(n, 13) + pad(dishesPerBatch(b), 22) + pad((dishesPerBatch(b) / STOVE_BATCH_MAX).toFixed(2), 10) + STAGES.map((st) => f1(guestGoldPerHour(st, b).gold)).join(' / '));
+}
+console.log('Gold shares with the best kitchen (mixed hour, guests / dungeon / trader): ' + STAGES.map((st) => { const r = goldBySource(st, seededRng(11), PREP_BONUS.max); const t = r.reduce((a, x) => a + x.mixed, 0); return `${st} ` + r.map((x) => `${Math.round((x.mixed / t) * 100)}%`).join('/'); }).join(', ') + ` (cap ${Math.round(BALANCE_TARGETS.maxGoldShareBestKitchen * 100)}% with prep tables, ${Math.round(BALANCE_TARGETS.maxGoldShare * 100)}% without).`);

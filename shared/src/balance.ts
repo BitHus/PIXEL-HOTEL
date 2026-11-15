@@ -14,6 +14,10 @@ import {
   GUEST_ORDER_AFTER_MAX_MS,
   GUEST_ORDER_AFTER_MIN_MS,
   TAVERN_START_DRINK,
+  STOVE_BATCH_MAX,
+  PREP_BONUS,
+  TAP_CAP,
+  POUR_MS,
   CATALOG_PRICE_MULT,
   ENEMY_GEM_RANK,
   GEMS,
@@ -580,8 +584,8 @@ const AVG_GROUP = GUEST_GROUP_WEIGHTS.reduce((sum, w, i) => sum + w * (i + 1), 0
 export function guestsPerHour(appeal: number): number {
   return (3_600_000 / (GUEST_BASE_INTERVAL_MS * (100 / (100 + appeal)))) * AVG_GROUP;
 }
-/** The seconds a guest holds a seat (the pause before the order, the carry, the meal, the walk out). */
-const SERVE_S = 15;
+/** The seconds a guest holds a seat (the pause before the order, the carry, the meal, the walk out; the pour at the taps adds POUR_MS). */
+const SERVE_S = 15 + POUR_MS / 1000;
 export const GUEST_STAY_S = (GUEST_ORDER_AFTER_MIN_MS + GUEST_ORDER_AFTER_MAX_MS) / 2000 + SERVE_S + (GUEST_EAT_MIN_MS + GUEST_EAT_MAX_MS) / 2000 + 5;
 /** Guests the seats can hold per hour. */
 export function seatCapPerHour(seats: number): number {
@@ -597,9 +601,30 @@ function drinkGold(id: string): number {
   return coinsFor(id as never, getDrinkType(id as never).baseValue);
 }
 
-/** What the tavern earns per hour at FULL attention: the smaller of the guests who come, the seats and the supply, at the average drink and dish. */
-export function guestGoldPerHour(stage: Stage): { gold: number; sold: number; limit: 'guests' | 'seats' | 'supply' } {
+/** Dishes one batch gives with a prep bonus (step T1): the batch the player chose (at most STOVE_BATCH_MAX) plus the bonus, which PREP_BONUS caps. */
+export function dishesPerBatch(prepBonus: number, batch = STOVE_BATCH_MAX): number {
+  return batch + Math.min(prepBonus, PREP_BONUS.max);
+}
+
+/** Drinks poured per hour at full attention (step T1): the drinks among the things sold. A pour is one mug off a tap. */
+export function poursPerHour(stage: Stage): number {
   const t = tavernSetup(stage);
+  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : DRINK_TYPES;
+  const mugs = (drinks.reduce((a, d) => a + mugsPerHour(d.id), 0) / drinks.length) * t.barrels;
+  const sold = guestGoldPerHour(stage).sold;
+  return sold * (mugs / (mugs + t.dishesPerHour));
+}
+
+/** How long a full tap lasts at that pour rate when the drink is the only one on it, minutes (a tap holds TAP_CAP mugs). */
+export function tapLastsMin(stage: Stage, taps = 1): number {
+  return (TAP_CAP * taps * 60) / poursPerHour(stage);
+}
+
+/** What the tavern earns per hour at FULL attention: the smaller of the guests who come, the seats and the supply, at the average drink and dish. */
+export function guestGoldPerHour(stage: Stage, prepBonus = 0): { gold: number; sold: number; limit: 'guests' | 'seats' | 'supply' } {
+  const base = tavernSetup(stage);
+  // Prep tables (step T1) add dishes to every batch: the batches stay the same, so dishes per hour grow by (batch + bonus) / batch.
+  const t = { ...base, dishesPerHour: base.dishesPerHour * dishesPerBatch(prepBonus) / STOVE_BATCH_MAX };
   // The new game brews root ale and roasts turnips; later players brew every drink and cook every dish.
   const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : DRINK_TYPES;
   const dishes = stage === 'new' ? FOOD_TYPES.filter((f) => f.id === 'roasted_turnip') : FOOD_TYPES;
@@ -663,8 +688,8 @@ export function traderByActivity(stage: Stage, rng: Rng): { id: string; focused:
 }
 
 /** Gold per hour by SOURCE for a stage (INN-PLAN 5: tavern guests, dungeon run gold, the trader): focused and mixed (equal time in every open activity; the tavern at TAVERN_ATTENTION). */
-export function goldBySource(stage: Stage, rng: Rng): GoldSource[] {
-  const guests = guestGoldPerHour(stage).gold;
+export function goldBySource(stage: Stage, rng: Rng, prepBonus = 0): GoldSource[] {
+  const guests = guestGoldPerHour(stage, prepBonus).gold;
   const run = runGoldPerHour(stage, rng);
   const trade = traderByActivity(stage, rng);
   return [
@@ -675,8 +700,8 @@ export function goldBySource(stage: Stage, rng: Rng): GoldSource[] {
 }
 
 /** The mixed hour's gold in all, and the biggest and smallest share of one source. */
-export function goldShares(stage: Stage, rng: Rng): { total: number; biggest: { id: GoldSourceId; share: number }; smallest: { id: GoldSourceId; share: number } } {
-  const rows = goldBySource(stage, rng);
+export function goldShares(stage: Stage, rng: Rng, prepBonus = 0): { total: number; biggest: { id: GoldSourceId; share: number }; smallest: { id: GoldSourceId; share: number } } {
+  const rows = goldBySource(stage, rng, prepBonus);
   const total = rows.reduce((a, r) => a + r.mixed, 0);
   const by = [...rows].sort((a, b) => b.mixed - a.mixed);
   return { total, biggest: { id: by[0]!.id, share: by[0]!.mixed / total }, smallest: { id: by[by.length - 1]!.id, share: by[by.length - 1]!.mixed / total } };

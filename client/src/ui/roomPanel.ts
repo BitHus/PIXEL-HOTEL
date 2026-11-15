@@ -3,7 +3,7 @@
 // with the player's unlocked styles. Picking a style shows it on the room at once (applying is
 // free, so the live preview is the change itself; pick again to go back).
 
-import { ROOM_MAX_LEVEL, STYLE_TYPES, soilCells, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
+import { BUILD_CELL, PREP_BONUS, ROOM_MAX_LEVEL, STYLE_TYPES, kitchenZone, soilCells, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
 import { ROOM_NAMES } from './infoPanel.ts';
 import { el, textButton } from './dom.ts';
 import { panelShell } from './panelShell.ts';
@@ -50,6 +50,9 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       const facts = el('div', 'room-facts inset');
       facts.append(el('div', '', `Level ${room.level} of ${ROOM_MAX_LEVEL}`), el('div', '', `Size ${room.w} x ${room.h}`));
       if (appeal !== null) facts.append(el('div', '', `Appeal ${appeal} / 100`));
+      // The kitchen zone (step T1): a staff-only corner; its tint shows while you place things.
+      const kitchen = kitchenZone(room);
+      if (kitchen) facts.append(el('div', '', `Kitchen ${kitchen.w / BUILD_CELL} x ${kitchen.h / BUILD_CELL} cells (staff only)`));
       const cost = upgradeCost(room);
       const up = textButton(cost === null ? 'Top level' : `Upgrade: ${cost} gold`, () => hooks.upgrade(room.id));
       up.disabled = cost === null;
@@ -84,6 +87,7 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
         el('h3', '', 'Wall'),
         picker(room, 'wall', unlocked),
         el('div', 'panel-info', 'Buy more floors and walls in the Catalog (Decor).'),
+        ...(kitchen ? [el('div', 'panel-info', `The kitchen is the warm tint while you place things: guests never walk or sit there. A prep table inside it, next to a stove, adds ${PREP_BONUS.perTable} dish to a batch (at most ${PREP_BONUS.max}). A bigger room level grows the kitchen.`)] : []),
       );
     },
   };
