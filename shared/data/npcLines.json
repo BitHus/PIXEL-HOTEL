@@ -136,5 +136,71 @@
     "I'll come back with more coin.",
     "Only having a look around.",
     "Hm, I'll think about it."
+  ],
+  "no_seat": [
+    "No free seat? Shame.",
+    "Nowhere to sit...",
+    "Full house tonight.",
+    "We'll come back later.",
+    "Not a single free stool!",
+    "Standing room only, eh?"
+  ],
+  "no_menu": [
+    "Nothing to drink?",
+    "Is the bar dry today?",
+    "No menu? Oh well.",
+    "Not even a sip?",
+    "My throat stays dry, then.",
+    "Maybe next time, barkeep."
+  ],
+  "table_talk": [
+    "Long road today.",
+    "Have you heard about the crypt?",
+    "My feet are killing me.",
+    "They say the lake hides a crown.",
+    "Good to sit for once.",
+    "Did you see the turnips this year?",
+    "Warm in here. I like it.",
+    "Any news from the mine?"
+  ],
+  "toast": [
+    "Cheers!",
+    "To good company!",
+    "To warm fires!",
+    "Bottoms up!",
+    "To the barkeep!",
+    "One more for the road!"
+  ],
+  "drink_talk": [
+    "Now that hits the spot.",
+    "Mmm. Fresh from the barrel.",
+    "Best mug in town.",
+    "Just what I needed.",
+    "Smooth. Very smooth.",
+    "I could get used to this."
+  ],
+  "order_wait": [
+    "Barkeep? Over here!",
+    "Still waiting on that order...",
+    "Is my order coming?",
+    "Getting thirsty over here.",
+    "Hello? One order, please!",
+    "Any day now..."
+  ],
+  "unhappy": [
+    "I've waited long enough.",
+    "Forget it. I'm leaving.",
+    "Too slow for me.",
+    "I'll drink elsewhere.",
+    "What a wait. Goodbye.",
+    "Never mind, then."
+  ],
+  "thanks": [
+    "Thanks! Coins are on the table.",
+    "That was lovely. Bye!",
+    "Left you something. Cheers!",
+    "Good stuff. See you soon.",
+    "Worth every coin.",
+    "Until next time, barkeep!"
   ]
 }

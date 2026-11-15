@@ -98,6 +98,22 @@
       "stall_table": {
         "x": 288,
         "y": 184
+      },
+      "round_table": {
+        "x": 432,
+        "y": 200
+      },
+      "stool_left": {
+        "x": 392,
+        "y": 188
+      },
+      "stool_right": {
+        "x": 472,
+        "y": 188
+      },
+      "brewing_barrel": {
+        "x": 504,
+        "y": 56
       }
     }
   },
@@ -154,6 +170,22 @@
       "stall_table": {
         "x": 176,
         "y": 304
+      },
+      "round_table": {
+        "x": 176,
+        "y": 440
+      },
+      "stool_left": {
+        "x": 136,
+        "y": 428
+      },
+      "stool_right": {
+        "x": 216,
+        "y": 428
+      },
+      "brewing_barrel": {
+        "x": 296,
+        "y": 56
       }
     }
   },
@@ -228,6 +260,22 @@
       "stall_table": {
         "x": 464,
         "y": 320
+      },
+      "round_table": {
+        "x": 160,
+        "y": 280
+      },
+      "stool_left": {
+        "x": 120,
+        "y": 268
+      },
+      "stool_right": {
+        "x": 200,
+        "y": 268
+      },
+      "brewing_barrel": {
+        "x": 272,
+        "y": 56
       }
     }
   },
@@ -320,6 +368,22 @@
       "stall_table": {
         "x": 128,
         "y": 264
+      },
+      "round_table": {
+        "x": 512,
+        "y": 240
+      },
+      "stool_left": {
+        "x": 472,
+        "y": 228
+      },
+      "stool_right": {
+        "x": 552,
+        "y": 228
+      },
+      "brewing_barrel": {
+        "x": 64,
+        "y": 184
       }
     }
   },
@@ -376,6 +440,22 @@
       "stall_table": {
         "x": 560,
         "y": 168
+      },
+      "round_table": {
+        "x": 704,
+        "y": 152
+      },
+      "stool_left": {
+        "x": 664,
+        "y": 140
+      },
+      "stool_right": {
+        "x": 744,
+        "y": 140
+      },
+      "brewing_barrel": {
+        "x": 112,
+        "y": 56
       }
     }
   },

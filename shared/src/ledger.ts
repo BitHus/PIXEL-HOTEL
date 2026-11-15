@@ -27,7 +27,7 @@ export interface Change {
 }
 
 /** Changes with these reasons only move things the player already has (off a shop slot): no finds. */
-const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf'];
+const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf', 'tavern_order'];
 
 /**
  * Applies a change and writes it to the ledger. Null if gold or a material would go below 0, or a

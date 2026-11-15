@@ -1,7 +1,9 @@
 // A new player (brief section 9): level 1, 0 xp, 100 gold, only the bare floor and wall
 // unlocked, 4 wood and 2 cloth, an empty level 1 hotel room and a level 1 shop room, and no
-// furniture in the inventory. The shop starts with the counter and one stall_table at fixed
-// positions (config SHOP_START_ITEMS); the hotel room is empty.
+// furniture in the inventory. The shop (the tavern, step 9t) starts with the bar (the counter), one
+// stall_table, a round table with 2 stools and a brewing barrel with root ale ready, at fixed
+// positions (the shop shape's shopStart; config SHOP_START_ITEMS and TAVERN_START_ITEMS); the hotel
+// room is empty.
 
 import { addSeen } from './seen.ts';
 import {
@@ -20,6 +22,8 @@ import {
   START_WALL_STYLE,
   START_XP,
   SHOP_START_ITEMS,
+  TAVERN_START_DRINK,
+  TAVERN_START_ITEMS,
 } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import { arrangeForInventory, emptyBag } from './bag.ts';
@@ -31,6 +35,8 @@ import { cleanDisplayName, lookAllowed } from './clothing.ts';
 import { emptyShop } from './shop.ts';
 import { emptyFarm } from './farm.ts';
 import { emptyLakeside } from './woodcut.ts';
+import { emptyTavern } from './tavern.ts';
+import type { FurnitureItem } from './types.ts';
 import type { MaterialId, StyleKind } from './types.ts';
 
 export interface NewPlayerConfig {
@@ -89,6 +95,13 @@ export function styleKey(kind: StyleKind, id: string): string {
 
 /** A brand new game for one player. The start gold and materials go through the ledger. */
 export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at = 0): GameState {
+  const shopStart = getRoomShape(config.shopShape).shopStart;
+  // The bar and the stall table, then the tavern's round table, two stools and the brewing barrel.
+  const startItems: FurnitureItem[] = [
+    ...SHOP_START_ITEMS.map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.typeId] ?? { x: s.x, y: s.y }, facing: s.facing })),
+    ...TAVERN_START_ITEMS.map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.key] ?? { x: s.x, y: s.y }, facing: s.facing })),
+  ].map((s, k) => ({ uid: k + 1, typeId: s.typeId, ownerId: config.playerId, roomId: config.shopRoomId, x: s.at.x, y: s.at.y, facing: s.facing, onItemUid: null }));
+  const barrel = startItems.find((i) => i.typeId === 'brewing_barrel');
   const empty: GameState = {
     player: {
       id: config.playerId,
@@ -118,26 +131,19 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       createRoom(config.farmRoomId, 'farm', 1, config.playerId),
       createRoom(config.lakesideRoomId, 'lakeside', 1, config.playerId),
     ],
-    items: SHOP_START_ITEMS.map((s, k) => ({
-      uid: k + 1,
-      typeId: s.typeId,
-      ownerId: config.playerId,
-      roomId: config.shopRoomId,
-      // The shop shape says where they stand (config SHOP_START_ITEMS for the square shop).
-      ...(getRoomShape(config.shopShape).shopStart?.[s.typeId] ?? { x: s.x, y: s.y }),
-      facing: s.facing,
-      onItemUid: null,
-    })),
+    items: startItems,
     hotbar: Array.from({ length: HOTBAR_SLOTS }, () => null),
     bag: emptyBag(),
     currentRoomId: config.hotelRoomId,
-    nextUid: SHOP_START_ITEMS.length + 1,
+    nextUid: startItems.length + 1,
     ledger: [],
     shop: emptyShop(config.shopRoomId, at),
     hintsDone: 0,
     run: null,
     farm: emptyFarm(config.farmRoomId),
     lakeside: emptyLakeside(config.lakesideRoomId),
+    // The start barrel holds a brew that is ready to collect.
+    tavern: { ...emptyTavern(config.shopRoomId, at), brews: barrel ? [{ barrelUid: barrel.uid, drink: TAVERN_START_DRINK, readyAt: at }] : [] },
     playerCreated: false,
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);
@@ -186,4 +192,19 @@ export function addShopStartItems(state: GameState): GameState {
 export function arrangeState(state: GameState): GameState {
   const l = arrangeForInventory({ hotbar: state.hotbar, bag: state.bag }, state.items, state.player.materials);
   return { ...state, hotbar: l.hotbar, bag: l.bag };
+}
+
+/**
+ * The tavern for an old save (step 9t, migration 12 -> 13): a round table, 2 bar stools and a
+ * brewing barrel with root ale ready go into the bag (ledger 'tavern_gift'), and the tavern starts
+ * empty with introSeen false, so the game explains it once.
+ */
+export function addTavern(state: GameState, at: number): GameState {
+  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
+  if (!gift) throw new Error('cannot add the tavern');
+  const barrel = gift.items.find((i) => i.typeId === 'brewing_barrel' && i.uid >= state.nextUid);
+  return {
+    ...gift,
+    tavern: { ...emptyTavern(gift.player.shopRoomId, at), introSeen: false, brews: barrel ? [{ barrelUid: barrel.uid, drink: TAVERN_START_DRINK, readyAt: at }] : [] },
+  };
 }

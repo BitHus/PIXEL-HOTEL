@@ -1,3 +1,4 @@
+import { tavernSeats } from './tavern.ts';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_NEW_PLAYER, configForChoice, createNewPlayer, styleKey } from './newPlayer.ts';
 import { CLOTHING, cleanDisplayName, lookAllowed, selectableClothing } from './clothing.ts';
@@ -47,9 +48,9 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.hotbar).toEqual(Array(HOTBAR_SLOTS).fill(null));
   });
 
-  it('puts exactly one counter and one stall_table in the shop, at their fixed spots', () => {
+  it('puts the bar, the stall_table, a round table, 2 stools and a brewing barrel in the shop, at their fixed spots', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
-    expect(shop.map((i) => i.typeId).sort()).toEqual(['counter', 'stall_table']);
+    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table']);
     for (const start of SHOP_START_ITEMS) {
       expect(shop.find((i) => i.typeId === start.typeId)).toMatchObject({ x: start.x, y: start.y, facing: start.facing });
     }
@@ -119,7 +120,9 @@ describe('a new player from character creation (step 7b)', () => {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const shop = s.items.filter((i) => i.roomId === room.id);
-      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['counter', 'stall_table']);
+      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table']);
+      // Both stools are seats at the round table, and guests can walk to them.
+      expect(tavernSeats(s.items, room.id).map((x) => x.tableUid), shape.id).toEqual([3, 3]);
       for (const i of shop) {
         const others = s.items.filter((o) => o.uid !== i.uid);
         expect(canPlace(room, others, getFurnitureType(i.typeId), i.x, i.y, i.facing), `${shape.id} ${i.typeId}`).toBe(true);

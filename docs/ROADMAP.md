@@ -25,7 +25,7 @@ The loops that are planned must all exist before anything else is added.
 1.1 Step 9f - Lakeside: fishing and woodcutting. [done]
 1.2 Step 9t - The tavern: the shop becomes a tavern (owner's decision, 14 Nov). Guests sit, order
     drinks and dishes, the player serves and collects the coins; brewing; the loot stall stays as
-    a market corner. [prompt ready]
+    a market corner. [prompt ready; part A (shared rules) done, B and C to do]
 1.3 Step 9g - Livelier hotel: hats, emotes, usable furniture, the cat, room stars, visitors.
     [prompt ready]
 1.4 Step 9h - Dungeon round 2 (3 floors, boss) and two more dungeon types. [prompt ready]

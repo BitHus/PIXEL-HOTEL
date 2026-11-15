@@ -42,3 +42,6 @@ export * from './farmLayout.ts';
 export * from './farm.ts';
 export * from './cooking.ts';
 export * from './forge.ts';
+export * from './tavern.ts';
+export * from './brewing.ts';
+export * from './guests.ts';

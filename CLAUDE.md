@@ -203,9 +203,12 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   sitting and lying), 7 (shop), 7b (room shapes, character creation, intro), 8 and 9 (dungeon),
   9b (farm), 9c (mine and forge), UI polish, atmosphere, logo splash, 9d (shop life) and its fix
   list, 9e (ranks and the Book), 9f (lakeside), housekeeping 1.0 (this file shortened).
+- Step 9t (tavern) is HALF done: part A (shared rules and tests, docs/NOTES.md STEP 9t) is done;
+  part B (room, guests and serving in the client) and part C (brewing and Menu panels, intro toast,
+  texts, economy tool, brief sections 1 and 5, UI-REFERENCE) are next. The game does not show it yet.
 - Not done: step 6 (art, docs/STYLE.md), step 10 (server; server/src/index.ts is a placeholder).
   Next (docs/ROADMAP.md): 9t (tavern), 9g (livelier hotel), 9h (dungeon round 2), 9i (questline).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 12. The game runs on LocalGameAPI only. All art is
+- DUNGEON_ROUND is 1. SAVE_VERSION is 13. The game runs on LocalGameAPI only. All art is
   placeholder boxes drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)

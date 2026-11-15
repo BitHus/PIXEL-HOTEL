@@ -288,6 +288,18 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   upgrades (section 10b), smelting fees (section 10c).
 - No trading between players in v1.
 - Every change to gold or items goes through one function and is written to a ledger.
+- THE TAVERN (owner's decision, step 9t; part A = the shared rules is done, the client parts B and
+  C are not, so the game does not show it yet): the shop room is a tavern (internal kind 'shop'
+  and the room id stay; the counter is the bar). GUESTS come alone, as a pair or as three, sit on
+  free seats at a table, order one drink or dish from the menu, and wait for the player to bring
+  it from the bar (taps queue up, at most 3). They eat 20 to 40 s, leave coins and an empty mug or
+  plate on the table and walk out; the player taps to collect the coins and to clear the dish
+  (nothing is collected automatically; a table spot with coins or a dish takes no new guest). A
+  guest who waits about 90 s leaves unhappy without paying. The menu price rule is the shop's
+  (tolerance, the four faces); too high = something cheaper or nothing. Drinks are brewed in a
+  brewing barrel from crops in real time. The market corner (stall table, shelves, cases, the
+  queue of 3 at the bar) stays exactly as above. Away rule: at most 3 guests sit with an open
+  order and they do not walk off. Details: STEP 9t in the notes.
 
 10. DUNGEON
 - Real-time and click-driven in the same top-down view: clicking fast is the game. A run is

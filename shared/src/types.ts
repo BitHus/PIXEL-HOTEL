@@ -92,6 +92,8 @@ export interface FurnitureType {
    *  from the anchor: on a shelf board, inside a case). Other facings and types without it: spread
    *  along the top. */
   slotSpots?: { dx: number; dy: number }[];
+  /** True for the brewing barrel (step 9t): crops go in, mugs come out (brewing.ts). */
+  brews?: boolean;
   /** A light source (atmosphere step): the client draws a warm pool around the item. Drawing only. */
   light?: LightSource;
   /** A small fish swimming in the item (the fish tank; step 9f). Drawing only: dx and z (px) of its start, size, how far it swims, colour. */
@@ -169,9 +171,11 @@ export type TreeDropId = 'resin' | 'amber' | 'golden_acorn';
  * Every stackable good: the dungeon materials plus the farm's seeds, crops and food (step 9b). They
  * all live in Player.materials, stack in the bag's Materials tab and go through the ledger.
  */
-export type MaterialId = BaseMaterialId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId;
+/** The tavern's drinks (step 9t, shared/data/drinks.json): brewed in a barrel, served by the mug. */
+export type DrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic';
+export type MaterialId = BaseMaterialId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId | DrinkId;
 /** What kind of stackable good it is. */
-export type MaterialGroup = 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing';
+export type MaterialGroup = 'material' | 'seed' | 'crop' | 'food' | 'fish' | 'thing' | 'drink';
 
 export interface MaterialType {
   id: MaterialId;
@@ -237,6 +241,12 @@ export type LedgerReason =
   | 'book_reward'
   | 'chop'
   | 'fish'
+  // The tavern (step 9t): brewing, an order taken out of the bag (and put back when the guest
+  // leaves unserved), the coins collected from a table, the furniture an old save gets.
+  | 'brew'
+  | 'tavern_order'
+  | 'tavern'
+  | 'tavern_gift'
   | 'debug';
 
 export interface LedgerEntry {

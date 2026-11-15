@@ -327,7 +327,10 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   save.ts MIGRATIONS, or the game resets with a message (old save kept as the backup). When the
   GameState shape changes: bump SAVE_VERSION and add MIGRATIONS[old]. SAVE_VERSION is 2
   (MIGRATIONS[1] adds an empty bag layout; arrangeState fills it).
-- SAVE_VERSION is 12: MIGRATIONS[11] (step 9f) adds a level 1 lakeside room (the next free room id)
+- SAVE_VERSION is 13: MIGRATIONS[12] (step 9t) adds GameState.tavern (introSeen false) and puts a
+  round table, 2 bar stools and a brewing barrel with root ale ready in the bag (newPlayer.ts
+  addTavern, ledger 'tavern_gift').
+- (Before 13:) SAVE_VERSION 12: MIGRATIONS[11] (step 9f) adds a level 1 lakeside room (the next free room id)
   with 8 whole trees (GameState.lakeside), Player.lakesideRoomId and Player.biggest {}.
 - (Before 12:) SAVE_VERSION 11: MIGRATIONS[10] (step 9e) adds Player.seen (everything owned now counts as
   seen, first seen at 0), bookOpenedAt 0, bookRewards [], and kills {} / met [] on a saved run.
@@ -432,6 +435,52 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   - Panels pop in (scale 0.95 -> 1, 120 ms), off with prefers-reduced-motion.
   - Checked with a headless browser at 360 x 740 and 1280 x 800 (all panels, confirm panels,
     character creation, shop, farm, mine, dungeon).
+- STEP 9t, PART A (the tavern: shared rules and tests only; the prompt is in docs/NEXT-STEPS.md):
+  - Data: shared/data/drinks.json (root_ale, carrot_cider, pumpkin_stout, glowcap_tonic: inputs,
+    minutes, mugs, baseValue per mug, tip (a share of the price; only the tonic), rank; values
+    chosen by the AI, the owner may tune them). furniture.json: bar_stool (1 seat), round_table and
+    long_table (surfaces), mug_shelf and menu_board (wall, appeal), keg_rack (appeal),
+    brewing_barrel (FurnitureType.brews); all category 'shop_furniture', in the catalog.
+    roomShapes.json shopStart gained round_table, stool_left, stool_right, brewing_barrel for every
+    shop shape. npcLines.json gained no_seat, no_menu, table_talk, toast, drink_talk, order_wait,
+    unhappy, thanks.
+  - Types: DrinkId in MaterialId, MaterialGroup 'drink' (materials.ts DRINK_TYPES, getDrinkType,
+    isDrinkId; shop category 'food'; the Book's Food tab, source "Brewed"), LedgerReason 'brew',
+    'tavern_order', 'tavern', 'tavern_gift'. GameState.tavern (TavernState: menu, guests,
+    nextGuestInMs, mess, brews, serveQueue, holding, history, lastLines, updatedAt, introSeen).
+  - brewing.ts: Brew { barrelUid, drink, readyAt }, startBrew (the barrel must stand in the tavern
+    and be empty; crops out, ledger 'brew'), brewReady / brewReadyInMs, collectBrew (mugs in),
+    barrels, returnOrphanBrews (a barrel sold at the stall gives its crops back; a barrel in the
+    bag keeps its brew; run it when items change).
+  - tavern.ts: the menu (isServable = drinks and food; defaultMenuEntry: drinks on at baseValue,
+    dishes off; setMenu, menuRows, menuOffers = on and in stock, chooseOrder (the price rule),
+    coinsFor (price + tip), recordOrder). Seats (tavernSeats: a 'sit' seat with a table (a surface
+    item or the bar) within GUEST_TABLE_NEAR_PX, never in the staff zone; each has a spot on the
+    table; cached per items list; freeTavernSeats; pickSeats: a group together at one table when it
+    fits, else spread). The player: requestServe (at most SERVE_QUEUE_MAX), pickUpOrder (at the
+    bar: the next order into TavernState.holding), serveStops (behind the bar, then the table
+    spot), cancelServe, collectCoins (ledger 'tavern'), clearDish, tavernCounts.
+  - guests.ts: Guest (phases enter, to_seat, settle, order, eat, no_seat, no_menu, leave),
+    stepTavern(state, world, dtMs, rng, at) -> { state, events } (TavernEvent: guests, say, order,
+    refuse, sip, coins, unhappy, to_stall), deliverOrder (the guest starts eating), repathGuests,
+    catchUpTavern (maths only), guestAvatar, rollGroupSize. TavernWorld.playerHere: the patience
+    only runs while the player is in the tavern; while away guests only come while fewer than
+    AWAY_ORDERS_MAX are there. An order takes the unit out of the bag at once (ledger
+    'tavern_order', never a Book find) and gives it back when the guest leaves unserved. Guest ids
+    come from ShopState.nextCustomerId, so a guest who looks at the stall on the way out
+    (GUEST_BROWSE_STALL_CHANCE; customers.ts stallVisitor) is the same person as a shop customer.
+    Never more guests than tavern seats, at most GUEST_MAX. Shop customers no longer sit on tavern
+    seats (customers.ts freeSeats). Config section "The tavern (step 9t)".
+  - A new game: createNewPlayer places the bar, the stall table, the round table, 2 stools and the
+    barrel (uids 1 to 6; config TAVERN_START_ITEMS) and the barrel holds root ale that is ready.
+  - Part B must: call stepTavern next to stepShop in LocalGameAPI (and catchUpTavern where
+    catchUpShop runs, repathGuests and returnOrphanBrews when items change), walk the avatar along
+    serveStops, draw guests, orders, coins and dishes. Part C: the brewing and Menu panels, the
+    toast for TavernState.introSeen false, the tavern texts, tools/simulate-economy.ts.
+  - Tests: tavern.test.ts (menu, price rule, seats, coins and dishes, the serve queue),
+    guests.test.ts (seating and groups, the serve chain, patience, the away rule, the ledger),
+    brewing.test.ts (real time, reload, orphan brews), save.test.ts (migration 12),
+    customers.test.ts (tavern seats), tavernTest.ts (helpers, not exported).
 - LOGO SPLASH (small step after the atmosphere step): client/src/assets/logo.gif is the owner's
   logo (256 x 256, animated GIF; never change or redraw it). The splash markup is in
   client/index.html (#splash, styled in style.css) so it shows before any JS; ui/splash.ts

@@ -2595,5 +2595,457 @@
         }
       ]
     }
+  },
+  {
+    "id": "bar_stool",
+    "name": "Bar stool",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 24,
+    "d": 24,
+    "height": 37,
+    "blocks": true,
+    "sittable": true,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [
+      {
+        "dx": 0,
+        "dy": -12,
+        "pose": "sit"
+      }
+    ],
+    "baseValue": 6,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -3,
+          "dy": -9,
+          "w": 6,
+          "d": 6,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": -10,
+          "dy": -2,
+          "w": 20,
+          "d": 20,
+          "z": 12,
+          "h": 3,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "round_table",
+    "name": "Round table",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 48,
+    "d": 48,
+    "height": 66,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 12,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -6,
+          "dy": -18,
+          "w": 12,
+          "d": 12,
+          "z": 0,
+          "h": 14,
+          "color": 5
+        },
+        {
+          "dx": -24,
+          "dy": 0,
+          "w": 48,
+          "d": 48,
+          "z": 14,
+          "h": 4,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "long_table",
+    "name": "Long table",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "both",
+    "slots": 0,
+    "appeal": 0,
+    "w": 112,
+    "d": 40,
+    "height": 56,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 20,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -54,
+          "dy": -34,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": 50,
+          "dy": -34,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": -54,
+          "dy": -2,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": 50,
+          "dy": -2,
+          "w": 4,
+          "d": 4,
+          "z": 0,
+          "h": 12,
+          "color": 5
+        },
+        {
+          "dx": -56,
+          "dy": 0,
+          "w": 112,
+          "d": 40,
+          "z": 12,
+          "h": 4,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "mug_shelf",
+    "name": "Mug shelf",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 4,
+    "w": 40,
+    "d": 4,
+    "height": 43,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 10,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -20,
+          "dy": 0,
+          "w": 40,
+          "d": 4,
+          "z": 30,
+          "h": 3,
+          "color": 5
+        },
+        {
+          "dx": -15,
+          "dy": -1,
+          "w": 6,
+          "d": 2,
+          "z": 33,
+          "h": 7,
+          "color": 10
+        },
+        {
+          "dx": -3,
+          "dy": -1,
+          "w": 6,
+          "d": 2,
+          "z": 33,
+          "h": 7,
+          "color": 10
+        },
+        {
+          "dx": 9,
+          "dy": -1,
+          "w": 6,
+          "d": 2,
+          "z": 33,
+          "h": 7,
+          "color": 10
+        }
+      ]
+    }
+  },
+  {
+    "id": "menu_board",
+    "name": "Menu board",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 6,
+    "w": 40,
+    "d": 4,
+    "height": 46,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": true,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 14,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -20,
+          "dy": 0,
+          "w": 40,
+          "d": 2,
+          "z": 14,
+          "h": 30,
+          "color": 6
+        },
+        {
+          "dx": -14,
+          "dy": 0,
+          "w": 28,
+          "d": 0,
+          "z": 36,
+          "h": 2,
+          "color": 1
+        },
+        {
+          "dx": -14,
+          "dy": 0,
+          "w": 28,
+          "d": 0,
+          "z": 30,
+          "h": 2,
+          "color": 1
+        },
+        {
+          "dx": -14,
+          "dy": 0,
+          "w": 28,
+          "d": 0,
+          "z": 24,
+          "h": 2,
+          "color": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "keg_rack",
+    "name": "Keg rack",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 5,
+    "w": 64,
+    "d": 32,
+    "height": 56,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 16,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 32,
+          "z": 0,
+          "h": 8,
+          "color": 5
+        },
+        {
+          "dx": -28,
+          "dy": -4,
+          "w": 26,
+          "d": 24,
+          "z": 8,
+          "h": 20,
+          "color": 4
+        },
+        {
+          "dx": 2,
+          "dy": -4,
+          "w": 26,
+          "d": 24,
+          "z": 8,
+          "h": 20,
+          "color": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "brewing_barrel",
+    "name": "Brewing barrel",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "slots": 0,
+    "appeal": 0,
+    "w": 40,
+    "d": 40,
+    "height": 68,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 25,
+    "rank": "common",
+    "inCatalog": true,
+    "brews": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -18,
+          "dy": -2,
+          "w": 36,
+          "d": 36,
+          "z": 0,
+          "h": 30,
+          "color": 4
+        },
+        {
+          "dx": -18,
+          "dy": -2,
+          "w": 36,
+          "d": 0,
+          "z": 5,
+          "h": 3,
+          "color": 6
+        },
+        {
+          "dx": -18,
+          "dy": -2,
+          "w": 36,
+          "d": 0,
+          "z": 22,
+          "h": 3,
+          "color": 6
+        },
+        {
+          "dx": -2,
+          "dy": 0,
+          "w": 4,
+          "d": 2,
+          "z": 10,
+          "h": 4,
+          "color": 10
+        }
+      ]
+    }
   }
 ]

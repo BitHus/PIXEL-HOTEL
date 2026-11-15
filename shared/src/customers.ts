@@ -81,6 +81,7 @@ import { doorY, doorZoneRect, type Room } from './room.ts';
 import { rngInt, rngPick, seededRng } from './rng.ts';
 import { selectableClothing } from './clothing.ts';
 import { seatSpots } from './seats.ts';
+import { tavernSeats } from './tavern.ts';
 import { maybeSay, reactionMoment, talkChance, type CustomerKind, type NpcMoment, type TalkMoment } from './npcTalk.ts';
 import {
   allSlots,
@@ -387,6 +388,36 @@ function newCustomer(id: number, rng: Rng, at: Point, want: ShopCategory, tolera
   };
 }
 
+/**
+ * A tavern guest who finished and looks at the market stall on the way out (step 9t): a buyer
+ * with the same id and look, standing where the guest was, whose whole plan is the goods.
+ */
+export function stallVisitor(from: Pick<Customer, 'id' | 'kind' | 'look' | 'x' | 'y' | 'facing' | 'speed' | 'tolerance'>, want: ShopCategory): Customer {
+  return {
+    ...from,
+    path: [],
+    phase: 'act',
+    buys: true,
+    plan: ['goods'],
+    step: -1,
+    doing: null,
+    want,
+    waitMs: 0,
+    shelfUid: null,
+    browsing: true,
+    decorUid: null,
+    followId: null,
+    talk: null,
+    holdMs: 0,
+    carrying: null,
+    reaction: null,
+    queueSpot: -1,
+    seat: null,
+    sitChecked: false,
+    callInMs: CUSTOMER_CALL_AFTER_MS,
+  };
+}
+
 /** The buyers in the shop who have not paid yet (they are, or may still join, the line at the till). */
 export function buyerCount(customers: readonly Customer[]): number {
   return customers.filter((c) => c.buys && c.phase !== 'paid' && c.phase !== 'leave').length;
@@ -461,10 +492,12 @@ interface SeatRef {
   facing: Facing;
 }
 
-/** The free seats (pose 'sit') of the shop: not used by anyone, not in the staff zone. */
+/** The free seats (pose 'sit') of the shop: not used by anyone, not in the staff zone, and not a
+ *  seat at a table (step 9t: those are for the tavern's guests). */
 function freeSeats(cx: Ctx, others: readonly Customer[]): SeatRef[] {
   const w = cx.w;
   const taken = new Set([...(w.seatsTaken ?? []), ...others.flatMap((o) => (o.seat ? [o.seat] : []))].map((t) => `${t.uid}:${t.index}`));
+  for (const s of tavernSeats(w.items, w.room.id)) taken.add(`${s.uid}:${s.index}`);
   const out: SeatRef[] = [];
   for (const item of w.items) {
     if (item.roomId !== w.room.id || item.onItemUid !== null) continue;

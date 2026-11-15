@@ -5,7 +5,7 @@
 import { CUSTOMER_CALL_AFTER_MS, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
-import { addShopStartItems } from './newPlayer.ts';
+import { addShopStartItems, addTavern } from './newPlayer.ts';
 import { emptyShop } from './shop.ts';
 import { emptyFarm } from './farm.ts';
 import { emptyLakeside } from './woodcut.ts';
@@ -197,6 +197,17 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       lakeside: emptyLakeside(lakesideRoomId),
     };
   },
+  // 12 -> 13 (step 9t, the tavern): GameState.tavern, and a round table, 2 bar stools and a brewing
+  // barrel (root ale ready) in the bag. The toast that explains the tavern shows once (introSeen).
+  12: (state) => {
+    if (!isObject(state) || !isObject(state.player) || !Array.isArray(state.items) || !Array.isArray(state.ledger) || isObject(state.tavern)) return state;
+    try {
+      const at = isObject(state.shop) && typeof state.shop.updatedAt === 'number' ? state.shop.updatedAt : 0;
+      return addTavern(state as unknown as GameState, at);
+    } catch {
+      return state;
+    }
+  },
 };
 
 /** The storage key for a save version. */
@@ -259,6 +270,8 @@ export function isGameState(x: unknown): x is GameState {
   if (!isObject(x.farm) || !isInt(x.farm.roomId) || !Array.isArray(x.farm.plots) || !isInt(p.farmRoomId)) return false;
   if (!x.farm.plots.every((pl) => isObject(pl) && (pl.crop === null || typeof pl.crop === 'string') && typeof pl.plantedAt === 'number')) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
+  const t = x.tavern;
+  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.serveQueue)) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }

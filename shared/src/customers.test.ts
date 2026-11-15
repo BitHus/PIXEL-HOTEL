@@ -525,4 +525,20 @@ describe('walking customers', () => {
     expect(sat).toBe(true);
     expect(stoodUpToPay).toBe(true);
   });
+  it('customers leave the seats at tables to the tavern\'s guests (step 9t)', () => {
+    // Plenty of visitors, a free chair in the open (uid 88) and the two start stools at the round table.
+    let s = withItem(stocked(3, 60), 88, 'chair', 120, 250);
+    const rng = seededRng(77);
+    let sat = false;
+    for (let t = 0; t < 1_500_000; t += SHOP_TICK_MS) {
+      s = stepShop(s, world(s, true), SHOP_TICK_MS, rng, t).state;
+      if (t % 10_000 === 0) s = restock(s, t);
+      for (const c of s.shop.customers) {
+        if (!c.seat) continue;
+        sat = true;
+        expect(c.seat.uid).toBe(88);
+      }
+    }
+    expect(sat).toBe(true);
+  });
 });
