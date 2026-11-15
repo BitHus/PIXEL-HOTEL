@@ -270,9 +270,19 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   cloth; an empty hotel room; a shop room (section 5) with a counter and one
   stall_table already placed at their fixed positions. No furniture in the inventory.
 - The loop: serve guests in the tavern -> gold -> buy furniture for the hotel room or the tavern, or upgrade a room. Loot, ore,
-  fish and crops are for USE (cook, brew, craft, build, plant, splice); the trader for surplus comes in step S2.
+  fish and crops are for USE (cook, brew, craft, build, plant, splice); surplus goes to the trader (step S2, below).
 - Stall table, shelf and display case (step S1) are decor only: no slots, no prices, no selling. Goods that sat on slots in an old
   save went back to the bag (ledger reason 'shop_closed'; save version 22). The starting stall table stays as decor.
+- THE TRADER (step S2): the bar's panel has a third tab, Sell. It lists what the player owns and does not need: materials, blocks,
+  seeds, crops, fish, ore, bars, spare clothes and furniture that is not placed. Each row shows the icon, the count, the gold for one
+  piece and two buttons, Sell 1 and Sell all. The price is baseValue * SELL_RATE (config, 0.3; at least 1 gold); a spare piece of
+  clothing keeps SPARE_SELL (0.1). Food and drinks (menu, lunch box), worn gear, placed furniture and the counter are never listed.
+  NEVER AUTOMATIC: nothing sells unless the player taps. Selling more than 5 pieces at once (SELL_CONFIRM_QTY), any ultra_rare or
+  legendary thing, or something in the hotbar asks first. One ledger entry per tap (reason 'sell'), a gold popup above the head,
+  and no Book find. When the bag fills (24 sellable stacks) a toast says "Sell what you do not need at the bar".
+  Closed loops (shared/src/balance.ts, tests in balance.test.ts): the ingredients of a dish or brew sold pay less than the dish or the
+  mugs; a catalog block bought and sold back loses gold; a pack's contents sold back are worth less than its gems at the gold-per-gem
+  floor (30); a splice result sold back is worth less than its seeds plus the cell-minutes at the best crop rate.
 - Tavern appeal: every decoration has an appeal number. tavernAppeal = min(100, sum of the appeal of placed items, decor too, each
   type counted at most 3 times, plus the appeal of the floor style and wall style (bare gives 0, the others give 4 each)).
   It sets the guest rate: a guest group every 45 s * 100 / (100 + appeal) (step 9t, unchanged).

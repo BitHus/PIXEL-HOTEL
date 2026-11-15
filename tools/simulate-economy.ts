@@ -57,6 +57,10 @@ import {
   seededRng,
   CATALOG_PRICE_MULT,
   CROP_TYPES,
+  SELL_RATE,
+  spliceSellLoops,
+  surplusGoldPerHour,
+  mixedSurplusGoldPerHour,
   SPLICE_RECIPES,
 } from '../shared/src/index.ts';
 
@@ -215,5 +219,16 @@ console.log(`\nOne stove visited every 10 min adds up to ${STOVE_BATCH_MAX * 6} 
 console.log('REPORT (nothing retuned): the target is tavern gold/h within 0.5x to 2x of the old shop at the same appeal. Result: brewing is the limit in every row. A new game (2 stools, one barrel) earns about 0.1x to 0.25x of the old shop ceiling, 4 barrels 0.45x to 0.9x; guests and seats are never the limit. The old shop figure is a CEILING (it assumes loot for every customer, which the dungeon cannot supply), so the real gap is smaller, and the stove adds dishes. If the owner wants the start closer to 0.5x: more mugs per brew, or a shorter root ale time.');
 console.log(GOLD_PER_GEM_NOTE + '.');
 
-console.log('\n=== S1. Gold per hour now (nothing retuned; S3 tunes it) ===');
-console.log('Gold comes from guests (table above: a new game about 324 gold/h at best, brewing-limited) and from dungeon run gold (npm run simulate:dungeon). Items (loot, ore, fish, spare crops) pile up until the S2 trader.');
+console.log('\n=== S2. The trader: gold per hour from selling surplus, next to guest gold (nothing retuned; S3 tunes it) ===');
+console.log(`The trader pays baseValue x SELL_RATE (${SELL_RATE}), at least 1; spare clothes keep SPARE_SELL (${SPARE_SELL}); food and drinks are never bought. Every thing the activities drop is counted as SURPLUS (so this is a CEILING: crops, ore and wood also feed cooking, brewing and crafting). Blocks are building stock and are not counted. Chest and kill gold is not counted (it is gold already).`);
+console.log(pad('stage', 24) + pad('mixed hour', 12) + 'focused hour by activity (gold/h)');
+for (const stage of STAGES) {
+  const rows = surplusGoldPerHour(stage, seededRng(11));
+  console.log(pad(STAGE_NAMES[stage], 24) + pad(f1(mixedSurplusGoldPerHour(stage, seededRng(11))), 12) + rows.map((r) => `${r.id} ${f1(r.gold)}`).join(', '));
+}
+const guestNew = Math.min(GUESTS_PER_HOUR(0), seatCap(2), mugsPerHour(rootAle, 1)) * rootAle.baseValue;
+const guestBig = Math.min(GUESTS_PER_HOUR(60), seatCap(6), (DRINK_TYPES.reduce((a, d) => a + mugsPerHour(d, 1), 0) / DRINK_TYPES.length) * 2) * avgMug;
+console.log(`Guest gold per hour for comparison (table 9t C): a new game ${f1(guestNew)} (2 stools, one barrel of root ale), a bigger tavern ${f1(guestBig)} (6 seats, 2 barrels, appeal 60). Ratio of a new player's mixed-hour surplus to guest gold: ${(mixedSurplusGoldPerHour('new', seededRng(11)) / guestNew).toFixed(2)}x.`);
+console.log('Loops closed (balance.test.ts): selling the ingredients of a dish or brew pays less than the dish or the mugs; a bought catalog block sells back for less; a pack sold back is worth less than its gems at the gold-per-gem floor; a splice chain\'s results sold back are worth less than their seeds plus cell-time.');
+const traded = spliceSellLoops().filter((r) => r.productSold > r.gold);
+console.log(`NOT CLOSED, ONLY PRICED: ${traded.length} spliced results sell for more than the GOLD of their starter seeds (${traded.map((r) => `${r.seed.replace(/_seed$/, '')} ${r.productSold} vs ${r.gold}`).join('; ')}); what pays for them is the real time (cell-minutes), as in BG9.`);

@@ -16,7 +16,7 @@ import {
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
-  type TavernEvent, type TavernView, type TavernWorld, type DrinkId, type MenuRowView, type BuyResult,
+  type TavernEvent, type TavernView, type TavernWorld, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
   type StyleKind, type Rng, type NewPlayerChoice, type ServeResult,
   type Avatar, type AvatarLook, type BagTab, type SlotLayout, type SlotRef, type ChatLine, type FurnitureItem,
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
@@ -31,6 +31,7 @@ import { blocksFarmApi } from './blocksFarmApi.ts';
 import { dungeonApi } from './dungeonApi.ts';
 import { lakesideApi } from './lakesideApi.ts';
 import { packsApi } from './packsApi.ts';
+import { traderApi } from './traderApi.ts';
 import { progressApi } from './progressApi.ts';
 import { savesApi } from './savesApi.ts';
 import { tavernApi } from './tavernApi.ts';
@@ -235,6 +236,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> { return blocksFarmApi.spliceSeed(this, c, r, seed); }
   async openPack(packId: string): Promise<PackOpenResult | null> { return packsApi.openPack(this, packId); }
   async sellSpare(clothingId: string, qty: number): Promise<number | null> { return packsApi.sellSpare(this, clothingId, qty); }
+  async getSellRows(): Promise<SellRow[]> { return traderApi.getSellRows(this); }
+  async sell(kind: SellKind, id: string, qty: number): Promise<SellResult | null> { return traderApi.sell(this, kind, id, qty); }
   async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> { return blocksFarmApi.buySeeds(this, seed, qty); }
 
   // ---------- The tavern (step 9t) ----------

@@ -10,7 +10,7 @@ A browser game. Parts:
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
 - Tavern (the shop room, step 9t; S1: nobody buys loot at a stall any more): guests sit, order drinks and dishes from your menu, you
   serve them and tap their coins. Brewing barrel (crops -> mugs) and stove (crops -> dishes). Gold comes from guests and dungeon run
-  gold (the trader for surplus comes in S2) and buys furniture in the catalog. Items are for USE: cook, brew, craft, build, plant.
+  gold and the trader (S2: tap-to-sell Sell tab on the bar) and buys furniture in the catalog. Items are for USE: cook, brew, craft, build, plant.
 - Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
 - Lakeside (10d): chop trees for wood, fish in the lake.
@@ -113,6 +113,13 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - NO SELLING TO LOOT CUSTOMERS (S1, owner 15 Nov): window-shoppers, buyers, the till queue, prices on slots and the stall sales are gone.
   Stall table, shelf and display case are plain DECOR (no slots, no prices); goods that were on them went back to the bag (ledger reason
   'shop_closed'). GOLD sources: tavern guests (main), dungeon run gold, the trader (S2: tap-to-sell Sell tab on the bar; never automatic).
+- THE TRADER (S2): the bar's panel has Serve, Menu, Sell. Sell lists materials, blocks, seeds, crops, fish, ore, bars, spare clothes and
+  furniture NOT placed; each row: icon, count, gold per piece, Sell 1 / Sell all. Price = baseValue * SELL_RATE (config, 0.3, at least 1
+  gold); spare clothes keep SPARE_SELL. Food, drinks (menu, lunch box), worn gear, placed items and the counter never list. Selling
+  more than 5 pieces (SELL_CONFIRM_QTY), any ultra_rare or legendary thing, or a hotbar item asks first (confirmBuy). Ledger reason
+  'sell' (pure rule shared/src/trader.ts; GameAPI.getSellRows / sell), gold popup, no Book find. Nothing ever sells by itself. Closed
+  loops in balance.ts: ingredients sold < the dish or brew; a bought catalog block sells back for less; a pack sold back < its gems at the
+  gold-per-gem floor; a splice result sold back < its seeds plus cell-time (gold alone is NOT closed for 6 furniture results, NOTES S2).
 - tavernAppeal = min(100, appeal of placed items, decor too (each type at most 3 times) + floor and wall style). It sets the guest rate.
 - Guests walk 72 px/s (+-10%), at most GUEST_MAX, talk lines from shared/data/npcLines.json; behind the bar is staff only.
 - Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
@@ -244,8 +251,8 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   intro toast, simulate-economy; NOTES 9t C). Tavern gold is brewing-limited at the start (0.1x to 0.25x of the old shop ceiling, NOTES 9t C).
 - BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
-  is done. S1 (the shop is the tavern: loot customers, slots and prices removed; stalls are decor; save v22; NOTES S1) is done.
-  Next: S2 (the trader), S3 (rebalance gold and gems), K2 (ripening), then 9g.
+  is done. S1 (the shop is the tavern: loot customers, slots and prices removed; stalls are decor; save v22; NOTES S1) and S2 (the trader:
+  bar Sell tab, SELL_RATE 0.3, four loops tested; NOTES S2) are done. Next: S3 (rebalance gold and gems), K2 (ripening), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
 - DUNGEON_ROUND is 1. SAVE_VERSION is 22. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.

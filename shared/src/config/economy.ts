@@ -87,3 +87,11 @@ export const RANK_WEIGHTS = { common: 75, rare: 20, ultra_rare: 4.5, legendary: 
 export const SPARKLE_MS = 900;
 /** The Book's reward steps: this part of a tab found (percent). The gold is in shared/data/bookRewards.json. */
 export const BOOK_REWARD_STEPS = [25, 50, 75, 100] as const;
+
+// ---------- The trader (step S2, docs/INN-PLAN.md section 5) ----------
+/** What the trader pays for a surplus thing: baseValue * SELL_RATE (at least 1 gold). Low on purpose: using a thing always beats selling it (balance.ts tests). */
+export const SELL_RATE = 0.3;
+/** Selling MORE than this many pieces in one tap asks first (ui/confirmBuy.ts). Ultra rare and legendary things always ask. */
+export const SELL_CONFIRM_QTY = 5;
+/** The Bag counts as filling when this many different stacks are sellable; the first time, a hint says "Sell what you do not need at the bar". */
+export const SELL_HINT_STACKS = 24;

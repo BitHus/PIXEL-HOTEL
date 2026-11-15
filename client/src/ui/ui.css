@@ -3366,3 +3366,15 @@
 .menu-switch.on {
   color: var(--ok);
 }
+
+/* The bar's Sell tab (step S2): the two buttons stack on the right of a row. */
+.sell-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+.sell-buttons .btn {
+  min-height: var(--touch);
+  white-space: nowrap;
+}

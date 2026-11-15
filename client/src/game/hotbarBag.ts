@@ -3,7 +3,7 @@
 
 import {
   countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId,
-  type SeedId, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries,
+  type SeedId, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries, SELL_HINT_STACKS, SELL_HINT_TEXT,
 } from '@pixel-hotel/shared';
 import { createHotbar } from '../ui/hotbar.ts';
 import { createBagPanel } from '../ui/bagPanel.ts';
@@ -134,8 +134,14 @@ late.hotbar = hotbar;
   // Panels start under the info panel (phone) and end above the hotbar or the run bag.
   watchLayout(ui, info.panel, [hotbar.el, runBar.el]);
 
+  /** The "Sell what you do not need at the bar" hint shows once per visit, when the bag fills (step S2). */
+  let sellHinted = false;
   async function refreshInventory(): Promise<void> {
     st.inventory = await api.getInventory();
+    if (!sellHinted && (await api.getSellRows()).length >= SELL_HINT_STACKS) {
+      sellHinted = true;
+      toast(SELL_HINT_TEXT);
+    }
     const p = await api.getPlayer();
     st.tavern = { ...st.tavern, appeal: (await api.getTavern()).appeal };
     if (!newIntro.running) {

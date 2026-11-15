@@ -10,6 +10,13 @@ import {
   activities,
   bestCropGoldPerCellMinute,
   biggestShare,
+  blockBuyBack,
+  brewSellLoops,
+  dishSellLoops,
+  mixedSurplusGoldPerHour,
+  packTraderBack,
+  surplusGoldPerHour,
+  spliceSellLoops,
   chains,
   cheapestGoldPerGem,
   expectedSpares,
@@ -25,6 +32,7 @@ import {
 } from './balance.ts';
 import { BALANCE_TARGETS, PACKS, SPARE_SELL } from './config.ts';
 import { PACK_TYPES } from './packs.ts';
+import { seededRng } from './rng.ts';
 import { SPLICE_RECIPES } from './splice.ts';
 
 const cheapestPack = Math.min(...PACK_TYPES.map((p) => p.gemPrice));
@@ -121,5 +129,47 @@ describe('pack timing targets (mixed play)', () => {
   it('packs are dearer in this order: first pack, common clothes, rare clothes', () => {
     expect(cheapestPack).toBeLessThan(PACKS.common_clothes.gemPrice);
     expect(PACKS.common_clothes.gemPrice).toBeLessThan(PACKS.rare_clothes.gemPrice);
+  });
+});
+
+// ---------- The trader (step S2): selling never opens a loop ----------
+describe('the trader closes its loops', () => {
+  it('selling the ingredients of a dish never pays more than the dish', () => {
+    for (const d of dishSellLoops()) expect(d.sold, d.id).toBeLessThanOrEqual(d.made);
+  });
+  it('selling the ingredients of a brew never pays more than the mugs it gives', () => {
+    for (const d of brewSellLoops()) expect(d.sold, d.id).toBeLessThanOrEqual(d.made);
+  });
+  it('buying a catalog block and selling it back loses gold', () => {
+    const rows = blockBuyBack();
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) expect(r.back, r.id).toBeLessThan(r.paid);
+  });
+  it('a pack sold back at the trader never pays more than its gems are worth at the gold-per-gem floor', () => {
+    for (const p of PACK_TYPES) {
+      const b = packTraderBack(p);
+      expect(b.sold, p.id).toBeLessThan(b.gemValue);
+      expect(b.peakPiece * p.rolls, p.id).toBeLessThan(b.gemValue); // even if every roll were its dearest piece
+    }
+  });
+  it('the results of a splice chain sold back do not beat the seeds they cost (their gold plus their cell-time)', () => {
+    const rows = spliceSellLoops();
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) {
+      expect(r.seedSold, r.seed).toBeLessThanOrEqual(r.cost);
+      expect(r.productSold, r.seed).toBeLessThanOrEqual(r.cost);
+    }
+  });
+});
+
+describe('what surplus sells for in an hour (a report for S3, not a target)', () => {
+  it('is positive, finite and the same every time for a seed', () => {
+    for (const stage of STAGES) {
+      const a = mixedSurplusGoldPerHour(stage, seededRng(7));
+      expect(a).toBeGreaterThan(0);
+      expect(Number.isFinite(a)).toBe(true);
+      expect(mixedSurplusGoldPerHour(stage, seededRng(7))).toBe(a);
+      for (const x of surplusGoldPerHour(stage, seededRng(7))) expect(x.gold, x.id).toBeGreaterThanOrEqual(0);
+    }
   });
 });

@@ -254,6 +254,8 @@ export type LedgerReason =
   // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.
   | 'pack'
   | 'spare_sale'
+  // The trader at the bar (step S2): surplus things sold for gold, only when the player taps.
+  | 'sell'
   | 'debug';
 
 export interface LedgerEntry {

@@ -22,6 +22,7 @@ import type { Guest, Mess } from './tavern.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
 import type { TavernEvent } from './guests.ts';
+import type { SellKind, SellResult, SellRow } from './trader.ts';
 
 export interface RoomState {
   room: Room;
@@ -387,6 +388,10 @@ export interface GameAPI {
   openPack(packId: string): Promise<PackOpenResult | null>;
   /** Sells spare copies of a piece of clothing for gold (config SPARE_SELL). Returns the gold paid; null = fewer spares than that. */
   sellSpare(clothingId: string, qty: number): Promise<number | null>;
+  /** The trader's list (step S2, the bar's Sell tab): what the player may sell, with the gold for one piece. Nothing sells by itself. */
+  getSellRows(): Promise<SellRow[]>;
+  /** Sells `qty` pieces of one thing for gold (ledger 'sell'): the gold and its popup list, or null = refused (nothing changes). Only a tap calls it. */
+  sell(kind: SellKind, id: string, qty: number): Promise<SellResult | null>;
   /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
   buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
   /**
