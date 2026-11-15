@@ -3,7 +3,7 @@
 // Methods are added in later steps as they are needed.
 
 import type { BookTab } from './book.ts';
-import type { BarId, CropId, DrinkId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SeedId, StyleKind } from './types.ts';
+import type { BarId, CropId, DrinkId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, Rect, SeedId, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
 import type { ChopKind } from './woodcut.ts';
 import type { RoomLevel } from './config.ts';
@@ -21,6 +21,7 @@ import type { BlockProblem } from './blocks.ts';
 import type { Guest, Mess } from './tavern.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
+import type { TapView } from './taps.ts';
 import type { TavernEvent } from './guests.ts';
 import type { SellKind, SellResult, SellRow } from './trader.ts';
 
@@ -77,12 +78,20 @@ export interface TavernView {
   brews: Brew[];
   /** What cooks on the stoves (stove uid, dish, how many, the time it is ready; step K1). */
   cooks: Cook[];
+  /** The kitchen zone of the tavern room in px (staff only for guests), or null (step T1b). */
+  kitchen: Rect | null;
+  /** The prep bonus (extra dishes per batch) of each stove placed in the tavern (step T1b). */
+  prepBonus: { stoveUid: number; bonus: number }[];
+  /** Every tap of every tap stand in the tavern (step T1; empty taps too). */
+  taps: TapView[];
   /** The tavern's appeal 0..100 (placed items, decor too, plus the styles; it sets how fast guests come). */
   appeal: number;
   /** The API's clock when this was read (to count down a brew). */
   at: number;
   /** False in an old save until markTavernIntroSeen (the one-time toast that explains the tavern). */
   introSeen: boolean;
+  /** False in an old save until markTapsIntroSeen (the one-time toast about the register and the taps). */
+  tapsIntroSeen: boolean;
 }
 
 /** One row of the Menu panel: a drink or dish the player owns or has set, with its menu choice and the last prices paid. */
@@ -91,7 +100,11 @@ export interface MenuRowView {
   on: boolean;
   price: number;
   baseValue: number;
+  /** What guests can still order: for a drink the mugs on the taps not claimed by an open order (T1), for a dish the bag's count. */
   stock: number;
+  /** The count in the bag (a drink in the bag is not on the menu until a tap holds it) and the mugs on all taps (drinks only). */
+  inBag: number;
+  onTap: number;
   /** The last prices guests paid (oldest first, at most MENU_HISTORY_LENGTH). */
   history: number[];
 }
@@ -113,7 +126,11 @@ export type TavernClientEvent =
   /** The player cleared an empty mug or plate. */
   | { t: 'cleared'; messId: number; spot: Point }
   /** The serve queue changed (a tap was added or used). */
-  | { t: 'queue'; queue: number[] };
+  | { t: 'queue'; queue: number[] }
+  /** The avatar pours a mug at the tap stand (standUid, slot) for `ms`; the artist's playPour hangs on this. */
+  | { t: 'pour'; standUid: number; slot: number; item: MaterialId; ms: number }
+  /** The tap was empty when the avatar came to pour: the order stays open (the text "Tap is empty"). */
+  | { t: 'tap_empty'; guestId: number; item: MaterialId }
 
 /** The walk to the spot behind the counter (step 7). */
 export interface ServeResult {
@@ -370,6 +387,14 @@ export interface GameAPI {
   setMenuEntry(id: string, change: { on?: boolean; price?: number }): Promise<MenuRowView[] | null>;
   /** The intro toast of the tavern was shown: it never shows again (also after a reload). */
   markTavernIntroSeen(): Promise<void>;
+  /** The one-time toast about the register and the taps (old saves) was shown. */
+  markTapsIntroSeen(): Promise<void>;
+  /** Every tap of every tap stand placed in the tavern (empty ones too). */
+  getTaps(): Promise<TapView[]>;
+  /** Moves qty mugs of one drink from the bag into a tap (a tap holds one drink, at most TAP_CAP). The new taps, or null = refused. */
+  loadTap(standUid: number, slot: number, drink: DrinkId, qty: number): Promise<TapView[] | null>;
+  /** Gives mugs of a tap back to the bag (qty omitted = all). The new taps, or null = refused. */
+  unloadTap(standUid: number, slot: number, qty?: number): Promise<TapView[] | null>;
   // ---------- Step 9b: the farm and cooking ----------
   /** Counts for the Map card (ripe, growing, free soil). */
   getFarm(): Promise<FarmView>;

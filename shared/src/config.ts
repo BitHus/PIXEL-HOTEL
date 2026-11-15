@@ -26,7 +26,15 @@ export const TAVERN_START_ITEMS = [
   { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 496, y: 64, facing: 'down' },
   { key: 'stove', typeId: 'stove', x: 240, y: 96, facing: 'down' },
 ] as const;
-/** The drink that is ready in the start barrel. */
+/** Taps (step T1): a tap stand has this many taps; a tap holds mugs of ONE drink, at most TAP_CAP; pouring one mug takes POUR_MS (the avatar stands at the bar). */
+export const TAP_SLOTS = 2;
+export const TAP_CAP = 12;
+export const POUR_MS = 800;
+/** The kitchen (step T1b): the furniture type that gives a stove its bonus, and the bonus: each prep table inside the kitchen zone and cell-adjacent to a
+ *  stove that is inside it adds `perTable` dishes to every batch of that stove, at most `max` (the extra dishes cost no crops). */
+export const PREP_TABLE_ID = 'prep_table';
+export const PREP_BONUS = { perTable: 1, max: 2 } as const;
+/** The drink that is ready on a tap (7 mugs; the start barrel is empty). */
 export const TAVERN_START_DRINK = 'root_ale' as const;
 /** The early dish a new tavern has on its menu (the stove cooks it in 20 s from one turnip, step S3). */
 export const TAVERN_START_DISH = 'roasted_turnip' as const;

@@ -114,7 +114,7 @@ describe('LocalGameAPI', () => {
     await api.enterRoom(1);
     const rug = (await api.getInventory()).furniture.find((i) => i.typeId === 'rug')!;
     await api.placeItem(rug.uid, { center: { x: 120, y: 120 }, facing: 'down', snap: true });
-    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stove']);
+    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'round_table', 'stove', 'tap_stand']);
     expect((await api.enterRoom(1)).items.map((i) => i.uid)).toEqual([rug.uid]);
   });
 
@@ -210,8 +210,6 @@ describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
     const { api } = LocalGameAPI.open(memoryStorage(), () => now, seq());
     const p = await api.getPlayer();
     await api.enterRoom(p.shopRoomId);
-    const barrel = (await api.getItems()).find((i) => i.typeId === 'brewing_barrel')!;
-    expect(await api.collectBrew(barrel.uid)).not.toBeNull();
     // Guests come and order, but with nobody serving the gold does not move.
     for (; now < 120_000; now += 100) api.update();
     expect((await api.getPlayer()).wallet.gold).toBe(100);

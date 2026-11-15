@@ -18,7 +18,7 @@ export interface Gain {
 export type GainList = Gain[];
 
 /** Ledger reasons whose items are not new: already shown (the run bag, popups at the find) or only moved. */
-const NOT_GAINS: readonly LedgerReason[] = ['dungeon_bank', 'lunch_box', 'shelf', 'tavern_order', 'block_return'];
+const NOT_GAINS: readonly LedgerReason[] = ['dungeon_bank', 'lunch_box', 'shelf', 'tavern_order', 'tap_load', 'tap_unload', 'block_return'];
 
 /** One gain; the rank is the item type's unless given (a drop that rolled a rank). */
 export function gain(itemId: string, count = 1, rank: Rank = rankOf(itemId)): Gain {

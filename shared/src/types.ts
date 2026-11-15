@@ -251,6 +251,9 @@ export type LedgerReason =
   // leaves unserved), the coins collected from a table, the furniture an old save gets.
   | 'brew'
   | 'tavern_order'
+  // Taps (step T1): mugs from the bag into a tap, and back.
+  | 'tap_load'
+  | 'tap_unload'
   | 'tavern'
   | 'tavern_gift'
   // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.

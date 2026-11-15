@@ -16,7 +16,7 @@ import {
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
-  type TavernEvent, type TavernView, type TavernWorld, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
+  type TavernEvent, type TavernView, type TavernWorld, type TapView, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
   type StyleKind, type Rng, type NewPlayerChoice, type ServeResult,
   type Avatar, type AvatarLook, type BagTab, type SlotLayout, type SlotRef, type ChatLine, type FurnitureItem,
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
@@ -252,6 +252,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async getMenu(): Promise<MenuRowView[]> { return tavernApi.getMenu(this); }
   async setMenuEntry(id: string, change: { on?: boolean; price?: number }): Promise<MenuRowView[] | null> { return tavernApi.setMenuEntry(this, id, change); }
   async markTavernIntroSeen(): Promise<void> { return tavernApi.markTavernIntroSeen(this); }
+  async markTapsIntroSeen(): Promise<void> { return tavernApi.markTapsIntroSeen(this); }
+  async getTaps(): Promise<TapView[]> { return tavernApi.getTaps(this); }
+  async loadTap(standUid: number, slot: number, drink: DrinkId, qty: number): Promise<TapView[] | null> { return tavernApi.loadTap(this, standUid, slot, drink, qty); }
+  async unloadTap(standUid: number, slot: number, qty?: number): Promise<TapView[] | null> { return tavernApi.unloadTap(this, standUid, slot, qty); }
   async startCook(stoveUid: number, food: FoodId, qty: number): Promise<boolean> { return tavernApi.startCook(this, stoveUid, food, qty); }
   async collectCook(stoveUid: number): Promise<{ food: FoodId; qty: number; gains: GainList } | null> { return tavernApi.collectCook(this, stoveUid); }
   inTavern(): boolean { return tavernApi.inTavern(this); }

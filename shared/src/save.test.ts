@@ -52,7 +52,7 @@ describe('save files', () => {
     expect(r.state.hintsDone).toBe(0);
     expect('shop' in r.state).toBe(false); // dropped again by migration 21 -> 22 (step S1)
     const inShop = r.state.items.filter((i) => i.roomId === r.state.player.shopRoomId).map((i) => i.typeId);
-    expect(inShop.sort()).toEqual(['counter', 'stall_table', 'stove']); // the stove comes with migration 20 -> 21 (step K1)
+    expect(inShop.sort()).toEqual(['counter', 'register', 'stall_table', 'stove', 'tap_stand']); // the stove comes with migration 20 -> 21 (step K1), the register and a tap stand on the bar with 24 -> 25 (step T1)
     expect(new Set(r.state.items.map((i) => i.uid)).size).toBe(r.state.items.length);
   });
 
@@ -172,6 +172,8 @@ describe('save files', () => {
       round_table: { count: 1, firstSeenAt: 0 },
       bar_stool: { count: 3, firstSeenAt: 0 }, // the new game now has a third stool at the bar (S3)
       brewing_barrel: { count: 1, firstSeenAt: 0 },
+      tap_stand: { count: 1, firstSeenAt: 0 }, // the bar's gift (step T1)
+      register: { count: 1, firstSeenAt: 0 },
     });
     expect(r.state.player.bookOpenedAt).toBe(0);
     expect(r.state.player.bookRewards).toEqual([]);

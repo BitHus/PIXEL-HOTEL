@@ -3,17 +3,20 @@
 // for them (step 9d, kept by 9t and S1).
 
 import { getFurnitureType, staffZone } from './furniture.ts';
+import { kitchenRect, type Room } from './room.ts';
 import { cellAt, cellCenter, cellRect, findPath, isCellFree, nearestFreeCell, reachableCells, type NavGrid } from './nav.ts';
 import { rectsOverlap } from './room.ts';
 import type { FurnitureItem, Point, Rect } from './types.ts';
 
-/** The staff zones of a room: behind every item that is served from behind (the counter). */
-export function staffZones(items: readonly FurnitureItem[], roomId: number): Rect[] {
-  return items.flatMap((i) => {
+/** The staff zones of a room: behind every item that is served from behind (the counter), and, when the room is given, the kitchen zone (step T1b). */
+export function staffZones(items: readonly FurnitureItem[], roomId: number, room?: Pick<Room, 'kind' | 'shape' | 'level'>): Rect[] {
+  const zones = items.flatMap((i) => {
     if (i.roomId !== roomId || i.onItemUid !== null) return [];
     const type = getFurnitureType(i.typeId);
     return type.servedFromBehind ? [staffZone(i, type)] : [];
   });
+  const kitchen = room ? kitchenRect(room) : null;
+  return kitchen ? [...zones, kitchen] : zones;
 }
 
 /** True if a point is in a staff zone (edges count). */

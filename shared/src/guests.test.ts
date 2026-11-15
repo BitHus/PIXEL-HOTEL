@@ -9,11 +9,13 @@ import { NPC_LINES } from './npcTalk.ts';
 import { seededRng } from './rng.ts';
 import { readSave, toSaveText } from './save.ts';
 import { clearDish, collectCoins, openOrders, pickUpOrder, requestServe, seatKey, setMenu, tavernSeats } from './tavern.ts';
-import { runTavern, serveAll, tavernWorld, tidy, legacyStart, withAle, withItem, withLongTable } from './tavernTest.ts';
+import { drinkStock } from './taps.ts';
+import { runTavern, serveAll, stock, tavernWorld, tidy, legacyStart, withAle, withItem, withLongTable } from './tavernTest.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
 
 const MIN = 60_000;
-const ale = (s: GameState): number => s.player.materials.root_ale ?? 0;
+/** Root ale a new guest could still order: the mugs on the taps not claimed by an open order (T1). */
+const ale = (s: GameState): number => drinkStock(s, 'root_ale');
 
 /** Runs until `done` says so (at most ms); returns the state and the time. */
 function until(s: GameState, ms: number, rng: () => number, done: (s: GameState, e: TavernEvent[]) => boolean, playerHere = true): { s: GameState; t: number } {
@@ -62,7 +64,7 @@ describe('guests: seating and groups (step 9t)', () => {
     });
     expect(most).toBe(2);
     // With many seats the config cap holds.
-    let big = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 200 } }, 0)!);
+    let big = withLongTable(stock(withAle(), 'root_ale', 200));
     for (let k = 0; k < 3; k++) big = withItem(big, 54 + k, 'bar_stool', 48 + k * 32, 288, 'up'); // below the table
     big = withItem(withItem(big, 57, 'bar_stool', 16, 256, 'right'), 58, 'bar_stool', 176, 256, 'left'); // at its ends
     expect(tavernSeats(big.items, big.tavern.roomId).length).toBe(10);
@@ -75,7 +77,7 @@ describe('guests: seating and groups (step 9t)', () => {
   });
 
   it('a group of three sits together at the long table', () => {
-    let s = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 50 } }, 0)!);
+    let s = withLongTable(stock(withAle(), 'root_ale', 50));
     let seen = false;
     s = runTavern(s, 0, 20 * MIN, seededRng(21), true, (x) => {
       const byGroup = new Map<number, number[]>();
@@ -191,7 +193,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
   });
 
   it('a guest who finds one drink too dear orders the cheaper one', () => {
-    let s0 = applyChange(withAle(), { reason: 'debug', materials: { glowcap_tonic: 4 } }, 0)!;
+    let s0 = stock(withAle(), 'glowcap_tonic', 4);
     s0 = setMenu(s0, 'glowcap_tonic', { price: 90 })!;
     const events: TavernEvent[] = [];
     runTavern(s0, 0, 15 * MIN, seededRng(13), true, (x, e) => (events.push(...e), tidy(serveAll(x, seededRng(1)), 0)));
@@ -243,7 +245,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
   });
 
   it('the ledger still adds up after a long evening, and every guest keeps a different id', () => {
-    let s = applyChange(withLongTable(withAle()), { reason: 'debug', materials: { root_ale: 60, glowcap_tonic: 20, wood: 20 } }, 0)!;
+    let s = applyChange(stock(stock(withLongTable(withAle()), 'root_ale', 60), 'glowcap_tonic', 20), { reason: 'debug', materials: { wood: 20 } }, 0)!;
     const rng = seededRng(31);
     const hand = seededRng(32);
     let coins = 0;
@@ -280,7 +282,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
 
 describe('guests: the away rule (step 9t)', () => {
   it('while the player is elsewhere at most 3 sit with an open order, and they never walk off', () => {
-    let s = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 30 } }, 0)!);
+    let s = withLongTable(stock(withAle(), 'root_ale', 30));
     const events: TavernEvent[] = [];
     s = runTavern(s, 0, 30 * MIN, seededRng(17), false, (x, e) => {
       events.push(...e);
@@ -297,7 +299,7 @@ describe('guests: the away rule (step 9t)', () => {
   });
 
   it('after a closed game (maths only): up to 3 guests sit with an open order, nobody walks', () => {
-    const s0 = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 30 } }, 0)!);
+    const s0 = withLongTable(stock(withAle(), 'root_ale', 30));
     const r = catchUpTavern(s0, tavernWorld(s0, false), 6 * 60 * MIN, seededRng(19));
     expect(r.arrived).toBe(AWAY_ORDERS_MAX);
     const s = r.state;
@@ -323,7 +325,7 @@ describe('guests: the away rule (step 9t)', () => {
 
   it('a break while guests are in: who was eating has finished and left coins, who waits stays, the rest is gone', () => {
     const rng = seededRng(23);
-    let s = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 30 } }, 0)!);
+    let s = withLongTable(stock(withAle(), 'root_ale', 30));
     let t = 0;
     // Until one guest eats while another still waits and someone is on the way in.
     for (; t < 20 * MIN; ) {

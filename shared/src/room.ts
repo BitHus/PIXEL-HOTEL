@@ -68,6 +68,14 @@ export interface ShapeLevel {
   door: { x: number };
 }
 
+/** A rectangle in whole cells (column, row, width, height). */
+export interface CellRect {
+  c: number;
+  r: number;
+  w: number;
+  h: number;
+}
+
 export interface RoomShape {
   id: string;
   name: string;
@@ -75,6 +83,8 @@ export interface RoomShape {
   /** Levels 1, 2 and 3; each floor contains the one before. */
   levels: ShapeLevel[];
   /** Where a new shop's counter and stall_table stand (level 1), for shapes a shop can use. */
+  /** The tavern's KITCHEN ZONE per level (1, 2, 3) in cells, for shapes a shop can use (step T1b): staff only for guests; level 1 holds shopStart.stove, each level contains the one before. */
+  kitchen?: CellRect[];
   shopStart?: Record<'counter' | 'stall_table' | 'stool_bar' | 'round_table' | 'stool_left' | 'stool_right' | 'brewing_barrel' | 'stove', Point>;
 }
 
@@ -100,6 +110,13 @@ function shapeLevel(shape: string, level: RoomLevel): ShapeLevel {
   const l = getRoomShape(shape).levels[level - 1];
   if (!l) throw new Error(`room shape ${shape} has no level ${level}`);
   return l;
+}
+
+/** The kitchen zone of a shop room in px (by its shape and level), or null for other rooms or shapes without one (step T1b). */
+export function kitchenRect(room: Pick<Room, 'kind' | 'shape' | 'level'>): Rect | null {
+  if (room.kind !== 'shop') return null;
+  const k = getRoomShape(room.shape).kitchen?.[room.level - 1];
+  return k ? { x: k.c * BUILD_CELL, y: k.r * BUILD_CELL, w: k.w * BUILD_CELL, h: k.h * BUILD_CELL } : null;
 }
 
 /** The floor rectangles of a shape level in px (the data is in cells). */

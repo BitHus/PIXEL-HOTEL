@@ -118,7 +118,7 @@ export function cellProblem(
 /** The tavern seats a guest can walk to from the door with these blockers (the walk ends within GUEST_SEAT_REACH_PX of the seat). */
 export function reachableSeatKeys(room: Room, items: readonly FurnitureItem[], blockers: readonly Rect[]): Set<string> {
   const out = new Set<string>();
-  const seats = tavernSeats(items, room.id);
+  const seats = tavernSeats(items, room.id, room);
   if (seats.length === 0) return out;
   const grid = buildNavGrid(room, blockers);
   const door = cellAt(grid, doorPoint(room));

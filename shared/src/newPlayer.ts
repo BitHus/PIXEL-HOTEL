@@ -31,12 +31,12 @@ import type { AvatarLook } from './avatar.ts';
 import { arrangeForInventory, emptyBag } from './bag.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
-import { canPlace, getFurnitureType } from './furniture.ts';
+import { canPlace, footprintRect, getFurnitureType, snapToSurface, type SurfaceSpot } from './furniture.ts';
 import { createRoom, defaultShape, getRoomShape, paintFloorCells, shapesFor, type Room } from './room.ts';
 import { cleanDisplayName, cleanInnName, lookAllowed } from './clothing.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { emptyTavern } from './tavern.ts';
-import { getFoodType } from './materials.ts';
+import { getDrinkType, getFoodType } from './materials.ts';
 import type { FurnitureItem } from './types.ts';
 import type { MaterialId, StyleKind } from './types.ts';
 
@@ -116,11 +116,20 @@ function startMenu(): Record<string, { on: boolean; price: number }> {
 export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at = 0): GameState {
   const shopStart = getRoomShape(config.shopShape).shopStart;
   // The bar and the stall table, then the tavern's round table, two stools and the brewing barrel.
-  const startItems: FurnitureItem[] = [
+  const baseItems: FurnitureItem[] = [
     ...SHOP_START_ITEMS.filter((s) => s.typeId !== 'stall_table').map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.typeId] ?? { x: s.x, y: s.y }, facing: s.facing })),
     ...TAVERN_START_ITEMS.map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.key] ?? { x: s.x, y: s.y }, facing: s.facing })),
   ].map((s, k) => ({ uid: k + 1, typeId: s.typeId, ownerId: config.playerId, roomId: config.shopRoomId, x: s.at.x, y: s.at.y, facing: s.facing, onItemUid: null }));
-  const barrel = startItems.find((i) => i.typeId === 'brewing_barrel');
+  // Step T1: the tap stand and the register stand ON the bar (the middle and the right end of the counter).
+  const shopRoom = createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape);
+  const bar = baseItems.find((i) => i.typeId === 'counter');
+  const riders: FurnitureItem[] = [];
+  for (const typeId of ['tap_stand', 'register']) {
+    const spot = bar ? barSpot(shopRoom, [...baseItems, ...riders], bar, typeId) : null;
+    if (spot) riders.push({ uid: baseItems.length + riders.length + 1, typeId, ownerId: config.playerId, roomId: config.shopRoomId, x: spot.x, y: spot.y, facing: 'down', onItemUid: spot.onItemUid });
+  }
+  const startItems = [...baseItems, ...riders];
+  const tapStand = riders.find((i) => i.typeId === 'tap_stand');
   const empty: GameState = {
     player: {
       id: config.playerId,
@@ -164,7 +173,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     run: null,
     lakeside: emptyLakeside(config.lakesideRoomId),
     // The start barrel holds a brew that is ready to collect.
-    tavern: { ...emptyTavern(config.shopRoomId, at), menu: startMenu(), brews: barrel ? [{ barrelUid: barrel.uid, drink: TAVERN_START_DRINK, readyAt: at }] : [] },
+    tavern: { ...emptyTavern(config.shopRoomId, at), menu: startMenu(), taps: tapStand ? [{ standUid: tapStand.uid, slot: 0, drink: TAVERN_START_DRINK, mugs: getDrinkType(TAVERN_START_DRINK).mugs }] : [] },
     playerCreated: false,
   };
   const state = applyChange(empty, { reason: 'start', gold: config.gold, materials: config.materials }, at);
@@ -173,6 +182,36 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
   let seen = state.player.seen;
   for (const item of state.items) seen = addSeen(seen, item.typeId, 1, at);
   return arrangeState({ ...state, player: { ...state.player, seen } });
+}
+
+/** Where the register (the end) or the tap stand (the middle) goes on the bar: the nearest free cell on top of the counter, or null. */
+export function barSpot(room: Room, items: readonly FurnitureItem[], counter: FurnitureItem, typeId: string): SurfaceSpot | null {
+  const top = footprintRect(counter, getFurnitureType(counter.typeId));
+  const aimX = typeId === 'register' ? top.x + top.w - 16 : top.x + top.w / 2;
+  return snapToSurface(room, items, getFurnitureType(typeId), aimX, top.y + top.h, 'down');
+}
+
+/**
+ * The register and a tap stand for an old save (step T1, migration 24 -> 25): they go ON the bar (ledger 'tavern_gift'), or into the bag
+ * when the bar has no free cell. Nothing else changes: drinks stay in the bag until the player loads a tap. A save that has one keeps it.
+ * tapsIntroSeen goes false so the client can explain taps once (and say where a piece went).
+ */
+export function addBarItems(state: GameState, at: number): GameState {
+  const base: GameState = { ...state, tavern: { ...state.tavern, taps: state.tavern.taps ?? [], tapsIntroSeen: false } };
+  let s = base;
+  let gifted = false;
+  for (const typeId of ['tap_stand', 'register']) {
+    if (s.items.some((i) => i.typeId === typeId)) continue;
+    const gift = applyChange(s, { reason: 'tavern_gift', addFurniture: [typeId], note: 'a register and taps for the bar' }, at);
+    if (!gift) continue;
+    gifted = true;
+    const piece = gift.items.find((i) => i.typeId === typeId && i.uid >= s.nextUid);
+    const room = gift.rooms.find((r) => r.id === gift.tavern.roomId);
+    const bar = gift.items.find((i) => i.typeId === 'counter' && i.roomId === gift.tavern.roomId && i.onItemUid === null);
+    const spot = piece && room && bar ? barSpot(room, gift.items.filter((i) => i.uid !== piece.uid), bar, typeId) : null;
+    s = piece && spot ? { ...gift, items: gift.items.map((i) => (i.uid === piece.uid ? { ...piece, roomId: room!.id, x: spot.x, y: spot.y, facing: 'down' as const, onItemUid: spot.onItemUid } : i)) } : gift;
+  }
+  return gifted ? arrangeState(s) : s;
 }
 
 /**

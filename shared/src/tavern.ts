@@ -24,7 +24,9 @@ import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { getDrinkType, getMaterialType, isDrinkId, materialGroup, MATERIAL_TYPES } from './materials.ts';
 import type { CustomerKind, NpcMoment } from './npcTalk.ts';
+import { rectsOverlap, type Room } from './room.ts';
 import { seatSpots } from './seats.ts';
+import { drinkStock, pourMug, refundMug, tapMugs, type Tap } from './taps.ts';
 import { decide, validPrice } from './prices.ts';
 import type { Facing, FurnitureItem, FurnitureType, MaterialId, Point, Reaction, Rect, Rng } from './types.ts';
 
@@ -109,6 +111,10 @@ export interface TavernState {
   brews: Brew[];
   /** Batches cooking on stoves (step K1, cooking.ts). */
   cooks: Cook[];
+  /** Mugs on the taps (step T1, taps.ts); a tap with no mugs is not stored. */
+  taps: Tap[];
+  /** False in an old save until the toast that explains the taps and the register was shown. */
+  tapsIntroSeen: boolean;
   /** Guests the player tapped: their orders wait to be carried, in this order. */
   serveQueue: number[];
   /** The order in the player's hands. */
@@ -133,6 +139,8 @@ export function emptyTavern(roomId: number, at: number): TavernState {
     nextMessId: 1,
     brews: [],
     cooks: [],
+    taps: [],
+    tapsIntroSeen: true,
     serveQueue: [],
     holding: null,
     history: {},
@@ -180,19 +188,23 @@ export interface MenuOffer {
   id: MaterialId;
   price: number;
   baseValue: number;
+  /** What guests can still order: for a drink the mugs on the taps not yet claimed by an open order (step T1), for a dish the bag's count. */
   stock: number;
 }
 
 /** Everything servable the player has or has put on the menu, in data order (the Menu panel's rows). */
-export function menuRows(state: GameState): (MenuOffer & { on: boolean })[] {
-  return MATERIAL_TYPES.filter((m) => isServable(m.id) && ((state.player.materials[m.id] ?? 0) > 0 || state.tavern.menu[m.id] !== undefined)).map((m) => {
+export function menuRows(state: GameState): (MenuOffer & { on: boolean; inBag: number; onTap: number })[] {
+  return MATERIAL_TYPES.filter((m) => isServable(m.id) && ((state.player.materials[m.id] ?? 0) > 0 || tapMugs(state, m.id) > 0 || state.tavern.menu[m.id] !== undefined)).map((m) => {
     const e = menuEntry(state.tavern, m.id);
-    return { id: m.id, price: e.price, baseValue: m.baseValue, stock: state.player.materials[m.id] ?? 0, on: e.on };
+    const inBag = state.player.materials[m.id] ?? 0;
+    const drink = materialGroup(m.id) === 'drink';
+    return { id: m.id, price: e.price, baseValue: m.baseValue, stock: drink ? drinkStock(state, m.id) : inBag, on: e.on, inBag, onTap: drink ? tapMugs(state, m.id) : 0 };
   });
 }
 
 /** What guests can order now: on the menu and in stock. */
 export function menuOffers(state: GameState): MenuOffer[] {
+  // A drink is on the menu only while a tap holds a mug (T1); a dish while it is in the bag.
   return menuRows(state).filter((r) => r.on && r.stock > 0).map(({ id, price, baseValue, stock }) => ({ id, price, baseValue, stock }));
 }
 
@@ -270,23 +282,25 @@ function facingToward(from: Point, to: Point, fallback: Facing): Facing {
   return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
 }
 
-const SEAT_CACHE = new WeakMap<readonly FurnitureItem[], Map<number, TavernSeat[]>>();
+const SEAT_CACHE = new WeakMap<readonly FurnitureItem[], Map<string, TavernSeat[]>>();
 
 /**
  * The tavern seats of a room: every 'sit' seat (not in the staff zone behind the bar) with a table
  * at most GUEST_TABLE_NEAR_PX away; the nearest table is its table, and the spot is the point of
  * that table nearest to the seat, a little inside its edge. Cached per items list.
  */
-export function tavernSeats(items: readonly FurnitureItem[], roomId: number): TavernSeat[] {
+export function tavernSeats(items: readonly FurnitureItem[], roomId: number, room?: Pick<Room, 'kind' | 'shape' | 'level'>): TavernSeat[] {
   let perRoom = SEAT_CACHE.get(items);
   if (!perRoom) SEAT_CACHE.set(items, (perRoom = new Map()));
-  const hit = perRoom.get(roomId);
+  const key = room ? `${roomId}:${room.shape}:${room.level}` : String(roomId);
+  const hit = perRoom.get(key);
   if (hit) return hit;
   const floor = items.filter((i) => i.roomId === roomId && i.onItemUid === null);
-  const zones = staffZones(items, roomId);
+  const zones = staffZones(items, roomId, room);
+  // A table inside the staff zones (a prep table in the kitchen) is nobody's table: guests do not sit at it.
   const tables = floor.flatMap((i) => {
     const type = getFurnitureType(i.typeId);
-    return isTable(type) ? [{ uid: i.uid, rect: footprintRect(i, type) }] : [];
+    return isTable(type) && !zones.some((z) => rectsOverlap(footprintRect(i, type), z) && !type.servedFromBehind) ? [{ uid: i.uid, rect: footprintRect(i, type) }] : [];
   });
   const out: TavernSeat[] = [];
   for (const item of floor) {
@@ -307,7 +321,7 @@ export function tavernSeats(items: readonly FurnitureItem[], roomId: number): Ta
       out.push({ uid: item.uid, index: s.index, x: s.x, y: s.y, facing: facingToward(s, spot, s.facing), tableUid: best.uid, spot });
     }
   }
-  perRoom.set(roomId, out);
+  perRoom.set(key, out);
   return out;
 }
 
@@ -361,19 +375,39 @@ export function requestServe(state: GameState, guestId: number): GameState | nul
  * At the bar: the player picks up the next order of the queue (orders of guests who left meanwhile
  * are skipped). Null with empty hands and nothing to carry, or with full hands.
  */
-export function pickUpOrder(state: GameState): { state: GameState; guestId: number; item: MaterialId } | null {
+export function pickUpOrder(state: GameState): { state: GameState; guestId: number; item: MaterialId; poured?: { standUid: number; slot: number } } | null {
   const t = state.tavern;
   if (t.holding) return null;
   const open = openOrders(t);
   const queue = t.serveQueue.filter((id) => open.some((g) => g.id === id));
   const guest = open.find((g) => g.id === queue[0]);
   if (!guest?.order) return null;
-  return { state: withTavern(state, { serveQueue: queue.slice(1), holding: { guestId: guest.id, item: guest.order.item } }), guestId: guest.id, item: guest.order.item };
+  const item = guest.order.item;
+  // A drink is POURED off a tap now (step T1); with no mug on any tap the order stays open and nothing is picked up.
+  const pour = isDrinkId(item) ? pourMug(state, item) : null;
+  if (isDrinkId(item) && !pour) return null;
+  const base = pour?.state ?? state;
+  return { state: withTavern(base, { serveQueue: queue.slice(1), holding: { guestId: guest.id, item } }), guestId: guest.id, item, ...(pour ? { poured: { standUid: pour.standUid, slot: pour.slot } } : {}) };
 }
 
-/** Forgets the taps and what is in the player's hands (the orders stay open). */
-export function cancelServe(state: GameState): GameState {
-  return withTavern(state, { serveQueue: [], holding: null });
+/** The next order the player would pick up (the first open one of the serve queue), or null. */
+export function nextQueuedOrder(state: GameState): { guestId: number; item: MaterialId } | null {
+  const t = state.tavern;
+  const open = openOrders(t);
+  const guest = open.find((g) => g.id === t.serveQueue.find((id) => open.some((o) => o.id === id)));
+  return guest?.order ? { guestId: guest.id, item: guest.order.item } : null;
+}
+
+/** The guest leaves the serve queue, their order stays open (the tap was empty). */
+export function dropFromQueue(state: GameState, guestId: number): GameState {
+  return withTavern(state, { serveQueue: state.tavern.serveQueue.filter((id) => id !== guestId) });
+}
+
+/** Forgets the taps and what is in the player's hands (the orders stay open). A poured mug in the hands goes back to the bag. */
+export function cancelServe(state: GameState, at = 0): GameState {
+  const held = state.tavern.holding;
+  const back = held && isDrinkId(held.item) ? refundMug(state, held.item, at) : state;
+  return withTavern(back, { serveQueue: [], holding: null });
 }
 
 /** Where the player goes for a guest's order: behind the bar, then the guest's table spot. Null without a bar or that seat. */
@@ -381,7 +415,7 @@ export function serveStops(state: GameState, guestId: number): { bar: Point; tab
   const t = state.tavern;
   const guest = t.guests.find((g) => g.id === guestId);
   const bar = state.items.find((i) => i.roomId === t.roomId && getFurnitureType(i.typeId).servedFromBehind === true);
-  const seat = guest?.seat ? tavernSeats(state.items, t.roomId).find((s) => seatKey(s) === seatKey(guest.seat!)) : undefined;
+  const seat = guest?.seat ? tavernSeats(state.items, t.roomId, state.rooms.find((r) => r.id === t.roomId)).find((s) => seatKey(s) === seatKey(guest.seat!)) : undefined;
   if (!bar || !seat) return null;
   return { bar: behindPoint(bar, getFurnitureType(bar.typeId)), table: seat.spot };
 }

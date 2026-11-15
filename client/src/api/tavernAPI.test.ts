@@ -37,20 +37,17 @@ async function openTavern(seed = 7) {
 }
 
 describe('the tavern through the GameAPI', () => {
-  it('a new game: the barrel is ready, a tap collects the mugs, then guests order', async () => {
+  it('a new game: the barrel is empty and 7 root ale stand on a tap, then guests order', async () => {
     const { api, until } = await openTavern();
     const barrel = (await api.snapshot().items).find((i) => i.typeId === 'brewing_barrel')!;
-    const got = await api.collectBrew(barrel.uid);
-    expect(got).toMatchObject({ drink: 'root_ale', mugs: 7 });
-    expect(got?.gains.some((g) => g.itemId === 'root_ale' && g.count === 7)).toBe(true);
-    expect(await api.collectBrew(barrel.uid)).toBeNull(); // the barrel is empty now
+    expect(await api.collectBrew(barrel.uid)).toBeNull(); // nothing brews yet
+    expect((await api.getTaps()).find((t) => t.drink === 'root_ale')).toMatchObject({ mugs: 7 });
     expect(await until(async () => (await api.getTavern()).guests.some((g) => g.phase === 'order'))).toBe(true);
   });
 
   it('serves an order from one tap, the guest pays, the player takes the coins by tapping', async () => {
     const { api, events, until } = await openTavern();
     const barrel = api.snapshot().items.find((i) => i.typeId === 'brewing_barrel')!;
-    await api.collectBrew(barrel.uid);
     const gold0 = (await api.getPlayer()).wallet.gold;
     await until(async () => (await api.getTavern()).guests.some((g) => g.phase === 'order'));
     const guest = (await api.getTavern()).guests.find((g) => g.phase === 'order')!;
@@ -59,6 +56,9 @@ describe('the tavern through the GameAPI', () => {
     // The avatar goes to the bar, holds the mug, walks to the table and puts it down.
     expect(await until(async () => events.some((e) => e.t === 'served' && e.guestId === guest.id))).toBe(true);
     expect(events.filter((e) => e.t === 'holding').map((e) => (e.t === 'holding' ? e.item : 'x'))).toEqual(['root_ale', null]);
+    // The avatar poured the mug first (step T1): one pour event, and the tap went down by one.
+    expect(events.filter((e) => e.t === 'pour')).toHaveLength(1);
+    expect((await api.getTaps()).find((t) => t.drink === 'root_ale')!.mugs).toBeLessThanOrEqual(6);
     expect((await api.getTavern()).guests.find((g) => g.id === guest.id)?.phase).toBe('eat');
     // Nothing is collected by itself: the coins wait on the table until the player taps them.
     expect(await until(async () => (await api.getTavern()).mess.length > 0)).toBe(true);

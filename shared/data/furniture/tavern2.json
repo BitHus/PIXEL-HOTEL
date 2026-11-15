@@ -57,7 +57,7 @@
       ]
     },
     "icon": {
-      "shape": "box",
+      "shape": "register",
       "colors": [
         "gold",
         "oak"
@@ -91,6 +91,7 @@
     "rank": "common",
     "inCatalog": true,
     "taps": true,
+    "light": { "radius": 40, "color": 10, "flicker": 0.2 },
     "art": {
       "boxes": [
         {
@@ -132,7 +133,7 @@
       ]
     },
     "icon": {
-      "shape": "barrel",
+      "shape": "taps",
       "colors": [
         "steel",
         "gold"
@@ -263,7 +264,7 @@
       ]
     },
     "icon": {
-      "shape": "shelf",
+      "shape": "pantry",
       "colors": [
         "oak",
         "lime"
@@ -328,7 +329,7 @@
       ]
     },
     "icon": {
-      "shape": "tank",
+      "shape": "sink",
       "colors": [
         "steel",
         "sky"
@@ -412,7 +413,7 @@
       ]
     },
     "icon": {
-      "shape": "shelf",
+      "shape": "hatch",
       "colors": [
         "walnut",
         "butter"

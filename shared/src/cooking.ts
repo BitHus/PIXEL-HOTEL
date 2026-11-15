@@ -5,12 +5,13 @@
 // game is closed and survives a save and reload. Nothing is collected by itself: the player taps the stove.
 // Inputs out and dishes in go through applyChange (ledger reason 'cook'), exactly once each.
 
-import { COOK_MS, STOVE_BATCH_MAX } from './config.ts';
-import { getFurnitureType } from './furniture.ts';
+import { COOK_MS, PREP_BONUS, PREP_TABLE_ID, STOVE_BATCH_MAX } from './config.ts';
+import { footprintRect, getFurnitureType } from './furniture.ts';
+import { kitchenRect, type Room } from './room.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { FOOD_TYPES, getFoodType, isFoodId, type FoodType } from './materials.ts';
-import type { FoodId, FurnitureItem, MaterialId } from './types.ts';
+import type { FoodId, FurnitureItem, MaterialId, Rect } from './types.ts';
 
 export { FOOD_TYPES };
 
@@ -20,6 +21,8 @@ export interface Cook {
   food: FoodId;
   qty: number;
   readyAt: number;
+  /** Extra dishes the kitchen's prep tables add to this batch (step T1b); absent = 0. They cost no crops. */
+  bonus?: number;
 }
 
 /** How long one batch of a recipe takes, ms: its own cookMs, else the default for its rank. */
@@ -51,6 +54,27 @@ function placedStove(state: GameState, uid: number): FurnitureItem | undefined {
 
 function withCooks(state: GameState, cooks: Cook[]): GameState {
   return { ...state, tavern: { ...state.tavern, cooks } };
+}
+
+const inside = (a: Rect, z: Rect): boolean => a.x >= z.x && a.y >= z.y && a.x + a.w <= z.x + z.w && a.y + a.h <= z.y + z.h;
+/** True when two footprints share an edge (cell-adjacent, not diagonal). */
+function touching(a: Rect, b: Rect): boolean {
+  const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  return (overlapY > 0 && (a.x + a.w === b.x || b.x + b.w === a.x)) || (overlapX > 0 && (a.y + a.h === b.y || b.y + b.h === a.y));
+}
+
+/**
+ * The dishes a stove adds to every batch (step T1b, config PREP_BONUS): each prep table that is INSIDE the kitchen zone and cell-adjacent to the stove adds
+ * perTable, at most max. A stove outside the zone still cooks, without the bonus.
+ */
+export function prepBonus(items: readonly FurnitureItem[], room: Room, stove: FurnitureItem): number {
+  const zone = kitchenRect(room);
+  if (!zone || stove.roomId !== room.id) return 0;
+  const stoveRect = footprintRect(stove, getFurnitureType(stove.typeId));
+  if (!inside(stoveRect, zone)) return 0;
+  const tables = items.filter((i) => i.roomId === room.id && i.onItemUid === null && i.typeId === PREP_TABLE_ID && inside(footprintRect(i, getFurnitureType(i.typeId)), zone) && touching(footprintRect(i, getFurnitureType(i.typeId)), stoveRect));
+  return Math.min(PREP_BONUS.max, tables.length * PREP_BONUS.perTable);
 }
 
 /** The inputs of `qty` dishes of a recipe. */
@@ -89,16 +113,20 @@ export function startCook(state: GameState, stoveUid: number, food: string, qty:
   const used: Partial<Record<MaterialId, number>> = {};
   for (const [id, n] of Object.entries(batchInputs(type, qty)) as [MaterialId, number][]) used[id] = -n;
   const paid = applyChange(state, { reason: 'cook', materials: used, note: `cooking ${qty} x ${food}` }, at);
-  return paid && withCooks(paid, [...paid.tavern.cooks, { stoveUid, food, qty, readyAt: at + cookMs(type) }]);
+  const room = paid?.rooms.find((r) => r.id === paid.tavern.roomId);
+  const stove = placedStove(state, stoveUid);
+  const bonus = room && stove ? prepBonus(state.items, room, stove) : 0;
+  return paid && withCooks(paid, [...paid.tavern.cooks, { stoveUid, food, qty, readyAt: at + cookMs(type), ...(bonus > 0 ? { bonus } : {}) }]);
 }
 
 /** Collects the dishes of a ready batch into the bag; the stove is empty again. Null if not ready. */
 export function collectCook(state: GameState, stoveUid: number, at: number): { state: GameState; food: FoodId; qty: number } | null {
   const cook = cookOf(state.tavern.cooks, stoveUid);
   if (!cook || !cookReady(cook, at) || !placedStove(state, stoveUid)) return null;
-  const got = applyChange(state, { reason: 'cook', materials: { [cook.food]: cook.qty }, note: `collected ${cook.qty} x ${cook.food}` }, at);
+  const qty = cook.qty + (cook.bonus ?? 0);
+  const got = applyChange(state, { reason: 'cook', materials: { [cook.food]: qty }, note: `collected ${qty} x ${cook.food}` }, at);
   if (!got) return null;
-  return { state: withCooks(got, got.tavern.cooks.filter((c) => c.stoveUid !== stoveUid)), food: cook.food, qty: cook.qty };
+  return { state: withCooks(got, got.tavern.cooks.filter((c) => c.stoveUid !== stoveUid)), food: cook.food, qty };
 }
 
 /**

@@ -67,9 +67,9 @@ describe('the menu (step 9t)', () => {
 
   it('out of stock is off the menu (the row stays for when there is stock again)', () => {
     let s = setMenu(withAle(), 'root_ale', { price: 10 })!;
-    s = applyChange(s, { reason: 'debug', materials: { root_ale: -6 } }, 0)!;
+    s = { ...s, tavern: { ...s.tavern, taps: [] } }; // the taps ran dry
     expect(menuOffers(s)).toEqual([]);
-    expect(menuRows(s)).toEqual([{ id: 'root_ale', price: 10, baseValue: 9, stock: 0, on: true }]);
+    expect(menuRows(s)).toEqual([{ id: 'root_ale', price: 10, baseValue: 9, stock: 0, on: true, inBag: 0, onTap: 0 }]);
   });
 
   it('the price rule: fair = smile, cheap = big smile, too high = something cheaper or nothing', () => {

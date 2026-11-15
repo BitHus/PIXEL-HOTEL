@@ -4,11 +4,12 @@ import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { DRINK_TYPES, getMaterialType } from './materials.ts';
 import { createNewPlayer } from './newPlayer.ts';
+import { withReadyBarrel } from './tavernTest.ts';
 import { readSave, toSaveText } from './save.ts';
 import { ledgerMaterials } from './testState.ts';
 
 const MIN = 60_000;
-const fresh = (): GameState => createNewPlayer(undefined, 1000);
+const fresh = (): GameState => withReadyBarrel(createNewPlayer(undefined, 1000), 1000); // the pre-T1 start: a barrel with root ale ready
 const barrelUid = (s: GameState): number => s.items.find((i) => i.typeId === 'brewing_barrel')!.uid;
 const withCrops = (s: GameState): GameState => applyChange(s, { reason: 'debug', materials: { turnip: 4, potato: 4, carrot: 4, pumpkin: 1, glowcap: 1 } }, 1000)!;
 
@@ -26,7 +27,7 @@ describe('brewing (step 9t)', () => {
     }
   });
 
-  it('a new game starts with one barrel holding 7 root ale ready to collect', () => {
+  it('a barrel holding 7 root ale ready to collect gives the mugs once (the new game now starts with them on a tap, tavernStart.test)', () => {
     const s = fresh();
     const uid = barrelUid(s);
     expect(barrels(s.items, s.tavern.roomId).map((b) => b.uid)).toEqual([uid]);

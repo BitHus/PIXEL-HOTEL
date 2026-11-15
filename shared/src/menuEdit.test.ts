@@ -4,9 +4,20 @@ import { EMPTY_MENU_HELP, menuIsEmpty, priceCeiling, priceHint, priceStep, stepM
 import { createNewPlayer } from './newPlayer.ts';
 import { menuEntry, menuOffers, menuRows } from './tavern.ts';
 import type { GameState } from './gameState.ts';
+import { isDrinkId } from './materials.ts';
+import { stock } from './tavernTest.ts';
 
-const fresh = (): GameState => createNewPlayer(undefined, 1000);
-const give = (s: GameState, m: Record<string, number>): GameState => applyChange(s, { reason: 'debug', materials: m }, 1000)!;
+// The new game's 7 mugs on a tap are taken off here (the tests below count mugs themselves).
+const fresh = (): GameState => {
+  const s = createNewPlayer(undefined, 1000);
+  return { ...s, tavern: { ...s.tavern, taps: [] } };
+};
+/** Gives goods: drinks go onto a tap (T1: only mugs on a tap are on the menu), the rest into the bag. */
+const give = (s: GameState, m: Record<string, number>): GameState => {
+  let out = s;
+  for (const [id, n] of Object.entries(m)) out = isDrinkId(id) ? stock(out, id, n) : applyChange(out, { reason: 'debug', materials: { [id]: n } }, 1000)!;
+  return out;
+};
 
 describe('the Menu panel rules (step 9t C)', () => {
   it('the stepper moves by 10% of the baseValue, at least 1, between 1 and 3 x the baseValue', () => {
@@ -42,7 +53,7 @@ describe('the Menu panel rules (step 9t C)', () => {
   it('out of stock means off the menu (guests cannot order it), though the row stays when it was set', () => {
     let s = give(fresh(), { root_ale: 1 });
     expect(menuOffers(s)).toHaveLength(1);
-    s = applyChange(s, { reason: 'debug', materials: { root_ale: -1 } }, 1000)!;
+    s = { ...s, tavern: { ...s.tavern, taps: [] } }; // the last mug is gone
     expect(menuOffers(s)).toEqual([]);
     expect(menuIsEmpty(s)).toBe(true);
     expect(EMPTY_MENU_HELP).toMatch(/brew/i);

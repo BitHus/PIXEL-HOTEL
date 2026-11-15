@@ -8,6 +8,7 @@ import { deliverOrder, stepTavern, type TavernEvent, type TavernWorld } from './
 import { buildNavGrid } from './nav.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
+import { loadTap } from './taps.ts';
 import { clearDish, collectCoins, openOrders, pickUpOrder, requestServe } from './tavern.ts';
 import type { Facing, Rng } from './types.ts';
 
@@ -25,16 +26,23 @@ export function tavernWorld(s: GameState, playerHere = true): TavernWorld {
  * (drinks on, dishes off). The real new game (3 seats, the early dish on, 7 mugs) is tested in newPlayer.test.ts and tavernStart.test.ts.
  */
 export function legacyStart(): GameState {
-  const s = createNewPlayer(undefined, 0);
+  const s = withReadyBarrel(createNewPlayer(undefined, 0), 0);
   const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'counter' && c.y + 32 === i.y && c.x === i.x))!;
   return { ...s, items: s.items.filter((i) => i.uid !== barStool.uid), tavern: { ...s.tavern, menu: {} } };
 }
 
-/** The legacy start with its barrel emptied: 6 root ale in the bag (on the menu at 9 gold). The start barrel gives 7 mugs now; one goes back. */
+/** A new game as it was before step T1: the start barrel holds 7 root ale ready to collect (at `at`) and no tap is loaded (a real new game has the 7 mugs on a tap and an empty barrel). */
+export function withReadyBarrel(s: GameState, at: number): GameState {
+  const barrel = s.items.find((i) => i.typeId === 'brewing_barrel')!;
+  return { ...s, tavern: { ...s.tavern, taps: [], brews: [{ barrelUid: barrel.uid, drink: 'root_ale', readyAt: at }] } };
+}
+
+/** The legacy start with its barrel emptied: 6 root ale LOADED ON A TAP (step T1; on the menu at 9 gold). The start barrel gives 7 mugs; one goes back. */
 export function withAle(): GameState {
   const s = legacyStart();
   const got = collectBrew(s, s.items.find((i) => i.typeId === 'brewing_barrel')!.uid, 0)!.state;
-  return applyChange(got, { reason: 'debug', materials: { root_ale: -1 } }, 0)!;
+  const less = applyChange(got, { reason: 'debug', materials: { root_ale: -1 } }, 0)!;
+  return loadTap(less, less.items.find((i) => i.typeId === 'tap_stand')!.uid, 0, 'root_ale', 6, 0)!;
 }
 
 export function withItem(s: GameState, uid: number, typeId: string, x: number, y: number, facing: Facing = 'down'): GameState {
@@ -81,4 +89,14 @@ export function tidy(s: GameState, at: number): GameState {
     s = clearDish(s, m.id) ?? s;
   }
   return s;
+}
+
+/** Puts n mugs of a drink straight onto a tap of the first tap stand (the tap that has it, else the first free one; no TAP_CAP; tests only): the stock a guest can order. */
+export function stock(s: GameState, drink: string, n: number): GameState {
+  const stand = s.items.find((i) => i.typeId === 'tap_stand')!;
+  const mine = s.tavern.taps.filter((t) => t.standUid === stand.uid);
+  const cur = mine.find((t) => t.drink === drink);
+  const slot = cur?.slot ?? [0, 1].find((k) => !mine.some((t) => t.slot === k))!;
+  const other = s.tavern.taps.filter((t) => t !== cur);
+  return { ...s, tavern: { ...s.tavern, taps: [...other, { standUid: stand.uid, slot, drink: drink as never, mugs: (cur?.mugs ?? 0) + n }] } };
 }

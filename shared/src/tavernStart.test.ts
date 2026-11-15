@@ -41,13 +41,16 @@ describe('a new tavern (step S3)', () => {
     expect(seats.filter((k) => k.tableUid === counter.uid)).toHaveLength(1);
   });
 
-  it('the start barrel holds 7 root ale and the early dish is on the menu', () => {
+  it('7 root ale start LOADED ON A TAP (step T1; the start barrel is empty) and the early dish is on the menu', () => {
     const s = createNewPlayer(undefined, 0);
     expect(TAVERN_START_DRINK).toBe('root_ale');
-    expect(s.tavern.brews[0]).toMatchObject({ drink: 'root_ale' });
-    const got = collectBrew(s, s.tavern.brews[0]!.barrelUid, 0)!;
-    expect(got.mugs).toBe(getDrinkType('root_ale').mugs);
-    expect(got.mugs).toBe(7);
+    expect(s.tavern.brews).toEqual([]);
+    const stand = s.items.find((i) => i.typeId === 'tap_stand')!;
+    expect(s.tavern.taps).toEqual([{ standUid: stand.uid, slot: 0, drink: 'root_ale', mugs: getDrinkType('root_ale').mugs }]);
+    expect(s.tavern.taps[0]!.mugs).toBe(7);
+    expect(s.player.materials.root_ale).toBeUndefined(); // nothing in the bag
+    expect(menuOffers(s).find((o) => o.id === 'root_ale')).toMatchObject({ stock: 7 });
+    expect(collectBrew(s, s.items.find((i) => i.typeId === 'brewing_barrel')!.uid, 0)).toBeNull();
     expect(menuRows(s).find((r) => r.id === TAVERN_START_DISH)).toMatchObject({ on: true, stock: 0, price: 14 }); // on, but no stock: no guest is offered a dish that is not there
     expect(menuOffers(s).some((o) => o.id === TAVERN_START_DISH)).toBe(false);
     expect(s.tavern.menu[TAVERN_START_DISH]).toEqual({ on: true, price: 14 });

@@ -5,7 +5,7 @@
 import { CUSTOMER_FIRST_ID, DEFAULT_INN_NAME, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
-import { addShopStartItems, addStove, addTavern } from './newPlayer.ts';
+import { addBarItems, addShopStartItems, addStove, addTavern } from './newPlayer.ts';
 import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
 import { emptyLakeside } from './woodcut.ts';
@@ -311,6 +311,16 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || !isObject(state.player)) return state;
     return { ...state, player: { ...state.player, innName: typeof state.player.innName === 'string' ? state.player.innName : DEFAULT_INN_NAME } };
   },
+  // 24 -> 25 (step T1): TavernState.taps (empty) and tapsIntroSeen (false = explain once). The bar gets a tap stand and a register ON it, or in the
+  // bag with the toast when it has no free cell. Drink stock in the bag stays in the bag. Nothing is lost.
+  24: (state) => {
+    if (!isObject(state) || !isObject(state.tavern) || !Array.isArray(state.items) || !Array.isArray(state.rooms) || !Array.isArray(state.ledger) || !isObject(state.player)) return state;
+    try {
+      return addBarItems(state as unknown as GameState, typeof state.tavern.updatedAt === 'number' ? state.tavern.updatedAt : 0);
+    } catch {
+      return { ...state, tavern: { ...state.tavern, taps: [], tapsIntroSeen: false } };
+    }
+  },
 };
 
 /** The storage key for a save version. */
@@ -375,7 +385,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isInt(p.farmRoomId) || !x.rooms.every((r) => isObject(r) && isObject(r.plants) && isObject(r.blocks))) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   const t = x.tavern;
-  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.serveQueue) || !isInt(t.nextGuestId)) return false;
+  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.taps) || !Array.isArray(t.serveQueue) || !isInt(t.nextGuestId)) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }
