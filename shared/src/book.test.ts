@@ -110,8 +110,8 @@ describe('the seen list (Player.seen, step 9e)', () => {
 });
 
 describe('the Book (step 9e)', () => {
-  it('has five tabs; every material, fish and furniture type is in exactly one', () => {
-    expect(BOOK_TABS).toEqual(['materials', 'furniture', 'food', 'fish', 'enemies']);
+  it('has six tabs; every material, fish and furniture type is in exactly one', () => {
+    expect(BOOK_TABS).toEqual(['materials', 'blocks', 'furniture', 'food', 'fish', 'enemies']);
     const keys = BOOK_TABS.flatMap((t) => bookEntries(t).map((e) => e.key));
     expect(new Set(keys).size).toBe(keys.length);
     for (const m of MATERIAL_TYPES) expect(keys).toContain(m.id);

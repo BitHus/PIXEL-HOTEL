@@ -5,7 +5,7 @@ import { finishRun, runIsFree, startRun } from './bank.ts';
 
 function withGold(gold: number, extra: Partial<GameState['player']> = {}): GameState {
   const s = createNewPlayer();
-  return { ...s, player: { ...s.player, wallet: { gold }, ...extra } };
+  return { ...s, player: { ...s.player, wallet: { ...s.player.wallet, gold }, ...extra } };
 }
 
 describe('starting and banking a run (sections 9 and 10)', () => {

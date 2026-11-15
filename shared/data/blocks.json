@@ -1,0 +1,12 @@
+[
+  {"id": "dirt", "name": "Dirt block", "hardness": 1, "rank": "common", "baseValue": 2, "inCatalog": true, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["walnut", "oak"]}},
+  {"id": "clay", "name": "Clay block", "hardness": 2, "rank": "common", "baseValue": 3, "inCatalog": false, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["clay", "rust"]}},
+  {"id": "thatch", "name": "Thatch block", "hardness": 2, "rank": "common", "baseValue": 3, "inCatalog": false, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["butter", "sand"]}},
+  {"id": "glass", "name": "Glass block", "hardness": 2, "rank": "rare", "baseValue": 9, "inCatalog": true, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["cyan", "white"]}},
+  {"id": "planks", "name": "Plank block", "hardness": 3, "rank": "common", "baseValue": 4, "inCatalog": true, "drops": [{"item": "wood", "chance": 0.1}], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["oak", "sand"]}},
+  {"id": "lantern_block", "name": "Lantern block", "hardness": 3, "rank": "rare", "baseValue": 12, "inCatalog": false, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["orange", "butter"]}},
+  {"id": "stone", "name": "Stone block", "hardness": 4, "rank": "common", "baseValue": 5, "inCatalog": true, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["slate", "steel"]}},
+  {"id": "brick", "name": "Brick block", "hardness": 5, "rank": "common", "baseValue": 7, "inCatalog": false, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["red", "crimson"]}},
+  {"id": "mossy_stone", "name": "Mossy stone block", "hardness": 6, "rank": "rare", "baseValue": 12, "inCatalog": false, "drops": [{"item": "cloth", "chance": 0.05}], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["forest", "slate"]}},
+  {"id": "cinder_block", "name": "Cinder block", "hardness": 8, "rank": "ultra_rare", "baseValue": 24, "inCatalog": false, "drops": [], "seedId": null, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["ink", "crimson"]}}
+]

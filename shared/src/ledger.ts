@@ -10,6 +10,8 @@ export interface Change {
   reason: LedgerReason;
   /** Gold added (negative = spent). */
   gold?: number;
+  /** Gems added (negative = spent). */
+  gems?: number;
   /** Materials added (negative = used). */
   materials?: Partial<Record<MaterialId, number>>;
   /** New furniture items (type ids), added to the inventory. */
@@ -38,6 +40,8 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
   const p = state.player;
   const gold = p.wallet.gold + (change.gold ?? 0);
   if (gold < 0 || !Number.isInteger(gold)) return null;
+  const gems = (p.wallet.gems ?? 0) + (change.gems ?? 0);
+  if (gems < 0 || !Number.isInteger(gems)) return null;
   const materials = { ...p.materials };
   for (const [id, n] of Object.entries(change.materials ?? {}) as [MaterialId, number][]) {
     const next = (materials[id] ?? 0) + n;
@@ -79,6 +83,7 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
     playerId: p.id,
     reason: change.reason,
     goldDelta: change.gold ?? 0,
+    ...(change.gems ? { gemsDelta: change.gems } : {}),
     ...(change.materials ? { materials: { ...change.materials } } : {}),
     ...(addedUids.length > 0 ? { furnitureUids: addedUids } : {}),
     ...(remove.size > 0 ? { removedUids: [...remove] } : {}),
@@ -95,7 +100,7 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
   }
   return {
     ...state,
-    player: { ...p, wallet: { gold }, materials, seen },
+    player: { ...p, wallet: { gold, gems }, materials, seen },
     items: [...state.items.filter((i) => !remove.has(i.uid)), ...returned, ...added],
     nextUid,
     ledger: [...state.ledger, entry],

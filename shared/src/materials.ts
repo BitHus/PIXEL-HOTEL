@@ -8,6 +8,7 @@ import cropData from '../data/crops.json';
 import foodData from '../data/food.json';
 import drinkData from '../data/drinks.json';
 import { CATCH_TYPES } from './fish.ts';
+import { BLOCK_TYPES } from './blockTypes.ts';
 import type { Icon } from './icons.ts';
 import type { CropId, DrinkId, FoodId, MaterialGroup, MaterialId, MaterialType, Rank, SeedId } from './types.ts';
 
@@ -76,6 +77,8 @@ const base = (materialData as Omit<MaterialType, 'group'>[]).map((m): MaterialTy
 
 export const MATERIAL_TYPES: MaterialType[] = [
   ...base,
+  // The blocks (step BG5): placed in a cell, punched out again.
+  ...BLOCK_TYPES.map((b): MaterialType => ({ id: b.id, name: b.name, baseValue: b.baseValue, color: 0, icon: b.icon, rank: b.rank, group: 'block' })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, icon: c.seedIcon, rank: c.rank, group: 'seed' })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, icon: c.icon, rank: c.rank, group: 'crop' })),
   ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, icon: f.icon, rank: f.rank, group: 'food' })),

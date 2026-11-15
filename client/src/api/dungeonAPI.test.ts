@@ -11,7 +11,7 @@ const clock = (): number => t;
 
 function stateWith(gold: number, extra: Partial<GameState> = {}): GameState {
   const s = createNewPlayer(undefined, 0);
-  return { ...s, playerCreated: true, player: { ...s.player, wallet: { gold } }, ...extra };
+  return { ...s, playerCreated: true, player: { ...s.player, wallet: { ...s.player.wallet, gold } }, ...extra };
 }
 
 function open(state: GameState, seed = 1) {

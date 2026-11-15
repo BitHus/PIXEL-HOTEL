@@ -21,6 +21,28 @@
       "hat": null
     }
   ],
+  "blocks": [
+    {
+      "percent": 25,
+      "gold": 40,
+      "hat": null
+    },
+    {
+      "percent": 50,
+      "gold": 100,
+      "hat": null
+    },
+    {
+      "percent": 75,
+      "gold": 220,
+      "hat": null
+    },
+    {
+      "percent": 100,
+      "gold": 500,
+      "hat": null
+    }
+  ],
   "furniture": [
     {
       "percent": 25,

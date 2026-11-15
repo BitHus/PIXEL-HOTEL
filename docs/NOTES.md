@@ -30,6 +30,7 @@ Contents:
 - Ranks and the Book (step 9e)
 - Lakeside: woodcutting and fishing (step 9f)
 - Atmosphere: light, shadows, backdrop, dust, sound
+- BG5: blocks and punching, gems core, gain popups (step BG5)
 
 ## History (the old CURRENT STATE and plan notes)
 
@@ -252,6 +253,8 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   the world offset on whole device px.
 
 ## Input rule and build mode (full text)
+
+- CHANGED IN BG5: PLAY MODE also places and punches blocks (see the BG5 section at the end). Build mode is for furniture only; everything below about play mode walking still holds for taps that are not on a block and not a block placement.
 
 - INPUT RULE (touch and mouse):
   - A press is a TAP only if it moved less than TAP_MAX_MOVE_PX (8 screen px) and was held
@@ -1170,3 +1173,71 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   - Frame time, headless software renderer at 360 x 740, dpr 2 (not a real phone; only the
     relation counts): before 27 ms, lighting off 26 ms, lighting on 63 ms (two extra full-screen
     layers). Not measured on a real phone.
+
+## BG5: blocks and punching (step BG5; also the gems core and the gain popups)
+
+- OWNER'S DECISIONS: (b) play mode places and punches directly, furniture is still moved in Build
+  mode; (c) breaking blocks can drop gems in every room; (d) blocks in every room the player may
+  build in (hotel, shop/tavern, farm), the lakeside stays unbuildable.
+- DATA: shared/data/blocks.json (BlockType in shared/src/blockTypes.ts): dirt 1, clay 2, thatch 2,
+  glass 2 (rare), planks 3, lantern_block 3 (rare), stone 4, brick 5, mossy_stone 6 (rare),
+  cinder_block 8 (ultra_rare). `drops` = extra items besides the block (planks: wood 10%, mossy stone:
+  cloth 5%), `seedId` null until BG6, `inCatalog` true for dirt, planks, stone, glass. Blocks are
+  materials with group 'block' (materials.ts adds BLOCK_TYPES), so bag, hotbar, ledger, Book, shop
+  slots and gains work unchanged. Block ids are in types.ts (BlockId). hotbar: bag.ts hotbarMaterial()
+  lets seeds AND blocks into the hotbar; a block type met for the first time lands in a free
+  hotbar slot like a seed. Book: new tab 'blocks' (bookRewards.json has its 25/50/75/100% gold).
+- ROOM: Room.blocks: Record<"col,row", { id, hits, hitAt }> (room.ts: blockKey, blockInCell,
+  blockList, blockRects). roomBlockers() now includes the blocks, so canPlace for furniture, the door
+  checks and every grid see them. (blockInCell, not blockAt: the dungeon already exports blockAt.)
+- RULES (shared/src/blocks.ts, all pure): blockProblem(room, items, type, c, r, { standing, from })
+  returns null or why: not_buildable (lakeside), wrong_room (placeIn), floor, door, taken, furniture
+  (any floor item, rugs too), fixed (farm plots, pot), avatar (a point in `standing`), door_blocked
+  (doorReachesMiddle with the block added), counter_blocked (behindReachable for every counter),
+  reach (from != null and farther than BLOCK_REACH cells, checked LAST so a walk is only offered for
+  an otherwise valid cell). placeBlock / hitBlock return a result with the new state (ledger reasons
+  block_place, block_break, block_return). hitBlock(state, roomId, c, r, at, lastHitAt, rng, from):
+  cooldown is passed in as lastHitAt (the API keeps it, not saved); hitsNow() heals after
+  BLOCK_HEAL_MS; crackStage() is for drawing. blockDrops(type, rng) rolls in the order: seed, extra
+  drops (data order), gems. approachSpot(grid, from, c, r): the free reachable cell nearest the
+  avatar within BLOCK_REACH - 1 cells of the target, where the avatar walks when it is too far.
+  Tests: blocks.test.ts (28), client/src/api/blocksAPI.test.ts (7), save.test.ts (14 -> 15),
+  bag.test.ts, book.test.ts.
+- GEMS CORE (BG4 not done, only what BG5 needs): Wallet.gems, applyChange({ gems }) and the ledger's
+  gemsDelta, gems.ts gemDrop(source, rank, rng) with config GEMS (only 'block': 15% chance, 1 to 2,
+  times GEM_RANK_MULT 1/2/4/8 by rank), GEMS_GAIN_ID 'gems' (a gain entry with itemId 'gems' in the
+  gains list; gainsSince reads gemsDelta), GEM_ICON in extraIcons.json, info panel shows gems next to
+  gold. The existing material 'gem' (a mine find) is a different thing. KNOWN LOOP: place + punch
+  the same block forever yields gems (gems have no use before BG8; BG9 balances it).
+- ROOM UPGRADE: economy.upgradeRoom sends blocks on the new door zone and the new farm plots back
+  to the bag (reason block_return, not a gain); if the door then cannot reach the middle, all of the
+  room's blocks go back. economy.ts also has buyBlocks / blockPrice / catalogBlocks (price =
+  baseValue * CATALOG_PRICE_MULT).
+- GAMEAPI (api.ts): placeBlock(c, r, blockId), hitBlock(c, r) -> BlockResult { placed | cracked |
+  broken (with room + gains) | walk (path) | refused (problem) }, buyBlocks(id, qty). LocalGameAPI:
+  standingPoints() = own avatar (if still) + idle customers and guests; walkCloser() answers 'walk';
+  commitBlocks() saves, rebuilds this.grid, resets shopGrid and re-paths the shop's customers.
+- SAVE: SAVE_VERSION 15; MIGRATIONS[14] gives every room blocks: {} and wallet.gems 0; isGameState
+  checks both.
+- CLIENT: render/blockViews.ts (BlockViews: one Container per block in view.objects with depth key
+  (foot of the cell, x of the cell middle, negative uid), drawBlockArt = a cube from the icon's two
+  colours with a top face of 11 px and a front face, special faces for brick, planks, glass,
+  lantern, stone; cracks per stage (3 pictures), a 140 ms shake on a punch, a puff of bits on a
+  break, the ghost cell (green/red) in view.ghostLayer; sync(room, now) runs every frame so the
+  heal shows). main.ts: selectedBlock, selectBlock(), blockTap(), doBlock() (a 'walk' answer sets
+  pendingBlock, done on arrival, at most 2 tries), updateBlockGhost(), Escape puts the block away.
+  Hotbar tap on a block selects it (tap again = put away). ui/gainPopups.ts: chips above the
+  avatar's head (POPUP_MS 1200, POPUP_MAX 5 at once, the rest queue, sparkle for ultra_rare and
+  legendary, Settings -> Popups, prefs.popups). Catalog has a Blocks tab (confirm panel: Buy 1 or
+  BLOCK_PACK = 10).
+- CONVENTION CHOICES TO CHECK (owner): a tap on an existing block ALWAYS punches it, also with a
+  block selected; a tap on a cell where a block does not fit falls through to walking or sitting
+  (only door, door_blocked and counter_blocked say why in a toast); rugs count as floor furniture
+  (no block on them); no quest hint for blocks (hints are indexed with their own done-triggers, so
+  it was not a one-line change).
+- NOT DONE: popups for chest, kill, fish, harvest, craft, cook, quest claims (BG3 B rest);
+  gem sources other than blocks, gem shop and packs (BG4, BG8); seeds from blocks (BG6); lantern
+  blocks do not light the room yet; blocks cast no shadows.
+- CHECKED BY EYE (headless Chromium, 900 x 640): place 5 dirt blocks, punch one (it breaks, a chip
+  floats up), stone cracks after 2 hits, glass and lantern art. A bug found that way: the hotbar
+  did not accept blocks (fitsArea) and the popup chip was stretched by a CSS order clash; both fixed.

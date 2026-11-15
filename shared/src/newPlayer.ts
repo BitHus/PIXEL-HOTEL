@@ -108,7 +108,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       name: config.name,
       level: START_PLAYER_LEVEL,
       xp: START_XP,
-      wallet: { gold: 0 },
+      wallet: { gold: 0, gems: 0 },
       materials: {},
       unlockedStyles: [styleKey('floor', START_FLOOR_STYLE), styleKey('wall', START_WALL_STYLE)],
       gear: [],

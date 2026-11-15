@@ -14,9 +14,11 @@
 import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, type RoomLevel } from './config.ts';
 import { growPlots } from './farm.ts';
 import { noPlaceRects } from './farmLayout.ts';
-import { FURNITURE_TYPES, footprintRect, getFurnitureType, pickUpItem } from './furniture.ts';
+import { FURNITURE_TYPES, doorReachesMiddle, footprintRect, getFurnitureType, pickUpItem, roomBlockers } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { BLOCK_TYPES, getBlockType } from './blockTypes.ts';
+import { blocksOverlapping } from './blocks.ts';
 import { doorZoneRect, paintFloorCells, paintWholeFloor, rectsOverlap, roomAtLevel, type Room } from './room.ts';
 import { returnOrphanLoot } from './shop.ts';
 import { findStyle, stylePrice } from './styles.ts';
@@ -115,7 +117,20 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
     if (rectsOverlap(fp, zone) || plots.some((r) => rectsOverlap(fp, r))) items = pickUpItem(items, i.uid);
   }
   const farm = grown.kind === 'farm' && paid.farm.roomId === roomId ? growPlots(paid.farm, level) : paid.farm;
-  return returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items, farm }, at);
+  let next = returnOrphanLoot({ ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items, farm }, at);
+  // Blocks (step BG5) on the new door zone or plots go back to the bag; if the door still cannot reach
+  // the middle of the grown room, all of its blocks do.
+  const room2 = next.rooms.find((r) => r.id === roomId) ?? grown;
+  const hit = [...blocksOverlapping(room2, zone), ...plots.flatMap((p) => blocksOverlapping(room2, p))];
+  next = returnBlocks(next, roomId, hit, at);
+  const room3 = next.rooms.find((r) => r.id === roomId) ?? grown;
+  if (!doorReachesMiddle(room3, roomBlockers(room3, next.items))) {
+    next = returnBlocks(next, roomId, Object.keys(room3.blocks).map((k) => {
+      const [c, r] = k.split(',').map(Number) as [number, number];
+      return { c, r, id: room3.blocks[k]!.id as string };
+    }), at);
+  }
+  return next;
 }
 
 /**
@@ -129,4 +144,38 @@ export function buyGear(state: GameState, id: ShopGearId, at: number): GameState
   if (!g || p.potions >= g.carryMax) return null;
   const next = applyChange(state, { reason: 'potion', gold: -g.price, note: 'bought health_potion' }, at);
   return next && { ...next, player: { ...next.player, potions: p.potions + 1 } };
+}
+
+/** Takes these blocks out of a room's layer and puts them back in the bag (ledger 'block_return'). */
+function returnBlocks(state: GameState, roomId: number, cells: { c: number; r: number; id: string }[], at: number): GameState {
+  if (cells.length === 0) return state;
+  const room = state.rooms.find((r) => r.id === roomId);
+  if (!room) return state;
+  const blocks = { ...room.blocks };
+  const back: Record<string, number> = {};
+  for (const b of cells) {
+    if (!blocks[`${b.c},${b.r}`]) continue;
+    delete blocks[`${b.c},${b.r}`];
+    back[b.id] = (back[b.id] ?? 0) + 1;
+  }
+  const given = applyChange(state, { reason: 'block_return', materials: back, notFound: back, note: `room ${roomId} changed` }, at);
+  if (!given) return state;
+  return { ...given, rooms: given.rooms.map((r) => (r.id === roomId ? { ...r, blocks } : r)) };
+}
+
+/** Catalog price of a block: baseValue * 3. */
+export function blockPrice(id: string): number {
+  return getBlockType(id).baseValue * CATALOG_PRICE_MULT;
+}
+
+/** The blocks the Catalog sells. */
+export function catalogBlocks() {
+  return BLOCK_TYPES.filter((b) => b.inCatalog);
+}
+
+/** Buys blocks from the Catalog into the bag. Null if the block is not sold or the gold is short. */
+export function buyBlocks(state: GameState, id: string, qty: number, at: number): GameState | null {
+  const b = BLOCK_TYPES.find((x) => x.id === id);
+  if (!b || !b.inCatalog || !Number.isInteger(qty) || qty < 1) return null;
+  return applyChange(state, { reason: 'catalog', gold: -blockPrice(id) * qty, materials: { [b.id]: qty }, note: `bought ${qty} ${id}` }, at);
 }

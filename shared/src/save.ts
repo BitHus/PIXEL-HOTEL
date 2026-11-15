@@ -219,6 +219,12 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       return state;
     }
   },
+  // 14 -> 15 (step BG5, blocks and gems): every room gets an empty block layer, the wallet gets 0 gems.
+  14: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms) || !isObject(state.player) || !isObject(state.player.wallet)) return state;
+    const rooms = state.rooms.map((r) => (isObject(r) ? { ...r, blocks: isObject(r.blocks) ? r.blocks : {} } : r));
+    return { ...state, rooms, player: { ...state.player, wallet: { ...state.player.wallet, gems: 0 } } };
+  },
 };
 
 /** The storage key for a save version. */
@@ -268,7 +274,7 @@ const isInt = (x: unknown): boolean => typeof x === 'number' && Number.isInteger
 export function isGameState(x: unknown): x is GameState {
   if (!isObject(x)) return false;
   const p = x.player;
-  if (!isObject(p) || !isInt(p.id) || !isObject(p.wallet) || !isInt(p.wallet.gold) || !isObject(p.materials)) return false;
+  if (!isObject(p) || !isInt(p.id) || !isObject(p.wallet) || !isInt(p.wallet.gold) || !isInt(p.wallet.gems) || !isObject(p.materials)) return false;
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
   if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;

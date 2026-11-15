@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrangeSlots, emptyBag, hotbarToBag, moveSlot, sortBag, stackBag, type SlotLayout } from './bag.ts';
+import { arrangeSlots, emptyBag, fitsArea, hotbarToBag, moveSlot, sortBag, stackBag, type SlotLayout } from './bag.ts';
 import { BAG_SLOTS, HOTBAR_SLOTS } from './config.ts';
 
 const hot = (...ids: (string | null)[]): (string | null)[] => [...ids, ...Array(6 - ids.length).fill(null)];
@@ -111,5 +111,18 @@ describe('seeds in the hotbar (step 9b)', () => {
     const sk = arrangeSlots(hotbarToBag(withChair, 0)!, ['chair'], ['wood', 'turnip_seed']);
     const seedAt = sk.bag.materials.indexOf('turnip_seed');
     expect(moveSlot(sk, { area: 'materials', index: seedAt }, { area: 'hotbar', index: 1 })).toBeNull();
+  });
+});
+
+describe('blocks in the hotbar (step BG5)', () => {
+  it('a new block type goes into a free hotbar slot, like a seed, and can go back to the bag', () => {
+    const layout = arrangeSlots({ hotbar: Array(6).fill(null), bag: { furniture: [], materials: [] } }, [], ['wood', 'dirt']);
+    expect(layout.hotbar[0]).toBe('dirt');
+    expect(layout.bag.materials).toContain('wood');
+    expect(fitsArea('hotbar', 'dirt')).toBe(true);
+    expect(fitsArea('hotbar', 'wood')).toBe(false);
+    const back = hotbarToBag(layout, 0)!;
+    expect(back.hotbar[0]).toBeNull();
+    expect(back.bag.materials).toContain('dirt');
   });
 });

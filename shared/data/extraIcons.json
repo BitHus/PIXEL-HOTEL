@@ -5,5 +5,12 @@
       "gold",
       "butter"
     ]
+  },
+  "gems": {
+    "shape": "gem",
+    "colors": [
+      "cyan",
+      "white"
+    ]
   }
 }
