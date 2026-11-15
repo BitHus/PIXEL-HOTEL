@@ -1365,3 +1365,13 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 - CHECKED BY EYE (headless Chromium 420 x 760 @2x): a v17 save with two piles: the run bar shows gems, a tap walks onto a pile,
   the pile is gone, a gem chip floats above the head, the run's gems go from 2 to 3. NOT checked on a real phone, nor the
   lakeside / room gem fly.
+
+## BG4c: block drops like Growtopia (owner's request, 15 Nov)
+
+- A broken block no longer always returns itself: every part is its own roll (config BLOCK_DROPS by the block's rank):
+  the block, its seed, extra drops, gems. So a break gives nothing, the block, the seed, both, and/or gems.
+  common 60% block / 15% seed / 25% gems (1-2); rare 50 / 12 / 35% (2-5); ultra_rare 45 / 10 / 50% (4-8);
+  legendary 40 / 8 / 60% (7-12). Pure `blockDrops`, `blockGemDrop`, `gemPieces` (shared/src/gems.ts, blocks.ts).
+- Gem colours (GEM_TIERS): pieces of 1 (green), 5 (blue), 10 (red); the amount is split biggest first (7 = 5+1+1).
+  ui/gemFly.ts flies one picture per piece (at most 5) from the broken cell to the head. BLOCK_SEED_CHANCE is gone.
+- BG9 still tunes these numbers (blocks now cost gold to replace: a sink).

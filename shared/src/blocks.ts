@@ -8,13 +8,13 @@
 // Blocks are items in the bag (Player.materials, group 'block'); every change goes through
 // ledger.applyChange. Only the room's owner changes the room.
 
-import { BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_REACH, BLOCK_SEED_CHANCE, BUILD_CELL } from './config.ts';
+import { BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BUILD_CELL } from './config.ts';
 import { getBlockType, isBlockId, type BlockCell, type BlockLookup, type BlockType } from './blockTypes.ts';
 import { footprintRect, getFurnitureType, behindPoint, behindReachable, doorReachesMiddle, roomBlockers, type FurnitureLookup } from './furniture.ts';
 import { noPlaceRects, fixedBlockers } from './farmLayout.ts';
 import { cellCenter, isCellFree, nearestFreeCell, reachableCells, type NavGrid } from './nav.ts';
 import type { GameState } from './gameState.ts';
-import { gemDrop } from './gems.ts';
+import { blockGemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
 import { blockInCell, blockKey, cellOf, cellOnFloor, cellRectOf, doorZoneRect, plantInCell, rectsOverlap, type Room, type RoomKind } from './room.ts';
 import type { FurnitureItem, MaterialId, Point, Rng } from './types.ts';
@@ -165,17 +165,19 @@ export interface BlockDrops {
 }
 
 /**
- * What a broken block gives: itself (always), its seed (BLOCK_SEED_CHANCE, when it has one), each
- * extra drop by its chance, and maybe gems by the block's rank. Rolls in that order.
+ * What a broken block gives, each part its own roll (so: block, seed, both, gems, or nothing), by the block's
+ * rank (BLOCK_DROPS). Rolls in order: block, seed, each extra drop, gem chance, gem amount.
  */
 export function blockDrops(type: BlockType, rng: Rng): BlockDrops {
-  const materials: Partial<Record<MaterialId, number>> = { [type.id]: 1 };
+  const t = BLOCK_DROPS[type.rank];
+  const materials: Partial<Record<MaterialId, number>> = {};
   const add = (id: MaterialId): void => {
     materials[id] = (materials[id] ?? 0) + 1;
   };
-  if (type.seedId && rng() < BLOCK_SEED_CHANCE) add(type.seedId);
+  if (rng() < t.block) add(type.id);
+  if (type.seedId && rng() < t.seed) add(type.seedId);
   for (const d of type.drops) if (rng() < d.chance) add(d.item);
-  return { materials, gems: gemDrop('block', type.rank, rng) };
+  return { materials, gems: blockGemDrop(type.rank, rng) };
 }
 
 export type HitBlockResult =
@@ -216,7 +218,7 @@ export function hitBlock(
   const drops = blockDrops(type, rng);
   const blocks = { ...room.blocks };
   delete blocks[key];
-  const paid = applyChange(state, { reason: 'block_break', materials: drops.materials, ...(drops.gems > 0 ? { gems: drops.gems } : {}), note: `${type.id}@${key}` }, at);
+  const paid = applyChange(state, { reason: 'block_break', ...(Object.keys(drops.materials).length > 0 ? { materials: drops.materials } : {}), ...(drops.gems > 0 ? { gems: drops.gems } : {}), note: `${type.id}@${key}` }, at);
   if (!paid) return { ok: false, problem: 'no_block' };
   return { ok: true, kind: 'broken', state: withRoom(paid, { ...room, blocks }), drops };
 }
