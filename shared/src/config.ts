@@ -645,7 +645,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -876,6 +876,21 @@ export const BOOK_GEM_RANK = { 25: 'common', 50: 'rare', 75: 'ultra_rare', 100: 
 export const GEM_PICKUP_REACH = 28;
 /** The gem amount is multiplied by this per rank of the thing that dropped it. */
 export const GEM_RANK_MULT = { common: 1, rare: 2, ultra_rare: 4, legendary: 8 } as const;
+// ---------- Packs bought with gems (step BG8; BLOCKS-PLAN 3.8; fairness rules in CLAUDE.md section 13) ----------
+/**
+ * What each pack costs (gems) and how many things it gives (rolls). STARTER numbers: BG9 tunes them (the first Common
+ * Clothes Pack should be about an hour of play). The contents and the rank odds are in shared/data/packs.json.
+ */
+export const PACKS = {
+  random_blocks: { gemPrice: 30, rolls: 5 },
+  basic_seeds: { gemPrice: 25, rolls: 5 },
+  common_clothes: { gemPrice: 80, rolls: 3 },
+  rare_clothes: { gemPrice: 240, rolls: 3 },
+} as const;
+/** Client only: the pack's pop animation (shake, then burst) lasts this long, ms. */
+export const PACK_POP_MS = 700;
+/** A spare piece of clothing sells for its baseValue times this (gold, until trading exists). */
+export const SPARE_SELL = 1;
 /** The id a gem gain has in a gains list (gems are a currency, not an item). */
 export const GEMS_GAIN_ID = 'gems';
 /** Popups above the avatar's head (step BG3 B): how long one stays, and how many show at once. */

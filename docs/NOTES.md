@@ -1404,3 +1404,40 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 - Gem colours (GEM_TIERS): pieces of 1 (green), 5 (blue), 10 (red); the amount is split biggest first (7 = 5+1+1).
   ui/gemFly.ts flies one picture per piece (at most 5) from the broken cell to the head. BLOCK_SEED_CHANCE is gone.
 - BG9 still tunes these numbers (blocks now cost gold to replace: a sink).
+
+## BG8: packs bought with gems (step BG8)
+
+- RULES (CLAUDE.md section 13 and BRIEF 13 hold the fairness rules): gems earned in play only; contents and rank odds shown on the card
+  before buying; duplicates allowed (spares); no timers or limited offers. Owner's change to BLOCKS-PLAN 3.8: no "never repeat owned
+  clothes", no "gems back at completion".
+- DATA: shared/data/packs.json { id, name, pool: blocks | seeds | clothing, rankWeights (multipliers of RANK_WEIGHTS, 0 = never), icon }.
+  The numbers an owner tunes live in config PACKS { gemPrice, rolls } and SPARE_SELL (the resolved PackType in packs.ts has all fields).
+  Starter prices: Random Blocks 30 gems / 5 rolls, Basic Seeds 25 / 5, Common Clothes 80 / 3, Rare Clothes 240 / 3 (BG9 tunes).
+  Pools: blocks = all 10; seeds = crop seeds + block seeds (13); clothing = the hidden pieces of clothing.json (18: 7 common, 6 rare,
+  3 ultra_rare, 2 legendary). Common Clothes = common x1, rare x0.5; Rare Clothes = rare, ultra_rare, legendary at the base weights.
+- CLOTHING: clothing.json got `rank` and `baseValue` on every piece and 15 new hidden pieces (ids braids, bob, curly, hoodie, apron,
+  overalls, spiky, jerkin, kilt, breeches, top_knot, wayfarer_cloak, moonweave, crown_braid, ember_robe; mohawk, tunic, baggy keep their
+  ids and are still the splice results). The avatar art (render/avatarParts.ts) only knows the old styles: a new id draws like the
+  default (short hair / plain top / plain trousers), only the icon differs. Real looks come with art (step 6). rankOf() knows clothing ids.
+- SHARED (shared/src/packs.ts, pure): getPack, packPool, packOdds (rank rows in percent, passes the chance of a rank with no item to
+  the next lower rank like rollRank does; also what the card shows), copiesOwned, piecesMissing, openPack(state, id, rng, at) ->
+  { state, finds[], gains } | null, spareValue, sellSpare(state, id, qty, at) | null. ranks.ts got rankFallback (used by rollRank).
+- LEDGER: Change.addClothing (ids, repeats allowed: the first copy unlocks, later ones raise Player.clothingSpares) and
+  Change.sellSpares; LedgerEntry.clothing { id: +copies | -sold }; reasons 'pack' and 'spare_sale'. Finds go into Player.seen under the
+  clothing id (the Book counts them; there is NO Clothes tab yet: add one with the clothes art, remember the splice-harvested
+  pieces do not go through applyChange). gainsSince reports clothing copies. Player.packsOpened { packId: n } is only a counter (quests later).
+- SAVE: SAVE_VERSION 19, MIGRATIONS[18] adds clothingSpares {} and packsOpened {}; isGameState checks both.
+- API: GameAPI.openPack(packId) -> PackOpenResult { packId, finds, gains } | null (unknown pack, too few gems: nothing changes) and
+  sellSpare(id, qty) -> gold paid | null.
+- CLIENT: Catalog > Packs tab (ui/packsView.ts; one card per pack: picture, gem price, "Gives N things", every possible item as a
+  chip in its rank colour with the rank odds, "You still miss X of Y pieces" for clothes, an Open button that greys with "Need N more
+  gems"), "Your spares" with one Sell button per piece. ui/packOpening.ts: confirmBuy in gems (new BuyQuestion.currency), then
+  ui/packPop.ts (CSS shake + burst, PACK_POP_MS 700, none with reduced motion), BG3 popups, then a toast: "New! <pieces>." with a
+  "Wear it" button (toast.ts takes an optional action) or "Spare x2: <piece>.". The Avatar panel's unlocked list is refreshed after
+  an opening (and now also after a splice unlock, which only updated on reload before).
+- TESTS: shared/src/packs.test.ts (data, odds table, odds over 3000 packs per pack with a seeded rng, duplicates and spares, spare
+  sale, refused buys change nothing, ledger adds up, Book, migration), client/src/api/packsAPI.test.ts, client/src/ui/packOpening.test.ts.
+- TOOLS: `npm run simulate` prints gems per pack and hours of play per pack at the ceiling income and at the richest single activity
+  (blocks). The first Common Clothes Pack is about 0.9 h of focused block punching.
+- CHECKED BY EYE (headless Chromium 420 x 760): the Packs tab, the confirm panel, the pop, the toast, gems 150 -> 70. NOT checked on
+  a real phone; Sell button not clicked in the browser (tested through the API).

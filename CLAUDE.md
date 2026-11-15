@@ -115,7 +115,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Customers walk 72 px/s (+-10%), at most 5 NPCs in the shop, no fixed route (window-shoppers,
   pairs, talk lines from shared/data/npcLines.json); behind the counter is staff only.
 - Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
-- No trading in v1. Every change to gold or items goes through ONE function (ledger.ts
+- GEM SINK (BG8): packs cost gems (config PACKS; shared/data/packs.json; pure openPack in shared/src/packs.ts):
+  Random Blocks, Basic Seeds, Common Clothes, Rare Clothes. Rank first (RANK_WEIGHTS times the pack's multiplier),
+  then an item. A clothes piece found again is a SPARE (Player.clothingSpares), sold for baseValue * SPARE_SELL gold.
+- No trading in v1. Every change to gold, gems or items goes through ONE function (ledger.ts
   applyChange) and is written to the ledger.
 
 10. DUNGEON
@@ -194,8 +197,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Accounts: username and password only. No email, real name or birthday (so no password reset by
   email; an admin can set a new one). Ages 13 and up: one checkbox, no other age data.
 - Chat: public in the room only, word filter, report button, per-player mute, rate limits. No
-  private messages, no friend requests in v1. Room owners can set a room to private. No loot
-  boxes, no real-money purchases. The first release is a small private test.
+  private messages, no friend requests in v1. Room owners can set a room to private. No real-money
+  purchases. No loot boxes in the usual sense; the ONE random thing you pay for is a PACK (BG8), and only
+  under these FAIRNESS RULES: gems are earned in play only, never bought with money; the contents and
+  the rank odds are shown on the pack card before buying; duplicates are allowed (extra copies are spares,
+  sellable); no timers, limited offers or daily tricks that push buying. The first release is a small private test.
 
 14. WORKING RULES FOR YOU (the AI)
 - Do one step at a time. Do not build things from later steps. Keep files small and named by
@@ -227,10 +233,11 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
 - BG3 (gain popups, every source) and BG4 (gems from every source: block, harvest, chest, kill, mimic, boss,
   rock, chop, fish, quest, Book; floor piles in the dungeon and mine, kept on Leave, half lost on death in the
   crypt) are done (NOTES BG3b + BG4b). BG5 (blocks), BG5b (hold to repeat) and BG6 (seeds, the free-form farm)
-  are done too. Next: BG8-BG9 (BG9 tunes the gem numbers), then 9t B/C, 9g.
+  are done too. BG8 (packs for gems, Catalog > Packs, spares; NOTES BG8) is done. Next: BG9 (tunes the gem and pack
+  numbers), then 9t B/C, 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
 - BG7 (splicing: two seeds in one cell, 40 recipes, the Book's Splice tab) is done (NOTES BG7).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 18. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 19. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -274,7 +281,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 18) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 19) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers

@@ -31,6 +31,9 @@ import {
   MINE_HINT,
   MINE_UNLOCK_LEVEL,
   buySeeds,
+  openPack,
+  sellSpare,
+  type PackOpenResult,
   buyBlocks,
   approachSpot,
   blockRects,
@@ -702,6 +705,21 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     if (!inReach(me, c, r)) return this.walkCloser(me, c, r);
     this.commitBlocks(this.hintDone(res.state, SPLICE_HINT));
     return { kind: 'spliced', room: this.roomById(room.id)!, c, r, gains: [] };
+  }
+
+  async openPack(packId: string): Promise<PackOpenResult | null> {
+    const res = openPack(this.state, packId, this.rng, this.now());
+    if (!res) return null;
+    this.commit(res.state);
+    return { packId, finds: res.finds, gains: res.gains };
+  }
+
+  async sellSpare(clothingId: string, qty: number): Promise<number | null> {
+    const next = sellSpare(this.state, clothingId, qty, this.now());
+    if (!next) return null;
+    const paid = next.player.wallet.gold - this.state.player.wallet.gold;
+    this.commit(next);
+    return paid;
   }
 
   async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> {

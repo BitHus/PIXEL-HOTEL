@@ -270,6 +270,9 @@ export type LedgerReason =
   | 'tavern_order'
   | 'tavern'
   | 'tavern_gift'
+  // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.
+  | 'pack'
+  | 'spare_sale'
   | 'debug';
 
 export interface LedgerEntry {
@@ -283,6 +286,8 @@ export interface LedgerEntry {
   materials?: Partial<Record<MaterialId, number>>;
   /** Furniture added (new or back from a shop slot). */
   furnitureUids?: number[];
+  /** Clothing copies gained (positive; the first unlocks the piece, the rest are spares) or spares sold (negative), by id (step BG8). */
+  clothing?: Record<string, number>;
   /** Furniture taken out (put on a shop slot). */
   removedUids?: number[];
   note?: string;
@@ -328,6 +333,13 @@ export interface Player {
   bookRewards: string[];
   /** Splice recipes found (step BG7): the pair keys of recipes whose result was harvested (splice.ts pairKey). */
   splicesFound: string[];
+  /**
+   * Spare copies of unlocked clothing (step BG8): a piece found again is not lost, the extra copies are kept here
+   * (missing = 0; a piece owned twice has 1 spare). They can be sold (config SPARE_SELL).
+   */
+  clothingSpares: Record<string, number>;
+  /** How many packs of each kind were opened (step BG8; for quests later). */
+  packsOpened: Record<string, number>;
 }
 
 export interface SeenEntry {
