@@ -210,10 +210,27 @@ const DRAW: Record<IconShape, Draw> = {
     p.rect(14, 19, 4, 3, dk(b)); p.rect(5, 9, 3, 2, b); p.rect(24, 9, 3, 2, b);
   },
   pickaxe: (p, a, b) => {
-    p.line(7, 28, 22, 10, b, 3); p.line(8, 27, 21, 11, lt(b), 1); p.poly([[3, 13], [11, 5], [22, 4], [29, 10], [25, 12], [20, 8], [13, 9], [8, 16]], a); p.rect(11, 6, 8, 1, lt(a)); p.rect(20, 9, 3, 3, dk(a));
+    // Drawn upright (handle down, arched head across the top, tips drooping) and turned 45 degrees.
+    const R = (x: number, y: number): [number, number] => [16 + (x - y) * 0.8, 16 + (x + y) * 0.8];
+    const [hx0, hy0] = R(0, 13);
+    const [hx1, hy1] = R(0, -8);
+    p.line(hx0, hy0, hx1, hy1, b, 3); p.line(hx0 + 1, hy0 - 1, hx1 + 1, hy1 - 1, lt(b), 1);
+    p.poly([[-14, 3], [-12, -3], [-7, -8], [0, -10], [7, -8], [12, -3], [14, 3], [10, 1], [6, -2], [0, -3], [-6, -2], [-10, 1]].map(([x, y]) => R(x!, y!)), a);
+    p.poly([[-12, -3], [-7, -8], [0, -10], [7, -8], [12, -3], [8, -4], [4, -7], [0, -8], [-4, -7], [-8, -4]].map(([x, y]) => R(x!, y!)), lt(a));
+    p.poly([[-3, -9], [3, -9], [3, -4], [-3, -4]].map(([x, y]) => R(x!, y!)), dk(b));
+    p.poly([[-14, 3], [-12, -1], [-10, 1]].map(([x, y]) => R(x!, y!)), dk(a)); p.poly([[14, 3], [12, -1], [10, 1]].map(([x, y]) => R(x!, y!)), dk(a));
   },
   axe: (p, a, b) => {
-    p.line(7, 28, 20, 8, b, 3); p.line(8, 27, 19, 9, lt(b), 1); p.poly([[14, 4], [28, 5], [28, 17], [20, 15], [14, 12]], a); p.poly([[14, 4], [28, 5], [26, 8], [15, 8]], lt(a)); p.rect(22, 9, 5, 7, dk(a)); p.rect(6, 26, 4, 3, dk(b));
+    // Drawn upright (handle down, blade flaring to one side at the top) and turned 45 degrees.
+    const R = (x: number, y: number): [number, number] => [18 + (x - y) * 0.72, 19 + (x + y) * 0.72];
+    const [hx0, hy0] = R(0, 12);
+    const [hx1, hy1] = R(0, -9);
+    p.line(hx0, hy0, hx1, hy1, b, 3); p.line(hx0 + 1, hy0 - 1, hx1 + 1, hy1 - 1, lt(b), 1);
+    p.poly([[1, -11], [5, -11], [5, -3], [1, -3]].map(([x, y]) => R(x!, y!)), dk(a));
+    p.poly([[0, -10], [-6, -11], [-11, -14], [-14, -8], [-14, -2], [-11, 4], [-6, 0], [0, -2]].map(([x, y]) => R(x!, y!)), a);
+    p.poly([[0, -10], [-6, -11], [-11, -14], [-12, -11], [-6, -8], [0, -7]].map(([x, y]) => R(x!, y!)), lt(a));
+    p.poly([[-14, -8], [-14, -2], [-11, 4], [-12, -3], [-12, -9]].map(([x, y]) => R(x!, y!)), WHITE);
+    p.poly([[-1, -3], [-1, -10], [-5, -10], [-5, -1]].map(([x, y]) => R(x!, y!)), dk(a));
   },
   rod: (p, a, b) => {
     p.line(4, 27, 26, 5, b, 2); p.line(27, 6, 27, 20, a); p.rect(26, 20, 3, 3, a); p.oval(9, 22, 5, 5, a); p.oval(9, 22, 2, 2, null); p.rect(6, 20, 2, 1, WHITE); p.rect(12, 18, 2, 2, dk(b));
