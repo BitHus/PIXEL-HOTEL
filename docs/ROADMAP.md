@@ -43,7 +43,8 @@ private suite connected by doors, with expeditions out of the inn. Proposed orde
 0.1 PLAYTEST (phase 2.1 brought forward): one full hour from a new game, one fix list, fix it.
 0.2 R1 Refactor: split main.ts, localGameAPI.ts and config.ts; no behaviour change. [prompt ready]
 0.3 9t B (guests and serving), K1 Tavern kitchen: cooking moves from the farm to the tavern
-    [prompt ready], 9t C (brewing, Menu), then M-A Carpentry (blocks -> furniture) [prompt ready],
+    [prompt ready], 9t C (brewing, Menu), K2 Ripening: aged and vintage
+    drinks in casks, real time [prompt ready], then M-A Carpentry (blocks -> furniture) [prompt ready],
     M-B Connected Inn (doors, an Inn name) [prompt ready].
 0.4 9g livelier suite, then M-C One Inn score (tavern + suite stars + garden beauty), M-E suite
     showcase; 9i questline follows the flow. After that 9h and phase 2.2 rebalancing.

@@ -69,6 +69,15 @@ M-D. THE TAVERN KITCHEN (owner, 15 Nov: you cook in the tavern). The cooking pot
      things: the MENU (guests order them, 9t), the lunch box for the dungeon (heals and buffs as
      now), and the stall. So the garden grows, the kitchen turns crops into dishes, the bar sells
      them. The garden keeps no pot; the farm room is for planting only. Step K1.
+M-D2. BREWING AND RIPENING (owner, 15 Nov). Brewing is 9t C (barrel, real time, drinks.json). RIPENING
+     is new (step K2): a finished batch can go into a CASK on a keg rack and ripen in real time,
+     also while the game is closed: fresh -> aged -> vintage, each tier worth more (value x1.6,
+     x3) and some guests ask for them (a taste trait: they pay above tolerance for aged or
+     vintage and tip more). Waiting is the cost: casks are limited (a keg rack holds a few), so
+     the player chooses what to age. Aged and vintage drinks are separate item ids (root_ale_aged,
+     root_ale_vintage) built from drinks.json, so stacks, the ledger, the Book, icons and the
+     stall work unchanged. Vintage drinks are Book finds. A bigger cellar comes with hotel 2
+     (roadmap 5.7). Later idea: the same for food (cheese, cured ham).
 M-E. SHOWCASE. The suite gets trophy places: the Book rewards, splice discoveries (a plant
      in a pot for each recipe found), hats on a stand. Shows achievements (phase 3). [Later.]
 M-F. LATER WITH ONLINE: the stall becomes a vending machine for real players, locks and
@@ -80,7 +89,7 @@ FURNITURE = things you use or admire (tables, beds, lamps). Carpentry connects t
 1. PLAYTEST + FIX (docs/ROADMAP phase 2.1, brought forward): the owner plays one full hour from
    a new game; one fix list. No new features first.
 2. R1 REFACTOR: split main.ts and localGameAPI.ts by part (no behaviour change).
-3. 9t B (guests and serving), then K1 (kitchen: cooking moves to the tavern), then 9t C.
+3. 9t B (guests and serving), then K1 (kitchen: cooking moves to the tavern), then 9t C (brewing, Menu), then K2 (ripening).
 4. M-A carpentry, M-B connected inn.
 5. 9g livelier suite (stars, visitors, hats, cat), then M-C one Inn score.
 6. 9i questline, rewritten to follow the one flow (garden -> tavern -> suite -> expeditions).

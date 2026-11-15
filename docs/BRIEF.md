@@ -693,3 +693,5 @@ changes them (4, 5, 6, 7, 9, 13). Until then sections 4 to 7 and 13 stay as writ
   portals; friends, guilds and trading only later with new safety rules.
 - Cooking happens in the TAVERN (owner, 15 Nov): a stove in the tavern cooks batches in real time from
   crops; dishes go on the menu, in the lunch box and on the stall. The garden has no pot. (Step K1.)
+- Brewing and RIPENING (owner, 15 Nov): drinks brewed in the barrel can ripen in casks on a keg rack in real time:
+  fresh -> aged -> vintage, worth more, ordered by taste guests; limited cask slots. (Step K2, after 9t C.)
