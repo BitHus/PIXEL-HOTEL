@@ -52,6 +52,8 @@ import {
   CROP_TYPES,
   MINE_UNLOCK_LEVEL,
   MINE_LANTERN_MS,
+  getClothing,
+  SLOT_FIELD,
   isSeedId,
   type FoodId,
   type SeedId,
@@ -117,6 +119,7 @@ import { createSettingsPanel } from './ui/settingsPanel.ts';
 import { createToast } from './ui/toast.ts';
 import { iconButton, typing } from './ui/dom.ts';
 import { confirmBuy } from './ui/confirmBuy.ts';
+import { createPackFlow } from './ui/packOpening.ts';
 import { furnitureIconUrl, materialIconUrl } from './ui/itemIcon.ts';
 import { stylePreviewUrl } from './render/styleArt.ts';
 import { CustomerViews } from './render/customerViews.ts';
@@ -563,6 +566,27 @@ async function start(): Promise<void> {
     await refreshShop();
     await refreshHint();
   };
+  // Packs (step BG8): ask, pop, popups, toast with "Wear it".
+  const packFlow = createPackFlow({
+    ui,
+    api,
+    popups,
+    toast,
+    wear: (id) => {
+      const c = getClothing(id);
+      if (!c) return;
+      const look = { ...avatar.look, [SLOT_FIELD[c.slot]]: id };
+      avatar = { ...avatar, look };
+      sprite.setLook(look);
+      dungeon.setLook(look);
+      void api.setLook(look);
+      void api.getPlayer().then((p) => avatarPanel.setLook(look, p.unlockedClothing));
+    },
+    refresh: async () => {
+      await refreshInventory();
+      avatarPanel.setLook(avatar.look, (await api.getPlayer()).unlockedClothing);
+    },
+  });
   const catalog = createCatalogPanel(ui, {
     buyItem: async (typeId) => {
       const t = getFurnitureType(typeId);
@@ -629,6 +653,8 @@ async function start(): Promise<void> {
       toast(got ? `${b.name}: ${qty} in your bag. Put it in the hotbar, then tap a free cell.` : 'Not enough gold.');
       await refreshInventory();
     },
+    openPack: (pack) => void packFlow.open(pack),
+    sellSpare: (id) => void packFlow.sell(id),
     buyStyle: async (kind, id) => {
       const s = getStyle(kind, id);
       const detail = `${kind === 'floor' ? 'Floor' : 'Wall'}: yours forever, put on this room now.`;
@@ -1091,7 +1117,7 @@ async function start(): Promise<void> {
     walletGold = p.wallet.gold;
     unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
-    catalog.refresh(p.wallet.gold, p.unlockedStyles, room);
+    catalog.refresh(p.wallet.gold, p.unlockedStyles, room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares });
     roomPanel.refresh(room, p.wallet.gold, p.unlockedStyles, room.kind === 'shop' ? shop.appeal : null);
     shelfPanel.refresh(shop, inventory);
     const materials = inventory.materials;
@@ -1397,6 +1423,8 @@ async function start(): Promise<void> {
     empty: 'None left.',
     not_buildable: 'You cannot build here.',
     no_soil: 'Seeds only grow on soil. Paint soil in the Room panel (Paint soil).',
+    nothing_happens: 'Nothing happens. Both seeds are safe in your bag.',
+    already_spliced: 'This cell already holds two seeds.',
     taken: '',
   };
   /** Why the selected block or seed does not fit in this cell (null = it fits); `standing` = avatars standing still. */
@@ -1408,6 +1436,15 @@ async function start(): Promise<void> {
    * Sends a place or punch to the GameAPI and draws what came back. `line` = a place hold along cells: out of
    * reach or refused cells are skipped quietly (no walking, no toasts). Returns what a hold should do next.
    */
+  /** A punch at a plant: with a seed selected, a young plant gets the seed spliced in (step BG7); else it is harvested. */
+  const hitOrSplice = async (c: number, r: number): Promise<BlockResult> => {
+    if (selectedBlock !== null && isSeedId(selectedBlock)) {
+      const res = await api.spliceSeed(c, r, selectedBlock);
+      // A ripe or already spliced plant is just punched (harvest, or "not grown yet"); anything else answers as it is.
+      if (!(res.kind === 'refused' && (res.problem === 'ripe' || res.problem === 'already_spliced'))) return res;
+    }
+    return api.hitPlant(c, r);
+  };
   const doBlock = async (kind: 'place' | 'hit', c: number, r: number, id: string | null, tries = 0, line = false): Promise<HoldResult> => {
     const was = blockInCell(room, c, r)?.id ?? null;
     const wasSeed = plantInCell(room, c, r)?.seed ?? null;
@@ -1418,7 +1455,7 @@ async function start(): Promise<void> {
           ? await api.plantSeed(c, r, id)
           : await api.placeBlock(c, r, id)
         : wasSeed
-          ? await api.hitPlant(c, r)
+          ? await hitOrSplice(c, r)
           : await api.hitBlock(c, r);
     if (res.kind === 'unripe') {
       // A punch never hurts a young plant: it shakes and says when it will be ready.
@@ -1442,12 +1479,18 @@ async function start(): Promise<void> {
       return line ? 'go' : 'stop';
     }
     room = res.room;
-    if (res.kind === 'planted') {
+    if (res.kind === 'planted' || res.kind === 'spliced') {
       sound.play('pop');
+      if (res.kind === 'spliced') toast('Two seeds in one cell. Wait for it to grow, then punch it.');
       void refreshHint();
     } else if (res.kind === 'harvested') {
       if (wasSeed) plantViews.harvestFx(c, r, wasSeed);
       sound.play('pop');
+      if (res.clothing) {
+        toast(`New clothes unlocked: ${getClothing(res.clothing)?.name ?? res.clothing} (Avatar panel).`);
+        void api.getPlayer().then((p) => avatarPanel.setLook(avatar.look, p.unlockedClothing));
+      }
+      if (res.recipe) toast('New splice recipe found! See the Book, Splice tab.');
     } else if (res.kind === 'placed') sound.play('pop');
     else if (res.kind === 'cracked') {
       blockViews.punch(c, r);
@@ -1461,7 +1504,7 @@ async function start(): Promise<void> {
     roomChanged();
     updateBlockGhost();
     void refreshInventory();
-    return res.kind === 'broken' || res.kind === 'harvested' ? 'stop' : 'go';
+    return res.kind === 'broken' || res.kind === 'harvested' || res.kind === 'spliced' ? 'stop' : 'go';
   };
   /** A tap on cell p in play mode: punches a block there, or places the selected block. False = not for us. */
   const blockTap = (p: Point): boolean => {

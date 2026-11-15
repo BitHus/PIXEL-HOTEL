@@ -110,8 +110,8 @@ describe('the seen list (Player.seen, step 9e)', () => {
 });
 
 describe('the Book (step 9e)', () => {
-  it('has six tabs; every material, fish and furniture type is in exactly one', () => {
-    expect(BOOK_TABS).toEqual(['materials', 'blocks', 'furniture', 'food', 'fish', 'enemies']);
+  it('has seven tabs; every material, fish and furniture type is in exactly one', () => {
+    expect(BOOK_TABS).toEqual(['materials', 'blocks', 'furniture', 'food', 'fish', 'enemies', 'splice']);
     const keys = BOOK_TABS.flatMap((t) => bookEntries(t).map((e) => e.key));
     expect(new Set(keys).size).toBe(keys.length);
     for (const m of MATERIAL_TYPES) expect(keys).toContain(m.id);
@@ -129,7 +129,7 @@ describe('the Book (step 9e)', () => {
     expect(sourceOf('slime_jar')).toBe('Crafted');
     expect(sourceOf('turnip')).toBe('Farm');
     expect(sourceOf('turnip_seed')).toBe('Catalog');
-    expect(sourceOf('glowcap_spore')).toBe('Dungeon chests');
+    expect(sourceOf('glowcap_spore')).toBe('Dungeon chests, Splicing');
     expect(sourceOf('potato_stew')).toBe('Cooked');
     expect(sourceOf('iron_ore')).toBe('Mine');
     expect(sourceOf('iron_bar')).toBe('Forge');
@@ -148,7 +148,7 @@ describe('the Book (step 9e)', () => {
     expect(total.percent).toBe(Math.floor(700 / total.total));
     let seen = s.player.seen;
     for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) seen = addSeen(seen, e.key, 1, 5);
-    expect(bookTotal(seen).percent).toBe(100);
+    expect(bookTotal(seen, bookEntries('splice').map((e) => e.key)).percent).toBe(100);
   });
 
   it('marks what is new since the Book was last opened', () => {

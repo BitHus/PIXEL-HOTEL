@@ -33,10 +33,9 @@ BG4 Gems: the second currency, dropped by everything, through the ledger. [done:
 BG5 Blocks and punching: place and break blocks by hits; drops, seeds, gems. [done]
 BG5b Hold to repeat: hold a press to keep punching / chopping / mining and to place block lines. [done]
 BG6 Seeds and the free-form farm: grow in real time, harvest by punching; old farm migrates. [done]
-BG3b+4b Finish popups and gems for all sources (catch-up before BG7). [prompt ready]
-BG7 Splicing: two seeds make a new one; a Splice tab in the Book.
-BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible.
-BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools.
+BG7 Splicing: two seeds make a new one; a Splice tab in the Book. [done, NOTES BG7]
+BG8 Packs: Random Blocks, Basic Seeds, Common and Rare Clothes packs for gems, odds visible. [done, NOTES BG8]
+BG9 Balance: gems in and out, pack prices, grow times, with the simulation tools. [done, NOTES BG9]
 
 ## PHASE 1 - Finish the core game
 The loops that are planned must all exist before anything else is added.
@@ -125,8 +124,8 @@ The long-term goal: a real online hotel.
 8.3 Windows desktop app; Steam page; a public test; launch.
 
 ## NEEDS THE OWNER'S DECISION (conflicts with CLAUDE.md; do not build until decided)
-- Packs with random contents (BG8): section 13 says no loot boxes. Planner's advice: allow only
-  with gems earned in play, visible odds and duplicates allowed, spares for later trading (BLOCKS-PLAN 3.8; owner agreed).
+- Packs with random contents (BG8): DECIDED and built with the fairness rules in CLAUDE.md section 13
+  (duplicates are allowed, extra copies are spares).
 - Gems as a second currency next to gold (section 9): asked for; gold stays the tavern money.
 - The block world answers a to d in BLOCKS-PLAN section 5.
 - Mystery boxes: section 13 says no loot boxes. Only as a free reward with visible odds, or not.

@@ -1366,6 +1366,35 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   the pile is gone, a gem chip floats above the head, the run's gems go from 2 to 3. NOT checked on a real phone, nor the
   lakeside / room gem fly.
 
+## BG7: splicing (step BG7)
+
+- DATA: shared/data/splice.json (40 recipes { a, b, result }, seed ids), spliceSeeds.json (13 new seeds { id, name, rank,
+  baseValue, icon (seed shape), grows { kind material | furniture | clothing, id } }: flaxbloom (cloth), hopvine (root_ale),
+  honeybloom (carrot_cider), amberbud (amber), spiritbrew (glowcap_broth), vine_bench / gilded_chair / honey_table /
+  ember_lamp / heartwood_throne (new furniture, cloned art, inCatalog false, in furniture.json), mohawk / baggy / tunic
+  (the three hidden clothes of clothing.json). Many results are the existing seeds (clay, thatch, brick, glass, lantern,
+  mossy, cinder, pumpkin, glowcap). bookRewards.json got `splice` (60 / 150 / 300 / 700 gold, gems by BOOK_GEM_RANK).
+  The recipe names and pairs are original (not copied from any game).
+- SHARED (pure): spliceData.ts (data, pairKey; no other imports so materials.ts can read it), seeds.ts (seedGrows,
+  seedProduct, seedRank, seedGrowMs, moved out of farm.ts, which re-exports them), splice.ts (splice(a, b), recipeFor,
+  spliceGrowMs, isSpliceResult, recipesWith, recipeHint). farm.ts: spliceSeed (ledger 'splice'), harvestPlant(plant, rng,
+  unlockedClothing) and hitPlant (spliced plants: the result seed + bonus + gems, found recipe, furniture, clothes).
+  Plant.with = the second seed; Player.splicesFound = pair keys. HarvestRoll gained furniture, clothing, result, recipe
+  (item is null for furniture and clothes). BlockProblem: nothing_happens, already_spliced, ripe.
+- BOOK: BookTab 'splice'; entries are recipes (kind 'recipe', key = pairKey, id = the result, recipe { a, b }); bookProgress /
+  bookTotal take the found list as a last argument; bookRewards reads player.splicesFound; no "New!" marks for recipes.
+  sourceOf: 'Splicing' for results (seeds, furniture, clothes); block seeds say 'Punching blocks' (they said 'Catalog').
+- SAVE: SAVE_VERSION 18, MIGRATIONS[17] adds splicesFound [] (tests in splice.test.ts).
+- API: GameAPI.spliceSeed(c, r, seed) -> 'spliced' | 'walk' | refused; 'harvested' may carry clothing and recipe.
+  Client (main.ts hitOrSplice): with a seed selected, a tap or hold on a young plant splices; a ripe or spliced plant is
+  punched as before. Toasts: spliced, recipe found, clothes unlocked, nothing happens. A spliced plant's accent colour is
+  the second seed's (farmArt). bookPanel recipeCard + ui.css .book-recipe. Quest hint index SPLICE_HINT = 6 (last).
+- TESTS: shared/src/splice.test.ts (the table: symmetric, one result per pair, ranks, reachable from the starters, value
+  cap, items and icons; spliceSeed; harvests; furniture and clothes seeds; Book; migration), client/src/api/spliceAPI.test.ts.
+  Older tests adjusted: home furniture tests now filter inCatalog, atmosphere lights, seats list, mine hint.
+- NOT CHECKED: the screen by eye (a headless screenshot was blocked), a real phone. Balance numbers (seed values, SPLICE_*
+  config, GEMS.splice) are first guesses for BG9.
+
 ## BG4c: block drops like Growtopia (owner's request, 15 Nov)
 
 - A broken block no longer always returns itself: every part is its own roll (config BLOCK_DROPS by the block's rank):
@@ -1375,3 +1404,86 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 - Gem colours (GEM_TIERS): pieces of 1 (green), 5 (blue), 10 (red); the amount is split biggest first (7 = 5+1+1).
   ui/gemFly.ts flies one picture per piece (at most 5) from the broken cell to the head. BLOCK_SEED_CHANCE is gone.
 - BG9 still tunes these numbers (blocks now cost gold to replace: a sink).
+
+## BG8: packs bought with gems (step BG8)
+
+- RULES (CLAUDE.md section 13 and BRIEF 13 hold the fairness rules): gems earned in play only; contents and rank odds shown on the card
+  before buying; duplicates allowed (spares); no timers or limited offers. Owner's change to BLOCKS-PLAN 3.8: no "never repeat owned
+  clothes", no "gems back at completion".
+- DATA: shared/data/packs.json { id, name, pool: blocks | seeds | clothing, rankWeights (multipliers of RANK_WEIGHTS, 0 = never), icon }.
+  The numbers an owner tunes live in config PACKS { gemPrice, rolls } and SPARE_SELL (the resolved PackType in packs.ts has all fields).
+  Starter prices: Random Blocks 30 gems / 5 rolls, Basic Seeds 25 / 5, Common Clothes 80 / 3, Rare Clothes 240 / 3 (BG9 tunes).
+  Pools: blocks = all 10; seeds = crop seeds + block seeds (13); clothing = the hidden pieces of clothing.json (18: 7 common, 6 rare,
+  3 ultra_rare, 2 legendary). Common Clothes = common x1, rare x0.5; Rare Clothes = rare, ultra_rare, legendary at the base weights.
+- CLOTHING: clothing.json got `rank` and `baseValue` on every piece and 15 new hidden pieces (ids braids, bob, curly, hoodie, apron,
+  overalls, spiky, jerkin, kilt, breeches, top_knot, wayfarer_cloak, moonweave, crown_braid, ember_robe; mohawk, tunic, baggy keep their
+  ids and are still the splice results). The avatar art (render/avatarParts.ts) only knows the old styles: a new id draws like the
+  default (short hair / plain top / plain trousers), only the icon differs. Real looks come with art (step 6). rankOf() knows clothing ids.
+- SHARED (shared/src/packs.ts, pure): getPack, packPool, packOdds (rank rows in percent, passes the chance of a rank with no item to
+  the next lower rank like rollRank does; also what the card shows), copiesOwned, piecesMissing, openPack(state, id, rng, at) ->
+  { state, finds[], gains } | null, spareValue, sellSpare(state, id, qty, at) | null. ranks.ts got rankFallback (used by rollRank).
+- LEDGER: Change.addClothing (ids, repeats allowed: the first copy unlocks, later ones raise Player.clothingSpares) and
+  Change.sellSpares; LedgerEntry.clothing { id: +copies | -sold }; reasons 'pack' and 'spare_sale'. Finds go into Player.seen under the
+  clothing id (the Book counts them; there is NO Clothes tab yet: add one with the clothes art, remember the splice-harvested
+  pieces do not go through applyChange). gainsSince reports clothing copies. Player.packsOpened { packId: n } is only a counter (quests later).
+- SAVE: SAVE_VERSION 19, MIGRATIONS[18] adds clothingSpares {} and packsOpened {}; isGameState checks both.
+- API: GameAPI.openPack(packId) -> PackOpenResult { packId, finds, gains } | null (unknown pack, too few gems: nothing changes) and
+  sellSpare(id, qty) -> gold paid | null.
+- CLIENT: Catalog > Packs tab (ui/packsView.ts; one card per pack: picture, gem price, "Gives N things", every possible item as a
+  chip in its rank colour with the rank odds, "You still miss X of Y pieces" for clothes, an Open button that greys with "Need N more
+  gems"), "Your spares" with one Sell button per piece. ui/packOpening.ts: confirmBuy in gems (new BuyQuestion.currency), then
+  ui/packPop.ts (CSS shake + burst, PACK_POP_MS 700, none with reduced motion), BG3 popups, then a toast: "New! <pieces>." with a
+  "Wear it" button (toast.ts takes an optional action) or "Spare x2: <piece>.". The Avatar panel's unlocked list is refreshed after
+  an opening (and now also after a splice unlock, which only updated on reload before).
+- TESTS: shared/src/packs.test.ts (data, odds table, odds over 3000 packs per pack with a seeded rng, duplicates and spares, spare
+  sale, refused buys change nothing, ledger adds up, Book, migration), client/src/api/packsAPI.test.ts, client/src/ui/packOpening.test.ts.
+- TOOLS: `npm run simulate` prints gems per pack and hours of play per pack at the ceiling income and at the richest single activity
+  (blocks). The first Common Clothes Pack is about 0.9 h of focused block punching.
+- CHECKED BY EYE (headless Chromium 420 x 760): the Packs tab, the confirm panel, the pop, the toast, gems 150 -> 70. NOT checked on
+  a real phone; Sell button not clicked in the browser (tested through the API).
+
+## BG9: balancing the block world (step BG9)
+
+- WHAT IT IS: numbers only (config + one data-free hint change), plus the maths and the tests that keep them. No new feature.
+  shared/src/balance.ts = closed-form EXPECTED values from the real rules and data (gems per event and per hour, block lineage,
+  seed ratio, pack sell value / duplicates / gem return, splice chains: time, gold and cell-minutes of the fastest / cheapest way,
+  the till cap). The activity rates (events per hour per stage: new, level 3, level 8) are ASSUMPTIONS in balance.ts `activities`;
+  a "mixed hour" = equal time in every open activity (blocks, farm, crypt, [mine from level 3], lakeside). Targets are in config
+  BALANCE_TARGETS. shared/src/balance.test.ts (33 tests) fails when a loop reopens. `npm run simulate` prints the six tables below
+  (tools/simulate-economy.ts, after the old shop tables). Only block gems of the old tool used the wrong rule (gemDrop('block')); fixed.
+- LOOPS FOUND (before): (1) every COMMON block seed had a seed ratio of 1.43 (2 to 4 blocks x 2.5 breaks x 15% seed + 30% back):
+  free seeds and free gems forever in the free farm; (2) punching blocks was 82% of mixed gem income (276 gems/h focused vs 16 to
+  27 for every other activity), so no one needed the dungeon, mine or lake; (3) a bought dirt block gave 0.94 gems for 6 gold (6 gold
+  per gem); (4) Rare Clothes sold as spares for 288 gold > 240 gems (a legendary spare 600 > 80 per piece) and Random Blocks sold for
+  31.6 > 30; (5) the other gem sources were too thin (mixed 84/h of which blocks 69) to carry the pack targets once blocks shrank.
+- CHANGES: BLOCK_DROPS seed chance common .15 -> .05, rare .12 -> .08, ultra .10 -> .08, legendary .08 -> .06; gem chance common .25 -> .05
+  (1 to 2), rare .35 -> .10 (2 to 4), ultra .50 -> .15 (4 to 8); legendary unchanged. GEMS: harvest .12 -> .25, chest .25 -> .8,
+  kill .10 -> .35, mimic .5 -> .9, rock .10 -> .6, chop .15 -> .45, fish .20 -> .6 (block, splice, boss, quest, book unchanged).
+  PACKS: Random Blocks 30 -> 40, Basic Seeds 25 -> 30, Common Clothes 80 -> 75, Rare Clothes 240 -> 225. SPARE_SELL 1 -> 0.1.
+  NEW QUEST (HINTS, PACK_HINT = 5, before the mine quest so a level 1 player sees it): "Gems buy packs. With 30 gems open the Catalog,
+  the Packs tab, and open a Basic Seeds Pack"; done by opening any pack (LocalGameAPI.openPack). MINE_HINT 6, SPLICE_HINT 7. The farm
+  quest now says a plant takes about 2 minutes and that blocks, plants, chests and fish drop gems. SAVE_VERSION 20, MIGRATIONS[19]:
+  hintsDone >= 5 moves up by one (the pack quest counts as done for old saves).
+- THE TABLES (after; gems per hour of a MIXED hour; the first-run quests pay 12 gems before the mine, 16 in all):
+  new player 54.9 (block 27%, harvest 26%, chest 17%, fish 17%, chop 7%, kill 6%); level 3 73.0 (block 30%, harvest 27%, fish 14%,
+  chest 13%, rock 8%); level 8 101.5 (block 33%, harvest 28%, chest 11%, fish 10%, rock 8%). Focused hour at level 3: blocks 110,
+  farm 98, lakeside 68, crypt 62, mine 28 (blocks under 2.2x the mean of the others, tested).
+  Hours of mixed play: Random Blocks (40) 31 / 33 / 24 min, Basic Seeds (30) 20 / 25 / 18 min, Common Clothes (75) 1.1 h / 1.0 h / 44
+  min, Rare Clothes (225) 3.9 h / 3.1 h / 2.2 h (new / level 3 / level 8).
+  Packs: sold value vs price: 31.6 / 40, 20.4 / 30, 7.4 / 75, 28.8 / 225 gold; duplicates in 1 / 5 / 10 packs: blocks 1.0 / 16 / 40,
+  clothes 0.3 / 7.5 / 21 (a clothes pack gives about 9 to 10 different pieces in 10 packs; every piece takes about 41 / 50 packs); gems
+  back by planting a pack's contents: blocks 1.7, seeds 12.7 of 30, clothes 0.
+  Blocks: dirt / planks / stone 0.19 gems per block bought (6 / 12 / 15 gold: 32 to 79 gold per gem), glass 0.60 (27 gold, 45 per gem);
+  seed ratio 0.68 common, 0.70 rare, 0.52 ultra; gems from ONE planted seed over all its generations 2.9 / 7.5 / 8.2.
+  Crops (one plant, no limit but the till): turnip 13.6, potato 21.9, carrot 30.2 gold per cell-minute, pumpkin 5.7; 60 to 120 customers
+  an hour (each buys ONE item and only while the player serves) cap crops at about 2600 gold/h, and 2 cells already feed that.
+  Splicing (from starter seeds, branches in parallel): common results 3 min, rare 3 to 24 min, ultra rare 21 to 24 min, the legendary
+  throne 3.0 h (not the 12 h of its own rank: a splice cell takes the longer INGREDIENT time + SPLICE_BONUS_MS). Every spliced thing
+  is worth under its seeds' gold plus its cell-minutes at the best plain crop rate (tested), all under a plain crop cell per minute (the Crest seed is the closest, about two thirds of it).
+- NOT CLOSED, ONLY PRICED (owner, please look): (a) gold from crops: a 2-minute carrot cell gives 30 gold per minute and the till is the
+  only cap (about 2600 gold/h); this is gold, not gems, and untouched here. (b) The farm gem source is time-gated per cell, not per
+  hour: a very big, fully attended farm (300 harvests/h assumed at level 8) is about 140 gems/h focused, the richest activity after blocks.
+  (c) The activity rates are assumptions; a real phone session should be timed (first pack, common clothes) and the numbers moved in
+  balance.ts / config. (d) The block rates assume 600 hand-fed breaks an hour; blocks come back 40 to 60% of the time, so a fast
+  hold-to-punch player eats supply, not gems: 1800 breaks an hour on unlimited common blocks would be 675 gems/h but needs a seed ratio
+  of 1 or more or about 250 blocks (1500 gold) an hour, both now closed.

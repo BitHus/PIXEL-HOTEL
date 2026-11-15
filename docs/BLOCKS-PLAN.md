@@ -146,12 +146,9 @@ Everything stays original (names, art); no Growtopia item names or splice recipe
   pool, rankWeights }. Pure function openPack(state, packId, rng).
 - Opening: confirm first (ui/confirmBuy.ts), then the pack opens with a short pop and the
   items float above the head (3.3) and land in the bag.
-- Fairness rules (owner, 15 Nov: DUPLICATES ARE ALLOWED, they are a reason to buy more packs and
-  they become trade goods when trading exists, phase 6.7): gems are earned in play only, never
-  bought with money; contents and odds are shown on the pack card before buying; no timers or
-  limited offers that push buying. Clothes packs may give a piece you already own: the first
-  copy unlocks it forever, extra copies stay in the bag as spares (x2, x3). Until trading
-  exists a spare can be sold at the stall for gold (baseValue, config) or kept.
+- Fairness rules (this is why it is not a loot box in the brief's sense, see section 5):
+  gems are earned in play only, odds are shown, DUPLICATES ARE ALLOWED (owner's decision in BG8: extra
+  copies are spares that sell for gold, later tradable), no daily limit tricks, no timers that push.
 - Clothes are unlocked forever (as now); packs are one of several ways to get them.
 
 ### 3.9 Social (phase 6 additions)
@@ -173,7 +170,7 @@ From Growtopia and Pixel Worlds, to build when the server exists (docs/ROADMAP.m
 |---|-----------|--------|--------|
 | 1 | Sec 4, 7: "No tile grid in rooms", free placement snapped to 4 px | Cell grid of 32 px | DECIDED by the owner (15 Nov). Update 4, 5, 6, 7 in BG1. |
 | 2 | Sec 9: one currency, gold | Add gems (second currency) | Accepted as asked. Keep gold for the tavern (3.4). |
-| 3 | Sec 13: no loot boxes | Random packs for gems | Accept ONLY with the fairness rules in 3.8 (earned gems, odds shown, no repeats of owned clothes). Owner confirms before BG8. |
+| 3 | Sec 13: no loot boxes | Random packs for gems | Accept ONLY with the fairness rules in 3.8 (earned gems, odds shown; BG8: duplicates allowed as spares). Owner decided in BG8. |
 | 4 | Sec 7/12: items are art drawn later | Icons from code shapes | No conflict (placeholders in code). |
 | 5 | Sec 9: "No trading in v1" | Not changed | Gems stay untradable; trading stays phase 6+. |
 | 6 | Tavern step 9t, hotel step 9g | They use free placement and seat adjacency | PAUSE 9t B/C and 9g until BG1 is done, then build them on the grid (cheaper than building twice). |

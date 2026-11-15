@@ -156,8 +156,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   all in config GEMS with gemDrop(source, rank, rng); in the dungeon and mine they are floor piles picked up by
   walking close (GEM_PICKUP_REACH) or by tapping; kept on Leave, half lost on death in the crypt (like gold),
   all kept in the mine): Player.wallet.gems (integer), ledger gemsDelta, shown in
-  the info panel next to gold; never traded or sold. A known loop: place and punch the same block
-  forever gives gems for free (gems have no use until packs, BG8; balance in BG9).
+  the info panel next to gold; never traded or sold. BALANCED IN BG9: blocks give few gems (common break 5% x 1 to 2, rare
+  10% x 2 to 4, ultra rare 15% x 4 to 8, config BLOCK_DROPS), the seed ratio of every block seed is under 0.85, so
+  place-and-punch cannot make gems or seeds for free; the cheapest gold to gems way (catalog blocks) costs about 32 gold per gem.
+  Mixed play gives about 55 gems/h (new player), 70 (level 3), 100 (level 8) and no source is over 40% (NOTES BG9).
 - Room ids are integers.
 
 6. MOVEMENT
@@ -334,8 +336,20 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - Gold sinks: catalog (baseValue * 3), room upgrades (level 2: 300 gold, level 3: 800 gold,
   for each room), dungeon gear and potions (section 10), dungeon key 10 gold, seeds and farm
   upgrades (section 10b), smelting fees (section 10c).
+- Gem sink (step BG8, prices BG9): packs are bought with gems (config PACKS; the contents are shared/data/packs.json). Packs in
+  v1: Random Blocks (5 blocks, 40 gems), Basic Seeds (5 seeds, 30), Common Clothes (3 pieces, 75) and Rare Clothes (3 pieces,
+  225). Targets (config BALANCE_TARGETS): the first pack within 45 minutes of a new game (about 25), a Common Clothes Pack
+  about an hour and a Rare Clothes Pack about 3 hours of mixed play at level 3. A
+  roll picks a rank first (RANK_WEIGHTS times the pack's multiplier, as for loot), then an item of that rank in the
+  pool (blocks.json; crop and block seeds; clothing.json pieces that are hidden until unlocked, each with a rank).
+  The first copy of a piece of clothing unlocks it forever; every further copy is a spare (Player.clothingSpares,
+  shown as "Spare x2"), which sells for gold (baseValue * config SPARE_SELL = 0.1, so a spare is always worth far less than a pack piece costs) until trading exists. Blocks and seeds
+  stack as always. Pack finds count in the Book like everything else. The Packs tab of the Catalog shows, per
+  pack: the price in gems, how many things it gives, every possible item with its rank odds in percent and, for
+  clothes, how many pieces are still missing. Every buy asks first. Opening plays a short pop, then the items
+  float above the head and land in the bag; a new piece says "New!" with a Wear it button.
 - No trading between players in v1.
-- Every change to gold or items goes through one function and is written to a ledger.
+- Every change to gold, gems or items goes through one function and is written to a ledger.
 - THE TAVERN (owner's decision, step 9t; part A = the shared rules is done, the client parts B and
   C are not, so the game does not show it yet): the shop room is a tavern (internal kind 'shop'
   and the room id stay; the counter is the bar). GUESTS come alone, as a pair or as three, sit on
@@ -452,7 +466,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - SEEDS: every block (blocks.json seedId `<block>_seed`) and every crop (crops.json seed) has a seed item
   with a seed icon in its colours; they stack in the bag and the hotbar. Basic crop seeds are sold in the
   Catalog (Seeds tab, gold); block seeds drop from broken blocks (BLOCK_SEED_CHANCE), harvests (SEED_BACK_CHANCE)
-  and later splicing (BG7). The glowcap spore still only drops in the dungeon.
+  and splicing (BG7). The glowcap spore still only drops in the dungeon.
 - PLANTING: select a seed in the hotbar and tap a free soil cell of a farm room within BLOCK_REACH cells (farther:
   the avatar walks closer first; holding still 300 ms and dragging plants a line). One plant per cell. A plant
   blocks its cell like a small block (nav grids rebuilt, never on the door zone, furniture, the pot, an avatar
@@ -465,6 +479,17 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   gemDrop('harvest', rank) gems. The plant goes, the cell is free again. Punching an unripe plant does nothing
   (a shake and "ready in n min"), so a tap never destroys it. All results go through the gains list and ledger
   (reasons 'plant', 'harvest'). Pure functions: plantSeed, growthStage, harvestPlant, hitPlant (shared/src/farm.ts).
+- SPLICING (BG7): select a seed and tap a planted, unripe, not yet spliced cell: the second seed is used up and
+  the cell grows the NEW seed of the pair (shared/data/splice.json { a, b, result }, a + b = b + a, about 40
+  recipes, chains of 2 to 3 steps, a result is never lower in rank than the lower input). The clock restarts:
+  readyAt = now + max(grow time of both, SEED_GROW_MS by rank) + SPLICE_BONUS_MS (config, 1 min). No random
+  failure: a pair not in the table, and a seed with itself, answer "nothing happens" and take nothing. A ripe
+  spliced plant is harvested by punching: exactly the result seed (no seed back), a SPLICE_BONUS_CHANCE (25%)
+  chance of one block or crop of either seed, gemDrop 'splice' (result rank). Splice seeds (spliceSeeds.json) grow
+  a drink or good, a furniture item (to the inventory) or a clothing piece (unlocked forever; a repeat harvest
+  gives the seed back). The Book's Splice tab: found recipes "[a] + [b] = [result]", the rest "???" with one
+  ingredient shown once that seed has been seen; a recipe is found when its result is first harvested
+  (Player.splicesFound); 25 / 50 / 75 / 100 % pay gold and gems (bookRewards.json). Quest hint 6 teaches it.
 - Crops (shared/data/crops.json): turnip (seed 4 gold, worth 10), potato (seed 6, worth 16), carrot (seed 8,
   worth 22), pumpkin (seed 15, rare, worth 50), glowcap mushroom (no seed for sale; 1 glowcap spore drops from 5%
   of dungeon chests; ultra_rare, worth 40). crops.json growMinutes is LEGACY (only the save migration uses it).
@@ -614,7 +639,12 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   password.
 - The game is for ages 13 and up. The register screen has a checkbox 'I am 13 or older' and
   collects no other age data. Rules differ by country, so check them before launch.
-- No loot boxes and no real-money purchases. Loot comes only from play.
+- No real-money purchases. Loot comes only from play. The one random thing that costs something is a pack
+  (section 9, BG8), allowed only under these FAIRNESS RULES (owner's decision): (1) gems are earned in play
+  only, never bought with money; (2) the contents and the rank odds are shown on the pack card before
+  buying; (3) duplicates are allowed: extra copies are spares, sellable for gold (and later tradable); (4) no
+  timers, limited-time offers, daily limits or streaks that push buying. Anything else random that costs
+  something needs the owner's yes.
 - The first release is a small private test.
 
 14. WORKING RULES FOR YOU (the AI)

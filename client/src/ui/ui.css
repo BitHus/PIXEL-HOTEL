@@ -3195,3 +3195,226 @@
   image-rendering: pixelated;
   opacity: 0;
 }
+
+/* The Book's Splice tab (step BG7): "[a] + [b] = [result]" in one row per recipe card. */
+.book-recipe {
+  grid-column: 1 / -1;
+}
+.book-recipe-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.book-recipe-sign {
+  font-family: var(--font);
+  color: var(--ink-dim, inherit);
+}
+
+/* ---------- Packs (step BG8): the Catalog's Packs tab, the opening pop, the toast button ---------- */
+.card-grid.pack-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pack-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+}
+
+.pack-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pack-icon {
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+
+.pack-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gem-img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+.catalog-price .gem-img {
+  margin-right: 3px;
+}
+
+.pack-odds-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.pack-odds-label {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.pack-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.pack-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 4px 1px 2px;
+  background: var(--slot-bg);
+  border: 2px solid var(--rank-common);
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.pack-chip.rank-rare {
+  border-color: var(--rank-rare);
+}
+
+.pack-chip.rank-ultra_rare {
+  border-color: var(--rank-ultra_rare);
+}
+
+.pack-chip.rank-legendary {
+  border-color: var(--rank-legendary);
+}
+
+.pack-chip.owned {
+  opacity: 0.6;
+}
+
+.pack-chip-icon {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.pack-open,
+.pack-sell {
+  min-height: 44px;
+}
+
+.pack-spare {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pack-spare-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.toast-action {
+  margin-left: 6px;
+  min-height: 36px;
+}
+
+/* The pop: the pack shakes, then bursts. Centre of the screen, above the room, under the toasts. */
+.pack-pop {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.pack-pop > * {
+  grid-area: 1 / 1;
+}
+
+.pack-pop-img {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+  animation: pack-shake var(--pop-ms, 700ms) ease-in forwards;
+}
+
+.pack-pop-shard {
+  width: 10px;
+  height: 10px;
+  background: var(--rank-common);
+  opacity: 0;
+  animation: pack-burst var(--pop-ms, 700ms) ease-out forwards;
+}
+
+.pack-pop.rank-rare .pack-pop-shard {
+  background: var(--rank-rare);
+}
+
+.pack-pop.rank-ultra_rare .pack-pop-shard {
+  background: var(--rank-ultra_rare);
+}
+
+.pack-pop.rank-legendary .pack-pop-shard {
+  background: var(--rank-legendary);
+}
+
+@keyframes pack-shake {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+
+  15% {
+    transform: rotate(-8deg) scale(1.05);
+  }
+
+  30% {
+    transform: rotate(8deg) scale(1.1);
+  }
+
+  45% {
+    transform: rotate(-8deg) scale(1.15);
+  }
+
+  60% {
+    transform: rotate(0) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes pack-burst {
+  0%,
+  55% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+
+  60% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pack-pop-img,
+  .pack-pop-shard {
+    animation: none;
+  }
+}

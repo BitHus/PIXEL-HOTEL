@@ -23,8 +23,10 @@ export interface BuyQuestion {
   yes?: string;
   /** More to show under the thing (the dungeon's lunch box picker, step 9b). */
   extra?: HTMLElement;
-  /** What the player has: a higher price shows in red and cannot be bought. */
+  /** What the player has (gold, or gems when `currency` is 'gems'): a higher price shows in red and cannot be bought. */
   gold?: number;
+  /** What the price is paid in (default gold; packs cost gems, step BG8). */
+  currency?: 'gold' | 'gems';
   /** A second way to buy (the seed pack): its own button; the answer is then 'more'. */
   more?: { label: string; price: number };
 }
@@ -64,9 +66,9 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
     const what = el('div', 'confirm-what inset');
     if (q.image) what.appendChild(iconBox(q.image, 'confirm-icon'));
     const info = el('div', 'confirm-info');
-    const price = q.price === null ? el('div', 'catalog-price', 'Free') : priceTag(q.price, q.gold);
+    const price = q.price === null ? el('div', 'catalog-price', 'Free') : priceTag(q.price, q.gold, q.currency);
     info.append(el('div', 'catalog-name', q.name), el('div', 'catalog-sub', q.detail), price);
-    if (short(q.price)) info.append(el('div', 'confirm-short price-short', 'Not enough gold.'));
+    if (short(q.price)) info.append(el('div', 'confirm-short price-short', `Not enough ${q.currency ?? 'gold'}.`));
     what.appendChild(info);
 
     const yes = textButton(q.price === null ? (q.yes ?? 'Buy') : `${q.yes ?? 'Buy'} for ${q.price}`, () => finish(true));

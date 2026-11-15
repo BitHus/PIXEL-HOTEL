@@ -1,0 +1,223 @@
+[
+  {
+    "id": "flaxbloom_seed",
+    "name": "Flaxbloom seed",
+    "rank": "common",
+    "baseValue": 3,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "lime",
+        "green"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "cloth"
+    }
+  },
+  {
+    "id": "hopvine_seed",
+    "name": "Hopvine seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "green",
+        "butter"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "root_ale"
+    }
+  },
+  {
+    "id": "honeybloom_seed",
+    "name": "Honeybloom seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "gold",
+        "orange"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "carrot_cider"
+    }
+  },
+  {
+    "id": "vine_bench_seed",
+    "name": "Vine bench seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "forest",
+        "oak"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "vine_bench"
+    }
+  },
+  {
+    "id": "mohawk_seed",
+    "name": "Crest seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "crimson",
+        "plum"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "mohawk"
+    }
+  },
+  {
+    "id": "baggy_seed",
+    "name": "Billow seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "tan",
+        "rust"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "baggy"
+    }
+  },
+  {
+    "id": "tunic_seed",
+    "name": "Tunic seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "rose",
+        "navy"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "tunic"
+    }
+  },
+  {
+    "id": "gilded_chair_seed",
+    "name": "Gilded chair seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "gold",
+        "crimson"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "gilded_chair"
+    }
+  },
+  {
+    "id": "honey_table_seed",
+    "name": "Honey table seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "butter",
+        "walnut"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "honey_table"
+    }
+  },
+  {
+    "id": "ember_lamp_seed",
+    "name": "Ember lamp seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "orange",
+        "red"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "ember_lamp"
+    }
+  },
+  {
+    "id": "amberbud_seed",
+    "name": "Amberbud seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "orange",
+        "gold"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "amber"
+    }
+  },
+  {
+    "id": "spiritbrew_seed",
+    "name": "Spiritbrew seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "cyan",
+        "lime"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "glowcap_broth"
+    }
+  },
+  {
+    "id": "heartwood_throne_seed",
+    "name": "Heartwood seed",
+    "rank": "legendary",
+    "baseValue": 90,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "gold",
+        "white"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "heartwood_throne"
+    }
+  }
+]

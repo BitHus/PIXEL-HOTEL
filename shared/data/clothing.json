@@ -1,15 +1,34 @@
 [
-  { "id": "short", "slot": "hair", "name": "Short", "free": true, "icon": {"shape": "hair", "colors": ["walnut", "oak"]}},
-  { "id": "long", "slot": "hair", "name": "Long", "free": true, "icon": {"shape": "hair", "colors": ["oak", "sand"]}},
-  { "id": "ponytail", "slot": "hair", "name": "Ponytail", "free": true, "icon": {"shape": "hair", "colors": ["rust", "clay"]}},
-  { "id": "buzz", "slot": "hair", "name": "Buzz cut", "free": true, "icon": {"shape": "hair", "colors": ["night", "slate"]}},
-  { "id": "mohawk", "slot": "hair", "name": "Mohawk", "free": false, "icon": {"shape": "hair", "colors": ["crimson", "red"]}},
-  { "id": "t_shirt", "slot": "top", "name": "T-shirt", "free": true, "icon": {"shape": "shirt", "colors": ["sky", "white"]}},
-  { "id": "long_sleeve", "slot": "top", "name": "Long sleeve", "free": true, "icon": {"shape": "shirt", "colors": ["green", "lime"]}},
-  { "id": "vest", "slot": "top", "name": "Vest over shirt", "free": true, "icon": {"shape": "shirt", "colors": ["oak", "walnut"]}},
-  { "id": "tunic", "slot": "top", "name": "Tunic", "free": false, "icon": {"shape": "shirt", "colors": ["crimson", "clay"]}},
-  { "id": "trousers", "slot": "bottoms", "name": "Trousers", "free": true, "icon": {"shape": "trousers", "colors": ["navy", "sky"]}},
-  { "id": "shorts", "slot": "bottoms", "name": "Shorts", "free": true, "icon": {"shape": "trousers", "colors": ["tan", "sand"]}},
-  { "id": "skirt", "slot": "bottoms", "name": "Skirt", "free": true, "icon": {"shape": "skirt", "colors": ["plum", "orchid"]}},
-  { "id": "baggy", "slot": "bottoms", "name": "Baggy trousers", "free": false, "icon": {"shape": "trousers", "colors": ["forest", "green"]}}
+  { "id": "short", "slot": "hair", "name": "Short", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "hair", "colors": ["walnut", "oak"]}},
+  { "id": "long", "slot": "hair", "name": "Long", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "hair", "colors": ["oak", "sand"]}},
+  { "id": "ponytail", "slot": "hair", "name": "Ponytail", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "hair", "colors": ["rust", "clay"]}},
+  { "id": "buzz", "slot": "hair", "name": "Buzz cut", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "hair", "colors": ["night", "slate"]}},
+  { "id": "t_shirt", "slot": "top", "name": "T-shirt", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "shirt", "colors": ["sky", "white"]}},
+  { "id": "long_sleeve", "slot": "top", "name": "Long sleeve", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "shirt", "colors": ["green", "lime"]}},
+  { "id": "vest", "slot": "top", "name": "Vest over shirt", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "shirt", "colors": ["oak", "walnut"]}},
+  { "id": "trousers", "slot": "bottoms", "name": "Trousers", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "trousers", "colors": ["navy", "sky"]}},
+  { "id": "shorts", "slot": "bottoms", "name": "Shorts", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "trousers", "colors": ["tan", "sand"]}},
+  { "id": "skirt", "slot": "bottoms", "name": "Skirt", "free": true, "rank": "common", "baseValue": 10, "icon": {"shape": "skirt", "colors": ["plum", "orchid"]}},
+
+  { "id": "braids", "slot": "hair", "name": "Braids", "free": false, "rank": "common", "baseValue": 20, "icon": {"shape": "hair", "colors": ["clay", "rust"]}},
+  { "id": "bob", "slot": "hair", "name": "Bob cut", "free": false, "rank": "common", "baseValue": 20, "icon": {"shape": "hair", "colors": ["tan", "oak"]}},
+  { "id": "curly", "slot": "hair", "name": "Curly", "free": false, "rank": "common", "baseValue": 20, "icon": {"shape": "hair", "colors": ["walnut", "rust"]}},
+  { "id": "hoodie", "slot": "top", "name": "Hooded jumper", "free": false, "rank": "common", "baseValue": 20, "icon": {"shape": "shirt", "colors": ["slate", "steel"]}},
+  { "id": "apron", "slot": "top", "name": "Cook's apron", "free": false, "rank": "common", "baseValue": 20, "icon": {"shape": "shirt", "colors": ["cream", "sand"]}},
+  { "id": "baggy", "slot": "bottoms", "name": "Baggy trousers", "free": false, "rank": "common", "baseValue": 20, "icon": {"shape": "trousers", "colors": ["forest", "green"]}},
+  { "id": "overalls", "slot": "bottoms", "name": "Overalls", "free": false, "rank": "common", "baseValue": 20, "icon": {"shape": "trousers", "colors": ["navy", "steel"]}},
+
+  { "id": "mohawk", "slot": "hair", "name": "Mohawk", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "hair", "colors": ["crimson", "red"]}},
+  { "id": "spiky", "slot": "hair", "name": "Spiky", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "hair", "colors": ["orange", "butter"]}},
+  { "id": "tunic", "slot": "top", "name": "Tunic", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "shirt", "colors": ["crimson", "clay"]}},
+  { "id": "jerkin", "slot": "top", "name": "Leather jerkin", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "shirt", "colors": ["walnut", "tan"]}},
+  { "id": "kilt", "slot": "bottoms", "name": "Kilt", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "skirt", "colors": ["pine", "crimson"]}},
+  { "id": "breeches", "slot": "bottoms", "name": "Riding breeches", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "trousers", "colors": ["cream", "tan"]}},
+
+  { "id": "top_knot", "slot": "hair", "name": "Top knot", "free": false, "rank": "ultra_rare", "baseValue": 200, "icon": {"shape": "hair", "colors": ["night", "plum"]}},
+  { "id": "wayfarer_cloak", "slot": "top", "name": "Wayfarer's cloak", "free": false, "rank": "ultra_rare", "baseValue": 200, "icon": {"shape": "shirt", "colors": ["dusk", "navy"]}},
+  { "id": "moonweave", "slot": "bottoms", "name": "Moonweave skirt", "free": false, "rank": "ultra_rare", "baseValue": 200, "icon": {"shape": "skirt", "colors": ["silver", "sky"]}},
+
+  { "id": "crown_braid", "slot": "hair", "name": "Crown braid", "free": false, "rank": "legendary", "baseValue": 600, "icon": {"shape": "hair", "colors": ["gold", "butter"]}},
+  { "id": "ember_robe", "slot": "top", "name": "Ember robe", "free": false, "rank": "legendary", "baseValue": 600, "icon": {"shape": "shirt", "colors": ["orange", "gold"]}}
 ]

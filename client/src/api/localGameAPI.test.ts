@@ -9,7 +9,7 @@ const clock = (): number => t;
 async function filledGame() {
   const storage = memoryStorage();
   const { api } = LocalGameAPI.open(storage, clock);
-  api.debugGiveFurniture(FURNITURE_TYPES.filter((t) => t.category === 'home_furniture').map((t) => t.id));
+  api.debugGiveFurniture(FURNITURE_TYPES.filter((t) => t.category === 'home_furniture' && t.inCatalog).map((t) => t.id));
   return { storage, api };
 }
 

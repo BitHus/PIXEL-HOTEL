@@ -7,22 +7,53 @@
 // Run: npm run simulate
 
 import {
-  BOOK_GEM_RANK,
-  ENEMY_GEM_RANK,
-  GEMS,
-  GEM_RANK_MULT,
+  BLOCK_BREAKS_CEILING_PER_HOUR,
+  BLOCK_DROPS,
+  BLOCK_TYPES,
+  BALANCE_TARGETS,
+  PACK_TYPES,
   QUEUE_MAX,
-  ROCK_GEM_RANK,
+  RANK_NAMES,
+  SEED_BACK_CHANCE,
+  SEED_GROW_MS,
+  SPARE_SELL,
+  STAGES,
+  STAGE_NAMES,
+  activities,
+  bestCropGoldPerCellMinute,
+  biggestShare,
+  blockLineage,
+  chains,
+  cheapestGoldPerGem,
   emptyShop,
+  expectedDistinct,
+  expectedSpares,
   fillQueueMath,
-  gemDrop,
+  focusedGems,
+  gemsPerBoughtBlock,
+  harvestYield,
+  hoursToAfford,
+  itemChances,
+  lineGemsPerEvent,
+  lineGemsPerHour,
   lootBaseValue,
-  rollRank,
+  mixedBySource,
+  mixedGemsPerHour,
+  packGemReturn,
+  packPeakSale,
+  packSellValue,
+  packsToComplete,
+  questGemsBeforeMine,
+  questGemsTotal,
+  seedLineageGems,
+  seedProductValue,
+  seedRank,
+  seedRatio,
   seededRng,
-  type GemSource,
+  CATALOG_PRICE_MULT,
+  CROP_TYPES,
+  SPLICE_RECIPES,
   type LootRef,
-  type Rank,
-  type Rng,
   type ShopSlot,
   type ShopState,
 } from '../shared/src/index.ts';
@@ -94,52 +125,95 @@ for (const [name, mult] of STRATEGIES) {
   }
 }
 
-// ---------- Gems per hour per source (step BG4) ----------
-// The gem rolls are the game's own gemDrop(source, rank, rng). How often each thing happens per hour is an ASSUMPTION
-// for an active player (below); BG9 tunes both. Quests and Book rewards are one-off: shown per game, not per hour.
-console.log('\nGems per hour per source (assumed activity for an active player; gemDrop is the real rule, 2000 hours each).');
-console.log('Block: 4/min punched. Harvest: 60/h. Crypt: 12 runs/h, each 3 chests (1 golden), 4 kills, 0.25 mimics, 1 boss per 24 runs.');
-console.log('Mine: 40 rocks/h. Lakeside: 30 trees/h and 40 fish/h (rank by RANK_WEIGHTS).\n');
+// ---------- BG9: the block world's gems, packs, seeds and splicing ----------
+// Every number below is EXPECTED value worked out in closed form from the game's rules (shared/src/balance.ts); the activity
+// rates (events per hour) are assumptions written in balance.ts, one place. Gems are the play money: gold is the tavern money.
+const hr = (h: number): string => (h < 1 ? `${Math.round(h * 60)} min` : `${h.toFixed(1)} h`);
+const f1 = (n: number): string => n.toFixed(1);
 
-type Pick = (rng: Rng) => Rank;
-const fixed = (r: Rank): Pick => () => r;
-/** A weighted pick of ranks. */
-const mix = (...w: [Rank, number][]): Pick => (rng) => {
-  let x = rng() * w.reduce((a, [, n]) => a + n, 0);
-  for (const [r, n] of w) {
-    if (x < n) return r;
-    x -= n;
+console.log('\n=== BG9 1. Gems per hour by source (focused hour in one activity; mixed hour = equal time in each open activity) ===');
+for (const stage of STAGES) {
+  console.log(`\n-- ${STAGE_NAMES[stage]} --`);
+  console.log(pad('activity / source', 26) + pad('events/h', 10) + pad('gems/event', 12) + pad('focused gems/h', 16) + 'mixed gems/h');
+  const acts = activities(stage);
+  for (const a of acts) {
+    console.log(`${a.label}   => ${f1(focusedGems(a))} gems/h focused`);
+    for (const l of a.lines) {
+      console.log('  ' + pad(l.source + ' (' + l.note + ')', 24) + pad(l.perHour, 10) + pad(lineGemsPerEvent(l).toFixed(3), 12) + pad(f1(lineGemsPerHour(l)), 16) + f1(lineGemsPerHour(l, 1 / acts.length)));
+    }
   }
-  return w[w.length - 1]![0];
-};
-const rolled: Pick = (rng) => rollRank(rng);
-const SOURCES_PER_HOUR: { source: GemSource; perHour: number; rank: Pick; note: string }[] = [
-  { source: 'block', perHour: 240, rank: mix(['common', 6], ['rare', 3], ['ultra_rare', 1]), note: 'breaking blocks' },
-  { source: 'harvest', perHour: 60, rank: mix(['common', 5], ['rare', 2], ['ultra_rare', 1]), note: 'a grown plant' },
-  { source: 'chest', perHour: 24, rank: fixed('common'), note: 'wooden chests (the rank is the chest\'s)' },
-  { source: 'chest', perHour: 12, rank: fixed('rare'), note: 'golden chests' },
-  { source: 'kill', perHour: 36, rank: fixed(ENEMY_GEM_RANK.slime), note: 'slime kills' },
-  { source: 'kill', perHour: 12, rank: fixed(ENEMY_GEM_RANK.skeleton), note: 'skeleton kills' },
-  { source: 'mimic', perHour: 3, rank: fixed('rare'), note: 'mimics' },
-  { source: 'boss', perHour: 0.5, rank: fixed('ultra_rare'), note: 'the Bone King' },
-  { source: 'rock', perHour: 22, rank: fixed(ROCK_GEM_RANK.copper), note: 'copper rocks' },
-  { source: 'rock', perHour: 14, rank: fixed(ROCK_GEM_RANK.iron), note: 'iron rocks' },
-  { source: 'rock', perHour: 4, rank: fixed(ROCK_GEM_RANK.mithril), note: 'mithril rocks' },
-  { source: 'chop', perHour: 30, rank: rolled, note: 'felled trees (the tree\'s rolled rank)' },
-  { source: 'fish', perHour: 40, rank: rolled, note: 'catches (rank by RANK_WEIGHTS)' },
-];
-console.log(pad('source', 9) + pad('per hour', 10) + pad('gems/h', 9) + 'what');
-const HOURS_SIMULATED = 2000;
-let total = 0;
-for (const row of SOURCES_PER_HOUR) {
-  const rng = seededRng(7);
-  const events = Math.round(row.perHour * HOURS_SIMULATED);
-  let gems = 0;
-  for (let i = 0; i < events; i++) gems += gemDrop(row.source, row.rank(rng), rng);
-  const perHour = gems / HOURS_SIMULATED;
-  total += perHour;
-  console.log(pad(row.source, 9) + pad(row.perHour, 10) + pad(perHour.toFixed(1), 9) + row.note);
+  const total = mixedGemsPerHour(stage);
+  const by = [...mixedBySource(stage)].sort((x, y) => y[1] - x[1]);
+  console.log(`MIXED ${f1(total)} gems/h: ` + by.map(([s, g]) => `${s} ${f1(g)} (${Math.round((g / total) * 100)}%)`).join(', '));
+  const big = biggestShare(stage);
+  console.log(`Biggest single source: ${big.source} ${Math.round(big.share * 100)}% (target at most ${Math.round(BALANCE_TARGETS.maxSourceShare * 100)}%).`);
 }
-console.log(pad('TOTAL', 19) + total.toFixed(1) + '  (if one player did all of it in one hour: a ceiling, not a typical hour)');
-const book = ([25, 50, 75, 100] as const).map((p) => `${GEMS.book.min * GEM_RANK_MULT[BOOK_GEM_RANK[p]]}-${GEMS.book.max * GEM_RANK_MULT[BOOK_GEM_RANK[p]]}`);
-console.log(`One-off: a finished quest pays ${GEMS.quest.min}-${GEMS.quest.max} gems; a Book tier pays ${book.join(' / ')} gems at 25 / 50 / 75 / 100 % of a tab.`);
+console.log(`\nOne-off: the first-run quests pay ${f1(questGemsBeforeMine())} gems before the mine opens (level 3), ${f1(questGemsTotal())} in all. Book tiers: see BOOK_GEM_RANK.`);
+
+console.log('\n=== BG9 2. Hours of MIXED play to afford each pack (the first-run quest gems count for the new player) ===');
+console.log(pad('pack', 22) + pad('gems', 7) + pad('rolls', 7) + STAGES.map((s) => pad(STAGE_NAMES[s], 22)).join('') + 'target');
+const TARGET_TEXT: Record<string, string> = {
+  basic_seeds: `first pack: at most ${BALANCE_TARGETS.firstPackMaxMin} min`,
+  random_blocks: `first pack: at most ${BALANCE_TARGETS.firstPackMaxMin} min`,
+  common_clothes: `about ${BALANCE_TARGETS.commonClothesHours} h`,
+  rare_clothes: `about ${BALANCE_TARGETS.rareClothesHours} h`,
+};
+for (const pack of PACK_TYPES) {
+  console.log(pad(pack.name, 22) + pad(pack.gemPrice, 7) + pad(pack.rolls, 7) + STAGES.map((s) => pad(hr(hoursToAfford(pack.gemPrice, s)), 22)).join('') + (TARGET_TEXT[pack.id] ?? ''));
+}
+
+console.log('\n=== BG9 3. Packs: what is inside, what it sells for, how many duplicates ===');
+console.log(pad('pack', 22) + pad('price', 7) + pad('sold (gold)', 13) + pad('peak sale', 11) + pad('price/piece', 13) + pad('dupes in 1 / 5 / 10 packs', 28) + pad('different in 10', 17) + 'gems back by playing it');
+for (const pack of PACK_TYPES) {
+  const peak = packPeakSale(pack);
+  const pool = itemChances(pack).length;
+  console.log(
+    pad(pack.name, 22) + pad(pack.gemPrice, 7) + pad(f1(packSellValue(pack)), 13) + pad(peak.peak, 11) + pad(f1(peak.pricePerPiece), 13) +
+      pad([1, 5, 10].map((n) => f1(expectedSpares(pack, n))).join(' / '), 28) + pad(`${f1(expectedDistinct(pack, 10))} of ${pool}`, 17) + packGemReturn(pack).toFixed(1),
+  );
+}
+const complete = PACK_TYPES.filter((p) => p.pool === 'clothing').map((p) => `${p.name}: ${f1(packsToComplete(p, seededRng(3)))} packs for every piece it can give`);
+console.log(complete.join('; ') + `. A spare piece sells for baseValue x SPARE_SELL (${SPARE_SELL}) gold.`);
+
+console.log('\n=== BG9 4. Blocks and seeds: the punching loop ===');
+console.log(pad('block', 14) + pad('rank', 11) + pad('hits', 6) + pad('breaks/blk', 12) + pad('gems/blk', 10) + pad('seeds/blk', 11) + pad('seed ratio', 12) + pad('gems/seed', 11) + 'gems per bought block (gold)');
+for (const b of BLOCK_TYPES) {
+  const l = blockLineage(b.rank);
+  const ratio = seedRatio(b.id);
+  const lineage = seedLineageGems(b.id);
+  console.log(
+    pad(b.id, 14) + pad(RANK_NAMES[b.rank], 11) + pad(b.hardness, 6) + pad(f1(l.breaks), 12) + pad(l.gems.toFixed(2), 10) + pad(l.seeds.toFixed(2), 11) + pad(ratio.toFixed(2) + (ratio >= 1 ? ' LOOP' : ''), 12) +
+      pad(Number.isFinite(lineage) ? f1(lineage) : 'unlimited', 11) + (b.inCatalog ? `${gemsPerBoughtBlock(b.id).toFixed(2)} gems for ${b.baseValue * CATALOG_PRICE_MULT} gold` : 'not sold'),
+  );
+}
+console.log(`Seed ratio = seeds back from ONE planted seed (harvest yield x seeds per block + ${SEED_BACK_CHANCE}); at 1 or more a seed makes seeds forever. BLOCK_DROPS: ` + (Object.entries(BLOCK_DROPS) as [string, (typeof BLOCK_DROPS)['common']][]).map(([k, v]) => `${k} block ${v.block} seed ${v.seed} gem ${v.gem}`).join('; '));
+const rate = BLOCK_BREAKS_CEILING_PER_HOUR;
+console.log(`Cheapest gold to gems: ${cheapestGoldPerGem().toFixed(1)} gold per gem (target at least ${BALANCE_TARGETS.minGoldPerGem}).`);
+console.log(`If blocks never ran out, ${rate} breaks/h would give ${f1(rate * 0.375)} gems/h on common blocks. They do run out: a bought dirt block (${2 * CATALOG_PRICE_MULT} gold) gives ${gemsPerBoughtBlock('dirt').toFixed(2)} gems, so ${f1((2 * CATALOG_PRICE_MULT) / gemsPerBoughtBlock('dirt'))} gold per gem.`);
+
+console.log('\n=== BG9 5. Seed -> plant -> harvest -> sell: gold per cell, and the limit ===');
+console.log(pad('crop', 10) + pad('seed gold', 11) + pad('grow', 8) + pad('yield', 7) + pad('sells', 7) + pad('gold/harvest', 14) + pad('gold per cell-min', 19) + 'cells to feed the shop');
+const CUSTOMERS_PER_HOUR = (appeal: number): number => 3600 / (60 * (100 / (100 + appeal)));
+for (const crop of CROP_TYPES) {
+  if (crop.seedPrice === null) continue;
+  const grow = SEED_GROW_MS[crop.rank] / 60_000;
+  const y = harvestYield(crop.rank);
+  const gold = y * crop.baseValue - crop.seedPrice * (1 - SEED_BACK_CHANCE);
+  const perMin = gold / grow;
+  const cellsToSaturate = CUSTOMERS_PER_HOUR(100) / ((60 / grow) * y);
+  console.log(pad(crop.id, 10) + pad(crop.seedPrice, 11) + pad(grow + ' min', 8) + pad(f1(y), 7) + pad(crop.baseValue, 7) + pad(f1(gold), 14) + pad(f1(perMin), 19) + cellsToSaturate.toFixed(2));
+}
+console.log(`The limit is the till: at most ${CUSTOMERS_PER_HOUR(0).toFixed(0)} customers/h at appeal 0 and ${CUSTOMERS_PER_HOUR(100).toFixed(0)}/h at appeal 100 (each buys ONE item, and only while the player serves). So crops cap at about ${(CUSTOMERS_PER_HOUR(100) * 22).toFixed(0)} gold/h however many cells, and a handful of cells already feed that.`);
+
+console.log('\n=== BG9 6. Splicing: time, cost and value of each result (fastest way from starter seeds) ===');
+const ch = chains();
+const rate1 = bestCropGoldPerCellMinute();
+console.log(pad('result', 24) + pad('rank', 11) + pad('wall clock', 12) + pad('seed gold', 11) + pad('cell-min', 10) + pad('worth (gold)', 14) + `worth per cell-min (a plain crop cell makes ${f1(rate1)})`);
+const results = [...new Set(SPLICE_RECIPES.map((x) => x.result))];
+for (const id of results) {
+  const c = ch.get(id)!;
+  const worth = seedProductValue(id);
+  console.log(pad(id, 24) + pad(RANK_NAMES[seedRank(id)], 11) + (c.cellMs === 0 ? pad('(starter)', 12) + pad(c.gold, 11) + pad('-', 10) + pad(worth, 14) + 'comes from a pack or a drop' : pad(hr(c.ms / 3_600_000), 12) + pad(c.gold, 11) + pad(f1(c.cellMs / 60_000), 10) + pad(worth, 14) + f1(worth / (c.cellMs / 60_000))));
+}
+console.log('Wall clock = branches planted in parallel in their own cells; a splice cell takes the longer seed time + SPLICE_BONUS_MS. Value per cell-min must stay under a plain crop cell, else a chain makes value from nothing.');
+console.log('Time by result rank (fastest result of each rank):' + (['common', 'rare', 'ultra_rare', 'legendary'] as const).map((rk) => { const ids = results.filter((i) => seedRank(i) === rk); return ids.length ? ` ${RANK_NAMES[rk]} ${hr(Math.min(...ids.map((i) => ch.get(i)!.ms)) / 3_600_000)}-${hr(Math.max(...ids.map((i) => ch.get(i)!.ms)) / 3_600_000)}` : ''; }).join(';'));

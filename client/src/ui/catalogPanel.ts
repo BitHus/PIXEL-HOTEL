@@ -22,6 +22,7 @@ import {
   stylePrice,
   styleKey,
   type FurnitureType,
+  type PackType,
   type Room,
   type StyleKind,
   type StyleType,
@@ -29,9 +30,10 @@ import {
 import { el } from './dom.ts';
 import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
 import { panelShell, priceTag, tabBar } from './panelShell.ts';
+import { drawPacks, type PacksData } from './packsView.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
-export type CatalogTab = 'home' | 'shop' | 'decor' | 'blocks' | 'seeds';
+export type CatalogTab = 'home' | 'shop' | 'decor' | 'blocks' | 'seeds' | 'packs';
 
 export interface CatalogHooks {
   buyItem(typeId: string): void;
@@ -40,11 +42,15 @@ export interface CatalogHooks {
   buySeeds(seed: SeedId): void;
   /** Asks first; the confirm panel offers 1 or a pack (step BG5). */
   buyBlock(id: string): void;
+  /** The Packs tab (step BG8): asks first, then opens the pack. */
+  openPack(pack: PackType): void;
+  /** Sells one spare piece of clothing. */
+  sellSpare(clothingId: string): void;
 }
 
 export interface CatalogPanel {
   readonly el: HTMLElement;
-  refresh(gold: number, unlocked: readonly string[], room: Room): void;
+  refresh(gold: number, unlocked: readonly string[], room: Room, packs?: PacksData): void;
 }
 
 const TABS = [
@@ -53,6 +59,7 @@ const TABS = [
   ['decor', 'house', 'Decor'],
   ['blocks', 'hammer', 'Blocks'],
   ['seeds', 'sprout', 'Seeds'],
+  ['packs', 'bag', 'Packs'],
 ] as const;
 
 /** Where a furniture type goes, in words (for the confirm panel). */
@@ -74,6 +81,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   let gold = 0;
   let unlocked: readonly string[] = [];
   let room: Room | null = null;
+  let packsData: PacksData = { gems: 0, unlocked: [], spares: {} };
   const markTab = tabBar(shell.tabs, TABS, (t) => {
     tab = t;
     draw();
@@ -112,10 +120,16 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   const draw = (): void => {
     markTab(tab);
     list.replaceChildren();
-    note.hidden = tab !== 'seeds' && tab !== 'blocks';
+    note.hidden = tab !== 'seeds' && tab !== 'blocks' && tab !== 'packs';
+    list.classList.toggle('pack-list', tab === 'packs');
     if (tab === 'blocks') {
       note.textContent = 'Select a block in the hotbar, tap a free cell to place it, tap a block to punch it. More kinds drop from punching.';
       for (const b of catalogBlocks()) list.appendChild(blockCard(b));
+      return;
+    }
+    if (tab === 'packs') {
+      note.textContent = 'Packs cost gems, which you only earn by playing. The odds and everything a pack can give are on its card. Duplicates are possible.';
+      drawPacks(list, packsData, { open: hooks.openPack, sell: hooks.sellSpare });
       return;
     }
     if (tab === 'seeds') {
@@ -133,7 +147,8 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   return {
     el: shell.el,
-    refresh(g, u, r) {
+    refresh(g, u, r, packs) {
+      if (packs) packsData = packs;
       gold = g;
       unlocked = u;
       room = r;

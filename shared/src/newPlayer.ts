@@ -128,6 +128,9 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       seen: {},
       bookOpenedAt: at,
       bookRewards: [],
+      splicesFound: [],
+      clothingSpares: {},
+      packsOpened: {},
     },
     look: { ...config.look },
     rooms: [

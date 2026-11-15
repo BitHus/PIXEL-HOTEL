@@ -166,7 +166,11 @@ export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 export type CropSeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
 /** Every block has a seed (step BG6): `<block id>_seed`; planted, it grows blocks. */
 export type BlockSeedId = `${BlockId}_seed`;
-export type SeedId = CropSeedId | BlockSeedId;
+/** Seeds that only splicing makes (step BG7, shared/data/spliceSeeds.json): they grow drinks, furniture, clothes and rarer goods. */
+export type SpliceSeedId =
+  | 'flaxbloom_seed' | 'hopvine_seed' | 'honeybloom_seed' | 'vine_bench_seed' | 'mohawk_seed' | 'baggy_seed' | 'tunic_seed'
+  | 'gilded_chair_seed' | 'honey_table_seed' | 'ember_lamp_seed' | 'amberbud_seed' | 'spiritbrew_seed' | 'heartwood_throne_seed';
+export type SeedId = CropSeedId | BlockSeedId | SpliceSeedId;
 export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
 export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth' | 'grilled_perch' | 'carp_stew' | 'eel_pie';
 /** The lakeside (section 10d, step 9f): fish (fish.json) and the things fished up (also fish.json), and what trees give besides wood. */
@@ -246,6 +250,7 @@ export type LedgerReason =
   | 'seeds'
   | 'plant'
   | 'harvest'
+  | 'splice'
   | 'cook'
   | 'lunch_box'
   | 'smelt'
@@ -265,6 +270,9 @@ export type LedgerReason =
   | 'tavern_order'
   | 'tavern'
   | 'tavern_gift'
+  // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.
+  | 'pack'
+  | 'spare_sale'
   | 'debug';
 
 export interface LedgerEntry {
@@ -278,6 +286,8 @@ export interface LedgerEntry {
   materials?: Partial<Record<MaterialId, number>>;
   /** Furniture added (new or back from a shop slot). */
   furnitureUids?: number[];
+  /** Clothing copies gained (positive; the first unlocks the piece, the rest are spares) or spares sold (negative), by id (step BG8). */
+  clothing?: Record<string, number>;
   /** Furniture taken out (put on a shop slot). */
   removedUids?: number[];
   note?: string;
@@ -321,6 +331,15 @@ export interface Player {
   bookOpenedAt: number;
   /** Book rewards already taken, as '<tab>:<percent>'. */
   bookRewards: string[];
+  /** Splice recipes found (step BG7): the pair keys of recipes whose result was harvested (splice.ts pairKey). */
+  splicesFound: string[];
+  /**
+   * Spare copies of unlocked clothing (step BG8): a piece found again is not lost, the extra copies are kept here
+   * (missing = 0; a piece owned twice has 1 spare). They can be sold (config SPARE_SELL).
+   */
+  clothingSpares: Record<string, number>;
+  /** How many packs of each kind were opened (step BG8; for quests later). */
+  packsOpened: Record<string, number>;
 }
 
 export interface SeenEntry {

@@ -18,6 +18,7 @@ import {
   getMaterialType,
   isMaterialId,
   newEntries,
+  recipeHint,
   type BookEntry,
   type BookTab,
   type MaterialId,
@@ -35,7 +36,7 @@ export interface BookPanel {
   refresh(player: Player, fresh?: boolean): void;
 }
 
-const TAB_ICONS: Record<BookTab, IconName> = { materials: 'wood', blocks: 'hammer', furniture: 'chair', food: 'food', fish: 'fish', enemies: 'sword' };
+const TAB_ICONS: Record<BookTab, IconName> = { materials: 'wood', blocks: 'hammer', furniture: 'chair', food: 'food', fish: 'fish', enemies: 'sword', splice: 'hammer' };
 
 /** Enemy pictures, drawn in code (placeholders): rows of palette letters, '.' = empty. */
 const ENEMY_ART: Record<string, { rows: string[]; colors: Record<string, number> }> = {
@@ -132,11 +133,39 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
     return c;
   };
 
+  /** A splice recipe card (step BG7): "[a] + [b] = [result]" once found; else "???" with one ingredient shown as a hint. */
+  const recipeCard = (e: BookEntry, p: Player): HTMLElement => {
+    const found = p.splicesFound.includes(e.key);
+    const c = el('div', `book-card book-recipe${found ? '' : ' unseen'}`);
+    const hint = e.recipe && !found ? recipeHint({ a: e.recipe.a as never, b: e.recipe.b as never, result: e.id as never }, p.seen) : null;
+    const slot = (id: string | null, show: boolean): HTMLElement => {
+      if (show && id) {
+        const box = icon(materialIconUrl(id as MaterialId), true);
+        box.title = nameOfItem(id);
+        return box;
+      }
+      const q = icon(materialIconUrl(e.recipe!.a as MaterialId), false);
+      q.title = '???';
+      return q;
+    };
+    const row = el('div', 'book-recipe-row');
+    row.append(slot(e.recipe!.a, found || hint === e.recipe!.a), el('span', 'book-recipe-sign', '+'), slot(e.recipe!.b, found || hint === e.recipe!.b), el('span', 'book-recipe-sign', '='), slot(e.id, found));
+    c.appendChild(row);
+    if (!found) {
+      c.append(el('div', 'book-name', '???'), el('div', 'book-sub', hint ? `Hint: ${nameOfItem(hint)}` : 'Not found yet'));
+      return c;
+    }
+    const name = rankName('div', 'book-name', e.name, e.id);
+    setRank(name, e.id, e.rank);
+    c.append(name, el('div', 'book-sub', RANK_NAMES[e.rank]));
+    return c;
+  };
+
   const draw = (): void => {
     const p = player;
     if (!p) return;
-    const prog = bookProgress(p.seen, tab);
-    const total = bookTotal(p.seen);
+    const prog = bookProgress(p.seen, tab, p.splicesFound);
+    const total = bookTotal(p.seen, p.splicesFound);
     const line = el('div', 'book-progress');
     line.append(el('span', 'book-found', `${prog.found} / ${prog.total} found`), el('span', 'book-total', `Whole book: ${total.percent}%`));
     const rewards = el('div', 'book-rewards');
@@ -157,7 +186,7 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
       rewards.appendChild(box);
     }
     head.replaceChildren(el('div', 'catalog-name', BOOK_TAB_NAMES[tab]), line, rewards);
-    grid.replaceChildren(...bookEntries(tab).map((e) => card(e, p)));
+    grid.replaceChildren(...bookEntries(tab).map((e) => (e.kind === 'recipe' ? recipeCard(e, p) : card(e, p))));
     mark(tab);
   };
 

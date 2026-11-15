@@ -115,7 +115,15 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Customers walk 72 px/s (+-10%), at most 5 NPCs in the shop, no fixed route (window-shoppers,
   pairs, talk lines from shared/data/npcLines.json); behind the counter is staff only.
 - Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
-- No trading in v1. Every change to gold or items goes through ONE function (ledger.ts
+- GEM SINK (BG8, numbers BG9): packs cost gems (config PACKS; shared/data/packs.json; pure openPack in shared/src/packs.ts):
+  Random Blocks 40, Basic Seeds 30 (5 rolls each), Common Clothes 75, Rare Clothes 225 (3 rolls). Rank first (RANK_WEIGHTS times
+  the pack's multiplier), then an item. A clothes piece found again is a SPARE (Player.clothingSpares), sold for baseValue *
+  SPARE_SELL (0.1) gold. GEM INCOME (BG9, config GEMS + BLOCK_DROPS, targets BALANCE_TARGETS): a mixed hour gives about 55 gems
+  (new player), 70 (level 3), 100 (level 8); no source over 40%; first pack about 25 min, Common Clothes about 1 h, Rare Clothes
+  about 3 h at level 3. Closed loops: seed ratio of every block seed under 0.85, gold per gem through catalog blocks at least 30,
+  a pack sells for less than its price, playing a pack's contents gives back at most half its price. shared/src/balance.ts (maths)
+  and balance.test.ts fail when a number reopens a loop; `npm run simulate` prints the tables (NOTES BG9).
+- No trading in v1. Every change to gold, gems or items goes through ONE function (ledger.ts
   applyChange) and is written to the ledger.
 
 10. DUNGEON
@@ -148,6 +156,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   legendary 12 h; no watering, no rotting). Harvest = PUNCH the full plant (one hit, hold works): SEED_YIELD
   blocks or crops by rank (1 to 4), SEED_BACK_CHANCE for the seed, gemDrop 'harvest'. An unripe plant only shakes
   and says when it is ready. Basic crop seeds are sold (gold); block seeds and rarer ones come from drops.
+  SPLICING (BG7): with a seed selected, tap a young plant: the second seed goes in and the cell grows the pair's
+  NEW seed (shared/data/splice.json, order free, no random failure; a wrong pair or the same seed = "nothing
+  happens", nothing taken) for the longer grow time + SPLICE_BONUS_MS. Harvest gives the new seed (+ a small
+  chance of a block or crop, gems 'splice'); results grow blocks, crops, drinks, furniture or clothes.
   Paths and fences are blocks. Hold to repeat: see INPUT.
 - Cooking recipes: shared/data/food.json. Up to 3 food items go into the dungeon (lunch box; lost
   on death). Crops and food sell in the shop.
@@ -190,8 +202,11 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Accounts: username and password only. No email, real name or birthday (so no password reset by
   email; an admin can set a new one). Ages 13 and up: one checkbox, no other age data.
 - Chat: public in the room only, word filter, report button, per-player mute, rate limits. No
-  private messages, no friend requests in v1. Room owners can set a room to private. No loot
-  boxes, no real-money purchases. The first release is a small private test.
+  private messages, no friend requests in v1. Room owners can set a room to private. No real-money
+  purchases. No loot boxes in the usual sense; the ONE random thing you pay for is a PACK (BG8), and only
+  under these FAIRNESS RULES: gems are earned in play only, never bought with money; the contents and
+  the rank odds are shown on the pack card before buying; duplicates are allowed (extra copies are spares,
+  sellable); no timers, limited offers or daily tricks that push buying. The first release is a small private test.
 
 14. WORKING RULES FOR YOU (the AI)
 - Do one step at a time. Do not build things from later steps. Keep files small and named by
@@ -220,12 +235,11 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   data, drawn by render/drawIcon.ts; NOTES BG2).
 - Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
   texts) next, on the cell grid.
-- BG3 (gain popups, every source) and BG4 (gems from every source: block, harvest, chest, kill, mimic, boss,
-  rock, chop, fish, quest, Book; floor piles in the dungeon and mine, kept on Leave, half lost on death in the
-  crypt) are done (NOTES BG3b + BG4b). BG5 (blocks), BG5b (hold to repeat) and BG6 (seeds, the free-form farm)
-  are done too. Next: BG7-BG9 (BG9 tunes the gem numbers), then 9t B/C, 9g.
+- BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
+  packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
+  is done. Next: 9t B/C (the tavern client), then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 17. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 20. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -269,7 +283,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 17) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 20) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers

@@ -37,7 +37,10 @@ export type BlockProblem =
   | 'cooldown' // too soon after the last hit (not an error)
   | 'no_soil' // seeds only go on soil cells (step BG6)
   | 'no_plant' // nothing planted there to harvest
-  | 'unripe'; // the plant is not fully grown yet
+  | 'unripe' // the plant is not fully grown yet
+  | 'nothing_happens' // splicing: this pair makes nothing (or the same seed twice); the seeds stay in the bag
+  | 'already_spliced' // the cell already holds two seeds
+  | 'ripe'; // splicing: the plant is already fully grown, harvest it first
 
 /** Who is where: the avatars standing still (cells that stay free) and the one who places or hits. */
 export interface BlockContext {

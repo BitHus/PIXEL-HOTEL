@@ -251,6 +251,7 @@ gradients, no blur, palette colours only (Endesga 32), all drawn in CSS / code.
   icon, the name and the price. A tap on a card opens "Buy this?", which has the details. No
   repeated "Hotel or shop" line: a small tag shows only when the item cannot go in the room
   the player is in. Seeds are the same cards; Buy 1 and Buy 5 are in the confirm panel.
+  The Packs tab (BG8) has one wide card per pack (picture, gem price, every possible item as a rank-coloured chip with the odds in percent, an Open button that greys with "Need N more gems") and a "Your spares" card; the confirm panel there is priced in gems (BuyQuestion.currency).
 - **List panels (polish).** Workshop, Cooking, the shelf panel and the Map use the Map's card as
   the model: an icon, a title, one short line, and one action on the right.
 - **Placing furniture** (our own pattern, built in step 4b): the item appears as a ghost,
