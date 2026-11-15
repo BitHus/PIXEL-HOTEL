@@ -28,10 +28,10 @@ async function inTavern(state: GameState) {
 const barrelOf = (api: LocalGameAPI) => api.snapshot().items.find((i) => i.typeId === 'brewing_barrel')!;
 
 describe('brewing through the GameAPI (step 9t C)', () => {
-  it('collect the starting root ale, brew a new batch: inputs out, ready later, collect gives the mugs and a gains list', async () => {
+  it('brew a new batch (the start ale is on a tap): inputs out, ready later, collect gives the mugs and a gains list', async () => {
     const { api } = await inTavern(stateWith({ turnip: 4, potato: 2 }));
     const uid = barrelOf(api).uid;
-    expect((await api.collectBrew(uid))?.mugs).toBe(7); // the new game's batch
+    expect(await api.collectBrew(uid)).toBeNull(); // the new game's barrel is idle (step T1)
     expect(await api.startBrew(uid, 'root_ale')).toBe(true);
     const p = await api.getPlayer();
     expect(p.materials.turnip).toBe(2);

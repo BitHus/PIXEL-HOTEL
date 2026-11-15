@@ -5,7 +5,7 @@
 import { CUSTOMER_FIRST_ID, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
-import { addShopStartItems, addStove, addTavern } from './newPlayer.ts';
+import { addBarFittings, addShopStartItems, addStove, addTavern } from './newPlayer.ts';
 import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
 import { emptyLakeside } from './woodcut.ts';
@@ -23,7 +23,7 @@ export interface SaveFile {
 export type SaveProblem = 'bad_json' | 'not_a_save' | 'too_old' | 'too_new' | 'invalid';
 
 export type LoadResult =
-  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean; kitchenChanged: boolean; shopClosed: boolean }
+  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean; kitchenChanged: boolean; shopClosed: boolean; barChanged: boolean }
   | { ok: false; problem: SaveProblem; version?: number };
 
 /**
@@ -306,6 +306,16 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || !isObject(state.tavern) || !Array.isArray(state.tavern.mess)) return state;
     return { ...state, tavern: { ...state.tavern, mess: state.tavern.mess.map((m) => (isObject(m) ? { ...m, gems: typeof m.gems === 'number' ? m.gems : 0 } : m)) } };
   },
+  // 23 -> 24 (step T1, taps and the kitchen): TavernState.taps (empty: the drinks in the bag stay in the bag); the tavern gets a register and a
+  // tap stand ON the bar (ledger 'tavern_gift'), or in the bag when the bar's cells are taken. The kitchen zone needs no data in the save.
+  23: (state) => {
+    if (!isObject(state) || !isObject(state.tavern) || !Array.isArray(state.items) || !Array.isArray(state.rooms) || !Array.isArray(state.ledger) || !isObject(state.player)) return state;
+    try {
+      return addBarFittings(state as unknown as GameState, typeof state.tavern.updatedAt === 'number' ? state.tavern.updatedAt : 0);
+    } catch {
+      return { ...state, tavern: { ...state.tavern, taps: [] } };
+    }
+  },
 };
 
 /** The storage key for a save version. */
@@ -342,7 +352,7 @@ export function readSave(text: string): LoadResult {
     if (v === 13 && isObject(state) && Array.isArray(state.items)) returnedToBag = Math.max(0, was - placedCount(state.items as GameState['items']));
   }
   if (!isGameState(state)) return { ok: false, problem: 'invalid', version };
-  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16, kitchenChanged: version < 21, shopClosed: version < 22 };
+  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16, kitchenChanged: version < 21, shopClosed: version < 22, barChanged: version < 24 };
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {
@@ -370,7 +380,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isInt(p.farmRoomId) || !x.rooms.every((r) => isObject(r) && isObject(r.plants) && isObject(r.blocks))) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   const t = x.tavern;
-  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.serveQueue) || !isInt(t.nextGuestId)) return false;
+  if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.cooks) || !Array.isArray(t.taps) || !Array.isArray(t.serveQueue) || !isInt(t.nextGuestId)) return false;
   if (x.run !== null && !(isObject(x.run) && isObject(x.run.map) && isObject(x.run.player) && Array.isArray(x.run.enemies))) return false;
   return isInt(x.nextUid) && Array.isArray(x.ledger);
 }

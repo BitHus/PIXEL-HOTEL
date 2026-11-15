@@ -45,12 +45,13 @@ import {
   REMARK_APPEAL_MIN,
 } from './config.ts';
 import { guestLook, outsidePoint, rollGuestKind, rollTolerance } from './guestLook.ts';
-import { npcGrid, npcPath, staffZones } from './npcNav.ts';
+import { kitchenZone } from './kitchen.ts';
+import { guestZones, npcGrid, npcPath } from './npcNav.ts';
 import { doorPoint } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { tavernGemDrop } from './gems.ts';
-import { getMaterialType } from './materials.ts';
+import { getMaterialType, isDrinkId } from './materials.ts';
 import type { NavGrid } from './nav.ts';
 import { maybeSay, reactionMoment, talkChance, type NpcMoment, type TalkMoment } from './npcTalk.ts';
 import type { Room } from './room.ts';
@@ -160,15 +161,20 @@ function reachable(g: NavGrid, door: Point, seats: readonly TavernSeat[]): Taver
   });
 }
 
-/** Takes the guest's order out of the bag (ledger 'tavern_order'). Null when the bag has none. */
+/**
+ * Takes the guest's order out of the bag (ledger 'tavern_order'). Null when the bag has none. A DRINK is not taken here (step T1): it
+ * stays on its tap until the avatar pours it; the open order counts as spoken for (taps.ts stockFor), menuOffers already checked it.
+ */
 function reserve(state: GameState, item: MaterialId, at: number): GameState | null {
+  if (isDrinkId(item)) return state;
   return applyChange(state, { reason: 'tavern_order', materials: { [item]: -1 }, note: `ordered: ${item}` }, at);
 }
 
 /** A guest leaves unserved: the order goes back to the bag and out of the player's queue and hands. */
 function giveBack(state: GameState, g: Guest, at: number): GameState {
   if (!g.order) return state;
-  const back = applyChange(state, { reason: 'tavern_order', materials: { [g.order.item]: 1 }, note: `not served: ${g.order.item}` }, at) ?? state;
+  // A drink was never taken from the bag (it is poured from the tap when served): only the queue and the hands are cleared.
+  const back = isDrinkId(g.order.item) ? state : applyChange(state, { reason: 'tavern_order', materials: { [g.order.item]: 1 }, note: `not served: ${g.order.item}` }, at) ?? state;
   const t = back.tavern;
   return withTavern(back, { serveQueue: t.serveQueue.filter((id) => id !== g.id), holding: t.holding?.guestId === g.id ? null : t.holding });
 }
@@ -211,8 +217,8 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
   const events: TavernEvent[] = [];
   let s = state;
   let changed = false;
-  const g = npcGrid(w.grid, staffZones(w.items, w.room.id));
-  const seats = tavernSeats(w.items, w.room.id);
+  const g = npcGrid(w.grid, guestZones(w.items, w.room));
+  const seats = tavernSeats(w.items, w.room.id, kitchenZone(w.room));
   const seatOf = (c: Guest): TavernSeat | undefined => (c.seat ? seats.find((k) => seatKey(k) === seatKey(c.seat!)) : undefined);
   const door = doorPoint(w.room);
   const exit = (from: Point): Point[] => [...npcPath(g, from, door), outsidePoint(w.room)];
@@ -306,7 +312,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
       c = { ...c, waitMs: c.waitMs - dtMs };
       if (c.waitMs <= 0) {
         changed = true;
-        const choice = chooseOrder(menuOffers(s), c.tolerance, rng);
+        const choice = chooseOrder(menuOffers(s, [...out, ...all.filter((o) => !out.some((x) => x.id === o.id))]), c.tolerance, rng);
         const taken = choice?.order ? reserve(s, choice.order.id, at) : null;
         if (choice?.order && taken) {
           s = taken;
@@ -376,8 +382,8 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
 
 /** Walking guests get a new path to where they were going (the furniture changed). */
 export function repathGuests(state: GameState, w: TavernWorld): GameState {
-  const g = npcGrid(w.grid, staffZones(w.items, w.room.id));
-  const seats = tavernSeats(w.items, w.room.id);
+  const g = npcGrid(w.grid, guestZones(w.items, w.room));
+  const seats = tavernSeats(w.items, w.room.id, kitchenZone(w.room));
   const guests = state.tavern.guests.map((c): Guest => {
     if (c.path.length === 0) return c;
     if (c.phase === 'leave') return { ...c, path: [...npcPath(g, c, doorPoint(w.room)), outsidePoint(w.room)] };
@@ -397,7 +403,7 @@ export function repathGuests(state: GameState, w: TavernWorld): GameState {
  * AWAY_ORDERS_MAX wait; one who finds no seat or nothing at their price is not there.
  */
 export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng: Rng): { state: GameState; arrived: number } {
-  const seats = tavernSeats(w.items, w.room.id);
+  const seats = tavernSeats(w.items, w.room.id, kitchenZone(w.room));
   const find = (c: Guest): TavernSeat | undefined => (c.seat ? seats.find((k) => seatKey(k) === seatKey(c.seat!)) : undefined);
   let s = withTavern(state, { serveQueue: [], holding: null });
   const kept: Guest[] = [];
@@ -412,7 +418,7 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
   const span = Math.min(gap, OFFLINE_MAX_MS);
   const interval = guestIntervalMs(tavernAppeal(w.room, w.items));
   const cap = Math.min(GUEST_MAX, seats.length);
-  const g = npcGrid(w.grid, staffZones(w.items, w.room.id));
+  const g = npcGrid(w.grid, guestZones(w.items, w.room));
   const usable = reachable(g, doorPoint(w.room), seats);
   let wait = s.tavern.nextGuestInMs;
   let t = 0;

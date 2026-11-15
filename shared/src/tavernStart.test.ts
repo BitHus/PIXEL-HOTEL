@@ -3,7 +3,6 @@
 
 import { describe, expect, it } from 'vitest';
 import { TAVERN_START_DISH, TAVERN_START_DRINK } from './config.ts';
-import { collectBrew } from './brewing.ts';
 import { itemBlockers } from './furniture.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { buildNavGrid, findPath } from './nav.ts';
@@ -44,10 +43,11 @@ describe('a new tavern (step S3)', () => {
   it('the start barrel holds 7 root ale and the early dish is on the menu', () => {
     const s = createNewPlayer(undefined, 0);
     expect(TAVERN_START_DRINK).toBe('root_ale');
-    expect(s.tavern.brews[0]).toMatchObject({ drink: 'root_ale' });
-    const got = collectBrew(s, s.tavern.brews[0]!.barrelUid, 0)!;
-    expect(got.mugs).toBe(getDrinkType('root_ale').mugs);
-    expect(got.mugs).toBe(7);
+    // Step T1: the 7 root ale of a new game are loaded on the first tap; the barrel starts idle.
+    expect(s.tavern.brews).toEqual([]);
+    expect(s.tavern.taps).toMatchObject([{ drink: 'root_ale', slot: 0, mugs: getDrinkType('root_ale').mugs }]);
+    expect(s.tavern.taps[0]!.mugs).toBe(7);
+    expect(menuRows(s).find((r) => r.id === 'root_ale')).toMatchObject({ on: true, stock: 7 });
     expect(menuRows(s).find((r) => r.id === TAVERN_START_DISH)).toMatchObject({ on: true, stock: 0, price: 14 }); // on, but no stock: no guest is offered a dish that is not there
     expect(menuOffers(s).some((o) => o.id === TAVERN_START_DISH)).toBe(false);
     expect(s.tavern.menu[TAVERN_START_DISH]).toEqual({ on: true, price: 14 });

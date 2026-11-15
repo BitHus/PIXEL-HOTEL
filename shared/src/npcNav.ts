@@ -4,7 +4,8 @@
 
 import { getFurnitureType, staffZone } from './furniture.ts';
 import { cellAt, cellCenter, cellRect, findPath, isCellFree, nearestFreeCell, reachableCells, type NavGrid } from './nav.ts';
-import { rectsOverlap } from './room.ts';
+import { kitchenZone } from './kitchen.ts';
+import { rectsOverlap, type Room } from './room.ts';
 import type { FurnitureItem, Point, Rect } from './types.ts';
 
 /** The staff zones of a room: behind every item that is served from behind (the counter). */
@@ -14,6 +15,12 @@ export function staffZones(items: readonly FurnitureItem[], roomId: number): Rec
     const type = getFurnitureType(i.typeId);
     return type.servedFromBehind ? [staffZone(i, type)] : [];
   });
+}
+
+/** Everything guests never enter: the staff zones behind the bar and the kitchen zone (step T1). */
+export function guestZones(items: readonly FurnitureItem[], room: Room): Rect[] {
+  const kitchen = kitchenZone(room);
+  return kitchen ? [...staffZones(items, room.id), kitchen] : staffZones(items, room.id);
 }
 
 /** True if a point is in a staff zone (edges count). */

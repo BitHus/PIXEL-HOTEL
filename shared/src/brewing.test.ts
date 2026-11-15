@@ -8,7 +8,12 @@ import { readSave, toSaveText } from './save.ts';
 import { ledgerMaterials } from './testState.ts';
 
 const MIN = 60_000;
-const fresh = (): GameState => createNewPlayer(undefined, 1000);
+/** A new game as it was before step T1: the barrel holds 7 root ale ready to collect, the taps are empty. The real start (7 mugs on a tap, an idle barrel) is the first test. */
+const fresh = (): GameState => {
+  const s = createNewPlayer(undefined, 1000);
+  const uid = s.items.find((i) => i.typeId === 'brewing_barrel')!.uid;
+  return { ...s, tavern: { ...s.tavern, taps: [], brews: [{ barrelUid: uid, drink: 'root_ale', readyAt: 1000 }] } };
+};
 const barrelUid = (s: GameState): number => s.items.find((i) => i.typeId === 'brewing_barrel')!.uid;
 const withCrops = (s: GameState): GameState => applyChange(s, { reason: 'debug', materials: { turnip: 4, potato: 4, carrot: 4, pumpkin: 1, glowcap: 1 } }, 1000)!;
 
@@ -26,7 +31,15 @@ describe('brewing (step 9t)', () => {
     }
   });
 
-  it('a new game starts with one barrel holding 7 root ale ready to collect', () => {
+  it('a new game (step T1): the barrel is idle and the 7 root ale are already loaded on the first tap', () => {
+    const s = createNewPlayer(undefined, 1000);
+    expect(s.tavern.brews).toEqual([]);
+    const stand = s.items.find((i) => i.typeId === 'tap_stand')!;
+    expect(s.tavern.taps).toEqual([{ standUid: stand.uid, slot: 0, drink: 'root_ale', mugs: 7 }]);
+    expect(s.player.materials.root_ale).toBeUndefined();
+  });
+
+  it('a barrel with a ready brew gives 7 root ale (collect)', () => {
     const s = fresh();
     const uid = barrelUid(s);
     expect(barrels(s.items, s.tavern.roomId).map((b) => b.uid)).toEqual([uid]);

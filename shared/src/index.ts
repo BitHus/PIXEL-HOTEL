@@ -48,6 +48,8 @@ export * from './seeds.ts';
 export * from './splice.ts';
 export * from './farm.ts';
 export * from './cooking.ts';
+export * from './kitchen.ts';
+export * from './taps.ts';
 export * from './forge.ts';
 export * from './tavern.ts';
 export * from './brewing.ts';

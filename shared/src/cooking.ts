@@ -7,6 +7,7 @@
 
 import { COOK_MS, STOVE_BATCH_MAX } from './config.ts';
 import { getFurnitureType } from './furniture.ts';
+import { prepBonus } from './kitchen.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { FOOD_TYPES, getFoodType, isFoodId, type FoodType } from './materials.ts';
@@ -19,6 +20,8 @@ export interface Cook {
   stoveUid: number;
   food: FoodId;
   qty: number;
+  /** Extra dishes from prep tables next to the stove inside the kitchen zone, fixed when the batch starts (step T1, kitchen.ts). Missing = 0. */
+  bonus?: number;
   readyAt: number;
 }
 
@@ -89,16 +92,22 @@ export function startCook(state: GameState, stoveUid: number, food: string, qty:
   const used: Partial<Record<MaterialId, number>> = {};
   for (const [id, n] of Object.entries(batchInputs(type, qty)) as [MaterialId, number][]) used[id] = -n;
   const paid = applyChange(state, { reason: 'cook', materials: used, note: `cooking ${qty} x ${food}` }, at);
-  return paid && withCooks(paid, [...paid.tavern.cooks, { stoveUid, food, qty, readyAt: at + cookMs(type) }]);
+  const bonus = prepBonus(state.items, state.rooms.find((r) => r.id === state.tavern.roomId), stoveUid);
+  return paid && withCooks(paid, [...paid.tavern.cooks, { stoveUid, food, qty, ...(bonus > 0 ? { bonus } : {}), readyAt: at + cookMs(type) }]);
 }
 
-/** Collects the dishes of a ready batch into the bag; the stove is empty again. Null if not ready. */
+/** The dishes a batch gives: the count put in plus the prep bonus (step T1). */
+export function cookYield(cook: Pick<Cook, 'qty' | 'bonus'>): number {
+  return cook.qty + (cook.bonus ?? 0);
+}
+
+/** Collects the dishes of a ready batch into the bag; the stove is empty again. Null if not ready. `qty` is the whole yield. */
 export function collectCook(state: GameState, stoveUid: number, at: number): { state: GameState; food: FoodId; qty: number } | null {
   const cook = cookOf(state.tavern.cooks, stoveUid);
   if (!cook || !cookReady(cook, at) || !placedStove(state, stoveUid)) return null;
-  const got = applyChange(state, { reason: 'cook', materials: { [cook.food]: cook.qty }, note: `collected ${cook.qty} x ${cook.food}` }, at);
+  const got = applyChange(state, { reason: 'cook', materials: { [cook.food]: cookYield(cook) }, note: `collected ${cookYield(cook)} x ${cook.food}` }, at);
   if (!got) return null;
-  return { state: withCooks(got, got.tavern.cooks.filter((c) => c.stoveUid !== stoveUid)), food: cook.food, qty: cook.qty };
+  return { state: withCooks(got, got.tavern.cooks.filter((c) => c.stoveUid !== stoveUid)), food: cook.food, qty: cookYield(cook) };
 }
 
 /**

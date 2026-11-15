@@ -26,7 +26,15 @@ export const TAVERN_START_ITEMS = [
   { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 496, y: 64, facing: 'down' },
   { key: 'stove', typeId: 'stove', x: 240, y: 96, facing: 'down' },
 ] as const;
-/** The drink that is ready in the start barrel. */
+/**
+ * What stands ON the bar in a new tavern (step T1): the register and a tap stand, side by side, as dx from the bar's anchor (px, bar facing down).
+ * The bar is 3 cells wide; the third cell stays free for a second stand.
+ */
+export const TAVERN_START_RIDERS = [
+  { typeId: 'register', dx: -32 },
+  { typeId: 'tap_stand', dx: 0 },
+] as const;
+/** The drink that is ready in the start barrel (a new game starts with these mugs loaded on the first tap, step T1). */
 export const TAVERN_START_DRINK = 'root_ale' as const;
 /** The early dish a new tavern has on its menu (the stove cooks it in 20 s from one turnip, step S3). */
 export const TAVERN_START_DISH = 'roasted_turnip' as const;
@@ -92,3 +100,13 @@ export const MENU_PRICE_MAX_MULT = 3;
 /** The Menu panel's face for a price: the guest with the middle tolerance of CUSTOMER_TOLERANCE_MIN..MAX. */
 export const MENU_FACE_TOLERANCE = 1.1;
 
+
+// ---------- The bar with taps and the kitchen (step T1) ----------
+/** Taps on one tap stand. */
+export const TAP_SLOTS = 2;
+/** Most mugs one tap holds. */
+export const TAP_CAP = 12;
+/** Pouring a mug at the taps takes this long, ms (then the avatar carries it). */
+export const POUR_MS = 800;
+/** A prep table inside the kitchen zone, cell-adjacent to a stove, adds this many dishes to its batch; at most `max` in all. */
+export const PREP_BONUS = { perTable: 1, max: 2 } as const;

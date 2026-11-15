@@ -3,6 +3,7 @@ import { applyChange } from './ledger.ts';
 import { EMPTY_MENU_HELP, menuIsEmpty, priceCeiling, priceHint, priceStep, stepMenuPrice, stepPrice, toggleMenu } from './menuEdit.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { menuEntry, menuOffers, menuRows } from './tavern.ts';
+import { loadTap, unloadTap } from './taps.ts';
 import type { GameState } from './gameState.ts';
 
 const fresh = (): GameState => createNewPlayer(undefined, 1000);
@@ -40,15 +41,21 @@ describe('the Menu panel rules (step 9t C)', () => {
   });
 
   it('out of stock means off the menu (guests cannot order it), though the row stays when it was set', () => {
-    let s = give(fresh(), { root_ale: 1 });
+    // The 7 start mugs are on a tap (step T1): take them off one by one to the last mug.
+    let s = fresh();
+    const stand = s.items.find((i) => i.typeId === 'tap_stand')!;
     expect(menuOffers(s)).toHaveLength(1);
-    s = applyChange(s, { reason: 'debug', materials: { root_ale: -1 } }, 1000)!;
+    s = unloadTap(s, stand.uid, 0, 'all', 1000)!;
     expect(menuOffers(s)).toEqual([]);
     expect(menuIsEmpty(s)).toBe(true);
     expect(EMPTY_MENU_HELP).toMatch(/brew/i);
     expect(EMPTY_MENU_HELP).toMatch(/cook/i);
-    s = toggleMenu(s, 'root_ale')!; // set once: the row stays with stock 0
-    expect(menuRows(s).find((r) => r.id === 'root_ale')?.stock).toBe(0);
+    // A drink that is not on a tap is not a row at all (step T1); the choice made earlier comes back with the drink.
+    expect(menuRows(s).find((r) => r.id === 'root_ale')).toBeUndefined();
+    s = toggleMenu(s, 'root_ale')!;
+    expect(s.tavern.menu.root_ale?.on).toBe(false);
+    s = loadTap(s, stand.uid, 0, 'root_ale', 3, 1000)!;
+    expect(menuRows(s).find((r) => r.id === 'root_ale')).toMatchObject({ stock: 3, on: false });
   });
 
   it('the price hint shows the four faces from cheap to too high', () => {

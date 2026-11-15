@@ -22,7 +22,7 @@ const fresh = (): GameState => createNewPlayer(undefined, 1000);
 describe('the seen list (Player.seen, step 9e)', () => {
   it('a new player has seen what they start with', () => {
     const s = fresh();
-    expect(Object.keys(s.player.seen).sort()).toEqual(['bar_stool', 'brewing_barrel', 'cloth', 'counter', 'round_table', 'stove', 'wood']);
+    expect(Object.keys(s.player.seen).sort()).toEqual(['bar_stool', 'brewing_barrel', 'cloth', 'counter', 'register', 'round_table', 'stove', 'tap_stand', 'wood']);
     expect(s.player.seen.wood).toEqual({ count: 4, firstSeenAt: 1000 });
     expect(s.player.seen.counter).toEqual({ count: 1, firstSeenAt: 1000 });
     expect(s.player.bookRewards).toEqual([]);
@@ -92,7 +92,7 @@ describe('the seen list (Player.seen, step 9e)', () => {
 
   it('ownedFinds counts materials and furniture', () => {
     const s = fresh();
-    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, counter: 1, round_table: 1, bar_stool: 3, brewing_barrel: 1, stove: 1 });
+    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, counter: 1, round_table: 1, bar_stool: 3, brewing_barrel: 1, stove: 1, register: 1, tap_stand: 1 });
   });
 
   it('addSeen keeps the first time', () => {
@@ -134,11 +134,11 @@ describe('the Book (step 9e)', () => {
   it('counts found per tab and in total', () => {
     const s = fresh();
     expect(bookProgress(s.player.seen, 'materials')).toEqual({ found: 2, total: bookEntries('materials').length });
-    expect(bookProgress(s.player.seen, 'furniture').found).toBe(5);
+    expect(bookProgress(s.player.seen, 'furniture').found).toBe(7);
     expect(bookProgress(s.player.seen, 'enemies').found).toBe(0);
     const total = bookTotal(s.player.seen);
-    expect(total.found).toBe(7);
-    expect(total.percent).toBe(Math.floor(800 / total.total));
+    expect(total.found).toBe(9);
+    expect(total.percent).toBe(Math.floor(900 / total.total));
     let seen = s.player.seen;
     for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) seen = addSeen(seen, e.key, 1, 5);
     expect(bookTotal(seen, bookEntries('splice').map((e) => e.key)).percent).toBe(100);

@@ -24,6 +24,8 @@ export interface WalkState {
 /** The player's tavern errand: to the bar for an order, to the guest's table with it, or to a table spot to tidy it. */
 export type TavernTask =
   | { stage: 'bar' }
+  /** Pouring a drink at the taps (step T1): the avatar stands still until `until` (the API's clock), then the mug is in its hands. */
+  | { stage: 'pour'; until: number }
   | { stage: 'table'; guestId: number }
   | { stage: 'mess'; messId: number; what: 'coins' | 'dish' };
 

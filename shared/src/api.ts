@@ -21,6 +21,7 @@ import type { BlockProblem } from './blocks.ts';
 import type { Guest, Mess } from './tavern.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
+import type { Tap } from './taps.ts';
 import type { TavernEvent } from './guests.ts';
 import type { SellKind, SellResult, SellRow } from './trader.ts';
 
@@ -77,6 +78,8 @@ export interface TavernView {
   brews: Brew[];
   /** What cooks on the stoves (stove uid, dish, how many, the time it is ready; step K1). */
   cooks: Cook[];
+  /** The drinks on the taps (stand uid, slot, drink, mugs; step T1). */
+  taps: Tap[];
   /** The tavern's appeal 0..100 (placed items, decor too, plus the styles; it sets how fast guests come). */
   appeal: number;
   /** The API's clock when this was read (to count down a brew). */
@@ -113,7 +116,11 @@ export type TavernClientEvent =
   /** The player cleared an empty mug or plate. */
   | { t: 'cleared'; messId: number; spot: Point }
   /** The serve queue changed (a tap was added or used). */
-  | { t: 'queue'; queue: number[] };
+  | { t: 'queue'; queue: number[] }
+  /** The avatar stands at the taps and pours one mug (step T1): `ms` long (POUR_MS), at the stand `standUid`; the clink and the pour animation. */
+  | { t: 'pour'; guestId: number; item: MaterialId; standUid: number; ms: number }
+  /** The tap holding the drink was empty when the avatar came to pour: the order stays open (step T1). */
+  | { t: 'tap_empty'; guestId: number; item: MaterialId };
 
 /** The walk to the spot behind the counter (step 7). */
 export interface ServeResult {
@@ -368,6 +375,10 @@ export interface GameAPI {
   getMenu(): Promise<MenuRowView[]>;
   /** Puts a drink or dish on or off the menu and / or sets its price (whole gold). The new rows, or null = refused. */
   setMenuEntry(id: string, change: { on?: boolean; price?: number }): Promise<MenuRowView[] | null>;
+  /** Step T1: moves qty mugs of one drink from the bag onto a tap (a whole number from 1; the tap holds at most TAP_CAP of ONE drink). False = refused. */
+  loadTap(standUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean>;
+  /** Step T1: gives mugs back to the bag (qty, or 'all'). False = refused (an empty tap, too many). */
+  unloadTap(standUid: number, slot: number, qty: number | 'all'): Promise<boolean>;
   /** The intro toast of the tavern was shown: it never shows again (also after a reload). */
   markTavernIntroSeen(): Promise<void>;
   // ---------- Step 9b: the farm and cooking ----------

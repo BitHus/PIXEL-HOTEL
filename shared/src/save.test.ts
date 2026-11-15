@@ -16,7 +16,7 @@ const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addF
 describe('save files', () => {
   it('saving then loading gives an identical state', () => {
     const loaded = readSave(toSaveText(state, 3));
-    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false, kitchenChanged: false, shopClosed: false });
+    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false, kitchenChanged: false, shopClosed: false, barChanged: false });
   });
   it('uses a versioned key', () => {
     expect(saveKey()).toBe(`pixel-hotel.save.v${SAVE_VERSION}`);
@@ -52,7 +52,7 @@ describe('save files', () => {
     expect(r.state.hintsDone).toBe(0);
     expect('shop' in r.state).toBe(false); // dropped again by migration 21 -> 22 (step S1)
     const inShop = r.state.items.filter((i) => i.roomId === r.state.player.shopRoomId).map((i) => i.typeId);
-    expect(inShop.sort()).toEqual(['counter', 'stall_table', 'stove']); // the stove comes with migration 20 -> 21 (step K1)
+    expect(inShop.sort()).toEqual(['counter', 'register', 'stall_table', 'stove', 'tap_stand']); // the stove comes with migration 20 -> 21 (step K1), the register and the tap stand with 23 -> 24 (step T1)
     expect(new Set(r.state.items.map((i) => i.uid)).size).toBe(r.state.items.length);
   });
 
@@ -172,6 +172,8 @@ describe('save files', () => {
       round_table: { count: 1, firstSeenAt: 0 },
       bar_stool: { count: 3, firstSeenAt: 0 }, // the new game now has a third stool at the bar (S3)
       brewing_barrel: { count: 1, firstSeenAt: 0 },
+      register: { count: 1, firstSeenAt: 0 }, // the bar's gift (step T1)
+      tap_stand: { count: 1, firstSeenAt: 0 },
     });
     expect(r.state.player.bookOpenedAt).toBe(0);
     expect(r.state.player.bookRewards).toEqual([]);
@@ -648,5 +650,102 @@ describe('22 -> 23 (step S3: a table spot can hold the gem a happy guest tipped)
     if (!r.ok) return;
     expect(r.state.tavern.mess).toEqual([]);
     expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
+  });
+});
+
+describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => {
+  /** A version 23 save: the bar is a plain counter (no register, no tap stand), no taps; 7 root ale sit in the bag. */
+  const v23 = (mutate: (items: FurnitureItem[]) => FurnitureItem[] = (i) => i) => {
+    const base = createNewPlayer(undefined, 1);
+    const items = mutate(base.items.filter((i) => i.typeId !== 'register' && i.typeId !== 'tap_stand'));
+    const { taps: _t, ...tavern } = base.tavern;
+    let state = { ...base, items, tavern };
+    state = applyChange(state as typeof base, { reason: 'debug', materials: { root_ale: 7 } }, 1) as typeof base;
+    return { before: state, old: state as unknown };
+  };
+  const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
+  const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
+
+  it('SAVE_VERSION is 24 and the migration exists', () => {
+    expect(SAVE_VERSION).toBe(24);
+    expect(typeof MIGRATIONS[23]).toBe('function');
+  });
+
+  it('the tavern gets a register and a tap stand ON the bar, side by side; the taps start empty; the drinks in the bag stay in the bag', () => {
+    const { before, old } = v23();
+    const r = load(old);
+    expect(r).toMatchObject({ ok: true, migrated: true, barChanged: true });
+    if (!r.ok) return;
+    const s = r.state;
+    expect(s.tavern.taps).toEqual([]);
+    expect(s.player.materials.root_ale).toBe(before.player.materials.root_ale); // nothing moved to a tap by itself
+    const riders = s.items.filter((i) => i.onItemUid === bar(s).uid);
+    expect(riders.map((i) => i.typeId).sort()).toEqual(['register', 'tap_stand']);
+    for (const i of riders) expect(i.roomId).toBe(s.tavern.roomId);
+    const [a, b] = riders.map((i) => footprintRect(i, getFurnitureType(i.typeId))).sort((p, q) => p.x - q.x) as [ReturnType<typeof footprintRect>, ReturnType<typeof footprintRect>];
+    expect(a.x + a.w).toBe(b.x);
+    expect(new Set(s.items.map((i) => i.uid)).size).toBe(s.items.length);
+    expect(s.items.filter((i) => i.roomId === null)).toEqual([]);
+  });
+
+  it('through the ledger (tavern_gift): the ledger still adds up, gold and gems are untouched, nothing else changes', () => {
+    const { before, old } = v23();
+    const r = load(old);
+    if (!r.ok) throw new Error('load failed');
+    const gifts = r.state.ledger.filter((e) => e.reason === 'tavern_gift' && e.note === 'the bar has a register and taps now');
+    expect(gifts).toHaveLength(2);
+    expect(ledgerGold(r.state)).toBe(r.state.player.wallet.gold);
+    expect(ledgerMaterials(r.state)).toEqual(r.state.player.materials);
+    expect(r.state.player.wallet).toEqual(before.player.wallet);
+    expect(r.state.tavern.menu).toEqual(before.tavern.menu);
+    expect(r.state.tavern.cooks).toEqual(before.tavern.cooks);
+    expect(r.state.items.filter((i) => !['register', 'tap_stand'].includes(i.typeId))).toEqual(before.items);
+  });
+
+  it('when the bar has no free cell the pieces wait in the bag (still owned, still in the ledger)', () => {
+    const { old } = v23((items) => {
+      const b = items.find((i) => i.typeId === 'counter')!;
+      // Three plain-decor items would not do (they are not surfaces' riders): fill the bar with 3 other riders of an on-surface type.
+      const filler = [-32, 0, 32].map((dx, k) => ({ uid: 200 + k, typeId: 'tap_stand', ownerId: 1, roomId: b.roomId, x: b.x + dx, y: b.y, facing: 'down' as const, onItemUid: b.uid }));
+      return [...items, ...filler];
+    });
+    const r = load(old);
+    if (!r.ok) throw new Error('load failed');
+    // A save that already has a tap stand keeps it and only gets the register: with all 3 cells taken it goes to the bag.
+    expect(r.state.items.filter((i) => i.typeId === 'tap_stand')).toHaveLength(3);
+    const reg = r.state.items.filter((i) => i.typeId === 'register');
+    expect(reg).toHaveLength(1);
+    expect(reg[0]).toMatchObject({ roomId: null, onItemUid: null });
+    expect(ledgerMaterials(r.state)).toEqual(r.state.player.materials);
+  });
+
+  it('a save that already has a register and a tap stand keeps exactly one of each; a migrated save does not migrate again', () => {
+    const base = createNewPlayer(undefined, 1);
+    const r = load(base);
+    if (!r.ok) throw new Error('load failed');
+    expect(r.state.items.filter((i) => i.typeId === 'register')).toHaveLength(1);
+    expect(r.state.items.filter((i) => i.typeId === 'tap_stand')).toHaveLength(1);
+    expect(r.state.tavern.taps).toEqual(base.tavern.taps);
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false, barChanged: false });
+  });
+
+  it('a bar that was turned and moved still takes both pieces (the first free cells along its long side)', () => {
+    const { old } = v23((items) => items.map((i) => (i.typeId === 'counter' ? { ...i, x: 240, y: 320, facing: 'right' as const } : i)));
+    const r = load(old);
+    if (!r.ok) throw new Error('load failed');
+    const b = bar(r.state);
+    const riders = r.state.items.filter((i) => i.onItemUid === b.uid);
+    expect(riders).toHaveLength(2);
+    const fp = footprintRect(b, getFurnitureType('counter'));
+    for (const i of riders) {
+      const f = footprintRect(i, getFurnitureType(i.typeId));
+      expect(f.x >= fp.x && f.x + f.w <= fp.x + fp.w && f.y >= fp.y && f.y + f.h <= fp.y + fp.h).toBe(true);
+    }
+  });
+
+  it('every older save (v1) still loads through the whole chain and ends with taps and a bar that has its pieces', () => {
+    const base = createNewPlayer(undefined, 1);
+    const { bag: _b, hintsDone: _h, tavern: _t, ...v1 } = base;
+    expect(readSave(JSON.stringify({ version: 1, savedAt: 0, state: v1 })).ok).toBe(true);
   });
 });

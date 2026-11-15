@@ -98,6 +98,14 @@ export interface FurnitureType {
   brews?: boolean;
   /** True for the stove (step K1): crops go in, dishes come out in real time (cooking.ts). */
   cooks?: boolean;
+  /** True for the tap stand (step T1): TAP_SLOTS taps, each holds one brewed drink (taps.ts). It stands ON the bar. */
+  taps?: boolean;
+  /** True for the register (step T1): the till on the bar; a tap opens Serve / Menu / Sell and collected coins fly into it. */
+  till?: boolean;
+  /** True for the prep table (step T1): inside the kitchen zone and next to a stove it adds dishes to a batch (kitchen.ts). */
+  preps?: boolean;
+  /** True for kitchen furniture (step T1): pantry, sink, serving hatch, prep table. Only for the Room panel and the Book text; no rule. */
+  kitchen?: boolean;
   /** A light source (atmosphere step): the client draws a warm pool around the item. Drawing only. */
   light?: LightSource;
   /** A small fish swimming in the item (the fish tank; step 9f). Drawing only: dx and z (px) of its start, size, how far it swims, colour. */
@@ -251,6 +259,8 @@ export type LedgerReason =
   | 'tavern_order'
   | 'tavern'
   | 'tavern_gift'
+  // Taps (step T1): mugs moved from the bag onto a tap and back (nothing is found or lost).
+  | 'tap'
   // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.
   | 'pack'
   | 'spare_sale'

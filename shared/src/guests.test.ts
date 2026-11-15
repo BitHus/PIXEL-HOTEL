@@ -8,12 +8,14 @@ import { createNewPlayer } from './newPlayer.ts';
 import { NPC_LINES } from './npcTalk.ts';
 import { seededRng } from './rng.ts';
 import { readSave, toSaveText } from './save.ts';
+import { loadTap, stockFor } from './taps.ts';
 import { clearDish, collectCoins, openOrders, pickUpOrder, requestServe, seatKey, setMenu, tavernSeats } from './tavern.ts';
-import { runTavern, serveAll, tavernWorld, tidy, legacyStart, withAle, withItem, withLongTable } from './tavernTest.ts';
+import { refillTaps, runTavern, serveAll, tavernWorld, tidy, legacyStart, withAle, withItem, withLongTable } from './tavernTest.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
 
 const MIN = 60_000;
-const ale = (s: GameState): number => s.player.materials.root_ale ?? 0;
+/** Root ale still on the taps and not spoken for by an open order (an order only reserves a mug; the pour takes it, step T1). */
+const ale = (s: GameState): number => stockFor(s.tavern, 'root_ale');
 
 /** Runs until `done` says so (at most ms); returns the state and the time. */
 function until(s: GameState, ms: number, rng: () => number, done: (s: GameState, e: TavernEvent[]) => boolean, playerHere = true): { s: GameState; t: number } {
@@ -192,6 +194,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
 
   it('a guest who finds one drink too dear orders the cheaper one', () => {
     let s0 = applyChange(withAle(), { reason: 'debug', materials: { glowcap_tonic: 4 } }, 0)!;
+    s0 = loadTap(s0, s0.items.find((i) => i.typeId === 'tap_stand')!.uid, 1, 'glowcap_tonic', 4, 0)!;
     s0 = setMenu(s0, 'glowcap_tonic', { price: 90 })!;
     const events: TavernEvent[] = [];
     runTavern(s0, 0, 15 * MIN, seededRng(13), true, (x, e) => (events.push(...e), tidy(serveAll(x, seededRng(1)), 0)));
@@ -244,6 +247,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
 
   it('the ledger still adds up after a long evening, and every guest keeps a different id', () => {
     let s = applyChange(withLongTable(withAle()), { reason: 'debug', materials: { root_ale: 60, glowcap_tonic: 20, wood: 20 } }, 0)!;
+    s = refillTaps(s, 0);
     const rng = seededRng(31);
     const hand = seededRng(32);
     let coins = 0;
@@ -257,6 +261,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
       }
       for (const c of s.tavern.guests) ids.add(c.id);
       s = serveAll(s, hand);
+      if (t % 10_000 === 0) s = refillTaps(s, t);
       // The player clears a table every now and then.
       if (t % 20_000 === 0) {
         for (const m of s.tavern.mess) {
@@ -297,7 +302,7 @@ describe('guests: the away rule (step 9t)', () => {
   });
 
   it('after a closed game (maths only): up to 3 guests sit with an open order, nobody walks', () => {
-    const s0 = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 30 } }, 0)!);
+    const s0 = withLongTable(withAle());
     const r = catchUpTavern(s0, tavernWorld(s0, false), 6 * 60 * MIN, seededRng(19));
     expect(r.arrived).toBe(AWAY_ORDERS_MAX);
     const s = r.state;
@@ -309,7 +314,7 @@ describe('guests: the away rule (step 9t)', () => {
       expect(g.order?.item).toBe('root_ale');
     }
     expect(new Set(s.tavern.guests.map((g) => seatKey(g.seat!))).size).toBe(AWAY_ORDERS_MAX);
-    expect(ale(s)).toBe(36 - AWAY_ORDERS_MAX);
+    expect(ale(s)).toBe(6 - AWAY_ORDERS_MAX);
     expect(s.player.wallet.gold).toBe(100);
     expect(s.tavern.updatedAt).toBe(6 * 60 * MIN);
     expect(s.player.materials).toEqual(ledgerMaterials(s));

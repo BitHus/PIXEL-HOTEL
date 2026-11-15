@@ -5,6 +5,7 @@ import { behindPoint, getFurnitureType, staffZone } from './furniture.ts';
 import { inStaffZone } from './npcNav.ts';
 import { applyChange } from './ledger.ts';
 import { seededRng } from './rng.ts';
+import { loadTap, unloadTap } from './taps.ts';
 import {
   chooseOrder,
   clearDish,
@@ -65,11 +66,16 @@ describe('the menu (step 9t)', () => {
     expect(setMenu(s, 'wood', { on: true })).toBeNull();
   });
 
-  it('out of stock is off the menu (the row stays for when there is stock again)', () => {
+  it('out of stock is off the menu: a dish keeps its row at stock 0; a drink with no mug on a tap is not a row at all (step T1)', () => {
     let s = setMenu(withAle(), 'root_ale', { price: 10 })!;
-    s = applyChange(s, { reason: 'debug', materials: { root_ale: -6 } }, 0)!;
+    s = unloadTap(s, s.items.find((i) => i.typeId === 'tap_stand')!.uid, 0, 'all', 0)!;
     expect(menuOffers(s)).toEqual([]);
-    expect(menuRows(s)).toEqual([{ id: 'root_ale', price: 10, baseValue: 9, stock: 0, on: true }]);
+    expect(menuRows(s)).toEqual([]);
+    s = setMenu(s, 'roasted_turnip', { on: true, price: 14 })!;
+    expect(menuRows(s)).toEqual([{ id: 'roasted_turnip', price: 14, baseValue: 14, stock: 0, on: true }]);
+    // The price chosen for the ale is still there when it goes back on a tap.
+    s = loadTap(s, s.items.find((i) => i.typeId === 'tap_stand')!.uid, 0, 'root_ale', 2, 0)!;
+    expect(menuRows(s).find((r) => r.id === 'root_ale')).toMatchObject({ price: 10, stock: 2 });
   });
 
   it('the price rule: fair = smile, cheap = big smile, too high = something cheaper or nothing', () => {

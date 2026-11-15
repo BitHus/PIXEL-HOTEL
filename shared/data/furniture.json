@@ -904,7 +904,7 @@
     "height": 70,
     "blocks": true,
     "sittable": false,
-    "surface": false,
+    "surface": true,
     "onSurface": false,
     "wall": false,
     "facings": [
@@ -3833,6 +3833,656 @@
       "colors": [
         "gold",
         "oak"
+      ]
+    }
+  },
+  {
+    "id": "register",
+    "name": "Register",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 4,
+    "w": 32,
+    "d": 32,
+    "height": 44,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": true,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 24,
+    "rank": "common",
+    "inCatalog": true,
+    "till": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -13,
+          "dy": -3,
+          "w": 26,
+          "d": 24,
+          "z": 0,
+          "h": 8,
+          "color": 5
+        },
+        {
+          "dx": -13,
+          "dy": -3,
+          "w": 26,
+          "d": 24,
+          "z": 8,
+          "h": 3,
+          "color": 10
+        },
+        {
+          "dx": -9,
+          "dy": -14,
+          "w": 18,
+          "d": 10,
+          "z": 11,
+          "h": 9,
+          "color": 22
+        },
+        {
+          "dx": -7,
+          "dy": -21,
+          "w": 14,
+          "d": 3,
+          "z": 13,
+          "h": 5,
+          "color": 11
+        }
+      ]
+    },
+    "icon": {
+      "shape": "box",
+      "colors": [
+        "gold",
+        "walnut"
+      ]
+    }
+  },
+  {
+    "id": "tap_stand",
+    "name": "Tap stand",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 6,
+    "w": 32,
+    "d": 32,
+    "height": 53,
+    "blocks": false,
+    "sittable": false,
+    "surface": false,
+    "onSurface": true,
+    "wall": false,
+    "facings": [
+      "down"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 36,
+    "rank": "common",
+    "inCatalog": true,
+    "taps": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -12,
+          "dy": -4,
+          "w": 24,
+          "d": 22,
+          "z": 0,
+          "h": 6,
+          "color": 5
+        },
+        {
+          "dx": -10,
+          "dy": -10,
+          "w": 20,
+          "d": 14,
+          "z": 6,
+          "h": 12,
+          "color": 4
+        },
+        {
+          "dx": -9,
+          "dy": -21,
+          "w": 18,
+          "d": 3,
+          "z": 8,
+          "h": 6,
+          "color": 10
+        },
+        {
+          "dx": -9,
+          "dy": -17,
+          "w": 5,
+          "d": 5,
+          "z": 18,
+          "h": 12,
+          "color": 21
+        },
+        {
+          "dx": 4,
+          "dy": -17,
+          "w": 5,
+          "d": 5,
+          "z": 18,
+          "h": 12,
+          "color": 21
+        },
+        {
+          "dx": -10,
+          "dy": -17,
+          "w": 20,
+          "d": 5,
+          "z": 28,
+          "h": 3,
+          "color": 21
+        },
+        {
+          "dx": -9,
+          "dy": -3,
+          "w": 5,
+          "d": 5,
+          "z": 2,
+          "h": 3,
+          "color": 20
+        },
+        {
+          "dx": 4,
+          "dy": -3,
+          "w": 5,
+          "d": 5,
+          "z": 2,
+          "h": 3,
+          "color": 20
+        }
+      ]
+    },
+    "icon": {
+      "shape": "barrel",
+      "colors": [
+        "steel",
+        "orange"
+      ]
+    }
+  },
+  {
+    "id": "prep_table",
+    "name": "Prep table",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 3,
+    "w": 64,
+    "d": 32,
+    "height": 63,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 30,
+    "rank": "common",
+    "inCatalog": true,
+    "kitchen": true,
+    "preps": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -30,
+          "dy": -25,
+          "w": 5,
+          "d": 5,
+          "z": 0,
+          "h": 26,
+          "color": 5
+        },
+        {
+          "dx": 25,
+          "dy": -25,
+          "w": 5,
+          "d": 5,
+          "z": 0,
+          "h": 26,
+          "color": 5
+        },
+        {
+          "dx": -30,
+          "dy": 0,
+          "w": 5,
+          "d": 5,
+          "z": 0,
+          "h": 26,
+          "color": 5
+        },
+        {
+          "dx": 25,
+          "dy": 0,
+          "w": 5,
+          "d": 5,
+          "z": 0,
+          "h": 26,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 32,
+          "z": 26,
+          "h": 5,
+          "color": 20
+        },
+        {
+          "dx": -32,
+          "dy": -2,
+          "w": 64,
+          "d": 3,
+          "z": 6,
+          "h": 20,
+          "color": 21
+        },
+        {
+          "dx": -18,
+          "dy": -14,
+          "w": 14,
+          "d": 10,
+          "z": 31,
+          "h": 3,
+          "color": 2
+        },
+        {
+          "dx": 6,
+          "dy": -18,
+          "w": 10,
+          "d": 8,
+          "z": 31,
+          "h": 5,
+          "color": 13
+        }
+      ]
+    },
+    "icon": {
+      "shape": "table",
+      "colors": [
+        "silver",
+        "steel"
+      ]
+    }
+  },
+  {
+    "id": "pantry",
+    "name": "Pantry",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 4,
+    "w": 64,
+    "d": 32,
+    "height": 96,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 36,
+    "rank": "common",
+    "inCatalog": true,
+    "kitchen": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 32,
+          "z": 0,
+          "h": 64,
+          "color": 5
+        },
+        {
+          "dx": -28,
+          "dy": 0,
+          "w": 57,
+          "d": 3,
+          "z": 4,
+          "h": 56,
+          "color": 6
+        },
+        {
+          "dx": -28,
+          "dy": 0,
+          "w": 57,
+          "d": 3,
+          "z": 22,
+          "h": 2,
+          "color": 4
+        },
+        {
+          "dx": -28,
+          "dy": 0,
+          "w": 57,
+          "d": 3,
+          "z": 40,
+          "h": 2,
+          "color": 4
+        },
+        {
+          "dx": -24,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 26,
+          "h": 9,
+          "color": 8
+        },
+        {
+          "dx": -11,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 26,
+          "h": 9,
+          "color": 9
+        },
+        {
+          "dx": 2,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 26,
+          "h": 9,
+          "color": 12
+        },
+        {
+          "dx": 15,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 26,
+          "h": 9,
+          "color": 10
+        },
+        {
+          "dx": -24,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 8,
+          "h": 9,
+          "color": 13
+        },
+        {
+          "dx": -11,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 8,
+          "h": 9,
+          "color": 1
+        },
+        {
+          "dx": 2,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 8,
+          "h": 9,
+          "color": 4
+        },
+        {
+          "dx": 15,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 8,
+          "h": 9,
+          "color": 2
+        },
+        {
+          "dx": -24,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 44,
+          "h": 9,
+          "color": 12
+        },
+        {
+          "dx": 2,
+          "dy": -1,
+          "w": 8,
+          "d": 2,
+          "z": 44,
+          "h": 9,
+          "color": 8
+        }
+      ]
+    },
+    "icon": {
+      "shape": "shelf",
+      "colors": [
+        "lime",
+        "oak"
+      ]
+    }
+  },
+  {
+    "id": "sink",
+    "name": "Sink",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 2,
+    "w": 32,
+    "d": 32,
+    "height": 65,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 28,
+    "rank": "common",
+    "inCatalog": true,
+    "kitchen": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -14,
+          "dy": -2,
+          "w": 28,
+          "d": 26,
+          "z": 0,
+          "h": 22,
+          "color": 21
+        },
+        {
+          "dx": -14,
+          "dy": -2,
+          "w": 28,
+          "d": 26,
+          "z": 22,
+          "h": 3,
+          "color": 20
+        },
+        {
+          "dx": -9,
+          "dy": -10,
+          "w": 18,
+          "d": 14,
+          "z": 25,
+          "h": 2,
+          "color": 17
+        },
+        {
+          "dx": -2,
+          "dy": -23,
+          "w": 4,
+          "d": 4,
+          "z": 25,
+          "h": 12,
+          "color": 20
+        },
+        {
+          "dx": -2,
+          "dy": -23,
+          "w": 12,
+          "d": 4,
+          "z": 35,
+          "h": 3,
+          "color": 20
+        }
+      ]
+    },
+    "icon": {
+      "shape": "tank",
+      "colors": [
+        "silver",
+        "sky"
+      ]
+    }
+  },
+  {
+    "id": "serving_hatch",
+    "name": "Serving hatch",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 3,
+    "w": 64,
+    "d": 32,
+    "height": 92,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 32,
+    "rank": "common",
+    "inCatalog": true,
+    "kitchen": true,
+    "art": {
+      "boxes": [
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 32,
+          "z": 0,
+          "h": 24,
+          "color": 5
+        },
+        {
+          "dx": -32,
+          "dy": 0,
+          "w": 64,
+          "d": 32,
+          "z": 24,
+          "h": 4,
+          "color": 4
+        },
+        {
+          "dx": -30,
+          "dy": -24,
+          "w": 6,
+          "d": 6,
+          "z": 28,
+          "h": 32,
+          "color": 5
+        },
+        {
+          "dx": 24,
+          "dy": -24,
+          "w": 6,
+          "d": 6,
+          "z": 28,
+          "h": 32,
+          "color": 5
+        },
+        {
+          "dx": -30,
+          "dy": -24,
+          "w": 60,
+          "d": 6,
+          "z": 56,
+          "h": 6,
+          "color": 5
+        },
+        {
+          "dx": -24,
+          "dy": 0,
+          "w": 48,
+          "d": 3,
+          "z": 28,
+          "h": 24,
+          "color": 6
+        }
+      ]
+    },
+    "icon": {
+      "shape": "sign",
+      "colors": [
+        "oak",
+        "walnut"
       ]
     }
   }

@@ -8,6 +8,7 @@
 // Blocks are items in the bag (Player.materials, group 'block'); every change goes through
 // ledger.applyChange. Only the room's owner changes the room.
 
+import { kitchenZone } from './kitchen.ts';
 import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BUILD_CELL } from './config.ts';
 import { getBlockType, isBlockId, type BlockCell, type BlockLookup, type BlockType } from './blockTypes.ts';
 import { footprintRect, getFurnitureType, behindPoint, behindReachable, doorPoint, doorReachesMiddle, roomBlockers, type FurnitureLookup } from './furniture.ts';
@@ -118,7 +119,7 @@ export function cellProblem(
 /** The tavern seats a guest can walk to from the door with these blockers (the walk ends within GUEST_SEAT_REACH_PX of the seat). */
 export function reachableSeatKeys(room: Room, items: readonly FurnitureItem[], blockers: readonly Rect[]): Set<string> {
   const out = new Set<string>();
-  const seats = tavernSeats(items, room.id);
+  const seats = tavernSeats(items, room.id, kitchenZone(room));
   if (seats.length === 0) return out;
   const grid = buildNavGrid(room, blockers);
   const door = cellAt(grid, doorPoint(room));

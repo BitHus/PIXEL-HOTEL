@@ -8,7 +8,8 @@ import { deliverOrder, stepTavern, type TavernEvent, type TavernWorld } from './
 import { buildNavGrid } from './nav.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
-import { clearDish, collectCoins, openOrders, pickUpOrder, requestServe } from './tavern.ts';
+import { loadRoom, loadTap } from './taps.ts';
+import { clearDish, collectCoins, openOrders, pourOrder, requestServe } from './tavern.ts';
 import type { Facing, Rng } from './types.ts';
 
 let gridFor: { items: GameState['items']; grid: TavernWorld['grid'] } | null = null;
@@ -27,14 +28,18 @@ export function tavernWorld(s: GameState, playerHere = true): TavernWorld {
 export function legacyStart(): GameState {
   const s = createNewPlayer(undefined, 0);
   const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'counter' && c.y + 32 === i.y && c.x === i.x))!;
-  return { ...s, items: s.items.filter((i) => i.uid !== barStool.uid), tavern: { ...s.tavern, menu: {} } };
+  // The start barrel holds a ready brew again and the taps are empty (as before step T1: the ale is collected from the barrel).
+  const barrel = s.items.find((i) => i.typeId === 'brewing_barrel')!;
+  return { ...s, items: s.items.filter((i) => i.uid !== barStool.uid), tavern: { ...s.tavern, menu: {}, taps: [], brews: [{ barrelUid: barrel.uid, drink: 'root_ale', readyAt: 0 }] } };
 }
 
-/** The legacy start with its barrel emptied: 6 root ale in the bag (on the menu at 9 gold). The start barrel gives 7 mugs now; one goes back. */
+/** The legacy start with its barrel emptied: 6 root ale LOADED ON THE FIRST TAP (on the menu at 9 gold; step T1). The start barrel gives 7 mugs; one goes back. */
 export function withAle(): GameState {
   const s = legacyStart();
   const got = collectBrew(s, s.items.find((i) => i.typeId === 'brewing_barrel')!.uid, 0)!.state;
-  return applyChange(got, { reason: 'debug', materials: { root_ale: -1 } }, 0)!;
+  const six = applyChange(got, { reason: 'debug', materials: { root_ale: -1 } }, 0)!;
+  const stand = six.items.find((i) => i.typeId === 'tap_stand')!;
+  return loadTap(six, stand.uid, 0, 'root_ale', 6, 0)!;
 }
 
 export function withItem(s: GameState, uid: number, typeId: string, x: number, y: number, facing: Facing = 'down'): GameState {
@@ -52,8 +57,19 @@ export function withLongTable(s: GameState): GameState {
 export function serveAll(s: GameState, rng: Rng): GameState {
   for (const g of openOrders(s.tavern)) {
     const asked = requestServe(s, g.id);
-    const picked = asked && pickUpOrder(asked);
-    s = (picked && deliverOrder(picked.state, rng)?.state) ?? s;
+    const picked = asked && pourOrder(asked);
+    s = (picked && !picked.empty && deliverOrder(picked.state, rng)?.state) || (picked ? picked.state : asked) || s;
+  }
+  return s;
+}
+
+/** Fills the first tap with root ale and the second with glowcap tonic from the bag, as far as the bag and TAP_CAP allow (the player keeps the taps full). */
+export function refillTaps(s: GameState, at: number): GameState {
+  const stand = s.items.find((i) => i.typeId === 'tap_stand' && i.roomId !== null);
+  if (!stand) return s;
+  for (const [slot, drink] of [[0, 'root_ale'], [1, 'glowcap_tonic']] as const) {
+    const room = loadRoom(s, stand.uid, slot, drink);
+    if (room > 0) s = loadTap(s, stand.uid, slot, drink, room, at) ?? s;
   }
   return s;
 }

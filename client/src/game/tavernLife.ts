@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, SERVE_QUEUE_MAX, seatKey,
+  REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, kitchenZone, SERVE_QUEUE_MAX, seatKey,
   tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
 } from '@pixel-hotel/shared';
@@ -39,7 +39,7 @@ export async function setupTavernLife(g: G9) {
     );
   /** What guests eat or drink now, on their table spots (the served item stays there until they leave). */
   const meals = (): Meal[] => {
-    const seats = tavernSeats(st.items, st.tavern.roomId);
+    const seats = tavernSeats(st.items, st.tavern.roomId, kitchenZone(st.room));
     return st.tavern.guests.flatMap((g) => {
       const seat = g.phase === 'eat' && g.order && g.seat ? seats.find((k) => seatKey(k) === seatKey(g.seat!)) : undefined;
       return seat && g.order ? [{ guestId: g.id, item: g.order.item, spot: seat.spot }] : [];

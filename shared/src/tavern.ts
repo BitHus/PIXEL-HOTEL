@@ -18,6 +18,7 @@ import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BAS
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
+import { kitchenZone } from './kitchen.ts';
 import { inStaffZone, staffZones } from './npcNav.ts';
 import { behindPoint, footprintRect, getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
@@ -25,6 +26,7 @@ import { applyChange } from './ledger.ts';
 import { getDrinkType, getMaterialType, isDrinkId, materialGroup, MATERIAL_TYPES } from './materials.ts';
 import type { CustomerKind, NpcMoment } from './npcTalk.ts';
 import { seatSpots } from './seats.ts';
+import { mugsOnTaps, pourStop, setTap, stockFor, tapFor, type Tap } from './taps.ts';
 import { decide, validPrice } from './prices.ts';
 import type { Facing, FurnitureItem, FurnitureType, MaterialId, Point, Reaction, Rect, Rng } from './types.ts';
 
@@ -109,6 +111,8 @@ export interface TavernState {
   brews: Brew[];
   /** Batches cooking on stoves (step K1, cooking.ts). */
   cooks: Cook[];
+  /** Drinks on the taps (step T1, taps.ts): only taps that hold at least one mug. */
+  taps: Tap[];
   /** Guests the player tapped: their orders wait to be carried, in this order. */
   serveQueue: number[];
   /** The order in the player's hands. */
@@ -133,6 +137,7 @@ export function emptyTavern(roomId: number, at: number): TavernState {
     nextMessId: 1,
     brews: [],
     cooks: [],
+    taps: [],
     serveQueue: [],
     holding: null,
     history: {},
@@ -183,17 +188,31 @@ export interface MenuOffer {
   stock: number;
 }
 
-/** Everything servable the player has or has put on the menu, in data order (the Menu panel's rows). */
+/** What a drink or dish has in stock: a drink counts the mugs on the taps (step T1), a dish the bag. */
+export function menuStock(state: GameState, id: string): number {
+  return isDrinkId(id) ? mugsOnTaps(state.tavern.taps, id) : state.player.materials[id as MaterialId] ?? 0;
+}
+
+/**
+ * Everything servable the player has or has put on the menu, in data order (the Menu panel's rows). A drink is a row only while it is on a
+ * tap with at least one mug (step T1); its stock is the mugs on the taps. A dish is a row while it is in the bag or has a menu entry.
+ */
 export function menuRows(state: GameState): (MenuOffer & { on: boolean })[] {
-  return MATERIAL_TYPES.filter((m) => isServable(m.id) && ((state.player.materials[m.id] ?? 0) > 0 || state.tavern.menu[m.id] !== undefined)).map((m) => {
+  return MATERIAL_TYPES.filter((m) => isServable(m.id) && (isDrinkId(m.id) ? mugsOnTaps(state.tavern.taps, m.id) > 0 : (state.player.materials[m.id] ?? 0) > 0 || state.tavern.menu[m.id] !== undefined)).map((m) => {
     const e = menuEntry(state.tavern, m.id);
-    return { id: m.id, price: e.price, baseValue: m.baseValue, stock: state.player.materials[m.id] ?? 0, on: e.on };
+    return { id: m.id, price: e.price, baseValue: m.baseValue, stock: menuStock(state, m.id), on: e.on };
   });
 }
 
-/** What guests can order now: on the menu and in stock. */
-export function menuOffers(state: GameState): MenuOffer[] {
-  return menuRows(state).filter((r) => r.on && r.stock > 0).map(({ id, price, baseValue, stock }) => ({ id, price, baseValue, stock }));
+/**
+ * What guests can order now: on the menu and in stock. A drink counts the mugs on the taps that no open order has spoken for yet
+ * (`guests` lets a step pass the orders it knows of, step T1).
+ */
+export function menuOffers(state: GameState, guests: readonly Guest[] = state.tavern.guests): MenuOffer[] {
+  return menuRows(state)
+    .map((r) => ({ ...r, stock: isDrinkId(r.id) ? stockFor(state.tavern, r.id, guests) : r.stock }))
+    .filter((r) => r.on && r.stock > 0)
+    .map(({ id, price, baseValue, stock }) => ({ id, price, baseValue, stock }));
 }
 
 export interface OrderChoice {
@@ -270,20 +289,22 @@ function facingToward(from: Point, to: Point, fallback: Facing): Facing {
   return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
 }
 
-const SEAT_CACHE = new WeakMap<readonly FurnitureItem[], Map<number, TavernSeat[]>>();
+const SEAT_CACHE = new WeakMap<readonly FurnitureItem[], Map<string, TavernSeat[]>>();
 
 /**
- * The tavern seats of a room: every 'sit' seat (not in the staff zone behind the bar) with a table
+ * The tavern seats of a room: every 'sit' seat (not in the staff zone behind the bar or the kitchen zone, step T1) with a table
  * at most GUEST_TABLE_NEAR_PX away; the nearest table is its table, and the spot is the point of
  * that table nearest to the seat, a little inside its edge. Cached per items list.
  */
-export function tavernSeats(items: readonly FurnitureItem[], roomId: number): TavernSeat[] {
+export function tavernSeats(items: readonly FurnitureItem[], roomId: number, kitchen: Rect | null = null): TavernSeat[] {
   let perRoom = SEAT_CACHE.get(items);
   if (!perRoom) SEAT_CACHE.set(items, (perRoom = new Map()));
-  const hit = perRoom.get(roomId);
+  // The kitchen zone grows with the room's level without the items changing: it is part of the cache key.
+  const cacheKey = kitchen ? `${roomId}:${kitchen.x},${kitchen.y},${kitchen.w},${kitchen.h}` : `${roomId}`;
+  const hit = perRoom.get(cacheKey);
   if (hit) return hit;
   const floor = items.filter((i) => i.roomId === roomId && i.onItemUid === null);
-  const zones = staffZones(items, roomId);
+  const zones = kitchen ? [...staffZones(items, roomId), kitchen] : staffZones(items, roomId);
   const tables = floor.flatMap((i) => {
     const type = getFurnitureType(i.typeId);
     return isTable(type) ? [{ uid: i.uid, rect: footprintRect(i, type) }] : [];
@@ -307,7 +328,7 @@ export function tavernSeats(items: readonly FurnitureItem[], roomId: number): Ta
       out.push({ uid: item.uid, index: s.index, x: s.x, y: s.y, facing: facingToward(s, spot, s.facing), tableUid: best.uid, spot });
     }
   }
-  perRoom.set(roomId, out);
+  perRoom.set(cacheKey, out);
   return out;
 }
 
@@ -362,13 +383,41 @@ export function requestServe(state: GameState, guestId: number): GameState | nul
  * are skipped). Null with empty hands and nothing to carry, or with full hands.
  */
 export function pickUpOrder(state: GameState): { state: GameState; guestId: number; item: MaterialId } | null {
+  const n = nextOrder(state);
+  if (!n) return null;
+  return { state: withTavern(state, { serveQueue: n.queue.slice(1), holding: { guestId: n.guestId, item: n.item } }), guestId: n.guestId, item: n.item };
+}
+
+/** The order the player carries next (orders of guests who left are skipped), with the cleaned queue. Null with full hands or an empty queue. */
+export function nextOrder(state: GameState): { guestId: number; item: MaterialId; queue: number[] } | null {
   const t = state.tavern;
   if (t.holding) return null;
   const open = openOrders(t);
   const queue = t.serveQueue.filter((id) => open.some((g) => g.id === id));
   const guest = open.find((g) => g.id === queue[0]);
-  if (!guest?.order) return null;
-  return { state: withTavern(state, { serveQueue: queue.slice(1), holding: { guestId: guest.id, item: guest.order.item } }), guestId: guest.id, item: guest.order.item };
+  return guest?.order ? { guestId: guest.id, item: guest.order.item, queue } : null;
+}
+
+export type PourResult =
+  | { empty: false; state: GameState; guestId: number; item: MaterialId; standUid: number | null; slot: number | null }
+  | { empty: true; state: GameState; guestId: number; item: MaterialId };
+
+/**
+ * At the bar (step T1): the player takes the next order. A dish is picked up as before (pickUpOrder). A DRINK is poured: one mug comes off
+ * the first tap that holds it and is in the player's hands. If no tap holds it (the player unloaded it after the order) nothing is
+ * poured: the guest leaves the queue but the ORDER STAYS OPEN, and the result says `empty`. Null with full hands or nothing queued.
+ */
+export function pourOrder(state: GameState): PourResult | null {
+  const n = nextOrder(state);
+  if (!n) return null;
+  if (!isDrinkId(n.item)) {
+    const r = pickUpOrder(state)!;
+    return { empty: false, state: r.state, guestId: r.guestId, item: r.item, standUid: null, slot: null };
+  }
+  const tap = tapFor(state.tavern.taps, n.item);
+  if (!tap) return { empty: true, state: withTavern(state, { serveQueue: n.queue.slice(1) }), guestId: n.guestId, item: n.item };
+  const taps = setTap(state.tavern.taps, { ...tap, mugs: tap.mugs - 1 });
+  return { empty: false, state: withTavern(state, { taps, serveQueue: n.queue.slice(1), holding: { guestId: n.guestId, item: n.item } }), guestId: n.guestId, item: n.item, standUid: tap.standUid, slot: tap.slot };
 }
 
 /** Forgets the taps and what is in the player's hands (the orders stay open). */
@@ -381,9 +430,11 @@ export function serveStops(state: GameState, guestId: number): { bar: Point; tab
   const t = state.tavern;
   const guest = t.guests.find((g) => g.id === guestId);
   const bar = state.items.find((i) => i.roomId === t.roomId && getFurnitureType(i.typeId).servedFromBehind === true);
-  const seat = guest?.seat ? tavernSeats(state.items, t.roomId).find((s) => seatKey(s) === seatKey(guest.seat!)) : undefined;
+  const seat = guest?.seat ? tavernSeats(state.items, t.roomId, kitchenZone(state.rooms.find((r) => r.id === t.roomId))).find((s) => seatKey(s) === seatKey(guest.seat!)) : undefined;
   if (!bar || !seat) return null;
-  return { bar: behindPoint(bar, getFurnitureType(bar.typeId)), table: seat.spot };
+  // A drink is poured at its tap (step T1): the avatar stands level with the stand that holds it; else behind the middle of the bar.
+  const pour = guest?.order && isDrinkId(guest.order.item) ? pourStop(state, guest.order.item) : null;
+  return { bar: pour?.at ?? behindPoint(bar, getFurnitureType(bar.typeId)), table: seat.spot };
 }
 
 // ---------- Coins and dishes ----------

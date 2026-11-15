@@ -37,20 +37,15 @@ async function openTavern(seed = 7) {
 }
 
 describe('the tavern through the GameAPI', () => {
-  it('a new game: the barrel is ready, a tap collects the mugs, then guests order', async () => {
+  it('a new game (step T1): 7 root ale stand loaded on the first tap, the barrel is idle, then guests order', async () => {
     const { api, until } = await openTavern();
     const barrel = (await api.snapshot().items).find((i) => i.typeId === 'brewing_barrel')!;
-    const got = await api.collectBrew(barrel.uid);
-    expect(got).toMatchObject({ drink: 'root_ale', mugs: 7 });
-    expect(got?.gains.some((g) => g.itemId === 'root_ale' && g.count === 7)).toBe(true);
-    expect(await api.collectBrew(barrel.uid)).toBeNull(); // the barrel is empty now
+    expect(await api.collectBrew(barrel.uid)).toBeNull(); // nothing is brewing: the first drink is on the tap
     expect(await until(async () => (await api.getTavern()).guests.some((g) => g.phase === 'order'))).toBe(true);
   });
 
   it('serves an order from one tap, the guest pays, the player takes the coins by tapping', async () => {
     const { api, events, until } = await openTavern();
-    const barrel = api.snapshot().items.find((i) => i.typeId === 'brewing_barrel')!;
-    await api.collectBrew(barrel.uid);
     const gold0 = (await api.getPlayer()).wallet.gold;
     await until(async () => (await api.getTavern()).guests.some((g) => g.phase === 'order'));
     const guest = (await api.getTavern()).guests.find((g) => g.phase === 'order')!;
@@ -86,8 +81,6 @@ describe('the tavern through the GameAPI', () => {
 
   it('a tap on the floor ends the errand: the queue and the hands are empty again', async () => {
     const { api, events, until } = await openTavern();
-    const barrel = api.snapshot().items.find((i) => i.typeId === 'brewing_barrel')!;
-    await api.collectBrew(barrel.uid);
     await until(async () => (await api.getTavern()).guests.some((g) => g.phase === 'order'));
     const guest = (await api.getTavern()).guests.find((g) => g.phase === 'order')!;
     await api.serveGuest(guest.id);
