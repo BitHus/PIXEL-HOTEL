@@ -242,6 +242,14 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     });
     return { ...rest, rooms };
   },
+  // 16 -> 17 (step BG4, gems from everywhere): a run in progress gets 0 gems in its three bags and no
+  // gem piles on the floor.
+  16: (state) => {
+    if (!isObject(state) || !isObject(state.run)) return state;
+    const run = state.run;
+    const bag = (b: unknown) => (isObject(b) ? { gems: 0, ...b } : b);
+    return { ...state, run: { ...run, bag: bag(run.bag), banked: bag(run.banked), lost: bag(run.lost), pickups: Array.isArray(run.pickups) ? run.pickups : [] } };
+  },
 };
 
 /** The storage key for a save version. */

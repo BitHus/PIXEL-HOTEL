@@ -6,7 +6,26 @@
 // catch-up). Averages over many seeds.
 // Run: npm run simulate
 
-import { QUEUE_MAX, emptyShop, fillQueueMath, lootBaseValue, seededRng, type LootRef, type ShopSlot, type ShopState } from '../shared/src/index.ts';
+import {
+  BOOK_GEM_RANK,
+  ENEMY_GEM_RANK,
+  GEMS,
+  GEM_RANK_MULT,
+  QUEUE_MAX,
+  ROCK_GEM_RANK,
+  emptyShop,
+  fillQueueMath,
+  gemDrop,
+  lootBaseValue,
+  rollRank,
+  seededRng,
+  type GemSource,
+  type LootRef,
+  type Rank,
+  type Rng,
+  type ShopSlot,
+  type ShopState,
+} from '../shared/src/index.ts';
 
 const RUNS = 500;
 const HOURS = 8;
@@ -74,3 +93,53 @@ for (const [name, mult] of STRATEGIES) {
     }
   }
 }
+
+// ---------- Gems per hour per source (step BG4) ----------
+// The gem rolls are the game's own gemDrop(source, rank, rng). How often each thing happens per hour is an ASSUMPTION
+// for an active player (below); BG9 tunes both. Quests and Book rewards are one-off: shown per game, not per hour.
+console.log('\nGems per hour per source (assumed activity for an active player; gemDrop is the real rule, 2000 hours each).');
+console.log('Block: 4/min punched. Harvest: 60/h. Crypt: 12 runs/h, each 3 chests (1 golden), 4 kills, 0.25 mimics, 1 boss per 24 runs.');
+console.log('Mine: 40 rocks/h. Lakeside: 30 trees/h and 40 fish/h (rank by RANK_WEIGHTS).\n');
+
+type Pick = (rng: Rng) => Rank;
+const fixed = (r: Rank): Pick => () => r;
+/** A weighted pick of ranks. */
+const mix = (...w: [Rank, number][]): Pick => (rng) => {
+  let x = rng() * w.reduce((a, [, n]) => a + n, 0);
+  for (const [r, n] of w) {
+    if (x < n) return r;
+    x -= n;
+  }
+  return w[w.length - 1]![0];
+};
+const rolled: Pick = (rng) => rollRank(rng);
+const SOURCES_PER_HOUR: { source: GemSource; perHour: number; rank: Pick; note: string }[] = [
+  { source: 'block', perHour: 240, rank: mix(['common', 6], ['rare', 3], ['ultra_rare', 1]), note: 'breaking blocks' },
+  { source: 'harvest', perHour: 60, rank: mix(['common', 5], ['rare', 2], ['ultra_rare', 1]), note: 'a grown plant' },
+  { source: 'chest', perHour: 24, rank: fixed('common'), note: 'wooden chests (the rank is the chest\'s)' },
+  { source: 'chest', perHour: 12, rank: fixed('rare'), note: 'golden chests' },
+  { source: 'kill', perHour: 36, rank: fixed(ENEMY_GEM_RANK.slime), note: 'slime kills' },
+  { source: 'kill', perHour: 12, rank: fixed(ENEMY_GEM_RANK.skeleton), note: 'skeleton kills' },
+  { source: 'mimic', perHour: 3, rank: fixed('rare'), note: 'mimics' },
+  { source: 'boss', perHour: 0.5, rank: fixed('ultra_rare'), note: 'the Bone King' },
+  { source: 'rock', perHour: 22, rank: fixed(ROCK_GEM_RANK.copper), note: 'copper rocks' },
+  { source: 'rock', perHour: 14, rank: fixed(ROCK_GEM_RANK.iron), note: 'iron rocks' },
+  { source: 'rock', perHour: 4, rank: fixed(ROCK_GEM_RANK.mithril), note: 'mithril rocks' },
+  { source: 'chop', perHour: 30, rank: rolled, note: 'felled trees (the tree\'s rolled rank)' },
+  { source: 'fish', perHour: 40, rank: rolled, note: 'catches (rank by RANK_WEIGHTS)' },
+];
+console.log(pad('source', 9) + pad('per hour', 10) + pad('gems/h', 9) + 'what');
+const HOURS_SIMULATED = 2000;
+let total = 0;
+for (const row of SOURCES_PER_HOUR) {
+  const rng = seededRng(7);
+  const events = Math.round(row.perHour * HOURS_SIMULATED);
+  let gems = 0;
+  for (let i = 0; i < events; i++) gems += gemDrop(row.source, row.rank(rng), rng);
+  const perHour = gems / HOURS_SIMULATED;
+  total += perHour;
+  console.log(pad(row.source, 9) + pad(row.perHour, 10) + pad(perHour.toFixed(1), 9) + row.note);
+}
+console.log(pad('TOTAL', 19) + total.toFixed(1) + '  (if one player did all of it in one hour: a ceiling, not a typical hour)');
+const book = ([25, 50, 75, 100] as const).map((p) => `${GEMS.book.min * GEM_RANK_MULT[BOOK_GEM_RANK[p]]}-${GEMS.book.max * GEM_RANK_MULT[BOOK_GEM_RANK[p]]}`);
+console.log(`One-off: a finished quest pays ${GEMS.quest.min}-${GEMS.quest.max} gems; a Book tier pays ${book.join(' / ')} gems at 25 / 50 / 75 / 100 % of a tab.`);

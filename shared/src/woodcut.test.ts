@@ -129,3 +129,31 @@ describe('woodcutting (section 10d, step 9f)', () => {
     expect(s.player.seen.resin).toEqual({ count: 1, firstSeenAt: 5 });
   });
 });
+
+describe('gems from a felled tree (step BG4)', () => {
+  const fell = (rng: () => number) => {
+    let s = createNewPlayer(undefined, 0);
+    let now = 1000;
+    for (let i = 0; i < TREE_HITS; i++) {
+      const r = chop(s, 0, now, rng)!;
+      s = r.state;
+      now += AXE_COOLDOWN_MS;
+    }
+    return s;
+  };
+
+  it('a felled tree can drop gems (the ledger entry carries them, the wallet adds them)', () => {
+    const s = fell(() => 0);
+    const entry = s.ledger[s.ledger.length - 1]!;
+    expect(entry).toMatchObject({ reason: 'chop', gemsDelta: 1 });
+    expect(s.player.wallet.gems).toBe(1);
+  });
+
+  it('no gems on a miss, and a hit that does not fell the tree never gives gems', () => {
+    const s = fell(() => 0.9999);
+    expect(s.player.wallet.gems).toBe(0);
+    expect(s.ledger[s.ledger.length - 1]!.gemsDelta).toBeUndefined();
+    const hit = chop(createNewPlayer(undefined, 0), 0, 1000, () => 0)!;
+    expect(hit.state.player.wallet.gems).toBe(0);
+  });
+});

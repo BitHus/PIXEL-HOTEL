@@ -116,7 +116,7 @@ describe('mining', () => {
 describe('ending a visit', () => {
   const withOre = (r: DungeonRun): DungeonRun => ({
     ...r,
-    bag: { slots: [{ kind: 'material', id: 'copper_ore', qty: 7 }, { kind: 'material', id: 'iron_ore', qty: 3 }, { kind: 'material', id: 'gem', qty: 1 }], gold: 0 },
+    bag: { slots: [{ kind: 'material', id: 'copper_ore', qty: 7 }, { kind: 'material', id: 'iron_ore', qty: 3 }, { kind: 'material', id: 'gem', qty: 1 }], gold: 0, gems: 0 },
   });
 
   it('the lantern ends the visit and keeps all ore', () => {

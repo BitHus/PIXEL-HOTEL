@@ -153,7 +153,8 @@ describe('fishing through the GameAPI', () => {
     expect(u.session.outcome).toBe('caught');
     expect(u.caught).not.toBeNull();
     // The catch comes back as a gain: the fish, once, in its rank.
-    expect(u.gains).toEqual([{ itemId: u.caught!.id, count: 1, rank: expect.any(String) }]);
+    // (gems, if the catch dropped any, come in the same list: step BG4)
+    expect(u.gains.filter((g) => g.itemId !== 'gems')).toEqual([{ itemId: u.caught!.id, count: 1, rank: expect.any(String) }]);
     const after = await api.getPlayer();
     expect(after.materials[u.caught!.id as 'mudfin']).toBe(1);
     expect(after.seen[u.caught!.id]!.count).toBe(1);

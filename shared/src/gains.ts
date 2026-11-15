@@ -67,7 +67,9 @@ export function gainsFromRunEvents(events: readonly RunEvent[]): GainList {
   const left: GainList = [];
   for (const e of events) {
     // Gold is not an item: the run bag and the wallet show it.
-    if (e.t === 'loot' && e.item !== 'gold') found.push(gain(e.item, e.qty, e.rank ?? rankOf(e.item)));
+    // Gems count when the player picks them up (step BG4): the pile on the floor is not a gain yet.
+    if (e.t === 'gem_pickup') found.push({ itemId: GEMS_GAIN_ID, count: e.qty, rank: 'common' });
+    else if (e.t === 'loot' && e.item !== 'gold') found.push(gain(e.item, e.qty, e.rank ?? rankOf(e.item)));
     else if (e.t === 'left_behind') left.push(e.item.kind === 'material' ? gain(e.item.id, e.item.qty) : gain(e.item.typeId));
   }
   const merged = mergeGains(found);
@@ -77,4 +79,15 @@ export function gainsFromRunEvents(events: readonly RunEvent[]): GainList {
     if (g) g.count -= l.count;
   }
   return merged.filter((g) => g.count > 0);
+}
+
+/**
+ * What a run bag holds, as a gains list (step BG3b): the items in its slots and its gems. The client shows it above
+ * the head when a run is banked and the room opens again. Gold is not a gain. Furniture and materials take their
+ * type's rank.
+ */
+export function bagGains(bag: { slots: readonly ({ kind: 'material'; id: string; qty: number } | { kind: 'furniture'; typeId: string })[]; gems: number }): GainList {
+  const list: GainList = bag.slots.map((s) => (s.kind === 'material' ? gain(s.id, s.qty) : gain(s.typeId)));
+  if (bag.gems > 0) list.push({ itemId: GEMS_GAIN_ID, count: bag.gems, rank: 'common' });
+  return mergeGains(list);
 }

@@ -1321,3 +1321,46 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   (900 x 640): an old v15 save (toast, 6 soil cells, a ripe turnip with its marker, a young pumpkin), plant by tap (walks,
   plants), a hold on an unripe plant (nothing happens), a hold on ripe plants (harvest), a stone line by hold + drag, hold
   on stone (breaks by itself, drops a stone seed), hold on a tree (walks, 5 swings, +3 wood). NOT checked: mine rocks, a real phone.
+
+## BG3b + BG4b: popups from every source and gems from every source (step BG3b+4b)
+
+- POPUPS (BG3 B finished; rendering only, numbers from the API): main.ts shows `popups.show(gains)` for catalog buys, seed
+  buys (buySeeds), blocks (BG5), plants and harvests (doBlock), craft, buyGear, smelt, forge, cook, Book rewards, quests,
+  and the banked bag at the exit (`bagGains(result.banked)`, shown in the room after the result screen; pure, in gains.ts).
+  The lakeside gets a hook `gains(list, at?)` (chop and catch). The dungeon gets `ctx.popups`: DungeonScreen.handle shows
+  `u.gains`, render() calls `popups.update(head)`, finish() clears them. In the dungeon the floating TEXT for items is gone
+  while popups are on (gold keeps its text; with popups off the old texts come back); the lakeside keeps its floating texts
+  (they show the fish size and sit at the tree). `GainPopups.enabled()` was added. NOT yet: pack opening (BG8).
+- QUESTS: the first-run hints are the quests. `shared/src/quests.ts` completeQuest(state, index, at, rng) pays GEMS.quest
+  through the ledger (reason 'quest') and moves hintsDone on; LocalGameAPI.hintDone uses it. The call that finished the quest
+  has its own result, so the gems wait in `GameAPI.takeGains()` (returns them once); main.ts refreshHint() takes them.
+- BOOK: claimBookReward(state, tab, percent, at, rng) adds gems by the tier (BOOK_GEM_RANK 25/50/75/100 = common..legendary,
+  so 2-3 / 4-6 / 8-12 / 16-24); the API returns `BookClaim { gold, gems, gains }` (it was a number). bankCatch and
+  claimBookReward now REQUIRE an rng (no silent default).
+- GEMS (config GEMS, all small; BG9 tunes): block, harvest, chest, kill, mimic, boss (chance 1), rock, chop, fish, quest (1),
+  book (1). Ranks: chest wooden common / golden rare; kill ENEMY_GEM_RANK (slime, bat common; skeleton rare); mimic rare; boss
+  ultra_rare; rock ROCK_GEM_RANK (copper common, iron rare, mithril ultra_rare); chop = the rank the tree rolled for its extra
+  drop (woodcut.fellRoll returns it; fellLoot is a wrapper); fish = the catch's rank. Rolls come AFTER the existing rolls of
+  that event, so older rng sequences only shift after the event.
+- DUNGEON RULES (shared/src/dungeon): RunBag.gems (bag, banked, lost) and DungeonRun.pickups { id, x, y, qty }. step.ts dropGems
+  lays a pile at the chest / enemy / rock (event 'gem_drop'); collectGems (every tick, before chests) picks piles within
+  GEM_PICKUP_REACH = 28 px into bag.gems (event 'gem_pickup'; a tap on a pile is a click_point onto it). The boss's gems go
+  straight into the bag (the bag is banked in the same step). Leave and the boss bank the bag gems; death keeps
+  floor(gems x 0.5) and loses the rest (the DEATH_GOLD_LOSS share, like gold); the mine carries the player out with ALL gems
+  (only ore is halved). Piles left on a floor are gone when going deeper or leaving. finishRun passes banked.gems to
+  applyChange (reason dungeon_bank / mine_bank). gainsFromRunEvents counts 'gem_pickup' as a gain with id 'gems'.
+- SAVE: SAVE_VERSION 17; MIGRATIONS[16] gives a saved run gems 0 in its three bags and pickups []. Tests in save.test.ts.
+- ROOMS: gems from blocks, harvests, chopping and fishing are paid at once (ledger, wallet): there are NO floor piles in rooms
+  (a pile there could be lost on a reload and would need saved state). ui/gemFly.ts only draws up to 3 gems flying from the spot
+  (cell centre, tree, bobber) to the head; "near or tapped" applies to the dungeon and the mine piles.
+- CLIENT: dungeonView draws the piles (a bobbing gem square from GEM_ICON, only on seen blocks, flies to the player in 180 ms
+  when picked up) and DungeonView.pickupAt() finds one for a tap; runBar shows the run's gems under the gold (also in the
+  mine); the result screen lists gems; dungeon pickups sound 'coin'.
+- TOOLS: `npm run simulate` now also prints gems per hour per source. The activity per hour is an assumption written in the
+  tool; a full active hour of everything is about 167 gems, and breaking blocks is half of it (the known loop). BG9 balances.
+- TESTS: shared/src/gems.test.ts (gemDrop per source and rank, fixed rng), dungeon/gems.test.ts (sources, piles, Leave, death,
+  mine, ledger), quests.test.ts, woodcut / fishing / book / gains / save tests, client/src/api/gemsAPI.test.ts (every source
+  returns its gems in the gains and the ledger adds up to the wallet).
+- CHECKED BY EYE (headless Chromium 420 x 760 @2x): a v17 save with two piles: the run bar shows gems, a tap walks onto a pile,
+  the pile is gone, a gem chip floats above the head, the run's gems go from 2 to 3. NOT checked on a real phone, nor the
+  lakeside / room gem fly.

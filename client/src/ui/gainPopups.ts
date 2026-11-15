@@ -18,6 +18,8 @@ export interface GainPopups {
   /** Queues a gains list. Ignored when popups are off or the page is hidden. */
   show(gains: GainList): void;
   setEnabled(on: boolean): void;
+  /** True while popups are switched on (Settings). */
+  enabled(): boolean;
   clear(): void;
   /** Call every frame. head = the screen point above the avatar's head (CSS px), or null. */
   update(head: Point | null): void;
@@ -61,6 +63,9 @@ export function createGainPopups(parent: HTMLElement, enabled: boolean): GainPop
     show(gains) {
       if (!on || document.hidden) return;
       queue.push(...gains.filter((g) => g.count > 0));
+    },
+    enabled() {
+      return on;
     },
     setEnabled(next) {
       on = next;

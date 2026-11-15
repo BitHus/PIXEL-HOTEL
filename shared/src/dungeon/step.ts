@@ -34,6 +34,9 @@ import {
   PLAYER_ATTACK_REACH,
   PLAYER_DUNGEON_SPEED,
   GEM_CHANCE,
+  GEM_PICKUP_REACH,
+  ENEMY_GEM_RANK,
+  ROCK_GEM_RANK,
   GLOWCAP_SPORE_CHANCE,
   MINE_DEATH_ORE_LOSS,
   MINE_REACH,
@@ -44,6 +47,7 @@ import {
   STAIRS_HEAL,
 } from '../config.ts';
 import { POTION } from '../gear.ts';
+import { gemDrop, type GemSource } from '../gems.ts';
 import { getFoodType } from '../materials.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
 import { findPath, lineOfSight, type NavGrid } from '../nav.ts';
@@ -76,6 +80,7 @@ function cloneRun(run: DungeonRun): DungeonRun {
     enemies: run.enemies.map((e) => ({ ...e })),
     chests: run.chests.map((c) => ({ ...c })),
     rocks: run.rocks.map((x) => ({ ...x })),
+    pickups: run.pickups.map((x) => ({ ...x })),
     bag: { ...run.bag },
     banked: { ...run.banked },
     lost: { ...run.lost },
@@ -243,6 +248,37 @@ function swing(r: DungeonRun, rock: Rock, now: number, rng: Rng): void {
   const loot: Loot[] = [{ item: `${rock.kind}_ore`, qty: rngInt(rng, ROCK_ORE_MIN, ROCK_ORE_MAX) }];
   if (rng() < GEM_CHANCE) loot.push({ item: 'gem', qty: 1 });
   addLoot(r, loot);
+  dropGems(r, 'rock', ROCK_GEM_RANK[rock.kind], rock, rng);
+}
+
+/**
+ * Rolls gems for a source (step BG4) and lays them on the floor at a point; they count once the player picks them
+ * up. `direct` puts them in the bag at once (the boss: the bag is banked in the same step).
+ */
+function dropGems(r: DungeonRun, source: GemSource, rank: Rank, at: Point, rng: Rng, direct = false): void {
+  const qty = gemDrop(source, rank, rng);
+  if (qty <= 0) return;
+  const id = r.pickups.reduce((m, x) => Math.max(m, x.id), r.timeMs) + 1;
+  if (direct) {
+    r.bag.gems += qty;
+    r.events.push({ t: 'gem_pickup', id, qty });
+    return;
+  }
+  r.pickups.push({ id, x: at.x, y: at.y, qty });
+  r.events.push({ t: 'gem_drop', id, x: at.x, y: at.y, qty });
+}
+
+/** Picks up every gem pile the player stands close to (into the run bag). */
+function collectGems(r: DungeonRun): void {
+  const p = r.player;
+  const left = [];
+  for (const g of r.pickups) {
+    if (distance(p, g) <= GEM_PICKUP_REACH) {
+      r.bag.gems += g.qty;
+      r.events.push({ t: 'gem_pickup', id: g.id, qty: g.qty });
+    } else left.push(g);
+  }
+  r.pickups = left;
 }
 
 function addLoot(r: DungeonRun, loot: readonly (Loot & { rank?: Rank })[]): void {
@@ -250,14 +286,14 @@ function addLoot(r: DungeonRun, loot: readonly (Loot & { rank?: Rank })[]): void
   r.bag = added.bag;
   for (const l of loot) r.events.push({ t: 'loot', item: l.item, qty: l.qty, ...(l.rank && l.rank !== 'common' ? { rank: l.rank } : {}) });
   if (added.leftBehind.length > 0) {
-    r.lost = addToBag(r.lost, bagLoot({ slots: added.leftBehind, gold: 0 }), Infinity).bag;
+    r.lost = addToBag(r.lost, bagLoot({ slots: added.leftBehind, gold: 0, gems: 0 }), Infinity).bag;
     for (const item of added.leftBehind) r.events.push({ t: 'left_behind', item });
   }
 }
 
 /** Moves the bag into the banked bag (leaving, or killing the boss). */
 function bankBag(r: DungeonRun): void {
-  r.banked = { ...addToBag(r.banked, bagLoot(r.bag), Infinity).bag, gold: r.banked.gold + r.bag.gold };
+  r.banked = { ...addToBag(r.banked, bagLoot(r.bag), Infinity).bag, gold: r.banked.gold + r.bag.gold, gems: r.banked.gems + r.bag.gems };
   r.bag = emptyRunBag();
 }
 
@@ -293,6 +329,10 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
   // The enemy's own drop table (step 9e): RARE_DROP_CHANCE per kill, and the table decides the
   // rank. The Bone King always drops. No such drops in the mine (step 9c): only ore and gems.
   if (r.place === 'crypt' && (e.kind === 'bone_king' || rng() < RARE_DROP_CHANCE)) addLoot(r, rollLoot(getLootTable(type), rng));
+  // Gems (step BG4): a mimic and the boss have their own sources, every other kill rolls by the enemy's rank.
+  if (e.kind === 'bone_king') dropGems(r, 'boss', 'ultra_rare', e, rng, true);
+  else if (e.mimic) dropGems(r, 'mimic', 'rare', e, rng);
+  else dropGems(r, 'kill', ENEMY_GEM_RANK[e.kind], e, rng);
   if (e.kind === 'bone_king') {
     r.bossDefeated = true;
     bankBag(r);
@@ -312,9 +352,10 @@ function die(r: DungeonRun): void {
     return;
   }
   const kept = Math.floor(r.bag.gold * (1 - DEATH_GOLD_LOSS));
-  const lostBag: RunBag = { slots: r.bag.slots, gold: r.bag.gold - kept };
-  r.lost = { ...addToBag(r.lost, bagLoot(lostBag), Infinity).bag, gold: r.lost.gold + lostBag.gold };
-  r.banked = { ...r.banked, gold: r.banked.gold + kept };
+  const keptGems = Math.floor(r.bag.gems * (1 - DEATH_GOLD_LOSS));
+  const lostBag: RunBag = { slots: r.bag.slots, gold: r.bag.gold - kept, gems: r.bag.gems - keptGems };
+  r.lost = { ...addToBag(r.lost, bagLoot(lostBag), Infinity).bag, gold: r.lost.gold + lostBag.gold, gems: r.lost.gems + lostBag.gems };
+  r.banked = { ...r.banked, gold: r.banked.gold + kept, gems: r.banked.gems + keptGems };
   r.bag = emptyRunBag();
   // The lunch box is lost too (step 9b).
   const food = r.player.food.map((id) => ({ item: id, qty: 1 }));
@@ -339,7 +380,7 @@ function carriedOut(r: DungeonRun): void {
     if (qty - gone > 0) kept.push({ item, qty: qty - gone });
     if (gone > 0) lost.push({ item, qty: gone });
   }
-  r.banked = { ...addToBag(r.banked, kept, Infinity).bag, gold: r.banked.gold + r.bag.gold };
+  r.banked = { ...addToBag(r.banked, kept, Infinity).bag, gold: r.banked.gold + r.bag.gold, gems: r.banked.gems + r.bag.gems };
   r.lost = addToBag(r.lost, lost, Infinity).bag;
   r.bag = emptyRunBag();
   r.player.hp = 0;
@@ -354,6 +395,7 @@ function deeper(r: DungeonRun): void {
   r.map = plan.map;
   r.enemies = plan.enemies;
   r.chests = plan.chests;
+  r.pickups = [];
   const healed = Math.min(p.maxHp - p.hp, Math.round(p.maxHp * STAIRS_HEAL));
   p.hp += healed;
   p.x = plan.map.spawn.x;
@@ -423,6 +465,9 @@ function tick(r: DungeonRun, rng: Rng): void {
     if (p.pendingSwing && now >= p.pickReadyAt) swing(r, rock, now, rng);
   }
 
+  // Gem piles are picked up by walking close (step BG4).
+  collectGems(r);
+
   // Chests open (or wake as a mimic) when walked onto.
   for (const c of r.chests) {
     if (c.opened || distance(p, c) > CHEST_OPEN_REACH) continue;
@@ -439,6 +484,7 @@ function tick(r: DungeonRun, rng: Rng): void {
       addLoot(r, rollLoot(getLootTable(c.kind === 'golden' ? 'golden_chest' : 'wooden_chest'), rng));
       // Step 9b: sometimes a glowcap spore for the farm.
       if (rng() < GLOWCAP_SPORE_CHANCE) addLoot(r, [{ item: 'glowcap_spore', qty: 1 }]);
+      dropGems(r, 'chest', c.kind === 'golden' ? 'rare' : 'common', c, rng);
     }
   }
 

@@ -6,12 +6,14 @@
 // Step 9c: the mine is drawn by the same view (run.place 'mine'): its own block colours, rocks in
 // the depth-sorted list (they crack per hit and shake when hit), no exit stairs.
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import {
   CHEST_OPEN_MS,
   DUNGEON_BLOCK,
   DUNGEON_SEEN_DARK,
   DUNGEON_TICK_MS,
+  GEM_ICON,
+  GEM_PICKUP_REACH,
   HIT_FLASH_MS,
   PICKAXE_COOLDOWN_MS,
   facingFor,
@@ -28,6 +30,7 @@ import {
 } from '@pixel-hotel/shared';
 import { AvatarSprite } from '../render/avatarSprite.ts';
 import { DepthLayer } from '../render/depthLayer.ts';
+import { iconTexture } from '../render/drawIcon.ts';
 import { CRYPT_OUTLINE, ENEMY_HEIGHT, ROCK_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit, drawRock } from './dungeonArt.ts';
 import { FogMemory } from './fog.ts';
 
@@ -35,6 +38,18 @@ import { FogMemory } from './fog.ts';
 const PLAYER_ID = 0;
 const CHEST_ID_BASE = 100000;
 const ROCK_ID_BASE = 200000;
+const GEM_ID_BASE = 300000;
+/** A gem pile bobs this many px, and flies to the player over this long when picked up (ms). */
+const GEM_BOB_PX = 2;
+const GEM_FLY_MS = 180;
+
+interface GemView {
+  sprite: Sprite;
+  x: number;
+  y: number;
+  /** ms since it started to fly to the player; -1 = lying on the floor. */
+  flyMs: number;
+}
 
 interface RockView {
   root: Container;
@@ -75,6 +90,8 @@ export class DungeonView {
   private readonly enemies = new Map<number, EnemyView>();
   private readonly chests = new Map<number, ChestView>();
   private readonly rocks = new Map<number, RockView>();
+  /** Gem piles lying on the floor (step BG4), and the ones flying to the player. */
+  private readonly gems = new Map<number, GemView>();
   readonly fogMemory = new FogMemory();
   private map: DungeonMap | null = null;
   /** Where the player is drawn now (world px). */
@@ -153,6 +170,22 @@ export class DungeonView {
       if (v?.root.visible && Math.abs(p.x - r.x) <= 20 && p.y >= r.y - ROCK_HEIGHT - 8 && p.y <= r.y + 10) return r;
     }
     return null;
+  }
+
+  /** The gem pile near a world point (generous for fingers; seen piles only), or null. A tap on it walks onto it. */
+  pickupAt(run: DungeonRun, p: Point): Point | null {
+    let best: Point | null = null;
+    let bestD = Infinity;
+    for (const g of run.pickups) {
+      const v = this.gems.get(g.id);
+      if (!v?.sprite.visible) continue;
+      const d = Math.hypot(p.x - g.x, p.y - 12 - g.y);
+      if (d <= Math.max(24, GEM_PICKUP_REACH) && d < bestD) {
+        best = { x: g.x, y: g.y };
+        bestD = d;
+      }
+    }
+    return best;
   }
 
   /** A hit rock shakes a little. */
@@ -286,6 +319,35 @@ export class DungeonView {
       v.shakeMs = Math.max(0, v.shakeMs - dtMs);
       v.root.x = r.x + (v.shakeMs > 0 ? (Math.floor(clockMs / 40) % 2 === 0 ? 1 : -1) : 0);
       v.root.visible = this.fogMemory.isSeen(map, r);
+    }
+
+    // Gem piles (step BG4): a small bobbing gem square; a picked-up pile flies to the player and is gone.
+    const piles = new Set(run.pickups.map((g) => g.id));
+    for (const g of run.pickups) {
+      let v = this.gems.get(g.id);
+      if (!v) {
+        const sprite = new Sprite(iconTexture(GEM_ICON));
+        sprite.anchor.set(0.5, 1);
+        sprite.scale.set(0.75);
+        v = { sprite, x: g.x, y: g.y, flyMs: -1 };
+        this.gems.set(g.id, v);
+        this.objects.add(sprite, { y: g.y, x: g.x, uid: GEM_ID_BASE + g.id });
+      }
+      v.sprite.position.set(Math.round(g.x), Math.round(g.y - 4 - GEM_BOB_PX * (0.5 + 0.5 * Math.sin(clockMs / 260 + g.id))));
+      v.sprite.visible = this.fogMemory.isSeen(map, g);
+    }
+    for (const [id, v] of this.gems) {
+      if (!piles.has(id) && v.flyMs < 0) v.flyMs = 0;
+      if (v.flyMs < 0) continue;
+      v.flyMs += dtMs;
+      const k = Math.min(1, v.flyMs / GEM_FLY_MS);
+      v.sprite.position.set(Math.round(v.x + (at.x - v.x) * k), Math.round(v.y - 4 + (at.y - 28 - (v.y - 4)) * k));
+      v.sprite.alpha = 1 - k * 0.5;
+      if (k >= 1) {
+        this.objects.remove(v.sprite);
+        v.sprite.destroy();
+        this.gems.delete(id);
+      }
     }
 
     // The cooldown ring above the player's head: the attack, or the pickaxe in the mine.
