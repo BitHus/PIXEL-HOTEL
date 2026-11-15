@@ -32,6 +32,7 @@ import {
   type FishInput,
   type FishSession,
   FISH_TICK_MS,
+  type GainList,
   type GameAPI,
   type LakesideView,
   type MaterialId,
@@ -59,6 +60,8 @@ export interface LakesideHooks {
   /** A floating text at a world point (rank: its colour, and a sparkle for ultra rare and legendary). */
   float(at: Point, text: string, rank: Rank | null, delayMs?: number): void;
   sound(name: 'hit' | 'pop' | 'bell' | 'coin'): void;
+  /** What a felled tree or a catch gave: the popups above the head (step BG3b). */
+  gains(list: GainList, at?: Point): void;
   /** The bag, the Book and the Map changed. */
   afterChange(): Promise<void>;
 }
@@ -317,6 +320,7 @@ export class LakesideScreen {
       return ok ? 'walk' : 'stop';
     }
     this.set(r.lakeside);
+    if (r.gains.length > 0) this.hooks.gains(r.gains, treeAnchor(i));
     if (r.kind === 'cooldown') return 'go';
     if (r.kind === 'regrowing') {
       this.hooks.toast('This tree grows back later.');
@@ -514,6 +518,7 @@ export class LakesideScreen {
         if (!u) this.endFishing();
         return;
       }
+      if (u.gains.length > 0) this.hooks.gains(u.gains, this.target ? { x: this.target.x, y: this.target.y } : undefined);
       this.applySession(u.session, u.caught);
     });
   }

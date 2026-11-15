@@ -17,6 +17,7 @@ import type { GameState } from './gameState.ts';
 import { ownedAxe } from './gear.ts';
 import { applyChange } from './ledger.ts';
 import { TREE_COUNT } from './lakeLayout.ts';
+import { gemDrop } from './gems.ts';
 import { rollRank } from './ranks.ts';
 import { rngInt } from './rng.ts';
 import type { MaterialId, Rank, Rng } from './types.ts';
@@ -58,12 +59,18 @@ export function growTrees(lake: LakesideState, now: number): LakesideState {
 /** What a rank gives besides wood: resin (rare), amber (ultra_rare), a golden acorn (legendary), nothing for common. */
 export const TREE_RANK_DROPS: Partial<Record<Rank, MaterialId>> = { rare: 'resin', ultra_rare: 'amber', legendary: 'golden_acorn' };
 
-/** The loot of a felled tree: 2 to 3 wood and the rank drop (rolled with RANK_WEIGHTS). */
-export function fellLoot(rng: Rng): Partial<Record<MaterialId, number>> {
+/** The loot of a felled tree: 2 to 3 wood and the rank drop (rolled with RANK_WEIGHTS), and the rank it rolled. */
+export function fellRoll(rng: Rng): { loot: Partial<Record<MaterialId, number>>; rank: Rank } {
   const loot: Partial<Record<MaterialId, number>> = { wood: rngInt(rng, TREE_WOOD_MIN, TREE_WOOD_MAX) };
-  const extra = TREE_RANK_DROPS[rollRank(rng)];
+  const rank = rollRank(rng);
+  const extra = TREE_RANK_DROPS[rank];
   if (extra) loot[extra] = 1;
-  return loot;
+  return { loot, rank };
+}
+
+/** The loot of a felled tree (see fellRoll). */
+export function fellLoot(rng: Rng): Partial<Record<MaterialId, number>> {
+  return fellRoll(rng).loot;
 }
 
 export type ChopKind = 'hit' | 'felled' | 'cooldown' | 'regrowing';
@@ -93,8 +100,10 @@ export function chop(state: GameState, index: number, now: number, rng: Rng): { 
     const trees = lake.trees.map((t, i) => (i === index ? { ...t, hits } : t));
     return { state: { ...state, lakeside: { ...lake, trees, axeReadyAt: ready } }, result: { kind: 'hit', hits } };
   }
-  const loot = fellLoot(rng);
-  const paid = applyChange(state, { reason: 'chop', materials: loot, note: `felled tree ${index}` }, now);
+  const { loot, rank } = fellRoll(rng);
+  // Gems (step BG4): rolled after the wood and the rank drop, by the rank the tree rolled.
+  const gems = gemDrop('chop', rank, rng);
+  const paid = applyChange(state, { reason: 'chop', materials: loot, ...(gems > 0 ? { gems } : {}), note: `felled tree ${index}` }, now);
   if (!paid) return null;
   const trees = lake.trees.map((t, i) => (i === index ? { hits: 0, felledAt: now } : t));
   return { state: { ...paid, lakeside: { ...lake, trees, axeReadyAt: ready } }, result: { kind: 'felled', hits: 0, loot } };

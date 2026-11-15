@@ -291,6 +291,24 @@ const DRAW: Record<IconShape, Draw> = {
   },
 };
 
+/** Shapes with a shiny surface: they get a small glint near the top-left. */
+const GLOSSY = new Set<IconShape>(['gem', 'potion', 'orb', 'ring', 'jar', 'bottle', 'mug', 'bar', 'ore', 'helmet', 'armor', 'sword', 'crown', 'heart', 'key', 'tank', 'lamp', 'pumpkin', 'plate', 'bowl']);
+
+/** The outline on the light side: a very dark version of the colour it borders (a warm, coloured outline). */
+function mixDark(c: string): string {
+  const n = parseInt(OUTLINE.slice(1), 16);
+  const m = parseInt(shade(c, 0.4).slice(1), 16);
+  const ch = (sh: number): number => (((n >> sh) & 255) + ((m >> sh) & 255)) >> 1;
+  return `#${[16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Steps (up to 3) toward an empty pixel, counting how deep this pixel sits inside the shape. */
+function backRun(at: (x: number, y: number) => string | null, x: number, y: number, dx: number, dy: number): number {
+  let n = 0;
+  while (n < 3 && at(x + dx * (n + 1), y + dy * (n + 1))) n++;
+  return n;
+}
+
 /**
  * The pixels of an icon: the shape's flat fills, then light from the top-left (a lighter edge where
  * the pixel above or to the left is empty, a darker one where below or to the right is), then a
@@ -305,16 +323,44 @@ export function iconPixels(icon: Icon, rank?: Rank): IconPixels {
   const flat = pen.px;
   const at = (x: number, y: number): string | null => (x < 0 || y < 0 || x >= ICON_SIZE || y >= ICON_SIZE ? null : flat[y * ICON_SIZE + x]!);
   const out: IconPixels = new Array<string | null>(ICON_SIZE * ICON_SIZE).fill(null);
+  let glint: [number, number] | null = null;
+  for (let y = 0; y < ICON_SIZE && !glint; y++) {
+    for (let x = 0; x < ICON_SIZE; x++) {
+      if (at(x, y) && at(x + 1, y) && at(x + 2, y) && at(x, y + 1) && at(x + 1, y + 1) && at(x, y + 2) && at(x, y + 3)) {
+        glint = [x + 1, y + 2];
+        break;
+      }
+    }
+  }
   for (let y = 0; y < ICON_SIZE; y++) {
     for (let x = 0; x < ICON_SIZE; x++) {
       const here = at(x, y);
       if (here) {
-        const shadow = !at(x, y + 1) || !at(x + 1, y);
-        const light = !at(x, y - 1) || !at(x - 1, y);
-        out[y * ICON_SIZE + x] = shadow ? shade(here, 0.78) : light ? shade(here, 1.25) : here;
-      } else if (at(x, y - 1) || at(x, y + 1) || at(x - 1, y) || at(x + 1, y)) {
-        out[y * ICON_SIZE + x] = OUTLINE;
+        // Distance to the nearest empty pixel above / left (light side) and below / right (dark side).
+        const up = backRun(at, x, y, 0, -1);
+        const left = backRun(at, x, y, -1, 0);
+        const down = backRun(at, x, y, 0, 1);
+        const right = backRun(at, x, y, 1, 0);
+        const lightD = Math.min(up, left);
+        const darkD = Math.min(down, right);
+        let f = 1;
+        if (darkD === 0) f = 0.7;
+        else if (lightD === 0) f = 1.3;
+        else if (darkD === 1) f = 0.86;
+        else if (lightD === 1) f = 1.12;
+        out[y * ICON_SIZE + x] = f === 1 ? here : shade(here, f);
+      } else {
+        const nb = at(x, y - 1) ?? at(x - 1, y);
+        const far = at(x, y + 1) ?? at(x + 1, y);
+        if (far) out[y * ICON_SIZE + x] = OUTLINE;
+        else if (nb) out[y * ICON_SIZE + x] = mixDark(nb);
       }
+    }
+  }
+  if (glint && GLOSSY.has(icon.shape)) {
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1]] as const) {
+      const i = (glint[1] + dy) * ICON_SIZE + glint[0] + dx;
+      if (out[i]) out[i] = shade(out[i]!, 1.6);
     }
   }
   if (rank) {

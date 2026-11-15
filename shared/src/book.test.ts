@@ -69,7 +69,7 @@ describe('the seen list (Player.seen, step 9e)', () => {
     expect(run.enemies).toHaveLength(0);
     expect(run.kills).toEqual({ slime: 1 });
     expect(run.met).toEqual(['slime']);
-    run = { ...run, status: 'dead', banked: { slots: [{ kind: 'material', id: 'slime_gel', qty: 2 }], gold: 0 } };
+    run = { ...run, status: 'dead', banked: { slots: [{ kind: 'material', id: 'slime_gel', qty: 2 }], gold: 0, gems: 0 } };
     const done = finishRun(s, run, 9000)!;
     expect(done.player.seen[enemyKey('slime')]).toEqual({ count: 1, firstSeenAt: 9000 });
     expect(done.player.seen.slime_gel).toEqual({ count: 2, firstSeenAt: 9000 });
@@ -170,17 +170,17 @@ describe('the Book (step 9e)', () => {
     }
     let s = fresh();
     expect(bookRewards(s.player, 'enemies').map((r) => r.state)).toEqual(['locked', 'locked', 'locked', 'locked']);
-    expect(claimBookReward(s, 'enemies', 25, 5000)).toBeNull();
+    expect(claimBookReward(s, 'enemies', 25, 5000, () => 0.9999)).toBeNull();
     // 2 of 5 enemies met = 40%: the 25% reward is ready, 50% is not.
     s = { ...s, player: { ...s.player, seen: addSeen(addSeen(s.player.seen, enemyKey('slime'), 1, 4000), enemyKey('bat'), 0, 4000) } };
     expect(bookRewards(s.player, 'enemies').map((r) => r.state)).toEqual(['ready', 'locked', 'locked', 'locked']);
     const gold = s.player.wallet.gold;
-    const paid = claimBookReward(s, 'enemies', 25, 5000)!;
+    const paid = claimBookReward(s, 'enemies', 25, 5000, () => 0.9999)!;
     expect(paid.player.wallet.gold).toBe(gold + BOOK_REWARDS.enemies[0]!.gold);
     expect(paid.ledger[paid.ledger.length - 1]).toMatchObject({ reason: 'book_reward', goldDelta: BOOK_REWARDS.enemies[0]!.gold });
     expect(bookRewards(paid.player, 'enemies')[0]!.state).toBe('taken');
-    expect(claimBookReward(paid, 'enemies', 25, 6000)).toBeNull();
-    expect(claimBookReward(paid, 'enemies', 50, 6000)).toBeNull();
+    expect(claimBookReward(paid, 'enemies', 25, 6000, () => 0.9999)).toBeNull();
+    expect(claimBookReward(paid, 'enemies', 50, 6000, () => 0.9999)).toBeNull();
     expect(RARE_DROP_CHANCE).toBe(0.1);
   });
 
@@ -207,5 +207,15 @@ describe('the Book (step 9e)', () => {
     expect(sourceOf('mudfin')).toBe('Fishing');
     expect(sourceOf('fish_tank')).toBe('Crafted');
     expect(sourceOf('grilled_perch')).toBe('Cooked');
+  });
+});
+
+describe('gems from a Book reward (step BG4)', () => {
+  it('pays gems by the tier next to the gold, through the ledger', () => {
+    let s = createNewPlayer(undefined, 0);
+    s = { ...s, player: { ...s.player, seen: addSeen(addSeen(s.player.seen, enemyKey('slime'), 1, 4000), enemyKey('bat'), 0, 4000) } };
+    const paid = claimBookReward(s, 'enemies', 25, 5000, () => 0)!;
+    expect(paid.player.wallet.gems).toBe(2);
+    expect(paid.ledger[paid.ledger.length - 1]).toMatchObject({ reason: 'book_reward', gemsDelta: 2 });
   });
 });

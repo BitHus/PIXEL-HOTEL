@@ -220,14 +220,12 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   data, drawn by render/drawIcon.ts; NOTES BG2).
 - Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
   texts) next, on the cell grid.
-- Step BG3 is HALF done: A (gains lists, shared/src/gains.ts) done; B: the popup module exists
-  (ui/gainPopups.ts, Settings "Popups"), wired for blocks only; chest, kill, fish, harvest next.
-- BG4 (gems) STARTED inside BG5: wallet.gems, ledger gemsDelta, gemDrop (block source), info panel.
-  BG5 (blocks), BG5b (hold to repeat) and BG6 (seeds, the free-form farm: soil cells, plants grown in real
-  time, harvest by punching; the old plots migrated) are done (NOTES BG5, BG5b, BG6). Next: BG4 other gem
-  sources, BG7-BG9, then 9t B/C, 9g.
+- BG3 (gain popups, every source) and BG4 (gems from every source: block, harvest, chest, kill, mimic, boss,
+  rock, chop, fish, quest, Book; floor piles in the dungeon and mine, kept on Leave, half lost on death in the
+  crypt) are done (NOTES BG3b + BG4b). BG5 (blocks), BG5b (hold to repeat) and BG6 (seeds, the free-form farm)
+  are done too. Next: BG7-BG9 (BG9 tunes the gem numbers), then 9t B/C, 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 16. LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 17. LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -257,9 +255,9 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. HOLD TO
   REPEAT (BG5b): a press on a block, a plant, a mine rock or a tree hits at once and keeps hitting at that
   thing's cooldown (blocks 250 ms, rock and tree 400 ms) until it breaks, the press ends or the avatar is out of
-  reach (it walks closer, then goes on); moving 8 px = a pan, which never hits; two fingers never hit. With a block
+  reach (it walks closer, then goes on); sliding the finger while holding never pans: it moves on to the next block, plant, rock or tree under it (also after one broke) without lifting; two fingers never hit. With a block
   selected, holding still 300 ms on free floor places blocks, dragging then makes a line (one per cell, in reach,
-  the usual rules). NOT for the dungeon fight (one hit per tap) and NOT for fishing. Pure helper
+  the usual rules). NOT for the dungeon fight (one hit per tap) and NOT for fishing. HOLD TO WALK: holding still 300 ms on free floor (no block selected, no panel, not build/paint/dungeon) walks to the pointer and follows it while the press lasts (re-paths when the pointer changes cell; moving never pans then; a quick drag still pans). Pure helper
   shared/src/hold.ts holdTick; the client only feeds pointer events. BUILD MODE (Build
   button or B; furniture only): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
   up), a tap on a free spot moves the selected item there. PAINT MODE (Room > Paint cells): tap =
@@ -271,7 +269,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 16) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 17) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Customers

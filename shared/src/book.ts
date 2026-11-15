@@ -12,7 +12,9 @@ import { FURNITURE_TYPES } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { MATERIAL_TYPES } from './materials.ts';
 import { enemyKey } from './seen.ts';
-import type { Rank, SeenMap } from './types.ts';
+import { BOOK_GEM_RANK } from './config.ts';
+import { gemDrop } from './gems.ts';
+import type { Rank, Rng, SeenMap } from './types.ts';
 
 export type BookTab = 'materials' | 'blocks' | 'furniture' | 'food' | 'fish' | 'enemies';
 export const BOOK_TABS: readonly BookTab[] = ['materials', 'blocks', 'furniture', 'food', 'fish', 'enemies'];
@@ -135,10 +137,12 @@ export function bookRewards(player: { seen: SeenMap; bookRewards: readonly strin
 }
 
 /** Takes a reward that is ready: the gold through the ledger (reason 'book_reward'). Null if it is not ready. */
-export function claimBookReward(state: GameState, tab: BookTab, percent: number, at: number): GameState | null {
+export function claimBookReward(state: GameState, tab: BookTab, percent: number, at: number, rng: Rng): GameState | null {
   const reward = bookRewards(state.player, tab).find((r) => r.percent === percent);
   if (!reward || reward.state !== 'ready') return null;
-  const next = applyChange(state, { reason: 'book_reward', gold: reward.gold, note: `book ${rewardKey(tab, percent)}` }, at);
+  // Gems (step BG4): the tier's rank (25 common ... 100 legendary) sets the amount.
+  const gems = gemDrop('book', BOOK_GEM_RANK[percent as keyof typeof BOOK_GEM_RANK] ?? 'common', rng);
+  const next = applyChange(state, { reason: 'book_reward', gold: reward.gold, ...(gems > 0 ? { gems } : {}), note: `book ${rewardKey(tab, percent)}` }, at);
   if (!next) return null;
   return { ...next, player: { ...next.player, bookRewards: [...next.player.bookRewards, rewardKey(tab, percent)] } };
 }

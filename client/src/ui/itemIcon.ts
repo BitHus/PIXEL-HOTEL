@@ -41,6 +41,11 @@ export function gemIconUrl(): string {
   return iconDataUrl(GEM_ICON);
 }
 
+/** A gem piece of one tier (1 green, 5 blue, 10 red): the colours come from GEM_TIERS. */
+export function gemPieceIconUrl(colors: readonly [string, string]): string {
+  return iconDataUrl({ ...GEM_ICON, colors: [...colors] } as typeof GEM_ICON);
+}
+
 /** The picture of a gain: a gem for 'gems', else the item's own icon (material or furniture). */
 export function gainIconUrl(itemId: string, rank?: Rank): string {
   if (itemId === 'gems') return gemIconUrl();

@@ -85,7 +85,7 @@ describe('a run in the game', () => {
     let tested = false;
     for (let seed = 1; seed < 30 && !tested; seed++) {
       const chest = { id: 1, kind: 'golden' as const, mimic: false, opened: false, ...blockCenter(5, 3) };
-      const { api } = open(stateWith(0, { run: handRun({ chests: [chest], bag: { slots: full, gold: 0 } }) }), seed);
+      const { api } = open(stateWith(0, { run: handRun({ chests: [chest], bag: { slots: full, gold: 0, gems: 0 } }) }), seed);
       await api.dungeonResume();
       await api.dungeonInput({ t: 'click_point', x: chest.x, y: chest.y });
       const r = (await api.dungeonAdvance(2000))!.run;
@@ -109,7 +109,11 @@ describe('a run in the game', () => {
     for (const s of run.bag.slots) inBag[s.kind === 'material' ? s.id : s.typeId] = (inBag[s.kind === 'material' ? s.id : s.typeId] ?? 0) + (s.kind === 'material' ? s.qty : 1);
     const gained: Record<string, number> = {};
     for (const g of mergeGains(gains)) gained[g.itemId] = (gained[g.itemId] ?? 0) + g.count;
+    // Gems are a gain too (id 'gems') once picked up: the same number as the bag's gems.
+    const gems = gained.gems ?? 0;
+    delete gained.gems;
     expect(gained).toEqual(inBag);
+    expect(gems).toBe(run.bag.gems);
     expect(gains.length).toBeGreaterThan(0);
     // A call with nothing found gives an empty list.
     expect((await api.dungeonAdvance(100))!.gains).toEqual([]);
@@ -118,13 +122,14 @@ describe('a run in the game', () => {
   it('gains: what did not fit in a full bag is not a gain', async () => {
     const full = Array.from({ length: 12 }, () => ({ kind: 'furniture' as const, typeId: 'wall_torch' }));
     const chest = { id: 1, kind: 'golden' as const, mimic: false, opened: false, ...blockCenter(5, 3) };
-    const { api } = open(stateWith(0, { run: handRun({ chests: [chest], bag: { slots: full, gold: 0 } }) }), 3);
+    const { api } = open(stateWith(0, { run: handRun({ chests: [chest], bag: { slots: full, gold: 0, gems: 0 } }) }), 3);
     await api.dungeonResume();
     const gains = (await api.dungeonInput({ t: 'click_point', x: chest.x, y: chest.y }))!.gains.slice();
     for (let k = 0; k < 20; k++) gains.push(...(await api.dungeonAdvance(100))!.gains);
     const run = (await api.getRun())!.run;
     expect(run.bag.slots).toEqual(full);
-    expect(gains.filter((g) => g.itemId !== 'wall_torch')).toEqual([]);
+    // Gems take no slot: they still come in a full bag.
+    expect(gains.filter((g) => g.itemId !== 'wall_torch' && g.itemId !== 'gems')).toEqual([]);
   });
 
   it('gains: killing an enemy gives its drop (here the Bone King always drops), and banking at the exit gives none again', async () => {
@@ -140,7 +145,7 @@ describe('a run in the game', () => {
   });
 
   it('banked loot appears in the bag exactly once', async () => {
-    const bag = { slots: [{ kind: 'material' as const, id: 'bone' as const, qty: 7 }, { kind: 'furniture' as const, typeId: 'skull_lamp' }], gold: 33 };
+    const bag = { slots: [{ kind: 'material' as const, id: 'bone' as const, qty: 7 }, { kind: 'furniture' as const, typeId: 'skull_lamp' }], gold: 33, gems: 0 };
     const { api, storage } = open(stateWith(50, { run: handRun({ status: 'exit_choice', bag }) }));
     await api.dungeonResume();
     const u = (await api.dungeonInput({ t: 'choose_exit', choice: 'leave' }))!;
@@ -163,7 +168,7 @@ describe('a run in the game', () => {
 
   it('death never banks anything (only half the bag gold is kept); xp is kept', async () => {
     const s = stateWith(40);
-    const bag = { slots: [{ kind: 'material' as const, id: 'crystal' as const, qty: 3 }], gold: 21 };
+    const bag = { slots: [{ kind: 'material' as const, id: 'crystal' as const, qty: 3 }], gold: 21, gems: 0 };
     const at = blockCenter(3, 3);
     const run = handRun({ bag, xpGained: 6, enemies: [enemyAt(1, at.x + 30, at.y, 'skeleton', 99)] });
     const { api } = open({ ...s, run: { ...run, player: { ...run.player, hp: 1, xp: 6 } } });

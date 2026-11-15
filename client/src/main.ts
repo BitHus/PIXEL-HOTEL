@@ -34,6 +34,9 @@ import {
   plantProblem,
   plantInCell,
   readyInMs,
+  BUILD_CELL,
+  GEMS_GAIN_ID,
+  bagGains,
   blockPrice,
   cellOf,
   type BlockResult,
@@ -50,7 +53,6 @@ import {
   MINE_UNLOCK_LEVEL,
   MINE_LANTERN_MS,
   isSeedId,
-  OUTDOOR_KINDS,
   type FoodId,
   type SeedId,
   screenToWorld,
@@ -104,6 +106,7 @@ import { createBuildMode } from './ui/buildMode.ts';
 import { createInfoPanel } from './ui/infoPanel.ts';
 import { createHotbar } from './ui/hotbar.ts';
 import { createGainPopups } from './ui/gainPopups.ts';
+import { createGemFly } from './ui/gemFly.ts';
 import { BlockViews } from './render/blockViews.ts';
 import { PlantViews } from './farm/plantViews.ts';
 import { createBagPanel } from './ui/bagPanel.ts';
@@ -323,6 +326,12 @@ async function start(): Promise<void> {
   const toast = createToast(ui);
   // Gain popups above the avatar's head (step BG3 B) and the blocks (step BG5).
   const popups = createGainPopups(ui, prefs.popups);
+  // Gems flying from a punched block, a harvest or a felled tree to the avatar (step BG4; the wallet has them already).
+  const gemFly = createGemFly(ui);
+  const flyGems = (gains: readonly { itemId: string; count: number }[], at: Point): void => {
+    const n = gains.filter((g) => g.itemId === GEMS_GAIN_ID).reduce((a, g) => a + g.count, 0);
+    if (n > 0) gemFly.launch(worldToScreen(at, shown), n);
+  };
   const bubbles = createChatBubbles(ui);
   const label = createDebugLabel(ui);
   const blockerButtons = createBlockersButton(ui, { onToggle: (on) => blockers.setOn(on), onClear: () => blockers.clear() });
@@ -389,10 +398,13 @@ async function start(): Promise<void> {
       sound: (name) => sound.play(name),
       dpr,
       backTo: () => ROOM_NAMES[room.kind].toLowerCase(),
-      onDone: async () => {
+      popups,
+      onDone: async (result) => {
         setDungeonMode(false);
         items = await api.getItems();
         await openRoom(room.id);
+        // Banking at the exit (step BG3b): what came home shows above the head in the room.
+        popups.show(bagGains(result.banked));
       },
     },
     avatar.look,
@@ -561,6 +573,7 @@ async function start(): Promise<void> {
           toast('Not enough gold.');
           return;
         }
+        popups.show(r.gains);
         items = await api.getItems();
         await refreshInventory();
         await refreshHint();
@@ -592,6 +605,7 @@ async function start(): Promise<void> {
       if (!sure) return;
       const qty = sure === 'more' ? SEED_PACK : 1;
       const ok = await api.buySeeds(seed, qty);
+      if (ok) popups.show(ok);
       toast(ok ? `${m.name}: ${qty} in your ${inventory.hotbar.includes(seed) || !inventory.bag.materials.includes(seed) ? 'hotbar' : 'bag'}. Select it in the hotbar and tap soil on your farm.` : 'Not enough gold.');
       await refreshInventory();
     },
@@ -632,7 +646,6 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
-          backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
         }
         toast(`Your new ${kind} is on! Switch it any time in the Room panel.`);
         await refreshShop();
@@ -676,7 +689,6 @@ async function start(): Promise<void> {
           room = next;
           view.setRoom(room);
           atmosphere.setRoom(room);
-          backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
         }
         await refreshShop();
         await refreshInventory();
@@ -689,6 +701,7 @@ async function start(): Promise<void> {
   const workshop = createWorkshopPanel(ui, {
     craft: (recipe) => {
       void api.craft(recipe.id).then(async (ok) => {
+        if (ok) popups.show(ok);
         toast(ok ? `Made: ${recipeName(recipe)}.${recipe.makesKind === 'furniture' ? ' It is in your bag.' : ' Pick it in the Room panel.'}` : 'You need more materials.');
         items = await api.getItems();
         await refreshInventory();
@@ -697,12 +710,14 @@ async function start(): Promise<void> {
     buy: async (gear) => {
       if (!(await confirmBuy(ui, { name: gear.name, detail: gearEffect(gear), price: gear.price }))) return;
       const ok = await api.buyGear(gear.id);
+      if (ok) popups.show(ok);
       toast(ok ? `${gear.name}: yours.` : 'Not enough gold.');
       await refreshInventory();
     },
     // The Forge (step 9c).
     smelt: (bar) => {
       void api.smelt(bar).then(async (ok) => {
+        if (ok) popups.show(ok);
         toast(ok ? `Smelted: ${getMaterialType(bar).name}.` : 'You need 3 ore and the fee.');
         await refreshInventory();
       });
@@ -713,6 +728,7 @@ async function start(): Promise<void> {
         .join(' and ')}.`;
       if (!(await confirmBuy(ui, { name: piece.name, detail, price: null, yes: 'Forge' }))) return;
       const ok = await api.forge(piece.id);
+      if (ok) popups.show(ok);
       toast(ok ? `${piece.name}: yours forever.` : 'You need more bars.');
       await refreshInventory();
     },
@@ -722,6 +738,7 @@ async function start(): Promise<void> {
   // ---------- The farm, cooking and travel (step 9b) ----------
   const cooking = createCookingPanel(ui, (food) => {
     void api.cook(food.id).then(async (ok) => {
+      if (ok) popups.show(ok);
       toast(ok ? `Cooked: ${food.name}. It is in your bag.` : 'You need more crops.');
       await refreshInventory();
     });
@@ -729,10 +746,11 @@ async function start(): Promise<void> {
   panels.add('cooking', cooking.el);
   // ---------- The Book (step 9e) ----------
   const book = createBookPanel(ui, (tab, percent) => {
-    void api.claimBookReward(tab, percent).then(async (gold) => {
-      if (gold !== null) {
+    void api.claimBookReward(tab, percent).then(async (claim) => {
+      if (claim !== null) {
         sound.play('coin');
-        toast(`Book reward: +${gold} gold.`);
+        popups.show(claim.gains);
+        toast(`Book reward: +${claim.gold} gold${claim.gems > 0 ? ` and ${claim.gems} gems` : ''}.`);
       }
       await refreshInventory();
     });
@@ -768,6 +786,10 @@ async function start(): Promise<void> {
     swing: () => sprite.gesture('reach'),
     float: (at, text, rank, delayMs = 0) => roomFloats.add(at, text, 'loot', delayMs, rank),
     sound: (name) => sound.play(name),
+    gains: (g, at) => {
+      popups.show(g);
+      if (at) flyGems(g, at);
+    },
     afterChange: async () => {
       await refreshInventory();
       await refreshHint();
@@ -821,6 +843,8 @@ async function start(): Promise<void> {
   }
   async function refreshHint(): Promise<void> {
     hint.set(newIntro.running ? null : await api.currentHint());
+    // A finished quest pays gems (step BG4): the popup shows them.
+    popups.show(await api.takeGains());
   }
   /** Step 9d: "n waiting" on the Map button while customers wait at the till. */
   const mapBadge = document.createElement('span');
@@ -1328,7 +1352,6 @@ async function start(): Promise<void> {
     view.setRoom(room);
     cellGrid.setRoom(room);
     atmosphere.setRoom(room);
-    backdrop.setOutdoor(OUTDOOR_KINDS.includes(room.kind));
     itemViews.setRoom(room.id);
     blockers.setRoom(room);
     items = await api.getItems();
@@ -1434,6 +1457,7 @@ async function start(): Promise<void> {
       sound.play('pop');
     }
     popups.show(res.gains);
+    flyGems(res.gains, { x: (c + 0.5) * BUILD_CELL, y: (r + 0.5) * BUILD_CELL });
     roomChanged();
     updateBlockGhost();
     void refreshInventory();
@@ -1500,6 +1524,17 @@ async function start(): Promise<void> {
       return 'stop';
     },
   });
+  // HOLD TO WALK: holding still on the floor walks to the pointer and follows it while the press lasts.
+  let walkHold = false;
+  let walkHoldCell = '';
+  const steerWalk = (screen: Point): void => {
+    marked = screenToWorld(screen, shown);
+    const { c, r } = cellOf(marked);
+    const key = `${c},${r}`;
+    if (key === walkHoldCell && walkHold) return;
+    walkHoldCell = key;
+    void walkTo(marked);
+  };
   /** What a press on this screen point would hit (a held thing), or null. */
   const holdTargetAt = (screen: Point): HoldTarget | null => {
     if (dungeon.isActive) {
@@ -1556,13 +1591,38 @@ async function start(): Promise<void> {
       hold.start({ kind: 'line', c, r });
       return true;
     },
+    onWalkHold: (screen) => {
+      if (dungeon.isActive || selectedBlock !== null || holdBusyElsewhere() || lakeside.fishing || menu.uid !== null) return false;
+      if (hold.active) return false;
+      walkHold = true;
+      walkHoldCell = "";
+      pendingBlock = null;
+      lakeside.cancel();
+      steerWalk(screen);
+      return true;
+    },
     onHoldMove: (screen) => {
+      if (walkHold) {
+        steerWalk(screen);
+        return;
+      }
+      if (hold.repeating) {
+        const t = holdTargetAt(screen);
+        if (t) {
+          if (!dungeon.isActive) marked = screenToWorld(screen, shown);
+          hold.retarget(t);
+        }
+        return;
+      }
       const last = hold.lastCell;
       if (!last) return;
       const here = cellOf(screenToWorld(screen, shown));
       if (here.c !== last.c || here.r !== last.r) hold.push(cellsBetween(last, here).slice(1));
     },
-    onHoldEnd: () => hold.stop(),
+    onHoldEnd: () => {
+      walkHold = false;
+      hold.stop();
+    },
     onPoint: (screen, kind, target) => {
       if (dungeon.isActive) {
         if (kind !== 'tap') return;
@@ -1762,6 +1822,7 @@ async function start(): Promise<void> {
     for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, shown));
     bubbles.update(ticker.deltaMS, heads);
     popups.update(heads.get(avatar.id) ?? null);
+    gemFly.update(heads.get(avatar.id) ?? null);
     floats.update(ticker.deltaMS, (p) => worldToScreen(p, shown));
     // Behind the counter: face the customers.
     if (serving?.state === 'walking' && path.length === 0) {

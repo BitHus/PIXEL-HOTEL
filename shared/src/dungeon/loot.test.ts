@@ -145,7 +145,7 @@ describe('the run bag (section 10)', () => {
     expect(bag.slots).toHaveLength(12);
     expect(left.length).toBeGreaterThan(0);
     // A full bag still tops up a stack that has room.
-    const full = addToBag({ slots: [{ kind: 'material', id: 'wood', qty: 4 }, ...Array(11).fill({ kind: 'furniture', typeId: 'wall_torch' })], gold: 0 }, [{ item: 'wood', qty: 8 }]);
+    const full = addToBag({ slots: [{ kind: 'material', id: 'wood', qty: 4 }, ...Array(11).fill({ kind: 'furniture', typeId: 'wall_torch' })], gold: 0, gems: 0 }, [{ item: 'wood', qty: 8 }]);
     expect(full.bag.slots[0]).toEqual({ kind: 'material', id: 'wood', qty: 10 });
     expect(full.leftBehind).toEqual([{ kind: 'material', id: 'wood', qty: 2 }]);
   });

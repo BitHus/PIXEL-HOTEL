@@ -40,7 +40,7 @@ describe('starting and banking a run (sections 9 and 10)', () => {
       status: 'left' as const,
       xpGained: 20,
       player: { ...run.player, potions: 1 },
-      banked: { slots: [{ kind: 'material' as const, id: 'bone' as const, qty: 10 }, { kind: 'material' as const, id: 'bone' as const, qty: 3 }, { kind: 'furniture' as const, typeId: 'wall_torch' }], gold: 55 },
+      banked: { slots: [{ kind: 'material' as const, id: 'bone' as const, qty: 10 }, { kind: 'material' as const, id: 'bone' as const, qty: 3 }, { kind: 'furniture' as const, typeId: 'wall_torch' }], gold: 55, gems: 0 },
     };
     const s = finishRun(state, done, 2)!;
     expect(s.player.wallet.gold).toBe(90 + 55);
@@ -52,7 +52,7 @@ describe('starting and banking a run (sections 9 and 10)', () => {
 
   it('xp is kept after death; only the banked part (half the gold) comes home', () => {
     const { state, run } = startRun(withGold(100), 5, 1);
-    const dead = { ...run, status: 'dead' as const, xpGained: 7, banked: { slots: [], gold: 12 } };
+    const dead = { ...run, status: 'dead' as const, xpGained: 7, banked: { slots: [], gold: 12, gems: 0 } };
     const s = finishRun(state, dead, 2)!;
     expect(s.player).toMatchObject({ xp: 7, level: 1 });
     expect(s.player.wallet.gold).toBe(102);

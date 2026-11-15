@@ -49,6 +49,7 @@ import type { Toast } from '../ui/toast.ts';
 import { flashScreen, showExitChoice, showResume, showRunResult } from '../ui/runScreens.ts';
 import { DungeonView } from './dungeonView.ts';
 import { FloatTexts } from './floatTexts.ts';
+import type { GainPopups } from '../ui/gainPopups.ts';
 
 export interface DungeonContext {
   app: Application;
@@ -62,6 +63,8 @@ export interface DungeonContext {
   dpr(): number;
   /** The run ended and its screen was closed: back to the room the player came from. */
   onDone(result: RunResult): Promise<void>;
+  /** The gain popups above the avatar's head (step BG3b): what the run's chests, kills and rocks gave. */
+  popups: GainPopups;
   /** "hotel room" or "shop": where the result screen's button goes. */
   backTo(): string;
 }
@@ -141,6 +144,12 @@ export class DungeonScreen {
     const rock = this.view.rockAt(run, p);
     if (rock) {
       this.input({ t: 'click_rock', id: rock.id });
+      return;
+    }
+    // A gem pile (step BG4): walk onto it.
+    const pile = this.view.pickupAt(run, p);
+    if (pile) {
+      this.input({ t: 'click_point', x: pile.x, y: pile.y });
       return;
     }
     const chest = this.view.chestAt(run, p);
@@ -232,6 +241,7 @@ export class DungeonScreen {
     if (u.run.map !== before.map) this.prev = null;
     else if (u.run.timeMs !== before.timeMs) this.prev = before;
     this.run = u.run;
+    this.ctx.popups.show(u.gains);
     this.effects(u.run, before);
     this.hud();
     if (u.result) void this.finish(u.result);
@@ -259,6 +269,7 @@ export class DungeonScreen {
     this.prev = null;
     this.view.world.visible = false;
     this.floats.clear();
+    this.ctx.popups.clear();
     await this.ctx.onDone(result);
   }
 
@@ -315,12 +326,18 @@ export class DungeonScreen {
           break;
         }
         case 'loot': {
+          // Items show as popups above the head (step BG3b); gold keeps its floating text. With popups off, the text stays.
+          if (e.item !== 'gold' && this.ctx.popups.enabled()) break;
           const name = e.item === 'gold' ? `+${e.qty} gold` : isMaterialId(e.item) ? `+${e.qty} ${getMaterialType(e.item).name}` : `${getFurnitureType(e.item).name}!`;
           // Its rank colour (a rare pile of gold too); common drops keep the plain loot colour.
           const rank = e.rank ?? (e.item === 'gold' ? 'common' : rankOf(e.item));
           this.floats.add(lootAt, name, 'loot', FLOAT_STAGGER_MS * stagger++, rank === 'common' ? null : rank);
           break;
         }
+        case 'gem_pickup':
+          this.ctx.sound('coin');
+          if (!this.ctx.popups.enabled()) this.floats.add(head(), `+${e.qty} gems`, 'loot');
+          break;
         case 'left_behind':
           leftBehind.push(e.item.kind === 'material' ? getMaterialType(e.item.id).name : getFurnitureType(e.item.typeId).name);
           break;
@@ -390,5 +407,6 @@ export class DungeonScreen {
     this.view.world.scale.set(this.shown.zoom);
     this.view.world.position.set(-this.shown.x * this.shown.zoom, -this.shown.y * this.shown.zoom);
     this.floats.update(dtMs, (p) => worldToScreen(p, this.shown));
+    this.ctx.popups.update(worldToScreen({ x: this.view.playerAt.x, y: this.view.playerAt.y - 64 }, this.shown));
   }
 }

@@ -58,6 +58,8 @@ export class HoldControl {
   private approaching = false;
   private queue: { c: number; r: number }[] = [];
   private last: { c: number; r: number } | null = null;
+  /** The finger is still down on a repeating hold, even after the thing broke (it can slide to the next one). */
+  private pressed = false;
 
   constructor(private readonly deps: HoldDeps) {}
 
@@ -68,6 +70,7 @@ export class HoldControl {
   /** The press went down on something to hit: the first hit comes at once. */
   start(target: HoldTarget): void {
     this.gen++;
+    this.pressed = target.kind !== 'line';
     this.state = holdStart();
     this.target = target;
     this.busy = false;
@@ -85,11 +88,46 @@ export class HoldControl {
     if (end) this.last = end;
   }
 
+  /** True while a repeating hit (not a line of blocks) is running. */
+  get repeating(): boolean {
+    return this.pressed;
+  }
+
+  /**
+   * The finger slid onto another thing while holding: aim the hold at it without a new press. The hit
+   * timing carries over (the cooldown is kept), the avatar walks closer first if it is out of reach.
+   */
+  retarget(target: HoldTarget): void {
+    const t = this.target;
+    if (!this.pressed || target.kind === 'line') return;
+    if (!t) {
+      // The last thing broke while the finger stayed down: the next one gets its first hit at once.
+      this.start(target);
+      return;
+    }
+    const same =
+      t.kind === target.kind &&
+      (t.kind === 'tree' && target.kind === 'tree'
+        ? t.index === target.index
+        : t.kind === 'rock' && target.kind === 'rock'
+          ? t.id === target.id
+          : (t.kind === 'block' || t.kind === 'plant') && (target.kind === 'block' || target.kind === 'plant') && t.c === target.c && t.r === target.r);
+    if (same) return;
+    this.target = target;
+    this.approaching = false;
+  }
+
   get lastCell(): { c: number; r: number } | null {
     return this.last;
   }
 
   stop(): void {
+    this.pressed = false;
+    this.softStop();
+  }
+
+  /** The thing broke or is gone: no more hits, but a finger still down may slide onto the next one. */
+  private softStop(): void {
     this.gen++;
     this.state = holdStop();
     this.target = null;
@@ -126,13 +164,13 @@ export class HoldControl {
         if (res === 'retry') {
           this.state = before; // too early: the next frame asks again, the cooldown was not used
           if (hitTarget.kind === 'line') this.queue.unshift({ c: hitTarget.c, r: hitTarget.r });
-        } else if (res === 'stop') this.stop();
+        } else if (res === 'stop') this.softStop();
         else if (res === 'walk') this.approaching = true;
       },
       () => {
         if (gen !== this.gen) return;
         this.busy = false;
-        this.stop();
+        this.softStop();
       },
     );
   }

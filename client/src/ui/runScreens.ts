@@ -5,6 +5,7 @@
 import { rankName } from './rank.ts';
 import { getFurnitureType, getMaterialType, type RunBag, type RunResult } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
+import { gemIconUrl } from './itemIcon.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
 function modal(parent: HTMLElement, title: string, cls = ''): { shade: HTMLElement; box: HTMLElement } {
@@ -101,8 +102,17 @@ function list(title: string, bag: RunBag): HTMLElement {
     g.append(pixelIcon('coin'), el('span', '', `${bag.gold} gold`));
     box.append(g);
   }
+  if (bag.gems > 0) {
+    const g = el('div', 'away-total run-gem-line');
+    const img = el('img');
+    img.src = gemIconUrl();
+    img.alt = '';
+    img.draggable = false;
+    g.append(img, el('span', '', `${bag.gems} gems`));
+    box.append(g);
+  }
   for (const l of lines) box.append(rankName('div', 'run-line', l.text, l.id));
-  if (lines.length === 0 && bag.gold === 0) box.append(el('div', 'run-line', 'Nothing.'));
+  if (lines.length === 0 && bag.gold === 0 && bag.gems === 0) box.append(el('div', 'run-line', 'Nothing.'));
   return box;
 }
 

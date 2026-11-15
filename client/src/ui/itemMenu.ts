@@ -21,9 +21,12 @@ export interface ItemMenu {
   follow(item: Rect | null): void;
 }
 
-function button(text: string, onClick: () => void): HTMLButtonElement {
+function button(icon: string, title: string, onClick: () => void): HTMLButtonElement {
   const b = document.createElement('button');
-  b.textContent = text;
+  b.className = 'round';
+  b.textContent = icon;
+  b.title = title;
+  b.setAttribute('aria-label', title);
   b.addEventListener('click', onClick);
   return b;
 }
@@ -43,8 +46,10 @@ export function createItemMenu(parent: HTMLElement, hooks: ItemMenuHooks): ItemM
   const act = (f: (uid: number) => void) => () => {
     if (uid !== null) f(uid);
   };
-  const pickUp = button('Pick up', act(hooks.onPickUp));
-  buttons.append(button('Rotate', act(hooks.onRotate)), pickUp);
+  const pickUp = button('⤓', 'Pick up', act(hooks.onPickUp));
+  const done = button('✓', 'Done', () => self.close());
+  done.classList.add('ok');
+  buttons.append(button('↻', 'Rotate', act(hooks.onRotate)), done, pickUp);
   menu.append(buttons, card);
   menu.hidden = true;
   parent.appendChild(menu);
