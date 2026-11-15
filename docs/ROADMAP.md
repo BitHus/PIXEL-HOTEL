@@ -126,7 +126,7 @@ The long-term goal: a real online hotel.
 
 ## NEEDS THE OWNER'S DECISION (conflicts with CLAUDE.md; do not build until decided)
 - Packs with random contents (BG8): section 13 says no loot boxes. Planner's advice: allow only
-  with gems earned in play, visible odds and no repeats of owned clothes (BLOCKS-PLAN 3.8).
+  with gems earned in play, visible odds and duplicates allowed, spares for later trading (BLOCKS-PLAN 3.8; owner agreed).
 - Gems as a second currency next to gold (section 9): asked for; gold stays the tavern money.
 - The block world answers a to d in BLOCKS-PLAN section 5.
 - Mystery boxes: section 13 says no loot boxes. Only as a free reward with visible odds, or not.

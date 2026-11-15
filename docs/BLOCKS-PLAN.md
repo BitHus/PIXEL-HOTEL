@@ -146,9 +146,12 @@ Everything stays original (names, art); no Growtopia item names or splice recipe
   pool, rankWeights }. Pure function openPack(state, packId, rng).
 - Opening: confirm first (ui/confirmBuy.ts), then the pack opens with a short pop and the
   items float above the head (3.3) and land in the bag.
-- Fairness rules (this is why it is not a loot box in the brief's sense, see section 5):
-  gems are earned in play only, odds are shown, clothes packs only roll pieces you do NOT own yet
-  until the category is complete (then gems back), no daily limit tricks, no timers that push.
+- Fairness rules (owner, 15 Nov: DUPLICATES ARE ALLOWED, they are a reason to buy more packs and
+  they become trade goods when trading exists, phase 6.7): gems are earned in play only, never
+  bought with money; contents and odds are shown on the pack card before buying; no timers or
+  limited offers that push buying. Clothes packs may give a piece you already own: the first
+  copy unlocks it forever, extra copies stay in the bag as spares (x2, x3). Until trading
+  exists a spare can be sold at the stall for gold (baseValue, config) or kept.
 - Clothes are unlocked forever (as now); packs are one of several ways to get them.
 
 ### 3.9 Social (phase 6 additions)
