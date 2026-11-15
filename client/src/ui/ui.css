@@ -992,6 +992,21 @@
   gap: 4px;
 }
 
+.item-buttons button.round {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.item-buttons button.round.ok {
+  background: var(--ok);
+  color: var(--cream);
+}
+
 .item-card {
   display: flex;
   align-items: center;
