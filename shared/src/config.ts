@@ -66,6 +66,8 @@ export const GUEST_ORDER_AFTER_MIN_MS = 3000;
 export const GUEST_ORDER_AFTER_MAX_MS = 6000;
 /** A tap on a brewing barrel acts at once when the avatar is this close (px) to its centre; else the avatar walks next to it first. */
 export const BARREL_REACH_PX = 64;
+/** A tap on a keg rack acts at once when the avatar is this close (px) to its centre; else the avatar walks next to it first (step K2b). */
+export const CASK_REACH_PX = 64;
 /** A guest waits this long for the order (only while the player is in the tavern), then leaves unhappy. */
 export const GUEST_PATIENCE_MS = 90_000;
 /** With this much patience left the guest calls for the order once. */

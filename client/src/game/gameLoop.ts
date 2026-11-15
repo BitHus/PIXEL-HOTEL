@@ -10,7 +10,7 @@ export async function setupGameLoop(g: G16) {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
     guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
     doBlock, placeBar, menu, orders, bubbles, popups, gemFly, splashGone, openRoom,
-    playNewGameIntro, stoveArrived, barrelArrived, pour, api, setDungeonMode, notice, toast, st,
+    playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, api, setDungeonMode, notice, toast, st,
   } = g;
 
   app.renderer.on('resize', fit);
@@ -71,6 +71,11 @@ export async function setupGameLoop(g: G16) {
       const uid = st.pendingBarrel;
       st.pendingBarrel = null;
       void barrelArrived(uid);
+    }
+    if (st.pendingCask !== null && st.path.length === 0 && st.avatar.state !== 'walk') {
+      const uid = st.pendingCask;
+      st.pendingCask = null;
+      void caskArrived(uid);
     }
     if (st.pendingBlock && st.path.length === 0 && st.avatar.state !== 'walk') {
       const p = st.pendingBlock;

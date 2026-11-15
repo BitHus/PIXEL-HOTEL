@@ -40,6 +40,7 @@ late.startPlacing = startPlacing;
   st.pendingBlock = null;
   st.pendingStove = null;
   st.pendingBarrel = null;
+  st.pendingCask = null;
   const selectBlock = (id: string | null, slot: number | null): void => {
     st.selectedBlock = id;
     selectedSlot = id === null ? null : slot;

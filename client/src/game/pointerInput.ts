@@ -142,6 +142,7 @@ export async function setupPointerInput(g: G15) {
       st.pendingBlock = null;
       st.pendingStove = null;
       st.pendingBarrel = null;
+      st.pendingCask = null;
       lakeside.cancel();
       if (blockTap(st.marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).

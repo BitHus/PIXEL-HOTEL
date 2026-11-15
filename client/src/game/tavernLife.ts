@@ -3,12 +3,13 @@
 
 import {
   REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, kitchenZone, SERVE_QUEUE_MAX, seatKey,
-  tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
+  tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, CASK_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen,
 } from '@pixel-hotel/shared';
 import { createBrewingPanel } from '../ui/brewingPanel.ts';
 import { createMenuPanel } from '../ui/menuPanel.ts';
+import { createCaskPanel } from '../ui/caskPanel.ts';
 import { createTapsPanel, TAP_EMPTY_TEXT } from '../ui/tapsPanel.ts';
 import { PourFx } from '../render/pourFx.ts';
 import { flyCoin } from '../ui/coinFly.ts';
@@ -64,6 +65,7 @@ export async function setupTavernLife(g: G9) {
     refreshCooks();
     brewing.setBrews(st.tavern.brews);
     refreshTaps();
+    refreshCasks();
     maybeIntro();
     if (panels.open === 'menu') void refreshMenu();
   }
@@ -120,6 +122,7 @@ export async function setupTavernLife(g: G9) {
   setInterval(() => {
     if (panels.open === 'cooking') cooking.tick();
     if (panels.open === 'brewing') brewing.tick();
+    if (panels.open === 'casks') casks.tick();
   }, 1000);
   // ---------- Brewing (step 9t C): barrels brew drinks in real time; a tap collects or opens the Brewing panel ----------
   const brewing = createBrewingPanel(ui, {
@@ -168,6 +171,52 @@ export async function setupTavernLife(g: G9) {
     void walkTo({ x: barrel.x, y: barrel.y + 16 }).then((ok) => {
       if (!ok) toast('There is no way to the barrel.');
       else st.pendingBarrel = barrel.uid;
+    });
+  };
+  // ---------- The casks (step K2b): a keg rack holds CASK_SLOTS casks that ripen in real time; a tap opens the Cask panel ----------
+  const casks = createCaskPanel(ui, {
+    fill: (rackUid, slot, drink, qty) => {
+      void api.fillCask(rackUid, slot, drink, qty).then(async (ok) => {
+        sound.play(ok ? 'pop' : 'click');
+        toast(ok ? `${qty} x ${getDrinkType(drink).name} are ripening in the cask.` : 'That did not fit in the cask.');
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
+    collect: (rackUid, slot) => {
+      void api.collectCask(rackUid, slot).then(async (r) => {
+        if (!r) {
+          toast('There is nothing to collect.');
+          return;
+        }
+        sound.play('pop');
+        popups.show(r.gains);
+        toast(`${r.mugs} x ${getMaterialType(r.item).name} are in your bag. Load them on a tap.`);
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
+  });
+  panels.add('casks', casks.el);
+  const refreshCasks = (): void => casks.update(st.tavern.casks, st.inventory.materials);
+  /** The avatar is next to the keg rack: the Cask panel opens. */
+  async function caskArrived(uid: number): Promise<void> {
+    await refreshTavern();
+    casks.open(uid);
+    refreshCasks();
+    panels.show('casks');
+  }
+  /** A tap on a keg rack: walk next to it (when farther than CASK_REACH_PX), then open the panel. */
+  const caskTap = (rack: FurnitureItem): void => {
+    const c = footprintCenter(rack, rack.typeId);
+    if (Math.hypot(st.avatar.x - c.x, st.avatar.y - c.y) <= CASK_REACH_PX) {
+      st.pendingCask = null;
+      void caskArrived(rack.uid);
+      return;
+    }
+    void walkTo({ x: rack.x, y: rack.y + 16 }).then((ok) => {
+      if (!ok) toast('There is no way to the keg rack.');
+      else st.pendingCask = rack.uid;
     });
   };
   // ---------- The taps (step T1): tap a tap stand on the bar; the register opens the bar's panel ----------
@@ -296,6 +345,10 @@ export async function setupTavernLife(g: G9) {
       barrelTap(hit);
       return true;
     }
+    if (hit && getFurnitureType(hit.typeId).casks) {
+      caskTap(hit);
+      return true;
+    }
     if (hit && getFurnitureType(hit.typeId).taps) {
       standTap();
       return true;
@@ -396,5 +449,5 @@ export async function setupTavernLife(g: G9) {
     }
   });
 
-  return { pour, guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived };
+  return { pour, guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived, caskArrived };
 }

@@ -21,7 +21,7 @@ import type { BlockProblem } from './blocks.ts';
 import type { Guest, Mess } from './tavern.ts';
 import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
-import type { CaskView } from './casks.ts';
+import type { Cask, CaskView } from './casks.ts';
 import type { Tap } from './taps.ts';
 import type { TavernEvent } from './guests.ts';
 import type { SellKind, SellResult, SellRow } from './trader.ts';
@@ -81,6 +81,8 @@ export interface TavernView {
   cooks: Cook[];
   /** The drinks on the taps (stand uid, slot, drink, mugs; step T1). */
   taps: Tap[];
+  /** The casks ripening on the keg racks (rack uid, slot, drink, mugs, start; step K2). */
+  casks: Cask[];
   /** The tavern's appeal 0..100 (placed items, decor too, plus the styles; it sets how fast guests come). */
   appeal: number;
   /** The API's clock when this was read (to count down a brew). */
