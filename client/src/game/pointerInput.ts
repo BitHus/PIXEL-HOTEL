@@ -4,7 +4,7 @@
 import { blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween } from '@pixel-hotel/shared';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
-import { doorGoalAt } from './doorGoal.ts';
+import { walkDoorGoal } from './doorGoal.ts';
 
 export async function setupPointerInput(g: G15) {
   const {
@@ -172,7 +172,8 @@ export async function setupPointerInput(g: G15) {
       }
       const to = st.marked;
       void walkTo(to).then((ok) => {
-        if (ok) st.pendingDoor = doorGoalAt(st.room, to);
+        const door = walkDoorGoal(st.room, to, ok, true);
+        if (door !== null) st.pendingDoor = door;
       });
     },
     getDragMode: (target) => {

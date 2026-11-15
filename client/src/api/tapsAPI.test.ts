@@ -106,6 +106,20 @@ describe('taps through the GameAPI (step T1)', () => {
     expect((await tavern()).serveQueue).toEqual([]);
   });
 
+  it('the stand is picked up while the order is in flight: its mugs go back to the bag, the order stays open, no softlock', async () => {
+    const { api, until, tavern, stand, firstOrder, mugs } = await openTavern();
+    const guest = await firstOrder();
+    expect(await api.serveGuest(guest.id)).toBe(true);
+    await api.pickUpItem(stand().uid);
+    await until(() => false, 3000);
+    expect(await mugs()).toBe(0);
+    const g = (await tavern()).guests.find((x) => x.id === guest.id);
+    expect(g?.phase).toBe('order');
+    expect((await tavern()).holding).toBeNull();
+    expect((await tavern()).serveQueue).toEqual([]);
+    expect(JSON.stringify((await api.getInventory()).bag)).toContain('root_ale');
+  });
+
   it('a tap on the floor while pouring ends the errand: no mug is taken, the order stays open', async () => {
     const { api, events, until, tavern, firstOrder, mugs } = await openTavern();
     const guest = await firstOrder();

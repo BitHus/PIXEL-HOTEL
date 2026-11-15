@@ -41,4 +41,27 @@ describe('casks through the GameAPI (step K2)', () => {
     const away = LocalGameAPI.open(memoryStorage({ [saveKey()]: toSaveText(start(), 0) }), () => t, seededRng(4)).api;
     expect(await away.fillCask(70, 0, 'root_ale', 7)).toBe(false);
   });
+
+  it('G1 offline catch-up: closed for 2 minutes, seats fill only; taps, cask and the ledger keep every mug', async () => {
+    t = 1000;
+    const storage = memoryStorage({ [saveKey()]: toSaveText(start(), 0) });
+    const first = LocalGameAPI.open(storage, () => t, seededRng(4)).api;
+    await first.enterRoom((await first.getPlayer()).shopRoomId);
+    expect(await first.fillCask(70, 0, 'root_ale', 7)).toBe(true);
+    const tapMugs = async (api: typeof first) => (await api.getTavern()).taps.reduce((n, x) => n + x.mugs, 0);
+    const before = await tapMugs(first);
+    expect(before).toBe(7);
+    t += 2 * MIN;
+    const second = LocalGameAPI.open(storage, () => t, seededRng(4)).api;
+    await second.enterRoom((await second.getPlayer()).shopRoomId);
+    const view = await second.getTavern();
+    expect(view.guests.length).toBeGreaterThan(0);
+    expect(view.guests.every((g) => g.phase === 'order' || g.phase === 'eat' || g.phase === 'leave')).toBe(true);
+    expect(await tapMugs(second)).toBe(before); // no serving while away
+    expect(view.serveQueue).toEqual([]);
+    expect(view.holding).toBeNull();
+    expect((await second.getCasks()).find((c) => c.slot === 0)).toMatchObject({ drink: 'root_ale', mugs: 7, tier: 'fresh' });
+    const end = second.snapshot();
+    expect(ledgerMaterials(end)).toEqual(end.player.materials);
+  });
 });

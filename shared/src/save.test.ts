@@ -807,3 +807,28 @@ describe('migrates a version 26 save (MB-2, Inn doors)', () => {
     if (clean.ok) expect(clean.state).toEqual(base);
   });
 });
+
+describe('migrates a version 25 save (K2, casks) and the whole chain 24 -> 27 (G1)', () => {
+  it('a v25 save without casks gets an empty list; a save with casks keeps them', () => {
+    const base = createNewPlayer(undefined, 1);
+    const { casks: _c, ...tavern } = base.tavern;
+    const r = readSave(JSON.stringify({ version: 25, savedAt: 9, state: { ...base, tavern } }));
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 25 });
+    if (!r.ok) return;
+    expect(r.state.tavern.casks).toEqual([]);
+    expect(r.state.items).toEqual(base.items);
+    expect(MIGRATIONS[25]!(base)).toMatchObject({ tavern: { casks: base.tavern.casks } });
+  });
+
+  it('a v24 save (no Inn name, no casks) walks every step to the current version and reads clean again', () => {
+    const base = createNewPlayer(undefined, 1);
+    const { casks: _c, ...tavern } = base.tavern;
+    const { innName: _n, ...player } = base.player;
+    const r = readSave(JSON.stringify({ version: 24, savedAt: 9, state: { ...base, player, tavern } }));
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 24 });
+    if (!r.ok) return;
+    expect(r.state.player.innName).toBe('The Inn');
+    expect(r.state.tavern.casks).toEqual([]);
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
+  });
+});

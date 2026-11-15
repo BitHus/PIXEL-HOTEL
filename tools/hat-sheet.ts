@@ -9,8 +9,8 @@ import { DARK_WARM } from '../client/src/render/bareStyles.ts';
 
 const out = process.argv[2] ?? 'hats.png';
 const S = Number(process.argv[3] ?? 4);
-const CW = 36, CH = 44, COLS = 4, VIEWS = 4;
-const W = HAT_IDS.length * CW * 0 + COLS * CW * 1 * 0 + VIEWS * CW * S;
+const CW = 36, CH = 46, VIEWS = 4;
+const W = VIEWS * CW * S;
 const H = HAT_IDS.length * CH * S;
 const buf = new Uint8Array(W * H * 3);
 for (let i = 0; i < W * H; i++) buf.set([60, 44, 52], i * 3);
@@ -29,12 +29,12 @@ function draw(ox: number, oy: number, ps: Part[]): void {
 HAT_IDS.forEach((id, r) => {
   const views: [Facing3, boolean][] = [['down', false], ['up', false], ['right', false], ['down', true]];
   views.forEach(([f, locked], v) => {
-    const ox = (v * CW + CW / 2) * S, oy = (r * CH + 40) * S - 0;
+    const ox = (v * CW + CW / 2) * S, oy = (r * CH + 76) * S;
     // feet at oy offset so the head (y -60) fits: shift by +20 px
     const base = avatarParts(START_LOOK, f);
     const shifted = (ps: Part[]): Part[] => ps.map(([x, y, w, h, c]): Part => [x, y + 0, w, h, c]);
-    draw(ox, oy + 20 * S, shifted(base));
-    draw(ox, oy + 20 * S, hatBoxes(id, f, locked) ?? []);
+    draw(ox, oy, shifted(base));
+    draw(ox, oy, hatBoxes(id, f, locked) ?? []);
   });
 });
 // PNG

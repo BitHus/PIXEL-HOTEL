@@ -107,6 +107,12 @@ export async function setupRoomFlow(g: G13) {
     menu.close();
     bubbles.clear();
     chat.clear();
+    // A walk that was heading for a door, stove, barrel, cask or block belongs to the old room.
+    st.pendingDoor = null;
+    st.pendingStove = null;
+    st.pendingBarrel = null;
+    st.pendingCask = null;
+    st.pendingBlock = null;
     const state = arrived ?? (await api.enterRoom(roomId));
     st.room = state.room;
     st.bounds = roomBoundsRect(st.room);
