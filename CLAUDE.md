@@ -233,8 +233,8 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   splash, 9d (shop life) and fixes, 9e (ranks, Book), 9f (lakeside), 1.0 (housekeeping), BG1 (the
   32 px cell grid; NOTES BG1), BG2 (every item is a coloured square: icon { shape, colors } in the
   data, drawn by render/drawIcon.ts; NOTES BG2).
-- Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
-  texts) next, on the cell grid.
+- Step 9t (tavern): A (shared rules) and B (the room, guests, serving, coins in the client; NOTES STEP 9t)
+  done; C (brewing and Menu panels, toast, texts, simulate-economy) next, on the cell grid.
 - BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
   packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
   is done. Next: 9t B/C (the tavern client), then 9g.

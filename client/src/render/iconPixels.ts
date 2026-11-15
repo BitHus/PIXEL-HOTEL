@@ -103,6 +103,9 @@ const DRAW: Record<IconShape, Draw> = {
     p.rect(8, 11, 14, 15, a); p.rect(8, 8, 14, 4, b);
     p.rect(22, 13, 6, 2, a); p.rect(26, 13, 2, 9, a); p.rect(22, 20, 6, 2, a);
   },
+  coin: (p, a, b) => {
+    p.oval(16, 16, 10, 10, a); p.oval(16, 16, 6, 6, b); p.rect(15, 11, 2, 10, a); p.rect(10, 9, 2, 2, WHITE);
+  },
   gem: (p, a, b) => {
     p.poly([[6, 12], [11, 5], [21, 5], [26, 12], [16, 27]], a); p.poly([[11, 5], [21, 5], [26, 12], [6, 12]], b); p.rect(10, 8, 2, 2, WHITE);
   },

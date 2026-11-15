@@ -253,6 +253,14 @@ function clampInto(v: number, lo: number, size: number): number {
   return Math.min(lo + size - TABLE_SPOT_INSET_PX, Math.max(lo + TABLE_SPOT_INSET_PX, v));
 }
 
+/** The way a guest on a seat looks: toward their table spot (the dominant axis), whatever way the stool was turned. */
+function facingToward(from: Point, to: Point, fallback: Facing): Facing {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (dx === 0 && dy === 0) return fallback;
+  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
+}
+
 const SEAT_CACHE = new WeakMap<readonly FurnitureItem[], Map<number, TavernSeat[]>>();
 
 /**
@@ -286,7 +294,8 @@ export function tavernSeats(items: readonly FurnitureItem[], roomId: number): Ta
       }
       if (!best) continue;
       const r = best.rect;
-      out.push({ uid: item.uid, index: s.index, x: s.x, y: s.y, facing: s.facing, tableUid: best.uid, spot: { x: clampInto(s.x, r.x, r.w), y: clampInto(s.y, r.y, r.h) } });
+      const spot = { x: clampInto(s.x, r.x, r.w), y: clampInto(s.y, r.y, r.h) };
+      out.push({ uid: item.uid, index: s.index, x: s.x, y: s.y, facing: facingToward(s, spot, s.facing), tableUid: best.uid, spot });
     }
   }
   perRoom.set(roomId, out);

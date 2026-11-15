@@ -4,7 +4,7 @@
 // Rendering only: the numbers come from the API. A real-time age (performance.now()), so a hidden
 // page never piles popups up. Settings "Popups" switches them off.
 
-import { GEMS_GAIN_ID, POPUP_MAX, POPUP_MS, sparkles, type Gain, type GainList, type Point } from '@pixel-hotel/shared';
+import { GEMS_GAIN_ID, GOLD_GAIN_ID, POPUP_MAX, POPUP_MS, sparkles, type Gain, type GainList, type Point } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { gainIconUrl } from './itemIcon.ts';
 import { rankClassOf } from './rank.ts';
@@ -31,7 +31,7 @@ export interface GainPopups {
 export function gainChip(g: Gain): HTMLElement {
   const chip = el('div', `gain-chip ${rankClassOf(g.rank)}`);
   const img = el('img');
-  img.src = gainIconUrl(g.itemId, g.itemId === GEMS_GAIN_ID ? undefined : g.rank);
+  img.src = gainIconUrl(g.itemId, g.itemId === GEMS_GAIN_ID || g.itemId === GOLD_GAIN_ID ? undefined : g.rank);
   img.alt = '';
   img.draggable = false;
   chip.append(img, el('span', '', g.count > 1 ? `x${g.count}` : ''));
