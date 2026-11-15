@@ -1156,10 +1156,11 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
     RoomView.shadowLayer (under the objects) for blocking floor items, the pot and avatars
     (AvatarSprite(look, false) = no built-in shadow; the dungeon keeps the built-in one). Dust:
     1 px specks in RoomView.airLayer, the walk puff in shadowLayer.
-  - client/src/render/backdrop.ts (Backdrop): indoors calm dark planks (low contrast), outdoors
-    (setOutdoor(true), the farm: main.ts calls it after every atmosphere.setRoom) darker grass
-    with code-drawn tree crowns and bushes on a seamless 256 px tile; it moves with the camera,
-    plus a stepped vignette (lighter outdoors), baked into ONE opaque screen picture that is redrawn only when the camera moves. Under
+  - client/src/render/backdrop.ts (Backdrop): the VOID (old-Habbo feel), same in every room: flat
+    deep night colour (PALETTE[25]) with a sprinkle of 1 texel specks (SPECKS per 192 px tile,
+    drawn 2 screen px wide, mostly dim), drifting at PARALLAX 0.15 of the camera, whole screen px.
+    Replaced the old planks (indoors) and grass with trees (outdoors). A mild stepped vignette,
+    baked with it into ONE opaque screen picture that is redrawn only when the camera moves. Under
     view.world on the stage; hidden in the dungeon / mine (they keep their own look).
   - CustomerViews: standing customers shift 1 px sideways now and then (AvatarSprite.setShift).
   - Sound: client/src/audio/sound.ts (Sound; Web Audio, no files): step, coin, bell (a soft
@@ -1393,3 +1394,13 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   Older tests adjusted: home furniture tests now filter inCatalog, atmosphere lights, seats list, mine hint.
 - NOT CHECKED: the screen by eye (a headless screenshot was blocked), a real phone. Balance numbers (seed values, SPLICE_*
   config, GEMS.splice) are first guesses for BG9.
+
+## BG4c: block drops like Growtopia (owner's request, 15 Nov)
+
+- A broken block no longer always returns itself: every part is its own roll (config BLOCK_DROPS by the block's rank):
+  the block, its seed, extra drops, gems. So a break gives nothing, the block, the seed, both, and/or gems.
+  common 60% block / 15% seed / 25% gems (1-2); rare 50 / 12 / 35% (2-5); ultra_rare 45 / 10 / 50% (4-8);
+  legendary 40 / 8 / 60% (7-12). Pure `blockDrops`, `blockGemDrop`, `gemPieces` (shared/src/gems.ts, blocks.ts).
+- Gem colours (GEM_TIERS): pieces of 1 (green), 5 (blue), 10 (red); the amount is split biggest first (7 = 5+1+1).
+  ui/gemFly.ts flies one picture per piece (at most 5) from the broken cell to the head. BLOCK_SEED_CHANCE is gone.
+- BG9 still tunes these numbers (blocks now cost gold to replace: a sink).

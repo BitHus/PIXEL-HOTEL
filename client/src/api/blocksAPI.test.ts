@@ -81,7 +81,7 @@ describe('blocks through the GameAPI', () => {
       if (r.kind === 'broken') break;
     }
     expect(hits).toEqual(['cracked', 'cracked', 'cracked', 'broken']);
-    expect((await api.getInventory()).materials.stone).toBe(30);
+    expect((await api.getInventory()).materials.stone).toBeGreaterThanOrEqual(29); // the block comes back by chance
     expect(await api.hitBlock(9, 9)).toEqual({ kind: 'refused', problem: 'no_block' });
   });
 
@@ -126,13 +126,14 @@ describe('blocks through the GameAPI', () => {
     const { api } = open(s, 11);
     await api.enterRoom(s.player.hotelRoomId);
     let gems = 0;
+    let dirt = 0;
     for (let i = 0; i < 60; i++) {
       await api.placeBlock(9, 9, 'dirt');
       const r = await api.hitBlock(9, 9);
       t += BLOCK_HIT_COOLDOWN_MS;
       expect(r.kind).toBe('broken');
       if (r.kind === 'broken') {
-        expect(r.gains.find((g) => g.itemId === 'dirt')).toEqual({ itemId: 'dirt', count: 1, rank: 'common' });
+        dirt += r.gains.find((g) => g.itemId === 'dirt')?.count ?? 0;
         gems += r.gains.find((g) => g.itemId === 'gems')?.count ?? 0;
       }
     }
@@ -141,7 +142,7 @@ describe('blocks through the GameAPI', () => {
     expect(p.wallet.gems).toBe(gems);
     const snap = api.snapshot();
     expect(snap.ledger.reduce((a, e) => a + (e.gemsDelta ?? 0), 0)).toBe(gems);
-    expect(ledgerMaterials(snap).dirt).toBe(30);
+    expect(ledgerMaterials(snap).dirt).toBe(30 - 60 + dirt); // 60 placed, some came back
     expect(ledgerGold(snap)).toBe(p.wallet.gold);
   });
 

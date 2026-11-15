@@ -820,8 +820,23 @@ export const BLOCK_REACH = 3;
 export const BLOCK_HIT_COOLDOWN_MS = 250;
 /** A half-broken block heals (its hits reset) when it was not hit for this long. */
 export const BLOCK_HEAL_MS = 6000;
-/** Chance that a broken block drops its seed (when the block has a seedId). */
-export const BLOCK_SEED_CHANCE = 0.2;
+/**
+ * What a broken block drops, by the block's rank (Growtopia style: every part is its own roll, so a break gives the
+ * block, the seed, both, gems, or nothing). block = chance the block itself comes back, seed = chance of its seed,
+ * gem = chance of gems and gemMin..gemMax = how many (both included). BG9 tunes these.
+ */
+export const BLOCK_DROPS = {
+  common: { block: 0.6, seed: 0.15, gem: 0.25, gemMin: 1, gemMax: 2 },
+  rare: { block: 0.5, seed: 0.12, gem: 0.35, gemMin: 2, gemMax: 5 },
+  ultra_rare: { block: 0.45, seed: 0.1, gem: 0.5, gemMin: 4, gemMax: 8 },
+  legendary: { block: 0.4, seed: 0.08, gem: 0.6, gemMin: 7, gemMax: 12 },
+} as const;
+/** Gem pieces on the ground: a drop is split into the biggest pieces first. Each value has its own colour (palette name). */
+export const GEM_TIERS = [
+  { value: 10, colors: ['red', 'rose'] },
+  { value: 5, colors: ['cyan', 'sky'] },
+  { value: 1, colors: ['green', 'lime'] },
+] as const;
 /**
  * Where gems come from (step BG4): the chance of a drop and its size (min to max, both included) before the rank
  * bonus. Small on purpose; BG9 tunes them. The rank of the thing that dropped it multiplies the amount (GEM_RANK_MULT).

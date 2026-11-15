@@ -244,10 +244,14 @@
   width: var(--slot);
   height: var(--slot);
   box-sizing: border-box;
-  background: var(--cream);
-  border: 1px solid var(--wood);
+  /* A recessed parchment cell: dark rim, shadow inside the top-left, light inside the bottom-right. */
+  background: radial-gradient(circle at 40% 35%, #f6e8c8 0%, var(--cream) 55%, #d9b98a 100%);
+  border: 2px solid var(--outline);
+  border-radius: 2px;
   box-shadow:
-    inset -1px -1px 0 var(--wood-hi);
+    inset 2px 2px 0 rgba(115, 62, 57, 0.45),
+    inset -2px -2px 0 rgba(255, 244, 214, 0.7),
+    0 1px 0 rgba(254, 231, 97, 0.18);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -264,12 +268,13 @@
 
 /* A tray of slots: darker than the panel, so the light slots stand out. */
 .tray {
-  background: var(--wood-mid);
-  border: 1px solid var(--wood);
+  background: linear-gradient(180deg, #a8684c 0%, var(--wood-light) 100%);
+  border: 2px solid var(--wood);
   box-shadow:
-    inset 1px 1px 0 var(--wood-light),
-    inset -1px -1px 0 var(--wood-hi);
-  padding: 3px;
+    inset 2px 2px 0 rgba(62, 39, 49, 0.4),
+    inset -2px -2px 0 var(--wood-hi),
+    0 0 0 1px var(--outline);
+  padding: 4px;
 }
 
 /* A light label plate (picker values); dark plates are for names and titles. */
@@ -283,8 +288,10 @@
 
 .slot.selected {
   border-color: var(--outline);
-  box-shadow: inset 0 0 0 var(--px) var(--select);
-  background: var(--warm);
+  box-shadow:
+    inset 0 0 0 2px var(--select),
+    inset 0 0 0 4px rgba(255, 244, 214, 0.55);
+  background: radial-gradient(circle at 40% 35%, #ffd98a 0%, var(--warm) 70%, #e8902a 100%);
 }
 
 .slot.carried {
@@ -306,6 +313,8 @@
   object-fit: contain;
   image-rendering: pixelated;
   pointer-events: none;
+  /* A hard 1 art-pixel drop shadow under the item, so it sits on the cell. */
+  filter: drop-shadow(0 2px 0 rgba(62, 39, 49, 0.4));
 }
 
 .slot > .pixel-icon {
@@ -2619,10 +2628,12 @@
 .slot.rank-rare,
 .slot.rank-ultra_rare,
 .slot.rank-legendary {
-  border-color: var(--rank);
+  border-color: var(--outline);
+  /* A rank ring inside the dark rim, plus a soft glow behind the item. */
   box-shadow:
-    inset 0 0 0 1px var(--rank),
-    inset -1px -1px 0 var(--wood-hi);
+    inset 0 0 0 2px var(--rank),
+    inset 0 0 8px 1px var(--rank),
+    inset -3px -3px 0 rgba(255, 244, 214, 0.35);
 }
 
 /* A name in the rank colour. Gold is light: it gets a dark outline so it reads on parchment. */

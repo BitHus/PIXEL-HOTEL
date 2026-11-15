@@ -3,9 +3,9 @@
 // the ledger), so nothing is lost if the page closes: this is only the picture. In the dungeon and the mine the
 // gems are real piles on the floor (render/dungeonView.ts). Rendering only; an HTML layer over the canvas.
 
-import type { Point } from '@pixel-hotel/shared';
+import { gemPieces, type Point } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
-import { gemIconUrl } from './itemIcon.ts';
+import { gemPieceIconUrl } from './itemIcon.ts';
 
 /** How long one gem takes from the spot to the head (ms). */
 export const GEM_FLY_TOTAL_MS = 450;
@@ -17,7 +17,7 @@ interface Flying {
 }
 
 export interface GemFly {
-  /** Sends `count` gems (at most 3 pictures) from a screen point (CSS px). Ignored while the page is hidden. */
+  /** Sends `count` gems (one picture per piece, at most 5) from a screen point (CSS px). Ignored while the page is hidden. */
   launch(from: Point, count: number): void;
   /** Call every frame with the avatar's head on screen (CSS px), or null. */
   update(head: Point | null): void;
@@ -32,14 +32,16 @@ export function createGemFly(parent: HTMLElement): GemFly {
     launch(from, count) {
       if (document.hidden || count <= 0) return;
       const now = performance.now();
-      for (let i = 0; i < Math.min(3, count); i++) {
+      // One picture per piece (biggest first, at most 5): 1 gem is green, 5 blue, 10 red.
+      const pieces = gemPieces(count).slice(0, 5);
+      for (let i = 0; i < pieces.length; i++) {
         const node = el('img', 'gem-fly');
-        node.src = gemIconUrl();
+        node.src = gemPieceIconUrl(pieces[i]!.colors);
         node.alt = '';
         node.draggable = false;
         layer.appendChild(node);
         // Staggered by a short delay: the later ones start in the past (born in the future).
-        list.push({ node, from: { x: from.x + (i - 1) * 8, y: from.y }, born: now + i * 90 });
+        list.push({ node, from: { x: from.x + (i - (pieces.length - 1) / 2) * 8, y: from.y }, born: now + i * 90 });
       }
     },
     update(head) {
