@@ -115,3 +115,18 @@ sells loot to walk-in customers any more.
   GEM sources: as BG4/BG9 plus a small tavern source (a happy guest sometimes tips a gem; rarer
   drinks and aged drinks tip more). Both re-balanced in S3.
 - Order: after 9t C: S1 retire the shop, S2 the trader, S3 rebalance gold and gems.
+
+## 6. The bar with taps, the register and the kitchen (owner, 15 Nov)
+A tavern looks like one: next to the register on the bar stand beer TAPS, and there is a KITCHEN.
+- BAR: the counter is the bar. On it: the REGISTER (the till; tapping it opens Serve / Menu /
+  Sell; collected coins fly into it) and TAP STANDS (2 taps each). Taps hold brewed drinks, loaded
+  from the bag (12 mugs per tap). A drink is on the menu only while a tap holds it; the avatar
+  pours at the taps, then carries the mug. Empty tap = the order waits. This gives brewing a
+  visible end point and ripening (K2) a place to go: a cask can be put on a tap.
+  (OPEN CHOICE for the owner: taps could be decoration only, with drinks served from the bag as
+  now. Planner's advice: real taps, because loading and pouring are the fun of running a bar.)
+- KITCHEN: a staff-only zone (like behind the bar) defined per tavern shape and level, with
+  prep tables, pantry, sink and a serving hatch. A prep table next to a stove in the zone adds
+  dishes per batch. Guests never enter it. A separate kitchen room behind a door can come later
+  with the connected Inn (M-B), by moving this zone.
+- ORDER: S1, S2, S3, then T1 (taps, register, kitchen), then K2 (ripening onto taps).
