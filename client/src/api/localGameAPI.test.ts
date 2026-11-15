@@ -114,7 +114,7 @@ describe('LocalGameAPI', () => {
     await api.enterRoom(1);
     const rug = (await api.getInventory()).furniture.find((i) => i.typeId === 'rug')!;
     await api.placeItem(rug.uid, { center: { x: 120, y: 120 }, facing: 'down', snap: true });
-    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stall_table', 'stove']);
+    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'round_table', 'stove']);
     expect((await api.enterRoom(1)).items.map((i) => i.uid)).toEqual([rug.uid]);
   });
 
@@ -199,7 +199,7 @@ describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
   it('nobody sells loot to customers any more: no goods calls, no customer events, and the stall is plain decor', async () => {
     const { api } = LocalGameAPI.open(memoryStorage(), clock, seq());
     for (const gone of ['getShop', 'putOnShelf', 'takeFromShelf', 'setPrice', 'onShop', 'isServing']) expect(gone in api, gone).toBe(false);
-    const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'stall_table')!;
+    const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'round_table')!; // a new game has no stall table any more (S3)
     expect(getFurnitureType('stall_table')).not.toHaveProperty('slots');
     expect(await api.serve(table.uid)).toBeNull(); // only the bar is served from behind
     expect((await api.getTavern()).appeal).toBeGreaterThan(0);
@@ -239,22 +239,22 @@ describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
     expect(openOrderCount(await again.getTavern())).toBeLessThanOrEqual(AWAY_ORDERS_MAX);
   });
 
-  it('the counter cannot be picked up; the stall table can, and goes back to the bag as plain decor', async () => {
+  it('the counter cannot be picked up; a table can, and goes back to the bag', async () => {
     const { api } = LocalGameAPI.open(memoryStorage(), clock);
     const items = (await api.enterRoom(2)).items;
     const counter = items.find((i) => i.typeId === 'counter')!;
-    const table = items.find((i) => i.typeId === 'stall_table')!;
+    const table = items.find((i) => i.typeId === 'round_table')!;
     expect(await api.pickUpItem(counter.uid)).toBeNull();
     expect(await api.pickUpItem(table.uid)).not.toBeNull();
     expect((await api.getInventory()).materials.wood).toBe(4); // nothing was on it
-    expect((await api.getInventory()).furniture.some((f) => f.typeId === 'stall_table')).toBe(true);
+    expect((await api.getInventory()).furniture.some((f) => f.typeId === 'round_table')).toBe(true);
   });
 
   it('an old save (version 21) with goods on the stall: they are back in the bag, with a notice, and nothing is lost', async () => {
     const base = createNewPlayer(undefined, 5);
     const { tavern, ...rest } = base;
     const { nextGuestId: _n, ...oldTavern } = tavern;
-    const stall = base.items.find((i) => i.typeId === 'stall_table')!;
+    const stall = { uid: 2 }; // the stall's uid; a new game has no stall table any more (S3) and the migration only reads the goods on its slots
     const old = {
       ...rest,
       tavern: oldTavern,
@@ -290,7 +290,7 @@ describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
     expect(await api.buyCatalog('counter')).toBeNull();
     await api.enterRoom(1);
     await api.placeItem(first!.uid, { center: { x: 100, y: 100 }, facing: 'down', snap: true });
-    expect(await api.currentHint()).toMatch(/table/);
+    expect(await api.currentHint()).toMatch(/coins/);
     expect(await api.buyStyle('floor', 'wood_planks')).toBe(true);
     expect((await api.getPlayer()).wallet.gold).toBe(100 - 15 - 15 - 30);
     expect((await api.applyStyle(1, 'floor', 'wood_planks'))?.floorStyle).toBe('wood_planks');

@@ -32,6 +32,14 @@ export const BALANCE_TARGETS = {
   minGoldPerGem: 30,
   /** Playing a pack's contents (punching its blocks, planting its seeds) gives back at most this share of its gem price (planting takes cell time too). */
   maxPackGemReturn: 0.5,
+  /** Gold (step S3): each gold source (tavern guests, dungeon run gold, the trader) is between these shares of the gold of a mixed hour. */
+  minGoldShare: 0.1,
+  maxGoldShare: 0.5,
+  /** A new game earns about this much gold at the tavern in its first 30 minutes and in its first hour (a perfect-play expectation: the player visits the barrel every 10 minutes). */
+  firstHalfHourGold: { min: 150, max: 280 },
+  firstHourGold: { min: 300, max: 500 },
+  /** Selling a thing at the trader pays at most this share of its base value (things worth 1 or 2 gold are exempt: the trader pays at least 1 gold). */
+  maxSellShare: 0.9,
 } as const;
 /** The id a gem gain has in a gains list (gems are a currency, not an item). */
 export const GEMS_GAIN_ID = 'gems';

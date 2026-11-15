@@ -2,7 +2,7 @@
 // what you do (today: breaking blocks), never from money, and they are never traded or sold.
 // Pure: the rng is passed in.
 
-import { BLOCK_DROPS, GEMS, GEM_RANK_MULT, GEM_TIERS } from './config.ts';
+import { BLOCK_DROPS, GEMS, GEM_RANK_MULT, GEM_TIERS, TAVERN_GEM_CHANCE_MULT } from './config.ts';
 import type { Rank, Rng } from './types.ts';
 
 export type GemSource = keyof typeof GEMS;
@@ -39,4 +39,20 @@ export function blockGemDrop(rank: Rank, rng: Rng): number {
   const t = BLOCK_DROPS[rank];
   if (rng() >= t.gem) return 0;
   return t.gemMin + Math.floor(rng() * (t.gemMax - t.gemMin + 1));
+}
+
+/** The chance (0 to 1) that a happy guest who ordered something of this rank leaves a gem. */
+export function tavernGemChance(rank: Rank): number {
+  return Math.min(1, GEMS.tavern.chance * TAVERN_GEM_CHANCE_MULT[rank]);
+}
+
+/** Expected gems of one happy guest's tip for an order of this rank (the closed form of tavernGemDrop). */
+export function tavernTipGems(rank: Rank): number {
+  return tavernGemChance(rank) * ((GEMS.tavern.min + GEMS.tavern.max) / 2);
+}
+
+/** The gems a happy tavern guest leaves with the coins (step S3): nothing most of the time, else min to max. Pure: the rng is passed in. */
+export function tavernGemDrop(rank: Rank, rng: Rng): number {
+  if (rng() >= tavernGemChance(rank)) return 0;
+  return GEMS.tavern.min + Math.floor(rng() * (GEMS.tavern.max - GEMS.tavern.min + 1));
 }

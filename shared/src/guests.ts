@@ -49,6 +49,8 @@ import { npcGrid, npcPath, staffZones } from './npcNav.ts';
 import { doorPoint } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { tavernGemDrop } from './gems.ts';
+import { getMaterialType } from './materials.ts';
 import type { NavGrid } from './nav.ts';
 import { maybeSay, reactionMoment, talkChance, type NpcMoment, type TalkMoment } from './npcTalk.ts';
 import type { Room } from './room.ts';
@@ -171,12 +173,21 @@ function giveBack(state: GameState, g: Guest, at: number): GameState {
   return withTavern(back, { serveQueue: t.serveQueue.filter((id) => id !== g.id), holding: t.holding?.guestId === g.id ? null : t.holding });
 }
 
-/** A guest finished eating: coins and the empty dish on their table spot, the price in the history. */
-function leaveMess(state: GameState, g: Guest, seat: TavernSeat | undefined): { state: GameState; mess: Mess | null } {
+/**
+ * A happy guest sometimes tips a gem (step S3): one who did not have to call out for the order and did not frown at the price. The chance is set by the
+ * rank of what they ordered (config GEMS.tavern and TAVERN_GEM_CHANCE_MULT); the rng is passed in.
+ */
+export function guestTip(g: Pick<Guest, 'warned' | 'reaction'>, item: MaterialId, rng: Rng): number {
+  if (g.warned || g.reaction === 'frown' || g.reaction === 'shrug') return 0;
+  return tavernGemDrop(getMaterialType(item).rank, rng);
+}
+
+/** A guest finished eating: coins (and maybe a gem) and the empty dish on their table spot, the price in the history. */
+function leaveMess(state: GameState, g: Guest, seat: TavernSeat | undefined, rng: Rng): { state: GameState; mess: Mess | null } {
   if (!g.order) return { state, mess: null };
   const t = state.tavern;
   const at = seat?.spot ?? { x: g.x, y: g.y };
-  const mess: Mess = { id: t.nextMessId, seatUid: g.seat?.uid ?? 0, seatIndex: g.seat?.index ?? -1, x: at.x, y: at.y, coins: g.order.coins, dish: g.order.item };
+  const mess: Mess = { id: t.nextMessId, seatUid: g.seat?.uid ?? 0, seatIndex: g.seat?.index ?? -1, x: at.x, y: at.y, coins: g.order.coins, gems: guestTip(g, g.order.item, rng), dish: g.order.item };
   return { state: withTavern(state, { mess: [...t.mess, mess], nextMessId: t.nextMessId + 1, history: recordOrder(t.history, g.order.item, g.order.price) }), mess };
 }
 
@@ -271,7 +282,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
       // Their seat or table was taken away: an open order goes back, a guest who was eating pays.
       if (c.phase === 'order') s = giveBack(s, c, at);
       if (c.phase === 'eat') {
-        const m = leaveMess(s, { ...c, seat: null }, undefined);
+        const m = leaveMess(s, { ...c, seat: null }, undefined, rng);
         s = m.state;
         if (m.mess) events.push({ t: 'coins', guestId: c.id, mess: m.mess });
       }
@@ -334,7 +345,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
     } else if (c.phase === 'eat') {
       c = { ...c, waitMs: c.waitMs - dtMs, sipInMs: c.sipInMs - dtMs };
       if (c.waitMs <= 0) {
-        const m = leaveMess(s, c, seat);
+        const m = leaveMess(s, c, seat, rng);
         s = m.state;
         if (m.mess) events.push({ t: 'coins', guestId: c.id, mess: m.mess });
         sayOut(c, 'thanks', 'leave');
@@ -392,7 +403,7 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
   const kept: Guest[] = [];
   for (const c of state.tavern.guests) {
     const seat = find(c);
-    if (c.phase === 'eat') s = leaveMess(s, seat ? c : { ...c, seat: null }, seat).state;
+    if (c.phase === 'eat') s = leaveMess(s, seat ? c : { ...c, seat: null }, seat, rng).state;
     else if (c.phase === 'order' && seat) kept.push({ ...c, x: seat.x, y: seat.y, facing: seat.facing, path: [], seated: true });
     else if (c.phase === 'order') s = giveBack(s, c, at);
   }

@@ -43,7 +43,7 @@ private suite connected by doors, with expeditions out of the inn. Proposed orde
 0.1 PLAYTEST (phase 2.1 brought forward): one full hour from a new game, one fix list, fix it.
 0.2 [x] R1 Refactor: split main.ts, localGameAPI.ts and config.ts; no behaviour change (NOTES R1).
 0.3 [x] 9t B (guests and serving), [x] K1 Tavern kitchen: cooking moves from the farm to the tavern
-    (NOTES K1), [x] 9t C (brewing, Menu; NOTES 9t C), [x] S1 Retire the shop (no loot customers; NOTES S1), [x] S2 trader (NOTES S2), S3 rebalance [prompt ready],
+    (NOTES K1), [x] 9t C (brewing, Menu; NOTES 9t C), [x] S1 Retire the shop (no loot customers; NOTES S1), [x] S2 trader (NOTES S2), [x] S3 rebalance gold and gems (NOTES S3),
     T1 Bar taps, the register and the kitchen (zone, prep tables) [prompt ready],
     K2 Ripening: aged and vintage
     drinks in casks, real time [prompt ready], then M-A Carpentry (blocks -> furniture) [prompt ready],

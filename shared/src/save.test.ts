@@ -142,11 +142,12 @@ describe('save files', () => {
 
   it('migrates a version 10 save (step 9e): everything the player owns counts as seen', () => {
     const { seen: _s, bookOpenedAt: _o, bookRewards: _r, ...player } = state.player;
-    const shelf = state.items.find((i) => i.typeId === 'stall_table')!;
+    // An old save has the stall table (a new game does not any more, S3): put one in the shop.
+    const shelf = { uid: 49, typeId: 'stall_table', ownerId: 1, roomId: state.player.shopRoomId, x: 304, y: 192, facing: 'down', onItemUid: null };
     const v10 = {
       ...state,
       player: { ...player, materials: { wood: 3, bone: 7 } },
-      items: [...state.items, { uid: 50, typeId: 'chair', ownerId: 1, roomId: null, x: 0, y: 0, facing: 'down', onItemUid: null }, { uid: 51, typeId: 'chair', ownerId: 1, roomId: 1, x: 100, y: 100, facing: 'down', onItemUid: null }],
+      items: [...state.items, shelf, { uid: 50, typeId: 'chair', ownerId: 1, roomId: null, x: 0, y: 0, facing: 'down', onItemUid: null }, { uid: 51, typeId: 'chair', ownerId: 1, roomId: 1, x: 100, y: 100, facing: 'down', onItemUid: null }],
       shop: shopOf({
         slots: [
           { shelfUid: shelf.uid, index: 0, loot: { kind: 'material', id: 'cloth', qty: 1 }, price: 5 },
@@ -169,7 +170,7 @@ describe('save files', () => {
       skull_lamp: { count: 1, firstSeenAt: 0 },
       // The tavern's gift (migration 12, step 9t).
       round_table: { count: 1, firstSeenAt: 0 },
-      bar_stool: { count: 2, firstSeenAt: 0 },
+      bar_stool: { count: 3, firstSeenAt: 0 }, // the new game now has a third stool at the bar (S3)
       brewing_barrel: { count: 1, firstSeenAt: 0 },
     });
     expect(r.state.player.bookOpenedAt).toBe(0);
@@ -601,6 +602,51 @@ describe('21 -> 22 (step S1: the shop is the tavern, nobody sells loot to custom
   it('a new save does not migrate again', () => {
     const r = load(v21().old);
     if (!r.ok) throw new Error('load failed');
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
+  });
+});
+
+describe('22 -> 23 (step S3: a table spot can hold the gem a happy guest tipped)', () => {
+  /** A version 22 save: piles on tables have coins and a dish but no `gems`. */
+  const v22 = () => {
+    const base = createNewPlayer(undefined, 1);
+    const { version: _v, ...rest } = { version: 22, ...base };
+    const mess = [
+      { id: 1, seatUid: 4, seatIndex: 0, x: 400, y: 224, coins: 9, dish: 'root_ale' },
+      { id: 2, seatUid: 5, seatIndex: 0, x: 496, y: 224, coins: 14, dish: null },
+    ];
+    return { before: base, old: { ...rest, tavern: { ...base.tavern, mess, nextMessId: 3 } } };
+  };
+  const load = (state: unknown) => readSave(JSON.stringify({ version: 22, savedAt: 9, state }));
+
+  it('every pile on a table gets 0 gems and keeps its coins and dish', () => {
+    const r = load(v22().old);
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.tavern.mess).toEqual([
+      { id: 1, seatUid: 4, seatIndex: 0, x: 400, y: 224, coins: 9, gems: 0, dish: 'root_ale' },
+      { id: 2, seatUid: 5, seatIndex: 0, x: 496, y: 224, coins: 14, gems: 0, dish: null },
+    ]);
+    expect(r.state.tavern.nextMessId).toBe(3);
+  });
+
+  it('nothing else changes: the wallet, the ledger, the items, the menu and the brews are the same', () => {
+    const { before, old } = v22();
+    const r = load(old);
+    if (!r.ok) throw new Error('load failed');
+    expect(r.state.player).toEqual(before.player);
+    expect(r.state.ledger).toEqual(before.ledger);
+    expect(r.state.items).toEqual(before.items);
+    expect(r.state.tavern.menu).toEqual(before.tavern.menu);
+    expect(r.state.tavern.brews).toEqual(before.tavern.brews);
+  });
+
+  it('a save with no piles on tables migrates and a new save does not migrate again', () => {
+    const base = createNewPlayer(undefined, 1);
+    const r = load(base);
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    expect(r.state.tavern.mess).toEqual([]);
     expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
   });
 });

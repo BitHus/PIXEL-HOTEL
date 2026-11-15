@@ -16,9 +16,10 @@ export * from './config/packs.ts';
 
 
 // ---------- The tavern (step 9t) ----------
-/** What a new tavern starts with besides the bar and the stall table: `key` is the spot in the shop
- *  shape's shopStart (roomShapes.json); x and y here are the square shop's. */
+/** What a new tavern starts with besides the bar (the old stall table is not in a new game any more, step S3: a bar stool takes its place
+ *  in front of the bar, so a new tavern has 3 seats): `key` is the spot in the shop shape's shopStart (roomShapes.json); x and y here are the square shop's. */
 export const TAVERN_START_ITEMS = [
+  { key: 'stool_bar', typeId: 'bar_stool', x: 176, y: 128, facing: 'up' },
   { key: 'round_table', typeId: 'round_table', x: 448, y: 224, facing: 'down' },
   { key: 'stool_left', typeId: 'bar_stool', x: 400, y: 192, facing: 'right' },
   { key: 'stool_right', typeId: 'bar_stool', x: 496, y: 192, facing: 'left' },
@@ -27,6 +28,8 @@ export const TAVERN_START_ITEMS = [
 ] as const;
 /** The drink that is ready in the start barrel. */
 export const TAVERN_START_DRINK = 'root_ale' as const;
+/** The early dish a new tavern has on its menu (the stove cooks it in 20 s from one turnip, step S3). */
+export const TAVERN_START_DISH = 'roasted_turnip' as const;
 /** A group of guests comes every this many ms * 100 / (100 + appeal), like customers. */
 export const GUEST_BASE_INTERVAL_MS = 45_000;
 /** The first guests of a new game come after this delay. */

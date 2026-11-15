@@ -268,14 +268,22 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - A new player is created by one shared function, createNewPlayer. They get: level 1 with 0
   xp; 100 gold; only the bare floor and bare wall unlocked, used in both rooms; 4 wood and 2
   cloth; an empty hotel room; a shop room (section 5) with a counter and one
-  stall_table already placed at their fixed positions. No furniture in the inventory.
+  a bar stool in front of it (step S3; it replaces the old stall table) already placed at their fixed positions. No furniture in the inventory.
 - The loop: serve guests in the tavern -> gold -> buy furniture for the hotel room or the tavern, or upgrade a room. Loot, ore,
   fish and crops are for USE (cook, brew, craft, build, plant, splice); surplus goes to the trader (step S2, below).
 - Stall table, shelf and display case (step S1) are decor only: no slots, no prices, no selling. Goods that sat on slots in an old
-  save went back to the bag (ledger reason 'shop_closed'; save version 22). The starting stall table stays as decor.
+  save went back to the bag (ledger reason 'shop_closed'; save version 22). Old saves keep their stall table as decor; a NEW game has a bar stool in front of the bar instead (step S3).
+- GOLD AND GEM BALANCE (step S3): gold comes from three sources, each 10% to 50% of a mixed hour (balance.ts, tests in balance.test.ts):
+  tavern guests, dungeon run gold (after the keys) and the trader. A mixed hour is about 375 / 480 / 630 gold at a new game / level 3 / level 8.
+  A new game earns about 220 gold at the tavern in its first 30 minutes and 460 in its first hour (7 mugs of root ale per 8-minute brew, the
+  early dish roasted turnip on the menu, 3 seats); the first dungeon run adds a few dozen. Selling never beats using: crops pay least, a harvest
+  sold pays no more than its seed cost, splice results and their seeds sell for no more than the gold of their starter seeds.
+- TAVERN GEM TIP (step S3): a guest who did not have to call for the order sometimes leaves a gem with the coins. Chance GEMS.tavern 5% times
+  TAVERN_GEM_CHANCE_MULT by the rank of the order (common 1, rare 2.5, ultra rare 5, legendary 10; aged and vintage drinks use the high ranks in
+  K2). It lies on the table spot next to the coins (Mess.gems, save version 23); one tap takes both; a popup shows gold and gem.
 - THE TRADER (step S2): the bar's panel has a third tab, Sell. It lists what the player owns and does not need: materials, blocks,
   seeds, crops, fish, ore, bars, spare clothes and furniture that is not placed. Each row shows the icon, the count, the gold for one
-  piece and two buttons, Sell 1 and Sell all. The price is baseValue * SELL_RATE (config, 0.3; at least 1 gold); a spare piece of
+  piece and two buttons, Sell 1 and Sell all. The price is baseValue * the rate of its group (step S3, config SELL_RATES: crops 0.1, seeds 0.2, wood and loot 0.3, blocks 0.3, fish and things 0.4, bars 0.5, ore 0.85, splice results 0.05; at least 1 gold); a spare piece of
   clothing keeps SPARE_SELL (0.1). Food and drinks (menu, lunch box), worn gear, placed furniture and the counter are never listed.
   NEVER AUTOMATIC: nothing sells unless the player taps. Selling more than 5 pieces at once (SELL_CONFIRM_QTY), any ultra_rare or
   legendary thing, or something in the hotbar asks first. One ledger entry per tap (reason 'sell'), a gold popup above the head,

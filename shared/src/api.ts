@@ -108,7 +108,7 @@ export type TavernClientEvent =
   | { t: 'holding'; item: MaterialId | null }
   /** The order was put on the guest's table spot. */
   | { t: 'served'; guestId: number; item: MaterialId; spot: Point }
-  /** The player took the coins of a table spot (`gains` = the gold, for the popup). */
+  /** The player took the coins (and a tipped gem) of a table spot (`gains` = the gold and the gems, for the popup). */
   | { t: 'collected'; messId: number; coins: number; spot: Point; gains: GainList }
   /** The player cleared an empty mug or plate. */
   | { t: 'cleared'; messId: number; spot: Point }

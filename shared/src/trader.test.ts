@@ -1,6 +1,6 @@
 // Step S2: the trader. Rates, what lists and what never does, the confirm threshold, the ledger, the Book, no auto selling.
 import { describe, expect, it } from 'vitest';
-import { SELL_CONFIRM_QTY, SELL_HINT_STACKS, SELL_RATE, SPARE_SELL } from './config.ts';
+import { SELL_CONFIRM_QTY, SELL_HINT_STACKS, SELL_RATE, SELL_RATES, SPARE_SELL } from './config.ts';
 import { CLOTHING } from './clothing.ts';
 import { FOOD_TYPES, DRINK_TYPES, MATERIAL_TYPES, getMaterialType } from './materials.ts';
 import { getFurnitureType } from './furniture.ts';
@@ -15,6 +15,29 @@ const base = (): GameState => createNewPlayer(undefined, 0);
 const give = (s: GameState, materials: Partial<Record<MaterialId, number>>, extra: { addFurniture?: string[]; addClothing?: string[] } = {}): GameState =>
   applyChange(s, { reason: 'debug', materials, ...extra }, 1)!;
 const hidden = CLOTHING.find((c) => !c.free)!;
+
+describe('prices by group (step S3)', () => {
+  const rate = (id: string): number => materialSellPrice(id) / getMaterialType(id as MaterialId).baseValue;
+  it('each group has its own rate: crops, seeds, ore, bars, fish, wood and loot, blocks', () => {
+    expect(materialSellPrice('carrot')).toBe(sellPrice(getMaterialType('carrot').baseValue, SELL_RATES.crop));
+    expect(materialSellPrice('copper_ore')).toBe(sellPrice(getMaterialType('copper_ore').baseValue, SELL_RATES.ore));
+    expect(materialSellPrice('iron_bar')).toBe(sellPrice(getMaterialType('iron_bar').baseValue, SELL_RATES.bar));
+    expect(materialSellPrice('lantern_carp')).toBe(sellPrice(getMaterialType('lantern_carp').baseValue, SELL_RATES.fish));
+    expect(materialSellPrice('turnip_seed')).toBe(sellPrice(getMaterialType('turnip_seed').baseValue, SELL_RATES.seed));
+    expect(materialSellPrice('resin')).toBe(sellPrice(getMaterialType('resin').baseValue, SELL_RATES.material));
+    expect(materialSellPrice('dirt')).toBe(sellPrice(getMaterialType('dirt').baseValue, SELL_RATES.block));
+  });
+  it('the results of splicing pay the splice rate: the seed, and the furniture it grows', () => {
+    expect(materialSellPrice('heartwood_throne_seed')).toBe(sellPrice(getMaterialType('heartwood_throne_seed').baseValue, SELL_RATES.splice));
+    expect(furnitureSellPrice('heartwood_throne')).toBe(sellPrice(getFurnitureType('heartwood_throne').baseValue, SELL_RATES.splice));
+    // Other furniture keeps SELL_RATE.
+    expect(furnitureSellPrice('chair')).toBe(sellPrice(getFurnitureType('chair').baseValue));
+  });
+  it('ore pays a bigger share than crops, and a harvest of ore beats a harvest of crops per piece', () => {
+    expect(rate('mithril_ore')).toBeGreaterThan(rate('pumpkin'));
+    expect(rate('iron_ore')).toBeGreaterThan(rate('potato'));
+  });
+});
 
 describe('prices', () => {
   it('pays baseValue * SELL_RATE, whole gold, at least 1', () => {

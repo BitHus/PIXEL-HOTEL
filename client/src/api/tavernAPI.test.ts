@@ -41,8 +41,8 @@ describe('the tavern through the GameAPI', () => {
     const { api, until } = await openTavern();
     const barrel = (await api.snapshot().items).find((i) => i.typeId === 'brewing_barrel')!;
     const got = await api.collectBrew(barrel.uid);
-    expect(got).toMatchObject({ drink: 'root_ale', mugs: 6 });
-    expect(got?.gains.some((g) => g.itemId === 'root_ale' && g.count === 6)).toBe(true);
+    expect(got).toMatchObject({ drink: 'root_ale', mugs: 7 });
+    expect(got?.gains.some((g) => g.itemId === 'root_ale' && g.count === 7)).toBe(true);
     expect(await api.collectBrew(barrel.uid)).toBeNull(); // the barrel is empty now
     expect(await until(async () => (await api.getTavern()).guests.some((g) => g.phase === 'order'))).toBe(true);
   });
