@@ -94,4 +94,25 @@ describe('HoldControl', () => {
     await advance(1000);
     expect(hits.some((h) => h.kind === 'block' && h.c === 2)).toBe(true);
   });
+
+  it('slides on to the next thing after one breaks, without lifting the finger', async () => {
+    const { control, hits, advance } = setup((t) => (t.kind === 'block' && t.c === 1 ? 'stop' : 'go'));
+    control.start({ kind: 'block', c: 1, r: 1 });
+    await advance(100);
+    expect(control.active).toBe(false); // the first one broke
+    expect(control.repeating).toBe(true); // but the finger is still down
+    control.retarget({ kind: 'block', c: 2, r: 1 });
+    await advance(100);
+    expect(hits.some((h) => h.kind === 'block' && h.c === 2)).toBe(true);
+    control.stop();
+    expect(control.repeating).toBe(false);
+  });
+
+  it('retargets a running hold and keeps the cooldown', async () => {
+    const { control, hits, advance } = setup();
+    control.start({ kind: 'block', c: 1, r: 1 });
+    control.retarget({ kind: 'block', c: 5, r: 5 });
+    await advance(BLOCK_HIT_COOLDOWN_MS * 2);
+    expect(hits.at(-1)).toEqual({ kind: 'block', c: 5, r: 5 });
+  });
 });
