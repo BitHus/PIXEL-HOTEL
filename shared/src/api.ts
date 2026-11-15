@@ -20,6 +20,9 @@ import type { ShopGearId } from './gear.ts';
 import type { GainList } from './gains.ts';
 import type { PackFind } from './packs.ts';
 import type { BlockProblem } from './blocks.ts';
+import type { Guest, Mess } from './tavern.ts';
+import type { Brew } from './brewing.ts';
+import type { TavernEvent } from './guests.ts';
 
 export interface RoomState {
   room: Room;
@@ -70,6 +73,41 @@ export interface ShopView {
   appeal: number;
   customers: Customer[];
 }
+
+/** The tavern as the client sees it (step 9t). */
+export interface TavernView {
+  roomId: number;
+  guests: Guest[];
+  /** Coins and dishes left on table spots. */
+  mess: Mess[];
+  /** The guests whose orders the player will carry next, in order. */
+  serveQueue: number[];
+  /** The order in the player's hands. */
+  holding: { guestId: number; item: MaterialId } | null;
+  /** What brews in the barrels (barrel uid, drink, the time it is ready). */
+  brews: Brew[];
+  /** The API's clock when this was read (to count down a brew). */
+  at: number;
+}
+
+/**
+ * What the tavern tells the client: the guests' events (tavern.ts TavernEvent) and what the own
+ * avatar does while serving. The client animates paths and draws; it decides nothing.
+ */
+export type TavernClientEvent =
+  | TavernEvent
+  /** The own avatar walks this path (to the bar, to a table). Starts at the avatar. */
+  | { t: 'walk'; path: Point[] }
+  /** The player picked an order up at the bar (item) or has empty hands again (null). */
+  | { t: 'holding'; item: MaterialId | null }
+  /** The order was put on the guest's table spot. */
+  | { t: 'served'; guestId: number; item: MaterialId; spot: Point }
+  /** The player took the coins of a table spot (`gains` = the gold, for the popup). */
+  | { t: 'collected'; messId: number; coins: number; spot: Point; gains: GainList }
+  /** The player cleared an empty mug or plate. */
+  | { t: 'cleared'; messId: number; spot: Point }
+  /** The serve queue changed (a tap was added or used). */
+  | { t: 'queue'; queue: number[] };
 
 /** The walk to the spot behind the counter (step 7). */
 export interface ServeResult {
@@ -308,6 +346,21 @@ export interface GameAPI {
   craft(recipeId: string): Promise<GainList | null>;
   /** Buys gear or a potion in the Blacksmith. Null if owned, at the potion limit, or gold is short. */
   buyGear(id: ShopGearId): Promise<GainList | null>;
+  // ---------- Step 9t: the tavern ----------
+  /** The tavern's guests, table spots and the serve queue. */
+  getTavern(): Promise<TavernView>;
+  /** Tavern events (guests, orders, coins, the own avatar's serving walk). Returns an unsubscribe function. */
+  onTavern(listener: (e: TavernClientEvent) => void): () => void;
+  /**
+   * The player tapped a guest with an open order (or the order bubble): the order joins the serve
+   * queue (at most SERVE_QUEUE_MAX) and the avatar goes to the bar, picks it up, and puts it on the
+   * guest's table, one tap. False = refused (no open order, queue full, not in the tavern, no way).
+   */
+  serveGuest(guestId: number): Promise<boolean>;
+  /** Walks to a table spot and takes its coins (`what` 'coins') or clears its empty mug or plate ('dish'). False = refused. */
+  tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean>;
+  /** Collects the mugs of a ready brew from a barrel in the tavern. Null if it is not ready. */
+  collectBrew(barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null>;
   // ---------- Step 9b: the farm and cooking ----------
   /** Counts for the Map card (ripe, growing, free soil). */
   getFarm(): Promise<FarmView>;

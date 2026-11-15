@@ -3418,3 +3418,43 @@
     animation: none;
   }
 }
+
+/* ---------- Step 9t: the tavern ---------- */
+/* The order bubble above a seated guest: the item's icon; tap to serve (44 px touch size). */
+.order-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  border: var(--px) solid var(--outline);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: till-bob 0.8s steps(2) infinite;
+}
+
+.order-bubble[hidden] {
+  display: none;
+}
+
+.order-bubble img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.order-bubble.urgent {
+  border-color: var(--no);
+}
+
+.order-bubble.taken {
+  opacity: 0.6;
+  animation: none;
+}
