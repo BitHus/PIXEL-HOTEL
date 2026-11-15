@@ -65,7 +65,7 @@ export function treeFall(k: number): { angle: number; lift: number; alpha: numbe
   const landed = t >= TIP;
   const angle = 1.3 * easeInQuad(Math.min(1, t / TIP));
   const lift = landed ? Math.round(Math.sin(((t - TIP) / (1 - TIP)) * Math.PI) * 3) : 0;
-  const alpha = t < 0.85 ? 1 : 1 - (t - 0.85) / 0.15;
+  const alpha = t < 0.85 ? 1 : Math.max(0, 1 - (t - 0.85) / 0.15);
   return { angle, lift, alpha, landed };
 }
 

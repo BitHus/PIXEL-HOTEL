@@ -619,6 +619,23 @@ const ICONS = {
     ],
     colors: { o: O, a: PALETTE[5], c: PALETTE[4], r: PALETTE[8] },
   },
+  hat: {
+    rows: [
+      '............',
+      '....oooo....',
+      '...oaaaao...',
+      '...oabbao...',
+      '..oaaaaaao..',
+      '..oaaaaaao..',
+      'oooooooooooo',
+      'occcccccccco',
+      '.oooooooooo.',
+      '............',
+      '............',
+      '............',
+    ],
+    colors: { o: O, a: PALETTE[13], b: PALETTE[12], c: PALETTE[10] },
+  },
   shoe: {
     rows: [
       '............',

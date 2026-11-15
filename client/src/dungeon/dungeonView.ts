@@ -39,6 +39,11 @@ import { DepthLayer } from '../render/depthLayer.ts';
 import { iconTexture } from '../render/drawIcon.ts';
 import { CRYPT_OUTLINE, ENEMY_HEIGHT, ROCK_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit, drawRock } from './dungeonArt.ts';
 import { FogMemory } from './fog.ts';
+import { DungeonLight } from './dungeonLight.ts';
+
+/** Seen-but-not-lit blocks under the light layer: a cool dark blue (palette night) at this alpha. */
+const SEEN_COOL = PALETTE[24]!;
+const DUNGEON_SEEN_COOL = 0.62;
 import { DungeonFx } from './dungeonFx.ts';
 import { easeInQuad, easeOutBounce, easeOutQuad } from '../fx/ease.ts';
 import { aggroStarted } from '../fx/fxSpec.ts';
@@ -115,6 +120,10 @@ export class DungeonView {
   /** Above the objects: the attack cooldown ring. */
   private readonly fx = new Graphics();
   private readonly fog = new Graphics();
+  /** The crypt light layer (outdoors rework C14); the old fog is its fallback. */
+  readonly light = new DungeonLight();
+  private fogCool = false;
+  private fogDirty = false;
   /** On the floor under the objects: the wind-up telegraph rings (outdoors rework C12). */
   private readonly floorFx = new Graphics();
   /** Sparks, bits, dust and loot drops above the objects. */
@@ -142,7 +151,7 @@ export class DungeonView {
     this.player = new AvatarSprite(look);
     this.player.container.eventMode = 'none';
     this.world.eventMode = 'none';
-    this.world.addChild(this.base, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog);
+    this.world.addChild(this.base, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog, this.light.container);
     this.objects.add(this.player.container, { y: 0, x: 0, uid: PLAYER_ID });
   }
 
@@ -172,6 +181,8 @@ export class DungeonView {
       this.chests.delete(id);
     }
     this.fogMemory.reset();
+    this.light.setMap(map, place);
+    this.fogDirty = true;
   }
 
   get mapRect(): { x: number; y: number; w: number; h: number } {
@@ -324,7 +335,15 @@ export class DungeonView {
     this.objects.setKey(this.player.container, { y: at.y, x: at.x, uid: PLAYER_ID });
 
     // Fog: lit around the player, seen blocks dim, the rest black.
-    if (this.fogMemory.update(map, at)) this.drawFog(map);
+    this.light.reduce = this.reduce;
+    this.light.perf.feed(dtMs);
+    const cool = this.light.active;
+    if (this.fogMemory.update(map, at) || this.fogDirty || cool !== this.fogCool) {
+      this.fogCool = cool;
+      this.fogDirty = false;
+      this.drawFog(map);
+    }
+    this.light.update(at, clockMs, run.chests, run.enemies, (q) => this.fogMemory.isSeen(map, q));
     // The mine has no exit block (NO_EXIT is off the map).
     this.exit.visible = map.exit.c >= 0 && this.fogMemory.seen.has(map.exit.r * map.cols + map.exit.c);
 
@@ -625,7 +644,9 @@ export class DungeonView {
           if (k !== kind) break;
           end++;
         }
-        if (kind > 0) g.rect(c * B, r * B, (end - c) * B, B).fill({ color: CRYPT_OUTLINE, alpha: kind === 2 ? 1 : DUNGEON_SEEN_DARK });
+        // With the light layer on, seen blocks are tinted cool dark blue instead of black.
+        if (kind === 2) g.rect(c * B, r * B, (end - c) * B, B).fill({ color: CRYPT_OUTLINE, alpha: 1 });
+        else if (kind === 1) g.rect(c * B, r * B, (end - c) * B, B).fill(this.fogCool ? { color: SEEN_COOL, alpha: DUNGEON_SEEN_COOL } : { color: CRYPT_OUTLINE, alpha: DUNGEON_SEEN_DARK });
         c = end;
       }
     }

@@ -100,3 +100,33 @@ export const FX_CATCH_ARC_PX = 30;
 export const FX_SLACK_MS = 450;
 /** The catch flash (ultra rare, legendary), ms. */
 export const FX_CATCH_FLASH_MS = 500;
+
+// ---------- Lakeside ambient life (outdoors rework C15; look only) ----------
+/** Grass and shore decor: how many spots decorSpots asks for, the least distance between two (px) and from a tree, a bush, the pier, the water edge, the door zone and the start (px). */
+export const LAKE_DECOR_COUNT = 34;
+export const LAKE_DECOR_GAP_PX = 18;
+export const LAKE_DECOR_TREE_PX = 30;
+export const LAKE_DECOR_BUSH_PX = 22;
+export const LAKE_DECOR_PIER_PX = 14;
+export const LAKE_DECOR_GRASS_EDGE_PX = 14;
+export const LAKE_DECOR_DOOR_PAD_PX = 32;
+export const LAKE_DECOR_START_PX = 40;
+/** Ambient caps. */
+export const LAKE_BIRDS = 2;
+export const LAKE_BUTTERFLIES = 3;
+export const LAKE_FISH_SHADOWS = 4;
+export const LAKE_FALLING_LEAVES = 4;
+/** A perched bird flies off when the avatar is within this many px, and comes back after a wait between the two times (ms) once the avatar is away. */
+export const LAKE_BIRD_FLEE_PX = 80;
+export const LAKE_BIRD_RETURN_MIN_MS = 8000;
+export const LAKE_BIRD_RETURN_MAX_MS = 16000;
+export const LAKE_BIRD_SPEED = 90;
+/** Fish shadows drift at this speed (px/s); a cast within LAKE_FISH_FLEE_PX scares them for LAKE_FISH_FLEE_MS at LAKE_FISH_FLEE_SPEED. */
+export const LAKE_FISH_SPEED = 10;
+export const LAKE_FISH_FLEE_PX = 90;
+export const LAKE_FISH_FLEE_MS = 1200;
+export const LAKE_FISH_FLEE_SPEED = 70;
+/** A falling leaf takes this long (ms) to fall this far (px) from a tree crown, and a leaf waits up to LAKE_LEAF_GAP_MS between falls. */
+export const LAKE_LEAF_FALL_MS = 3200;
+export const LAKE_LEAF_FALL_PX = 56;
+export const LAKE_LEAF_GAP_MS = 6000;

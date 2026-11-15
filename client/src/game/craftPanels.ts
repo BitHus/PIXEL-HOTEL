@@ -8,13 +8,14 @@ import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createWorkshopPanel, gearEffect, pieceEffect, recipeName } from '../ui/workshopPanel.ts';
 import { LakesideScreen } from '../lakeside/lakesideScreen.ts';
 import { createFishBar } from '../ui/fishBar.ts';
+import { flashScreen } from '../ui/runScreens.ts';
 import { FloatTexts } from '../dungeon/floatTexts.ts';
 import { createBookPanel } from '../ui/bookPanel.ts';
 import { createTravelPanel, type PlaceCard } from '../ui/travelPanel.ts';
 import type { G7 } from './ctx.ts';
 
 export async function setupCraftPanels(g: G7) {
-  const { ui, api, popups, toast, panels, sound, side, view, walkTo, follow, sprite, flyGems, st, late } = g;
+  const { ui, prefs, api, popups, toast, panels, sound, side, view, walkTo, follow, sprite, flyGems, st, late } = g;
 
   // ---------- Workshop: crafting and the Blacksmith (step 9) ----------
   const workshop = createWorkshopPanel(ui, {
@@ -93,7 +94,9 @@ export async function setupCraftPanels(g: G7) {
     },
     swing: () => sprite.gesture('reach'),
     float: (at, text, rank, delayMs = 0) => roomFloats.add(at, text, 'loot', delayMs, rank),
-    sound: (name) => sound.play(name),
+    sound: (name, opts) => sound.play(name, opts?.rank, opts?.pitch),
+    reduceEffects: () => prefs.reduceEffects,
+    flash: (ms) => flashScreen(ui, ms),
     gains: (g, at) => {
       popups.show(g);
       if (at) flyGems(g, at);

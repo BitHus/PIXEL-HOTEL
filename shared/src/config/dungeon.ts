@@ -166,3 +166,31 @@ export const FX_DUST_EVERY_PX = 24;
 /** Loot popped out of a chest: how high it jumps (px), and how long the arc lasts, ms. */
 export const FX_LOOT_POP_PX = 18;
 export const FX_LOOT_POP_MS = 420;
+
+// ---------- Crypt light layer (outdoors rework C14; look only) ----------
+/** Light pools are drawn as LIGHT_RINGS stacked discs (additive), radii in whole steps of LIGHT_STEP_PX. */
+export const LIGHT_RINGS = 5;
+export const LIGHT_STEP_PX = 4;
+/** The lantern pool around the player: radius (px), alpha of each ring. */
+export const LIGHT_PLAYER_PX = 196;
+export const LIGHT_PLAYER_ALPHA = 0.055;
+/** Flicker: the radius shifts by up to LIGHT_FLICKER_PX (whole steps), re-rolled every LIGHT_FLICKER_MS. */
+export const LIGHT_FLICKER_PX = 8;
+export const LIGHT_FLICKER_MS = 120;
+/** Pools of torches (and mine lanterns), the exit, a chest, a golden chest and the Bone King crown: radius px, ring alpha. */
+export const LIGHT_TORCH_PX = 76;
+export const LIGHT_TORCH_ALPHA = 0.05;
+export const LIGHT_EXIT_PX = 68;
+export const LIGHT_EXIT_ALPHA = 0.05;
+export const LIGHT_CHEST_PX = 40;
+export const LIGHT_GOLD_CHEST_PX = 60;
+export const LIGHT_CHEST_ALPHA = 0.045;
+export const LIGHT_CROWN_PX = 84;
+export const LIGHT_CROWN_ALPHA = 0.05;
+/** Screen vignette: darkest edge alpha, number of steps, and where it starts (fraction of the half-diagonal). */
+export const LIGHT_VIGNETTE_ALPHA = 0.55;
+export const LIGHT_VIGNETTE_STEPS = 5;
+export const LIGHT_VIGNETTE_START = 0.55;
+/** Below this frame rate (averaged over LIGHT_PERF_FRAMES frames) the light layer switches off for the old fog. */
+export const LIGHT_MIN_FPS = 50;
+export const LIGHT_PERF_FRAMES = 90;

@@ -9,7 +9,7 @@ export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hu
 const FOUND_HZ: Record<Rank, number> = { common: 784, rare: 988, ultra_rare: 1319, legendary: 1568 };
 
 /** The same sound is never started twice within this many ms. */
-const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120 };
+export const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120 };
 
 type Wave = OscillatorType;
 

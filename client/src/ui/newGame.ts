@@ -8,6 +8,7 @@
 import {
   DEFAULT_INN_NAME,
   DISPLAY_NAME_MAX,
+  LOOK_COLORS,
   START_LOOK,
   borderRects,
   cleanDisplayName,
@@ -16,6 +17,7 @@ import {
   doorRect,
   floorRects,
   roomBoundsRect,
+  selectableClothing,
   shapesFor,
   wallBands,
   type AvatarLook,
@@ -33,12 +35,15 @@ const TURN_MS = 900;
 const TURNS: (Facing3 | 'left')[] = ['down', 'right', 'up', 'left'];
 
 /** A turning avatar preview on a canvas (scale canvas px per art px). */
-export function createAvatarPreview(scale: number): { el: HTMLCanvasElement; setLook(look: AvatarLook): void; stop(): void } {
+export function createAvatarPreview(scale: number): { el: HTMLCanvasElement; setLook(look: AvatarLook): void; turn(d: number): void; stop(): void } {
   const canvas = el('canvas', 'avatar-preview');
   let look: AvatarLook = { ...START_LOOK };
   let k = 0;
   const draw = (): void => drawAvatarOnCanvas(canvas, look, TURNS[k % TURNS.length]!, scale);
+  // A manual turn (the arrows under the preview) pauses the slow auto-turn for a while.
+  let pausedUntil = 0;
   const timer = window.setInterval(() => {
+    if (Date.now() < pausedUntil) return;
     k++;
     draw();
   }, TURN_MS);
@@ -47,6 +52,11 @@ export function createAvatarPreview(scale: number): { el: HTMLCanvasElement; set
     el: canvas,
     setLook(next) {
       look = next;
+      draw();
+    },
+    turn(d) {
+      k = (k + d + TURNS.length * 4) % TURNS.length;
+      pausedUntil = Date.now() + 4000;
       draw();
     },
     stop: () => window.clearInterval(timer),
@@ -81,6 +91,23 @@ function screen(parent: HTMLElement): HTMLElement {
   return s;
 }
 
+/** A random look from the free choices (UI only: the pick is validated again by createPlayer). */
+function randomLook(base: AvatarLook): AvatarLook {
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
+  const style = (slot: 'hair' | 'top' | 'bottoms'): string => pick(selectableClothing(slot)).id;
+  return {
+    ...base,
+    skin: pick(LOOK_COLORS.skin),
+    hair: pick(LOOK_COLORS.hair),
+    shirt: pick(LOOK_COLORS.top),
+    legs: pick(LOOK_COLORS.bottoms),
+    shoes: pick(LOOK_COLORS.shoes),
+    hairStyle: style('hair'),
+    top: style('top'),
+    bottoms: style('bottoms'),
+  };
+}
+
 /**
  * Character creation. Resolves with the name and look. Layout (docs/UI-REFERENCE.md): the avatar
  * preview always in view (phone: fixed at the top, about 35% of the screen height; desktop: on the
@@ -101,17 +128,17 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: st
     pickers.setLook(look);
     const name = el('input', 'chat-input name-input');
     name.maxLength = DISPLAY_NAME_MAX;
-    name.placeholder = 'Your name in the game';
+    name.placeholder = 'Your name';
     name.autocomplete = 'off';
     name.setAttribute('aria-label', 'Display name');
     // MB-1: the Inn's name, the same character rules; left empty it becomes the default.
     const inn = el('input', 'chat-input name-input inn-name-input');
     inn.maxLength = DISPLAY_NAME_MAX;
-    inn.placeholder = `Name of your Inn (${DEFAULT_INN_NAME})`;
+    inn.placeholder = DEFAULT_INN_NAME;
     inn.autocomplete = 'off';
     inn.setAttribute('aria-label', 'Inn name');
     const problem = el('div', 'panel-info newgame-problem');
-    const done = textButton('Done', () => {
+    const done = textButton('Begin your story', () => {
       const clean = cleanDisplayName(name.value);
       if (!clean) {
         problem.textContent = `Pick a name: up to ${DISPLAY_NAME_MAX} letters, digits and spaces.`;
@@ -127,17 +154,36 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: st
       preview.stop();
       s.remove();
       resolve({ name: clean, innName: innClean, look });
-    }, 'newgame-next');
+    }, 'newgame-next primary');
     name.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
     inn.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
     const stage = el('div', 'charmaker-stage');
-    stage.append(el('h2', 'charmaker-title plate', 'Make your character'), preview.el);
+    // The stage: a candle-lit tavern corner (CSS, skin.css) with the avatar on a rug, turn arrows and a dice.
+    const turnLeft = textButton('◀', () => preview.turn(-1), 'turn-btn small');
+    turnLeft.setAttribute('aria-label', 'Turn left');
+    const turnRight = textButton('▶', () => preview.turn(1), 'turn-btn small');
+    turnRight.setAttribute('aria-label', 'Turn right');
+    const dice = textButton('Surprise me', () => {
+      look = randomLook(look);
+      pickers.setLook(look);
+      preview.setLook(look);
+    }, 'dice-btn small');
+    const controls = el('div', 'charmaker-turn');
+    controls.append(turnLeft, dice, turnRight);
+    stage.append(el('h2', 'charmaker-title plate', 'Make your character'), el('div', 'stage-rug'), preview.el, controls);
     // The tabs sit on the panel's top edge, like in every panel.
     const side = el('div', 'charmaker-side');
     const panel = el('div', 'frame charmaker-panel');
     const choices = el('div', 'charmaker-choices');
     choices.append(pickers.body);
-    panel.append(name, inn, problem, el('div', 'divider'), choices, done);
+    const names = el('div', 'name-card inset');
+    const field = (label: string, input: HTMLInputElement): HTMLElement => {
+      const f = el('label', 'name-field');
+      f.append(el('span', 'name-label', label), input);
+      return f;
+    };
+    names.append(field('You', name), field('Your inn', inn));
+    panel.append(names, problem, el('div', 'divider'), choices, done);
     side.append(pickers.tabs, panel);
     s.append(stage, side);
   });

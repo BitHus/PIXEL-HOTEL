@@ -3918,3 +3918,66 @@
     opacity: 0.7;
   }
 }
+
+/* ---------- A17: reel feedback (the code toggles .catching and .draining on .fish-track and sets --tension 0..1) ---------- */
+.fish-track {
+  /* The bar trembles in whole px with the tension: 0 = still, 1 = about 2 px. */
+  animation: fish-tremble 140ms steps(2, end) infinite;
+}
+
+@keyframes fish-tremble {
+  0% { transform: translateX(calc(var(--tension, 0) * -2px)); }
+  50% { transform: translateX(calc(var(--tension, 0) * 2px)); }
+  100% { transform: translateX(calc(var(--tension, 0) * -2px)); }
+}
+
+/* The fish is inside the green box: the box glows and pulses (stepped, pixel look). */
+.fish-track.catching .fish-box {
+  box-shadow: 0 0 0 2px rgba(254, 231, 97, 0.55), 0 0 10px 2px rgba(99, 199, 77, 0.7);
+  animation: fish-catch-pulse 420ms steps(3, end) infinite;
+}
+
+@keyframes fish-catch-pulse {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.35); }
+  100% { filter: brightness(1); }
+}
+
+/* The catch bar is low and falling: the track blinks red and the box turns warning red. */
+.fish-track.draining {
+  border-color: #e43b44;
+  animation:
+    fish-tremble 140ms steps(2, end) infinite,
+    fish-drain-blink 360ms steps(2, end) infinite;
+}
+
+.fish-track.draining .fish-box {
+  background: rgba(228, 59, 68, 0.4);
+  border-color: #e43b44;
+}
+
+@keyframes fish-drain-blink {
+  0% { box-shadow: inset 0 0 0 0 rgba(228, 59, 68, 0); }
+  50% { box-shadow: inset 0 0 14px 4px rgba(228, 59, 68, 0.75); }
+  100% { box-shadow: inset 0 0 0 0 rgba(228, 59, 68, 0); }
+}
+
+/* A high tension tints the water a little redder (no animation needed). */
+.fish-track {
+  background-image: linear-gradient(rgba(228, 59, 68, calc(var(--tension, 0) * 0.28)), rgba(228, 59, 68, calc(var(--tension, 0) * 0.28)));
+}
+
+/* Rank-coloured screen flash for a rare, ultra rare or legendary catch (add the class next to .screen-flash). */
+.screen-flash.rank-rare { background: #0099db; }
+.screen-flash.rank-ultra_rare { background: #b55088; }
+.screen-flash.rank-legendary { background: #feae34; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fish-track,
+  .fish-track.draining {
+    animation: none;
+  }
+  .fish-track.catching .fish-box {
+    animation: none;
+  }
+}

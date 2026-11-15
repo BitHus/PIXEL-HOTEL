@@ -6,7 +6,7 @@
 // Every tap calls onChange at once, so the preview updates the moment a choice is made.
 
 import { HATS, LOOK_COLORS, PALETTE, RANK_COLORS, SLOT_FIELD, hatWearable, selectableClothing, type AvatarLook, type ClothingSlot } from '@pixel-hotel/shared';
-import { partBounds } from '../render/avatarParts.ts';
+import { drawAvatarOnCanvas, partBounds } from '../render/avatarParts.ts';
 import { hatBoxes } from '../render/hatParts.ts';
 import { el, textButton } from './dom.ts';
 import { tabBar } from './panelShell.ts';
@@ -51,8 +51,8 @@ const TABS: { name: string; icon: IconName; rows: Row[] }[] = [
     ],
   },
   { name: 'Shoes', icon: 'shoe', rows: [{ kind: 'color', field: 'shoes', list: LOOK_COLORS.shoes, label: 'Shoes colour' }] },
-  // Hats (step 9g-1): only in the Avatar panel (a new character owns none). The tab icon is a placeholder until the artist draws a hat icon.
-  { name: 'Hat', icon: 'hair', rows: [{ kind: 'hat' }] },
+  // Hats (step 9g-1): only in the Avatar panel (a new character owns none).
+  { name: 'Hat', icon: 'hat', rows: [{ kind: 'hat' }] },
 ];
 
 /** A hat on a small canvas, 2 canvas px per art px; `locked` = the grey silhouette. */
@@ -112,21 +112,33 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
         const next = options[(at + d + options.length) % options.length];
         if (next) set({ ...l, [field]: next.id });
       };
+      // Big tiles: each option drawn on the avatar itself (cropped to the hair, top or bottoms), so you pick by looking.
+      const grid = el('div', 'look-tiles');
+      options.forEach((o, i) => {
+        const t = el('button', `look-tile crop-${r.slot}${i === at ? ' selected' : ''}`);
+        t.type = 'button';
+        t.setAttribute('aria-label', `${r.label}: ${o.name}`);
+        t.title = o.name;
+        const c = el('canvas', 'look-tile-art');
+        drawAvatarOnCanvas(c, { ...l, [field]: o.id }, 'down', 1);
+        t.appendChild(c);
+        t.addEventListener('click', () => set({ ...l, [field]: o.id }));
+        grid.appendChild(t);
+      });
       const prev = textButton('◀', () => step(-1), 'look-step small');
       prev.setAttribute('aria-label', `Previous ${r.label.toLowerCase()}`);
       const next = textButton('▶', () => step(1), 'look-step small');
       next.setAttribute('aria-label', `Next ${r.label.toLowerCase()}`);
       const stepper = el('div', 'look-stepper');
-      // The name plate: "Hair 2", then the style's name.
       const plate = el('span', 'look-value plate light');
-      plate.append(el('span', 'look-kind', `${r.label} ${at + 1}`), el('span', '', options[at]?.name ?? ''));
+      plate.append(el('span', 'look-kind', `${r.label} ${at + 1} / ${options.length}`), el('span', '', options[at]?.name ?? ''));
       stepper.append(prev, plate, next);
-      out.appendChild(stepper);
+      out.append(grid, stepper);
     } else {
       out.appendChild(el('div', 'look-label plate', r.label));
       const swatches = el('div', 'look-swatches');
       for (const i of r.list) {
-        const b = el('button', `swatch${l[r.field] === i ? ' selected' : ''}`);
+        const b = el('button', `swatch look-swatch${l[r.field] === i ? ' selected' : ''}`);
         b.type = 'button';
         b.style.background = PALETTE[i] ?? '';
         b.setAttribute('aria-label', `${r.label} ${i}`);
@@ -156,7 +168,22 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
     if (hat && owned) plate.style.color = PALETTE[RANK_COLORS[hat.rank]] ?? '';
     const stepper = el('div', 'look-stepper');
     stepper.append(prev, plate, next);
-    out.appendChild(stepper);
+    // A tile per hat: "no hat" first, locked hats as grey silhouettes.
+    const grid = el('div', 'look-tiles hat-tiles');
+    for (let i = 0; i < n; i++) {
+      const h = i === 0 ? null : HATS[i - 1]!;
+      const t = el('button', `look-tile hat-tile${i === hatAt ? ' selected' : ''}${h && !hatWearable(h.id, unlocked) ? ' locked' : ''}`);
+      t.type = 'button';
+      t.setAttribute('aria-label', h ? h.name : 'No hat');
+      if (h) t.appendChild(hatCanvas(h.id, !hatWearable(h.id, unlocked)));
+      else t.appendChild(el('span', 'look-tile-none', '✕'));
+      t.addEventListener('click', () => {
+        hatAt = i;
+        draw();
+      });
+      grid.appendChild(t);
+    }
+    out.append(grid, stepper);
     if (hat) out.appendChild(hatCanvas(hat.id, !owned));
     if (hat && !owned) out.appendChild(el('div', 'hat-hint', hat.unlock ?? ''));
     const wearing = (l.hat ?? '') === (hat?.id ?? '');

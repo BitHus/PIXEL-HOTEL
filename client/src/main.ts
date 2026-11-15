@@ -2,6 +2,7 @@
 // order, and hands what the later parts need on (the order and the shared types are in game/ctx.ts).
 import { TextureSource } from 'pixi.js';
 import './ui/ui.css';
+import './ui/skin.css';
 import type { G0, Late, State } from './game/ctx.ts';
 import { setupCore } from './game/core.ts';
 import { setupAvatarWalk } from './game/avatarWalk.ts';

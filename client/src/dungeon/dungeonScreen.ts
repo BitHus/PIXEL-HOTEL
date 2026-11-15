@@ -106,7 +106,7 @@ export class DungeonScreen {
   constructor(private readonly ctx: DungeonContext, look: AvatarLook) {
     this.view = new DungeonView(look);
     this.view.world.visible = false;
-    ctx.app.stage.addChild(this.view.world);
+    ctx.app.stage.addChild(this.view.world, this.view.light.vignette);
     this.floats = new FloatTexts(ctx.ui);
     // Screen overlays; shown and hidden here, drawn by CSS (.hurt-edge, .low-hp). Empty and invisible without that CSS.
     this.hurtEdge = document.createElement('div');
@@ -296,6 +296,7 @@ export class DungeonScreen {
     this.run = null;
     this.prev = null;
     this.view.world.visible = false;
+    this.view.light.vignette.visible = false;
     this.resetFx();
     this.floats.clear();
     this.ctx.popups.clear();
@@ -498,6 +499,7 @@ export class DungeonScreen {
     this.shown = snapCamera(cam, this.ctx.dpr());
     this.view.world.scale.set(this.shown.zoom);
     this.view.world.position.set(-this.shown.x * this.shown.zoom, -this.shown.y * this.shown.zoom);
+    this.view.light.layoutVignette(w, h);
     this.floats.update(rdt, (p) => worldToScreen(p, this.shown));
     this.ctx.popups.update(worldToScreen({ x: this.view.playerAt.x, y: this.view.playerAt.y - 64 }, this.shown));
     // Hurt edge pulse and the low hp heartbeat vignette (HTML overlays; their look is CSS: .hurt-edge and .low-hp).
