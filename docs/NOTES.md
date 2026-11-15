@@ -141,6 +141,43 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   room.test.ts (cells, paint), economy.test.ts (paintFloor), save.test.ts (13 -> 14),
   localGameAPI.test.ts (paintFloor).
 
+## BG2: item icons (step BG2)
+
+- DATA: every item has `icon: { shape, colors }` in its data file: materials.json (ore, bars, wood,
+  cloth, drops), crops.json (`icon` for the crop, `seedIcon` for its seed), food.json, drinks.json,
+  fish.json (fish and fished-up things), forge.json pieces, gear.json (the potion), clothing.json,
+  furniture.json (inventory icon) and extraIcons.json (the dungeon key). `color` fields stay (the
+  farm art and the old placeholders still read them); the icon is what items show.
+- SHAPES: ICON_SHAPES in shared/src/icons.ts (type IconShape, isValidIcon, iconKey). It has the
+  goods shapes (ore, bar, fish, leaf, mushroom, log, potion, bread, mug, gem, seed, block, cloth,
+  bone, boot, key, ring, plate, bottle, shell, ...), gear and clothing (sword, armor, pickaxe, axe,
+  rod, helmet, shirt, hat, trousers, skirt, hair) and furniture silhouettes (chair, table, lamp,
+  shelf, bed, rug, plant, box, ...). seed, block and gem are there for BG4 to BG8: a new item picks
+  an existing shape or adds one (to ICON_SHAPES and to DRAW in iconPixels.ts; a test fails if not).
+- COLOURS: PALETTE_NAMES / PaletteName / paletteColor in shared/src/palette.ts (our own names for
+  the 32 colours; `outline` = the dark warm one). colors[0] main, [1] accent, [2] third (missing
+  ones follow the one before). No hex anywhere else.
+- LOOKUP: shared/src/itemIcons.ts iconGroups() lists every icon by group (material, seed, crop,
+  food, drink, fish, thing, furniture, clothing, gear, extra); shared/src/icons.test.ts checks every
+  one is valid and that no two items of a group share shape + colours.
+- DRAWING: client/src/render/iconPixels.ts iconPixels(icon, rank?) is pure: a 32x32 array of hex
+  (null = empty). Each shape paints flat fills with a small Pen (rect, oval, poly, line); then ONE
+  pass adds light from the top-left (lighter edge where the pixel above or left is empty, darker
+  where below or right is) and the 1 px outline; a rank adds a 1 px frame in RANK_COLORS (the art
+  keeps the outer ring free). client/src/render/drawIcon.ts drawIcon(shape, colors, rank?, size?)
+  paints it on a canvas, iconDataUrl(icon, rank?) for <img> slots, iconTexture(icon, rank?, size?)
+  for PixiJS (nearest), lootIcon(loot); all cached per (shape, colors, rank, size).
+- USED BY: ui/itemIcon.ts (materialIconUrl, furnitureIconUrl, clothingIconUrl, gearIconUrl,
+  potionIconUrl, keyIconUrl) for the bag, hotbar, run bag, catalog, seeds, shelf picker, Book,
+  recipes, cooking, lunch box, the forge (every tier and bar now shows its icon) and the confirm
+  dialog; render/slotGoods.ts for goods on stalls, shelves and in customers' hands (the 32 px icon
+  sampled down to 12 px). The slot border already shows the rank, so HTML slots pass no rank.
+- NOT DONE ON PURPOSE: chest and kill drops in the dungeon are still floating TEXT (BG3 makes them
+  icon popups); no gems or blocks yet; styles keep their own previews (they are not items).
+- PLACEHOLDER: the shapes are rough on purpose. Real pixel art replaces drawIcon per item in
+  phase 4 (a sprite per item id wins over the shape); the data stays as the fallback.
+- CHECK BY EYE: render all icons on one sheet (a vite-node script over iconGroups() + iconPixels()).
+
 ## File lists: client/ (steps 1 to 5b)
 
 - client/src/main.ts: Pixi app (resolution = devicePixelRatio, nearest scaling). Opens

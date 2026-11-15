@@ -8,6 +8,7 @@ import cropData from '../data/crops.json';
 import foodData from '../data/food.json';
 import drinkData from '../data/drinks.json';
 import { CATCH_TYPES } from './fish.ts';
+import type { Icon } from './icons.ts';
 import type { CropId, DrinkId, FoodId, MaterialGroup, MaterialId, MaterialType, Rank, SeedId } from './types.ts';
 
 /** A crop (crops.json): its seed, grow time and value. A seed with seedPrice null is not sold. */
@@ -24,6 +25,9 @@ export interface CropType {
   baseValue: number;
   color: number;
   seedColor: number;
+  /** The square icons of the crop and of its seed (step BG2). */
+  icon: Icon;
+  seedIcon: Icon;
   /** The rank of the crop and of its seed (step 9e). */
   rank: Rank;
 }
@@ -42,6 +46,7 @@ export interface FoodType {
   effect: FoodEffect;
   baseValue: number;
   color: number;
+  icon: Icon;
   rank: Rank;
 }
 
@@ -59,6 +64,7 @@ export interface DrinkType {
   /** Extra coins a guest leaves, as a share of the price (the glowcap tonic). */
   tip: number;
   color: number;
+  icon: Icon;
   rank: Rank;
 }
 
@@ -70,12 +76,12 @@ const base = (materialData as Omit<MaterialType, 'group'>[]).map((m): MaterialTy
 
 export const MATERIAL_TYPES: MaterialType[] = [
   ...base,
-  ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, rank: c.rank, group: 'seed' })),
-  ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, rank: c.rank, group: 'crop' })),
-  ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, rank: f.rank, group: 'food' })),
-  ...DRINK_TYPES.map((d): MaterialType => ({ id: d.id, name: d.name, baseValue: d.baseValue, color: d.color, rank: d.rank, group: 'drink' })),
+  ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, icon: c.seedIcon, rank: c.rank, group: 'seed' })),
+  ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, icon: c.icon, rank: c.rank, group: 'crop' })),
+  ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, icon: f.icon, rank: f.rank, group: 'food' })),
+  ...DRINK_TYPES.map((d): MaterialType => ({ id: d.id, name: d.name, baseValue: d.baseValue, color: d.color, icon: d.icon, rank: d.rank, group: 'drink' })),
   // The lakeside's catches (step 9f): fish and the things fished up.
-  ...CATCH_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, rank: c.rank, group: c.kind })),
+  ...CATCH_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, icon: c.icon, rank: c.rank, group: c.kind })),
 ];
 
 const BY_ID = new Map(MATERIAL_TYPES.map((m) => [m.id, m]));

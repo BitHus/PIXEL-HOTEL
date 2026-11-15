@@ -171,6 +171,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   dark outline. No anti-aliasing. Nearest-neighbour scaling only.
 - Sprite sizes: docs/BRIEF.md 12 (avatar 32x64, floor texture 64x64, blocks and icons 32x32).
   Anchor = bottom center of the footprint. Art is drawn in code from boxes until step 6.
+  ITEM ICONS: every item has data icon { shape, colors } (palette NAMES); render/drawIcon.ts draws it.
 - UI: HTML/CSS over the canvas, local open-license pixel font. Layout, frame style and patterns
   are in docs/UI-REFERENCE.md: read it before any step that adds or changes UI.
 
@@ -204,13 +205,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
 - Done: steps 1 to 5b, 7, 7b, 8 and 9 (dungeon), 9b (farm), 9c (mine), UI polish, atmosphere, logo
   splash, 9d (shop life) and fixes, 9e (ranks, Book), 9f (lakeside), 1.0 (housekeeping), BG1 (the
-  32 px cell grid: floor furniture, floor paint, navigation per cell; docs/NOTES.md BG1).
+  32 px cell grid; NOTES BG1), BG2 (every item is a coloured square: icon { shape, colors } in the
+  data, drawn by render/drawIcon.ts; NOTES BG2).
 - Step 9t (tavern) is HALF done: A (shared rules, NOTES STEP 9t) done; B (client) and C (panels,
   texts) next, on the cell grid.
-- Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder). Next (docs/ROADMAP.md): BG2-BG9
+- Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder). Next (docs/ROADMAP.md): BG3-BG9
   (block world, docs/BLOCKS-PLAN.md), then 9t B/C, 9g, 9h, 9i.
-- DUNGEON_ROUND is 1. SAVE_VERSION is 14. LocalGameAPI only. All art is placeholder boxes drawn
-  in code. The indoor lighting look is approved: keep it.
+- DUNGEON_ROUND is 1. SAVE_VERSION is 14. LocalGameAPI only. All art is placeholder shapes and boxes
+  drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, simulate, simulate:dungeon. Vite base stays './'.

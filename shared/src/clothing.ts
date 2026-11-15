@@ -6,6 +6,7 @@
 
 import clothingData from '../data/clothing.json';
 import { DISPLAY_NAME_MAX, LOOK_COLORS } from './config.ts';
+import type { Icon } from './icons.ts';
 import type { AvatarLook } from './avatar.ts';
 
 export type ClothingSlot = 'hair' | 'top' | 'bottoms';
@@ -15,6 +16,8 @@ export interface ClothingType {
   slot: ClothingSlot;
   name: string;
   free: boolean;
+  /** The inventory icon (step BG2). */
+  icon: Icon;
 }
 
 export const CLOTHING = clothingData as ClothingType[];

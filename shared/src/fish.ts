@@ -3,6 +3,7 @@
 // stackable goods from it. Fish are shop goods of the category 'food'; fished-up things are
 // materials. Both stack in Player.materials and are in the Book's Fish tab.
 
+import type { Icon } from './icons.ts';
 import fishData from '../data/fish.json';
 import type { FishId, Rank, ThingId } from './types.ts';
 
@@ -14,6 +15,7 @@ export interface CatchType {
   baseValue: number;
   /** Placeholder icon colour (palette index). */
   color: number;
+  icon: Icon;
   /** Fish only: the size range of a catch in cm. */
   minCm?: number;
   maxCm?: number;

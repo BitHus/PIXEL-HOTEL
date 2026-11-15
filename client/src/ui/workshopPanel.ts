@@ -31,7 +31,7 @@ import {
   RANK_NAMES,
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
-import { furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
+import { furnitureIconUrl, gearIconUrl, materialIconUrl, potionIconUrl } from './itemIcon.ts';
 import { panelShell, priceTag, tabBar } from './panelShell.ts';
 import { pixelIcon, type IconName } from './pixelIcons.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
@@ -148,7 +148,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
     const full = p.potions >= g.carryMax;
     const b = textButton(full ? 'Full' : 'Buy', () => hooks.buy(g));
     b.disabled = full || p.wallet.gold < g.price;
-    row.append(iconSlot(pixelIcon('potion')), info, b);
+    row.append(iconSlot(img(potionIconUrl())), info, b);
     return row;
   };
 
@@ -196,7 +196,7 @@ export function createWorkshopPanel(parent: HTMLElement, hooks: WorkshopHooks): 
         }
         info.append(needs);
       }
-      t.append(info);
+      t.append(iconSlot(img(gearIconUrl(g.id))), info);
       if (state === 'next') {
         const b = textButton('Forge', () => hooks.forge(g));
         b.disabled = !canFor(g, p);
