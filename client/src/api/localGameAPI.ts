@@ -55,12 +55,12 @@ import {
   type FishUpdate,
   type LakesideView,
   type BookTab,
-  harvestPlot,
-  plantPlot,
+  hitPlant,
+  plantSeed,
+  farmCounts,
   roomBlockers,
   type FarmView,
   type FoodId,
-  type HarvestResult,
   type RoomLevel,
   type SeedId,
   buyGear,
@@ -273,7 +273,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       if (r.ok) {
         const back = r.returnedToBag;
         const extra = back > 0 ? ` ${back} ${back === 1 ? 'item' : 'items'} did not fit the new building grid and went back to your bag.` : '';
-        return start(r.state, `Your save was updated to the new version of the game.${extra}`);
+        const farm = r.farmChanged
+          ? ' The farm is free-form now: your old plots are soil cells. Select a seed and tap soil to plant, punch a grown plant to harvest it.'
+          : '';
+        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}`);
       }
       return start(
         createNewPlayer(undefined, now()),
@@ -653,20 +656,32 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     return this.farmView();
   }
 
-  async plant(plot: number, seed: SeedId): Promise<FarmView | null> {
-    const next = plantPlot(this.state, plot, seed, this.now());
-    if (!next) return null;
-    // The farm quest: plant your first turnip (any seed counts).
-    this.commit(this.hintDone(next, FARM_HINT));
-    return this.farmView();
+  /** Plants a seed in a soil cell (step BG6): within reach, else the avatar walks closer first. */
+  async plantSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const res = plantSeed(this.state, room.id, c, r, seed, this.now(), { standing: this.standingPoints(), from: me });
+    if (!res.ok) return res.problem === 'reach' ? this.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
+    // The farm quest: plant your first seed (any seed counts).
+    this.commitBlocks(this.hintDone(res.state, FARM_HINT));
+    return { kind: 'planted', room: this.roomById(room.id)!, c, r, gains: [] };
   }
 
-  async harvest(plot: number): Promise<HarvestResult | null> {
-    const r = harvestPlot(this.state, plot, this.now(), this.rng);
-    if (!r) return null;
-    const gains = gainsSince(this.state, r.state);
-    this.commit(r.state);
-    return { farm: this.farmView(), crop: r.harvest.crop, qty: r.harvest.qty, gains };
+  /** One punch at a plant (step BG6): a grown one is harvested, an unripe one is left alone. */
+  async hitPlant(c: number, r: number): Promise<BlockResult> {
+    const room = this.room();
+    const me = this.avatarNow();
+    const now = this.now();
+    const res = hitPlant(this.state, room.id, c, r, now, this.lastBlockHitAt, this.rng, me);
+    if (!res.ok) {
+      if (res.problem === 'reach') return this.walkCloser(me, c, r);
+      if (res.problem === 'unripe') return { kind: 'unripe', c, r, leftMs: res.leftMs ?? 0 };
+      return { kind: 'refused', problem: res.problem };
+    }
+    this.lastBlockHitAt = now;
+    const gains = gainsSince(this.state, res.state);
+    this.commitBlocks(res.state);
+    return { kind: 'harvested', room: this.roomById(room.id)!, c, r, gains };
   }
 
   async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> {
@@ -780,9 +795,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   }
 
   private farmView(): FarmView {
-    const f = this.state.farm;
-    const room = this.roomById(f.roomId);
-    return structuredClone({ roomId: f.roomId, level: (room?.level ?? 1) as RoomLevel, plots: f.plots, at: this.now() });
+    const room = this.roomById(this.state.player.farmRoomId);
+    const at = this.now();
+    const counts = room ? farmCounts(room, at) : { ripe: 0, growing: 0, free: 0 };
+    return { roomId: this.state.player.farmRoomId, level: (room?.level ?? 1) as RoomLevel, ...counts, at };
   }
 
   /**

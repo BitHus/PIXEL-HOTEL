@@ -122,10 +122,10 @@ describe('where a block may stand', () => {
     expect(blockProblem(hotel(s), s.items, shopOnly, 3, 3, free)).toBe('wrong_room');
     expect(blockProblem(shop(s), s.items, shopOnly, 3, 3, free)).toBeNull();
   });
-  it('works in the farm, but not on its plots or the cooking pot', () => {
+  it('works in the farm (also on soil, step BG6), but not on the cooking pot', () => {
     const s = rich();
     const farm = roomOf(s, s.player.farmRoomId);
-    expect(blockProblem(farm, s.items, getBlockType('dirt'), 2, 2, free)).toBe('fixed'); // plot at x 64, y 64
+    expect(blockProblem(farm, s.items, getBlockType('dirt'), 2, 2, free)).toBeNull(); // a soil cell: a block may stand there
     expect(blockProblem(farm, s.items, getBlockType('dirt'), 14, 3, free)).toBe('fixed'); // the pot (464, 128)
     expect(blockProblem(farm, s.items, getBlockType('dirt'), 8, 8, free)).toBeNull();
   });
@@ -260,11 +260,11 @@ describe('drops (rng passed in)', () => {
     expect(blockDrops(getBlockType('stone'), seq(0.9))).toEqual({ materials: { stone: 1 }, gems: 0 });
   });
   it('an extra drop and a gem drop follow the rolls in order', () => {
-    // planks: the wood roll first (0.05 < 0.1), then the gem chance (0.01 < 0.15) and the amount (0 -> min).
-    expect(blockDrops(getBlockType('planks'), seq(0.05, 0.01, 0))).toEqual({ materials: { planks: 1, wood: 1 }, gems: 1 });
-    expect(blockDrops(getBlockType('planks'), seq(0.5, 0.01, 0.99))).toEqual({ materials: { planks: 1 }, gems: 2 });
+    // planks: the seed roll first (0.5: none), the wood roll (0.05 < 0.1), then the gem chance (0.01 < 0.15) and the amount (0 -> min).
+    expect(blockDrops(getBlockType('planks'), seq(0.5, 0.05, 0.01, 0))).toEqual({ materials: { planks: 1, wood: 1 }, gems: 1 });
+    expect(blockDrops(getBlockType('planks'), seq(0.5, 0.5, 0.01, 0.99))).toEqual({ materials: { planks: 1 }, gems: 2 });
   });
-  it('a seed drops with BLOCK_SEED_CHANCE when the block has a seedId (BG6 fills it in)', () => {
+  it('a seed drops with BLOCK_SEED_CHANCE when the block has a seedId (every block has one since BG6)', () => {
     const withSeed = { ...getBlockType('dirt'), seedId: 'turnip_seed' } as BlockType;
     expect(blockDrops(withSeed, seq(0.1, 0.9)).materials).toEqual({ dirt: 1, turnip_seed: 1 });
     expect(blockDrops(withSeed, seq(0.5, 0.9)).materials).toEqual({ dirt: 1 });
@@ -279,7 +279,7 @@ describe('drops (rng passed in)', () => {
     const id = s0.player.hotelRoomId;
     const s1 = put(s0, id, 3, 3, 'planks');
     // Planks take 3 hits; here a soft copy so one hit breaks it (the rolls are what is tested).
-    const r = hitBlock(s1, id, 3, 3, 1000, 0, seq(0.05, 0.01, 0), null, (b) => ({ ...getBlockType(b), hardness: 1 }));
+    const r = hitBlock(s1, id, 3, 3, 1000, 0, seq(0.5, 0.05, 0.01, 0), null, (b) => ({ ...getBlockType(b), hardness: 1 }));
     expect(r).toMatchObject({ ok: true, kind: 'broken' });
     if (!r.ok) return;
     expect(r.state.player.wallet.gems).toBe(1);
@@ -312,15 +312,14 @@ describe('drops (rng passed in)', () => {
 });
 
 describe('a room upgrade', () => {
-  it('sends blocks that stand on new plots back to the bag', () => {
+  it('blocks on soil stay put when the farm grows (the plots are gone since BG6)', () => {
     const s0 = rich();
     const farmId = s0.player.farmRoomId;
-    // Level 2 adds the plot at x 256, y 64: cell (8, 2).
     const s1 = put(s0, farmId, 8, 2, 'stone');
     expect(blockInCell(roomOf(s1, farmId), 8, 2)).not.toBeNull();
     const up = upgradeRoom(s1, farmId, 5)!;
-    expect(blockInCell(roomOf(up, farmId), 8, 2)).toBeNull();
-    expect(up.player.materials.stone).toBe(60);
+    expect(blockInCell(roomOf(up, farmId), 8, 2)).not.toBeNull();
+    expect(up.player.materials.stone).toBe(59);
     expect(blockKey(8, 2)).toBe('8,2');
   });
 });

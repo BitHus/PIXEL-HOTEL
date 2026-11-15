@@ -23,10 +23,18 @@ import {
   type RoomLevel,
 } from './config.ts';
 import type { BlockCell } from './blockTypes.ts';
-import type { Point, Rect } from './types.ts';
+import type { Point, Rect, SeedId } from './types.ts';
 
 /** The hotel room, the shop, the farm (step 9b) and the lakeside (step 9f). */
 export type RoomKind = 'hotel' | 'shop' | 'farm' | 'lakeside';
+
+/** A seed growing in a cell of a farm room (step BG6; Room.plants, key "col,row"). Times are ms on the game clock. */
+export interface Plant {
+  seed: SeedId;
+  plantedAt: number;
+  /** When it is fully grown (plantedAt + the grow time of its rank; a migrated old crop keeps its own). */
+  readyAt: number;
+}
 
 export interface Room {
   /** Room ids are integers. */
@@ -45,6 +53,8 @@ export interface Room {
   wallStyle: string;
   /** The foreground layer (step BG5): one block per cell, key "col,row". Empty = none. */
   blocks: Record<string, BlockCell>;
+  /** Plants growing on soil cells (step BG6), one per cell, key "col,row"; a cell has a block or a plant, never both. */
+  plants: Record<string, Plant>;
   ownerId: number;
   /** Owners can set a room to private (section 13). */
   private: boolean;
@@ -117,6 +127,7 @@ export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId
     floorStyle: kind === 'farm' || kind === 'lakeside' ? FARM_FLOOR_STYLE : START_FLOOR_STYLE,
     wallStyle: kind === 'farm' || kind === 'lakeside' ? FARM_WALL_STYLE : START_WALL_STYLE,
     blocks: {},
+    plants: {},
     ownerId,
     private: false,
   };
@@ -390,7 +401,21 @@ export function blockList(room: Room): { c: number; r: number; block: BlockCell 
   });
 }
 
-/** The cells of the blocks, as rectangles: they block walking. */
-export function blockRects(room: Room): Rect[] {
-  return blockList(room).map((b) => cellRectOf(b.c, b.r));
+/** The plant growing in a cell, or null. */
+export function plantInCell(room: Room, c: number, r: number): Plant | null {
+  return room.plants[blockKey(c, r)] ?? null;
 }
+
+/** Every plant of the room with its cell. */
+export function plantList(room: Room): { c: number; r: number; plant: Plant }[] {
+  return Object.entries(room.plants).map(([k, plant]) => {
+    const [c, r] = k.split(',').map(Number) as [number, number];
+    return { c, r, plant };
+  });
+}
+
+/** The cells of the blocks and the plants, as rectangles: they block walking (a plant is a small block). */
+export function blockRects(room: Room): Rect[] {
+  return [...blockList(room).map((b) => cellRectOf(b.c, b.r)), ...plantList(room).map((p) => cellRectOf(p.c, p.r))];
+}
+

@@ -16,7 +16,7 @@ import { cellCenter, isCellFree, nearestFreeCell, reachableCells, type NavGrid }
 import type { GameState } from './gameState.ts';
 import { gemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
-import { blockInCell, blockKey, cellOf, cellOnFloor, cellRectOf, doorZoneRect, rectsOverlap, type Room } from './room.ts';
+import { blockInCell, blockKey, cellOf, cellOnFloor, cellRectOf, doorZoneRect, plantInCell, rectsOverlap, type Room, type RoomKind } from './room.ts';
 import type { FurnitureItem, MaterialId, Point, Rng } from './types.ts';
 
 export type BlockProblem =
@@ -34,7 +34,10 @@ export type BlockProblem =
   | 'counter_blocked' // the spot behind the counter would no longer be reachable
   | 'reach' // too far from the avatar (the client walks closer first)
   | 'no_block' // nothing to hit there
-  | 'cooldown'; // too soon after the last hit (not an error)
+  | 'cooldown' // too soon after the last hit (not an error)
+  | 'no_soil' // seeds only go on soil cells (step BG6)
+  | 'no_plant' // nothing planted there to harvest
+  | 'unripe'; // the plant is not fully grown yet
 
 /** Who is where: the avatars standing still (cells that stay free) and the one who places or hits. */
 export interface BlockContext {
@@ -65,12 +68,28 @@ export function blockProblem(
   ctx: BlockContext,
   types: FurnitureLookup = getFurnitureType,
 ): BlockProblem | null {
+  return cellProblem(room, items, type.placeIn, c, r, ctx, types);
+}
+
+/**
+ * The checks every one-cell thing shares (a block, or a plant since step BG6): the room kind, floor, door zone,
+ * a block or plant already there, furniture, the pot, an avatar, the door and the counter staying reachable, reach.
+ */
+export function cellProblem(
+  room: Room,
+  items: readonly FurnitureItem[],
+  placeIn: readonly RoomKind[],
+  c: number,
+  r: number,
+  ctx: BlockContext,
+  types: FurnitureLookup = getFurnitureType,
+): BlockProblem | null {
   if (room.kind === 'lakeside') return 'not_buildable';
-  if (!type.placeIn.includes(room.kind)) return 'wrong_room';
+  if (!placeIn.includes(room.kind)) return 'wrong_room';
   if (!cellOnFloor(room, c, r)) return 'floor';
   const cell = cellRectOf(c, r);
   if (rectsOverlap(cell, doorZoneRect(room))) return 'door';
-  if (blockInCell(room, c, r)) return 'taken';
+  if (blockInCell(room, c, r) || plantInCell(room, c, r)) return 'taken';
   if (floorFurniture(room, items, types).some((i) => rectsOverlap(cell, footprintRect(i, types(i.typeId))))) return 'furniture';
   if ([...noPlaceRects(room), ...fixedBlockers(room)].some((x) => rectsOverlap(cell, x))) return 'fixed';
   if (ctx.standing.some((p) => cellOf(p).c === c && cellOf(p).r === r)) return 'avatar';
@@ -85,11 +104,11 @@ export function blockProblem(
   return null;
 }
 
-function roomOf(state: GameState, roomId: number): Room | null {
+export function roomOf(state: GameState, roomId: number): Room | null {
   return state.rooms.find((x) => x.id === roomId) ?? null;
 }
 
-function withRoom(state: GameState, room: Room): GameState {
+export function withRoom(state: GameState, room: Room): GameState {
   return { ...state, rooms: state.rooms.map((x) => (x.id === room.id ? room : x)) };
 }
 

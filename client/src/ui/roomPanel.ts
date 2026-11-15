@@ -3,7 +3,7 @@
 // with the player's unlocked styles. Picking a style shows it on the room at once (applying is
 // free, so the live preview is the change itself; pick again to go back).
 
-import { ROOM_MAX_LEVEL, STYLE_TYPES, farmPlotCount, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
+import { ROOM_MAX_LEVEL, STYLE_TYPES, soilCells, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
 import { ROOM_NAMES } from './infoPanel.ts';
 import { el, textButton } from './dom.ts';
 import { panelShell } from './panelShell.ts';
@@ -61,10 +61,16 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
         return;
       }
       if (room.kind === 'farm') {
-        // The farm keeps its grass and hedge; an upgrade adds plots.
-        facts.append(el('div', '', `Plots ${farmPlotCount(room.level)}`));
-        if (cost !== null) up.title = `Level ${room.level + 1}: the farm grows and gets ${farmPlotCount((room.level + 1) as 2 | 3)} plots.`;
-        body.replaceChildren(facts, up, el('div', 'panel-info', 'Place decorations around the plots in build mode.'));
+        // The farm keeps its grass and hedge; an upgrade makes the room bigger. Soil is painted for free.
+        facts.append(el('div', '', `Soil cells ${soilCells(room).length}`));
+        if (cost !== null) up.title = `Level ${room.level + 1}: the farm grows to the right and down.`;
+        body.replaceChildren(
+          facts,
+          up,
+          el('div', 'divider'),
+          textButton('Paint soil', () => hooks.startPaint()),
+          el('div', 'panel-info', 'Seeds only grow on soil. Paint soil cells (free) or paint grass over them to take soil away. Build paths and fences with blocks.'),
+        );
         return;
       }
       body.replaceChildren(

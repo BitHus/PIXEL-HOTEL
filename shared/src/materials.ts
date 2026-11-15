@@ -79,6 +79,16 @@ export const MATERIAL_TYPES: MaterialType[] = [
   ...base,
   // The blocks (step BG5): placed in a cell, punched out again.
   ...BLOCK_TYPES.map((b): MaterialType => ({ id: b.id, name: b.name, baseValue: b.baseValue, color: 0, icon: b.icon, rank: b.rank, group: 'block' })),
+  // Every block has a seed (step BG6): the same two colours on the seed shape, a little cheaper than the block.
+  ...BLOCK_TYPES.map((b): MaterialType => ({
+    id: `${b.id}_seed` as SeedId,
+    name: `${b.name.replace(/ block$/, '')} seed`,
+    baseValue: Math.max(1, Math.round(b.baseValue / 2)),
+    color: 0,
+    icon: { shape: 'seed', colors: b.icon.colors },
+    rank: b.rank,
+    group: 'seed',
+  })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.seed, name: c.seedName, baseValue: c.seedValue, color: c.seedColor, icon: c.seedIcon, rank: c.rank, group: 'seed' })),
   ...CROP_TYPES.map((c): MaterialType => ({ id: c.id, name: c.name, baseValue: c.baseValue, color: c.color, icon: c.icon, rank: c.rank, group: 'crop' })),
   ...FOOD_TYPES.map((f): MaterialType => ({ id: f.id, name: f.name, baseValue: f.baseValue, color: f.color, icon: f.icon, rank: f.rank, group: 'food' })),
@@ -112,7 +122,7 @@ export function isFoodId(id: string): id is FoodId {
   return materialGroup(id) === 'food';
 }
 
-/** The crop a seed grows into. */
+/** The crop a seed grows into (a crop seed only: block seeds grow blocks, see seeds in farm.ts). */
 export function cropOfSeed(seed: SeedId): CropType {
   const c = CROP_TYPES.find((x) => x.seed === seed);
   if (!c) throw new Error(`unknown seed ${seed}`);

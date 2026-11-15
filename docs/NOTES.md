@@ -916,6 +916,8 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
 
 ## Farm and cooking (step 9b)
 
+- CHANGED IN BG6 (see the BG6 section at the end): the fixed plots, Plot / FarmState, plantPlot / harvestPlot and GameState.farm are GONE (seeds are planted on soil cells and punched, Room.plants). The cooking pot, crops, food, cooking and the lunch box below still hold. Read the BG6 section first.
+
 - Step 9b (farm and cooking, section 10b):
   - Data: shared/data/crops.json (turnip, potato, carrot, pumpkin, glowcap: seed id and name,
     seedPrice (null = not sold: the glowcap spore), seedValue, growMinutes, baseValue, colours),
@@ -1278,3 +1280,44 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   pinch never keeps punching.
 - KNOWN: the first hit happens on press, so a pan that starts on a block or a tree gives one hit before the pan
   (the owner asked for hit-on-press). Not run on a real phone by the AI.
+
+## BG6: seeds and the free-form farm (step BG6)
+
+- OWNER'S REQUEST (changes CLAUDE.md 10b and 9, BRIEF 10b). The farm is free-form: no fixed plots, soil = a floor style.
+- DATA: types.ts SeedId = CropSeedId | BlockSeedId (`${BlockId}_seed`). blocks.json seedId is now `<id>_seed` for all 10
+  blocks. materials.ts adds a 'seed' material per block (name "Dirt seed", icon { shape 'seed', colors = the block's two
+  colours }, baseValue = half the block's, rank = the block's). styles.json: floor 'soil' (not in the catalog; the farm paints
+  soil and grass for free, economy.paintFloor: FARM_FLOORS). crops.json growMinutes is LEGACY (migration only).
+  Config: SEED_GROW_MS (rank: common 2 min, rare 20 min, ultra_rare 3 h, legendary 12 h), SEED_YIELD, SEED_BACK_CHANCE 0.3,
+  PLANT_SPROUT_SHARE 0.5, GEMS.harvest, FARM_START_SOIL { c 2, r 2, w 6, h 2 }, SOIL_STYLE; the old FARM_PLOTS became
+  LEGACY_FARM_PLOTS (+ _PER_LEVEL), read only by migration 15 -> 16.
+- SHARED (all pure): room.ts Plant { seed, plantedAt, readyAt }, Room.plants (key "col,row", like blocks), plantInCell,
+  plantList, blockRects now includes plants (so roomBlockers, every nav grid and the door checks see them). blocks.ts:
+  blockProblem is now cellProblem(room, items, placeIn, c, r, ctx) (taken = a block OR a plant) + the BlockProblem
+  values 'no_soil', 'no_plant', 'unripe'. farm.ts (rewritten): seedProduct / seedRank / seedGrowMs, isSoil / soilCells,
+  growthStage (sprout, small, full), isRipe, readyInMs, plantProblem, plantSeed (ledger 'plant'), harvestPlant(plant, rng)
+  (rolls: amount, seed back, gems), hitPlant(state, roomId, c, r, at, lastHitAt, rng, from) (order: owner, plant, reach,
+  unripe, cooldown), plantsOverlapping, seedsForSale / buySeeds, farmCounts(room, now), keepSoilUnderPlants.
+  farmLayout.ts: only the pot is fixed (potRect, fixedBlockers, noPlaceRects = [pot]). legacyFarm.ts: the old farm
+  shape and convertLegacyFarm, ONLY for migrations. economy.upgradeRoom: no plot logic; plants on the new door zone
+  give their seed back (reason 'block_return').
+- MIGRATION 15 -> 16 (SAVE_VERSION 16, tests in save.test.ts): GameState.farm removed; each old plot -> a soil cell
+  (floorCells, snapped); planted crop -> plant { seed: the crop's seed, plantedAt: same, readyAt: plantedAt + the crop's OLD
+  growMinutes } so the stage and the time left stay exactly the same (new plants use the rank times); every room gets
+  plants {}; LoadResult.farmChanged (version < 16) -> LocalGameAPI shows the one-time toast. A migrated plant keeps
+  its old time, so a migrated carrot still needs 30 min.
+- GAMEAPI: plantSeed(c, r, seed) and hitPlant(c, r) return BlockResult (new kinds 'planted', 'harvested', 'unripe' with
+  leftMs; 'walk' and 'refused' as for blocks; the cooldown is the same lastBlockHitAt). getFarm() = FarmView { ripe, growing,
+  free } for the Map card. plant / harvest are gone. Planting finishes the farm hint (FARM_HINT).
+- CLIENT: farm/farmScreen.ts is only the pot now; farm/plantViews.ts (PlantViews: a node per plant in view.objects, stage art
+  farmArt.drawPlantArt, bobbing ripe marker, shake for an unripe punch, harvest puff, seed ghost); styleArt 'soil'. main.ts:
+  selectedBlock may be a seed (selectedProblem picks plantProblem or blockProblem), doBlock plants / punches (a plant in
+  the cell -> api.hitPlant; 'unripe' -> shake + toast + the hold stops), hold target kind 'plant', line hold plants seeds
+  too, paintableStyles() (the farm paints soil and grass). Room panel on the farm: Soil cells N, Paint soil.
+- LOOPS: block seeds drop from breaking blocks (20%) and come back from harvests (30%): per cycle (1 seed -> 2 to 4 blocks
+  -> 0.2 seeds each + 0.3 back) a loop decays, not grows (about 0.9 to 1.2 seeds per cycle, so dirt can be farmed
+  slowly; BG9 balances it).
+- TESTS: farm.test.ts (20), save.test.ts (4 new), farmAPI.test.ts, blocks.test.ts adjusted. By hand in headless Chromium
+  (900 x 640): an old v15 save (toast, 6 soil cells, a ripe turnip with its marker, a young pumpkin), plant by tap (walks,
+  plants), a hold on an unripe plant (nothing happens), a hold on ripe plants (harvest), a stone line by hold + drag, hold
+  on stone (breaks by itself, drops a stone seed), hold on a tree (walks, 5 swings, +3 wood). NOT checked: mine rocks, a real phone.

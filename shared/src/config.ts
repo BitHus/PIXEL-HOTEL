@@ -392,27 +392,39 @@ export const FARM_UPGRADE_COST = {
 /** The farm's ground and fence (styles.json, not in the catalog; the farm always uses them). */
 export const FARM_FLOOR_STYLE = 'grass';
 export const FARM_WALL_STYLE = 'hedge';
-/** A soil plot is a square of this size, px. */
-export const FARM_PLOT_SIZE = 32;
 /**
- * Every plot's top-left corner, in order; level n has the first FARM_PLOTS_PER_LEVEL[n - 1]. All of
- * them lie inside the level 1 farm, in neat rows, so an upgrade only adds plots. On cells (BG1), 2 cells apart.
+ * LEGACY (steps 9b to 9e): the old fixed plots, top-left corners in px, level n had the first
+ * LEGACY_FARM_PLOTS_PER_LEVEL[n - 1]. Only the save migration 15 -> 16 reads them (each plot became a soil cell).
  */
-export const FARM_PLOTS: readonly { x: number; y: number }[] = [
-  // Level 1: two rows of three.
+export const LEGACY_FARM_PLOTS: readonly { x: number; y: number }[] = [
   ...[64, 128, 192].flatMap((x) => [{ x, y: 64 }, { x, y: 128 }]),
-  // Level 2: the rows get three more plots.
   ...[256, 320, 384].flatMap((x) => [{ x, y: 64 }, { x, y: 128 }]),
-  // Level 3: a third row of eight.
   ...[64, 128, 192, 256, 320, 384, 448, 512].map((x) => ({ x, y: 192 })),
 ];
-export const FARM_PLOTS_PER_LEVEL = [6, 12, 20] as const;
+export const LEGACY_FARM_PLOTS_PER_LEVEL = [6, 12, 20] as const;
+/** The soil a new farm starts with (step BG6): a rectangle of cells (col, row, width, height). The player adds or removes soil for free. */
+export const FARM_START_SOIL = { c: 2, r: 2, w: 6, h: 2 } as const;
+/** The floor style ids of the farm's ground (styles.json): soil takes seeds, grass is the rest. Both are free. */
+export const SOIL_STYLE = 'soil';
 /** The cooking pot: a fixed spot in the farm (anchor = bottom middle of its footprint), w x d px. */
 export const COOKING_POT = { x: 464, y: 128, w: 32, d: 32 } as const;
-/** One harvest gives this many crops (random, both ends included). */
-export const HARVEST_MIN = 1;
-export const HARVEST_MAX = 2;
-/** The ripe marker above a plot bobs this many px every this many ms (client). */
+/**
+ * How long a planted seed takes to be fully grown, by the rank of the thing it grows (step BG6). Real time, also
+ * while the game is closed. The first harvest of a starter seed (common) is within about 2 minutes.
+ */
+export const SEED_GROW_MS = { common: 2 * 60_000, rare: 20 * 60_000, ultra_rare: 3 * 3_600_000, legendary: 12 * 3_600_000 } as const;
+/** A harvest gives this many blocks or crops (min to max, both included), by rank. */
+export const SEED_YIELD = {
+  common: { min: 2, max: 4 },
+  rare: { min: 2, max: 3 },
+  ultra_rare: { min: 1, max: 2 },
+  legendary: { min: 1, max: 1 },
+} as const;
+/** Chance that a harvest also gives the seed back. */
+export const SEED_BACK_CHANCE = 0.3;
+/** A plant is in its first stage (sprout) until this share of its time has passed, then the small plant, then fully grown. */
+export const PLANT_SPROUT_SHARE = 0.5;
+/** The ripe marker above a grown plant bobs this many px every this many ms (client). */
 export const RIPE_MARKER_BOB_PX = 2;
 export const RIPE_MARKER_BOB_MS = 400;
 /** Seeds are bought in packs of 1 or this many (catalog Seeds tab). */
@@ -629,7 +641,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */
@@ -661,7 +673,7 @@ export const HINTS = [
   'Place it in your room.',
   'Put an item on the table in your shop and set a price.',
   'Your shop has nothing left to sell. Tap the Dungeon button to find loot.',
-  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds) and plant your first turnip.',
+  'Open the Map and go to your farm. Buy turnip seeds in the Catalog (Seeds), pick them in the hotbar, tap a soil cell to plant, and punch the plant when it is fully grown.',
   'Level 3: the mine is open! Open the Map and go mining. Smelt the ore into bars at the Workshop (Forge).',
 ] as const;
 /** The index of the dungeon hint in HINTS: it only shows while the shop has nothing for sale. */
@@ -806,6 +818,8 @@ export const BLOCK_SEED_CHANCE = 0.2;
 /** Where gems come from (step BG4 adds the other sources): the chance of a drop and its size before the rank bonus. */
 export const GEMS = {
   block: { chance: 0.15, min: 1, max: 2 },
+  /** Harvesting a grown plant (step BG6). */
+  harvest: { chance: 0.12, min: 1, max: 2 },
 } as const;
 /** The gem amount is multiplied by this per rank of the thing that dropped it. */
 export const GEM_RANK_MULT = { common: 1, rare: 2, ultra_rare: 4, legendary: 8 } as const;

@@ -8,7 +8,7 @@ import { emptyBag } from './bag.ts';
 import { addShopStartItems, addTavern } from './newPlayer.ts';
 import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { emptyShop } from './shop.ts';
-import { emptyFarm } from './farm.ts';
+import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
 import type { Player } from './types.ts';
@@ -23,7 +23,7 @@ export interface SaveFile {
 export type SaveProblem = 'bad_json' | 'not_a_save' | 'too_old' | 'too_new' | 'invalid';
 
 export type LoadResult =
-  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number }
+  | { ok: true; state: GameState; version: number; migrated: boolean; returnedToBag: number; farmChanged: boolean }
   | { ok: false; problem: SaveProblem; version?: number };
 
 /**
@@ -93,7 +93,7 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
       ...state,
       player: { ...state.player, farmRoomId },
       rooms: [...state.rooms, createRoom(farmRoomId, 'farm', 1, ownerId)],
-      farm: emptyFarm(farmRoomId),
+      farm: emptyLegacyFarm(farmRoomId),
       run: nextRun,
     };
   },
@@ -225,6 +225,23 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     const rooms = state.rooms.map((r) => (isObject(r) ? { ...r, blocks: isObject(r.blocks) ? r.blocks : {} } : r));
     return { ...state, rooms, player: { ...state.player, wallet: { ...state.player.wallet, gems: 0 } } };
   },
+  // 15 -> 16 (step BG6, seeds and the free-form farm): the fixed plots go away. Each old plot becomes a soil
+  // cell (snapped to the cell grid); each planted crop becomes a plant with the same crop, planting time and
+  // time left (its own old grow time); every room gets an empty plant layer; GameState.farm is dropped.
+  // Crops and seeds in the bag are unchanged (the seed ids are the same).
+  15: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms)) return state;
+    const { farm, ...rest } = state;
+    const conv = isObject(farm) && Array.isArray(farm.plots) ? convertLegacyFarm(farm as unknown as LegacyFarm) : { soil: {}, plants: {} };
+    const farmRoomId = isObject(farm) && typeof farm.roomId === 'number' ? farm.roomId : null;
+    const rooms = state.rooms.map((r) => {
+      if (!isObject(r)) return r;
+      const base = { ...r, plants: isObject(r.plants) ? r.plants : {} };
+      if (r.id !== farmRoomId || r.kind !== 'farm') return base;
+      return { ...base, floorCells: { ...(isObject(r.floorCells) ? r.floorCells : {}), ...conv.soil }, plants: { ...base.plants, ...conv.plants } };
+    });
+    return { ...rest, rooms };
+  },
 };
 
 /** The storage key for a save version. */
@@ -261,7 +278,7 @@ export function readSave(text: string): LoadResult {
     if (v === 13 && isObject(state) && Array.isArray(state.items)) returnedToBag = Math.max(0, was - placedCount(state.items as GameState['items']));
   }
   if (!isGameState(state)) return { ok: false, problem: 'invalid', version };
-  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag };
+  return { ok: true, state, version, migrated: version !== SAVE_VERSION, returnedToBag, farmChanged: version < 16 };
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {
@@ -287,8 +304,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!isInt(x.currentRoomId) || !x.rooms.some((r) => isObject(r) && r.id === x.currentRoomId)) return false;
   if (!isObject(x.shop) || !Array.isArray(x.shop.slots) || !Array.isArray(x.shop.customers) || !isObject(x.shop.saleHistory)) return false;
   if (typeof x.shop.nextCustomerInMs !== 'number' || typeof x.shop.updatedAt !== 'number' || !isInt(x.hintsDone)) return false;
-  if (!isObject(x.farm) || !isInt(x.farm.roomId) || !Array.isArray(x.farm.plots) || !isInt(p.farmRoomId)) return false;
-  if (!x.farm.plots.every((pl) => isObject(pl) && (pl.crop === null || typeof pl.crop === 'string') && typeof pl.plantedAt === 'number')) return false;
+  if (!isInt(p.farmRoomId) || !x.rooms.every((r) => isObject(r) && isObject(r.plants) && isObject(r.blocks))) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   const t = x.tavern;
   if (!isObject(t) || !isInt(t.roomId) || !isObject(t.menu) || !Array.isArray(t.guests) || !Array.isArray(t.mess) || !Array.isArray(t.brews) || !Array.isArray(t.serveQueue)) return false;

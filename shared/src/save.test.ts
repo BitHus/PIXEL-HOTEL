@@ -4,7 +4,9 @@ import { arrangeState, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { SAVE_VERSION } from './config.ts';
 import { canPlace, footprintRect, getFurnitureType, isOnGrid } from './furniture.ts';
-import { createRoom } from './room.ts';
+import { createRoom, plantInCell, floorStyleAt } from './room.ts';
+import { growthStage, soilCells } from './farm.ts';
+import { SOIL_STYLE } from './config.ts';
 import type { FurnitureItem } from './types.ts';
 
 const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
@@ -12,7 +14,7 @@ const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addF
 describe('save files', () => {
   it('saving then loading gives an identical state', () => {
     const loaded = readSave(toSaveText(state, 3));
-    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0 });
+    expect(loaded).toEqual({ ok: true, state, version: SAVE_VERSION, migrated: false, returnedToBag: 0, farmChanged: false });
   });
   it('uses a versioned key', () => {
     expect(saveKey()).toBe(`pixel-hotel.save.v${SAVE_VERSION}`);
@@ -61,7 +63,7 @@ describe('save files', () => {
   });
 
   it('migrates a version 4 save: square rooms, the old look as clothing, and no character creation', () => {
-    const { playerCreated: _p, farm: _f, lakeside: _l, ...rest } = state;
+    const { playerCreated: _p, lakeside: _l, ...rest } = state;
     const v4 = {
       ...rest,
       rooms: rest.rooms.filter((r) => r.kind !== 'farm' && r.kind !== 'lakeside').map(({ shape: _s, ...r }) => r),
@@ -78,7 +80,7 @@ describe('save files', () => {
   });
 
   it('migrates a version 6 save (step 9b): a level 1 farm with empty plots, and the run gets a lunch box', () => {
-    const { farm: _f, lakeside: _l, ...rest } = state;
+    const { lakeside: _l, ...rest } = state;
     const v6 = {
       ...rest,
       rooms: rest.rooms.filter((r) => r.kind !== 'farm' && r.kind !== 'lakeside'),
@@ -91,7 +93,10 @@ describe('save files', () => {
     const farm = r.state.rooms.find((x) => x.kind === 'farm');
     expect(farm).toMatchObject({ id: 3, level: 1, shape: 'farm', floorStyle: 'grass', wallStyle: 'hedge' });
     expect(r.state.player.farmRoomId).toBe(3);
-    expect(r.state.farm).toEqual({ roomId: 3, plots: Array.from({ length: 6 }, () => ({ crop: null, plantedAt: 0 })) });
+    // Migration 15 -> 16 turned the six empty plots into six soil cells (no plants), and dropped GameState.farm.
+    expect(Object.keys(farm!.floorCells ?? {})).toHaveLength(6);
+    expect(farm!.plants).toEqual({});
+    expect('farm' in r.state).toBe(false);
     expect(r.state.run?.player).toMatchObject({ hp: 5, potions: 1, food: [], buffs: [], attackCooldownMs: 350 });
   });
 
@@ -329,5 +334,79 @@ describe('14 -> 15 (step BG5: blocks and gems)', () => {
     expect(r.state.player.wallet).toEqual({ gold: 77, gems: 0 });
     // Nothing else changed.
     expect(r.state.items).toEqual(now.items);
+  });
+});
+
+describe('15 -> 16 (step BG6: seeds and the free-form farm)', () => {
+  const MIN = 60_000;
+  const now = createNewPlayer(undefined, 1);
+  const farmId = now.player.farmRoomId;
+  /** A version 15 farm: plots in the old order, some planted. The old plots 0, 3 (level 1) are turnip and pumpkin. */
+  const oldFarm = {
+    roomId: farmId,
+    plots: [
+      { crop: 'turnip', plantedAt: 10_000 }, // 5 min grow time
+      { crop: null, plantedAt: 0 },
+      { crop: null, plantedAt: 0 },
+      { crop: 'pumpkin', plantedAt: 20_000 }, // 120 min
+      { crop: null, plantedAt: 0 },
+      { crop: null, plantedAt: 0 },
+    ],
+  };
+  const old = {
+    ...now,
+    rooms: now.rooms.map((r) => {
+      const { plants: _p, floorCells: _f, ...rest } = r;
+      return rest;
+    }),
+    farm: oldFarm,
+    player: { ...now.player, materials: { ...now.player.materials, turnip_seed: 2, carrot: 3 } },
+  };
+  const result = () => readSave(JSON.stringify({ version: 15, savedAt: 9, state: old }));
+
+  it('turns each old plot into a soil cell on the cell grid, and drops the farm key', () => {
+    const r = result();
+    expect(r).toMatchObject({ ok: true, migrated: true, version: 15, farmChanged: true });
+    if (!r.ok) return;
+    expect('farm' in r.state).toBe(false);
+    const room = r.state.rooms.find((x) => x.id === farmId)!;
+    // Level 1 plots: x 64/128/192, y 64/128 = cells (2,2) (2,4) (4,2) (4,4) (6,2) (6,4).
+    expect(soilCells(room).map((c) => `${c.c},${c.r}`).sort()).toEqual(['2,2', '2,4', '4,2', '4,4', '6,2', '6,4']);
+    expect(floorStyleAt(room, 2, 2)).toBe(SOIL_STYLE);
+    for (const other of r.state.rooms.filter((x) => x.id !== farmId)) expect(other.plants).toEqual({});
+  });
+
+  it('planted crops become plants with the same crop, planting time and time left', () => {
+    const r = result();
+    if (!r.ok) throw new Error('not ok');
+    const room = r.state.rooms.find((x) => x.id === farmId)!;
+    const turnip = plantInCell(room, 2, 2)!;
+    expect(turnip).toEqual({ seed: 'turnip_seed', plantedAt: 10_000, readyAt: 10_000 + 5 * MIN });
+    const pumpkin = plantInCell(room, 4, 4)!; // plot 3 = (128, 128)
+    expect(pumpkin).toEqual({ seed: 'pumpkin_seed', plantedAt: 20_000, readyAt: 20_000 + 120 * MIN });
+    // The same stage as the old plot had: half the time gone = the small plant, then ripe at the same moment.
+    expect(growthStage(turnip, 10_000 + 2 * MIN)).toBe('sprout');
+    expect(growthStage(turnip, 10_000 + 3 * MIN)).toBe('small');
+    expect(growthStage(turnip, 10_000 + 5 * MIN)).toBe('full');
+    expect(plantInCell(room, 6, 2)).toBeNull();
+  });
+
+  it('loses nothing: seeds and crops in the bag and the other rooms stay as they were', () => {
+    const r = result();
+    if (!r.ok) throw new Error('not ok');
+    expect(r.state.player.materials).toEqual(old.player.materials);
+    expect(r.state.player.wallet).toEqual(old.player.wallet);
+    expect(r.state.items).toEqual(old.items);
+    expect(r.state.ledger).toEqual(old.ledger);
+    expect(r.state.rooms.find((x) => x.id === farmId)).toMatchObject({ level: 1, floorStyle: 'grass', wallStyle: 'hedge' });
+    // A current save is not "farm changed".
+    expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false, farmChanged: false });
+  });
+
+  it('a level 3 farm keeps all 20 plots as soil cells', () => {
+    const lvl3 = { ...old, farm: { roomId: farmId, plots: Array.from({ length: 20 }, () => ({ crop: null, plantedAt: 0 })) } };
+    const r = readSave(JSON.stringify({ version: 15, savedAt: 9, state: lvl3 }));
+    if (!r.ok) throw new Error('not ok');
+    expect(soilCells(r.state.rooms.find((x) => x.id === farmId)!)).toHaveLength(20);
   });
 });
