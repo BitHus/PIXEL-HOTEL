@@ -2,12 +2,13 @@
 // one string per row, one character per pixel, '.' = empty. Rendered as a crisp inline SVG.
 
 import { PALETTE } from '@pixel-hotel/shared';
+import { MEDIEVAL_ICONS } from './pixelIconsMedieval.ts';
 
 type PixelMap = { rows: string[]; colors: Record<string, string> };
 
 const O = PALETTE[6]; // dark warm outline
 
-const ICONS = {
+const BASE_ICONS = {
   bag: {
     rows: [
       '....oooo....',
@@ -655,6 +656,9 @@ const ICONS = {
   },
 } satisfies Record<string, PixelMap>;
 
+// UI round 4: the 16 x 16 medieval redraws win over the old 12 x 12 maps of the same name (and add level, refused).
+const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS };
+
 export type IconName = keyof typeof ICONS;
 
 /** An inline SVG element for the icon (crisp edges, scaled by CSS). */
@@ -667,6 +671,7 @@ export function pixelIcon(name: IconName): SVGSVGElement {
   svg.setAttribute('shape-rendering', 'crispEdges');
   svg.setAttribute('aria-hidden', 'true');
   svg.classList.add('pixel-icon');
+  if (w >= 16) svg.classList.add('px16');
   rows.forEach((row, y) => {
     [...row].forEach((ch, x) => {
       const fill = colors[ch];

@@ -3,7 +3,7 @@
 
 import { Application } from 'pixi.js';
 import { PALETTE, roomBoundsRect } from '@pixel-hotel/shared';
-import { LocalGameAPI } from '../api/localGameAPI.ts';
+import { LocalGameAPI, peekSavedGame } from '../api/localGameAPI.ts';
 import { browserStorage } from '../api/saveStorage.ts';
 import { RoomView } from '../render/roomView.ts';
 import { loadSprites } from '../render/spriteStore.ts';
@@ -15,6 +15,7 @@ import { Backdrop } from '../render/backdrop.ts';
 import { Sound } from '../audio/sound.ts';
 import { loadPrefs } from '../api/prefs.ts';
 import { runSplash } from '../ui/splash.ts';
+import { runTitleScreen } from '../ui/titleScreen.ts';
 import type { G0 } from './ctx.ts';
 
 export async function setupCore(g: G0) {
@@ -30,7 +31,13 @@ export async function setupCore(g: G0) {
 
   // Step 5: the game runs on LocalGameAPI (shared rules in the browser, saved in localStorage).
   const storage = browserStorage();
+  // UI round 4: the title screen (Continue / New game / Settings) comes after the splash and before the API opens (open always writes a save).
+  await splashGone;
+  const peek = peekSavedGame(storage);
+  const titleChoice = await runTitleScreen(ui, peek, storage);
   const { api, notice } = LocalGameAPI.open(storage);
+  // New game over a save: the old one becomes the backup, then the character maker runs as for any new game.
+  if (titleChoice === 'new' && peek.exists) api.newGame();
   // Atmosphere step: the device settings, and sound (it wakes on the first tap; every UI button clicks).
   const prefs = loadPrefs(storage);
   const sound = new Sound(prefs.sound, prefs.volume);

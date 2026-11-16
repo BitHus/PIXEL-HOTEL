@@ -10,11 +10,11 @@ import { pixelIcon, type IconName } from './pixelIcons.ts';
 /** The banner's look from its words (a pure view choice: the text is all the caller gives). good = gold edge, warn = crimson edge. */
 export function toastKind(text: string): { icon: IconName | 'gem'; tone: 'good' | 'warn' | 'info' } {
   const t = text.toLowerCase();
-  if (/not enough|cannot|can't|nothing|refused|too |no .* left|need more|you need|full|blocked|not grown|opens at/.test(t)) return { icon: 'shrug', tone: 'warn' };
+  if (/not enough|cannot|can't|nothing|refused|too |no .* left|need more|you need|full|blocked|not grown|opens at/.test(t)) return { icon: 'refused', tone: 'warn' };
   if (/gem/.test(t)) return { icon: 'gem', tone: 'good' };
   if (/gold|sold|coin/.test(t)) return { icon: 'coin', tone: 'good' };
   if (/book|recipe/.test(t)) return { icon: 'book', tone: 'good' };
-  if (/level|unlocked|new /.test(t)) return { icon: 'quest', tone: 'good' };
+  if (/level|unlocked|new /.test(t)) return { icon: 'level', tone: 'good' };
   return { icon: 'journal', tone: 'info' };
 }
 

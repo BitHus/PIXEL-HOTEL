@@ -1082,3 +1082,331 @@
   top: -4px !important;
   bottom: -4px !important;
 }
+
+/* ======================================================================
+   Round 4: icons on a 16 grid, the title screen, smoother panel and toast motion
+   ====================================================================== */
+
+/* The 16 x 16 icons sit on whole pixels at 16 px (1x) and 32 px (2x). Small spots (info bar, prices, small buttons) use 1x, the rest 2x. */
+.pixel-icon.px16 {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.btn.small .pixel-icon.px16,
+.info-gold .pixel-icon.px16,
+.price-field .pixel-icon.px16,
+.catalog-price .pixel-icon.px16,
+.quest-head .pixel-icon.px16,
+.info-bar .pixel-icon.px16,
+.run-gold .pixel-icon.px16,
+.forge-slot .pixel-icon.px16,
+.book-reward .pixel-icon.px16 {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-btn > .pixel-icon.px16,
+.tab-btn .pixel-icon.px16,
+.more-item > .pixel-icon.px16,
+.fish-tap .pixel-icon.px16,
+.bubble-icon .pixel-icon.px16,
+.fly-coin .pixel-icon.px16 {
+  width: 32px;
+  height: 32px;
+}
+
+/* ---------- Title screen: a hanging tavern sign by candlelight ---------- */
+.title-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: calc(var(--edge) + env(safe-area-inset-top)) var(--edge) calc(var(--edge) + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: auto;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 62px, rgba(24, 20, 37, 0.35) 62px 64px),
+    var(--night);
+  animation: title-in 0.24s steps(4, end) both;
+}
+
+.title-screen.leaving {
+  opacity: 0;
+  transition: opacity 0.16s steps(3, end);
+}
+
+/* The candle glow: three stepped rings of warm light behind the sign (no blur, no gradient ramps). */
+.title-glow {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  width: min(760px, 160vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(254, 174, 52, 0.22) 0 20%, rgba(247, 118, 34, 0.14) 20% 36%, rgba(190, 74, 47, 0.08) 36% 52%, transparent 52%);
+  animation: title-flicker 1.6s steps(2, end) infinite;
+}
+
+.title-sign {
+  position: relative;
+  z-index: 1;
+  padding-top: 40px;
+  max-width: 100%;
+  animation: title-sway 3.2s steps(4, end) infinite alternate;
+  transform-origin: 50% 0;
+}
+
+.title-chain {
+  position: absolute;
+  top: 0;
+  height: 44px;
+  width: 6px;
+  background: repeating-linear-gradient(180deg, var(--iron-hi) 0 2px, var(--iron) 2px 4px, var(--iron-dk) 4px 6px);
+  box-shadow: 0 0 0 2px var(--outline);
+}
+
+.title-chain.left {
+  left: 18%;
+}
+
+.title-chain.right {
+  right: 18%;
+}
+
+.title-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 28px 16px;
+  box-sizing: border-box;
+  max-width: calc(100vw - 2 * var(--edge));
+  text-align: center;
+  background-color: var(--wood-light);
+  background-image: repeating-linear-gradient(0deg, transparent 0 15px, rgba(62, 39, 49, 0.35) 15px 16px);
+}
+
+.title-logo {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+}
+
+.title-name {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 36px;
+  line-height: 1.1;
+  color: var(--butter);
+  text-shadow: 0 3px 0 var(--outline), 2px 3px 0 var(--outline), -2px 3px 0 var(--outline);
+}
+
+.title-tag {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--cream);
+  text-shadow: 0 2px 0 var(--outline);
+}
+
+.title-candle {
+  position: absolute;
+  z-index: 1;
+  bottom: 18%;
+  width: 14px;
+  height: 44px;
+  pointer-events: none;
+}
+
+.title-candle.left {
+  left: max(10%, 12px);
+}
+
+.title-candle.right {
+  right: max(10%, 12px);
+}
+
+.title-candle .wax {
+  position: absolute;
+  inset: 14px 0 0;
+  background: linear-gradient(90deg, var(--cream) 0 4px, var(--parch-dk) 4px 10px, var(--wood-mid) 10px);
+  box-shadow: 0 0 0 2px var(--outline);
+}
+
+.title-candle .flame {
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  background: linear-gradient(180deg, var(--butter) 0 6px, var(--candle) 6px 10px, var(--ember) 10px);
+  box-shadow: 0 0 0 2px var(--outline), 0 0 0 6px rgba(254, 174, 52, 0.2);
+  animation: title-flame 0.7s steps(2, end) infinite;
+}
+
+.title-menu {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: min(280px, calc(100vw - 2 * var(--edge) - 24px));
+}
+
+.title-btn {
+  min-height: 48px;
+  font-size: 20px;
+}
+
+.title-btn.primary {
+  background: var(--warm);
+}
+
+.title-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.title-note {
+  margin: -4px 0 2px;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--cream);
+  text-shadow: 0 2px 0 var(--outline);
+}
+
+.title-note.off {
+  color: var(--parch-dk);
+}
+
+.title-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cream);
+  font-family: var(--font);
+  text-shadow: 0 2px 0 var(--outline);
+}
+
+/* Short screens (a phone turned sideways, 1000 x 420 and less): the logo steps aside so the buttons always fit. */
+@media (max-height: 560px) {
+  .title-screen {
+    flex-direction: row;
+    gap: 32px;
+  }
+  .title-logo {
+    display: none;
+  }
+  .title-candle {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .title-name {
+    font-size: 30px;
+  }
+  .title-board {
+    padding: 12px 18px 14px;
+  }
+}
+
+@keyframes title-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes title-flicker {
+  50% {
+    opacity: 0.82;
+  }
+}
+
+@keyframes title-flame {
+  50% {
+    transform: translateY(1px) scaleY(0.9);
+  }
+}
+
+@keyframes title-sway {
+  from {
+    transform: rotate(-0.6deg);
+  }
+  to {
+    transform: rotate(0.6deg);
+  }
+}
+
+/* ---------- Motion: short stepped easing, transforms only (no layout jumps) ---------- */
+/* Panels open from the button column: a short slide and fade in four steps (closing is instant, the panel is hidden). */
+@keyframes panel-pop {
+  from {
+    opacity: 0;
+    transform: translateX(10px) scale(0.96);
+  }
+}
+
+.panel,
+.more-menu.open,
+.confirm-panel {
+  animation-duration: 0.16s;
+  animation-timing-function: steps(4, end);
+}
+
+/* Toasts rise into place and sink away; the centring translate stays in every frame. */
+@keyframes toast-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+
+.toast:not([hidden]) {
+  animation: toast-rise 0.18s steps(4, end);
+}
+
+.toast.fading {
+  transform: translate(-50%, 6px);
+  transition: opacity var(--fade-ms, 900ms) steps(8, end), transform var(--fade-ms, 900ms) steps(4, end);
+}
+
+/* Buttons settle with a quick press; a hover lifts the frame one pixel on devices that hover. */
+.btn {
+  transition: transform 60ms steps(1, end);
+}
+
+@media (hover: hover) {
+  .btn:hover:not(:disabled):not(.on):not(:active) {
+    filter: brightness(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-screen,
+  .title-glow,
+  .title-sign,
+  .title-candle .flame,
+  .panel,
+  .more-menu.open,
+  .confirm-panel,
+  .toast:not([hidden]) {
+    animation: none !important;
+  }
+  .toast.fading,
+  .title-screen.leaving,
+  .btn {
+    transition: none !important;
+  }
+}
