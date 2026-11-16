@@ -288,3 +288,6 @@ OUTPUT: a short list of crashes, missing sprites, layout problems and anything t
 5. The plugin: the Aseprite plugin is not attached now. Recommended: run all CODE-ART tasks (B1 to B6) meanwhile; they improve the look without it and none is wasted (sprites replace code art piece by piece).
 6. Push to GitHub: still the user's call (a push deploys). Recommended: ask after CP-1 passes and G1 is done.
 Everything else in this queue is decided (door design, hat list, tier numbers, folders, content list).
+
+### G2 OWNER AGENDA (16 Nov, urgent, right after the running coder task): see docs/FIXLIST.md OWNER AGENDA
+GOAL: (1) empty hotbar slots must be clickable; (2) hands-on pouring: press and hold the tap to fill the mug, release at the full mark, then tap the guest/table to deliver. Rules in shared/ (pour progress, perfect window, tip bonus config), client wiring in game/tavernLife.ts + render/tavernFx.ts + sound.ts, UI in ui/hotbar.ts; the UI worker styles the pour bar afterwards. Tests for the pour rules and the hotbar. Update CLAUDE.md section 9 after.
