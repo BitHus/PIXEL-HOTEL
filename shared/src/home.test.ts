@@ -268,7 +268,7 @@ describe('peekSave (title screen hook)', () => {
   it('a made character can continue; the card has name, Inn and level', () => {
     const s = { ...fresh(), playerCreated: true };
     const p = peekSave(store({ [saveKey()]: toSaveText(s, 77) }));
-    expect(p).toMatchObject({ exists: true, canContinue: true, version: 28, savedAt: 77, playerName: s.player.name, innName: s.player.innName, level: 1 });
+    expect(p).toMatchObject({ exists: true, canContinue: true, version: 29, savedAt: 77, playerName: s.player.name, innName: s.player.innName, level: 1 });
   });
 
   it('a save before the character was made is not continuable', () => {

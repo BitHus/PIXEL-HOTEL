@@ -44,6 +44,7 @@ import {
   OFFLINE_MAX_MS,
   REMARK_APPEAL_MIN,
 } from './config.ts';
+import { pourTip } from './pour.ts';
 import { guestLook, outsidePoint, rollGuestKind, rollTolerance } from './guestLook.ts';
 import { kitchenZone } from './kitchen.ts';
 import { guestZones, npcGrid, npcPath } from './npcNav.ts';
@@ -206,7 +207,8 @@ export function deliverOrder(state: GameState, rng: Rng): { state: GameState; gu
   const hold = state.tavern.holding;
   const guest = hold ? state.tavern.guests.find((g) => g.id === hold.guestId && g.phase === 'order') : undefined;
   if (!hold || !guest) return null;
-  const eating: Guest = { ...guest, phase: 'eat', waitMs: between(rng, GUEST_EAT_MIN_MS, GUEST_EAT_MAX_MS), sipInMs: between(rng, GUEST_SIP_MIN_MS, GUEST_SIP_MAX_MS) };
+  const tip = pourTip(hold.perfect === true, guest.order?.price ?? 0);
+  const eating: Guest = { ...guest, ...(tip > 0 && guest.order ? { order: { ...guest.order, coins: guest.order.coins + tip } } : {}), phase: 'eat', waitMs: between(rng, GUEST_EAT_MIN_MS, GUEST_EAT_MAX_MS), sipInMs: between(rng, GUEST_SIP_MIN_MS, GUEST_SIP_MAX_MS) };
   return { state: withTavern(state, { holding: null, guests: state.tavern.guests.map((g) => (g.id === guest.id ? eating : g)) }), guestId: guest.id, item: hold.item };
 }
 

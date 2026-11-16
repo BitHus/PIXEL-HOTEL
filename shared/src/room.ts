@@ -75,7 +75,7 @@ export interface RoomShape {
   /** Levels 1, 2 and 3; each floor contains the one before. */
   levels: ShapeLevel[];
   /** Where a new shop's counter and stall_table stand (level 1), for shapes a shop can use. */
-  shopStart?: Record<'counter' | 'stall_table' | 'stool_bar' | 'round_table' | 'stool_left' | 'stool_right' | 'brewing_barrel' | 'stove', Point>;
+  shopStart?: Record<'counter' | 'stall_table' | 'round_table' | 'stool_left' | 'stool_right' | 'stool_front' | 'brewing_barrel' | 'stove', Point>;
   /** The KITCHEN ZONE (step T1) per level 1..3, in CELLS: staff only, like the strip behind the bar. Shapes a tavern can use only. */
   kitchen?: Rect[];
 }

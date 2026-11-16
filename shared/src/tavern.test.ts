@@ -138,7 +138,7 @@ describe('seats at tables (step 9t)', () => {
     s = withItem(s, 71, 'bar_stool', 400, 160); // the cell above the table's left corner: diagonal
     s = withItem(s, 72, 'bar_stool', 368, 192); // one cell away from the left stool: a gap
     const seats = tavernSeats(s.items, s.tavern.roomId);
-    expect(seats.map((k) => k.uid).sort((a, b) => a - b)).toEqual([4, 5, 70]);
+    expect(seats.map((k) => k.uid).sort((a, b) => a - b)).toEqual([3, 4, 70]);
     const above = seats.find((k) => k.uid === 70)!;
     expect(above.tableUid).toBe(table.uid);
     // A guest looks at the table, whichever way the stool was turned.
@@ -156,7 +156,7 @@ describe('seats at tables (step 9t)', () => {
     s = withItem(s, 62, 'bar_stool', behind.x, behind.y + 12); // the staff side
     expect(inStaffZone([staffZone(bar, type)], { x: behind.x, y: behind.y })).toBe(true);
     const seats = tavernSeats(s.items, s.tavern.roomId);
-    expect(seats.map((k) => k.uid).sort()).toEqual([4, 5, 61]);
+    expect(seats.map((k) => k.uid).sort()).toEqual([3, 4, 61]);
     expect(seats.find((k) => k.uid === 61)!.tableUid).toBe(bar.uid);
   });
 
@@ -207,17 +207,17 @@ describe('seats at tables (step 9t)', () => {
   });
 
   it('the player and seats already kept for guests are not free', () => {
-    const s = waiting(withAle(), -1, 4);
+    const s = waiting(withAle(), -1, 3);
     const seats = tavernSeats(s.items, s.tavern.roomId);
-    expect(freeTavernSeats(s.tavern, seats).map((k) => k.uid)).toEqual([5]);
-    expect(freeTavernSeats(s.tavern, seats, [{ uid: 5, index: 0 }])).toEqual([]);
+    expect(freeTavernSeats(s.tavern, seats).map((k) => k.uid)).toEqual([4]);
+    expect(freeTavernSeats(s.tavern, seats, [{ uid: 4, index: 0 }])).toEqual([]);
   });
 });
 
 describe('the serve queue (step 9t)', () => {
   it('taps queue up, at most 3, each guest once, only guests with an open order', () => {
     let s = withLongTable(withAle());
-    for (const [k, uid] of [4, 5, 51, 52].entries()) s = waiting(s, -1 - k, uid);
+    for (const [k, uid] of [3, 4, 51, 52].entries()) s = waiting(s, -1 - k, uid);
     expect(requestServe(s, -99)).toBeNull();
     for (const id of [-2, -1, -3]) s = requestServe(s, id)!;
     expect(s.tavern.serveQueue).toEqual([-2, -1, -3]);
@@ -236,7 +236,7 @@ describe('the serve queue (step 9t)', () => {
   });
 
   it('an order of a guest who left is skipped', () => {
-    let s = waiting(waiting(withAle(), -1, 4), -2, 5);
+    let s = waiting(waiting(withAle(), -1, 3), -2, 4);
     s = requestServe(requestServe(s, -1)!, -2)!;
     s = { ...s, tavern: { ...s.tavern, guests: s.tavern.guests.filter((g) => g.id !== -1) } };
     expect(pickUpOrder(s)).toMatchObject({ guestId: -2 });
@@ -244,9 +244,9 @@ describe('the serve queue (step 9t)', () => {
   });
 
   it('the stops for an order: behind the bar, then the guest\'s table spot', () => {
-    const s = waiting(withAle(), -1, 5);
+    const s = waiting(withAle(), -1, 4);
     const bar = s.items.find((i) => i.typeId === 'counter')!;
-    const seat = tavernSeats(s.items, s.tavern.roomId).find((k) => k.uid === 5)!;
+    const seat = tavernSeats(s.items, s.tavern.roomId).find((k) => k.uid === 4)!;
     expect(serveStops(s, -1)).toEqual({ bar: behindPoint(bar, getFurnitureType('counter')), table: seat.spot });
     expect(serveStops(s, -7)).toBeNull();
   });

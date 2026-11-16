@@ -58,7 +58,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Floors and walls are unlockable styles (shared/data/styles.json). Rooms start 'bare'. A bought
   or crafted style is unlocked forever and applied to any own room for free. Price = baseValue * 3.
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
-- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a REGISTER and a TAP STAND standing on the bar (T1; the 7 root ale of a new game are loaded on the first tap), a bar stool in front of it (S3: replaces the old stall table, so 3 seats), a round table with 2 stools, an idle brewing barrel and one stove (K1: you cook there, inside the kitchen zone); the early dish roasted turnip is on the menu.
+- New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a REGISTER and a TAP STAND standing on the bar (T1; the 7 root ale of a new game are loaded on the first tap), a round table with 3 stools (S3 had a bar stool in front of the bar for the 3rd seat; G2 removed it, the 3rd stool stands at the table; old saves keep their furniture), an idle brewing barrel and one stove (K1: you cook there, inside the kitchen zone); the early dish roasted turnip is on the menu.
 - The counter (the bar): one per tavern, movable, never picked up; the spot behind it must stay reachable. T1: it is a SURFACE item (one level): the register and tap stands are onSurface pieces on its 3 cells.
 - KITCHEN ZONE (T1): per tavern shape and level a cell rectangle (shared/data/roomShapes.json `kitchen`, level 1 a small corner next to the bar, levels 2 and 3 grow it). Staff only like behind the bar: guests never walk or sit there (npcGrid, tavernSeats); the owner's blocks and furniture are allowed. Shown as a faint tint while placing and in the Room panel.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
@@ -112,7 +112,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   in the catalog) stand ON the bar. Tap the register = the bar's panel (Serve / Menu / Sell); collected coins fly into it. Tap a stand = the Taps panel (ui/panelShell.ts): each tap
   shows its drink and mugs (max TAP_CAP = 12); Load moves mugs of ONE drink from the bag (a number or Fill; ledger 'tap'), Unload gives them back (TavernState.taps, shared/src/taps.ts).
   A DRINK is on the menu only while a tap holds at least one mug (menu stock = mugs on taps; an open order only reserves a mug); dishes still come from the bag and the stove. SERVING a
-  drink: the avatar walks to the taps (stage 'bar'), POURS (POUR_MS 800 ms: a pour animation and sound), the tap drops by one, then it carries the mug on. An empty tap says "Tap is empty" and
+  drink (G2, hands-on): the avatar walks to the taps (stage 'bar') and WAITS (stage 'pourwait', event 'pour_ready'); the player HOLDS the pour button over the tap (mouse or touch) and the mug fills (pourFill: POUR_FULL_MS = POUR_MS to full, shared/src/pour.ts);
+  releasing calls pourHeld(heldMs): the tap drops by one, a release inside POUR_PERFECT_RANGE (0.85 to 1.15) is a PERFECT pour = a tip of POUR_TIP_RATE (10%) of the price in the guest's coins (holding.perfect); under or over only misses the tip, the drink is never lost. Then the player TAPS the guest (or its order bubble): carryHeld() walks the mug to the table and sets it down (not automatic; dishes stay automatic). An empty tap says "Tap is empty" and
   the order stays open. A stand that leaves the bar gives its mugs back. Old saves (version 24) get a register and a tap stand on the bar (else in the bag), drinks stay in the bag.
 - KITCHEN EFFECT (T1): each prep table (surface; kitchen pieces prep_table, pantry, sink, serving_hatch, placeIn 'shop') inside the kitchen zone and cell-adjacent to a stove inside it adds
   +1 dish per batch (PREP_BONUS max +2; fixed when the batch starts, the inputs stay those of the batch). A stove outside the zone works without the bonus. Taps, register and kitchen
@@ -268,7 +269,7 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
   bar Sell tab, four loops tested; NOTES S2) are done. S3 (rebalance: SELL_RATES per group, a faster start, splice strict, the tavern gem tip, 3 seats,
   gold tables in `npm run simulate`; save v23; NOTES S3) is done. T1 (the bar with taps and a register, the kitchen zone with prep tables, taps hold drinks, the pour step; save v24; NOTES T1) is done. K2 (casks, tier drinks; save v26) and MB-2 (Inn doors rules; save v27) are done, MB-3 (doors client) and H3 (floors and walls from PNG) are in. Next: G1, then 9g.
 - Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 27 (24 = taps and the register, 25 = the Inn name, 26 = casks, 27 = Inn doors). LocalGameAPI only. All art is placeholder shapes and boxes
+- DUNGEON_ROUND is 1. SAVE_VERSION is 29 (24 = taps and the register, 25 = the Inn name, 26 = casks, 27 = Inn doors, 28 = usable pieces and the cat, 29 = holding.perfect, G2). LocalGameAPI only. All art is placeholder shapes and boxes
   drawn in code. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
@@ -316,7 +317,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 27) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 29) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

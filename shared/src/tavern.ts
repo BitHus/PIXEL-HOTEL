@@ -119,7 +119,7 @@ export interface TavernState {
   /** Guests the player tapped: their orders wait to be carried, in this order. */
   serveQueue: number[];
   /** The order in the player's hands. */
-  holding: { guestId: number; item: MaterialId } | null;
+  holding: { guestId: number; item: MaterialId; /** G2: poured in the perfect window (a small tip on delivery). */ perfect?: boolean } | null;
   /** The last MENU_HISTORY_LENGTH prices paid per drink or dish (oldest first). */
   history: Record<string, number[]>;
   lastLines: Partial<Record<NpcMoment, number>>;

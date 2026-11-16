@@ -3,13 +3,13 @@
 
 import type { Rank } from '@pixel-hotel/shared';
 
-export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found' | 'cast' | 'splash' | 'reelTick' | 'rustle' | 'door' | 'arrive' | 'ready' | 'collect' | 'uiOpen' | 'uiClose';
+export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'pourTick' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found' | 'cast' | 'splash' | 'reelTick' | 'rustle' | 'door' | 'arrive' | 'ready' | 'collect' | 'uiOpen' | 'uiClose';
 
 /** The ping of a find, by rank: the rarer, the higher (G5, B5, E6, G6). */
 const FOUND_HZ: Record<Rank, number> = { common: 784, rare: 988, ultra_rare: 1319, legendary: 1568 };
 
 /** The same sound is never started twice within this many ms. */
-export const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120, door: 400, arrive: 1500, ready: 2500, collect: 120, uiOpen: 120, uiClose: 120 };
+export const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, pourTick: 80, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120, door: 400, arrive: 1500, ready: 2500, collect: 120, uiOpen: 120, uiClose: 120 };
 
 type Wave = OscillatorType;
 
@@ -192,6 +192,13 @@ export class Sound {
         this.hiss(0.7, 0.07, 'bandpass', 1400);
         this.tone('sine', 220, 150, 0.7, 0.04);
         break;
+      case 'pourTick': {
+        // G2: one glug while the tap is held; `pitch` 0..1 is the fill, so the sound rises as the mug fills.
+        const hz = 180 + 520 * Math.max(0, Math.min(1, pitch));
+        this.tone('sine', hz, hz * 1.15, 0.09, 0.05);
+        this.hiss(0.08, 0.03, 'bandpass', 1400);
+        break;
+      }
       case 'murmur':
         // Soft talk in the room: a slow swell of low, muffled noise.
         this.hiss(1.4, 0.05, 'lowpass', 380);

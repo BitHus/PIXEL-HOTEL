@@ -228,7 +228,7 @@ export function arrangeState(state: GameState): GameState {
  * empty with introSeen false, so the game explains it once.
  */
 export function addTavern(state: GameState, at: number): GameState {
-  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.filter((i) => i.typeId !== 'stove' && i.key !== 'stool_bar').map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
+  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.filter((i) => i.typeId !== 'stove' && i.key !== 'stool_front').map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
   if (!gift) throw new Error('cannot add the tavern');
   const barrel = gift.items.find((i) => i.typeId === 'brewing_barrel' && i.uid >= state.nextUid);
   return {

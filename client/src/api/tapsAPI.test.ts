@@ -1,7 +1,7 @@
 // Taps through the GameAPI (step T1): loading, the pour step in the serving chain, an empty tap, the menu, a save.
 
 import { describe, expect, it } from 'vitest';
-import { POUR_MS, TAP_CAP, applyChange, createNewPlayer, saveKey, toSaveText, type Rng, type TavernClientEvent } from '@pixel-hotel/shared';
+import { POUR_FULL_MS, pourTip, TAP_CAP, applyChange, createNewPlayer, saveKey, toSaveText, type Rng, type TavernClientEvent } from '@pixel-hotel/shared';
 import { ledgerMaterials } from '../../../shared/src/testState.ts';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
@@ -50,32 +50,46 @@ async function openTavern(seed = 7, storage = memoryStorage(), start = 1_000_000
 }
 
 describe('taps through the GameAPI (step T1)', () => {
-  it('the serving chain with the pour step: walk to the taps, pour POUR_MS, the tap drops by one, then the mug is carried to the guest', async () => {
+  it('the hands-on pour (G2): walk to the taps and wait, hold to pour, the tap drops by one, the guest is tapped, the mug is carried; a perfect pour tips', async () => {
     const { api, events, until, mugs, firstOrder, stand } = await openTavern();
     expect(await mugs()).toBe(7);
     const guest = await firstOrder();
-    expect(await mugs()).toBe(7); // an order alone takes nothing
     expect(await api.serveGuest(guest.id)).toBe(true);
-    expect(await until(() => events.some((x) => x.e.t === 'pour'))).toBe(true);
-    const pour = events.find((x) => x.e.t === 'pour')!;
-    expect(pour.e).toMatchObject({ t: 'pour', guestId: guest.id, item: 'root_ale', standUid: stand().uid, ms: POUR_MS });
-    // While pouring the mug is still on the tap and the hands are empty.
+    expect(await until(() => events.some((x) => x.e.t === 'pour_ready'))).toBe(true);
+    expect(events.find((x) => x.e.t === 'pour_ready')!.e).toMatchObject({ t: 'pour_ready', guestId: guest.id, item: 'root_ale', standUid: stand().uid });
+    // Waiting: nothing is taken and nothing is carried until the player holds the pour.
     expect(await mugs()).toBe(7);
     expect(events.some((x) => x.e.t === 'holding')).toBe(false);
-    expect(await until(() => events.some((x) => x.e.t === 'holding' && x.e.item === 'root_ale'))).toBe(true);
-    const held = events.find((x) => x.e.t === 'holding' && x.e.item === 'root_ale')!;
-    expect(held.at - pour.at).toBeGreaterThanOrEqual(POUR_MS);
-    expect(held.at - pour.at).toBeLessThanOrEqual(POUR_MS + 300);
-    expect(await mugs()).toBe(6); // the pour took one mug
-    // The walk to the table, the order is put down.
-    expect(await until(() => events.some((x) => x.e.t === 'served' && x.e.guestId === guest.id))).toBe(true);
-    expect((await api.getTavern()).guests.find((g) => g.id === guest.id)?.phase).toBe('eat');
+    expect(await api.carryHeld()).toBe(false);
+    const coins = (await api.getTavern()).guests.find((g) => g.id === guest.id)!.order!.coins;
+    expect(await api.pourHeld(POUR_FULL_MS)).toBe(true);
     expect(await mugs()).toBe(6);
-    // The order of the events: walk (to the taps), pour, holding, walk, served.
-    const kinds = events.map((x) => x.e.t).filter((t) => ['walk', 'pour', 'holding', 'served'].includes(t));
-    expect(kinds.slice(0, 5)).toEqual(['walk', 'pour', 'holding', 'walk', 'served']);
+    expect((await api.getTavern()).holding).toMatchObject({ guestId: guest.id, item: 'root_ale', perfect: true });
+    // Not automatic: the avatar stays until the guest is tapped.
+    await new Promise((r) => setTimeout(r, 400));
+    expect(events.some((x) => x.e.t === 'served')).toBe(false);
+    expect(await api.carryHeld()).toBe(true);
+    expect(await until(() => events.some((x) => x.e.t === 'served' && x.e.guestId === guest.id))).toBe(true);
+    const g = (await api.getTavern()).guests.find((x) => x.id === guest.id)!;
+    expect(g.phase).toBe('eat');
+    expect(g.order!.coins).toBe(coins + pourTip(true, g.order!.price));
+    const kinds = events.map((x) => x.e.t).filter((t) => ['walk', 'pour_ready', 'poured', 'holding', 'served'].includes(t));
+    expect(kinds.slice(0, 6)).toEqual(['walk', 'pour_ready', 'poured', 'holding', 'walk', 'served']);
     const end = api.snapshot();
     expect(end.player.materials).toEqual(ledgerMaterials(end));
+  });
+
+  it('an under-poured mug pays no tip but the drink is served the same', async () => {
+    const { api, events, until, firstOrder } = await openTavern();
+    const guest = await firstOrder();
+    await api.serveGuest(guest.id);
+    expect(await until(() => events.some((x) => x.e.t === 'pour_ready'))).toBe(true);
+    const coins = (await api.getTavern()).guests.find((g) => g.id === guest.id)!.order!.coins;
+    expect(await api.pourHeld(100)).toBe(true);
+    expect((await api.getTavern()).holding?.perfect).toBe(false);
+    expect(await api.carryHeld()).toBe(true);
+    expect(await until(() => events.some((x) => x.e.t === 'served'))).toBe(true);
+    expect((await api.getTavern()).guests.find((g) => g.id === guest.id)!.order!.coins).toBe(coins);
   });
 
   it('an empty tap: "the order stays open": serving is refused with a tap_empty event and nothing is queued', async () => {
@@ -124,7 +138,7 @@ describe('taps through the GameAPI (step T1)', () => {
     const { api, events, until, tavern, firstOrder, mugs } = await openTavern();
     const guest = await firstOrder();
     await api.serveGuest(guest.id);
-    expect(await until(() => events.some((x) => x.e.t === 'pour'))).toBe(true);
+    expect(await until(() => events.some((x) => x.e.t === 'pour_ready'))).toBe(true);
     await api.walk({ x: 300, y: 300 });
     await until(() => false, 1500);
     expect(await mugs()).toBe(7);

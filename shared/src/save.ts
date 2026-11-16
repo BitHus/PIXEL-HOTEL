@@ -328,6 +328,11 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || !isObject(state.tavern)) return state;
     return { ...state, tavern: { ...state.tavern, casks: Array.isArray(state.tavern.casks) ? state.tavern.casks : [] } };
   },
+  // 28 -> 29 (step G2, hands-on pour): a mug in the hands has `perfect` (false). Nothing else changes.
+  28: (state) => {
+    if (!isObject(state) || !isObject(state.tavern) || !isObject(state.tavern.holding)) return state;
+    return { ...state, tavern: { ...state.tavern, holding: { ...state.tavern.holding, perfect: state.tavern.holding.perfect === true } } };
+  },
   // 27 -> 28 (step 9g-2, usable furniture and the cat): Player.pet = null, and lamps, fires and the like get their on/off state (on, as they always shone).
   // Nothing else changes.
   27: (state) => {

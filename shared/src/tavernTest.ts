@@ -22,12 +22,12 @@ export function tavernWorld(s: GameState, playerHere = true): TavernWorld {
 }
 
 /**
- * The tavern start the rules tests were written with, before step S3: two stools at the round table (no bar stool), an empty menu setting
+ * The tavern start the rules tests were written with, before step S3: two stools at the round table (no third stool), an empty menu setting
  * (drinks on, dishes off). The real new game (3 seats, the early dish on, 7 mugs) is tested in newPlayer.test.ts and tavernStart.test.ts.
  */
 export function legacyStart(): GameState {
   const s = createNewPlayer(undefined, 0);
-  const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'counter' && c.y + 32 === i.y && c.x === i.x))!;
+  const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'round_table' && c.y + 32 === i.y))!; // the third (front) stool of the round table
   // The start barrel holds a ready brew again and the taps are empty (as before step T1: the ale is collected from the barrel).
   const barrel = s.items.find((i) => i.typeId === 'brewing_barrel')!;
   return { ...s, items: s.items.filter((i) => i.uid !== barStool.uid), tavern: { ...s.tavern, menu: {}, taps: [], brews: [{ barrelUid: barrel.uid, drink: 'root_ale', readyAt: 0 }] } };

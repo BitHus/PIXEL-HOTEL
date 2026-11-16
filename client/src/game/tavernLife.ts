@@ -7,6 +7,7 @@ import {
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen,
 } from '@pixel-hotel/shared';
+import { createPourControl } from './pourControl.ts';
 import { createBrewingPanel } from '../ui/brewingPanel.ts';
 import { createMenuPanel } from '../ui/menuPanel.ts';
 import { createCaskPanel } from '../ui/caskPanel.ts';
@@ -60,6 +61,41 @@ export async function setupTavernLife(g: G9) {
     guide.refresh(waiting, on);
     sound.setAmbience(on ? 'tavern' : null, Math.min(1, st.seatedGuests / 6));
   };
+  // G2: the hands-on pour. The stand and the drink the avatar waits to pour for (null = nothing to pour).
+  let pourFor: { standUid: number; item: MaterialId } | null = null;
+  const standTop = (): { stand: FurnitureItem; bar: FurnitureItem | undefined; floorY: number } | null => {
+    const stand = pourFor ? st.items.find((i) => i.uid === pourFor!.standUid) : undefined;
+    if (!stand) return null;
+    const bar = st.items.find((i) => i.uid === stand.onItemUid);
+    return { stand, bar, floorY: stand.y - (bar ? surfaceHeight(getFurnitureType(bar.typeId)) : 0) };
+  };
+  const pourControl = createPourControl({
+    root: uiRoot,
+    screenPoint: () => {
+      const s = standTop();
+      return s ? worldToScreen({ x: s.stand.x, y: s.floorY - 24 }, st.shown) : null;
+    },
+    onStart: () => {
+      const s = standTop();
+      if (!s || !pourFor) return;
+      pour.startHeld(s.stand, s.bar, pourFor.item);
+      sprite.gesture('hand');
+    },
+    onFill: (f) => {
+      const s = standTop();
+      if (!s || !pourFor) return;
+      pour.setFill(f, true);
+      if (!prefs.reduceEffects) fx.pourSplash({ x: s.stand.x, y: s.floorY - 9 }, s.floorY, getDrinkType(pourFor.item as DrinkId).color, 200);
+    },
+    glug: (f) => sound.play('pourTick', 'common', f),
+    onRelease: (ms) => {
+      pour.stop();
+      fx.stopPour();
+      pourControl.hide();
+      pourFor = null;
+      void api.pourHeld(ms).then((ok) => ok || toast('Nothing to pour.'));
+    },
+  });
   const guests = new GuestViews(view);
   const tableMess = new TableMess(view);
   /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
@@ -83,6 +119,10 @@ export async function setupTavernLife(g: G9) {
   /** Draws the tavern as it is now (guests, coins and dishes, order bubbles, the Map badge). */
   const syncTavern = (): void => {
     const on = inTavern();
+    if (!on && pourFor) {
+      pourControl.hide();
+      pourFor = null;
+    }
     guests.sync(on ? walkers(st.tavern.guests) : [], st.room.id, st.items);
     tableMess.sync(on ? st.tavern.mess : [], on ? meals() : [], st.items);
     orders.sync(on ? orderMarks() : []);
@@ -359,8 +399,13 @@ export async function setupTavernLife(g: G9) {
     st.tavern = { ...st.tavern, introSeen: true };
     void api.markTavernIntroSeen();
   }
-  /** A tap on a guest or an order bubble: the order is carried to the table (taps queue up, at most SERVE_QUEUE_MAX). */
+  /** A tap on a guest or an order bubble: the order is carried (G2: a poured drink waits for a second tap on the guest). to the table (taps queue up, at most SERVE_QUEUE_MAX). */
   async function serveTap(guestId: number): Promise<void> {
+    // G2: a poured mug waits in the hands: a tap on its guest (or bubble) carries it over.
+    if (st.tavern.holding?.guestId === guestId) {
+      if (await api.carryHeld()) sound.play('click');
+      return;
+    }
     if (st.tavern.serveQueue.length >= SERVE_QUEUE_MAX) {
       toast(`${SERVE_QUEUE_MAX} orders are waiting to be carried already.`);
       return;
@@ -448,6 +493,8 @@ export async function setupTavernLife(g: G9) {
         break;
       case 'holding':
         if (e.item) {
+          pourControl.hide();
+          pourFor = null;
           pour.stop();
           fx.stopPour();
           if (isDrinkId(e.item)) sound.play('clink'); // the full mug is lifted off the bar
@@ -477,7 +524,18 @@ export async function setupTavernLife(g: G9) {
         }
         break;
       }
+      case 'pour_ready':
+        if (on) {
+          pourFor = { standUid: e.standUid, item: e.item };
+          pourControl.show();
+        }
+        break;
+      case 'poured':
+        if (on) toast(e.grade === 'perfect' ? 'Perfect pour! Tap the guest to carry it over.' : 'Poured. Tap the guest to carry it over.');
+        break;
       case 'tap_empty':
+        pourControl.hide();
+        pourFor = null;
         pour.stop();
         fx.stopPour();
         if (on) toast(`${TAP_EMPTY_TEXT}: ${getMaterialType(e.item).name} is not on a tap. The order waits.`);

@@ -51,7 +51,10 @@ describe('the tavern through the GameAPI', () => {
     const guest = (await api.getTavern()).guests.find((g) => g.phase === 'order')!;
     expect(await api.serveGuest(guest.id)).toBe(true);
     expect(events.some((e) => e.t === 'walk')).toBe(true);
-    // The avatar goes to the bar, holds the mug, walks to the table and puts it down.
+    // The avatar goes to the taps and waits; the pour is held, then the guest is tapped to carry the mug (G2).
+    expect(await until(async () => events.some((e) => e.t === 'pour_ready'))).toBe(true);
+    expect(await api.pourHeld(800)).toBe(true);
+    expect(await api.carryHeld()).toBe(true);
     expect(await until(async () => events.some((e) => e.t === 'served' && e.guestId === guest.id))).toBe(true);
     expect(events.filter((e) => e.t === 'holding').map((e) => (e.t === 'holding' ? e.item : 'x'))).toEqual(['root_ale', null]);
     expect((await api.getTavern()).guests.find((g) => g.id === guest.id)?.phase).toBe('eat');

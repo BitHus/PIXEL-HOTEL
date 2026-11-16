@@ -115,8 +115,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   704x384, level 3 is 832x448.
 - Every new player gets two basic rooms: a hotel room (level 1) and a shop room (level 1).
   The hotel room starts completely empty. The tavern (kind 'shop') starts with the bar (the counter), a stall_table,
-  a round table with 2 stools, an idle brewing barrel and a stove (inside the kitchen zone), at fixed positions from the shape's data (a bar stool
-  in front of the bar since S3, no stall table), and, since T1, a register and a tap stand standing ON the bar with the 7 root ale loaded on the first tap.
+  a round table with 3 stools, an idle brewing barrel and a stove (inside the kitchen zone), at fixed positions from the shape's data (since G2 the third stool stands at the round table;
+  S3 had it as a bar stool in front of the bar; no stall table), and, since T1, a register and a tap stand standing ON the bar with the 7 root ale loaded on the first tap.
 - The counter (step 7): every shop has exactly one counter. Since T1 it is a SURFACE item (3 cells, one level) and the cash register is its own piece, 'register', standing on it.
   It is placed at the start (near the back wall with room behind it, left of center) and can be
   moved and rotated in build mode, but never picked up or sold (FurnitureType.noPickup). The
@@ -260,11 +260,11 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - A new player is created by one shared function, createNewPlayer. They get: level 1 with 0
   xp; 100 gold; only the bare floor and bare wall unlocked, used in both rooms; 4 wood and 2
   cloth; an empty hotel room; a shop room (section 5) with a counter, a register and a tap stand on it (T1) and one
-  a bar stool in front of it (step S3; it replaces the old stall table) already placed at their fixed positions. No furniture in the inventory.
+  a round table with three stools (step S3, G2; it replaces the old stall table) already placed at their fixed positions. No furniture in the inventory.
 - The loop: serve guests in the tavern -> gold -> buy furniture for the hotel room or the tavern, or upgrade a room. Loot, ore,
   fish and crops are for USE (cook, brew, craft, build, plant, splice); surplus goes to the trader (step S2, below).
 - Stall table, shelf and display case (step S1) are decor only: no slots, no prices, no selling. Goods that sat on slots in an old
-  save went back to the bag (ledger reason 'shop_closed'; save version 22). Old saves keep their stall table as decor; a NEW game has a bar stool in front of the bar instead (step S3).
+  save went back to the bag (ledger reason 'shop_closed'; save version 22). Old saves keep their stall table as decor; a NEW game has a third stool at the round table instead (S3, G2).
 - GOLD AND GEM BALANCE (step S3): gold comes from three sources, each 10% to 50% of a mixed hour (balance.ts, tests in balance.test.ts):
   tavern guests, dungeon run gold (after the keys) and the trader. A mixed hour is about 375 / 480 / 630 gold at a new game / level 3 / level 8.
   A new game earns about 220 gold at the tavern in its first 30 minutes and 460 in its first hour (7 mugs of root ale per 8-minute brew, the
@@ -330,8 +330,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   Tavern texts say Tavern; old saves get one intro toast (introSeen), new games a short line. Details: STEP 9t and 9t C in the notes.
   STEP T1 (the bar with taps, the register and the kitchen; NOTES T1): tap the REGISTER on the bar = the bar's panel (Serve / Menu / Sell) and collected coins fly into it; tap a TAP STAND = the
   Taps panel (2 taps per stand, each holds one brewed drink, at most 12 mugs; Load from the bag by a number or Fill, Unload gives them back; ledger reason 'tap'). A drink is on the menu only while
-  a tap holds it (the Menu tab shows the tap levels and a hint to load a tap; dishes still come from the bag). Serving a drink: the avatar walks behind the bar to the taps, pours for 800 ms (a small
-  pour animation, a pour sound and a clink), the tap drops by one, then it carries the mug to the guest. An empty tap says "Tap is empty" and the order stays open. Old saves (v23 to v24) get a
+  a tap holds it (the Menu tab shows the tap levels and a hint to load a tap; dishes still come from the bag). Serving a drink: the avatar walks behind the bar to the taps and waits; the player holds the pour button (mouse or touch) and the mug fills (POUR_FULL_MS, a rising glug sound, foam past full);
+  releasing between POUR_PERFECT_RANGE 0.85 and 1.15 is a perfect pour (a tip of POUR_TIP_RATE 10% of the price in the guest's coins); under or over only misses the tip. The tap drops by one at the release; then the player taps the guest (or its order bubble) and the avatar carries the mug to the table (a clink; not automatic any more, G2; save version 29 adds holding.perfect). An empty tap says "Tap is empty" and the order stays open. Old saves (v23 to v24) get a
   register and a tap stand on the bar (or in the bag, with a toast); the drinks in their bag stay there until loaded.
 
 10. DUNGEON
