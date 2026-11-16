@@ -7,9 +7,14 @@
 // head and shoulders on the pillow with the bed's blanket over them, drawn inside the bed:
 // setLying).
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import {
   GESTURE_MS,
+  drawnFacing,
+  handAnchor,
+  headOffset,
+  rigPose,
+  walkFrame,
   WALK_BOB_MS,
   WALK_BOB_PX,
   type Avatar,
@@ -22,6 +27,9 @@ import { lyingRects } from './lieArt.ts';
 import { SIT_DROP, avatarParts, sitParts, type Part } from './avatarParts.ts';
 import type { EmotePose } from './emoteAnim.ts';
 import { drawOverlay } from './emoteOverlay.ts';
+import { BAKE_FEET_X, BAKE_FEET_Y, CODE_HAT_DY } from './avatarBake.ts';
+import { bakeAvatar, bakedTexture } from './avatarCompose.ts';
+import { hatPart } from './hatParts.ts';
 
 /** Draws boxes with a 1 px dark warm outline; `shadow` adds the soft shadow under the feet. */
 function drawParts(ps: Part[], shadow: boolean): Graphics {
@@ -67,6 +75,15 @@ export class AvatarSprite {
   /** A short move (step 9d): reach toward the facing, nod, or the shopkeeper's hand-over. */
   private gestureNow: { kind: Gesture; startMs: number } | null = null;
   private lastTimeMs = 0;
+  // C18: the baked layered avatar. It is used whenever every layer file of the look, pose and facing exists; else the box views above show.
+  private readonly baked = new Sprite();
+  private readonly bakedShadow = new Graphics();
+  private codeHat: { key: string; box: Container } | null = null;
+  /** Distance walked so far (px): the walk frame comes from it, so no speed ever skates. */
+  private distance = 0;
+  private lastPos: { x: number; y: number } | null = null;
+  /** What the baked avatar shows now (null = the box views), for the hand anchor. */
+  private bakedNow: { pose: 'walk' | 'sit'; facing: 'down' | 'up' | 'right'; frame: number } | null = null;
 
   /** `shadow` false: the room draws the shadow itself, under everything (atmosphere step). */
   constructor(
@@ -75,6 +92,11 @@ export class AvatarSprite {
   ) {
     this.look = look;
     this.views = this.draw(look);
+    this.bakedShadow.ellipse(0, 0, 9, 3).fill({ color: DARK_WARM, alpha: 0.35 });
+    this.bakedShadow.visible = false;
+    this.baked.visible = false;
+    this.baked.position.set(-BAKE_FEET_X, -BAKE_FEET_Y);
+    this.body.addChild(this.bakedShadow, this.baked);
     this.container.addChild(this.body, this.held, this.overlay);
   }
 
@@ -96,6 +118,10 @@ export class AvatarSprite {
 
   /** The hands, relative to the feet (where a held item sits, its bottom middle). */
   handOffset(): { x: number; y: number } {
+    if (this.bakedNow) {
+      const a = handAnchor(this.bakedNow.pose, this.last.facing, this.bakedNow.frame);
+      return { x: a.x, y: a.y };
+    }
     const sit = this.last.state === 'sit' ? SIT_DROP : 0;
     const side = this.last.facing === 'right' ? 4 : this.last.facing === 'left' ? -4 : 0;
     return { x: side, y: HAND_Y + sit };
@@ -144,9 +170,11 @@ export class AvatarSprite {
   /** Shows the avatar's position, facing, pose and walk bob. timeMs drives the bob. */
   update(avatar: Avatar, timeMs: number): void {
     this.lastTimeMs = timeMs;
+    if (this.lastPos && avatar.state === 'walk') this.distance += Math.min(Math.hypot(avatar.x - this.lastPos.x, avatar.y - this.lastPos.y), 64);
+    this.lastPos = { x: avatar.x, y: avatar.y };
     this.container.position.set(Math.round(avatar.x), Math.round(avatar.y));
     this.show(avatar);
-    const up = avatar.state === 'walk' && Math.floor(timeMs / WALK_BOB_MS) % 2 === 1;
+    const up = !this.bakedNow && avatar.state === 'walk' && Math.floor(timeMs / WALK_BOB_MS) % 2 === 1;
     this.bobPx = up ? -WALK_BOB_PX : 0;
     if (this.gestureNow && timeMs - this.gestureNow.startMs >= GESTURE_MS) this.gestureNow = null;
     this.place();
@@ -176,12 +204,51 @@ export class AvatarSprite {
     this.container.setChildIndex(this.held, this.last.facing === 'up' ? 0 : this.container.children.length - 1);
   }
 
+  private showBaked(state: Avatar['state'], facing: Facing): boolean {
+    const pose = rigPose(state);
+    let b: ReturnType<typeof bakeAvatar> = null;
+    let frame = 0;
+    let df: 'down' | 'up' | 'right' = 'down';
+    let head = { dx: 0, dy: 0 };
+    if (pose) {
+      df = drawnFacing(facing).facing;
+      frame = pose === 'walk' && state === 'walk' ? walkFrame(this.distance) : 0;
+      head = headOffset(pose, df, frame, this.lastTimeMs, state === 'walk');
+      b = bakeAvatar(this.look, pose, df, frame, head);
+    }
+    this.bakedNow = b && pose ? { pose, facing: df, frame } : null;
+    this.setCodeHat(b?.codeHat ?? false, df, head);
+    this.baked.visible = b !== null;
+    this.bakedShadow.visible = b !== null && this.shadow;
+    if (b) this.baked.texture = bakedTexture(b);
+    return b !== null;
+  }
+
+  /** A hat without a PNG is drawn from the hat boxes on top of the baked head (lowered by CODE_HAT_DY). */
+  private setCodeHat(on: boolean, facing: 'down' | 'up' | 'right', head: { dx: number; dy: number }): void {
+    const hat = on ? this.look.hat : undefined;
+    const key = hat ? `${hat}|${facing}` : '';
+    if (this.codeHat && this.codeHat.key !== key) {
+      this.codeHat.box.destroy({ children: true });
+      this.codeHat = null;
+    }
+    if (hat && !this.codeHat) {
+      const box = hatPart(hat, facing);
+      if (box) {
+        this.body.addChild(box);
+        this.codeHat = { key, box };
+      }
+    }
+    this.codeHat?.box.position.set(head.dx, head.dy + CODE_HAT_DY);
+  }
+
   private show({ facing, state }: Pick<Avatar, 'facing' | 'state'>): void {
     this.last = { facing, state };
     const lying = state === 'lie' && this.lying !== null;
     const turned = facing === 'left' ? 'right' : facing;
     const view: View = state === 'sit' ? `sit-${turned}` : turned;
-    for (const [k, v] of Object.entries(this.views)) v.visible = !lying && k === view;
+    const baked = lying ? false : this.showBaked(state, facing);
+    for (const [k, v] of Object.entries(this.views)) v.visible = !lying && !baked && k === view;
     if (this.lying) this.lying.g.visible = lying;
     this.body.scale.x = facing === 'left' ? -1 : 1;
   }

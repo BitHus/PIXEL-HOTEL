@@ -165,7 +165,7 @@ export function avatarLayers(look: AvatarLook, outfit: AvatarOutfit | null, faci
     torso: look.top,
     outer: outfit?.outer ?? null,
     hair_back: look.hairStyle,
-    face: d.facing === 'up' ? null : 'neutral',
+    face: d.facing === 'up' ? null : 'default',
     hair_front: look.hairStyle,
     hat: look.hat ? look.hat : null,
   };

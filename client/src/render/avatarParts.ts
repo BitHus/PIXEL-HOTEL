@@ -9,6 +9,7 @@ import { DARK_WARM } from './bareStyles.ts';
 import { shade } from './colors.ts';
 import { hatBoxes } from './hatParts.ts';
 
+
 /** A box relative to the feet (0, 0); y grows down, so the figure has negative y. */
 export type Part = [x: number, y: number, w: number, h: number, color: string];
 export type Facing3 = 'down' | 'up' | 'right';
@@ -132,6 +133,12 @@ export function avatarParts(look: AvatarLook, facing: Facing3): Part[] {
   return [...b.legs, ...b.upper, ...b.arm];
 }
 
+/** C18: set by avatarCompose.ts (which needs the sprite store, so the tools that only draw boxes do not import it): draws the layered avatar, false = use the boxes. */
+let bakedPreview: ((ctx: CanvasRenderingContext2D, look: AvatarLook, facing: Facing3 | 'left', scale: number, ox: number, oy: number) => boolean) | null = null;
+export function registerBakedPreview(fn: typeof bakedPreview): void {
+  bakedPreview = fn;
+}
+
 /** Sitting lowers the upper body this many px (the hips come down to the seat). */
 export const SIT_DROP = 14;
 
@@ -193,6 +200,8 @@ export function drawAvatarOnCanvas(canvas: HTMLCanvasElement, look: AvatarLook, 
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   ctx.imageSmoothingEnabled = false;
+  // C18: the layered sprite avatar when every layer file exists, else the boxes below.
+  if (bakedPreview?.(ctx, look, facing, scale, w / 2, h - 1)) return;
   const ps = avatarParts(look, facing === 'left' ? 'right' : facing);
   const mirror = facing === 'left' ? -1 : 1;
   const ox = w / 2;
