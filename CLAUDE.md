@@ -254,7 +254,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   docs/NOTES.md under the right heading. Keep this file under 250 lines.
 - Art tools: only the Aseprite plugin (owner approved 15 Nov, docs/PLAN-SPRITES.md); no other art generation unless I ask.
 - I work with Claude Code on my phone or PC. Every push to main is deployed by GitHub Pages
-  (https://bithus.github.io/pixel-hotel/). Commit and push at the end of every step.
+  (https://bithus.github.io/PIXEL-HOTEL/). Commit and push at the end of every step.
 
 CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the live task list is docs/TEAM.md START HERE + docs/QUEUE.md)
 - Done (16 Nov 2026): the game loops (hotel, tavern with taps/register/kitchen/casks, dungeon, farm, mine, lakeside), blocks and seeds, gems and packs, the One Inn doors (suite, tavern, garden),

@@ -49,4 +49,4 @@ You are the main Claude session = the project manager. The owner opens you from 
 
 ## Tools on this PC
 - /myoffice (skill) shows all agents; turn on its "Subagents" switch. Finished subagents may stay "thinking" until the idle timeout.
-- Game: `npm install` then `npm run dev` in C:\Users\ajren\PIXEL-HOTEL. Deployed version: https://bithus.github.io/pixel-hotel/
+- Game: `npm install` then `npm run dev` in C:\Users\ajren\PIXEL-HOTEL. Deployed version: https://bithus.github.io/PIXEL-HOTEL/
