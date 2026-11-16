@@ -256,21 +256,16 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - I work with Claude Code on my phone or PC. Every push to main is deployed by GitHub Pages
   (https://bithus.github.io/pixel-hotel/). Commit and push at the end of every step.
 
-CURRENT STATE (at most 15 lines; updated by the AI at the end of each step)
-- Done: steps 1 to 5b, 7, 7b, 8 and 9 (dungeon), 9b (farm), 9c (mine), UI polish, atmosphere, logo
-  splash, 9d (shop life) and fixes, 9e (ranks, Book), 9f (lakeside), 1.0 (housekeeping), BG1 (the
-  32 px cell grid; NOTES BG1), BG2 (every item is a coloured square: icon { shape, colors } in the
-  data, drawn by render/drawIcon.ts; NOTES BG2).
-- Step 9t (tavern) is DONE: A (rules), B (room, guests, serving), K1 (stove), C (Brewing panel, bar Menu panel, tavern texts, one-time
-  intro toast, simulate-economy; NOTES 9t C). Tavern gold is brewing-limited at the start (0.1x to 0.25x of the old shop ceiling, NOTES 9t C).
-- BG3 to BG8 are done: gain popups, gems from every source, blocks, hold to repeat, seeds and the free-form farm, splicing,
-  packs for gems (NOTES BG3b+4b, BG5 to BG8). BG9 (balance: gem income, pack prices, closed loops, the pack quest; NOTES BG9)
-  is done. S1 (the shop is the tavern: loot customers, slots and prices removed; stalls are decor; save v22; NOTES S1) and S2 (the trader:
-  bar Sell tab, four loops tested; NOTES S2) are done. S3 (rebalance: SELL_RATES per group, a faster start, splice strict, the tavern gem tip, 3 seats,
-  gold tables in `npm run simulate`; save v23; NOTES S3) is done. T1 (the bar with taps and a register, the kitchen zone with prep tables, taps hold drinks, the pour step; save v24; NOTES T1) is done. K2 (casks, tier drinks; save v26) and MB-2 (Inn doors rules; save v27) are done, MB-3 (doors client) and H3 (floors and walls from PNG) are in. Next: G1, then 9g.
-- Not done: step 6 (art, STYLE.md), step 10 (server, a placeholder).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 29 (24 = taps and the register, 25 = the Inn name, 26 = casks, 27 = Inn doors, 28 = usable pieces and the cat, 29 = holding.perfect, G2). LocalGameAPI only. All art is placeholder shapes and boxes
-  drawn in code. The indoor lighting look is approved: keep it.
+CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the live task list is docs/TEAM.md START HERE + docs/QUEUE.md)
+- Done (16 Nov 2026): the game loops (hotel, tavern with taps/register/kitchen/casks, dungeon, farm, mine, lakeside), blocks and seeds, gems and packs, the One Inn doors (suite, tavern, garden),
+  hats and emotes, usable furniture and the cat rules (cat not drawn yet), room stars, first-ten-minutes guide, hands-on tap pouring (hold, perfect-window tip, tap the guest), hold/drag walking in
+  the dungeon, 70+ furniture (5 medieval pieces added), the outdoors rework (crypt and lakeside art, fx module, light layer, lakeside life), the UI skin (client/src/ui/skin.css), 63+ redrawn icons.
+- Art direction (owner): cozy MEDIEVAL pixel look like Travellers Rest, original only: docs/ART-STYLE.md, PIXEL-ART-GUIDE.md, ART-REDO.md, PLAN-CHARACTERS.md (cosy three-head avatar, layers in
+  client/src/assets/sprites/avatar, rig data shared/data/avatarRig.json and ramps.json), PLAN-UI.md, PLAN-REWORK-OUTDOORS.md; research: RESEARCH-GAMES.md and RESEARCH-DEEP.md.
+- In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, smoothness pass
+  (docs/FIXLIST.md). Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
+- Not done: step 10 (server, a placeholder), the playtest (nobody has run the game in a browser yet: do that first when a browser tool exists).
+- DUNGEON_ROUND is 1. SAVE_VERSION is 29 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, simulate, simulate:dungeon. Vite base stays './'.
