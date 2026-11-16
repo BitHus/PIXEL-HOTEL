@@ -73,3 +73,6 @@ You are the main Claude session = the project manager. The owner opens you from 
 
 ## ONE FOLDER RULE (owner 17 Nov)
 EVERY worker (coder, artist, tester, ui, animator) works in the main folder C:\Usersjren\PIXEL-HOTEL, never in a separate worktree, so everyone sees what the others do. Write only to the files you own, append to your own doc section, do not commit or push (the manager does). The old worktrees (PIXEL-HOTEL-rebased, PIXEL-HOTEL-test) are retired.
+
+## LOCAL WORKER (owner OK 17 Nov: Ollama + OpenCode on the owner's PC, free, RTX 3070 8 GB, 32 GB RAM)
+Tools: Ollama (model qwen2.5-coder:7b; bigger ones are slower) + OpenCode (`opencode run "<prompt>"` from C:\Users\ajren\PIXEL-HOTEL; config ~/.config/opencode/opencode.json). It saves Claude tokens on MECHANICAL work only: text/JSON batch edits, renames, doc/NEWS tidying, simple tests for existing pure functions, lint fixes, adding data rows to a pattern. NOT for rules logic, multi-file refactors, UI, art, save migrations. Rules: one local worker at a time, own file list in the prompt, small prompts, the manager reviews `git diff` and runs `npm run check` before committing, never commit/push by itself. It does not count toward the 3 Claude workers (it runs on the PC, not the usage window), but it must not edit files another worker owns.
