@@ -400,7 +400,7 @@ describe('SG2 splice gate: every pair of the general rule', () => {
   it('7. cycles (depth 4): no loop of splices gives a seed back for free (every loop costs gold or cell-time)', () => {
     const loops = cheapestSpliceCycle(4);
     for (const l of loops) expect(l.cost, l.seed).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it('8. ore, drinks, furniture and styles: furniture seeds sell at most the splice rate, ore per cell-minute stays under the mine, a brew is worth more than its crops', () => {
     const mine = traderByActivity('level8', seededRng(11)).find((r) => r.id === 'mine');

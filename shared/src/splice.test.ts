@@ -16,6 +16,7 @@ import { RANKS } from './ranks.ts';
 import { plantInCell, type Plant, type Room } from './room.ts';
 import { readSave, toSaveText } from './save.ts';
 import { seedGrowMs, seedGrows, seedRank } from './seeds.ts';
+import { allRecipes } from './spliceRule.ts';
 import { SPLICE_RECIPES, SPLICE_SEEDS, isSpliceResult, pairKey, recipeFor, recipeHint, recipesWith, splice, spliceGrowMs } from './splice.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
 import type { GameState } from './gameState.ts';
@@ -94,6 +95,16 @@ describe('the splice table', () => {
       }
     }
     for (const r of SPLICE_RECIPES) expect(have.has(r.result), `${r.result} unreachable`).toBe(true);
+    // SG3: most splice seeds are made by the general rule, not by a special recipe, so walk every recipe of the rule too.
+    for (let again = true; again; ) {
+      again = false;
+      for (const r of allRecipes()) {
+        if (have.has(r.a) && have.has(r.b) && !have.has(r.result)) {
+          have.add(r.result);
+          again = true;
+        }
+      }
+    }
     for (const s of SPLICE_SEEDS) expect(have.has(s.id), `${s.id} unreachable`).toBe(true);
   });
 

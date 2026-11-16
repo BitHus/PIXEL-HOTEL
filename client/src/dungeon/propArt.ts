@@ -27,7 +27,7 @@ export const PROP_KINDS = [
   'barrel', 'crate', 'bones', 'skull_pile', 'candle_stand', 'candles', 'banner', 'cobweb', 'shelf', 'library_shelf',
   'root', 'glowcap', 'fountain', 'statue', 'brazier_big', 'pillar', 'pillar_ring', 'pillar_variant', 'sarcophagus',
   'crack', 'vault_arch', 'vault_door', 'rubble', 'campfire', 'guard_post', 'arena_mark', 'crypt_garden', 'torch_stand',
-  'stairs_up', 'stairs_down',
+  'stairs_up', 'stairs_down', 'gem_pile', 'brazier', 'sarcophagus_small',
 ] as const;
 export type PropKind = (typeof PROP_KINDS)[number];
 
@@ -74,6 +74,9 @@ export const PROP_INFO: Record<PropKind, PropInfo> = {
   torch_stand: { w: 1, d: 1, solid: true, variants: 2, light: { color: P.orange, radius: 90, dy: -40, flicker: true } },
   stairs_up: { w: 1, d: 1, solid: false, variants: 2 },
   stairs_down: { w: 1, d: 1, solid: false, variants: 2 },
+  gem_pile: { w: 1, d: 1, solid: false, variants: 3 },
+  brazier: { w: 1, d: 1, solid: true, variants: 1, light: { color: P.orange, radius: 72, dy: -24, flicker: true } },
+  sarcophagus_small: { w: 1, d: 1, solid: true, variants: 3 },
 };
 
 // ---- helpers (all coordinates relative to the anchor; x centred, y up is negative) ----
@@ -333,6 +336,34 @@ const MAKERS: Record<PropKind, Maker> = {
     if (v === 1) { r(g, 6, -28, 10, 4, OUT); r(g, 6, -27, 9, 2, c); r(g, 10, -17, 2, 8, OUT); } // lid pushed ajar
     if (v === 2) r(g, -14, -9, 10, 1, P.forest);
     r(g, -14, -3, 28, 1, shade(c, 0.6));
+  },
+  gem_pile(g, v) {
+    shadowOval(g, 22);
+    const gem = (x: number, y: number, c: string): void => {
+      r(g, x - 1, y - 1, 8, 7, OUT); r(g, x, y, 6, 5, c);
+      r(g, x, y, 6, 1, shade(c, 1.3)); r(g, x, y, 1, 5, shade(c, 1.15)); r(g, x + 5, y + 1, 1, 4, shade(c, 0.75)); r(g, x + 1, y + 1, 2, 1, P.white);
+    };
+    const cs = pick([[P.cyan, P.sky, P.orchid], [P.crimson, P.orchid, P.sky], [P.lime, P.cyan, P.gold]], v);
+    gem(-12, -7, cs[0]!); gem(5, -8, cs[1]!); gem(-3, -5, cs[2]!); gem(-5, -12, cs[1]!); gem(3, -14, cs[0]!);
+  },
+  brazier(g, _v, t) {
+    shadowOval(g, 20);
+    r(g, -6, -3, 12, 3, OUT); r(g, -5, -3, 10, 2, P.steel); // foot
+    r(g, -2, -11, 4, 8, OUT); r(g, -1, -11, 2, 7, P.slate); // stem
+    r(g, -8, -17, 16, 7, OUT); r(g, -7, -16, 14, 5, P.dusk); r(g, -7, -16, 14, 1, P.steel); r(g, -7, -16, 1, 5, P.steel); // bowl
+    r(g, -6, -19, 12, 3, P.red); r(g, -5, -20, 10, 2, P.orange);
+    flame(g, -2, -20, t, 1); flame(g, 3, -19, t + 50, 1);
+  },
+  sarcophagus_small(g, v) {
+    shadowOval(g, 24);
+    const c = pick([P.steel, P.dusk, P.silver], v);
+    slab(g, -9, -14, 18, 13, shade(c, 0.9)); // chest
+    slab(g, -10, -20, 20, 8, c); // lid
+    r(g, -8, -18, 16, 1, shade(c, 1.4));
+    r(g, -1, -19, 2, 6, shade(c, 0.75)); r(g, -4, -16, 8, 2, shade(c, 0.75)); // cross carving
+    if (v === 1) { r(g, 4, -22, 7, 3, OUT); r(g, 4, -21, 6, 1, c); } // lid ajar
+    if (v === 2) r(g, -9, -7, 7, 1, P.forest);
+    r(g, -9, -2, 18, 1, shade(c, 0.6));
   },
   crack(g, v) {
     const pts = pick([

@@ -19,7 +19,7 @@ const withCrops = (s: GameState): GameState => applyChange(s, { reason: 'debug',
 
 describe('brewing (step 9t)', () => {
   it('has the four drinks of the brief, as stackable goods that sell as food', () => {
-    expect(DRINK_TYPES.map((d) => [d.id, d.inputs, d.minutes, d.mugs])).toEqual([
+    expect(DRINK_TYPES.slice(0, 4).map((d) => [d.id, d.inputs, d.minutes, d.mugs])).toEqual([
       ['root_ale', { turnip: 2, potato: 1 }, 8, 7],
       ['carrot_cider', { carrot: 3 }, 20, 6],
       ['pumpkin_stout', { pumpkin: 1, potato: 2 }, 45, 8],

@@ -20,6 +20,7 @@ import suiteData from '../data/furniture/suite.json';
 import tavern2Data from '../data/furniture/tavern2.json';
 import tavern3Data from '../data/furniture/tavern3.json';
 import medievalData from '../data/furniture/medieval.json';
+import spliceFurnitureData from '../data/furniture/splice.json';
 import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_DEPTH_PX,
   STAFF_ZONE_SIDE_PX, SNAP } from './config.ts';
@@ -36,6 +37,7 @@ export const FURNITURE_TYPES = [
   ...(tavern2Data as FurnitureType[]),
   ...(tavern3Data as FurnitureType[]),
   ...(medievalData as FurnitureType[]),
+  ...(spliceFurnitureData as FurnitureType[]),
   ...(suiteData as FurnitureType[]),
   ...(dungeon2Data as FurnitureType[]),
 ];

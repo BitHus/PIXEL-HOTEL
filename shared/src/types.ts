@@ -183,16 +183,23 @@ export type EnemyDropId =
 export type OreId = 'copper_ore' | 'iron_ore' | 'mithril_ore';
 export type BarId = 'copper_bar' | 'iron_bar' | 'mithril_bar';
 /** Farm goods (section 10b, step 9b): seeds (crops.json), crops (crops.json) and food (food.json). */
-export type CropSeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore';
+export type CropSeedId = 'turnip_seed' | 'potato_seed' | 'carrot_seed' | 'pumpkin_seed' | 'glowcap_spore'
+  | 'beet_seed' | 'leek_seed' | 'onion_seed' | 'pepper_seed' | 'berry_seed' | 'brown_cap_seed' | 'sunmelon_seed' | 'honey_root_seed';
 /** Every block has a seed (step BG6): `<block id>_seed`; planted, it grows blocks. */
 export type BlockSeedId = `${BlockId}_seed`;
 /** Seeds that only splicing makes (step BG7, shared/data/spliceSeeds.json): they grow drinks, furniture, clothes and rarer goods. */
 export type SpliceSeedId =
   | 'flaxbloom_seed' | 'hopvine_seed' | 'honeybloom_seed' | 'vine_bench_seed' | 'mohawk_seed' | 'baggy_seed' | 'tunic_seed'
-  | 'gilded_chair_seed' | 'honey_table_seed' | 'ember_lamp_seed' | 'amberbud_seed' | 'spiritbrew_seed' | 'heartwood_throne_seed';
+  | 'gilded_chair_seed' | 'honey_table_seed' | 'ember_lamp_seed' | 'amberbud_seed' | 'spiritbrew_seed' | 'heartwood_throne_seed'
+  | 'sweetmead_seed' | 'nettle_wine_seed' | 'briar_beer_seed' | 'frost_cider_seed' | 'ember_stout_seed' | 'moonmilk_porter_seed'
+  | 'belt_seed' | 'apron_seed' | 'braids_seed' | 'tabard_seed' | 'cloak_seed' | 'kilt_seed' | 'wayfarer_cloak_seed' | 'moonweave_seed' | 'top_knot_seed'
+  | 'hearth_stool_seed' | 'cask_table_seed' | 'trestle_bench_seed' | 'rug_runner_seed' | 'candle_stand_seed' | 'banner_stand_seed' | 'candelabra_seed'
+  | 'wine_rack_seed' | 'hunters_table_seed' | 'cushion_bench_seed' | 'coat_rack_seed' | 'lord_chair_seed' | 'feast_table_seed' | 'iron_brazier_seed';
 export type SeedId = CropSeedId | BlockSeedId | SpliceSeedId;
-export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap';
-export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth' | 'grilled_perch' | 'carp_stew' | 'eel_pie';
+export type CropId = 'turnip' | 'potato' | 'carrot' | 'pumpkin' | 'glowcap'
+  | 'beet' | 'leek' | 'onion' | 'pepper' | 'berry' | 'brown_cap' | 'sunmelon' | 'honey_root';
+export type FoodId = 'roasted_turnip' | 'potato_stew' | 'carrot_soup' | 'pumpkin_pie' | 'glowcap_broth' | 'grilled_perch' | 'carp_stew' | 'eel_pie'
+  | 'pickled_beets' | 'beet_stew' | 'leek_broth' | 'onion_tart' | 'pepper_roast' | 'berry_pudding' | 'cap_skewers' | 'hearty_hotpot' | 'sunmelon_tart' | 'honeyed_roots';
 /** The lakeside (section 10d, step 9f): fish (fish.json) and the things fished up (also fish.json), and what trees give besides wood. */
 export type FishId =
   | 'mudfin' | 'reed_minnow' | 'pebble_perch' | 'silver_dace' | 'pond_loach'
@@ -206,7 +213,8 @@ export type TreeDropId = 'resin' | 'amber' | 'golden_acorn';
  */
 /** The tavern's drinks (step 9t, shared/data/drinks.json): brewed in a barrel, served by the mug. */
 /** The drinks drinks.json brews (fresh). */
-export type BaseDrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic';
+export type BaseDrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic'
+  | 'sweetmead' | 'nettle_wine' | 'briar_beer' | 'frost_cider' | 'ember_stout' | 'moonmilk_porter';
 /** How far a drink has ripened in a cask (step K2): fresh is the plain drink. */
 export type DrinkTier = 'aged' | 'vintage';
 /** A drink item: the plain drink, or its aged / vintage tier (`root_ale_aged`, built from drinks.json by materials.ts). */

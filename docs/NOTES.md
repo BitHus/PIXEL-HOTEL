@@ -1718,3 +1718,10 @@ simulate:dungeon (1000 runs per row, before -> after): round 1 value/run 97/96/9
 - The 14 non-starter results of the current pool: all chains pass; best splice gems per cell-minute 0.150 (cap 0.375); cheapest loop of depth 4 costs 1270 gold-equivalent.
 - CLAUDE.md 9 and 10b and docs/BRIEF.md now carry the SG1 (general rule), SG4 (plants on blocks) and SG2 wording.
 - R4 boxes aligned with the new sprites (furniture.json, footprints unchanged): sofa seat 10 -> 16, back 22 -> 38 (height 70); bench seat 10 -> 18 (height 48); desk top 16 -> 28 (height 60, a surface: items on it stand higher); the rug box already fills its footprint. Test in client/src/render/furnitureArt.test.ts.
+
+## SG3bc: crops, dishes, drinks, furniture and clothes seeds (coder, 16 Nov; no save change)
+- Data: crops.json +8 (spliceOnly, seedPrice null: beet leek onion / pepper berry brown_cap / sunmelon honey_root), food.json +10 dishes, drinks.json +6 (they are brewable from the new crops; tiers auto), spliceSeeds.json +29 (6 drink seeds, 9 clothes seeds: belt apron braids tabard cloak kilt wayfarer_cloak moonweave top_knot, 14 furniture seeds), furniture/splice.json +14 (art boxes: dy = FRONT edge, height = max(-dy+z+h+d), tested by furnitureArt.test). types.ts unions extended. No clothing.json change (the pieces already existed).
+- Per category and rank (non-starter seeds): drink common 3 rare 3 ultra 2 (one short), crop 3/3/3 (spiritbrew counts as crop), furniture 5/7/6, clothing 3/6/4, block 4/5/3. ore, style, material wait for SG3d.
+- balance.ts: the gem-line harvest pool skips spliceOnly crops; guestGoldPerHour and poursPerHour average PLAIN_DRINKS/PLAIN_DISHES (no splice-crop input) so the S3/T1 tables stay 373/477/626. Loops over ALL drinks and dishes (brewSellLoops, dishSellLoops) still count the new ones.
+- Ranked values changed to pass the STRICT sell-back: pepper 28, brown cap 24 (rare crops). top_knot and wayfarer_cloak seeds have 0 slack (13 of 13): SG3d reshuffles chains, re-run balance.test.ts.
+- GOLDEN in spliceRule.test.ts repinned for the new pool; repin again after SG3d, then it is frozen.

@@ -236,5 +236,498 @@
       "kind": "clothing",
       "id": "flower_crown"
     }
+  },
+  {
+    "id": "sweetmead_seed",
+    "name": "Sweetmead seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "butter",
+        "rust"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "sweetmead"
+    }
+  },
+  {
+    "id": "nettle_wine_seed",
+    "name": "Nettle wine seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "green",
+        "lime"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "nettle_wine"
+    }
+  },
+  {
+    "id": "briar_beer_seed",
+    "name": "Briar beer seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "walnut",
+        "cream"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "briar_beer"
+    }
+  },
+  {
+    "id": "frost_cider_seed",
+    "name": "Frost cider seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "sky",
+        "rust"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "frost_cider"
+    }
+  },
+  {
+    "id": "ember_stout_seed",
+    "name": "Ember stout seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "orange",
+        "night"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "ember_stout"
+    }
+  },
+  {
+    "id": "moonmilk_porter_seed",
+    "name": "Moonmilk seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "plum",
+        "white"
+      ]
+    },
+    "grows": {
+      "kind": "material",
+      "id": "moonmilk_porter"
+    }
+  },
+  {
+    "id": "belt_seed",
+    "name": "Buckle seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "walnut",
+        "gold"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "belt"
+    }
+  },
+  {
+    "id": "apron_seed",
+    "name": "Pinafore seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "cream",
+        "sand"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "apron"
+    }
+  },
+  {
+    "id": "braids_seed",
+    "name": "Plait seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "clay",
+        "clay"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "braids"
+    }
+  },
+  {
+    "id": "tabard_seed",
+    "name": "Herald seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "crimson",
+        "gold"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "tabard"
+    }
+  },
+  {
+    "id": "cloak_seed",
+    "name": "Mantle seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "forest",
+        "pine"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "cloak"
+    }
+  },
+  {
+    "id": "kilt_seed",
+    "name": "Pleat seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "pine",
+        "crimson"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "kilt"
+    }
+  },
+  {
+    "id": "wayfarer_cloak_seed",
+    "name": "Far-road seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "dusk",
+        "navy"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "wayfarer_cloak"
+    }
+  },
+  {
+    "id": "moonweave_seed",
+    "name": "Moonthread seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "silver",
+        "sky"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "moonweave"
+    }
+  },
+  {
+    "id": "top_knot_seed",
+    "name": "Topknot seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "night",
+        "plum"
+      ]
+    },
+    "grows": {
+      "kind": "clothing",
+      "id": "top_knot"
+    }
+  },
+  {
+    "id": "hearth_stool_seed",
+    "name": "Hearth stool seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "clay",
+        "oak"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "hearth_stool"
+    }
+  },
+  {
+    "id": "cask_table_seed",
+    "name": "Cask table seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "oak",
+        "rust"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "cask_table"
+    }
+  },
+  {
+    "id": "trestle_bench_seed",
+    "name": "Trestle bench seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "oak",
+        "tan"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "trestle_bench"
+    }
+  },
+  {
+    "id": "rug_runner_seed",
+    "name": "Rug runner seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "crimson",
+        "rust"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "rug_runner"
+    }
+  },
+  {
+    "id": "candle_stand_seed",
+    "name": "Candle stand seed",
+    "rank": "common",
+    "baseValue": 4,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "butter",
+        "clay"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "candle_stand"
+    }
+  },
+  {
+    "id": "banner_stand_seed",
+    "name": "Banner stand seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "crimson",
+        "clay"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "banner_stand"
+    }
+  },
+  {
+    "id": "candelabra_seed",
+    "name": "Candelabra seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "gold",
+        "rust"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "candelabra"
+    }
+  },
+  {
+    "id": "wine_rack_seed",
+    "name": "Wine rack seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "walnut",
+        "crimson"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "wine_rack"
+    }
+  },
+  {
+    "id": "hunters_table_seed",
+    "name": "Hunter's table seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "walnut",
+        "forest"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "hunters_table"
+    }
+  },
+  {
+    "id": "cushion_bench_seed",
+    "name": "Cushion bench seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "crimson",
+        "oak"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "cushion_bench"
+    }
+  },
+  {
+    "id": "coat_rack_seed",
+    "name": "Coat rack seed",
+    "rank": "rare",
+    "baseValue": 12,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "walnut",
+        "rust"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "coat_rack"
+    }
+  },
+  {
+    "id": "lord_chair_seed",
+    "name": "Lord's chair seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "crimson",
+        "cream"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "lord_chair"
+    }
+  },
+  {
+    "id": "feast_table_seed",
+    "name": "Feast table seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "crimson",
+        "sand"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "feast_table"
+    }
+  },
+  {
+    "id": "iron_brazier_seed",
+    "name": "Iron brazier seed",
+    "rank": "ultra_rare",
+    "baseValue": 30,
+    "icon": {
+      "shape": "seed",
+      "colors": [
+        "orange",
+        "slate"
+      ]
+    },
+    "grows": {
+      "kind": "furniture",
+      "id": "iron_brazier"
+    }
   }
 ]

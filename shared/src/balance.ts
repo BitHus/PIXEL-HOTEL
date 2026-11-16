@@ -594,8 +594,8 @@ function lineTraderGoldPerEvent(line: GemLine, rng: Rng): number {
     case 'boss': return lootTraderGold('bone_king', rng);
     case 'harvest':
       return byRank((rank) => {
-        const crops = CROP_TYPES.filter((c) => c.rank === rank);
-        const pool = crops.length > 0 ? crops : CROP_TYPES.filter((c) => c.rank === 'common');
+        const crops = CROP_TYPES.filter((c) => c.rank === rank && !c.spliceOnly);
+        const pool = crops.length > 0 ? crops : CROP_TYPES.filter((c) => c.rank === 'common' && !c.spliceOnly);
         // Net of the seed: a bought seed comes back with SEED_BACK_CHANCE only (step S3).
         return harvestYield(rank) * (pool.reduce((a, c) => a + materialSellPrice(c.id), 0) / pool.length) - (pool.reduce((a, c) => a + (c.seedPrice ?? 0), 0) / pool.length) * (1 - SEED_BACK_CHANCE);
       });
@@ -685,10 +685,15 @@ export function dishesPerBatch(prepBonus: number, batch = STOVE_BATCH_MAX): numb
   return batch + Math.min(prepBonus, PREP_BONUS.max);
 }
 
+/** SG3b: the drinks and dishes a plain farm can make every day (no splice-only crop in them); the tavern hours use these, the splice-crop ones are an optional extra reached by splicing (their loops are tested over ALL recipes). */
+const PLAIN_INPUTS = (inputs: Partial<Record<string, number>>): boolean => Object.keys(inputs).every((id) => !CROP_TYPES.some((c) => c.id === id && c.spliceOnly));
+const PLAIN_DRINKS = DRINK_TYPES.filter((d) => PLAIN_INPUTS(d.inputs));
+const PLAIN_DISHES = FOOD_TYPES.filter((f) => PLAIN_INPUTS(f.inputs));
+
 /** Drinks poured per hour at full attention (step T1): the drinks among the things sold. A pour is one mug off a tap. */
 export function poursPerHour(stage: Stage): number {
   const t = tavernSetup(stage);
-  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : DRINK_TYPES;
+  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : PLAIN_DRINKS;
   const mugs = (drinks.reduce((a, d) => a + mugsPerHour(d.id), 0) / drinks.length) * t.barrels;
   const sold = guestGoldPerHour(stage).sold;
   return sold * (mugs / (mugs + t.dishesPerHour));
@@ -705,8 +710,8 @@ export function guestGoldPerHour(stage: Stage, prepBonus = 0): { gold: number; s
   // Prep tables (step T1) add dishes to every batch: the batches stay the same, so dishes per hour grow by (batch + bonus) / batch.
   const t = { ...base, dishesPerHour: base.dishesPerHour * dishesPerBatch(prepBonus) / STOVE_BATCH_MAX };
   // The new game brews root ale and roasts turnips; later players brew every drink and cook every dish.
-  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : DRINK_TYPES;
-  const dishes = stage === 'new' ? FOOD_TYPES.filter((f) => f.id === 'roasted_turnip') : FOOD_TYPES;
+  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : PLAIN_DRINKS;
+  const dishes = stage === 'new' ? FOOD_TYPES.filter((f) => f.id === 'roasted_turnip') : PLAIN_DISHES;
   const mugs = (drinks.reduce((a, d) => a + mugsPerHour(d.id), 0) / drinks.length) * t.barrels;
   const mugPrice = drinks.reduce((a, d) => a + drinkGold(d.id), 0) / drinks.length;
   const dishPrice = dishes.reduce((a, f) => a + f.baseValue, 0) / dishes.length;
@@ -792,7 +797,7 @@ export function goldShares(stage: Stage, rng: Rng, prepBonus = 0): { total: numb
 export const HAPPY_SHARE = 0.8;
 export function tavernTipGemsPerHour(stage: Stage): number {
   const t = guestGoldPerHour(stage);
-  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : DRINK_TYPES;
+  const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : PLAIN_DRINKS;
   const avg = drinks.reduce((a, d) => a + tavernTipGems(d.rank), 0) / drinks.length;
   return t.sold * HAPPY_SHARE * avg * TAVERN_ATTENTION_BY_STAGE[stage];
 }

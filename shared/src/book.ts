@@ -70,7 +70,7 @@ export function sourceOf(id: string): string {
   const material = MATERIAL_TYPES.find((m) => m.id === id);
   if (material?.group === 'seed' && id !== 'glowcap_spore' && !isSpliceResult(id) && CROP_TYPES.some((c) => c.seed === id && c.seedPrice !== null)) parts.push('Catalog');
   if (material?.group === 'seed' && BLOCK_TYPES.some((b) => b.seedId === id)) parts.push('Punching blocks');
-  if (isSpliceResult(id) || FURNITURE_GROWN.has(id) || CLOTHING_GROWN.has(id)) parts.push('Splicing');
+  if (isSpliceResult(id) || FURNITURE_GROWN.has(id) || CLOTHING_GROWN.has(id) || (material?.group === 'seed' && (SPLICE_SEEDS.some((s) => s.id === id) || CROP_TYPES.some((c) => c.seed === id && c.spliceOnly)))) parts.push('Splicing');
   if (material?.group === 'crop') parts.push('Farm');
   if (material?.group === 'food') parts.push('Cooked');
   if (material?.group === 'drink') parts.push(/_(aged|vintage)$/.test(id) ? 'Ripened in a cask' : 'Brewed');

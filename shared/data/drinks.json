@@ -2,5 +2,11 @@
   {"id": "root_ale", "name": "Root ale", "inputs": {"turnip": 2, "potato": 1}, "minutes": 8, "mugs": 7, "baseValue": 9, "tip": 0, "color": 4, "rank": "common", "icon": {"shape": "mug", "colors": ["oak", "cream"]}},
   {"id": "carrot_cider", "name": "Carrot cider", "inputs": {"carrot": 3}, "minutes": 20, "mugs": 6, "baseValue": 14, "tip": 0, "color": 9, "rank": "common", "icon": {"shape": "mug", "colors": ["orange", "butter"]}},
   {"id": "pumpkin_stout", "name": "Pumpkin stout", "inputs": {"pumpkin": 1, "potato": 2}, "minutes": 45, "mugs": 8, "baseValue": 15, "tip": 0, "color": 2, "rank": "rare", "icon": {"shape": "mug", "colors": ["walnut", "cream"]}},
-  {"id": "glowcap_tonic", "name": "Glowcap tonic", "inputs": {"glowcap": 1, "carrot": 1}, "minutes": 30, "mugs": 4, "baseValue": 22, "tip": 0.25, "color": 19, "rank": "rare", "icon": {"shape": "bottle", "colors": ["cyan", "white"]}}
+  {"id": "glowcap_tonic", "name": "Glowcap tonic", "inputs": {"glowcap": 1, "carrot": 1}, "minutes": 30, "mugs": 4, "baseValue": 22, "tip": 0.25, "color": 19, "rank": "rare", "icon": {"shape": "bottle", "colors": ["cyan", "white"]}},
+  {"id": "sweetmead", "name": "Sweetmead", "inputs": {"beet": 2, "carrot": 1}, "minutes": 15, "mugs": 6, "baseValue": 12, "tip": 0, "color": 11, "rank": "common", "icon": {"shape": "mug", "colors": ["butter", "cream"]}},
+  {"id": "nettle_wine", "name": "Nettle wine", "inputs": {"leek": 2, "potato": 1}, "minutes": 20, "mugs": 6, "baseValue": 13, "tip": 0, "color": 13, "rank": "common", "icon": {"shape": "mug", "colors": ["green", "lime"]}},
+  {"id": "briar_beer", "name": "Briar beer", "inputs": {"leek": 1, "onion": 1, "turnip": 1}, "minutes": 12, "mugs": 7, "baseValue": 11, "tip": 0, "color": 5, "rank": "common", "icon": {"shape": "mug", "colors": ["walnut", "butter"]}},
+  {"id": "frost_cider", "name": "Frost cider", "inputs": {"berry": 2, "carrot": 1}, "minutes": 35, "mugs": 5, "baseValue": 20, "tip": 0.1, "color": 17, "rank": "rare", "icon": {"shape": "mug", "colors": ["sky", "white"]}},
+  {"id": "ember_stout", "name": "Ember stout", "inputs": {"pepper": 1, "pumpkin": 1, "potato": 1}, "minutes": 50, "mugs": 6, "baseValue": 26, "tip": 0.2, "color": 8, "rank": "ultra_rare", "icon": {"shape": "mug", "colors": ["night", "orange"]}},
+  {"id": "moonmilk_porter", "name": "Moonmilk porter", "inputs": {"sunmelon": 1, "honey_root": 1}, "minutes": 60, "mugs": 4, "baseValue": 32, "tip": 0.25, "color": 19, "rank": "ultra_rare", "icon": {"shape": "bottle", "colors": ["plum", "white"]}}
 ]
