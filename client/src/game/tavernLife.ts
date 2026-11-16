@@ -12,6 +12,10 @@ import { createMenuPanel } from '../ui/menuPanel.ts';
 import { createCaskPanel } from '../ui/caskPanel.ts';
 import { createTapsPanel, TAP_EMPTY_TEXT } from '../ui/tapsPanel.ts';
 import { PourFx } from '../render/pourFx.ts';
+import { TavernFx } from '../render/tavernFx.ts';
+import { surfaceHeight } from '../render/furnitureArt.ts';
+import { createFirstTenGuide } from '../ui/firstTenGuide.ts';
+import { brewReady as brewIsReady, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { sellDetail, sellRowIcon } from '../ui/sellTab.ts';
@@ -25,11 +29,37 @@ import type { G9 } from './ctx.ts';
 
 export async function setupTavernLife(g: G9) {
   const {
-    api, view, ui, uiRoot, updateBadge, toast, sound, popups, sayBubble, bubbles, follow, sprite, st, late, panels, walkTo,
+    api, view, ui, uiRoot, updateBadge, toast, sound, popups, sayBubble, bubbles, follow, sprite, st, late, panels, walkTo, prefs, storage,
   } = g;
 
   // ---------- The tavern (step 9t): guests, orders, coins on the tables ----------
   st.tavern = await api.getTavern();
+  // FP-1: the first ten minutes (a skippable guide in a new game) and JU-1 juice; AU-1 sounds are played from the events below.
+  const guide = createFirstTenGuide(uiRoot, storage, toast);
+  if (st.introPending) guide.begin();
+  const fx = new TavernFx(view, () => prefs.reduceEffects);
+  let readyNow = new Set<string>();
+  /** Steam from ready machines, a "ding" when one becomes ready, the guide's waiting steps and the ambient bed. */
+  const syncMachines = (): void => {
+    const on = st.room.id === st.tavern.roomId && !fx.paused;
+    const now = Date.now();
+    const ready = new Set<string>();
+    const steam: P2[] = [];
+    if (on) {
+      for (const c of st.tavern.cooks) if (cookReady(c, now)) ready.add(`s${c.stoveUid}`);
+      for (const b of st.tavern.brews) if (brewIsReady(b, now)) ready.add(`b${b.barrelUid}`);
+      for (const k of ready) {
+        const it = st.items.find((i) => i.uid === Number(k.slice(1)));
+        if (it) steam.push({ x: it.x, y: it.y - 26 });
+      }
+      for (const k of ready) if (!readyNow.has(k)) sound.play('ready');
+    }
+    readyNow = ready;
+    fx.setSteam(steam);
+    const waiting: FirstTenStep[] = guide.state.done.includes('collect') || [...ready].some((k) => k[0] === 'b') ? [] : ['collect', 'load'];
+    guide.refresh(waiting, on);
+    sound.setAmbience(on ? 'tavern' : null, Math.min(1, st.seatedGuests / 6));
+  };
   const guests = new GuestViews(view);
   const tableMess = new TableMess(view);
   /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
@@ -57,6 +87,7 @@ export async function setupTavernLife(g: G9) {
     tableMess.sync(on ? st.tavern.mess : [], on ? meals() : [], st.items);
     orders.sync(on ? orderMarks() : []);
     updateBadge();
+    syncMachines();
   };
   st.onItemsSynced = syncTavern;
   async function refreshTavern(): Promise<void> {
@@ -87,7 +118,7 @@ export async function setupTavernLife(g: G9) {
   async function collectStove(stoveUid: number): Promise<boolean> {
     const r = await api.collectCook(stoveUid);
     if (!r) return false;
-    sound.play('pop');
+    sound.play('collect');
     popups.show(r.gains);
     toast(`${r.qty} x ${getFoodType(r.food).name} are in your bag.`);
     await refreshTavern();
@@ -97,6 +128,7 @@ export async function setupTavernLife(g: G9) {
   }
   /** The avatar is next to the stove: a ready batch is collected, else the Cooking panel opens (progress or recipes). */
   async function stoveArrived(uid: number): Promise<void> {
+    guide.tip('stove');
     await refreshTavern();
     const cook = cookOf(st.tavern.cooks, uid);
     if (cook && cookReady(cook, Date.now()) && (await collectStove(uid))) return;
@@ -123,7 +155,14 @@ export async function setupTavernLife(g: G9) {
     if (panels.open === 'cooking') cooking.tick();
     if (panels.open === 'brewing') brewing.tick();
     if (panels.open === 'casks') casks.tick();
+    syncMachines();
   }, 1000);
+  let lastPanel = panels.open;
+  panels.onChange(() => {
+    if (panels.open !== null && lastPanel === null) sound.play('uiOpen');
+    else if (panels.open === null && lastPanel !== null) sound.play('uiClose');
+    lastPanel = panels.open;
+  });
   // ---------- Brewing (step 9t C): barrels brew drinks in real time; a tap collects or opens the Brewing panel ----------
   const brewing = createBrewingPanel(ui, {
     start: (barrelUid, drink) => {
@@ -142,7 +181,8 @@ export async function setupTavernLife(g: G9) {
   async function collectBarrel(barrelUid: number): Promise<boolean> {
     const r = await api.collectBrew(barrelUid);
     if (!r) return false;
-    sound.play('pop');
+    sound.play('collect');
+    guide.event('collect');
     popups.show(r.gains);
     toast(`${r.mugs} x ${getDrinkType(r.drink as DrinkId).name} are in your bag. Put them on the menu at the bar.`);
     await refreshTavern();
@@ -152,6 +192,8 @@ export async function setupTavernLife(g: G9) {
   }
   /** The avatar is next to the barrel: a ready brew is collected, else the Brewing panel opens (progress or recipes). */
   async function barrelArrived(uid: number): Promise<void> {
+    guide.event('barrel');
+    guide.tip('barrel');
     await refreshTavern();
     const brew = brewOf(st.tavern.brews, uid);
     if (brew && brewReady(brew, Date.now()) && (await collectBarrel(uid))) return;
@@ -225,7 +267,10 @@ export async function setupTavernLife(g: G9) {
     load: (standUid, slot, drink, qty) => {
       void api.loadTap(standUid, slot, drink as DrinkId, qty).then(async (ok) => {
         sound.play(ok ? 'pop' : 'click');
-        if (ok) toast(`${qty} x ${getMaterialType(drink).name} on the tap. Guests can order it now.`);
+        if (ok) {
+          guide.event('load');
+          toast(`${qty} x ${getMaterialType(drink).name} on the tap. Guests can order it now.`);
+        }
         else toast('That did not fit on the tap.');
         await refreshTavern();
         await late.refreshInventory();
@@ -247,6 +292,7 @@ export async function setupTavernLife(g: G9) {
   };
   /** A tap on a tap stand: the Taps panel opens. */
   const standTap = (): void => {
+    guide.tip('tap');
     refreshTaps();
     panels.show('taps');
   };
@@ -300,6 +346,7 @@ export async function setupTavernLife(g: G9) {
   /** A tap on the bar: the Menu panel opens (Serve tab when orders wait, else Menu). Only in the tavern. */
   const barTap = (): void => {
     if (!inTavern()) return;
+    guide.event('menu');
     menuPanel.setTab(openOrdersNow().length > 0 ? 'serve' : 'menu');
     void refreshMenu().then(() => panels.show('menu'));
   };
@@ -319,7 +366,10 @@ export async function setupTavernLife(g: G9) {
       return;
     }
     if (!(await api.serveGuest(guestId))) toast('There is no way to the bar.');
-    else sound.play('click');
+    else {
+      sound.play('click');
+      guide.event('serve');
+    }
     await refreshTavern();
   }
   /** A tap on something of the tavern: a guest with an order, coins or a dish on a table, a brewing barrel. True when handled. */
@@ -361,10 +411,11 @@ export async function setupTavernLife(g: G9) {
     switch (e.t) {
       case 'guests': {
         // The door bell for new arrivals; a soft murmur when three or more sit.
-        if (on && e.guests.some((g) => !st.tavern.guests.some((o) => o.id === g.id))) sound.play('bell');
+        if (on && e.guests.some((g) => !st.tavern.guests.some((o) => o.id === g.id))) sound.play('arrive');
         const sitting = e.guests.filter((g) => g.seated).length;
         if (on && sitting >= 3 && st.seatedGuests < 3) sound.play('murmur');
         st.seatedGuests = sitting;
+        syncMachines();
         st.tavern = { ...st.tavern, guests: e.guests };
         syncTavern();
         void refreshTavern();
@@ -398,6 +449,7 @@ export async function setupTavernLife(g: G9) {
       case 'holding':
         if (e.item) {
           pour.stop();
+          fx.stopPour();
           if (isDrinkId(e.item)) sound.play('clink'); // the full mug is lifted off the bar
         }
         sprite.setHeld(e.item ? drawGood({ kind: 'material', id: e.item, qty: 1 }) : null);
@@ -405,6 +457,10 @@ export async function setupTavernLife(g: G9) {
         break;
       case 'served':
         sound.play('clink');
+        if (on) {
+          bubbles.addNode(e.guestId, pixelIcon('smile'), REACTION_BUBBLE_MS);
+          fx.sparkle(e.spot, 4);
+        }
         sprite.gesture('hand');
         void refreshTavern();
         void late.refreshInventory();
@@ -415,6 +471,7 @@ export async function setupTavernLife(g: G9) {
         if (on && stand) {
           const bar = st.items.find((i) => i.uid === stand.onItemUid);
           pour.start(stand, bar, e.item, e.ms);
+          fx.pourSplash({ x: stand.x, y: stand.y - (bar ? surfaceHeight(getFurnitureType(bar.typeId)) : 0) - 9 }, stand.y - (bar ? surfaceHeight(getFurnitureType(bar.typeId)) : 0), getDrinkType(e.item as DrinkId).color, e.ms);
           sound.play('pour');
           sprite.gesture('hand');
         }
@@ -422,16 +479,21 @@ export async function setupTavernLife(g: G9) {
       }
       case 'tap_empty':
         pour.stop();
+        fx.stopPour();
         if (on) toast(`${TAP_EMPTY_TEXT}: ${getMaterialType(e.item).name} is not on a tap. The order waits.`);
         void refreshTavern();
         break;
       case 'collected': {
         sound.play('coin');
+        guide.event('coins');
         // The coins fly into the register on the bar (up to three), then the gold count follows as before.
         const reg = on ? registerPoint(st.items, st.tavern.roomId) : null;
         if (reg) {
           const n = Math.min(3, Math.max(1, Math.ceil(e.coins / 10)));
-          for (let k = 0; k < n; k++) window.setTimeout(() => flyCoin(uiRoot, worldToScreen(e.spot, st.shown), worldToScreen(reg, st.shown), 450, () => {}), k * 90);
+          for (let k = 0; k < n; k++) window.setTimeout(() => flyCoin(uiRoot, worldToScreen(e.spot, st.shown), worldToScreen(reg, st.shown), 450, () => {
+            sound.play('coin');
+            fx.sparkle({ x: reg.x, y: reg.y - 8 }, 5);
+          }), k * 90);
         }
         popups.show(e.gains);
         void refreshTavern();
@@ -449,5 +511,5 @@ export async function setupTavernLife(g: G9) {
     }
   });
 
-  return { pour, guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived, caskArrived };
+  return { fx, pour, guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived, caskArrived };
 }

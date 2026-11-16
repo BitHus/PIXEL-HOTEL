@@ -11,7 +11,7 @@ export async function setupGameLoop(g: G16) {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
     guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
     doBlock, placeBar, menu, orders, bubbles, emote, nameTag, popups, gemFly, splashGone, openRoom,
-    playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, api, setDungeonMode, notice, toast, st, late,
+    playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
   } = g;
 
   app.renderer.on('resize', fit);
@@ -26,6 +26,13 @@ export async function setupGameLoop(g: G16) {
   const feet: Point[] = [];
   let lastStepBeat = 0;
   app.ticker.add((ticker) => {
+    if (dungeon.isActive !== fx.paused) {
+      fx.paused = dungeon.isActive;
+      if (fx.paused) {
+        fx.clear();
+        sound.setAmbience(null);
+      }
+    }
     if (dungeon.isActive) {
       nameTag.update('', null);
       control.update(ticker.deltaMS);
@@ -46,6 +53,7 @@ export async function setupGameLoop(g: G16) {
     itemViews.update(ticker.deltaMS);
     guests.update(ticker.deltaMS, clockMs);
     pour.update();
+    fx.update(ticker.deltaMS);
     lakeside.update(ticker.deltaMS, clockMs);
     if (st.path.length === 0 && st.avatar.state !== 'walk') lakeside.arrived();
     roomFloats.update(ticker.deltaMS, (p) => worldToScreen(p, st.shown));

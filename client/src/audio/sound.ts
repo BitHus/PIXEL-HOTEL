@@ -3,13 +3,13 @@
 
 import type { Rank } from '@pixel-hotel/shared';
 
-export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found' | 'cast' | 'splash' | 'reelTick' | 'rustle';
+export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found' | 'cast' | 'splash' | 'reelTick' | 'rustle' | 'door' | 'arrive' | 'ready' | 'collect' | 'uiOpen' | 'uiClose';
 
 /** The ping of a find, by rank: the rarer, the higher (G5, B5, E6, G6). */
 const FOUND_HZ: Record<Rank, number> = { common: 784, rare: 988, ultra_rare: 1319, legendary: 1568 };
 
 /** The same sound is never started twice within this many ms. */
-export const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120 };
+export const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120, door: 400, arrive: 1500, ready: 2500, collect: 120, uiOpen: 120, uiClose: 120 };
 
 type Wave = OscillatorType;
 
@@ -19,6 +19,11 @@ export class Sound {
   private noise: AudioBuffer | null = null;
   private readonly last = new Map<SoundName, number>();
   private stepFlip = false;
+  private ambienceWanted: 'tavern' | null = null;
+  private crowd = 0;
+  private ambienceSources: AudioBufferSourceNode[] = [];
+  private murmurGain: GainNode | null = null;
+  private ambienceTimer = 0;
 
   constructor(
     private enabled: boolean,
@@ -42,6 +47,7 @@ export class Sound {
         for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
       }
       if (this.ctx.state === 'suspended') void this.ctx.resume();
+      this.syncAmbience(); // an ambience asked for before the first tap starts now
     } catch {
       // No sound on this device: the game goes on silently.
       this.ctx = null;
@@ -53,6 +59,70 @@ export class Sound {
     const go = (): void => this.unlock();
     window.addEventListener('pointerdown', go, { capture: true, passive: true });
     window.addEventListener('keydown', go, { capture: true, passive: true });
+  }
+
+  /**
+   * A warm ambient bed for a place (AU-1): a low room rumble, a murmur that grows with `crowd` (0 to 1), and now and then a soft lute-like note.
+   * Synthesised, quiet, follows the sound setting (the master gain) and stops with `null`. Safe to call before the first tap: it starts on unlock.
+   */
+  setAmbience(scene: 'tavern' | null, crowd = 0): void {
+    this.ambienceWanted = scene;
+    this.crowd = Math.max(0, Math.min(1, crowd));
+    if (this.murmurGain) this.murmurGain.gain.value = 0.015 + 0.05 * this.crowd;
+    this.syncAmbience();
+  }
+
+  private syncAmbience(): void {
+    const ctx = this.ctx;
+    if (this.ambienceWanted === null || !ctx || !this.master || !this.noise) {
+      this.stopAmbience();
+      return;
+    }
+    if (this.ambienceSources.length > 0) return;
+    const master = this.master;
+    const noise = this.noise;
+    const loop = (freq: number, gain: number): GainNode => {
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      src.loop = true;
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = freq;
+      const g = ctx.createGain();
+      g.gain.value = gain;
+      src.connect(f).connect(g).connect(master);
+      src.start();
+      this.ambienceSources.push(src);
+      return g;
+    };
+    loop(160, 0.03);
+    this.murmurGain = loop(420, 0.015 + 0.05 * this.crowd);
+    const notes = [196, 220, 261.6, 294, 392]; // a calm pentatonic
+    const next = (): void => {
+      this.ambienceTimer = window.setTimeout(() => {
+        if (this.ambienceSources.length === 0) return;
+        if (this.ctx?.state === 'running' && this.enabled && Math.random() < 0.7) {
+          const hz = notes[Math.floor(Math.random() * notes.length)]!;
+          this.tone('triangle', hz, hz, 1.6, 0.012, 0, 0.03);
+        }
+        next();
+      }, 3500 + Math.random() * 5000);
+    };
+    next();
+  }
+
+  private stopAmbience(): void {
+    if (this.ambienceTimer) window.clearTimeout(this.ambienceTimer);
+    this.ambienceTimer = 0;
+    for (const s of this.ambienceSources) {
+      try {
+        s.stop();
+      } catch {
+        // already stopped
+      }
+    }
+    this.ambienceSources = [];
+    this.murmurGain = null;
   }
 
   setEnabled(on: boolean): void {
@@ -158,6 +228,34 @@ export class Sound {
       }
       case 'rustle':
         this.hiss(0.16, 0.07, 'highpass', 3000);
+        break;
+      case 'door':
+        // A wooden door: a low creak that slides, then a soft thud.
+        this.tone('sawtooth', 140, 190, 0.18, 0.03);
+        this.tone('sine', 90, 55, 0.14, 0.09, 0.16);
+        this.hiss(0.08, 0.05, 'lowpass', 500);
+        break;
+      case 'arrive':
+        // A guest comes in: the latch, then the soft door chime.
+        this.hiss(0.05, 0.05, 'bandpass', 1500);
+        this.tone('sine', 659, 659, 0.8, 0.04, 0.08, 0.05);
+        this.tone('sine', 988, 988, 0.9, 0.03, 0.22, 0.05);
+        break;
+      case 'ready':
+        // A batch or brew is ready: a warm two-note "ding-ding".
+        this.tone('triangle', 784, 784, 0.25, 0.07);
+        this.tone('triangle', 1175, 1175, 0.4, 0.07, 0.14);
+        break;
+      case 'collect':
+        // Taking something from a stove or barrel: a rising pop and a clink.
+        this.tone('sine', 330, 700, 0.09, 0.2);
+        this.tone('triangle', 1568, 1568, 0.12, 0.06, 0.07);
+        break;
+      case 'uiOpen':
+        this.tone('triangle', 520, 780, 0.07, 0.07);
+        break;
+      case 'uiClose':
+        this.tone('triangle', 700, 440, 0.07, 0.06);
         break;
       case 'found':
         this.tone('triangle', FOUND_HZ[rank], FOUND_HZ[rank], 0.16, 0.08);

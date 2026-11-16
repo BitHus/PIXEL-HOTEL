@@ -35,6 +35,8 @@ export const IDLE_SHIFT_HOLD_MS = 700;
 export const SOUND_DEFAULT_VOLUME = 0.35;
 /** Where the device settings (sound, volume, lighting) are stored. */
 export const PREFS_KEY = 'pixel-hotel.prefs';
+/** Device storage key of the first-ten-minutes guide state (FP-1; not part of the save). */
+export const FIRST_TEN_KEY = 'pixel-hotel.first-ten';
 
 // ---------- Logo splash on every page load (client only) ----------
 /** The logo pops in (scale SPLASH_POP_FROM -> 1 with a small bounce) over this many ms. */

@@ -162,6 +162,7 @@ export async function setupRoomFlow(g: G13) {
   async function useDoor(doorId: string): Promise<boolean> {
     if (doorBusy) return false;
     doorBusy = true;
+    g.sound.play('door');
     try {
       fade.classList.add('on');
       const [state] = await Promise.all([api.useDoor(doorId), new Promise((r) => window.setTimeout(r, 200))]);
