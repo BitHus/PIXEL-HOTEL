@@ -52,7 +52,7 @@ describe('generateFloor (section 10)', () => {
           const s = blockAt(map.spawn);
           const dist = blockDistances(map, s.c, s.r);
           for (const room of map.rooms) {
-            for (let r = room.y; r < room.y + room.h; r++) for (let c = room.x; c < room.x + room.w; c++) expect(dist[r * map.cols + c]).toBeGreaterThanOrEqual(0);
+            for (let r = room.y; r < room.y + room.h; r++) for (let c = room.x; c < room.x + room.w; c++) if (isFloorBlock(map, c, r)) expect(dist[r * map.cols + c]).toBeGreaterThanOrEqual(0);
           }
           expect(isFloorBlock(map, map.exit.c, map.exit.r)).toBe(true);
           const exit = blockCenter(map.exit.c, map.exit.r);

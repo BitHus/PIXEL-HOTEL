@@ -152,7 +152,7 @@
 /* The night backdrop of the whole creation screen: a few warm stars of candlelight on the dusk. */
 .charmaker {
   background:
-    radial-gradient(circle at 50% 30%, rgba(247, 118, 34, 0.18) 0 22%, rgba(247, 118, 34, 0.1) 22% 40%, transparent 40%),
+    radial-gradient(circle at 50% 30%, rgba(247, 118, 34, 0.2) 0%, rgba(247, 118, 34, 0.1) 22%, rgba(247, 118, 34, 0.03) 36%, transparent 46%),
     var(--night);
 }
 
@@ -160,7 +160,7 @@
 .charmaker-stage,
 .avatar-stage {
   background:
-    radial-gradient(circle at 50% 44%, rgba(254, 174, 52, 0.34) 0 26%, rgba(254, 174, 52, 0.2) 26% 46%, rgba(254, 174, 52, 0.09) 46% 68%, transparent 68%),
+    radial-gradient(circle at 50% 44%, rgba(254, 174, 52, 0.36) 0%, rgba(254, 174, 52, 0.2) 30%, rgba(254, 174, 52, 0.08) 52%, transparent 72%),
     linear-gradient(var(--outline), var(--outline)) 0 64% / 100% 3px no-repeat,
     repeating-linear-gradient(180deg, var(--wood-light) 0 10px, var(--wood) 10px 12px) 0 100% / 100% 36% no-repeat,
     repeating-linear-gradient(90deg, var(--wood) 0 22px, var(--outline) 22px 24px) 0 0 / 100% 64% no-repeat,
@@ -1076,6 +1076,30 @@
   box-shadow: inset 0 2px 0 var(--butter);
 }
 
+/* "Hold the tap" hint: inline styles set position and colours; this adds a pointer tail and a hard pixel shadow. */
+.pour-hint { box-shadow: 0 2px 0 #181425; margin-top: -6px; }
+.pour-hint::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 6px;
+  height: 6px;
+  margin-left: -5px;
+  background: #3e2731;
+  border-right: 2px solid #f6ca9f;
+  border-bottom: 2px solid #f6ca9f;
+  transform: translateY(-4px) rotate(45deg);
+}
+
+/* The pour bar over the mug: the green window pulses softly, the bar glows green inside it. */
+.pour-bar-over.in-window { box-shadow: 0 0 0 1px #63c74d, 0 0 6px rgba(99, 199, 77, 0.6); }
+.pour-bar-over.in-window .pour-bar-fill { box-shadow: inset 0 2px 0 #a8e08a; }
+@media (prefers-reduced-motion: no-preference) {
+  .pour-bar-over .pour-bar-mark { animation: pour-window 0.9s ease-in-out infinite alternate; }
+}
+@keyframes pour-window { from { background: rgba(99, 199, 77, 0.14); } to { background: rgba(99, 199, 77, 0.36); } }
+
 .pour-bar-mark {
   border: 2px solid #63c74d !important;
   background: rgba(99, 199, 77, 0.22);
@@ -1151,7 +1175,7 @@
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  background: radial-gradient(circle, rgba(254, 174, 52, 0.22) 0 20%, rgba(247, 118, 34, 0.14) 20% 36%, rgba(190, 74, 47, 0.08) 36% 52%, transparent 52%);
+  background: radial-gradient(circle, rgba(254, 174, 52, 0.24) 0%, rgba(247, 118, 34, 0.14) 26%, rgba(190, 74, 47, 0.07) 42%, transparent 54%);
   animation: title-flicker 1.6s steps(2, end) infinite;
 }
 

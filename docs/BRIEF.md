@@ -343,9 +343,10 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   are ignored, and there is no auto-attack). Drink a potion with a button or the Q key.
   Walking into the exit pauses the run until the player chooses.
 - Floor: the dungeon is built from 32x32 px blocks (a block is floor or wall), 40x40 blocks
-  per floor, 5 to 8 rooms of 4 to 8 blocks, corridors 1 block wide, from an integer seed
+  per floor, 5 to 8 rooms of 4 to 8 blocks, corridors 1 block wide (some 2), from an integer seed
   (same seed = same floor). A run = 3 floors. Floor 3 has a boss. Each floor has an exit
   (one block).
+- LAYOUT (DG1, owner 16 Nov): rooms are templates (rectangle, cross, L, cut-corner, pillared hall, alcove hall, ring, arena; data in shared/data/dungeonRooms.json) of 4 to 8 blocks on a jittered 3x3 grid of zones, joined door to door by corridors of at most DUNGEON_CORRIDOR_MAX (5) blocks, with at least one loop when there are 4 or more rooms. Every floor has side nooks, 1 to 2 dead-end secrets, a vault nook, one landmark and set pieces (dungeonThemes.json); a BEAT (enemy, chest, prop or landmark) lies within PACE_GAP_BLOCKS (7) blocks of every point of the main route. Chest counts, enemy counts, loot tables and the 100 ms tick are unchanged. The mine keeps its old layout. "Rooms" means main rooms (nooks, secrets and vaults do not count). Code: shared/src/dungeon/layout.ts, rooms.ts, themes.ts, pacing.ts.
 - Theme in v1: Crypt.
 - DUNGEON_ROUND in config switches the size of the dungeon. Round 1 (the default):
   MAX_FLOORS = 1, 3 to 4 rooms, only slimes, no mimics, no boss, xp and levels on. Round 2:

@@ -10,6 +10,7 @@ You are the main Claude session = the project manager. The owner opens you from 
 3. TEAM = lead, coder, artist, ui, tester (agent files in ~/.claude/agents). EVERY worker runs on model sonnet (set model: "sonnet" on each Agent call). Usage is tight: at most TWO workers at a time (one coder + one artist or ui), big well-scoped tasks, verify once per batch.
 4. Next work: finish what is running (see git status and QUEUE.md), then: coder C17 avatar rig data then C18+ layered renderer; FP-1 first ten minutes; JU-1/AU-1 juice and sound; 9g-2/9g-3; 9i. Artist: furniture rounds from ART-REDO.md, A24 character prototype, pixel art guide checks. UI: PLAN-UI.md rounds 2 to 4. The Aseprite plugin needs Aseprite open with the extension (preflight); if not ready, do CODE-ART tasks and say so; never switch to headless without the owner asking.
 5. After each batch: npm test, npm run typecheck, npm run build in the rebased tree, commit there (git -c user.name=Claude -c user.email=noreply@anthropic.com, message ends with Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>), then git merge --ff-only claude/inn-1b-rebased in C:UsersajrenPIXEL-HOTEL. NEVER push to GitHub unless the owner says so (a push deploys the game).
+5b. TOOLS (same on both startups; the project holds them): Playwright (`npm run e2e`, chromium is installed per user on this PC), CI file, Aseprite plugin (open Aseprite first, then preflight). Details: docs/TEAM.md "Test tools". After `git pull` or a fresh clone run `npm install` and `npx playwright install chromium`.
 6. You decide small things; ask the owner only for big ones (pushing, game balance changes, fixed CLAUDE.md rules, style locks). Short replies. Running agents do not survive a restart: start them again from QUEUE.md.
 
 ## The team (agent definitions live in ~/.claude/agents/, all model: sonnet)
@@ -51,3 +52,9 @@ You are the main Claude session = the project manager. The owner opens you from 
 ## Tools on this PC
 - /myoffice (skill) shows all agents; turn on its "Subagents" switch. Finished subagents may stay "thinking" until the idle timeout.
 - Game: `npm install` then `npm run dev` in C:\Users\ajren\PIXEL-HOTEL. Deployed version: https://bithus.github.io/PIXEL-HOTEL/
+
+## Test tools (added 16 Nov, owner OK)
+- Playwright (devDependency, chromium installed): `npm run e2e` builds, serves `vite preview` on 4173 and runs e2e/*.spec.ts at desktop 1000x700 and phone 420x760 (touch, dpr 2). The tester extends e2e/ (new game, tavern, pour, panels) instead of raw CDP; screenshots land in test-results/ (git-ignored).
+- CI: .github/workflows/ci.yml runs test, typecheck and build on every push (no deploy). Committed locally; a push still waits for the owner.
+- Not installed on purpose: Serena, Context7, Tiled/LDtk, Yarn Spinner, Excalidraw, FFmpeg, ImageMagick (see the 16 Nov audit); ChipTone and Audacity are for the owner by hand when AU-1 sound starts.
+- ADDED 16 Nov (owner: "download everything"): devDependencies fast-check (property tests, see shared/src/fastcheck.test.ts), @biomejs/biome (`npm run lint`, warnings only for now), sharp, pixelmatch, pngjs (sprite checks in tools/), free-tex-packer-core (atlases, only when load time needs it), stats.js. .mcp.json adds the Playwright MCP (headless; approve it on first use). .github/dependabot.yml monthly. Installed on the PC with winget: ImageMagick (magick), FFmpeg, Audacity. Manual web tools for the owner: sfxr.me/jsfxr, BeepBox, ChipTone. Playwright visual snapshots: use toHaveScreenshot in e2e/.

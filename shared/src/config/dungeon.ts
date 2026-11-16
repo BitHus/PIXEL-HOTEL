@@ -222,5 +222,5 @@ export const PACE_ENEMY_GAP_BLOCKS = 16;
 export const ROUTE_LEN_MIN = 25;
 export const ROUTE_LEN_MAX = 70;
 /** How often the layout is drawn again when a floor breaks a rule (loop, route length). */
-export const DUNGEON_LAYOUT_ATTEMPTS = 80;
+export const DUNGEON_LAYOUT_ATTEMPTS = 300;
 

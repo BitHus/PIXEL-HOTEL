@@ -1,0 +1,6 @@
+{
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+  "files": { "includes": ["shared/src/**", "client/src/**", "server/**", "!**/*.json", "!**/node_modules/**"] },
+  "linter": { "enabled": true, "rules": { "recommended": false, "correctness": { "noUnusedImports": "warn", "noUnusedVariables": "warn", "noUndeclaredVariables": "off" } } }
+}

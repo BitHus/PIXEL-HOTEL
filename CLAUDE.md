@@ -153,9 +153,9 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   fixed 100 ms ticks (deterministic; the server runs it later). No turns.
 - Tap the floor = walk; tap an enemy = walk next to it and hit: one hit per tap, 350 ms cooldown,
   no auto-attack. Potion: button or Q. Food: button or E.
-- Floors: 40x40 blocks of 32 px from an integer seed. Theme v1: Crypt. DUNGEON_ROUND in config:
+- Floors: 40x40 blocks of 32 px from an integer seed. Theme v1: Crypt. LAYOUT (DG1, owner 16 Nov): rooms are templates (rectangle, cross, L, cut-corner, pillared hall, alcove hall, ring, arena; data in shared/data/dungeonRooms.json) of 4 to 8 blocks on a jittered 3x3 grid of zones, joined door to door by corridors of at most DUNGEON_CORRIDOR_MAX (5) blocks, with at least one loop when there are 4 or more rooms. Every floor has side nooks, 1 to 2 dead-end secrets, a vault nook, one landmark and set pieces (dungeonThemes.json); a BEAT (enemy, chest, prop or landmark) lies within PACE_GAP_BLOCKS (7) blocks of every point of the main route. Chest counts, enemy counts, loot tables and the 100 ms tick are unchanged. The mine keeps its old layout. DUNGEON_ROUND in config:
   round 1 (default) = 1 floor, 3-4 rooms, slimes only; round 2 = 3 floors, 5-8 rooms, all
-  enemies, mimics, the Bone King. Both are implemented.
+  enemies, mimics, the Bone King. Both are implemented. "Rooms" means main rooms (nooks, secrets and vaults do not count).
 - Player 30 hp, attack 4-6, 80 px/s. Enemy stats are in config ENEMIES. Enemies chase within
   192 px, attack with a 300 ms wind-up, and miss if the player is over 48 px away at its end.
 - Run bag: 12 slots (materials stack to 10). At the exit: Go deeper or Leave (banks the bag).
@@ -268,9 +268,9 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the 
 - DUNGEON_ROUND is 1. SAVE_VERSION is 31 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
-- Root: npm scripts dev, build, test, typecheck, simulate, simulate:dungeon. Vite base stays './'.
+- Root: npm scripts dev, build, test, typecheck, e2e (Playwright smoke, e2e/), simulate, simulate:dungeon. Vite base stays './'.
 - shared/src: all rules (pure), config.ts (re-exports config/*.ts: the constants by topic; tavern numbers stay in config.ts), types.ts, api.ts (GameAPI),
-  palette.ts, save.ts (migrations); shared/src/dungeon: run, step, generate, loot, bank.
+  palette.ts, save.ts (migrations); shared/src/dungeon: run, step, generate (crypt -> layout.ts; mine -> legacyLayout.ts), layout, rooms, themes, pacing, layoutCommon, loot, bank.
 - shared/data: JSON data (furniture, materials, styles, roomShapes, clothing, loot, levels, gear,
   forge, recipes, crops, food, fish, npcLines, bookRewards).
 - client/src: main.ts (only wiring: start() runs the parts in game/ in order), game/ (one part per area:
