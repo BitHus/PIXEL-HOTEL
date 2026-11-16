@@ -184,7 +184,6 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
       grid.appendChild(t);
     }
     out.append(grid, stepper);
-    if (hat) out.appendChild(hatCanvas(hat.id, !owned));
     if (hat && !owned) out.appendChild(el('div', 'hat-hint', hat.unlock ?? ''));
     const wearing = (l.hat ?? '') === (hat?.id ?? '');
     if (owned) {

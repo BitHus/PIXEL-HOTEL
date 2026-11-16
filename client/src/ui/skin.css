@@ -1042,3 +1042,43 @@
     font-size: 12px;
   }
 }
+
+/* ---------- G2 hands-on pour: the Hold-to-pour tag over the tap stand (inline defaults in game/pourControl.ts are overridden here) ---------- */
+.pour-btn {
+  background: var(--wood) !important;
+  color: var(--butter) !important;
+  border: 2px solid var(--outline) !important;
+  box-shadow: inset 0 0 0 1px var(--candle), inset 0 -3px 0 var(--wood-dk), 0 2px 0 var(--outline) !important;
+  padding: 8px 14px 10px !important;
+  min-width: 148px !important;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 0 var(--outline);
+  image-rendering: pixelated;
+}
+
+.pour-btn:active {
+  transform: translate(-50%, calc(-100% + 2px)) !important;
+  box-shadow: inset 0 0 0 1px var(--butter), inset 0 -1px 0 var(--wood-dk) !important;
+}
+
+.pour-bar {
+  height: 12px !important;
+  margin-top: 8px !important;
+  background: var(--bar-bg) !important;
+  border: 2px solid var(--outline) !important;
+  box-shadow: inset 0 0 0 1px var(--wood-dk);
+}
+
+.pour-bar-fill {
+  background: var(--candle);
+  box-shadow: inset 0 2px 0 var(--butter);
+}
+
+.pour-bar-mark {
+  border: 2px solid #63c74d !important;
+  background: rgba(99, 199, 77, 0.22);
+  top: -4px !important;
+  bottom: -4px !important;
+}
