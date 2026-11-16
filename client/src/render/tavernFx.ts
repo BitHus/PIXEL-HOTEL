@@ -23,6 +23,8 @@ export class TavernFx {
   private clock = 0;
   /** True while another screen (the dungeon) covers the room: no steam, no ambience. */
   paused = false;
+  /** Told where coins land (the register's drawer pops, render/propAnim.ts). Plays even with Reduce effects: it is feedback. */
+  onSparkle: ((at: Point) => void) | null = null;
 
   constructor(view: RoomView, private readonly reduce: () => boolean) {
     this.g.eventMode = 'none';
@@ -41,6 +43,7 @@ export class TavernFx {
 
   /** A small shower of sparks (coins landing in the register, a served mug). */
   sparkle(at: Point, count = 6, color: number = toHex(PALETTE[8])): void {
+    this.onSparkle?.(at);
     if (this.reduce()) return;
     for (let i = 0; i < count; i++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;

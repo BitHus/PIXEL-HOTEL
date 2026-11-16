@@ -27,7 +27,7 @@ import { applyChange } from './ledger.ts';
 import { getDrinkType, getMaterialType, isDrinkId, materialGroup, MATERIAL_TYPES } from './materials.ts';
 import type { CustomerKind, NpcMoment } from './npcTalk.ts';
 import { seatSpots } from './seats.ts';
-import { mugsOnTaps, pourStop, setTap, stockFor, tapFor, type Tap } from './taps.ts';
+import { mugsOnTaps, pourStop, setTap, stockFor, tapFor, tapOf, type Tap } from './taps.ts';
 import { decide, validPrice } from './prices.ts';
 import type { Facing, FurnitureItem, FurnitureType, MaterialId, Point, Reaction, Rect, Rng } from './types.ts';
 
@@ -420,14 +420,15 @@ export type PourResult =
  * the first tap that holds it and is in the player's hands. If no tap holds it (the player unloaded it after the order) nothing is
  * poured: the guest leaves the queue but the ORDER STAYS OPEN, and the result says `empty`. Null with full hands or nothing queued.
  */
-export function pourOrder(state: GameState): PourResult | null {
+export function pourOrder(state: GameState, pick?: { standUid: number; slot: number }): PourResult | null {
   const n = nextOrder(state);
   if (!n) return null;
   if (!isDrinkId(n.item)) {
     const r = pickUpOrder(state)!;
     return { empty: false, state: r.state, guestId: r.guestId, item: r.item, standUid: null, slot: null };
   }
-  const tap = tapFor(state.tavern.taps, n.item);
+  const picked = pick ? tapOf(state.tavern.taps, pick.standUid, pick.slot) : undefined;
+  const tap = picked && picked.drink === n.item && picked.mugs > 0 ? picked : tapFor(state.tavern.taps, n.item);
   if (!tap) return { empty: true, state: withTavern(state, { serveQueue: n.queue.slice(1) }), guestId: n.guestId, item: n.item };
   const taps = setTap(state.tavern.taps, { ...tap, mugs: tap.mugs - 1 });
   return { empty: false, state: withTavern(state, { taps, serveQueue: n.queue.slice(1), holding: { guestId: n.guestId, item: n.item } }), guestId: n.guestId, item: n.item, standUid: tap.standUid, slot: tap.slot };

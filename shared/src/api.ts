@@ -375,8 +375,8 @@ export interface GameAPI {
    * guest's table, one tap. False = refused (no open order, queue full, not in the tavern, no way).
    */
   serveGuest(guestId: number): Promise<boolean>;
-  /** G2: the avatar waits at the taps (event 'pour_ready'); the player held the pour for heldMs. Takes the mug; false = nothing to pour. */
-  pourHeld(heldMs: number): Promise<boolean>;
+  /** G2: the avatar waits at the taps (event 'pour_ready'); the player held the pour for heldMs (capped) on the tap `pick` (default: the first tap holding the drink). Takes the mug; false = nothing to pour. */
+  pourHeld(heldMs: number, pick?: { standUid: number; slot: number }): Promise<boolean>;
   /** G2: the player taps the guest, bubble or table: the avatar carries the poured mug there (a dish goes by itself). False = nothing in the hands. */
   carryHeld(): Promise<boolean>;
   /** Walks to a table spot and takes its coins (`what` 'coins') or clears its empty mug or plate ('dish'). False = refused. */

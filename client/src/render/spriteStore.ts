@@ -28,7 +28,7 @@ export async function loadSprites(): Promise<void> {
   await Promise.all(
     Object.keys(URLS).map(async (file) => {
       const ref = parseSpritePath(file);
-      if (!ref || (ref.kind === 'furniture' && !types.has(ref.id))) return;
+      if (!ref || (ref.kind === 'furniture' && !types.has(ref.id) && !isFurnitureStrip(ref.id, types))) return;
       try {
         const url = URLS[file]!;
         const texture = (await Assets.load(url)) as Texture;
@@ -48,13 +48,21 @@ export async function loadSprites(): Promise<void> {
     const [kind, ...rest] = key.split('/') as [SpriteKind, ...string[]];
     const id = rest.join('/');
     // Furniture needs every facing its type allows, a plant its three stages; everything else is one file.
-    const ok = kind === 'furniture' ? neededFacings(types.get(id)!).every((f) => per.has(f)) : kind === 'plants' ? plantComplete(per.keys()) : per.has('');
+    const ok = kind === 'furniture' ? (types.has(id) ? neededFacings(types.get(id)!).every((f) => per.has(f)) : per.has('down')) : kind === 'plants' ? plantComplete(per.keys()) : per.has('');
     if (ok) store.set(key, per);
   }
 }
 
+/** A furniture strip file `<typeId>_<tag>.png` (stove_fire.png): the id starts with a furniture type id. */
+function isFurnitureStrip(id: string, types: ReadonlyMap<string, unknown>): boolean {
+  const i = id.lastIndexOf('_');
+  return i > 0 && types.has(id.slice(0, i));
+}
+
 function pick(kind: SpriteKind, id: string, variant: string): Loaded | null {
-  return store.get(keyOf(kind, id))?.get(variant) ?? null;
+  const per = store.get(keyOf(kind, id));
+  // A furniture strip is stored under the 'down' variant (parseSpriteName); other kinds ask for ''.
+  return per?.get(variant) ?? (kind === 'furniture' && variant === '' ? per?.get('down') : undefined) ?? null;
 }
 
 /** The sprite of a furniture type for a facing ('left' uses 'right'; the caller mirrors), or null = draw the code art. */

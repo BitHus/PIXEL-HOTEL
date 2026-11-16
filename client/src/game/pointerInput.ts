@@ -12,8 +12,10 @@ export async function setupPointerInput(g: G15) {
     app, dungeon, setCamera, overviewZoom, dpr, intro, holdTargetAt, lakeside, hold, holdBusyElsewhere, menu,
     steerWalk, panels, cross, label, redraw, updateBlockGhost, placer, paint, roomItem, itemViews, build,
     openMenu, api, applyItems, sound, blockTap, tavernTap, barTap, serveAt, toast, sitOn, walkTo,
-    blockers, st,
+    blockers, st, pourControl,
   } = g;
+  /** True while a press belongs to the pour (the hold on the tap stand): it never walks, pans or hits. */
+  let pourClaim = false;
 
   const useTap = createItemUse({ api, applyItems, toast, sound, panels });
   app.stage.hitArea = app.screen;
@@ -24,6 +26,13 @@ export async function setupPointerInput(g: G15) {
     getDevicePixelRatio: dpr,
     onGestureStart: () => intro.cancel(),
     onPress: (screen) => {
+      // G2: while the avatar waits at the taps, a press on the stand (or near it) is the pour: hold = pour, release = done.
+      if (!dungeon.isActive && !build.on && !paint.active && !placer.active && !lakeside.fishing && pourControl.claims(screen)) {
+        pourClaim = true;
+        st.pendingBlock = null;
+        pourControl.down(screen);
+        return 'repeat';
+      }
       const t = holdTargetAt(screen);
       if (!t) return null;
       if (!dungeon.isActive) {
@@ -61,6 +70,7 @@ export async function setupPointerInput(g: G15) {
       return true;
     },
     onHoldMove: (screen) => {
+      if (pourClaim) return;
       if (st.walkHold) {
         if (dungeon.isActive) dungeon.steer(screenToWorld(screen, dungeon.camera));
         else steerWalk(screen);
@@ -80,6 +90,11 @@ export async function setupPointerInput(g: G15) {
       if (here.c !== last.c || here.r !== last.r) hold.push(cellsBetween(last, here).slice(1));
     },
     onHoldEnd: () => {
+      if (pourClaim) {
+        pourClaim = false;
+        pourControl.up();
+        return;
+      }
       st.walkHold = false;
       dungeon.steer(null);
       hold.stop();

@@ -12,9 +12,9 @@ import { RANKS } from './ranks.ts';
 const HAT_SOURCES = ['catalog', 'book', 'fish', 'loot', 'splice', 'boss', 'sunken', 'mine'];
 
 describe('hat data', () => {
-  it('has 12 unique hats with a rank, a source and an unlock hint, none free, none in packs', () => {
-    expect(HATS.length).toBe(12);
-    expect(new Set(HATS.map((h) => h.id)).size).toBe(12);
+  it('has 13 unique hats with a rank, a source and an unlock hint, none free, none in packs', () => {
+    expect(HATS.length).toBe(13);
+    expect(new Set(HATS.map((h) => h.id)).size).toBe(13);
     for (const h of HATS) {
       expect(h.free).toBe(false);
       expect(h.pack).toBe(false);

@@ -4,8 +4,8 @@ import { HAT_IDS, hatBoxes, hatPart } from './hatParts.ts';
 import { EMOTE_KINDS, emotePose } from './emoteAnim.ts';
 
 describe('hats (B2)', () => {
-  it('has 12 unique hats, palette colours, all facings, inside a sane box above the shoulders', () => {
-    expect(new Set(HAT_IDS).size).toBe(12);
+  it('has 13 unique hats, palette colours, all facings, inside a sane box above the shoulders', () => {
+    expect(new Set(HAT_IDS).size).toBe(13);
     for (const id of HAT_IDS) {
       for (const f of ['down', 'up', 'right'] as const) {
         const ps = hatBoxes(id, f)!;

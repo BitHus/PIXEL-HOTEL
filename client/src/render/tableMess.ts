@@ -49,6 +49,8 @@ interface Shown {
   /** Where the coins and the dish are drawn (world px), for taps. */
   coinsAt: Point | null;
   dishAt: Point | null;
+  /** Where steam rises (a full dish or drink being eaten), or null. */
+  steamAt: { x: number; y: number; hot: boolean } | null;
 }
 
 export class TableMess {
@@ -114,9 +116,17 @@ export class TableMess {
       }
       const probe = { ...(table ?? { typeId: '', ownerId: 0, roomId: 0, facing: 'down' as const, onItemUid: null }), uid: m.uid, x: mx, y: my } as FurnitureItem;
       this.view.objects.add(container, table ? itemDepthKey(probe, table) : { y: my, x: mx, uid: probe.uid });
-      s = { container, key, coinsAt, dishAt, messId: m.messId };
+      const steamAt = m.full && m.dish !== null && dishAt ? { x: dishAt.x, y: dishAt.y - DISH_PX / 2, hot: materialGroup(m.dish) !== 'drink' } : null;
+      s = { container, key, coinsAt, dishAt, steamAt, messId: m.messId };
       this.shown.set(m.key, s);
     }
+  }
+
+  /** The spots where a full dish or drink stands (steam rises from them). */
+  steamSpots(): { x: number; y: number; hot: boolean }[] {
+    const out: { x: number; y: number; hot: boolean }[] = [];
+    for (const s of this.shown.values()) if (s.steamAt) out.push(s.steamAt);
+    return out;
   }
 
   /** What lies under a tap (world px): the nearest coins or dish within HIT_PX, or null. */

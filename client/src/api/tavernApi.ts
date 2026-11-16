@@ -29,6 +29,7 @@ import {
   tapFor,
   isDrinkId,
   pourGrade,
+  pourHeldClamp,
   GEMS_GAIN_ID,
   GOLD_GAIN_ID,
   GUEST_SERVE_REACH_PX,
@@ -210,10 +211,10 @@ export const tavernApi = {
   },
 
   /** G2: the player held the pour for heldMs at the taps. The mug comes off the tap; perfect = a small tip on delivery. */
-  async pourHeld(h: LocalGameAPI, heldMs: number): Promise<boolean> {
+  async pourHeld(h: LocalGameAPI, heldMs: number, pick?: { standUid: number; slot: number }): Promise<boolean> {
     const w = h.walkState;
     if (!h.inTavern() || !h.errand || w.task?.stage !== 'pourwait' || w.path.length > 0) return false;
-    const r = pourOrder(h.state);
+    const r = pourOrder(h.state, pick);
     h.walkState = { ...w, task: undefined };
     h.errand = false;
     if (!r) return false;
@@ -224,7 +225,7 @@ export const tavernApi = {
       if (!h.nextServe()) h.dropServe();
       return false;
     }
-    const grade = pourGrade(heldMs);
+    const grade = pourGrade(pourHeldClamp(heldMs));
     h.commit({ ...r.state, tavern: { ...r.state.tavern, holding: { guestId: r.guestId, item: r.item, perfect: grade === 'perfect' } } });
     h.emitTavern({ t: 'poured', grade });
     h.emitTavern({ t: 'holding', item: r.item });
@@ -280,7 +281,11 @@ export const tavernApi = {
     const task = w.task;
     const now = h.now();
     // G2: the avatar stands at the taps until the player holds the pour (pourHeld); a new walk drops the task.
-    if (task.stage === 'pourwait') return;
+    if (task.stage === 'pourwait') {
+      // The guest left (or the order was served otherwise) while the avatar waited: nothing to pour for, no stuck avatar.
+      if (nextOrder(h.state)?.guestId !== task.guestId) h.dropServe();
+      return;
+    }
     h.walkState = { ...w, task: undefined };
     h.errand = false;
     if (task.stage === 'bar') {

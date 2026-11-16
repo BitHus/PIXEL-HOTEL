@@ -7,6 +7,8 @@ import { Graphics, type Container } from 'pixi.js';
 import { PALETTE, POP_MS, SHAKE_MS, SHAKE_PX, getFurnitureType, type FurnitureItem, type Rect } from '@pixel-hotel/shared';
 import { FurnitureSprite } from './furnitureSprite.ts';
 import { surfaceHeight } from './furnitureArt.ts';
+import { PropAnim } from './propAnim.ts';
+import { spriteFor } from './spriteStore.ts';
 import { itemDepthKey } from './depthOrder.ts';
 import type { RoomView } from './roomView.ts';
 
@@ -36,12 +38,19 @@ export class ItemViews {
   constructor(
     private readonly view: RoomView,
     private roomId: number,
-  ) {}
+    reduce: () => boolean = () => false,
+  ) {
+    this.props = new PropAnim(view, reduce);
+  }
+
+  /** Flames, smoke, steam, the register's drawer (render/propAnim.ts). */
+  readonly props: PropAnim;
 
   /** Shows another room: every sprite of the old room is dropped. */
   setRoom(roomId: number): void {
     for (const [uid, sprite] of this.sprites) this.drop(uid, sprite);
     this.shakes.clear();
+    this.props.clear();
     this.roomId = roomId;
   }
 
@@ -65,6 +74,7 @@ export class ItemViews {
       }
       const under = item.onItemUid !== null ? byUid.get(item.onItemUid) : undefined;
       sprite.set(item.x, item.y, item.facing, under ? surfaceHeight(getFurnitureType(under.typeId)) : 0);
+      this.props.attach(sprite, item, spriteFor(type.id, item.facing));
       sprite.container.visible = !hidden.has(item.uid);
       this.layerFor(item).setKey(sprite.container, itemDepthKey(item, under));
     }
@@ -108,6 +118,7 @@ export class ItemViews {
   update(dtMs: number): void {
     // The fish in a fish tank swim (step 9f).
     this.clockMs += dtMs;
+    this.props.update(dtMs, this.clockMs);
     for (const sprite of this.sprites.values()) if (sprite.type.swim) sprite.animate(this.clockMs);
     for (const [uid, t] of this.pops) {
       const c = this.sprites.get(uid)?.container;
@@ -157,6 +168,7 @@ export class ItemViews {
   private drop(uid: number, sprite: FurnitureSprite): void {
     this.view.objects.remove(sprite.container);
     this.view.rugs.remove(sprite.container);
+    this.props.detach(uid);
     this.uids.delete(sprite.container);
     this.sprites.delete(uid);
     sprite.destroy();

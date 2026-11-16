@@ -11,7 +11,7 @@ import type { Facing3, Part } from './avatarParts.ts';
 
 export const HAT_IDS = [
   'straw_hat', 'wool_cap', 'cook_cap', 'feather_cap', 'tavern_keeper_hat', 'fisher_hat',
-  'skull_cap', 'flower_crown', 'knight_helm', 'gold_crown', 'sunken_crown_hat', 'miner_lamp_cap',
+  'skull_cap', 'flower_crown', 'knight_helm', 'gold_crown', 'sunken_crown_hat', 'miner_lamp_cap', 'hood_coif',
 ] as const;
 export type HatId = (typeof HAT_IDS)[number];
 
@@ -70,6 +70,10 @@ function build(id: HatId, f: Facing3): Part[] {
         [x0, -65, 2, 4, c(16)], [cx - 2, -67, 2, 6, c(17)], [cx + 1, -66, 2, 5, c(16)], [fr - 2, -64, 2, 3, c(17)],
         [x0 + 2, -63, 1, 3, c(13)], [fr - 4, -63, 1, 3, c(12)], [cx - 2, -68, 1, 1, c(18)],
         ...(back ? [] : [[cx - 1, -60, 2, 2, c(19)] as Part])];
+    case 'hood_coif':
+      // A hood over the head with a coif framing the face and covering the neck; hides all hair.
+      return [[x0 - 1, -66, w + 2, 10, c(5)], [x0, -67, w, 2, c(4)], [x0 - 1, -57, 2, 5, c(5)], [fr - 1, -57, 2, 5, c(5)],
+        ...(back ? [[x0 - 1, -57, w + 2, 5, c(5)] as Part] : [[x0 + 1, -58, w - 2, 1, c(3)] as Part]), [x0 + 2, -65, 3, 2, c(7)]];
     case 'miner_lamp_cap':
       return [[x0, -64, w, 7, c(9)], [x0 + 1, -65, w - 2, 2, c(10)], [x0 - 1, -58, w + 2, 2, c(1)],
         ...(back ? [] : side ? [[fr - 3, -65, 4, 4, c(22)] as Part, [fr, -64, 2, 2, c(11)] as Part] : [[cx - 2, -66, 5, 5, c(22)] as Part, [cx - 1, -65, 3, 3, c(11)] as Part])];

@@ -169,6 +169,8 @@ export function avatarLayers(look: AvatarLook, outfit: AvatarOutfit | null, faci
     hair_front: look.hairStyle,
     hat: look.hat ? look.hat : null,
   };
+  // The apron (outer) has no sit frame yet: hide it while sitting (remove this line when the sit frame exists).
+  if (pose === 'sit') items.outer = null;
   if (hides === 'all') {
     items.hair_back = null;
     items.hair_front = null;

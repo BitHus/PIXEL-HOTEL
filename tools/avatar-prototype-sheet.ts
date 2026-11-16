@@ -1,12 +1,12 @@
-// Run: copy to client/src/a24-sheet.ts, add client/a24-sheet.html (script type=module src=/src/a24-sheet.ts), `npx vite` in client/, screenshot with headless Chrome; delete both afterwards.
-// TEMPORARY contact sheet for A24 (deleted after the screenshot): bakes the prototype layers the way C18 will
+// A26 contact sheet. Run: copy to client/src/a26-sheet.ts, add client/a26-sheet.html (a script type=module src=/src/a26-sheet.ts), `npx vite` in client/,
+// open /a26-sheet.html (screenshot with headless Chrome); delete both afterwards. Bakes the avatar layer PNGs the way C18 will
+// (key colours -> ramps, composite in slot order, one 1 px outline pass) for down, up and right: walk frames, sit, hood + coif, long hair, apron, at zoom 3 and zoom 1.
 window.addEventListener('unhandledrejection', (e) => { document.body.insertAdjacentText('beforeend', String(e.reason)); });
 window.addEventListener('error', (e) => { document.body.insertAdjacentText('beforeend', e.message); });
-// (key colours -> ramps, composite in order, one 1 px outline pass) and shows them at zoom 1 and 3 next to a chair.
 import { PALETTE, PALETTE_NAMES, KEY_RAMPS, rampFor, type PaletteName } from '@pixel-hotel/shared';
 
-const W = 1300;
-const H = 760;
+const W = 1500;
+const H = 1130;
 const cv = document.createElement('canvas');
 cv.width = W;
 cv.height = H;
@@ -18,56 +18,63 @@ ctx.imageSmoothingEnabled = false;
 
 const hex = (n: PaletteName): string => PALETTE[PALETTE_NAMES.indexOf(n)]!;
 const rgb = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-const load = (url: string): Promise<HTMLImageElement> => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('load ' + url)); i.src = url; });
+const load = (url: string): Promise<HTMLImageElement | null> => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = url; });
 const base = new URL('./assets/sprites/avatar', import.meta.url).href;
-const files = {
-  body: 'body_base_walk_down.png', shoes: 'shoes_boots_walk_down.png', legs: 'legs_trousers_walk_down.png', torso: 'torso_tunic_walk_down.png',
-  hair: 'hair_front_short_still_down.png', face: 'face_default_still_down.png', hat: 'hat_straw_hat_still_down.png',
-} as const;
-const img: Record<string, HTMLImageElement> = {};
-for (const [k, f] of Object.entries(files)) img[k] = await load(base + '/' + f);
-const chair = await load(new URL('./assets/sprites/furniture/chair.png', import.meta.url).href);
-
-interface Look { skin: PaletteName; hair: PaletteName; top: PaletteName; legs: PaletteName; shoes: PaletteName; hat: boolean }
-
-/** A frame of one layer as ImageData, key colours swapped for the ramps. */
-function layerData(name: keyof typeof files, frame: number, look: Look): ImageData {
-  const c = document.createElement('canvas');
-  c.width = 32; c.height = 64;
-  const g = c.getContext('2d')!;
-  const wide = img[name]!.width > 32;
-  g.drawImage(img[name]!, wide ? frame * 32 : 0, 0, 32, 64, 0, 0, 32, 64);
-  const d = g.getImageData(0, 0, 32, 64);
-  const map = new Map<string, string>();
-  const add = (keys: readonly PaletteName[], ramp: readonly PaletteName[] | null): void => { if (ramp) keys.forEach((k, i) => map.set(hex(k), hex(ramp[i]!))); };
-  if (name === 'body') add(KEY_RAMPS.KS, rampFor(look.skin));
-  if (name === 'torso') { add(KEY_RAMPS.K1, rampFor(look.top)); add(KEY_RAMPS.KS, rampFor(look.skin)); }
-  if (name === 'legs') add(KEY_RAMPS.K1, rampFor(look.legs));
-  if (name === 'shoes') add(KEY_RAMPS.K1, rampFor(look.shoes));
-  if (name === 'hair') add(KEY_RAMPS.K1, rampFor(look.hair));
-  for (let i = 0; i < d.data.length; i += 4) {
-    if (d.data[i + 3] === 0) continue;
-    const h = '#' + [d.data[i]!, d.data[i + 1]!, d.data[i + 2]!].map((v) => v.toString(16).padStart(2, '0')).join('');
-    const to = map.get(h);
-    if (to) { const [r, gg, b] = rgb(to); d.data[i] = r; d.data[i + 1] = gg; d.data[i + 2] = b; }
-  }
-  return d;
+type Facing = 'down' | 'up' | 'right';
+type Slot = 'body' | 'shoes' | 'legs' | 'torso' | 'outer' | 'hair_back' | 'face' | 'hair_front' | 'hat';
+const BODY: readonly Slot[] = ['body', 'shoes', 'legs', 'torso', 'outer'];
+const cache = new Map<string, HTMLImageElement | null>();
+async function img(slot: Slot, item: string, anim: string, f: Facing): Promise<HTMLImageElement | null> {
+  const key = `${slot}_${item}_${anim}_${f}`;
+  if (!cache.has(key)) cache.set(key, await load(`${base}/${key}.png`));
+  return cache.get(key)!;
 }
 
-/** Composites the layers in order and adds the 1 px outline; returns a 32 x 64 canvas. */
-function bake(frame: number, look: Look): HTMLCanvasElement {
+interface Look { skin: PaletteName; hair: PaletteName; top: PaletteName; legs: PaletteName; shoes: PaletteName; outer?: PaletteName; hairItem: 'short' | 'long'; legItem: 'trousers' | 'hose'; hat?: string }
+
+function recolour(d: ImageData, slot: Slot, look: Look): void {
+  const map = new Map<string, string>();
+  const add = (keys: readonly PaletteName[], c: PaletteName): void => { const r = rampFor(c); if (r) keys.forEach((k, i) => map.set(hex(k), hex(r[i]!))); };
+  if (slot === 'body') add(KEY_RAMPS.KS, look.skin);
+  if (slot === 'torso') { add(KEY_RAMPS.K1, look.top); add(KEY_RAMPS.KS, look.skin); }
+  if (slot === 'legs') add(KEY_RAMPS.K1, look.legs);
+  if (slot === 'shoes') add(KEY_RAMPS.K1, look.shoes);
+  if (slot === 'hair_back' || slot === 'hair_front') add(KEY_RAMPS.K1, look.hair);
+  if (slot === 'outer' && look.outer) add(KEY_RAMPS.K1, look.outer);
+  for (let i = 0; i < d.data.length; i += 4) {
+    if (d.data[i + 3] === 0) continue;
+    const to = map.get('#' + [d.data[i]!, d.data[i + 1]!, d.data[i + 2]!].map((v) => v.toString(16).padStart(2, '0')).join(''));
+    if (to) { const [r, g, b] = rgb(to); d.data[i] = r; d.data[i + 1] = g; d.data[i + 2] = b; }
+  }
+}
+
+/** One 32 x 64 baked figure. pose 'walk' (frame 0..3) or 'sit'. */
+async function bake(look: Look, pose: 'walk' | 'sit', f: Facing, frame: number): Promise<HTMLCanvasElement> {
   const out = document.createElement('canvas');
   out.width = 32; out.height = 64;
   const g = out.getContext('2d')!;
-  const order: (keyof typeof files)[] = ['body', 'shoes', 'legs', 'torso', 'face', 'hair', ...(look.hat ? (['hat'] as const) : [])];
-  // face is drawn before hair_front (spec order: face, hair_front, hat); hair_front has the fringe over the forehead
-  for (const n of order) {
-    const t = document.createElement('canvas');
-    t.width = 32; t.height = 64;
-    t.getContext('2d')!.putImageData(layerData(n, frame, look), 0, 0);
-    g.drawImage(t, 0, 0);
+  const hidesAll = look.hat === 'hood_coif';
+  const layers: [Slot, string][] = [['body', 'base'], ['shoes', 'boots'], ['legs', look.legItem], ['torso', 'tunic']];
+  if (look.outer) layers.push(['outer', 'apron']);
+  layers.push(['hair_back', 'long'], ['face', 'default'], ['hair_front', look.hairItem]);
+  if (look.hat) layers.push(['hat', look.hat]);
+  for (const [slot, item] of layers) {
+    if ((slot === 'hair_back' && (look.hairItem !== 'long' || hidesAll)) || (slot === 'hair_front' && hidesAll)) continue;
+    const isBody = BODY.includes(slot);
+    const image = await img(slot, item, isBody ? pose : 'still', f);
+    if (!image) continue;
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 64;
+    const cg = c.getContext('2d')!;
+    const sx = isBody && pose === 'walk' ? frame * 32 : 0;
+    cg.drawImage(image, sx, 0, 32, 64, 0, 0, 32, 64);
+    const d = cg.getImageData(0, 0, 32, 64);
+    recolour(d, slot, look);
+    cg.putImageData(d, 0, 0);
+    // the head layers follow the body: a sit pose lowers the head by 8 px (rig sit head offset), walk frames 1 and 3 bob 1 px up
+    const dy = !isBody && pose === 'sit' ? 8 : !isBody && pose === 'walk' && frame % 2 === 1 ? -1 : 0;
+    g.drawImage(c, 0, dy);
   }
-  // outline pass: every transparent pixel next to an opaque one becomes the outline colour
   const src = g.getImageData(0, 0, 32, 64);
   const dst = g.getImageData(0, 0, 32, 64);
   const o = rgb(hex('outline'));
@@ -86,46 +93,35 @@ function bake(frame: number, look: Look): HTMLCanvasElement {
   return out;
 }
 
-const looks: Look[] = [
-  { skin: 'skin', hair: 'walnut', top: 'crimson', legs: 'dusk', shoes: 'walnut', hat: true },
-  { skin: 'tan', hair: 'gold', top: 'green', legs: 'walnut', shoes: 'outline', hat: false },
-  { skin: 'oak', hair: 'night', top: 'navy', legs: 'night', shoes: 'walnut', hat: true },
-];
-function draw(c: HTMLCanvasElement, x: number, y: number, z: number): void { ctx.drawImage(c, x, y, 32 * z, 64 * z); }
+const A: Look = { skin: 'skin', hair: 'walnut', top: 'crimson', legs: 'dusk', shoes: 'walnut', hairItem: 'short', legItem: 'trousers' };
+const B: Look = { skin: 'tan', hair: 'gold', top: 'green', legs: 'walnut', shoes: 'outline', outer: 'cream', hairItem: 'long', legItem: 'hose' };
+const C: Look = { skin: 'oak', hair: 'night', top: 'navy', legs: 'night', shoes: 'walnut', hairItem: 'short', legItem: 'trousers', hat: 'hood_coif' };
+const D: Look = { ...B, outer: undefined, hat: 'felt_cap' };
+const FACINGS: Facing[] = ['down', 'up', 'right'];
 
-ctx.fillStyle = '#3e2731';
-ctx.font = '15px monospace';
+const label = (t: string, x: number, y: number): void => { ctx.fillStyle = '#3e2731'; ctx.font = '15px monospace'; ctx.fillText(t, x, y); };
+const draw = (c: HTMLCanvasElement, x: number, y: number, z: number): void => { ctx.drawImage(c, x, y, 32 * z, 64 * z); };
 ctx.fillStyle = '#c28569';
 ctx.fillRect(0, 0, W, H);
-ctx.fillStyle = '#3e2731';
-ctx.fillText('A24 prototype (down): body, shoes, legs, tunic, hair, face, hat. Zoom 3: walk frames 1 to 4 (contact, pass, contact, pass) of three recolours', 10, 20);
-for (let f = 0; f < 4; f++) draw(bake(f, looks[0]!), 10 + f * 110, 40, 3);
-// rows: look 0 at zoom 3 across (frames), looks 1 and 2 at zoom 3 stand pose to the right
-draw(bake(0, looks[1]!), 470, 40, 3);
-draw(bake(0, looks[2]!), 580, 40, 3);
-// next to the chair, bar height: zoom 3 and zoom 1
-ctx.fillStyle = '#3e2731';
-ctx.fillText('next to the chair, zoom 3 and zoom 1 (feet on one line)', 10, 255);
-const floorY3 = 480;
+
+label('A26 walk (look A: short hair, tunic, trousers), zoom 3: down 1-4, up 1-4, right 1-4', 10, 20);
+let x = 10;
+for (const f of FACINGS) for (let i = 0; i < 4; i++) { draw(await bake(A, 'walk', f, i), x, 28, 3); x += 100; }
+label('apron + long hair + hose (look B) walk, zoom 3', 10, 240);
+x = 10;
+for (const f of FACINGS) for (let i = 0; i < 4; i++) { draw(await bake(B, 'walk', f, i), x, 248, 3); x += 100; }
+label('SIT zoom 3: A down/up/right, B (no apron sit frame yet), C hood+coif, D felt cap', 10, 462);
+x = 10;
+for (const lk of [A, { ...B, outer: undefined }, C, D]) for (const f of FACINGS) { draw(await bake(lk, 'sit', f, 0), x, 470, 3); x += 100; }
+label('hood + coif stand (C) and long hair + apron (B) stand, zoom 3', 10, 700);
+x = 10;
+for (const f of FACINGS) { draw(await bake(C, 'walk', f, 0), x, 708, 3); x += 100; }
+for (const f of FACINGS) { draw(await bake(B, 'walk', f, 0), x + 40, 708, 3); x += 100; }
+// zoom 1 row (game size) on a floor line
+const fy = 1090;
+label('zoom 1: stand A/B/C, walk right A 1-4, sit A/B/C down, sit right A/C', 10, 940);
 ctx.fillStyle = '#b86f50';
-ctx.fillRect(0, floorY3, 760, 4);
-draw(bake(0, looks[0]!), 30, floorY3 - 64 * 3 + 6, 3);
-ctx.drawImage(chair, 0, 0, 32, 76, 160, floorY3 - 76 * 3 + 16 * 3 + 3 * 0, 32 * 3, 76 * 3);
-draw(bake(1, looks[1]!), 280, floorY3 - 64 * 3 + 6, 3);
-const floorY1 = 700;
-ctx.fillStyle = '#b86f50';
-ctx.fillRect(0, floorY1, 760, 2);
-for (let i = 0; i < 3; i++) draw(bake(i, looks[i]!), 30 + i * 70, floorY1 - 64 + 2, 1);
-ctx.drawImage(chair, 0, 0, 32, 76, 260, floorY1 - 76 + 16 + 2, 32, 76);
-draw(bake(0, looks[2]!), 300, floorY1 - 64 + 2, 1);
-// the raw layers (key colours) for the lead: stand pose
-ctx.fillStyle = '#3e2731';
-ctx.fillText('raw layers (key colours), frame 1', 790, 255);
-(['body', 'shoes', 'legs', 'torso', 'hair', 'face', 'hat'] as const).forEach((n, i) => {
-  const c = document.createElement('canvas');
-  c.width = 32; c.height = 64;
-  c.getContext('2d')!.drawImage(img[n]!, 0, 0, 32, 64, 0, 0, 32, 64);
-  ctx.fillStyle = '#b86f50';
-  ctx.fillRect(790 + i * 70, 270, 66, 130);
-  ctx.drawImage(c, 790 + i * 70 + 1, 270 + 1, 64, 128);
-});
+ctx.fillRect(0, fy, W, 2);
+x = 10;
+const row: [Look, 'walk' | 'sit', Facing, number][] = [[A, 'walk', 'down', 0], [B, 'walk', 'down', 0], [C, 'walk', 'down', 0], [A, 'walk', 'right', 0], [A, 'walk', 'right', 1], [A, 'walk', 'right', 2], [A, 'walk', 'right', 3], [A, 'sit', 'down', 0], [B, 'sit', 'down', 0], [C, 'sit', 'down', 0], [A, 'sit', 'right', 0], [C, 'sit', 'right', 0]];
+for (const [lk, p, f, i] of row) { draw(await bake(lk, p, f, i), x, fy - 62, 1); x += 50; }

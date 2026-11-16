@@ -14,6 +14,7 @@ export async function setupGameLoop(g: G16) {
     playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
   } = g;
 
+  fx.onSparkle = (at) => itemViews.props.ding(at);
   app.renderer.on('resize', fit);
   // Browser zoom or moving to another monitor changes the device pixel ratio: render at the new one.
   window.addEventListener('resize', () => {
@@ -50,9 +51,10 @@ export async function setupGameLoop(g: G16) {
     // Arrived at the seat's approach point: take the pose and slide onto the seat.
     if (st.path.length === 0 && seating.goal !== null) st.avatar = seating.arrive(st.avatar, roomItem(seating.goal.uid));
     st.avatar = seating.update(st.avatar, ticker.deltaMS);
+    itemViews.props.setMealSpots(g.tableMess.steamSpots());
     itemViews.update(ticker.deltaMS);
     guests.update(ticker.deltaMS, clockMs);
-    pour.update();
+    pour.update(ticker.deltaMS);
     fx.update(ticker.deltaMS);
     lakeside.update(ticker.deltaMS, clockMs);
     if (st.path.length === 0 && st.avatar.state !== 'walk') lakeside.arrived();

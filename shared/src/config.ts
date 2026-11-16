@@ -116,8 +116,10 @@ export const POUR_MS = 800;
 export const PREP_BONUS = { perTable: 1, max: 2 } as const;
 
 // ---------- Hands-on pouring (step G2) ----------
-/** Holding the tap fills the mug in this many ms (POUR_MS = the minimum feel of one pour). */
-export const POUR_FULL_MS = POUR_MS;
+/** Holding the tap fills the mug in this many ms (long enough to see the level and the green window; POUR_MS stays the old automatic pour). */
+export const POUR_FULL_MS = 1400;
+/** Safety cap: a hold longer than this ends by itself (a stuck press never pours for ever). */
+export const POUR_HOLD_CAP_MS = 4000;
 /** Releasing with the fill between these fractions of full is a perfect pour (forgiving window). */
 export const POUR_PERFECT_RANGE = [0.85, 1.15] as const;
 /** The mug overflows at this fraction; holding longer changes nothing. */

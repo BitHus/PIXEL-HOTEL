@@ -16,7 +16,7 @@ export async function setupRoomItems(g: G2) {
   /** The current room's items plus the inventory furniture (the GameAPI's view). */
   st.items = await api.getItems();
   st.inventory = await api.getInventory();
-  const itemViews = new ItemViews(view, st.room.id);
+  const itemViews = new ItemViews(view, st.room.id, () => g.prefs.reduceEffects);
   const blockViews = new BlockViews(view);
   const plantViews = new PlantViews(view);
   const roomItem = (uid: number | null): FurnitureItem | undefined =>
