@@ -4,8 +4,8 @@ import { decorIsFlat, decorKind, decorLights, decorVariant, drawDecorProp, landm
 import { PROP_KINDS } from './propArt.ts';
 
 describe('decor (DG2)', () => {
-  it('every kind of 40 crypt floors has art, an alias or the gem pile', () => {
-    const known = new Set<string>([...PROP_KINDS, 'gem_pile']);
+  it('every kind of 40 crypt floors has propArt art', () => {
+    const known = new Set<string>(PROP_KINDS);
     for (let seed = 1; seed <= 40; seed++) {
       for (const d of generateFloor(seed, 1, 2).map.decor ?? []) {
         expect(known.has(decorKind(d.kind)), d.kind).toBe(true);

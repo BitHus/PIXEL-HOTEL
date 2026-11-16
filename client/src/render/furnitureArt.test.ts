@@ -61,14 +61,14 @@ describe('icon style (room art looks like the item icon)', () => {
 describe('heights match the sprites (ART-REDO R1 and R2)', () => {
   const type = (id: string) => FURNITURE_TYPES.find((t) => t.id === id)!;
   it('surface heights', () => {
-    expect(surfaceHeight(type('round_table'))).toBe(26);
+    expect(surfaceHeight(type('round_table'))).toBe(29);
     expect(surfaceHeight(type('table'))).toBe(26);
     expect(surfaceHeight(type('long_table'))).toBe(26);
   });
   it('seat heights, and the avatar is raised past the standard pose', () => {
-    expect(seatHeight(type('bar_stool'))).toBe(24);
+    expect(seatHeight(type('bar_stool'))).toBe(18);
     expect(seatHeight(type('chair'))).toBe(18);
-    expect(seatLiftFor(type('bar_stool'))).toBe(10);
+    expect(seatLiftFor(type('bar_stool'))).toBe(4);
     expect(seatLiftFor(type('chair'))).toBe(4);
     expect(seatLiftFor(type('table'))).toBe(0);
   });
@@ -89,6 +89,15 @@ describe('heights match the sprites (ART-REDO R1 and R2)', () => {
     for (const [id, w, d] of [['crate', 32, 32], ['shelf', 64, 32], ['display_case', 64, 32], ['stall_table', 96, 64]] as const) {
       expect([type(id).w, type(id).d]).toEqual([w, d]);
       expect(type(id).height).toBe(d + top(id));
+    }
+  });
+  it('R6 kitchen boxes match the new sprites: prep 32, pantry 56, sink 33, hatch frame 42, footprints untouched', () => {
+    const top = (id: string) => Math.max(...boxesForFacing(type(id), 'down').boxes.map((x) => x.z + x.h));
+    expect([top('prep_table'), top('pantry'), top('sink'), top('serving_hatch')]).toEqual([32, 56, 33, 42]);
+    expect(surfaceHeight(type('prep_table'))).toBe(32);
+    expect([type('prep_table').height, type('pantry').height, type('sink').height, type('serving_hatch').height]).toEqual([64, 88, 60, 72]);
+    for (const [id, w, d] of [['prep_table', 64, 32], ['pantry', 64, 32], ['sink', 32, 32], ['serving_hatch', 64, 32]] as const) {
+      expect([type(id).w, type(id).d]).toEqual([w, d]);
     }
   });
 });

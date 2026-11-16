@@ -2,20 +2,14 @@
 // plus drawDecorProp, which calls the artist's drawDecor hook (propArt.ts). No game rule here: the layout decides
 // where props stand, this only says how they look and which of them glow.
 
-import { Container, Graphics } from 'pixi.js';
-import { DUNGEON_BLOCK, LIGHT_TORCH_ALPHA, PALETTE, type DecorProp, type DungeonMap } from '@pixel-hotel/shared';
+import type { Container } from 'pixi.js';
+import { DUNGEON_BLOCK, LIGHT_TORCH_ALPHA, type DecorProp, type DungeonMap } from '@pixel-hotel/shared';
 import { drawDecor, propLight, PROP_INFO } from './propArt.ts';
 import type { LightSource } from './light.ts';
 
-/** Kinds the generator uses that propArt names differently (a missing kind would draw the grey box). */
-const DECOR_ALIAS: Record<string, string> = {
-  brazier: 'brazier_big',
-  sarcophagus_small: 'sarcophagus',
-};
-
-/** The propArt kind for a generator kind. */
+/** The propArt kind for a generator kind (propArt names them all now: no aliases). */
 export function decorKind(kind: string): string {
-  return DECOR_ALIAS[kind] ?? kind;
+  return kind;
 }
 
 /** Variant of a prop from its cell, stable per floor. */
@@ -72,26 +66,7 @@ export function landmarkToast(map: DungeonMap): string | null {
   return lm ? (LANDMARK_LINES[lm.kind] ?? null) : null;
 }
 
-/** gem_pile has no art in propArt yet: a small code-art pile (cool gems, 1 px dark outline). */
-function gemPile(): Container {
-  const root = new Container();
-  const g = new Graphics();
-  const out = PALETTE[25]!;
-  const gem = (x: number, y: number, c: string): void => {
-    g.rect(x - 1, y - 1, 7, 6).fill(out);
-    g.rect(x, y, 5, 4).fill(c);
-    g.rect(x, y, 2, 1).fill(PALETTE[19]!);
-  };
-  gem(-9, -7, PALETTE[18]!);
-  gem(2, -8, PALETTE[17]!);
-  gem(-4, -4, PALETTE[28]!);
-  root.addChild(g);
-  root.label = 'prop:gem_pile';
-  return root;
-}
-
-/** One prop for the view: the artist's drawDecor, with the aliases and the gem pile fallback. */
+/** One prop for the view: the artist's drawDecor. */
 export function drawDecorProp(kind: string, c: number, r: number, clockMs: number): Container {
-  if (kind === 'gem_pile') return gemPile();
   return drawDecor(decorKind(kind), decorVariant(c, r), clockMs);
 }
