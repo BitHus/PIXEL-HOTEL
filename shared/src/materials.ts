@@ -33,6 +33,10 @@ export interface CropType {
   seedIcon: Icon;
   /** The rank of the crop and of its seed (step 9e). */
   rank: Rank;
+  /** True = only splicing makes this seed (not in the packs or the catalog, step SG1). */
+  spliceOnly?: boolean;
+  /** True = the seed never takes part in a splice. */
+  noSplice?: boolean;
 }
 
 export type FoodEffect =

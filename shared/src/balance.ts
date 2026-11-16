@@ -29,7 +29,6 @@ import {
   SEED_BACK_CHANCE,
   SEED_YIELD,
   SPARE_SELL,
-  SPLICE_BONUS_MS,
 } from './config.ts';
 import { BLOCK_TYPES, getBlockType, isBlockId } from './blockTypes.ts';
 import { getClothing } from './clothing.ts';
@@ -49,7 +48,8 @@ import { ROCK_ORE_MAX, ROCK_ORE_MIN, RARE_DROP_CHANCE } from './config.ts';
 import { isMaterialId } from './materials.ts';
 import type { MaterialId, Rng } from './types.ts';
 import { seedGrowMs, seedGrows, seedRank } from './seeds.ts';
-import { SPLICE_RECIPES } from './splice.ts';
+import { spliceGrowMs } from './splice.ts';
+import { allRecipes } from './spliceRule.ts';
 import { tavernTipGems, type GemSource } from './gems.ts';
 import type { Rank, SeedId } from './types.ts';
 
@@ -359,19 +359,21 @@ export interface Chain {
 
 /**
  * The cheapest way to each seed from the starter seeds, each measure on its own (fastest, cheapest, fewest cell-minutes).
- * One splice cell grows for the longer of the two seeds' grow times plus SPLICE_BONUS_MS (spliceGrowMs).
+ * One splice cell grows for the longest of the two seeds' and the result's grow time plus SPLICE_BONUS_MS (spliceGrowMs). Over allRecipes():
+ * the special recipes and the general rule's result of every pair (step SG2).
  */
 export function chains(): Map<SeedId, Chain> {
   const start = starterSeeds();
   const best = new Map<SeedId, Chain>();
-  const seedsOf = new Set<SeedId>(SPLICE_RECIPES.flatMap((x) => [x.a, x.b, x.result]));
+  const recipes = allRecipes();
+  const seedsOf = new Set<SeedId>(recipes.flatMap((x) => [x.a, x.b, x.result]));
   for (const s of seedsOf) best.set(s, start.has(s) ? { ms: 0, gold: seedGold(s), cellMs: 0 } : { ms: Infinity, gold: Infinity, cellMs: Infinity });
   for (let round = 0; round < 40; round++) {
     let changed = false;
-    for (const x of SPLICE_RECIPES) {
+    for (const x of recipes) {
       const a = best.get(x.a)!;
       const b = best.get(x.b)!;
-      const grow = Math.max(seedGrowMs(x.a), seedGrowMs(x.b)) + SPLICE_BONUS_MS;
+      const grow = spliceGrowMs(x.a, x.b);
       const cur = best.get(x.result)!;
       const next: Chain = { ms: Math.max(a.ms, b.ms) + grow, gold: a.gold + b.gold, cellMs: a.cellMs + b.cellMs + grow };
       const merged: Chain = { ms: Math.min(cur.ms, next.ms), gold: Math.min(cur.gold, next.gold), cellMs: Math.min(cur.cellMs, next.cellMs) };
@@ -462,7 +464,7 @@ export function spliceSellLoops(): { seed: SeedId; seedSold: number; productSold
   const start = starterSeeds();
   const out: { seed: SeedId; seedSold: number; productSold: number; gold: number; cost: number }[] = [];
   const rate = bestCropGoldPerCellMinute();
-  for (const seed of new Set(SPLICE_RECIPES.map((r) => r.result))) {
+  for (const seed of new Set(allRecipes().map((r) => r.result))) {
     if (start.has(seed)) continue;
     const g = seedGrows(seed);
     const productSold =

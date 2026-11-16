@@ -1,0 +1,15 @@
+{
+  "note": "Room templates of the crypt (DG1). mask = the shape inside the bounding rect (see shared/src/dungeon/rooms.ts); sizes in blocks; weight = how often one is picked; fixed = the whole room is this size.",
+  "templates": [
+    { "id": "rect", "mask": "rect", "weight": 6, "w": [4, 8], "h": [4, 8] },
+    { "id": "cross", "mask": "cross", "weight": 3, "w": [6, 8], "h": [6, 8] },
+    { "id": "ell", "mask": "ell", "weight": 3, "w": [5, 8], "h": [5, 8] },
+    { "id": "cutcorner", "mask": "cutcorner", "weight": 3, "w": [5, 8], "h": [5, 8] },
+    { "id": "pillars", "mask": "pillars", "weight": 3, "w": [5, 8], "h": [5, 8] },
+    { "id": "alcoves", "mask": "alcoves", "weight": 3, "w": [6, 8], "h": [4, 5] },
+    { "id": "ring", "mask": "ring", "weight": 2, "w": [5, 8], "h": [5, 8] },
+    { "id": "split", "mask": "split", "weight": 2, "w": [6, 8], "h": [5, 7] },
+    { "id": "hall", "mask": "hall", "weight": 2, "w": [8, 8], "h": [4, 4] },
+    { "id": "arena", "mask": "arena", "weight": 0, "w": [8, 8], "h": [8, 8] }
+  ]
+}

@@ -29,6 +29,12 @@ export interface BlockType {
   /** The room kinds it can be placed in. */
   placeIn: RoomKind[];
   icon: Icon;
+  /** True = food crops may be planted on it as on soil (dirt, rich soil; step SG4). */
+  soilHost?: boolean;
+  /** True = only splicing makes this block's seed (not in the packs, step SG1). */
+  spliceOnly?: boolean;
+  /** True = the block's seed never takes part in a splice. */
+  noSplice?: boolean;
 }
 
 /** One block standing in a cell of a room's foreground layer (Room.blocks, key "col,row"). */

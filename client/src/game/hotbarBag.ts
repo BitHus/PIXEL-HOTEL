@@ -11,13 +11,30 @@ import { watchLayout } from '../ui/layoutVars.ts';
 import { ROOM_NAMES } from '../ui/infoPanel.ts';
 import type { G10 } from './ctx.ts';
 
+/** Walking this long without a stop makes the quest card compact. */
+const WALK_COMPACT_MS = 1500;
+
 export async function setupHotbarBag(g: G10) {
   const {
     toast, menu, placer, viewCenter, build, blockViews, plantViews, syncGrid, ui, panels, api, side, info,
     runBar, newIntro, dungeon, workshop, cooking, brewing, book, refreshTravel, dungeonBadge, dungeonButton, paintBar,
-    paint, paintableStyles, prefs, catalog, roomPanel, st, late,
+    paint, paintableStyles, prefs, catalog, roomPanel, st, late, hint,
   } = g;
   late.refreshInventory = refreshInventory;
+
+  // The quest and first-steps cards shrink to their seal while the avatar keeps walking (UI round 5); a tap opens them again.
+  let walkedMs = 0;
+  let stoodMs = 0;
+  window.setInterval(() => {
+    const walking = st.path.length > 0 || st.avatar.state === 'walk';
+    walkedMs = walking ? walkedMs + 250 : 0;
+    stoodMs = walking ? 0 : stoodMs + 250;
+    if (walking && walkedMs === WALK_COMPACT_MS) {
+      hint.setCompact(true);
+      ui.classList.add('walk-compact'); // skin.css: the first-steps card drops its text too
+    }
+    if (stoodMs === WALK_COMPACT_MS * 2) ui.classList.remove('walk-compact');
+  }, 250);
 
   /** Starts placing an inventory item of this type in the middle of the screen. */
   const startPlacing = (typeId: string): boolean => {

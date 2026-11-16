@@ -61,6 +61,10 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
     const count = el('span', 'slot-count');
     root.append(el('span', 'slot-key', String(i + 1)), img, count);
     attachPress(root, { onTap: () => hooks.onTap(i), onHold: () => hooks.onHold(i) });
+    // Press feedback under 100 ms: the slot sinks while the finger is down (skin.css .pressed).
+    const release = (): void => root.classList.remove('pressed');
+    root.addEventListener('pointerdown', () => root.classList.add('pressed'));
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) root.addEventListener(ev, release);
     bar.appendChild(root);
     root.classList.add('is-empty');
     slots.push({ root, img, count });
@@ -96,7 +100,16 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
       bar.hidden = hidden;
     },
     setSelected(index) {
-      slots.forEach((s, i) => s.root.classList.toggle('selected', i === index));
+      slots.forEach((s, i) => {
+        const was = s.root.classList.contains('selected');
+        s.root.classList.toggle('selected', i === index);
+        // A short stepped pop on the newly chosen slot (skin.css .just-selected).
+        if (i === index && !was) {
+          s.root.classList.remove('just-selected');
+          void s.root.offsetWidth;
+          s.root.classList.add('just-selected');
+        }
+      });
       selected = index;
       showName();
     },

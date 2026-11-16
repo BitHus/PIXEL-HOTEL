@@ -1,0 +1,15 @@
+{
+  "note": "Room themes of the crypt (DG1). templates = the room templates it may take ('*' = any); rounds = the rounds it appears in; role = spawn / exit / any; props = decor kinds placed in the room (count range); enemies = 'normal', 'none' (an enemy roll moves to another room), 'ambush' (enemies stand next to a pillar) or 'guard' (enemies stand near a door); weight = how often a free room takes it.",
+  "themes": [
+    { "id": "campfire", "role": "spawn", "templates": ["*"], "rounds": [1, 2], "weight": 0, "props": [["campfire", 1, 1], ["crate", 0, 2]], "enemies": "none" },
+    { "id": "arena", "role": "exit", "templates": ["arena"], "rounds": [2], "weight": 0, "props": [["banner", 2, 2], ["bones", 1, 3]], "enemies": "normal" },
+    { "id": "bone_hall", "role": "any", "templates": ["pillars", "hall"], "rounds": [1, 2], "weight": 5, "props": [["bones", 1, 3], ["skull_pile", 1, 2]], "enemies": "ambush" },
+    { "id": "crossroads", "role": "any", "templates": ["cross"], "rounds": [2], "weight": 4, "props": [["brazier", 1, 2]], "enemies": "normal" },
+    { "id": "sarcophagus", "role": "any", "templates": ["alcoves"], "rounds": [2], "weight": 4, "props": [["sarcophagus_small", 1, 3], ["candle_stand", 1, 2]], "enemies": "normal" },
+    { "id": "library", "role": "any", "templates": ["split", "rect"], "rounds": [2], "weight": 3, "props": [["shelf", 2, 3], ["candle_stand", 1, 2]], "enemies": "normal" },
+    { "id": "guard_post", "role": "any", "templates": ["hall", "rect", "cutcorner"], "rounds": [2], "weight": 4, "props": [["barrel", 1, 2], ["banner", 1, 1]], "enemies": "guard" },
+    { "id": "crypt_garden", "role": "any", "templates": ["ring", "ell", "rect"], "rounds": [1, 2], "weight": 4, "props": [["root", 2, 3], ["glowcap", 2, 3]], "enemies": "none" },
+    { "id": "storeroom", "role": "any", "templates": ["*"], "rounds": [1, 2], "weight": 3, "props": [["barrel", 1, 3], ["crate", 1, 3], ["cobweb", 0, 2]], "enemies": "normal" }
+  ],
+  "landmarks": ["fountain", "statue", "brazier_big", "pillar_ring", "sarcophagus"]
+}

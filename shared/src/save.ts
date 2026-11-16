@@ -11,6 +11,7 @@ import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
+import { isSeedId } from './materials.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
 import { applyChange, type Change } from './ledger.ts';
 import type { LootRef, Player } from './types.ts';
@@ -327,6 +328,26 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
   25: (state) => {
     if (!isObject(state) || !isObject(state.tavern)) return state;
     return { ...state, tavern: { ...state.tavern, casks: Array.isArray(state.tavern.casks) ? state.tavern.casks : [] } };
+  },
+  // 29 -> 30 (step SG4, plants on any block): the plant layer is normalised. A plant whose seed (or second seed) no longer exists is dropped,
+  // one with broken times too, and the lakeside has none; a plant and a block may now share a cell, so nothing else changes.
+  29: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms)) return state;
+    const rooms = (state.rooms as unknown[]).map((room) => {
+      if (!isObject(room)) return room;
+      const old = isObject(room.plants) ? room.plants : {};
+      const plants: Record<string, unknown> = {};
+      if (room.kind !== 'lakeside') {
+        for (const [key, p] of Object.entries(old)) {
+          if (!isObject(p) || typeof p.seed !== 'string' || !isSeedId(p.seed)) continue;
+          if (typeof p.plantedAt !== 'number' || typeof p.readyAt !== 'number') continue;
+          if (p.with !== undefined && !(typeof p.with === 'string' && isSeedId(p.with))) continue;
+          plants[key] = p;
+        }
+      }
+      return { ...room, plants };
+    });
+    return { ...state, rooms };
   },
   // 28 -> 29 (step G2, hands-on pour): a mug in the hands has `perfect` (false). Nothing else changes.
   28: (state) => {

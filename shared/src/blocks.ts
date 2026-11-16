@@ -40,7 +40,10 @@ export type BlockProblem =
   | 'reach' // too far from the avatar (the client walks closer first)
   | 'no_block' // nothing to hit there
   | 'cooldown' // too soon after the last hit (not an error)
-  | 'no_soil' // seeds only go on soil cells (step BG6)
+  | 'no_soil' // seeds go on soil or on a block, not on bare floor (steps BG6, SG4)
+  | 'needs_soil' // a food crop needs soil or a block with soilHost (step SG4)
+  | 'planted' // the block carries a plant: it cannot be punched (step SG4)
+  | 'too_many_plants' // PLANTS_ROOM_CAP of the room is reached (step SG4)
   | 'no_plant' // nothing planted there to harvest
   | 'unripe' // the plant is not fully grown yet
   | 'nothing_happens' // splicing: this pair makes nothing (or the same seed twice); the seeds stay in the bag
@@ -91,6 +94,8 @@ export function cellProblem(
   r: number,
   ctx: BlockContext,
   types: FurnitureLookup = getFurnitureType,
+  /** True = a block already in the cell is fine (a plant on a block host, step SG4); a plant there never is. */
+  allowBlock = false,
 ): BlockProblem | null {
   if (room.kind === 'lakeside') return 'not_buildable';
   if (!placeIn.includes(room.kind)) return 'wrong_room';
@@ -98,7 +103,7 @@ export function cellProblem(
   const cell = cellRectOf(c, r);
   if (rectsOverlap(cell, doorZoneRect(room))) return 'door';
   if (innDoorSpotRects(room).some((x) => rectsOverlap(cell, x))) return 'inn_door';
-  if (blockInCell(room, c, r) || plantInCell(room, c, r)) return 'taken';
+  if ((!allowBlock && blockInCell(room, c, r)) || plantInCell(room, c, r)) return 'taken';
   if (floorFurniture(room, items, types).some((i) => rectsOverlap(cell, footprintRect(i, types(i.typeId))))) return 'furniture';
   if ([...noPlaceRects(room), ...fixedBlockers(room)].some((x) => rectsOverlap(cell, x))) return 'fixed';
   if (ctx.standing.some((p) => cellOf(p).c === c && cellOf(p).r === r)) return 'avatar';
@@ -240,6 +245,7 @@ export function hitBlock(
   if (!room || room.ownerId !== state.player.id) return { ok: false, problem: 'not_owner' };
   const cell = blockInCell(room, c, r);
   if (!cell) return { ok: false, problem: 'no_block' };
+  if (plantInCell(room, c, r)) return { ok: false, problem: 'planted' }; // the host never vanishes under a plant (step SG4)
   if (from && !inReach(from, c, r)) return { ok: false, problem: 'reach' };
   if (at - lastHitAt < BLOCK_HIT_COOLDOWN_MS) return { ok: false, problem: 'cooldown' };
   const type = lookup(cell.id);

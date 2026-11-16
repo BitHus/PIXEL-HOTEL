@@ -194,3 +194,32 @@ export const LIGHT_VIGNETTE_START = 0.55;
 /** Below this frame rate (averaged over LIGHT_PERF_FRAMES frames) the light layer switches off for the old fog. */
 export const LIGHT_MIN_FPS = 50;
 export const LIGHT_PERF_FRAMES = 90;
+
+// ---------- Dungeon layout (DG1, brief section 10 LAYOUT) ----------
+/** Zones per side of the layout grid (3 x 3). */
+export const DUNGEON_ZONES = 3;
+/** A corridor between two rooms is at most this many blocks long. */
+export const DUNGEON_CORRIDOR_MAX = 5;
+/** The gap between two linked rooms (the corridor's length) is drawn from this range. */
+export const DUNGEON_LINK_GAP_MIN = 1;
+export const DUNGEON_LINK_GAP_MAX = 3;
+/** Chance that a link is a 2 block wide hall. */
+export const DUNGEON_WIDE_LINK_CHANCE = 0.2;
+/** Extra links (loops) when a floor has 4 or more rooms: [min, max] per round. */
+export const DUNGEON_LOOPS: Record<1 | 2, readonly [number, number]> = { 1: [1, 1], 2: [1, 2] };
+/** Side nooks (1x2 or 2x2 pockets) and dead-end secrets per floor. */
+export const DUNGEON_NOOKS_MAX = 3;
+export const DUNGEON_SECRETS_MAX = 2;
+/** A template is used at most this often per floor. */
+export const DUNGEON_TEMPLATE_MAX_PER_FLOOR = 2;
+/** Pacing: a beat (enemy, chest, prop, landmark) lies within PACE_GAP_BLOCKS of every point of the main route. */
+export const PACE_GAP_BLOCKS = 7;
+/** The fill pass adds a prop wherever a route point has no beat within this many blocks (stricter than the gap). */
+export const PACE_NEAR_BLOCKS = 4;
+/** No more than this many route blocks without an enemy nearby (enemies are moved, never added). */
+export const PACE_ENEMY_GAP_BLOCKS = 16;
+/** The main route (spawn to exit) is this many blocks long, at most and at least. */
+export const ROUTE_LEN_MIN = 25;
+export const ROUTE_LEN_MAX = 70;
+/** How often the layout is drawn again when a floor breaks a rule (loop, route length). */
+export const DUNGEON_LAYOUT_ATTEMPTS = 80;

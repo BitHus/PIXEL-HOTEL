@@ -86,10 +86,10 @@ describe('soil', () => {
     expect(room.floorStyle).toBe('grass');
   });
 
-  it('seeds go on soil only: grass, the hotel and the lakeside refuse', () => {
+  it('seeds go on soil or a block: bare grass, the bare hotel floor and the lakeside refuse', () => {
     const s = applyChange(rich(), { reason: 'debug', materials: { turnip_seed: 3 } }, 0)!;
     expect(plantSeed(s, farmId(s), 12, 8, 'turnip_seed', 1, free)).toEqual({ ok: false, problem: 'no_soil' });
-    expect(plantSeed(s, s.player.hotelRoomId, 4, 4, 'turnip_seed', 1, free)).toEqual({ ok: false, problem: 'wrong_room' });
+    expect(plantSeed(s, s.player.hotelRoomId, 4, 4, 'turnip_seed', 1, free)).toEqual({ ok: false, problem: 'no_soil' });
     expect(plantSeed(s, s.player.lakesideRoomId, 4, 4, 'turnip_seed', 1, free)).toEqual({ ok: false, problem: 'not_buildable' });
     expect(plantSeed(s, farmId(s), SOIL.c, SOIL.r, 'turnip_seed', 1, free)).toMatchObject({ ok: true });
   });
@@ -137,11 +137,12 @@ describe('planting', () => {
     const standing: BlockContext = { standing: [{ x: (SOIL.c + 1.5) * BUILD_CELL, y: (SOIL.r + 0.5) * BUILD_CELL }], from: null };
     const t = applyChange(s, { reason: 'debug', materials: { dirt_seed: 1 } }, 0)!;
     expect(plantSeed(t, farmId(t), SOIL.c + 1, SOIL.r, 'dirt_seed', 5, standing)).toEqual({ ok: false, problem: 'avatar' });
-    // A block cannot be placed over a plant, and a plant cannot go on a block.
+    // A block cannot be placed over a plant; a plant may go on a block (step SG4, the host stays).
     const withBlock = placeBlock(applyChange(t, { reason: 'debug', materials: { dirt: 2 } }, 0)!, farmId(t), SOIL.c + 2, SOIL.r, 'dirt', 5, free);
     expect(withBlock.ok).toBe(true);
     if (!withBlock.ok) return;
-    expect(plantProblem(farmRoom(withBlock.state), withBlock.state.items, SOIL.c + 2, SOIL.r, free)).toBe('taken');
+    expect(plantProblem(farmRoom(withBlock.state), withBlock.state.items, SOIL.c + 2, SOIL.r, free)).toBeNull();
+    expect(plantProblem(farmRoom(s), s.items, SOIL.c, SOIL.r, free)).toBe('taken'); // the plant itself fills its cell
   });
 
   it('the farm has no fixed blockers any more (the pot is gone, step K1): its old cell takes soil and a plant', () => {

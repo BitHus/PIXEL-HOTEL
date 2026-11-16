@@ -649,6 +649,6 @@ export async function setupTavernLife(g: G9) {
   });
 
   // A test hook for the headless end-to-end check (only with ?e2e in the address).
-  if (new URLSearchParams(location.search).has('e2e')) (window as unknown as { __ph: unknown }).__ph = { api, st, late, pourControl, pour, worldToScreen, tapStands, serveTap, standPoint: (uid: number) => { const i = standInfo(uid); return i ? worldToScreen({ x: i.stand.x, y: i.floorY - 14 }, st.shown) : null; } };
+  if (new URLSearchParams(location.search).has('e2e')) (window as unknown as { __ph: unknown }).__ph = { api, st, late, setCamera: g.setCamera, pourControl, pour, worldToScreen, tapStands, serveTap, standPoint: (uid: number) => { const i = standInfo(uid); return i ? worldToScreen({ x: i.stand.x, y: i.floorY - 14 }, st.shown) : null; } };
   return { fx, pour, pourControl, guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived, caskArrived };
 }

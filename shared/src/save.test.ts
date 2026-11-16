@@ -667,8 +667,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 29 (28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(29);
+  it('SAVE_VERSION is 30 (29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(30);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');
@@ -843,5 +843,35 @@ describe('migration 28 -> 29 (step G2: the hands-on pour)', () => {
     const e = readSave(JSON.stringify({ version: 28, savedAt: 9, state }));
     expect(e).toMatchObject({ ok: true, migrated: true });
     if (e.ok) expect(e.state.tavern.holding).toBeNull();
+  });
+});
+
+describe('migration 29 -> 30 (step SG4: plants on any block)', () => {
+  const planted = () => {
+    const base = createNewPlayer(undefined, 1);
+    const farm = base.rooms.find((r) => r.kind === 'farm')!;
+    const plants = {
+      '2,2': { seed: 'turnip_seed', plantedAt: 10, readyAt: 130_010 },
+      '3,2': { seed: 'gone_seed', plantedAt: 10, readyAt: 20 },
+      '4,2': { seed: 'dirt_seed', with: 'nope_seed', plantedAt: 10, readyAt: 20 },
+      '5,2': { seed: 'dirt_seed', with: 'clay_seed', plantedAt: 10, readyAt: 99 },
+      '6,2': { seed: 'dirt_seed', plantedAt: 'x', readyAt: 20 },
+    };
+    return { ...base, rooms: base.rooms.map((r) => (r.id === farm.id ? { ...r, plants } : r)) } as unknown;
+  };
+  it('drops plants with an unknown seed or broken times and keeps the rest untouched', () => {
+    const r = readSave(JSON.stringify({ version: 29, savedAt: 9, state: planted() }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (!r.ok) return;
+    const farm = r.state.rooms.find((x) => x.kind === 'farm')!;
+    expect(Object.keys(farm.plants).sort()).toEqual(['2,2', '5,2']);
+    expect(farm.plants['5,2']).toEqual({ seed: 'dirt_seed', with: 'clay_seed', plantedAt: 10, readyAt: 99 });
+  });
+  it('a plant and a block in one cell is a valid state, and a new save does not migrate again', () => {
+    const r = readSave(JSON.stringify({ version: 29, savedAt: 9, state: planted() }));
+    if (!r.ok) throw new Error('load failed');
+    const farm = r.state.rooms.find((x) => x.kind === 'farm')!;
+    const both = { ...r.state, rooms: r.state.rooms.map((x) => (x.id === farm.id ? { ...x, blocks: { '2,2': { id: 'planks', hits: 0, hitAt: 0 } } } : x)) };
+    expect(readSave(toSaveText(both as never, 9))).toMatchObject({ ok: true, migrated: false });
   });
 });

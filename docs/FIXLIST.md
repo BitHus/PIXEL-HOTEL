@@ -40,3 +40,7 @@ Findings, severity order:
 7. LOW, look: floor and wall in tavern and glow rings behind the character preview and on the title screen are stepped concentric rings (the dungeon light is smooth, those two are not). Room floor is one flat brown (bare style), guests are plain red/blue boxes, the barrel PNG and bar/register/tap/stove sprites do show. Area: ui title/charmaker CSS gradients, render bare floor.
 8. LOW, dungeon: no Leave/abandon button in the HUD (only chat and settings), the run bag bar is a wide beige panel unlike the rest, and a faint square-stepped dark patch appears at the lower left corner when the camera moves (stepped vignette). Area: dungeon HUD, dungeon light.
 9. LOW, Quest card covers the pier at the top of the lakeside; avatar overlaps the bar counter when pouring (reads as standing on the counter). Area: ui quest card position, avatar draw order at the staff spot.
+
+## UI currency and shop pass (ui, 16 Nov)
+- Done from TESTER RUN 1: 1 (panels and quest card start below the first-steps card via --ft-bottom; close X and Skip 44 px), 4 (Map badge grows left, card badge no shrink), 5 (HUD counters: first value instant), 9 quest card (shrinks to its seal after reading; hintBox.setCompact(true) for the coder to call when the avatar walks or outside the tavern).
+- Not mine, seen: client/src/dungeon/dungeonView.ts ~line 660 has type errors (map undefined) in the working tree (someone's WIP); typecheck is red there.

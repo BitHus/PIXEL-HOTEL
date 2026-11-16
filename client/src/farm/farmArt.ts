@@ -70,3 +70,20 @@ export function drawRipeMarker(): Graphics {
   return g;
 }
 
+
+/** SA1: a plant on the top face of a block lifts 6 px so the block's front edge still shows below the stem (config-free, art only). */
+export const PLANT_ON_BLOCK_DY = -6;
+
+/**
+ * The same plant as drawPlantArt, for a cell that holds a block: the art is drawn into a child lifted by PLANT_ON_BLOCK_DY, with a
+ * thin soil-coloured patch under the stem so it reads as sitting on top of the block (the block itself is drawn by the block layer).
+ */
+export function drawPlantOnBlock(g: Graphics, seed: SeedId, stage: PlantStage, withSeed: SeedId | null = null): void {
+  const child = new Graphics();
+  child.rect(10, 26, 12, 3).fill(DARK_WARM);
+  child.rect(11, 26, 10, 2).fill(SOIL);
+  child.rect(11, 26, 10, 1).fill(shade(SOIL, 1.3));
+  drawPlantArt(child, seed, stage, withSeed);
+  child.position.set(0, PLANT_ON_BLOCK_DY);
+  g.addChild(child);
+}

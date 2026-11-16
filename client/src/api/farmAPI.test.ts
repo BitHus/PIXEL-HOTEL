@@ -118,8 +118,8 @@ describe('the farm through the GameAPI', () => {
     t = 1000;
     const s = fresh();
     const { api } = open(applyChange(s, { reason: 'debug', materials: { dirt_seed: 2, turnip_seed: 2 } }, 0)!);
-    // The hotel refuses seeds.
-    expect(await api.plantSeed(5, 5, 'turnip_seed')).toEqual({ kind: 'refused', problem: 'wrong_room' });
+    // The bare hotel floor refuses seeds (SG4: seeds need soil or a block).
+    expect(await api.plantSeed(5, 5, 'turnip_seed')).toEqual({ kind: 'refused', problem: 'no_soil' });
     const p = await api.getPlayer();
     await api.enterRoom(p.farmRoomId);
     expect(await api.plantSeed(12, 8, 'turnip_seed')).toEqual({ kind: 'refused', problem: 'no_soil' }); // grass

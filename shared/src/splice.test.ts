@@ -139,7 +139,7 @@ describe('spliceGrowMs', () => {
 
 describe('spliceSeed', () => {
   const base = (): GameState => {
-    const s = withSeeds({ dirt_seed: 3, turnip_seed: 3, glass_seed: 1 });
+    const s = withSeeds({ dirt_seed: 3, turnip_seed: 3, heartwood_throne_seed: 1 });
     const r = plantSeed(s, farmId(s), SOIL.c, SOIL.r, 'dirt_seed', 1000, free);
     if (!r.ok) throw new Error(r.problem);
     return r.state;
@@ -170,9 +170,9 @@ describe('spliceSeed', () => {
 
   it('a wrong pair says nothing happens and takes nothing; the same seed twice too', () => {
     const s = base();
-    expect(spliceSeed(s, farmId(s), SOIL.c, SOIL.r, 'glass_seed', 5000)).toEqual({ ok: false, problem: 'nothing_happens' });
+    expect(spliceSeed(s, farmId(s), SOIL.c, SOIL.r, 'heartwood_throne_seed', 5000)).toEqual({ ok: false, problem: 'nothing_happens' });
     expect(spliceSeed(s, farmId(s), SOIL.c, SOIL.r, 'dirt_seed', 5000)).toEqual({ ok: false, problem: 'nothing_happens' });
-    expect(s.player.materials.glass_seed).toBe(1);
+    expect(s.player.materials.heartwood_throne_seed).toBe(1);
   });
 
   it('refuses: no plant, none in the bag, already spliced, ripe, someone else\'s room', () => {

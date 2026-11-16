@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PET_NAME_MAX, SAVE_BACKUP_KEY, STAR_THRESHOLDS } from './config.ts';
+import { PET_NAME_MAX, SAVE_BACKUP_KEY, SAVE_VERSION, STAR_THRESHOLDS } from './config.ts';
 import { getFurnitureType, FURNITURE_TYPES } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { clockText, cleanPetName, isOn, isUsable, renamePet, TUNES, useItem } from './itemUse.ts';
@@ -268,7 +268,7 @@ describe('peekSave (title screen hook)', () => {
   it('a made character can continue; the card has name, Inn and level', () => {
     const s = { ...fresh(), playerCreated: true };
     const p = peekSave(store({ [saveKey()]: toSaveText(s, 77) }));
-    expect(p).toMatchObject({ exists: true, canContinue: true, version: 29, savedAt: 77, playerName: s.player.name, innName: s.player.innName, level: 1 });
+    expect(p).toMatchObject({ exists: true, canContinue: true, version: SAVE_VERSION, savedAt: 77, playerName: s.player.name, innName: s.player.innName, level: 1 });
   });
 
   it('a save before the character was made is not continuable', () => {

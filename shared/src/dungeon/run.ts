@@ -30,6 +30,28 @@ export interface BlockRect {
   h: number;
 }
 
+/** A prop or landmark on a floor block (DG1). kind is a string the client draws; solid ones are also wall blocks. */
+export interface DecorProp {
+  id: number;
+  kind: string;
+  c: number;
+  r: number;
+  solid: boolean;
+}
+
+/** A corridor joining two main rooms (indexes into map.rooms); cells are the corridor blocks (DG1). */
+export interface MapLink {
+  a: number;
+  b: number;
+  cells: { c: number; r: number }[];
+}
+
+/** What a main room is (DG1): its template and theme id. */
+export interface RoomInfo {
+  template: string;
+  theme: string;
+}
+
 /** One floor's layout. Never changed after it is generated. */
 export interface DungeonMap {
   seed: number;
@@ -47,6 +69,15 @@ export interface DungeonMap {
   spawn: Point;
   /** The exit block, in block coordinates. */
   exit: { c: number; r: number };
+  // Optional (DG1): runs saved before it have none of these and still load and play.
+  /** The corridors between rooms, with the loops (crypt only). */
+  links?: MapLink[];
+  /** Nooks, secrets and the vault outside the bounding rects (they are floor; the fog must show them). */
+  extras?: BlockRect[];
+  /** Props and landmarks (decor kinds are strings; the client draws them). */
+  decor?: DecorProp[];
+  /** Template and theme of every main room, same order as rooms. */
+  roomInfo?: RoomInfo[];
 }
 
 export interface Enemy {

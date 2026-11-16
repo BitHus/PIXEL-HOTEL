@@ -9,7 +9,7 @@ const clock = (): number => t;
 
 function open() {
   const s0 = createNewPlayer(undefined, 0);
-  const s: GameState = { ...applyChange(s0, { reason: 'debug', materials: { dirt_seed: 4, turnip_seed: 4, glass_seed: 2 } }, 0)!, playerCreated: true, hintsDone: SPLICE_HINT };
+  const s: GameState = { ...applyChange(s0, { reason: 'debug', materials: { dirt_seed: 4, turnip_seed: 4, heartwood_throne_seed: 2 } }, 0)!, playerCreated: true, hintsDone: SPLICE_HINT };
   const storage = memoryStorage({ [saveKey()]: toSaveText(s, 0) });
   return LocalGameAPI.open(storage, clock, seededRng(9)).api;
 }
@@ -33,10 +33,10 @@ describe('splicing through the GameAPI', () => {
     expect(await until(() => api.plantSeed(3, 2, 'dirt_seed'))).toMatchObject({ kind: 'planted' });
     // Nothing to splice on an empty cell.
     expect(await api.spliceSeed(4, 2, 'turnip_seed')).toEqual({ kind: 'refused', problem: 'no_plant' });
-    // A pair that is not in the table, and the same seed twice: nothing happens, nothing is lost.
-    expect(await until(() => api.spliceSeed(3, 2, 'glass_seed'))).toEqual({ kind: 'refused', problem: 'nothing_happens' });
+    // A legendary seed never splices, and the same seed twice: nothing happens, nothing is lost.
+    expect(await until(() => api.spliceSeed(3, 2, 'heartwood_throne_seed'))).toEqual({ kind: 'refused', problem: 'nothing_happens' });
     expect(await until(() => api.spliceSeed(3, 2, 'dirt_seed'))).toEqual({ kind: 'refused', problem: 'nothing_happens' });
-    expect((await api.getPlayer()).materials).toMatchObject({ dirt_seed: 3, glass_seed: 2 });
+    expect((await api.getPlayer()).materials).toMatchObject({ dirt_seed: 3, heartwood_throne_seed: 2 });
     // The real pair.
     expect(await until(() => api.spliceSeed(3, 2, 'turnip_seed'))).toMatchObject({ kind: 'spliced' });
     expect((await api.getPlayer()).materials.turnip_seed).toBe(3);

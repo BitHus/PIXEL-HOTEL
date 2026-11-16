@@ -6,18 +6,19 @@
 // (SEED_YIELD blocks or crops by rank, a chance for the seed back, a chance for gems); an unripe plant is
 // never harmed. Everything that changes the bag or the wallet goes through ledger.applyChange. Pure.
 
-import { BUILD_CELL, PLANT_SPROUT_SHARE, SEED_BACK_CHANCE, SEED_YIELD, SPLICE_BONUS_CHANCE, SOIL_STYLE, BLOCK_HIT_COOLDOWN_MS } from './config.ts';
+import { BUILD_CELL, PLANT_ROOMS, PLANTS_ROOM_CAP, PLANT_SPROUT_SHARE, SEED_BACK_CHANCE, SEED_YIELD, SPLICE_BONUS_CHANCE, SOIL_STYLE, BLOCK_HIT_COOLDOWN_MS } from './config.ts';
 import { cellProblem, inReach, roomOf, withRoom, type BlockContext, type BlockProblem } from './blocks.ts';
+import { getBlockType } from './blockTypes.ts';
 import { getFurnitureType, type FurnitureLookup } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { gemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
 import { CROP_TYPES, isSeedId } from './materials.ts';
-import { seedGrowMs, seedGrows, seedRank } from './seeds.ts';
+import { isFoodSeed, seedGrowMs, seedGrows, seedRank } from './seeds.ts';
 import { pairKey } from './spliceData.ts';
 import { recipeFor, spliceGrowMs } from './splice.ts';
 import { rngInt } from './rng.ts';
-import { blockKey, cellOnFloor, floorStyleAt, plantInCell, plantList, type Plant, type Room } from './room.ts';
+import { blockInCell, blockKey, cellOnFloor, floorStyleAt, plantInCell, plantList, type Plant, type Room } from './room.ts';
 import type { FurnitureItem, MaterialId, Point, Rng, SeedId } from './types.ts';
 
 export type PlantStage = 'sprout' | 'small' | 'full';
@@ -64,9 +65,12 @@ export function readyInMs(plant: Plant, now: number): number {
 
 // ---------- Planting ----------
 
-const FARM_ONLY = ['farm'] as const;
-
-/** Why this seed may not go into this cell now (null = it may). Does not look at the bag. */
+/**
+ * Why this seed may not go into this cell now (null = it may). Does not look at the bag. Step SG4: a seed goes on a soil
+ * cell (farm) or on a BLOCK cell (the host stays, the plant sits on its top face) in a hotel, tavern or farm. A food crop
+ * (isFoodSeed) needs soil or a block with soilHost. PLANTS_ROOM_CAP plants per room. `seed` is optional: without it only
+ * the cell is judged (the client's tint and tap checks), with it also the food rule.
+ */
 export function plantProblem(
   room: Room,
   items: readonly FurnitureItem[],
@@ -74,10 +78,17 @@ export function plantProblem(
   r: number,
   ctx: BlockContext,
   types: FurnitureLookup = getFurnitureType,
+  seed?: SeedId,
 ): BlockProblem | null {
-  if (room.kind !== 'farm') return room.kind === 'lakeside' ? 'not_buildable' : 'wrong_room';
-  if (cellOnFloor(room, c, r) && !isSoil(room, c, r)) return 'no_soil';
-  return cellProblem(room, items, FARM_ONLY, c, r, ctx, types);
+  if (room.kind === 'lakeside') return 'not_buildable';
+  if (!PLANT_ROOMS.includes(room.kind as (typeof PLANT_ROOMS)[number])) return 'wrong_room';
+  const host = blockInCell(room, c, r);
+  if (!host && cellOnFloor(room, c, r) && !isSoil(room, c, r)) return 'no_soil';
+  if (host && seed !== undefined && isFoodSeed(seed) && !getBlockType(host.id).soilHost) return 'needs_soil';
+  const problem = cellProblem(room, items, PLANT_ROOMS, c, r, ctx, types, true);
+  if (problem) return problem;
+  if (plantList(room).length >= PLANTS_ROOM_CAP[room.kind as keyof typeof PLANTS_ROOM_CAP]) return 'too_many_plants';
+  return null;
 }
 
 export type PlantSeedResult = { ok: true; state: GameState } | { ok: false; problem: BlockProblem };
@@ -97,7 +108,7 @@ export function plantSeed(
   if (!room || room.ownerId !== state.player.id) return { ok: false, problem: 'not_owner' };
   if (!Number.isInteger(c) || !Number.isInteger(r) || !isSeedId(seed)) return { ok: false, problem: 'floor' };
   if ((state.player.materials[seed] ?? 0) < 1) return { ok: false, problem: 'empty' };
-  const problem = plantProblem(room, state.items, c, r, ctx, types);
+  const problem = plantProblem(room, state.items, c, r, ctx, types, seed);
   if (problem) return { ok: false, problem };
   const paid = applyChange(state, { reason: 'plant', materials: { [seed]: -1 }, note: `${seed}@${blockKey(c, r)}` }, at);
   if (!paid) return { ok: false, problem: 'empty' };
@@ -274,10 +285,11 @@ export function farmCounts(room: Room, now: number): { ripe: number; growing: nu
   return { ripe, growing, free: Math.max(0, soilCells(room).length - ripe - growing) };
 }
 
-/** Painting the farm floor: a cell that holds a plant stays soil (the plant must not float on grass). */
+/** Painting the farm floor: a cell that holds a plant (not on a block) stays soil (the plant must not float on grass). */
 export function keepSoilUnderPlants(room: Room): Room {
   let next = room;
   for (const { c, r } of plantList(room)) {
+    if (blockInCell(room, c, r)) continue; // a plant on a block host: the soil below does not matter
     if (floorStyleAt(next, c, r) !== SOIL_STYLE) {
       const painted = { ...(next.floorCells ?? {}), [blockKey(c, r)]: SOIL_STYLE };
       next = { ...next, floorCells: painted };

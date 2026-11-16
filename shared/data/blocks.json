@@ -1,5 +1,5 @@
 [
-  {"id": "dirt", "name": "Dirt block", "hardness": 1, "rank": "common", "baseValue": 2, "inCatalog": true, "drops": [], "seedId": "dirt_seed", "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["walnut", "oak"]}},
+  {"id": "dirt", "name": "Dirt block", "hardness": 1, "rank": "common", "baseValue": 2, "inCatalog": true, "drops": [], "seedId": "dirt_seed", "soilHost": true, "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["walnut", "oak"]}},
   {"id": "clay", "name": "Clay block", "hardness": 2, "rank": "common", "baseValue": 3, "inCatalog": false, "drops": [], "seedId": "clay_seed", "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["clay", "rust"]}},
   {"id": "thatch", "name": "Thatch block", "hardness": 2, "rank": "common", "baseValue": 3, "inCatalog": false, "drops": [], "seedId": "thatch_seed", "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["butter", "sand"]}},
   {"id": "glass", "name": "Glass block", "hardness": 2, "rank": "rare", "baseValue": 9, "inCatalog": true, "drops": [], "seedId": "glass_seed", "placeIn": ["hotel", "shop", "farm"], "icon": {"shape": "block", "colors": ["cyan", "white"]}},

@@ -1706,3 +1706,859 @@
     animation: none !important;
   }
 }
+
+/* ======================================================================
+   TESTER RUN 1 fixes: top cards stay clear of panels, 44 px close and Skip, the order badge, a quiet quest card
+   --ft-bottom (px from the top of the UI) is set by firstTenGuide.ts while its card shows.
+   ====================================================================== */
+.panel {
+  top: max(calc(var(--edge) + env(safe-area-inset-top)), var(--ft-bottom, 0px));
+  max-height: calc(100dvh - max(calc(var(--edge) + env(safe-area-inset-top)), var(--ft-bottom, 0px)) - var(--bottom-clear));
+}
+
+.quest-card:not(.below) {
+  top: max(calc(var(--edge) + env(safe-area-inset-top)), var(--ft-bottom, 0px));
+}
+
+@media (max-width: 680px) {
+  .panel {
+    top: max(calc(var(--edge) + var(--info-h) + 6px + env(safe-area-inset-top)), var(--ft-bottom, 0px));
+    max-height: calc(100dvh - max(calc(var(--edge) + var(--info-h) + 6px + env(safe-area-inset-top)), var(--ft-bottom, 0px)) - var(--bottom-clear));
+  }
+  .first-ten-skip {
+    min-height: var(--touch);
+    min-width: var(--touch);
+  }
+}
+
+/* The close X is a full 44 px ring (it still hangs a little over the corner). */
+.panel-close {
+  width: var(--touch);
+  height: var(--touch);
+  top: -12px;
+  right: -12px;
+  font-size: 20px;
+}
+
+.first-ten-skip {
+  min-height: var(--touch);
+}
+
+/* The Map button's "N orders" badge grows to the left instead of being clipped; the Tavern card's badge never shrinks. */
+.icon-btn .map-badge {
+  right: -3px;
+  left: auto;
+  top: -7px;
+  bottom: auto;
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+  z-index: 2;
+  padding: 0 4px;
+}
+
+.card-badge {
+  flex: none;
+}
+
+/* The quest card shrinks to its seal once it was read (hintBox.ts): a tap opens it again. */
+.quest-card.compact {
+  width: auto;
+  max-width: none;
+  padding: 2px 6px;
+}
+
+.quest-card.compact .quest-text,
+.quest-card.compact .quest-hide {
+  display: none;
+}
+
+.quest-card.compact .quest-head {
+  border-bottom: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* ======================================================================
+   UI round 5 (ui): the tavern panels (bar menu, taps, brewing, cooking, room), the hotbar feel, panel close, toasts clear of the hotbar
+   ====================================================================== */
+
+/* Panels slide out in three steps when they close for good (panels.ts adds .panel-leaving, then hides). */
+@keyframes panel-leave {
+  to {
+    opacity: 0;
+    transform: translateX(12px) scale(0.96);
+  }
+}
+
+.panel.panel-leaving,
+.more-menu.panel-leaving {
+  animation: panel-leave 0.13s steps(3, end) forwards;
+  pointer-events: none;
+}
+
+/* Toasts sit above the hotbar AND its name plate (20 px plate + 8 px gap + the candle line). */
+.toast {
+  bottom: calc(var(--bar-h) + var(--edge) + 40px + env(safe-area-inset-bottom));
+}
+
+/* ---------- Hotbar: pressed, just chosen, empty ---------- */
+.hotbar-slot {
+  transition: transform 60ms steps(1, end);
+}
+
+.hotbar-slot.pressed {
+  transform: translateY(2px) scale(0.94);
+  filter: brightness(0.92);
+}
+
+@keyframes slot-pop {
+  0% {
+    transform: scale(0.86);
+  }
+  50% {
+    transform: scale(1.1) translateY(-2px);
+  }
+}
+
+.hotbar-slot.just-selected {
+  animation: slot-pop 0.18s steps(3, end);
+}
+
+/* The chosen slot: a flat candle face with a butter ring (no smooth ramp). */
+.hotbar-slot.selected {
+  background: var(--warm);
+  box-shadow:
+    inset 0 0 0 2px var(--butter),
+    inset 0 0 0 4px var(--ember),
+    0 0 0 1px var(--outline),
+    0 -3px 0 1px var(--candle);
+}
+
+/* An empty slot is a sunk, dashed hollow: it reads as "free", not as a broken one. */
+.hotbar-slot.is-empty:not(.selected) {
+  outline: 1px dashed var(--wood-light);
+  outline-offset: -5px;
+}
+
+.hotbar-slot.is-empty.selected .slot-key {
+  color: var(--text);
+}
+
+/* ---------- Mug gauges: TAP_CAP little mugs, the full ones amber with a foam cap ---------- */
+.mug-gauge {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  min-height: 16px;
+  padding-right: 4px;
+}
+
+.mug-gauge i {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 8px;
+  max-width: 15px;
+  height: 14px;
+  background: var(--bar-bg);
+  box-shadow:
+    0 0 0 1px var(--outline),
+    inset 0 2px 0 rgba(24, 20, 37, 0.6);
+}
+
+/* The handle. */
+.mug-gauge i::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 3px;
+  width: 3px;
+  height: 7px;
+  box-shadow: 0 0 0 1px var(--outline);
+  background: var(--wood-light);
+}
+
+.mug-gauge i.on {
+  background: linear-gradient(var(--cream) 0 3px, var(--warm) 3px 9px, var(--ember) 9px 100%);
+  box-shadow:
+    0 0 0 1px var(--outline),
+    inset 1px 0 0 var(--butter);
+}
+
+.mug-gauge.low i.on {
+  background: linear-gradient(#f6757a 0 3px, var(--no) 3px 100%);
+}
+
+.tap-row .mug-gauge {
+  grid-column: 2;
+}
+
+.tap-count {
+  min-width: 44px;
+  text-align: center;
+  padding: 0 6px;
+  background: var(--wood);
+  color: var(--butter);
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow: 0 0 0 1px var(--outline), inset 1px 1px 0 var(--wood-light);
+}
+
+.tap-row .tap-name {
+  font-weight: 700;
+}
+
+/* The Menu tab's strip of taps: one gauge per tap and the Taps button. */
+.tap-levels-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.tap-levels-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tap-levels-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.tap-levels-name b {
+  margin-left: auto;
+}
+
+.mini-icon {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.tap-levels-open {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+
+/* ---------- Menu rows: a card with the dish, its price on a coin stepper, a peg switch ---------- */
+.menu-row {
+  align-items: stretch;
+  gap: 8px;
+  padding: 6px;
+}
+
+.menu-row .catalog-info {
+  gap: 3px;
+}
+
+.menu-row.off {
+  background: var(--parch-dk);
+}
+
+.menu-row:not(.off) {
+  box-shadow:
+    inset 3px 0 0 var(--candle),
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream);
+}
+
+.menu-price {
+  width: max-content;
+  padding: 2px;
+  background: var(--bar-bg);
+  box-shadow: 0 0 0 1px var(--outline), 0 0 0 2px var(--wood-light);
+}
+
+.menu-price .btn.cook-step {
+  min-width: var(--touch);
+  min-height: 36px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.menu-price-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 68px;
+  color: var(--butter);
+  font-size: 16px;
+  text-shadow: 0 1px 0 var(--outline);
+}
+
+.menu-price-num svg {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+.menu-price-num b {
+  font-weight: 700;
+}
+
+/* The On / Off peg switch: a vertical groove at the row's right, the peg up = on. */
+.btn.menu-switch {
+  position: relative;
+  flex: none;
+  align-self: center;
+  width: 52px;
+  min-width: 52px;
+  height: var(--touch);
+  padding: 0;
+  font-size: 0;
+  color: transparent;
+}
+
+.btn.menu-switch::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  bottom: 6px;
+  width: 14px;
+  margin-left: -7px;
+  background: var(--bar-bg);
+  box-shadow: inset 0 2px 0 rgba(24, 20, 37, 0.7), 0 0 0 1px var(--outline), 0 0 0 2px var(--wood-light);
+}
+
+.btn.menu-switch::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 24px;
+  height: 14px;
+  margin-left: -12px;
+  background: var(--wood-hi);
+  box-shadow: inset 1px 1px 0 var(--cream), 0 0 0 1px var(--outline);
+}
+
+.btn.menu-switch.on {
+  background: var(--parch);
+  box-shadow: none;
+  transform: none;
+  color: transparent;
+}
+
+.btn.menu-switch.on::before {
+  background: var(--ok);
+}
+
+.btn.menu-switch.on::after {
+  bottom: auto;
+  top: 5px;
+  background: var(--candle);
+}
+
+/* ---------- Recipe cards (Brewing, Stove): ingredient chips with pictures, ready cards with a candle edge ---------- */
+.recipe-card {
+  gap: 8px;
+  padding: 6px;
+}
+
+.recipe-card.ready {
+  box-shadow:
+    inset 3px 0 0 var(--candle),
+    inset 1px 1px 0 var(--wood-mid),
+    inset -1px -1px 0 var(--cream);
+}
+
+.recipe-card.cant {
+  background: var(--parch-dk);
+}
+
+.recipe-card.cant .slot,
+.recipe-card.cant .catalog-name {
+  opacity: 0.6;
+}
+
+.recipe-card .btn {
+  flex: none;
+  min-width: 72px;
+  min-height: var(--touch);
+}
+
+.recipe-needs {
+  gap: 4px;
+}
+
+.recipe-needs .need {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px 1px 2px;
+  background: var(--cream);
+  box-shadow: 0 0 0 1px var(--wood);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.recipe-needs .need.short {
+  background: #f6757a;
+  color: var(--night);
+  text-decoration: none;
+  box-shadow: 0 0 0 1px var(--no);
+}
+
+.brewing-panel .recipe-needs .need.short {
+  color: var(--night);
+  text-decoration: none;
+}
+
+.need-icon {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+
+/* ---------- Vessel bars: a pot or a tankard filling in stepped segments ---------- */
+.cook-state {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vessel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vessel-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 20px;
+  background: var(--bar-bg);
+  box-shadow: 0 0 0 1px var(--outline), 0 0 0 2px var(--wood-light), inset 0 2px 0 rgba(24, 20, 37, 0.7);
+  overflow: hidden;
+}
+
+.vessel-fill {
+  height: 100%;
+  transition: width 0.4s steps(6, end);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(24, 20, 37, 0.55) 11px 12px),
+    linear-gradient(var(--cream) 0 3px, var(--warm) 3px 12px, var(--ember) 12px 100%);
+  border-right: 2px solid var(--butter);
+}
+
+.vessel.pot .vessel-fill {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(24, 20, 37, 0.55) 11px 12px),
+    linear-gradient(#f6757a 0 3px, var(--no) 3px 12px, var(--wood-dk) 12px 100%);
+  border-right-color: #f6757a;
+}
+
+.vessel-pct {
+  flex: none;
+  min-width: 36px;
+  text-align: right;
+  font-weight: 700;
+}
+
+.cook-state.ready {
+  align-items: stretch;
+  background: var(--parch);
+  box-shadow: inset 0 0 0 2px var(--candle);
+}
+
+.cook-state .ready-text {
+  font-weight: 700;
+  color: var(--ok);
+}
+
+.btn.collect-btn {
+  min-height: 52px;
+  font-size: 18px;
+  animation: flame-pulse 1.4s steps(2, end) infinite;
+}
+
+.cook-batch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cook-qty {
+  min-width: 48px;
+  padding: 2px 6px;
+  text-align: center;
+  background: var(--bar-bg);
+  color: var(--butter);
+  font-size: 18px;
+  box-shadow: 0 0 0 1px var(--outline), 0 0 0 2px var(--wood-light);
+}
+
+.cook-step {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+
+/* ---------- Room panel: stars and the tip ---------- */
+.room-facts {
+  grid-template-columns: 1fr;
+}
+
+.room-appeal {
+  height: 12px;
+}
+
+.room-stars {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.star-row {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.star-row i.star {
+  width: 20px;
+  height: 20px;
+  background: var(--bar-bg);
+  clip-path: polygon(50% 0, 62% 36%, 100% 38%, 70% 60%, 80% 100%, 50% 76%, 20% 100%, 30% 60%, 0 38%, 38% 36%);
+}
+
+.star-row i.star.on {
+  background: var(--butter);
+}
+
+.room-star-tip {
+  padding: 4px 6px 4px 8px;
+  background: var(--cream);
+  box-shadow: inset 3px 0 0 var(--candle), 0 0 0 1px var(--wood);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+/* ---------- While the avatar walks, the first-steps card keeps only its seal and pips ---------- */
+.walk-compact .first-ten .first-ten-text,
+.walk-compact .first-ten .first-ten-head,
+.walk-compact .first-ten .btn {
+  display: none;
+}
+
+.walk-compact .first-ten {
+  max-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel.panel-leaving,
+  .more-menu.panel-leaving,
+  .hotbar-slot.just-selected,
+  .btn.collect-btn {
+    animation: none !important;
+  }
+  .hotbar-slot,
+  .vessel-fill {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-row {
+    flex-wrap: wrap;
+  }
+  .menu-row .catalog-info {
+    flex-basis: 0;
+    flex-grow: 1;
+  }
+  .recipe-card {
+    flex-wrap: wrap;
+  }
+  .recipe-card .btn {
+    width: 100%;
+  }
+  .mug-gauge i {
+    min-width: 6px;
+  }
+}
+
+/* ============ SA1: splice dialog, Book splice cards, category badges, seed target tint, splice effect ============
+   CLASS NAMES for the coder (SG5, SG6). Markup:
+   dialog:  .confirm-shade > .confirm-panel.splice-dialog > .splice-row [ .splice-seed(.rank-X) + .splice-plus + .splice-seed ] + .splice-eq + .splice-result(.rank-X | .unknown)
+            then .splice-grow (grow time line), .splice-note ("Uses up 1 ... You get 1 new seed."), .confirm-buttons (.confirm-yes = Splice).
+   Book:    .splice-card.rank-X [.unknown | .found] > .cat-badge.cat-<category> + .splice-card-icon + .splice-card-name + .splice-card-sub (pairs found)
+   badge:   render/categoryBadges.ts categoryBadge(cat) gives <span class="cat-badge cat-<cat>">; .cat-badge.big = 24 px.
+   tint:    .seed-target on a DOM cell hint, or a fill colour var(--seed-target) for the canvas tint (render side).
+   effect:  .splice-fx > .splice-fx-a + .splice-fx-b + .splice-spark x6 (600 ms); add .reduce-fx on the UI root to skip it. */
+:root {
+  --seed-target: rgba(254, 231, 97, 0.22);
+}
+
+.cat-badge {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+.cat-badge.big {
+  width: 24px;
+  height: 24px;
+}
+
+.splice-dialog {
+  align-items: stretch;
+  text-align: center;
+}
+
+.splice-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 4px;
+  background: var(--parch) var(--specks);
+  border: var(--px) solid var(--outline);
+  box-shadow: inset 0 var(--px) 0 var(--wood-hi);
+}
+
+.splice-seed,
+.splice-result {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  background: var(--slot-bg);
+  border: calc(var(--px) * 2) solid var(--rank, var(--outline));
+  image-rendering: pixelated;
+}
+
+.splice-seed .cat-badge,
+.splice-result .cat-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  outline: var(--px) solid var(--outline);
+  background-color: var(--cream);
+}
+
+.splice-plus,
+.splice-eq {
+  font-family: var(--font);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--wood);
+}
+
+.splice-result.unknown {
+  background: repeating-conic-gradient(var(--wood-mid) 0 25%, var(--wood-hi) 0 50%) 0 0 / 8px 8px;
+  color: var(--night);
+  font-family: var(--font);
+  font-size: 24px;
+}
+
+.splice-result.unknown::before {
+  content: '?';
+}
+
+.splice-grow,
+.splice-note {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.splice-note {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* Book: one card per result seed. Unknown = grey with a rank border; found = in colour with the name. */
+.splice-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  min-height: var(--touch);
+  background: var(--parch) var(--specks);
+  border: calc(var(--px) * 2) solid var(--rank, var(--outline));
+  box-shadow: inset 0 var(--px) 0 var(--cream), var(--shadow);
+}
+
+.splice-card-icon {
+  grid-row: 1 / span 2;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: var(--slot-bg);
+  border: var(--px) solid var(--outline);
+  image-rendering: pixelated;
+}
+
+.splice-card .cat-badge {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+}
+
+.splice-card-name {
+  font-family: var(--font);
+  font-size: 15px;
+  color: var(--rank, var(--text));
+  text-shadow: 0 1px 0 rgba(24, 20, 37, 0.35);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.splice-card-sub {
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+}
+
+.splice-card.unknown {
+  filter: grayscale(1) brightness(0.9);
+  background-color: var(--wood-mid);
+}
+
+.splice-card.unknown .splice-card-icon {
+  filter: brightness(0.15) contrast(0.8);
+}
+
+.splice-card.unknown .splice-card-name::before {
+  content: '???';
+}
+
+.splice-card.found.rank-ultra_rare,
+.splice-card.found.rank-legendary {
+  animation: splice-glint 1.6s steps(4) infinite;
+}
+
+@keyframes splice-glint {
+  0%, 100% { box-shadow: inset 0 var(--px) 0 var(--cream), var(--shadow); }
+  50% { box-shadow: inset 0 var(--px) 0 var(--cream), 0 0 0 var(--px) var(--rank), var(--shadow); }
+}
+
+/* A DOM hint for a seed target cell (the canvas tint uses --seed-target). */
+.seed-target {
+  background: var(--seed-target);
+  outline: var(--px) dashed rgba(254, 231, 97, 0.7);
+  outline-offset: -2px;
+  animation: seed-target-pulse 1s steps(2) infinite;
+}
+
+@keyframes seed-target-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* The splice effect: two seed icons spiral into the middle in 600 ms (steps, pixel feel), then the rank sparkle bursts. */
+.splice-fx {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.splice-fx-a,
+.splice-fx-b {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  animation: splice-spiral-a 0.5s steps(8, end) forwards;
+}
+
+.splice-fx-b {
+  animation-name: splice-spiral-b;
+}
+
+@keyframes splice-spiral-a {
+  0% { transform: translate(-24px, 0) rotate(0deg) scale(1); }
+  40% { transform: translate(0, -20px) rotate(120deg) scale(1); }
+  75% { transform: translate(10px, 6px) rotate(270deg) scale(0.8); }
+  100% { transform: translate(0, 0) rotate(360deg) scale(0.4); opacity: 0; }
+}
+
+@keyframes splice-spiral-b {
+  0% { transform: translate(24px, 0) rotate(0deg) scale(1); }
+  40% { transform: translate(0, 20px) rotate(120deg) scale(1); }
+  75% { transform: translate(-10px, -6px) rotate(270deg) scale(0.8); }
+  100% { transform: translate(0, 0) rotate(360deg) scale(0.4); opacity: 0; }
+}
+
+.splice-spark {
+  position: absolute;
+  left: 30px;
+  top: 30px;
+  width: 4px;
+  height: 4px;
+  background: var(--rank, var(--butter, #fee761));
+  box-shadow: 0 0 0 var(--px) var(--night);
+  opacity: 0;
+  animation: splice-spark 0.3s steps(3, end) 0.5s forwards;
+}
+
+.splice-spark:nth-of-type(3) { --dx: 0px;   --dy: -24px; }
+.splice-spark:nth-of-type(4) { --dx: 22px;  --dy: -12px; }
+.splice-spark:nth-of-type(5) { --dx: 22px;  --dy: 12px; }
+.splice-spark:nth-of-type(6) { --dx: 0px;   --dy: 24px; }
+.splice-spark:nth-of-type(7) { --dx: -22px; --dy: 12px; }
+.splice-spark:nth-of-type(8) { --dx: -22px; --dy: -12px; }
+
+@keyframes splice-spark {
+  0% { opacity: 1; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)); }
+}
+
+/* The reveal frame of the new seed: a rank-coloured pulse around its icon once (sparkly for ultra rare and legendary). */
+.splice-reveal {
+  animation: splice-reveal 0.6s steps(6) 1;
+}
+
+@keyframes splice-reveal {
+  0% { box-shadow: 0 0 0 0 var(--rank); transform: scale(0.6); }
+  60% { box-shadow: 0 0 0 6px var(--rank); transform: scale(1.12); }
+  100% { box-shadow: 0 0 0 0 var(--rank); transform: scale(1); }
+}
+
+.reduce-fx .splice-fx-a,
+.reduce-fx .splice-fx-b,
+.reduce-fx .splice-spark,
+.reduce-fx .splice-reveal,
+.reduce-fx .seed-target,
+.reduce-fx .splice-card.found {
+  animation: none;
+}
+
+.reduce-fx .splice-spark {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splice-fx-a, .splice-fx-b, .splice-spark, .splice-reveal, .seed-target, .splice-card.found {
+    animation: none;
+  }
+  .splice-spark {
+    display: none;
+  }
+}

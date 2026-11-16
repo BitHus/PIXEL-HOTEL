@@ -62,3 +62,25 @@ export const LUNCH_BOX_MAX = 3;
 export const MINE_UNLOCK_LEVEL = 3;
 /** Chance that an opened dungeon chest also holds one glowcap spore. */
 export const GLOWCAP_SPORE_CHANCE = 0.05;
+/**
+ * Plants (step SG4, owner 16 Nov): a seed goes on a soil cell (food crops) or on any BLOCK cell (every seed; the block stays,
+ * the plant sits on its top face) in these room kinds. At most PLANTS_ROOM_CAP plants per room kind (so a hotel or tavern stays usable).
+ */
+export const PLANT_ROOMS = ['hotel', 'shop', 'farm'] as const;
+export const PLANTS_ROOM_CAP = { farm: 80, hotel: 16, shop: 8 } as const;
+/** Why a seed was refused, in words (reading pace; the client shows them). */
+export const PLANT_REFUSALS = {
+  no_soil: 'Tap soil or any block to plant a seed.',
+  needs_soil: 'Food crops need soil or a dirt block.',
+  planted: 'A plant grows on this block. Harvest it first.',
+  too_many_plants: 'This room cannot hold more plants.',
+} as const;
+/**
+ * The GENERAL SPLICE RULE (step SG1, shared/src/spliceRule.ts): a pure hash of the sorted pair key picks the result. FROZEN once the content ships
+ * (SG3): the salt, shared/data/spliceRules.json and the order of the pools decide every general result.
+ */
+export const SPLICE_SALT = 'pixel-hotel.splice.v1';
+/** The highest rank a general splice can make; legendary seeds only come from special recipes (splice.json). */
+export const SPLICE_RANK_CAP = 'ultra_rare' as const;
+/** Two seeds of the same rank make one rank higher once in this many pairs (a hash of the pair; at most SPLICE_RANK_CAP). */
+export const SPLICE_UP_ONE_IN = 8;

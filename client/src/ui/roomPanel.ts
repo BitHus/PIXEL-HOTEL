@@ -50,9 +50,22 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       title.textContent = ROOM_NAMES[room.kind];
       const facts = el('div', 'room-facts inset');
       facts.append(el('div', '', `Level ${room.level} of ${ROOM_MAX_LEVEL}`), el('div', '', `Size ${room.w} x ${room.h}`));
-      if (appeal !== null) facts.append(el('div', '', `Appeal ${appeal} / 100`));
+      if (appeal !== null) {
+        facts.append(el('div', '', `Appeal ${appeal} / 100`));
+        const bar = el('div', 'skin-bar xp room-appeal');
+        const barFill = el('i');
+        barFill.style.width = `${Math.max(0, Math.min(100, appeal))}%`;
+        bar.append(barFill);
+        facts.append(bar);
+      }
       if (stars) {
-        facts.append(el('div', 'room-stars', `Comfort ${stars.stars} of ${STAR_THRESHOLDS.length} stars`));
+        const row = el('div', 'room-stars');
+        const pips = el('span', 'star-row');
+        pips.setAttribute('role', 'img');
+        pips.setAttribute('aria-label', `${stars.stars} of ${STAR_THRESHOLDS.length} stars`);
+        for (let i = 0; i < STAR_THRESHOLDS.length; i++) pips.append(el('i', i < stars.stars ? 'star on' : 'star'));
+        row.append(el('span', '', 'Comfort'), pips);
+        facts.append(row);
         facts.append(el('div', 'room-star-tip', `${stars.tip}${stars.toNext !== null ? ` (${stars.toNext} more points for the next star)` : ''}`));
       }
       // The kitchen zone (step T1): a staff-only corner; its tint shows while you place things.

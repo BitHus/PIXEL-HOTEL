@@ -8,6 +8,15 @@ import { materialIconUrl } from './itemIcon.ts';
 import { iconBox, panelShell } from './panelShell.ts';
 import { rankName } from './rank.ts';
 
+/** A row of TAP_CAP little mugs, the first `mugs` of them full (UI round 5). Low = the last few mugs, shown red. */
+export function mugGauge(mugs: number, cap: number = TAP_CAP): HTMLElement {
+  const g = el('div', 'mug-gauge' + (mugs > 0 && mugs <= TAP_LOW_MUGS ? ' low' : ''));
+  g.setAttribute('role', 'img');
+  g.setAttribute('aria-label', `${mugs} of ${cap} mugs`);
+  for (let i = 0; i < cap; i++) g.append(el('i', i < mugs ? 'on' : ''));
+  return g;
+}
+
 /** A tap with this many mugs or fewer shows the red level bar. */
 const TAP_LOW_MUGS = 3;
 
@@ -44,10 +53,8 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
     const head = el('div', 'tap-head');
     const name = c.drink ? rankName('span', 'tap-name', `Tap ${n}: ${getMaterialType(c.drink).name}`, c.drink) : el('span', 'tap-name', `Tap ${n}: empty`);
     head.append(name, el('span', 'tap-count', `${c.mugs}/${TAP_CAP}`));
-    const level = el('div', `tap-level${c.mugs > 0 && c.mugs <= TAP_LOW_MUGS ? ' low' : ''}`);
-    const fill = el('div', 'tap-fill');
-    fill.style.setProperty('--fill-pct', `${Math.round((c.mugs / TAP_CAP) * 100)}%`);
-    level.append(fill);
+    const level = mugGauge(c.mugs);
+    level.classList.add('tap-level-gauge');
 
     const controls = el('div', 'tap-controls tap-actions');
     controls.append(el('p', 'tap-hint', c.mugs > 0 ? `${c.mugs} of ${TAP_CAP} mugs left.` : `${TAP_EMPTY_TEXT}. A guest who wants this drink waits until you load it.`));

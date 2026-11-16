@@ -13,7 +13,7 @@ import { materialIconUrl } from './itemIcon.ts';
 import { iconBox, panelShell, tabBar } from './panelShell.ts';
 import { pixelIcon } from './pixelIcons.ts';
 import { rankName } from './rank.ts';
-import { TAPS_HINT } from './tapsPanel.ts';
+import { TAPS_HINT, mugGauge } from './tapsPanel.ts';
 
 export type MenuTab = 'serve' | 'menu' | 'sell';
 
@@ -38,6 +38,14 @@ export interface MenuPanel {
   update(orders: readonly Guest[], rows: readonly MenuRowView[], queued: readonly number[], taps?: readonly Tap[]): void;
   /** Redraw the Sell tab with the trader's list. */
   setSellRows(rows: readonly SellRow[]): void;
+}
+
+/** A small picture for a gauge caption. */
+function miniIcon(url: string): HTMLElement {
+  const img = el('img', 'mini-icon');
+  img.src = url;
+  img.alt = '';
+  return img;
 }
 
 export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPanel {
@@ -81,12 +89,16 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     const plus = textButton('+', () => hooks.step(r.id, 1), 'cook-step');
     minus.disabled = r.price <= 1;
     plus.disabled = r.price >= priceCeiling(r.baseValue);
-    price.append(minus, el('span', 'menu-price-num', `${r.price} gold`), plus);
+    const num = el('span', 'menu-price-num');
+    num.append(pixelIcon('coin'), el('b', '', String(r.price)));
+    num.title = `${r.price} gold`;
+    price.append(minus, num, plus);
     const hintLine = el('div', 'catalog-sub menu-hint');
     hintLine.append(pixelIcon(hint.face), el('span', '', ` ${hint.text}`));
     const last = r.history.slice(-MENU_HISTORY_LENGTH);
     info.append(
       rankName('div', 'catalog-name', isDrinkId(r.id) ? `${getMaterialType(r.id).name} (${r.stock} on tap)` : `${getMaterialType(r.id).name} (${r.stock})`, r.id),
+      ...(isDrinkId(r.id) ? [mugGauge(Math.min(r.stock, TAP_CAP))] : []),
       el('div', 'catalog-sub', r.stock === 0 ? (isDrinkId(r.id) ? 'Not on a tap: load it to serve it.' : 'Out of stock: it is off the menu until you have more.') : `Worth ${r.baseValue} gold.`),
       price,
       hintLine,
@@ -94,6 +106,8 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     );
     const sw = textButton(r.on ? 'On' : 'Off', () => hooks.toggle(r.id, !r.on), `menu-switch${r.on ? ' on' : ''}`);
     sw.setAttribute('aria-pressed', String(r.on));
+    sw.setAttribute('aria-label', `${getMaterialType(r.id).name}: ${r.on ? 'on the menu' : 'off the menu'}`);
+    sw.title = r.on ? 'On the menu (tap to switch off)' : 'Off the menu (tap to switch on)';
     row.append(iconBox(materialIconUrl(r.id)), info, sw);
     return row;
   };
@@ -116,8 +130,16 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     const empty = !rows.some((r) => r.on && r.stock > 0);
     // The taps at a glance (step T1): what each holds, and a way to the Taps panel.
     const levels = el('div', 'panel-info tap-levels');
-    levels.append(el('div', '', taps.length > 0 ? taps.map((t) => `${getMaterialType(t.drink).name} ${t.mugs}/${TAP_CAP}`).join('  |  ') : TAPS_HINT));
-    levels.append(textButton('Taps', () => hooks.openTaps()));
+    const gauges = el('div', 'tap-levels-list');
+    if (taps.length === 0) gauges.append(el('div', '', TAPS_HINT));
+    for (const t of taps) {
+      const g = el('div', 'tap-levels-item');
+      const name = el('span', 'tap-levels-name');
+      name.append(miniIcon(materialIconUrl(t.drink)), el('span', '', getMaterialType(t.drink).name), el('b', '', `${t.mugs}/${TAP_CAP}`));
+      g.append(name, mugGauge(t.mugs));
+      gauges.append(g);
+    }
+    levels.append(gauges, textButton('Taps', () => hooks.openTaps(), 'tap-levels-open'));
     list.replaceChildren(
       levels,
       ...(empty ? [el('div', 'panel-info', EMPTY_MENU_HELP)] : [el('div', 'panel-info', 'Guests order what is on the menu and in stock. If a price is too high they take something cheaper, or nothing.')]),

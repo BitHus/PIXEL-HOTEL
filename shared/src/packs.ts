@@ -58,7 +58,7 @@ export interface PackItem {
 export function packPool(pool: PackPool): PackItem[] {
   if (pool === 'blocks') return BLOCK_TYPES.map((b) => ({ kind: 'material', id: b.id, name: b.name, rank: b.rank }));
   if (pool === 'seeds') {
-    const seeds: MaterialId[] = [...CROP_TYPES.map((c) => c.seed as MaterialId), ...BLOCK_TYPES.flatMap((b) => (b.seedId ? [b.seedId] : []))];
+    const seeds: MaterialId[] = [...CROP_TYPES.filter((c) => !c.spliceOnly).map((c) => c.seed as MaterialId), ...BLOCK_TYPES.flatMap((b) => (b.seedId && !b.spliceOnly ? [b.seedId] : []))];
     return seeds.map((id) => {
       const m = getMaterialType(id);
       return { kind: 'material', id, name: m.name, rank: m.rank };

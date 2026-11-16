@@ -50,12 +50,22 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   function draw(): void {
     const goal = firstTenGoal(state, waiting);
     card.hidden = !visible || goal === null;
-    if (goal === null) return;
+    if (goal === null) {
+      announce();
+      return;
+    }
     count.textContent = `${state.done.length + 1}/${FIRST_TEN_STEPS.length}`;
     text.textContent = FIRST_TEN_TEXT[goal];
     pips.querySelectorAll('i').forEach((p, i) => p.classList.toggle('done', i < state.done.length));
     card.setAttribute('aria-label', `First steps, ${count.textContent}`);
+    announce();
   }
+  /** Tells the layout where the card ends (--ft-bottom, px from the top of the UI): panels and the quest card start below it. */
+  function announce(): void {
+    parent.style.setProperty('--ft-bottom', card.hidden ? '0px' : `${card.offsetTop + card.offsetHeight + 6}px`);
+    window.dispatchEvent(new Event('first-ten-layout'));
+  }
+  window.addEventListener('resize', announce);
   draw();
   return {
     begin() {

@@ -8,7 +8,7 @@ import { el, textButton } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
 import { iconBox, panelShell } from './panelShell.ts';
 import { rankName } from './rank.ts';
-import { cookTimeText } from './cookingPanel.ts';
+import { cookTimeText, needChip, vesselBar } from './cookingPanel.ts';
 
 export interface BrewingHooks {
   /** Start a brew of `drink` in the open barrel. */
@@ -41,9 +41,9 @@ export function createBrewingPanel(parent: HTMLElement, hooks: BrewingHooks, now
 
   const card = (c: BrewCard): HTMLElement => {
     const d = getDrinkType(c.id);
-    const row = el('div', `catalog-row${c.can ? '' : ' cant'}`);
+    const row = el('div', `catalog-row recipe-card${c.can ? ' ready' : ' cant'}`);
     const needs = el('div', 'recipe-needs');
-    for (const i of c.inputs) needs.append(el('span', i.short ? 'need short' : 'need', `${getMaterialType(i.id).name} ${i.have}/${i.need}`));
+    for (const i of c.inputs) needs.append(needChip(i.id, i.have, i.need));
     const info = el('div', 'catalog-info');
     const owned = materials[c.id] ?? 0;
     info.append(
@@ -51,7 +51,7 @@ export function createBrewingPanel(parent: HTMLElement, hooks: BrewingHooks, now
       el('div', 'catalog-sub', `${c.mugs} mugs, ${cookTimeText(brewMs(c.id))}. One mug is worth ${c.value} gold.${d.tip > 0 ? ' Guests tip extra.' : ''}`),
       needs,
     );
-    const b = textButton('Brew', () => uid !== null && hooks.start(uid, c.id));
+    const b = textButton('Brew', () => uid !== null && hooks.start(uid, c.id), c.can ? 'primary' : '');
     b.disabled = !c.can;
     row.append(iconBox(materialIconUrl(c.id)), info, b);
     return row;
@@ -62,16 +62,12 @@ export function createBrewingPanel(parent: HTMLElement, hooks: BrewingHooks, now
     if (mine) {
       const d = getDrinkType(mine.drink);
       const left = brewReadyInMs(mine, now());
-      const box = el('div', 'panel-info cook-state');
+      const box = el('div', `panel-info cook-state${left > 0 ? '' : ' ready'}`);
       box.append(el('div', 'catalog-name', `${d.mugs} mugs of ${d.name}`));
       if (left > 0) {
-        const track = el('div', 'bar-track');
-        const fill = el('div', 'bar-fill');
-        fill.style.width = `${Math.round((1 - left / brewMs(mine.drink)) * 100)}%`;
-        track.append(fill);
-        box.append(track, el('div', 'catalog-sub', `Brewing: ready in ${cookTimeText(left)}. It brews while the game is closed too.`));
+        box.append(vesselBar('tankard', (1 - left / brewMs(mine.drink)) * 100, iconBox(materialIconUrl(mine.drink))), el('div', 'catalog-sub', `Brewing: ready in ${cookTimeText(left)}. It brews while the game is closed too.`));
       } else {
-        box.append(el('div', 'catalog-sub', 'Ready!'), textButton('Collect', () => uid !== null && hooks.collect(uid)));
+        box.append(el('div', 'catalog-sub ready-text', 'Ready!'), textButton('Collect', () => uid !== null && hooks.collect(uid), 'primary collect-btn'));
       }
       top.replaceChildren(box);
       list.replaceChildren();

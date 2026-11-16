@@ -15,6 +15,10 @@ export interface Panels {
   onChange(listener: () => void): void;
 }
 
+/** How long the slide-out lasts (matches skin.css .panel-leaving). */
+const LEAVE_MS = 130;
+const reducedMotion = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export function createPanels(): Panels {
   const panels = new Map<PanelName, { el: HTMLElement; onOpen?: () => void; onClose?: () => void }>();
   const listeners: (() => void)[] = [];
@@ -23,12 +27,22 @@ export function createPanels(): Panels {
     if (next === open) return;
     const was = open !== null ? panels.get(open) : undefined;
     if (was) {
-      was.el.hidden = true;
+      // Closing for good: a short stepped slide-out (skin.css .panel-leaving), then hidden. Switching panels hides at once.
+      if (next === null && !reducedMotion()) {
+        const leaving = was.el;
+        leaving.classList.add('panel-leaving');
+        window.setTimeout(() => {
+          leaving.classList.remove('panel-leaving');
+          // Opened again meanwhile: it stays.
+          if (open === null || panels.get(open)?.el !== leaving) leaving.hidden = true;
+        }, LEAVE_MS);
+      } else was.el.hidden = true;
       was.onClose?.();
     }
     open = next;
     const now = next !== null ? panels.get(next) : undefined;
     if (now) {
+      now.el.classList.remove('panel-leaving');
       now.el.hidden = false;
       now.onOpen?.();
     }

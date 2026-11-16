@@ -1,7 +1,7 @@
 // The quest card in the HTML overlay (step 7; the floating sale gold and the till coins went with the
 // loot customers in step S1).
 
-import { HINTS, QUEST_CARD_POP_MS, type Point } from '@pixel-hotel/shared';
+import { HINTS, QUEST_CARD_POP_MS, readingMs, type Point } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 
@@ -12,6 +12,8 @@ export interface HintBox {
   toggle(): void;
   /** While a panel is open the card steps aside (it opens where the panels open). */
   setCovered(covered: boolean): void;
+  /** True = only the quest seal shows (the card shrinks so it never covers the room: the coder calls it when the player walks, or outside the tavern); false = the full card. It also shrinks by itself after the text was read. */
+  setCompact(compact: boolean): void;
   /** Called when the quest or whether its card shows changes. */
   onChange(listener: (quest: string | null, showing: boolean) => void): void;
 }
@@ -47,6 +49,12 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
   const changed = (): void => {
     for (const l of listeners) l(quest, showing);
   };
+  let compactTimer = 0;
+  const setCompact = (c: boolean): void => {
+    window.clearTimeout(compactTimer);
+    box.classList.toggle('compact', c);
+    place();
+  };
   const place = (): void => {
     if (box.hidden) return;
     box.classList.remove('below');
@@ -58,10 +66,13 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
     const top = box.offsetTop;
     if (left < a.right - p.left + 6 && top < a.bottom - p.top) {
       box.classList.add('below');
-      box.style.top = `${a.bottom - p.top + 6}px`;
+      // Under the info column, and under the first-steps card when that one is lower (--ft-bottom, firstTenGuide.ts).
+      const ft = Number.parseFloat(parent.style.getPropertyValue('--ft-bottom')) || 0;
+      box.style.top = `${Math.max(a.bottom - p.top + 6, ft)}px`;
     }
   };
   window.addEventListener('resize', place);
+  window.addEventListener('first-ten-layout', place);
   const draw = (): void => {
     box.classList.toggle('covered', covered);
     place();
@@ -74,6 +85,10 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
     box.classList.remove('closing');
     box.hidden = false;
     showing = true;
+    // A fresh card opens in full and shrinks to its seal after the player had time to read it.
+    window.clearTimeout(compactTimer);
+    box.classList.remove('compact');
+    compactTimer = window.setTimeout(() => setCompact(true), readingMs(quest ?? '') + 4000);
     // Place it first (same frame), then pop in from its corner; an open card just changes its text.
     draw();
     if (!wasOpen) {
@@ -97,6 +112,10 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
     changed();
   };
   box.addEventListener('click', () => {
+    if (box.classList.contains('compact')) {
+      setCompact(false);
+      return;
+    }
     if (showing) hide();
   });
   return {
@@ -121,6 +140,7 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
       dismissed.delete(quest);
       show();
     },
+    setCompact,
     setCovered(c) {
       covered = c;
       draw();

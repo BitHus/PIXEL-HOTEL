@@ -56,6 +56,27 @@ export function foodEffectText(e: FoodEffect): string {
   }
 }
 
+/** An ingredient chip: its picture and have/need; red when short (UI round 5). */
+export function needChip(id: MaterialId, have: number, need: number): HTMLElement {
+  const chip = el('span', have < need ? 'need short' : 'need');
+  const img = el('img', 'need-icon');
+  img.src = materialIconUrl(id);
+  img.alt = '';
+  chip.append(img, el('span', '', `${getMaterialType(id).name} ${have}/${need}`));
+  return chip;
+}
+
+/** A progress bar drawn as a vessel (a pot or a tankard) that fills in stepped segments; icon sits at its left. */
+export function vesselBar(kind: 'pot' | 'tankard', pct: number, icon: HTMLElement): HTMLElement {
+  const v = el('div', `vessel ${kind}`);
+  const track = el('div', 'vessel-track');
+  const fill = el('div', 'vessel-fill');
+  fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+  track.append(fill);
+  v.append(icon, track, el('span', 'vessel-pct', `${Math.round(pct)}%`));
+  return v;
+}
+
 export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): CookingPanel {
   const shell = panelShell(parent, 'workshop-panel cooking-panel', 'Stove');
   const panel = shell.el;
@@ -69,12 +90,13 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
   let bonus = 0;
 
   const row = (f: FoodType, p: Player): HTMLElement => {
-    const r = el('div', 'catalog-row');
+    const can0 = maxBatchWith(p.materials, f) >= 1;
+    const r = el('div', `catalog-row recipe-card${can0 ? ' ready' : ' cant'}`);
     const slot = iconBox(materialIconUrl(f.id));
     const needs = el('div', 'recipe-needs');
     for (const [id, n] of Object.entries(f.inputs) as [MaterialId, number][]) {
       const have = p.materials[id] ?? 0;
-      needs.append(el('span', have < n ? 'need short' : 'need', `${getMaterialType(id).name} ${have}/${n}`));
+      needs.append(needChip(id, have, n));
     }
     const owned = p.materials[f.id] ?? 0;
     const info = el('div', 'catalog-info');
@@ -85,7 +107,7 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     );
     const can = maxBatchWith(p.materials, f);
     const n = Math.min(qty, can);
-    const b = textButton(n > 1 ? `Cook x${n}` : 'Cook', () => uid !== null && hooks.start(uid, f, n));
+    const b = textButton(n > 1 ? `Cook x${n}` : 'Cook', () => uid !== null && hooks.start(uid, f, n), can0 ? 'primary' : '');
     b.disabled = can < 1;
     r.append(slot, info, b);
     return r;
@@ -96,18 +118,14 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     if (mine) {
       const food = getFoodType(mine.food);
       const left = cookReadyInMs(mine, Date.now());
-      const box = el('div', 'panel-info cook-state');
+      const box = el('div', `panel-info cook-state${left > 0 ? '' : ' ready'}`);
       box.append(el('div', 'catalog-name', `${cookYield(mine)} x ${food.name}`));
       if ((mine.bonus ?? 0) > 0) box.append(el('div', 'catalog-sub', `${mine.qty} from the crops and ${mine.bonus} from the prep table${mine.bonus === 1 ? '' : 's'}.`));
       if (left > 0) {
         const total = cookMs(food);
-        const track = el('div', 'bar-track');
-        const fill = el('div', 'bar-fill');
-        fill.style.width = `${Math.round((1 - left / total) * 100)}%`;
-        track.append(fill);
-        box.append(track, el('div', 'catalog-sub', `Cooking: ready in ${cookTimeText(left)}. It cooks while the game is closed too.`));
+        box.append(vesselBar('pot', (1 - left / total) * 100, iconBox(materialIconUrl(food.id))), el('div', 'catalog-sub', `Cooking: ready in ${cookTimeText(left)}. It cooks while the game is closed too.`));
       } else {
-        box.append(el('div', 'catalog-sub', 'Ready!'), textButton('Collect', () => uid !== null && hooks.collect(uid)));
+        box.append(el('div', 'catalog-sub ready-text', 'Ready!'), textButton('Collect', () => uid !== null && hooks.collect(uid), 'primary collect-btn'));
       }
       top.replaceChildren(box);
       list.replaceChildren();

@@ -16,6 +16,8 @@ export interface SpliceSeedType {
   baseValue: number;
   icon: Icon;
   grows: SeedGrows;
+  /** True = this seed never takes part in a splice (step SG1). */
+  noSplice?: boolean;
 }
 
 /** One recipe: a + b = result (order does not matter). */

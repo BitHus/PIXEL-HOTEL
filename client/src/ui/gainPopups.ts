@@ -89,13 +89,16 @@ export function createGainPopups(parent: HTMLElement, enabled: boolean): GainPop
       layer.hidden = head === null;
       if (!head) return;
       // One row, centred above the head, rising a little while it lives; chips side by side.
+      // Keep clear of the hotbar and its name plate at the bottom edge (--bar-h).
+      const barH = parseFloat(getComputedStyle(layer).getPropertyValue('--bar-h')) || 62;
+      const floorY = (layer.clientHeight || window.innerHeight) - barH - 80;
       const widths = shown.map((s) => s.node.offsetWidth || 36);
       const total = widths.reduce((a, w) => a + w, 0) + 4 * Math.max(0, shown.length - 1);
       let x = head.x - total / 2;
       shown.forEach((s, i) => {
         const k = (now - s.born) / POPUP_MS;
         const rise = 14 + 18 * k;
-        s.node.style.transform = `translate(${Math.round(x)}px, ${Math.round(head.y - rise - 26)}px)`;
+        s.node.style.transform = `translate(${Math.round(x)}px, ${Math.round(Math.min(head.y - rise - 26, floorY))}px)`;
         s.node.style.opacity = k > 0.75 ? String(Math.max(0, (1 - k) / 0.25)) : '1';
         x += (widths[i] ?? 36) + 4;
       });
