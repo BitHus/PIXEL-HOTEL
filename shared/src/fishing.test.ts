@@ -9,6 +9,7 @@ import {
   FISH_REEL_FULL,
   FISH_REEL_MAX_MS,
   FISH_REEL_START,
+  FISH_SWIM_ACCEL,
   FISH_TAP_KICK,
   FISH_THRUST,
   FISH_TICK_MS,
@@ -17,7 +18,7 @@ import {
   RANK_WEIGHTS,
 } from './config.ts';
 import { CATCH_TYPES, FISH_TYPES, THING_TYPES, getCatchType } from './fish.ts';
-import { bankCatch, fishDone, fishInBox, newFishSession, rollCatch, step, type FishInput, type FishSession } from './fishing.ts';
+import { bankCatch, fishDone, fishInBox, newFishSession, rollCatch, step, swimStep, type FishInput, type FishSession } from './fishing.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { RANKS } from './ranks.ts';
 import { seededRng } from './rng.ts';
@@ -421,5 +422,79 @@ describe('gems from a catch (step BG4)', () => {
     expect(ultra.player.wallet.gems).toBe(4);
     expect(ultra.ledger[ultra.ledger.length - 1]).toMatchObject({ reason: 'fish', gemsDelta: 4 });
     expect(bankCatch(s0, caught('common'), 1, () => 0.9999)!.player.wallet.gems).toBe(0);
+  });
+});
+
+describe('FISH-1 fish movement path', () => {
+  const start = { fishPos: 50, fishTarget: 50, fishTurnMs: 0, fishSpeedMul: 1, fishVel: 0, fishFace: 'right' as 'left' | 'right' };
+
+  it('stays in the bar, never exceeds its top speed and is deterministic', () => {
+    for (const rank of RANKS) {
+      let f = { ...start };
+      let g = { ...start };
+      const rng = seededRng(5);
+      const rng2 = seededRng(5);
+      for (let i = 0; i < 1200; i++) {
+        f = swimStep(f, rank, rng, FISH_TICK_MS);
+        g = swimStep(g, rank, rng2, FISH_TICK_MS);
+        expect(f.fishPos).toBeGreaterThanOrEqual(0);
+        expect(f.fishPos).toBeLessThanOrEqual(FISH_BAR);
+        expect(Math.abs(f.fishVel)).toBeLessThanOrEqual(FISH_REEL[rank].speed * 2.4 + 1e-9);
+      }
+      expect(f).toEqual(g);
+    }
+  });
+
+  it('accelerates smoothly: the speed never jumps, the fish turns around now and then', () => {
+    for (const rank of RANKS) {
+      let f = { ...start };
+      const rng = seededRng(11);
+      let turns = 0;
+      for (let i = 0; i < 2000; i++) {
+        const n = swimStep(f, rank, rng, FISH_TICK_MS);
+        const maxJump = (FISH_SWIM_ACCEL[rank] * 2.4 * FISH_TICK_MS) / 1000 + 1e-9;
+        expect(Math.abs(n.fishVel - f.fishVel)).toBeLessThanOrEqual(maxJump);
+        if (n.fishFace !== f.fishFace) turns++;
+        f = n;
+      }
+      expect(turns).toBeGreaterThan(2);
+    }
+  });
+
+  it('faces the way it swims', () => {
+    let f = { ...start, fishTarget: 90, fishTurnMs: 99999 };
+    const rng = seededRng(1);
+    for (let i = 0; i < 20; i++) f = swimStep(f, 'common', rng, FISH_TICK_MS);
+    expect(f.fishFace).toBe('right');
+    f = { ...f, fishTarget: 5, fishTurnMs: 99999 };
+    for (let i = 0; i < 80; i++) f = swimStep(f, 'common', rng, FISH_TICK_MS);
+    expect(f.fishFace).toBe('left');
+  });
+
+  it('rarer fish swim faster', () => {
+    const avg = (rank: Rank): number => {
+      let f = { ...start };
+      const rng = seededRng(3);
+      let sum = 0;
+      for (let i = 0; i < 1500; i++) {
+        f = swimStep(f, rank, rng, FISH_TICK_MS);
+        sum += Math.abs(f.fishVel);
+      }
+      return sum / 1500;
+    };
+    expect(avg('legendary')).toBeGreaterThan(avg('common'));
+  });
+
+  it('nibbles 1 to 3 times just before the bite', () => {
+    let s: FishSession = { ...session('common', 4), waitMs: 4000, nibblesLeft: 3 };
+    const rng = seededRng(2);
+    let nibbles = 0;
+    for (let i = 0; i < 100 && s.phase === 'wait'; i++) {
+      s = step(s, [], FISH_TICK_MS, rng);
+      for (const e of s.events) if (e.t === 'nibble') nibbles++;
+    }
+    expect(s.phase).toBe('bite');
+    expect(nibbles).toBeGreaterThanOrEqual(1);
+    expect(nibbles).toBeLessThanOrEqual(3);
   });
 });

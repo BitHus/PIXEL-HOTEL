@@ -73,6 +73,13 @@ export const FISH_REEL = {
   ultra_rare: { speed: 31, turnMin: 1000, turnMax: 2100, dart: 0.15, gain: 19, drain: 14 },
   legendary: { speed: 38, turnMin: 800, turnMax: 1700, dart: 0.25, gain: 17, drain: 17 },
 } as const;
+/** FISH-1: how fast the fish speeds up and slows down while it swims (units/s^2, by rank): it turns smoothly, never at once. */
+export const FISH_SWIM_ACCEL = { common: 70, rare: 120, ultra_rare: 220, legendary: 400 } as const;
+/** FISH-1: in the last FISH_NIBBLE_MS before the bite the fish nibbles 2 to 3 times (a gap of min to max ms between nibbles; a nibble pulse lasts FISH_NIBBLE_PULSE_MS). */
+export const FISH_NIBBLE_MS = 1800;
+export const FISH_NIBBLE_GAP_MIN_MS = 350;
+export const FISH_NIBBLE_GAP_MAX_MS = 700;
+export const FISH_NIBBLE_PULSE_MS = 250;
 /** A reel that lasts longer than this is lost (the fish gets away), ms. A safety limit. */
 export const FISH_REEL_MAX_MS = 45_000;
 // ---------- Effects (outdoors rework C13/C15; the shared FX_* numbers are in dungeon.ts) ----------

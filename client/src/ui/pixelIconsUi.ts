@@ -41,8 +41,6 @@ const GLOBE: PixelMap = {
 
 export const UI_ICONS = {
   worlds: GLOBE,
-  // The old name: the Map button (game/uiShell.ts) still asks for 'map' until the coder renames it to 'worlds'.
-  map: GLOBE,
   catalog: {
     rows: [
       '.......oc.......',

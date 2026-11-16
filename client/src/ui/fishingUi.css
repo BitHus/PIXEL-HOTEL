@@ -1,0 +1,309 @@
+/* FISHING UI (ART-2, artist). Loaded after ui.css and skin.css; only adds and overrides the .fish-* hooks
+   of ui/fishBar.ts and adds the .fx-* pieces of render/fishScene.ts and render/fishSprite.ts.
+   Look: a pixel-water strip with three depth bands, drifting glints, a bobber that dips, a swimming fish
+   (4-frame tail wiggle, mirrored for left), a clean reel track with a notched catch box and a segmented
+   catch bar, a framed catch popup. Palette: Endesga 32. Hard edges. Motion is stepped; reduced motion stills it. */
+
+:root {
+  --fx-w0: #124e89; /* navy: deep */
+  --fx-w1: #0099db; /* sky: mid */
+  --fx-w2: #2ce8f5; /* cyan: surface glint */
+  --fx-w3: #c0cbdc;
+  --fx-foam: #ffffff;
+}
+
+/* ---------- The swimming fish (sprite sheet 4 frames of 24 x 12, see render/fishSprite.ts) ---------- */
+.fx-fish {
+  --s: var(--fx-scale, 2);
+  width: calc(24px * var(--s));
+  height: calc(12px * var(--s));
+  background-repeat: no-repeat;
+  background-size: calc(96px * var(--s)) calc(12px * var(--s));
+  background-position: 0 0;
+  image-rendering: pixelated;
+  animation:
+    fx-tail var(--fx-beat, 520ms) steps(4, end) infinite,
+    fx-bob 1400ms steps(1, end) infinite;
+  pointer-events: none;
+}
+.fx-fish[data-face='left'] {
+  transform: scaleX(-1);
+}
+@keyframes fx-tail {
+  to { background-position: calc(-96px * var(--fx-scale, 2)) 0; }
+}
+@keyframes fx-bob {
+  0% { translate: 0 0; }
+  35% { translate: 0 -1px; }
+  50% { translate: 0 -1px; }
+  75% { translate: 0 1px; }
+}
+
+/* ---------- The reel (restyles .fish-bar / .fish-track / .fish-box / .fish-meter of fishBar.ts) ---------- */
+.fish-bar {
+  gap: 8px;
+}
+.fish-track {
+  height: 44px;
+  border-radius: 0;
+  border: 2px solid var(--rank, var(--night));
+  box-shadow: inset 0 2px 0 rgba(24, 20, 37, 0.55), 0 2px 0 var(--night);
+  /* Depth bands (hard steps), then the tension tint of A17 on top. */
+  background-color: var(--fx-w0);
+  background-image:
+    linear-gradient(rgba(228, 59, 68, calc(var(--tension, 0) * 0.28)), rgba(228, 59, 68, calc(var(--tension, 0) * 0.28))),
+    linear-gradient(to bottom, var(--fx-w2) 0 2px, transparent 2px),
+    linear-gradient(to bottom, transparent 0 2px, var(--fx-w1) 2px 14px, transparent 14px),
+    linear-gradient(to bottom, transparent 0 14px, #0b3a6b 14px);
+  position: relative;
+}
+/* Glints drifting along the track: two pixel rows, stepped, slow. */
+.fish-track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--fx-w2), var(--fx-w2)) 6px 8px / 6px 2px no-repeat,
+    linear-gradient(var(--fx-w2), var(--fx-w2)) 38px 20px / 4px 2px no-repeat,
+    linear-gradient(var(--fx-w3), var(--fx-w3)) 70px 10px / 4px 2px no-repeat;
+  background-repeat: repeat-x;
+  background-size: 96px 44px;
+  opacity: 0.55;
+  animation: fx-drift 5s steps(24, end) infinite;
+}
+@keyframes fx-drift {
+  to { background-position: -96px 0; }
+}
+
+.fish-box {
+  background: rgba(99, 199, 77, 0.35);
+  border: 2px solid #63c74d;
+  /* Notched corners and a light top edge: reads as a net frame, not a plain rectangle. */
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 0 rgba(24, 20, 37, 0.35), 0 0 0 1px var(--night);
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+}
+.fish-track.catching .fish-box {
+  background: rgba(99, 199, 77, 0.7);
+  border-color: var(--butter);
+  clip-path: none;
+}
+.fish-track.draining .fish-box {
+  clip-path: none;
+}
+/* The fish sprite inside the track: the old pixel icon is replaced by .fx-fish. */
+.fish-fish {
+  width: auto;
+  height: auto;
+  --fx-scale: 2;
+  filter: drop-shadow(0 2px 0 rgba(24, 20, 37, 0.4));
+}
+.fish-fish .fx-fish {
+  display: block;
+}
+
+/* The catch bar: segmented, a lit top edge, the rank colour on the frame. */
+.fish-meter {
+  height: 16px;
+  background: var(--bar-bg, #3e2731);
+  border: 2px solid var(--rank, var(--night));
+  box-shadow: 0 2px 0 var(--night);
+  overflow: hidden;
+}
+.fish-fill {
+  position: relative;
+  background: var(--candle, #feae34);
+  box-shadow: inset 0 3px 0 var(--butter, #fee761), inset 0 -3px 0 var(--ember, #f77622);
+  transition: width 90ms steps(3, end);
+}
+.fish-meter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to right, transparent 0 11px, rgba(24, 20, 37, 0.55) 11px 12px);
+}
+
+/* The Hold button: heavier, and a pressed look. */
+.fish-tap {
+  min-height: 56px;
+  letter-spacing: 1px;
+}
+.fish-tap.held {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 0 rgba(24, 20, 37, 0.45);
+}
+
+/* ---------- The scene strip (render/fishScene.ts): water, ripples, bobber ---------- */
+.fx-scene {
+  position: relative;
+  height: 72px;
+  overflow: hidden;
+  border: 2px solid var(--night);
+  background-color: var(--fx-w0);
+  background-image:
+    linear-gradient(to bottom, var(--fx-w2) 0 2px, transparent 2px),
+    linear-gradient(to bottom, transparent 0 2px, var(--fx-w1) 2px 20px, transparent 20px),
+    linear-gradient(to bottom, transparent 0 20px, #0b3a6b 20px 46px, transparent 46px),
+    linear-gradient(to bottom, transparent 0 46px, #0a2a52 46px);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.18), 0 2px 0 var(--night);
+}
+.fx-scene .fx-fish {
+  position: absolute;
+  --fx-scale: 2;
+}
+.fx-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(to right, transparent 0 14px, var(--fx-w3) 14px 20px, transparent 20px 38px);
+  opacity: 0.7;
+  animation: fx-wave 3.2s steps(16, end) infinite;
+}
+.fx-wave.w1 { top: 6px; }
+.fx-wave.w2 { top: 26px; animation-duration: 4.6s; animation-direction: reverse; opacity: 0.4; }
+@keyframes fx-wave {
+  to { background-position: 38px 0; }
+}
+
+.fx-bobber {
+  position: absolute;
+  top: 0;
+  width: 12px;
+  height: 20px;
+  margin-left: -6px;
+  /* Red and white float, a line above it, a shadow ring in the water. */
+  background:
+    linear-gradient(var(--night), var(--night)) 5px 0 / 2px 8px no-repeat,
+    linear-gradient(var(--night), var(--night)) 2px 8px / 8px 1px no-repeat,
+    linear-gradient(#e43b44, #e43b44) 3px 9px / 6px 3px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 3px 12px / 6px 3px no-repeat,
+    linear-gradient(var(--night), var(--night)) 2px 15px / 8px 1px no-repeat;
+  translate: 0 10px;
+}
+.fx-bobber::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 17px;
+  height: 3px;
+  border: 1px solid var(--fx-w3);
+  border-radius: 50%;
+  opacity: 0.8;
+}
+.fx-bobber[data-state='wait'] { animation: fx-float 1800ms steps(1, end) infinite; }
+.fx-bobber[data-state='nibble'] { animation: fx-nibble 520ms steps(1, end) infinite; }
+.fx-bobber[data-state='bite'] { animation: fx-dip 380ms steps(1, end) infinite; }
+@keyframes fx-float {
+  0% { translate: 0 10px; }
+  50% { translate: 0 11px; }
+}
+@keyframes fx-nibble {
+  0% { translate: 0 10px; }
+  20% { translate: 0 12px; }
+  40% { translate: 0 10px; }
+  60% { translate: 0 13px; }
+  80% { translate: 0 10px; }
+}
+/* The hook: the float is pulled down under the water line, then pops back up. */
+@keyframes fx-dip {
+  0% { translate: 0 10px; }
+  25% { translate: 0 17px; }
+  50% { translate: 0 20px; }
+  75% { translate: 0 13px; }
+}
+
+.fx-ring {
+  position: absolute;
+  top: 24px;
+  width: 8px;
+  height: 4px;
+  margin-left: -4px;
+  border: 2px solid var(--fx-foam);
+  border-radius: 50%;
+  opacity: 0;
+}
+.fx-scene[data-state='wait'] .fx-ring { animation: fx-ring 2400ms steps(6, end) infinite; }
+.fx-scene[data-state='nibble'] .fx-ring { animation: fx-ring 800ms steps(5, end) infinite; }
+.fx-scene[data-state='bite'] .fx-ring { animation: fx-ring 360ms steps(4, end) infinite; }
+.fx-ring.r2 { animation-delay: 0.5s !important; }
+@keyframes fx-ring {
+  0% { opacity: 0.9; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(3.2, 2.2); }
+}
+
+/* "!" over the bobber at the bite. */
+.fx-bang {
+  position: absolute;
+  top: -2px;
+  width: 8px;
+  height: 14px;
+  margin-left: -4px;
+  background:
+    linear-gradient(var(--butter), var(--butter)) 3px 0 / 2px 8px no-repeat,
+    linear-gradient(var(--butter), var(--butter)) 3px 10px / 2px 2px no-repeat;
+  filter: drop-shadow(1px 1px 0 var(--night));
+  display: none;
+}
+.fx-scene[data-state='bite'] .fx-bang { display: block; animation: fx-bang 300ms steps(2, end) infinite; }
+@keyframes fx-bang {
+  50% { translate: 0 -2px; }
+}
+
+/* ---------- The catch popup (render/fishScene.ts catchPopup) ---------- */
+.fx-catch {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  z-index: 7;
+  min-width: 180px;
+  max-width: 86vw;
+  padding: 12px 16px 14px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: fx-pop 260ms steps(4, end) both;
+  pointer-events: none;
+}
+.fx-catch .fx-fish {
+  --fx-scale: 4;
+  margin: 0 auto 6px;
+  animation: fx-tail 420ms steps(4, end) infinite;
+}
+.fx-catch .fx-catch-title {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--wood);
+}
+.fx-catch .fx-catch-name {
+  margin-top: 4px;
+  font-size: 18px;
+  line-height: 1.35;
+}
+.fx-catch .fx-catch-size {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text);
+}
+.fx-catch[data-rank='rare'] { border-color: var(--rank-rare, #0099db); }
+.fx-catch[data-rank='ultra_rare'] { border-color: var(--rank-ultra_rare, #b55088); }
+.fx-catch[data-rank='legendary'] { border-color: var(--rank-legendary, #feae34); animation: fx-pop 260ms steps(4, end) both, fx-glow 700ms steps(2, end) infinite; }
+.fx-catch.out { animation: fx-away 260ms steps(4, end) both; }
+@keyframes fx-pop {
+  0% { transform: translate(-50%, -30%) scale(0.6); opacity: 0; }
+  60% { transform: translate(-50%, -54%) scale(1.08); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+@keyframes fx-away {
+  to { transform: translate(-50%, -80%) scale(0.9); opacity: 0; }
+}
+@keyframes fx-glow {
+  50% { filter: brightness(1.18); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-fish, .fx-wave, .fx-bobber, .fx-ring, .fx-bang, .fish-track::before, .fx-catch, .fx-catch .fx-fish {
+    animation: none !important;
+  }
+}

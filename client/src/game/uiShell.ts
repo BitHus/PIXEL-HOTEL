@@ -78,7 +78,7 @@ export async function setupUiShell(g: G3) {
   const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn room-only');
   sideButtons.prepend(questButton);
   // The Map button (step 9b), under the quest button: the travel panel with every place.
-  const mapButton = iconButton('map', 'Map: travel', () => panels.toggle('travel'), 'room-only');
+  const mapButton = iconButton('worlds', 'Worlds: travel', () => panels.toggle('travel'), 'room-only');
   questButton.after(mapButton);
   panels.onChange(() => mapButton.classList.toggle('on', panels.open === 'travel'));
   panels.onChange(() => hint.setCovered(panels.open !== null));

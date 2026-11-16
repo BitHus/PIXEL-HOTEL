@@ -2,7 +2,7 @@
 // step(session, inputs, dtMs, rng), in fixed FISH_TICK_MS ticks (like the dungeon), so it is
 // deterministic and the server can run the same code later.
 //
-//   cast -> 'wait': the bobber floats 2 to 8 s (rng), then it dips and a "!" shows
+//   cast -> 'wait': the bobber floats 2 to 8 s (rng), the fish nibbles 2 to 3 times just before, then it dips and a "!" shows
 //   -> 'bite': the "!" stays for the rank's window (700 ms for common, shorter for rarer fish): tap in time to hook
 //   -> 'reel': a bar with a fish swimming back and forth and a green catch box (like Stardew
 //      Valley's): holding (or tapping) pushes the box right, it falls back left by itself; keep the
@@ -28,6 +28,11 @@ import {
   FISH_REEL_FULL,
   FISH_REEL_MAX_MS,
   FISH_REEL_START,
+  FISH_NIBBLE_GAP_MAX_MS,
+  FISH_NIBBLE_GAP_MIN_MS,
+  FISH_NIBBLE_MS,
+  FISH_NIBBLE_PULSE_MS,
+  FISH_SWIM_ACCEL,
   FISH_TAP_KICK,
   FISH_THRUST,
   FISH_TICK_MS,
@@ -47,6 +52,8 @@ export type FishPhase = 'wait' | 'bite' | 'reel' | 'done';
 export type FishOutcome = 'caught' | 'escaped' | 'missed' | 'cancelled';
 
 export type FishEvent =
+  /** FISH-1: the fish nibbles at the bait (2 to 3 times just before the bite). */
+  | { t: 'nibble' }
   /** The bobber dipped: the "!" shows. */
   | { t: 'bite' }
   /** Hooked in time: the reel starts. */
@@ -76,6 +83,13 @@ export interface FishSession {
   fishTarget: number;
   fishTurnMs: number;
   fishSpeedMul: number;
+  /** FISH-1: the fish's speed (units/s, signed, smooth) and the way it faces (follows the speed). */
+  fishVel: number;
+  fishFace: 'left' | 'right';
+  /** FISH-1: 'wait': nibbles still to come, ms to the next one, and a pulse (ms left, 0 = none) the art can follow. */
+  nibblesLeft: number;
+  nibbleGapMs: number;
+  nibbleMs: number;
   /** The catch box: its middle, its speed, its width and how hard it falls (from the rod), and whether it is held. */
   boxPos: number;
   boxVel: number;
@@ -134,6 +148,11 @@ export function newFishSession(rng: Rng, gear: readonly string[] = []): FishSess
     fishTarget: FISH_BAR / 2,
     fishTurnMs: 0,
     fishSpeedMul: 1,
+    fishVel: 0,
+    fishFace: 'right',
+    nibblesLeft: rngInt(rng, 2, 3),
+    nibbleGapMs: 0,
+    nibbleMs: 0,
     boxPos: boxSize / 2,
     boxVel: 0,
     boxSize,
@@ -164,6 +183,9 @@ function hook(s: FishSession): void {
   s.fishTarget = s.fishPos;
   s.fishTurnMs = 600;
   s.fishSpeedMul = 1;
+  s.fishVel = 0;
+  s.fishFace = 'right';
+  s.nibbleMs = 0;
   s.boxPos = s.boxSize / 2;
   s.boxVel = 0;
   s.reelMs = 0;
@@ -197,18 +219,39 @@ function applyInput(s: FishSession, input: FishInput): void {
 const lo = (s: FishSession): number => s.boxSize / 2;
 const hi = (s: FishSession): number => FISH_BAR - s.boxSize / 2;
 
-function swim(s: FishSession, rng: Rng, dtS: number): void {
-  const r = FISH_REEL[s.rank];
-  s.fishTurnMs -= FISH_TICK_MS;
-  if (s.fishTurnMs <= 0 || Math.abs(s.fishTarget - s.fishPos) < 1) {
+/** The fish's swim state (the part of a session the path changes). */
+export type FishSwim = Pick<FishSession, 'fishPos' | 'fishTarget' | 'fishTurnMs' | 'fishSpeedMul' | 'fishVel' | 'fishFace'>;
+
+/**
+ * FISH-1: one tick of the fish's path, pure (rng passed in). It picks a target and a speed now and
+ * then (a turn; the rarer, the faster and the more darts), speeds up and slows down smoothly (a turn
+ * goes through a stop, never a snap), eases in at its target, stays in the bar, and faces the way it moves.
+ */
+export function swimStep(f: FishSwim, rank: Rank, rng: Rng, dtMs: number): FishSwim {
+  const r = FISH_REEL[rank];
+  const out: FishSwim = { ...f };
+  const dtS = dtMs / 1000;
+  out.fishTurnMs -= dtMs;
+  if (out.fishTurnMs <= 0 || Math.abs(out.fishTarget - out.fishPos) < 4) {
     // A new direction: anywhere in the bar (the far ends are a little rare), sometimes a sudden dart.
-    s.fishTarget = 6 + rng() * (FISH_BAR - 12);
-    s.fishTurnMs = rngInt(rng, r.turnMin, r.turnMax);
-    s.fishSpeedMul = rng() < r.dart ? 2.4 : 1;
+    out.fishTarget = 6 + rng() * (FISH_BAR - 12);
+    out.fishTurnMs = rngInt(rng, r.turnMin, r.turnMax);
+    out.fishSpeedMul = rng() < r.dart ? 2.4 : 1;
   }
-  const step = r.speed * s.fishSpeedMul * dtS;
-  const d = s.fishTarget - s.fishPos;
-  s.fishPos += Math.abs(d) <= step ? d : Math.sign(d) * step;
+  const maxV = r.speed * out.fishSpeedMul;
+  const d = out.fishTarget - out.fishPos;
+  // Ease in: the wanted speed falls to 0 as the target gets near.
+  const want = Math.sign(d) * Math.min(maxV, Math.abs(d) * 6);
+  const a = FISH_SWIM_ACCEL[rank] * out.fishSpeedMul * dtS;
+  out.fishVel += Math.max(-a, Math.min(a, want - out.fishVel));
+  out.fishPos = Math.max(0, Math.min(FISH_BAR, out.fishPos + out.fishVel * dtS));
+  if (out.fishPos === 0 || out.fishPos === FISH_BAR) out.fishVel = 0;
+  if (Math.abs(out.fishVel) > 1) out.fishFace = out.fishVel > 0 ? 'right' : 'left';
+  return out;
+}
+
+function swim(s: FishSession, rng: Rng): void {
+  Object.assign(s, swimStep(s, s.rank, rng, FISH_TICK_MS));
 }
 
 function moveBox(s: FishSession, dtS: number): void {
@@ -238,6 +281,16 @@ function tick(s: FishSession, rng: Rng): void {
   const dtS = FISH_TICK_MS / 1000;
   if (s.phase === 'wait') {
     s.waitMs -= FISH_TICK_MS;
+    s.nibbleMs = Math.max(0, s.nibbleMs - FISH_TICK_MS);
+    if (s.waitMs > 0 && s.waitMs <= FISH_NIBBLE_MS && s.nibblesLeft > 0) {
+      s.nibbleGapMs -= FISH_TICK_MS;
+      if (s.nibbleGapMs <= 0) {
+        s.nibblesLeft--;
+        s.nibbleMs = FISH_NIBBLE_PULSE_MS;
+        s.nibbleGapMs = rngInt(rng, FISH_NIBBLE_GAP_MIN_MS, FISH_NIBBLE_GAP_MAX_MS);
+        s.events.push({ t: 'nibble' });
+      }
+    }
     if (s.waitMs <= 0) {
       s.phase = 'bite';
       s.biteMs = FISH_BITE_MS[s.rank];
@@ -248,7 +301,7 @@ function tick(s: FishSession, rng: Rng): void {
     if (s.biteMs <= 0) finish(s, 'missed', { t: 'missed' });
   } else if (s.phase === 'reel') {
     s.reelMs += FISH_TICK_MS;
-    swim(s, rng, dtS);
+    swim(s, rng);
     moveBox(s, dtS);
     const r = FISH_REEL[s.rank];
     s.fill += (fishInBox(s) ? r.gain : -r.drain) * dtS;

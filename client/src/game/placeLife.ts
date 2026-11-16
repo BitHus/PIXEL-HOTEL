@@ -36,7 +36,7 @@ export async function setupPlaceLife(g: G8) {
     const parts = [orders > 0 ? `${orders} ${orders === 1 ? 'order' : 'orders'}` : '', coins > 0 ? `${coins} ${coins === 1 ? 'coin pile' : 'coin piles'}` : ''].filter(Boolean);
     mapBadge.hidden = parts.length === 0;
     mapBadge.textContent = parts.join(', ');
-    mapButton.title = parts.length > 0 ? `Map: travel (${parts.join(', ')} in your tavern)` : 'Map: travel';
+    mapButton.title = parts.length > 0 ? `Worlds: travel (${parts.join(', ')} in your tavern)` : 'Worlds: travel';
   };
   /** A guest's line (and a reaction face with it) in a bubble at reading pace. */
   const sayBubble = (guestId: number, text: string, icon?: Node): void => {

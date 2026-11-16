@@ -3,6 +3,7 @@
 import { TextureSource } from 'pixi.js';
 import './ui/ui.css';
 import './ui/skin.css';
+import './ui/fishingUi.css';
 import './ui/sizes.css';
 import './ui/layout.ts';
 import type { G0, Late, State } from './game/ctx.ts';

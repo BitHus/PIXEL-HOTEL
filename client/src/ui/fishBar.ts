@@ -10,6 +10,7 @@
 import { FISH_BAR, FISH_REEL_FULL, type FishPhase, type Rank } from '@pixel-hotel/shared';
 import { el, textButton, typing } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
+import { createFishSprite } from '../render/fishSprite.ts';
 import { setRank } from './rank.ts';
 
 export interface FishBarHooks {
@@ -56,7 +57,9 @@ export function createFishBar(parent: HTMLElement, hooks: FishBarHooks): FishBar
   const track = el('div', 'fish-track');
   const box = el('div', 'fish-box');
   const fish = el('div', 'fish-fish');
-  fish.appendChild(pixelIcon('fish'));
+  const swimmer = createFishSprite(['orange', 'gold']);
+  fish.appendChild(swimmer.el);
+  let lastFishPos = -1;
   track.append(box, fish);
   const meter = el('div', 'fish-meter');
   const fill = el('div', 'fish-fill');
@@ -132,6 +135,10 @@ export function createFishBar(parent: HTMLElement, hooks: FishBarHooks): FishBar
       box.style.left = pct(reel.boxPos - reel.boxSize / 2);
       box.style.width = pct(reel.boxSize);
       fish.style.left = pct(reel.fishPos);
+      // Face the way it swims; the tail beats faster the quicker it moves.
+      if (lastFishPos >= 0 && reel.fishPos !== lastFishPos) swimmer.face(reel.fishPos > lastFishPos ? 'right' : 'left');
+      swimmer.speed(lastFishPos < 0 ? 0.3 : Math.min(1, Math.abs(reel.fishPos - lastFishPos) / (FISH_BAR * 0.02)));
+      lastFishPos = reel.fishPos;
       fill.style.width = `${Math.max(0, Math.min(100, (reel.fill / FISH_REEL_FULL) * 100))}%`;
       // The box goes green while the fish is inside it.
       const f = feedback ?? { catching: Math.abs(reel.fishPos - reel.boxPos) <= reel.boxSize / 2, draining: false, tension: 0 };
