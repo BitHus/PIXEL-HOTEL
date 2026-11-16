@@ -36,3 +36,7 @@ So the Growtopia likes are served top-down: building/breaking/splicing/planting 
 ## Left open at the usage limit (17 Nov)
 ARTIST: counter_up/right, register, tap_stand (arch with two levers), lamp, menu_board redrawn but NOT seen in the game; still to draw: shop_rug recolour, mug_shelf, banner; ghost lever (static right lever stays visible while the lever strip plays: hide it); coder must align furniture.json heights (register ~34, lamp ~28, menu_board z14-44). Aseprite sources of the last batches are UNSAVED documents in the open Aseprite window (save them to art-src/aseprite/ before closing; the PNGs are exported and committed).
 TESTER: running a playtest (TESTER RUN 2 in docs/FIXLIST.md incl. the hat bug); read it first, fix list = next coder task. After it: ST1 stacking, then SG3d, SG4b, SG5.
+
+## Helpers (free workers; test results)
+Ollama local (qwen2.5-coder:7b, qwen3:8b): FAILED file-edit test (bad tool calls) 17 Nov, use only for plain text drafting. Gemini CLI: key set, scratch test running. Groq, OpenRouter: waiting for owner keys.
+## Stopped by the owner 17 Nov (unfinished, files partly in the tree, NOT committed): ui catalog redesign, coder ONBOARD-1 (name only, guide.json started), artist hood_coif/hats. Resume when the owner says.
