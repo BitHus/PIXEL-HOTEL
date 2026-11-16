@@ -49,3 +49,53 @@ Findings, severity order:
 Code icons audited next to their models (146 shape icons without PNG, 69 PNG icons). Wrong read, now redrawn as PNG (art-src/aseprite/icons_audit_r1.aseprite): wall_clock (was a sign), wall_mirror (orb), music_box (chest), pet_basket (box), dartboard (sign), antler_mount (bone), tap_stand (candle stand), bat_wing_fan (banner), dice_cup (plain mug), coat_rack (lamp post), spice_bundle (single leaf), iron_brazier (torch), mimic_tongue (red tag).
 Checked and left (read fine): all fish, food bowls/plates, drinks, ores, bars, blocks, chairs/benches/tables/thrones, lamps, rugs, banners, crowns, rings. Weak but acceptable, redraw if time: window_curtains (banner shape), throne_piece (plain block), register (till box), cloth (pink slab), pearl_chandelier.
 Not checked in the game: only icons next to code icons in a contact sheet, not in the real bag or catalog.
+
+## TESTER RUN 2 (headless) 17 Nov, production build via vite preview, Chromium 1000x700 (phone 420x760 NOT rerun, see NOT SEEN). Specs: e2e/run2.spec.ts, e2e/hats.spec.ts (+ route.spec.ts). Screenshots: C:\Users\ajren\scratch-r2\shots (desktop-r2-*.png, desktop-hat-8*.png), hat montages C:\Users\ajren\scratch-r2\hats-*.png
+Console: no errors, no 404s, no exceptions in the whole run.
+PROVEN WORKING (state checked): stove Cook -> batch ready in ~20 s -> tap collects (roasted_turnip in bag, popup); barrel Brew root ale (brew saved, 5 turnips used); taps Load (tap 2 got 4 mugs); hold-pour end to end (guest tapped, avatar waits, hold on stand, release gives tray mug with perfect:true, delivered to the guest); prep table placed in the save and moved in build mode; planting 3 turnip seeds (plantedAt/readyAt set, 2 min = SEED_GROW_MS common, seeds 6 -> 3); Avatar panel Hat tab: Wear puts the cook cap on the preview AND the world avatar (hat bug of run 1 is fixed); 3 h offline (updatedAt shifted): guests stay on 2 open orders, 1 coin pile appears, no crash.
+Findings, severity order:
+1. MEDIUM, hats from behind: for hats that hide the hair (cook cap, straw, knight helm, wool, skull cap, miner lamp, tavern keeper) the head shows plain skin from the back (no hair-back, no hat back): reads as a bald bag. Also felt_cap/hood coif in walk-up and idle-up draws a big dark-green oval from head to waist (reads as a cloak, not a cap). Front view is fine (face and hat show). Area: avatar hat layer up-facing strips, hair hide rule. Shots: hats-up.png, hats-idle.png, desktop-hat-83-after-wear.png.
+2. MEDIUM, first-steps card and orders strip overlap at the top: the order chips (2 to 3 mug chips) sit on top of the first-steps text ("Tap the brewi...tart a brew.") and on the Bar panel tabs. Area: ui/ordersStrip position vs hint card and panelShell. Shots: desktop-r2-30-taps-before.png, desktop-hat-81-hat-tab.png.
+3. MEDIUM, toasts cover panels: the persistent toast ("The barrel turns crops into mugs...", "Drinks are poured from the taps...") overlaps the lower part of the Stove, Brewing and Taps panels (cut-off recipe rows) and the same intro toast text is still shown after changing room to the farm (stale, not cleared on room change). Shots: desktop-22-brew-panel (run route), desktop-r2-60-farm.png.
+4. MEDIUM, farm: in two farm shots no soil patch and no planted turnips are visible (plants exist in the save at cells 2,2 to 4,2, 6 x 2 soil patch in the data); the screen showed plain grass with the avatar low in the frame at zoom 3. Not verified whether the soil is not drawn or the camera was off (my test turned Follow camera off and set a camera): please check by hand that soil and plants are drawn and the camera frames the soil. Shots: desktop-r2-61-farm-planted.png. Harvest NOT verified (api answered "walk" after my reload; the plant needs a hit from reach).
+5. MEDIUM, kitchen tint: build mode on shows an orange screen border but no visible build grid and no kitchen tint around stove / prep table in desktop-r2-50-build-tint.png (maybe Settings grid is off by default, then tint hidden too: tint should show while placing regardless). Check the kitchen hint exists at all. Area: render/cellGrid.ts.
+6. LOW, pour bar: the pour bar and its green window float at the avatar head, about 30 px above the mug/stand and over the avatar, not at the mug as the brief says. Shot: desktop-r2-41-pouring.png.
+7. LOW, stove panel layout: the "-" and "+" steppers wrap to two lines (the "+" under the number); the long prep-table help text pushes the recipe list far down; only 1 recipe is visible without scrolling. Area: ui cooking panel CSS.
+8. LOW, counter art and scale: the avatar standing at the bar is taller than the counter plus register (counter about 40 px high, avatar 54 px), so staff reads as standing on top of the bar and the register is as wide as the counter's 1/3. The register and tap stand look aligned with the counter top (ok). Round table, stools, barrel and stove read well and are consistent in scale. A prep table 2 cells wide placed 1 cell right of the stove overlaps it (my seeding, not a game bug: placing is checked by the game).
+9. LOW, dungeon HUD: still the wide beige run-bag bar (12 slots) plus "0 / 0" counters with no clear Leave button (stairs only); lunch box counter shows 0 while a roasted turnip was in the bag (not equipped, but the slot gives no hint how to take it). The dungeon look itself (crypt tiles, torches, campfire) is good. Fight NOT tested (no enemy near the start, headless clicks only).
+10. LOW, balance data: crops.json says turnip growMinutes 5 but planted turnip is ready after 2 min (SEED_GROW_MS common); one of them is stale text. Check the Book / plant tooltip.
+11. LOW, "Nice, that is one more done." first-steps toast repeats on every unrelated action (bar panel, pour) while the card still says step 1/8 or 2/8.
+12. LOW, test note, quest card: Quest card (100 gold hint) still opens over the top right panel area and the Map side badge ("2 orders") overlaps the Quest button; the badge text runs into the next icon.
+
+### A. THINGS TO IMPROVE (ranked, most valuable first)
+- [ui] Top of the screen is crowded: first-steps card, orders strip, quest card, panels fight for the same band. One stack with a fixed order (orders strip always visible, hint card below it, quest card collapsed to its seal) and panels that start below it.
+- [ui] Toasts: short, one at a time, never over an open panel (put them above the hotbar only when no panel is open, else inside the panel header); clear stale tutorial toasts on room change.
+- [artist] Make the bar the hero: the counter is small next to the avatar. Raise the counter and shelf, add mugs/bottles on the back wall behind it, a visible lit tap handle so the pour reads from across the room.
+- [coder] Pour bar should anchor on the mug at the stand (and be big on a phone); show the perfect window larger the first 3 pours, then smaller.
+- [ui] Stove and Brewing panels: show the ingredient icons with 0/2 counts in one row, a big Cook/Brew button, the help text collapsed behind a small "?" (now 5 lines before the first recipe).
+- [coder] Tell the player what is wrong when a button is greyed (Cook/Brew disabled: "need 2 turnip": the red chips do it, but the button should say it too).
+- [ui] Hat tab: 14 hats in a plain grid, locked ones are all unlocked in my test; show name under the icon on hover/long press and a lock overlay with the unlock hint.
+- [coder] First-steps pacing: step 1 asks for a brew that needs crops the new player has not got (6 turnips? none): either give 2 turnips and a potato at start or point the first step to the farm.
+- [artist] Avatar back views for hat layers (see finding 1) and a visible hair-under-hat rule.
+
+### B. MISSING OR TO PRODUCE
+- [artist] Soil/plant art check on the farm (rows, sprout/small/full turnip) and a visible farm fence/hedge frame so the farm does not read as an empty meadow.
+- [artist] Cat (rules exist, not drawn), mug_shelf, banner, wall decor around the bar so the tavern is not a plain brown floor (floor is one flat tile pattern with no rug, no wall shadow).
+- [artist] Guest variety: two seated guests look similar boxes-with-hair; add hats/aprons per guest type and a coin/heart reaction icon set.
+- [artist] Dungeon enemies and chest art seen in a real fight (not checked), a Leave/stairs marker visible from afar.
+- [coder] Sound: no audio at all was audible to test; pour glug, coin, cook ding, brew bubble, UI click (AU-1 not started).
+- [ui] A Leave dungeon button (confirm: lose half the gold) and a clear "Go deeper / Leave" at the exit.
+- [coder] Settings: a visible Build grid + kitchen tint toggle in the build toolbar, not only Settings.
+- [ui] Cook panel: when the stove is busy show a progress bar and "ready in 12 s" on the stove itself (world-space bar over the stove, like the pour bar).
+
+### C. MORE FUN / GAMEPLAY IDEAS (small, fit GATHER-MAKE-SERVE-EARN-BUILD-SHOW)
+- [coder] Combo tips: serving 3 guests in a row with perfect pours gives a "Streak" bonus and a small sparkle; adds skill to SERVE and makes holding the tap matter.
+- [coder] Dish pairing: a guest who gets a drink AND a dish orders again or tips a gem; links MAKE (stove + barrel) to EARN and rewards using both machines.
+- [coder] Regular guest names and a favourite order shown above the seat; serve it right = bigger tip. Gives guests identity and a reason to stock variety.
+- [coder] A daily/session "special": the board picks one dish at +20% price when on the menu; simple SERVE/EARN decision without timers pushing purchase.
+- [artist][coder] SHOW: a Tavern sign you can paint (name + 3 symbols) and a "Take a photo" button that saves the room view as an image to share. Cheap SHOW for the One Inn idea.
+- [coder] Farm: a hot streak "golden turnip" 1 in 20 plants that grows in half time and sells for 5x; adds a tiny surprise to GATHER.
+- [coder] Dungeon: a lunch box choice before the door (take roasted turnip: +heal, take ale: +attack for 1 floor); links MAKE to the dungeon.
+- [ui] "Closing report" popup when you leave the tavern for a while (guests served, gold, tips, best pour): clarity plus a reason to come back (offline catch-up now only silently adds 1 coin pile).
+
+NOT SEEN: phone 420x760 pass for run 2 (only the 1000x700 desktop run was done), dungeon fight and the Leave flow, farm harvest, the Pour on touch, build rotate of the stove (rotate button click ran, result not inspected), wall decor, the lakeside after the new art. Test notes: world taps need ?e2e (window.__ph.worldToScreen) and the camera reset (Follow camera off); the intro toasts and the camera follow make blind taps unreliable.
