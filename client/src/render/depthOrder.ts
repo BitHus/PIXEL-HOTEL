@@ -36,8 +36,11 @@ export function itemDepthKey(item: FurnitureItem, under?: FurnitureItem): DepthK
  * An avatar's key. Avatars use negative uids so they never tie with an item. `seat` is the item
  * the avatar sits on, if any.
  */
+/** Seats with no backrest: a sitter facing up is still in FRONT of them (ART-1: never behind its stool). */
+const BACKLESS_SEATS: ReadonlySet<string> = new Set(['bar_stool']);
+
 export function avatarDepthKey(avatar: Avatar, seat?: FurnitureItem): DepthKey {
   if (!seat) return { y: avatar.y, x: avatar.x, uid: -avatar.id };
-  const behind = avatar.state !== 'lie' && seat.facing === 'up';
+  const behind = avatar.state !== 'lie' && seat.facing === 'up' && !BACKLESS_SEATS.has(seat.typeId);
   return { ...baseKey(seat), sub: { y: behind ? -1 : 2, x: 0, uid: -avatar.id } };
 }

@@ -77,6 +77,11 @@ describe('compareDepth', () => {
     expect(order({ chair: itemDepthKey(up), avatar: avatarDepthKey(sitter, up) })).toEqual(['avatar', 'chair']);
   });
 
+  it('keeps a sitter in front of a backless stool in every facing', () => {
+    const stool = { ...item(5, 'bar_stool', 100, 100), facing: 'up' as const };
+    expect(order({ stool: itemDepthKey(stool), avatar: avatarDepthKey(avatar(100, 84), stool) })).toEqual(['stool', 'avatar']);
+  });
+
   it('draws a lying avatar right after its bed in every facing, before things in front of the bed', () => {
     for (const facing of ['down', 'right', 'up', 'left'] as const) {
       const bed = { ...item(5, 'bed', 100, 100), facing };
