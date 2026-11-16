@@ -83,3 +83,14 @@ describe('cellsBetween', () => {
     for (let i = 1; i < diag.length; i++) expect(Math.abs(diag[i]!.c - diag[i - 1]!.c) + Math.abs(diag[i]!.r - diag[i - 1]!.r)).toBe(1);
   });
 });
+
+import { steerCellChange } from './hold.ts';
+describe('steerCellChange', () => {
+  it('fires on the first call and when the cell changes only', () => {
+    const k = steerCellChange(null, { x: 5, y: 5 }, 16);
+    expect(k).toBe('0,0');
+    expect(steerCellChange(k, { x: 15, y: 1 }, 16)).toBeNull();
+    expect(steerCellChange(k, { x: 16, y: 1 }, 16)).toBe('1,0');
+    expect(steerCellChange(k, { x: -1, y: 1 }, 16)).toBe('-1,0');
+  });
+});

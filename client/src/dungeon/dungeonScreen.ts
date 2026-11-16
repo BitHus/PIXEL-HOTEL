@@ -18,6 +18,8 @@ import {
   FX_SHAKE_STEP_MS,
   DUNGEON_CSS_PX_PER_ART_PX,
   DUNGEON_DEVICE_PX_PER_ART_PX,
+  DUNGEON_NAV_CELL,
+  steerCellChange,
   LEVEL_FLASH_MS,
   LEVEL_TOTAL_XP,
   MINE_LANTERN_MS,
@@ -123,6 +125,8 @@ export class DungeonScreen {
     });
   }
 
+  private steerKey: string | null = null;
+
   get isActive(): boolean {
     return this.active;
   }
@@ -180,6 +184,24 @@ export class DungeonScreen {
     }
     const chest = this.view.chestAt(run, p);
     this.input(chest ? { t: 'click_point', x: chest.x, y: chest.y } : { t: 'click_point', x: p.x, y: p.y });
+  }
+
+  /**
+   * Hold to walk / steer: walks toward a world point while the pointer is down; re-paths only when the pointer
+   * enters another 16 px cell. Never hits (on an enemy it only walks to its spot; a hit stays one per tap).
+   * steer(null) resets the cell memory (call on release).
+   */
+  steer(p: Point | null): void {
+    if (p === null) {
+      this.steerKey = null;
+      return;
+    }
+    const run = this.run;
+    if (!this.active || this.halted || !run || run.status !== 'active') return;
+    const key = steerCellChange(this.steerKey, p, DUNGEON_NAV_CELL);
+    if (key === null) return;
+    this.steerKey = key;
+    this.input({ t: 'click_point', x: p.x, y: p.y });
   }
 
   /** Hold to repeat (BG5b): the mine rock under a point, or null. Only in the mine; fights stay one hit per tap. */

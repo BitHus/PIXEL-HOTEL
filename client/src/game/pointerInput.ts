@@ -43,7 +43,15 @@ export async function setupPointerInput(g: G15) {
       return true;
     },
     onWalkHold: (screen) => {
-      if (dungeon.isActive || st.selectedBlock !== null || holdBusyElsewhere() || lakeside.fishing || menu.uid !== null) return false;
+      // Dungeon: holding still walks toward the pointer and follows it (moves steer, never hit; the fight stays one hit per tap).
+      if (dungeon.isActive) {
+        if (panels.open !== null) return false;
+        st.walkHold = true;
+        dungeon.steer(null);
+        dungeon.steer(screenToWorld(screen, dungeon.camera));
+        return true;
+      }
+      if (st.selectedBlock !== null || holdBusyElsewhere() || lakeside.fishing || menu.uid !== null) return false;
       if (hold.active) return false;
       st.walkHold = true;
       st.walkHoldCell = "";
@@ -54,7 +62,8 @@ export async function setupPointerInput(g: G15) {
     },
     onHoldMove: (screen) => {
       if (st.walkHold) {
-        steerWalk(screen);
+        if (dungeon.isActive) dungeon.steer(screenToWorld(screen, dungeon.camera));
+        else steerWalk(screen);
         return;
       }
       if (hold.repeating) {
@@ -72,6 +81,7 @@ export async function setupPointerInput(g: G15) {
     },
     onHoldEnd: () => {
       st.walkHold = false;
+      dungeon.steer(null);
       hold.stop();
     },
     onPoint: (screen, kind, target) => {
@@ -193,6 +203,12 @@ export async function setupPointerInput(g: G15) {
       return placer.active ? 'draw' : 'pan';
     },
     onDraw: (phase, screen) => {
+      // Dungeon: a quick drag never pans (the camera follows the avatar); it steers the walk like a hold.
+      if (dungeon.isActive) {
+        if (panels.open !== null) return;
+        dungeon.steer(phase === 'end' ? null : screenToWorld(screen, dungeon.camera));
+        return;
+      }
       const world = screenToWorld(screen, st.shown);
       if (placer.active) {
         const moved = placer.moving ? placer.uid : null;

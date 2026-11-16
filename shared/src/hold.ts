@@ -57,3 +57,12 @@ export function cellsBetween(a: { c: number; r: number }, b: { c: number; r: num
   }
   return out;
 }
+
+/**
+ * Hold to walk / steering (dungeon): the walk is re-pathed only when the pointer moves to another cell.
+ * Returns the new cell key when it changed (or on the first call, prev = null), else null.
+ */
+export function steerCellChange(prev: string | null, p: { x: number; y: number }, cellPx: number): string | null {
+  const key = `${Math.floor(p.x / cellPx)},${Math.floor(p.y / cellPx)}`;
+  return key === prev ? null : key;
+}
