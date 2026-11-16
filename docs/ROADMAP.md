@@ -13,6 +13,14 @@ another part (gather -> craft -> decorate / upgrade -> earn -> go further), the 
 something to look forward to, and the hotel and shop show what the player has achieved.
 
 ## PRIORITY ORDER (manager decision 16 Nov; the owner said: look at the whole roadmap and decide; this order wins over the phase order below)
+THE GAME IN ONE PAGE: docs/GAME-VISION.md (owner 16 Nov: combine Growtopia + Travellers Rest + Habbo into one logical game). Three pillars: the TAVERN is the heart (Travellers Rest), the BLOCK WORLD is the engine (Growtopia/Pixel Worlds: blocks, seeds, open splicing, gems), IDENTITY AND HOME (Habbo: avatar, suite, stars). One loop: GATHER -> MAKE -> SERVE -> EARN -> BUILD -> SHOW -> deeper GATHER. Where the list below disagrees, this order wins:
+ A. CORE FEEL now: hands-on pour + deliver, smoothness, first ten minutes, art pass (floors/walls, furniture, icons, avatar), headless-Chrome test after every batch.
+ B. BLOCK WORLD DEEP: plant on any block, open splicing + preview + Book Splice tab, dungeon layout redo (docs/PLAN-SPLICE-DUNGEON.md).
+ C. TAVERN DEEP: Inn Renown ranks (RN-1), regulars and guests with tastes (RG-1, GT-1, NC-1), orders board without timers (BD-1, with 9i questline), menu tiers from splice foods, cleaning + closing report, staff and guest rooms, big projects.
+ D. IDENTITY AND HOME: finish avatar/NPC redesign and wardrobe, suite showcase, room stars and One Inn score, pets, pastimes, titles and badges.
+ E. WORLD: new areas, seasons and events, deeper dungeon and mine, potions and accessories.
+ F. ONLINE (owner go): safety first (mute/report/filter/server limits), then visits by name, lobby tavern, leaderboards; trading stays held.
+
 Rule: the game must be fun and good-looking in a browser BEFORE it gets bigger or online. Depth that feeds the existing loops beats new areas.
 VIBES FIRST (owner 16 Nov, updated): the game must look and feel like a cozy MEDIEVAL pixel game (Travellers Rest is the reference; see docs/ART-STYLE.md MEDIEVAL DIRECTION). Four art/feel tracks run in parallel with the features and rank above 2 onward: (A) furniture and item redo with matching icons (docs/ART-REDO.md); (B) CHARACTERS: a real pixel avatar and NPCs, medieval outfits and hats (docs/PLAN-CHARACTERS.md; U1 approved); (C) the OUTDOORS REWORK (1b below); (D) medieval content: new furniture, clothes, recipes and decor in medieval style (anvil, weapon rack, banners, chandelier, hearth, trestle tables).
 NOW (in progress): C6 done; N1 done; art redo round 2; C11 outdoors hooks; character plan being written.
