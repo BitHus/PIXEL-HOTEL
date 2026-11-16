@@ -1,6 +1,6 @@
 # STATUS: where we are in the roadmap (the manager rewrites this after EVERY batch; read it first, 40 lines max)
 
-Updated 2026-11-16 late (SG3b/c content + R6 kitchen set pushed; artist redrawing the starting tavern set RUNNING; tester RUNNING incl. hat bug).
+Updated 2026-11-17 (batch 1 pushed: icon audit 13 icons, register/lamp heights, hat fixes, ST1 stacked blocks SAVE 32; tester RUN 2 running). NEXT: ST2 (stack look; tap-to-place-on-top needs a design call), tester fix list, artist: shop_rug/mug_shelf/banner, ghost lever, hat PNGs, weak icons (window_curtains, throne_piece, register, cloth, pearl_chandelier).
 
 ## Vision check (rewrite each batch): the loop is GATHER -> MAKE -> SERVE -> EARN -> BUILD -> SHOW. Works in code: all steps. Weakest link now: nobody has played it in a browser yet (tester running), the tavern needs life (animation done v1), long-term goals (renown, questline) missing. Bugs and small events may jump the queue; return to this line afterwards.
 
