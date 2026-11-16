@@ -21,8 +21,9 @@ import {
 } from '@pixel-hotel/shared';
 import { hash01 } from '../fx/shake.ts';
 import { wallTorchSpots } from './dungeonArt.ts';
+import { decorLights } from './decor.ts';
 
-export type LightKind = 'torch' | 'lantern' | 'exit' | 'chest' | 'gold_chest' | 'crown';
+export type LightKind = 'torch' | 'lantern' | 'exit' | 'chest' | 'gold_chest' | 'crown' | 'decor';
 
 export interface LightSource {
   kind: LightKind;
@@ -32,6 +33,8 @@ export interface LightSource {
   alpha: number;
   /** Seeds the flicker so pools do not pulse together. */
   seed: number;
+  /** Own tint (props: the glow colour from propArt); else the colour of the kind. */
+  color?: string;
 }
 
 /** A radius rounded down to a whole number of steps (at least one step). */
@@ -67,7 +70,7 @@ export function mineLanternSpots(map: DungeonMap): { x: number; y: number }[] {
   return out;
 }
 
-/** The lights that never move on a floor: wall torches (crypt) or lanterns (mine) and the exit. Stable per map. */
+/** The lights that never move on a floor: wall torches (crypt) or lanterns (mine), the exit and the glowing props (DG2). Stable per map. */
 export function staticLights(map: DungeonMap, place: RunPlace): LightSource[] {
   const out: LightSource[] = [];
   const B = DUNGEON_BLOCK;
@@ -78,6 +81,7 @@ export function staticLights(map: DungeonMap, place: RunPlace): LightSource[] {
   if (map.exit.c >= 0) {
     out.push({ kind: 'exit', x: (map.exit.c + 0.5) * B, y: (map.exit.r + 0.5) * B, radius: LIGHT_EXIT_PX, alpha: LIGHT_EXIT_ALPHA, seed: map.exit.c * 97 + map.exit.r });
   }
+  out.push(...decorLights(map));
   return out;
 }
 

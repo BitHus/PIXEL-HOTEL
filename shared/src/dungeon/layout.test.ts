@@ -258,9 +258,9 @@ describe('crypt layout (DG1, section 10 LAYOUT)', () => {
     let total = 0;
     let worst = 0;
     for (let seed = 1; seed <= 300; seed++) {
-      const t = performance.now();
+      const t = Date.now();
       generateFloor(seed, 1 + (seed % 3), 2);
-      const d = performance.now() - t;
+      const d = Date.now() - t;
       total += d;
       worst = Math.max(worst, d);
     }

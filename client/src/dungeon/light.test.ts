@@ -64,3 +64,20 @@ describe('light', () => {
     expect(slow.failed).toBe(true);
   });
 });
+
+describe('light: props (DG2)', () => {
+  it('braziers and other glow props add static lights; old maps have none', () => {
+    const m = map();
+    const base = staticLights(m, 'crypt').length;
+    (m as { decor?: unknown }).decor = [
+      { id: 1, kind: 'brazier', c: 10, r: 12, solid: false },
+      { id: 2, kind: 'barrel', c: 11, r: 12, solid: false },
+      { id: 3, kind: 'gem_pile', c: 12, r: 12, solid: false },
+    ];
+    const lights = staticLights(m, 'crypt');
+    expect(lights.length).toBe(base + 1);
+    const l = lights.find((x) => x.kind === 'decor')!;
+    expect(l.color).toBeTruthy();
+    expect(l.x).toBe(10.5 * DUNGEON_BLOCK);
+  });
+});

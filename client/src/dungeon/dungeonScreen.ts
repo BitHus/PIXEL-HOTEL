@@ -110,6 +110,8 @@ export class DungeonScreen {
     this.view.world.visible = false;
     ctx.app.stage.addChild(this.view.world, this.view.light.vignette);
     this.floats = new FloatTexts(ctx.ui);
+    // One landmark line per floor, when it first comes into sight (toasts stay at reading pace).
+    this.view.onLandmark = (text) => ctx.toast(text);
     // Screen overlays; shown and hidden here, drawn by CSS (.hurt-edge, .low-hp). Empty and invisible without that CSS.
     this.hurtEdge = document.createElement('div');
     this.hurtEdge.className = 'hurt-edge';

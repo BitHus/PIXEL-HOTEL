@@ -24,3 +24,24 @@ describe('fog', () => {
     expect(fog.isSeen(map, { x: 600, y: 100 })).toBe(false);
   });
 });
+
+describe('fog with extras (DG2)', () => {
+  it('lights and remembers secret and vault blocks outside the bounding rects', () => {
+    const f = generateFloor(7, 1, 2).map;
+    const extra = f.extras?.[0];
+    expect(extra).toBeDefined();
+    const p = { x: (extra!.x + 0.5) * 32, y: (extra!.y + 0.5) * 32 };
+    const fog = new FogMemory();
+    fog.update(f, p);
+    expect(fog.isLit(f, p)).toBe(true);
+    fog.update(f, { x: 1000, y: 1000 });
+    expect(fog.isSeen(f, p)).toBe(true);
+  });
+  it('an old map without extras, links or decor still works', () => {
+    const { extras, links, decor, ...old } = generateFloor(7, 1, 2).map;
+    void extras; void links; void decor;
+    const fog = new FogMemory();
+    expect(fog.update(old as typeof map, { x: 100, y: 100 })).toBe(true);
+    expect(litBlocks(old as typeof map, { x: 100, y: 100 }).size).toBeGreaterThan(0);
+  });
+});

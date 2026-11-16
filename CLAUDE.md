@@ -237,6 +237,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   sellable); no timers, limited offers or daily tricks that push buying. The first release is a small private test.
 
 14. WORKING RULES FOR YOU (the AI)
+- NEWS: at the start read the top of docs/NEWS.md; at the end of every batch add a 1 to 3 line entry on top (format in the file).
 - Do one step at a time. Do not build things from later steps. Keep files small and named by
   purpose. Constants go in shared/config.ts, not in code.
 - The order of work is docs/ROADMAP.md. Step prompts are in docs/NEXT-STEPS.md. Details of

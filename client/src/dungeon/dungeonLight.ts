@@ -35,6 +35,7 @@ const COLORS: Record<LightSource['kind'], string> = {
   chest: WARM,
   gold_chest: PALETTE[11]!,
   crown: CROWN,
+  decor: WARM,
 };
 
 
@@ -169,7 +170,7 @@ export class DungeonLight {
         lg.addChild(sp);
       }
       sp.visible = true;
-      sp.tint = COLORS[s.kind];
+      sp.tint = s.color ?? COLORS[s.kind];
       sp.position.set(Math.round(s.x), Math.round(s.y));
       sp.width = sp.height = rad * 2;
       sp.alpha = Math.min(1, s.alpha * 1.6);

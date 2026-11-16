@@ -39,6 +39,7 @@ import { DepthLayer } from '../render/depthLayer.ts';
 import { iconTexture } from '../render/drawIcon.ts';
 import { CRYPT_OUTLINE, ENEMY_HEIGHT, ROCK_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit, drawRock } from './dungeonArt.ts';
 import { FogMemory } from './fog.ts';
+import { decorAnimated, decorIsFlat, drawDecorProp, landmarkOf, landmarkToast } from './decor.ts';
 import { DungeonLight } from './dungeonLight.ts';
 
 /** Seen-but-not-lit blocks under the light layer: a cool dark blue (palette night) at this alpha. */
@@ -145,6 +146,12 @@ export class DungeonView {
   private readonly rocks = new Map<number, RockView>();
   /** Gem piles lying on the floor (step BG4), and the ones flying to the player. */
   private readonly gems = new Map<number, GemView>();
+  /** Props (map.decor, DG2): flat ones lie under the avatars, tall ones sort with them. Redrawn per flame frame when they burn. */
+  private readonly flatDecor = new Container();
+  private decorViews: { id: number; kind: string; c: number; r: number; root: Container; frame: number; flat: boolean }[] = [];
+  /** Called once per floor when the landmark first comes into sight (the screen shows it as a toast). */
+  onLandmark: ((text: string) => void) | null = null;
+  private landmarkSaid = false;
   readonly fogMemory = new FogMemory();
   private map: DungeonMap | null = null;
   /** Where the player is drawn now (world px). */
@@ -154,7 +161,7 @@ export class DungeonView {
     this.player = new AvatarSprite(look);
     this.player.container.eventMode = 'none';
     this.world.eventMode = 'none';
-    this.world.addChild(this.base, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog, this.fogSprite, this.light.container);
+    this.world.addChild(this.base, this.flatDecor, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog, this.fogSprite, this.light.container);
     this.objects.add(this.player.container, { y: 0, x: 0, uid: PLAYER_ID });
   }
 
@@ -174,6 +181,7 @@ export class DungeonView {
     }
     this.exit.position.set((map.exit.c + 0.5) * DUNGEON_BLOCK, (map.exit.r + 1) * DUNGEON_BLOCK);
     this.base.addChild(this.exit);
+    this.setDecor(map);
     for (const id of [...this.enemies.keys()]) this.removeEnemy(id);
     for (const d of this.dying.splice(0)) this.destroyEnemyView(d.v);
     this.fadeRequests.clear();
@@ -186,6 +194,62 @@ export class DungeonView {
     this.fogMemory.reset();
     this.light.setMap(map, place);
     this.fogDirty = true;
+  }
+
+  /** Builds the props of map.decor (none on the mine or on a run saved before DG1). */
+  private setDecor(map: DungeonMap): void {
+    for (const d of this.decorViews) {
+      if (d.flat) d.root.destroy({ children: true });
+      else {
+        this.objects.remove(d.root);
+        d.root.destroy({ children: true });
+      }
+    }
+    this.decorViews = [];
+    this.landmarkSaid = false;
+    const B = DUNGEON_BLOCK;
+    for (const d of map.decor ?? []) {
+      const flat = decorIsFlat(d.kind);
+      const root = drawDecorProp(d.kind, d.c, d.r, 0);
+      root.position.set((d.c + 0.5) * B, (d.r + 1) * B);
+      root.visible = false;
+      root.eventMode = 'none';
+      if (flat) this.flatDecor.addChild(root);
+      else this.objects.add(root, { y: (d.r + 1) * B, x: (d.c + 0.5) * B, uid: 1_000_000 + d.id });
+      this.decorViews.push({ id: d.id, kind: d.kind, c: d.c, r: d.r, root, frame: 0, flat });
+    }
+  }
+
+  /** Per frame: props show once seen; burning ones swap to the next flame frame; the landmark line fires once. */
+  private updateDecor(map: DungeonMap, clockMs: number): void {
+    const B = DUNGEON_BLOCK;
+    const frame = Math.floor(Math.max(0, clockMs) / 110) % 3;
+    for (const d of this.decorViews) {
+      const seen = this.fogMemory.seen.has(d.r * map.cols + d.c);
+      d.root.visible = seen;
+      if (!seen || d.frame === frame || !decorAnimated(d.kind)) continue;
+      d.frame = frame;
+      const next = drawDecorProp(d.kind, d.c, d.r, clockMs);
+      next.position.copyFrom(d.root.position);
+      next.eventMode = 'none';
+      if (d.flat) {
+        this.flatDecor.addChild(next);
+        d.root.destroy({ children: true });
+      } else {
+        this.objects.remove(d.root);
+        d.root.destroy({ children: true });
+        this.objects.add(next, { y: (d.r + 1) * B, x: (d.c + 0.5) * B, uid: 1_000_000 + d.id });
+      }
+      d.root = next;
+    }
+    if (!this.landmarkSaid) {
+      const lm = landmarkOf(map);
+      if (lm && this.fogMemory.seen.has(lm.r * map.cols + lm.c)) {
+        this.landmarkSaid = true;
+        const text = landmarkToast(map);
+        if (text) this.onLandmark?.(text);
+      }
+    }
   }
 
   get mapRect(): { x: number; y: number; w: number; h: number } {
@@ -346,6 +410,7 @@ export class DungeonView {
       this.fogDirty = false;
       this.drawFog(map);
     }
+    this.updateDecor(map, clockMs);
     this.light.update(at, clockMs, run.chests, run.enemies, (q) => this.fogMemory.isSeen(map, q));
     // The mine has no exit block (NO_EXIT is off the map).
     this.exit.visible = map.exit.c >= 0 && this.fogMemory.seen.has(map.exit.r * map.cols + map.exit.c);
