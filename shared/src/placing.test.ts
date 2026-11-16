@@ -53,6 +53,18 @@ describe('placing a new item', () => {
     expect(planGhost(room, [], startNewPlacing('wall_torch', { x: 133, y: 40 }, null))).toMatchObject({ x: 132, y: 0 });
   });
 
+  it('small decor follows the pointer freely over a table top and is confirmed there', () => {
+    const table = atCell('round_table', 6, 5); // x 192..256, y 160..224
+    const s = startNewPlacing('candle_stand', { x: 213, y: 190 }, null);
+    const p = planGhost(room, [table], s);
+    expect(p).toMatchObject({ x: 212, y: 208, onItemUid: table.uid, ok: true });
+    expect(planGhost(room, [table], s, false)).toMatchObject({ x: 213, y: 206 });
+    const placed = confirmPlacing(room, [table], s, owner(7))!;
+    expect(placed.find((i) => i.uid === 7)).toMatchObject({ x: 212, y: 208, onItemUid: table.uid });
+    // Off the table it is a floor piece again (cells).
+    expect(planGhost(room, [table], startNewPlacing('candle_stand', { x: 400, y: 200 }, null))).toMatchObject({ onItemUid: null });
+  });
+
   it('refuses to place while the ghost is invalid, and changes nothing', () => {
     const items = [atCell('table', 6, 5)];
     let called = false;

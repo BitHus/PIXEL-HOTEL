@@ -208,7 +208,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   reach the middle of the room. A WALL item stays free (owner, 15 Nov): it slides along a back
   wall band at any x, 4 px snap (SNAP; Shift = whole px), its anchor y is the band's foot (its
   art is drawn upward from there); not on the door. An onSurface item sits on a cell of a
-  surface item, one level only, and moves and returns together with the item under it.
+  surface item, one level only, and moves and returns together with the item under it. FS1: pieces flagged freeOnSurface (small decor) stand at any point on the top, 4 px snap, Shift none.
 - Floors are painted per cell (BG1): Room.floorCells maps "col,row" to a floor style id; every
   other cell has Room.floorStyle. Pick an unlocked floor in the Room panel and tap Paint cells:
   tap a cell or drag a rectangle (free; the unlocked-forever rules stay). Wall styles stay one

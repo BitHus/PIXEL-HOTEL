@@ -18,6 +18,7 @@ import {
   ridersOf,
   snapCoord,
   snapToCells,
+  snapToSurface,
   type FurnitureLookup,
   type MoveTo,
   type Placement,
@@ -74,6 +75,11 @@ export function planGhost(room: Room, items: readonly FurnitureItem[], s: Placin
   const y = cell ? cell.y : snapCoord(s.center.y + fd / 2, snap);
   const others = items.filter((i) => i.uid !== s.uid);
   const carrying = s.origin !== null && s.uid !== null && ridersOf(items, s.uid).length > 0;
+  if (type.freeOnSurface && !carrying) {
+    // Small decor: the ghost follows the pointer freely over a table top (4 px snap, none with Shift).
+    const free = snapToSurface(room, others, type, snapCoord(s.center.x, snap), snapCoord(s.center.y + fd / 2, snap), s.facing, types, snap);
+    if (free) return { ...free, facing: s.facing, ok: true };
+  }
   return planPlacement(room, others, type, x, y, s.facing, carrying, types);
 }
 

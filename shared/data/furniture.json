@@ -255,6 +255,7 @@
     "sittable": false,
     "surface": false,
     "onSurface": true,
+    "freeOnSurface": true,
     "wall": false,
     "facings": [
       "down"
@@ -395,6 +396,7 @@
     "sittable": false,
     "surface": false,
     "onSurface": true,
+    "freeOnSurface": true,
     "wall": false,
     "facings": [
       "down"
@@ -1538,6 +1540,7 @@
     "sittable": false,
     "surface": false,
     "onSurface": true,
+    "freeOnSurface": true,
     "wall": false,
     "facings": [
       "down"
@@ -1840,6 +1843,7 @@
     "sittable": false,
     "surface": false,
     "onSurface": true,
+    "freeOnSurface": true,
     "wall": false,
     "facings": [
       "down"
@@ -2201,6 +2205,7 @@
     "sittable": false,
     "surface": false,
     "onSurface": true,
+    "freeOnSurface": true,
     "wall": false,
     "facings": [
       "down"
@@ -2422,6 +2427,7 @@
     "sittable": false,
     "surface": false,
     "onSurface": true,
+    "freeOnSurface": true,
     "wall": false,
     "facings": [
       "down"
@@ -3657,6 +3663,7 @@
     "sittable": false,
     "surface": false,
     "onSurface": true,
+    "freeOnSurface": true,
     "wall": false,
     "facings": [
       "down"

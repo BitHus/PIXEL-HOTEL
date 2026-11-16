@@ -79,6 +79,8 @@ export interface FurnitureType {
   sittable: boolean;
   surface: boolean;
   onSurface: boolean;
+  /** True for small decor on a surface (candle, lamp, plant, jug): it stands at ANY point on the top of the surface item (4 px snap), not on a cell. Register and tap stand leave it off. */
+  freeOnSurface?: boolean;
   wall: boolean;
   facings: Facing[];
   /** Where a customer stands, relative to the anchor. Default { dx: 0, dy: 24 }. */

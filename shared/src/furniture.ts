@@ -295,6 +295,7 @@ export function snapToSurface(
   y: number,
   facing: Facing,
   types: FurnitureLookup = getFurnitureType,
+  snap = true,
 ): SurfaceSpot | null {
   if (!type.onSurface || type.wall || !fitsRoomKind(type, room)) return null;
   const { w: fw, d: fd } = footprintSize(type, facing);
@@ -308,8 +309,16 @@ export function snapToSurface(
   if (!surface) return null;
   const top = footprintRect(surface, types(surface.typeId));
   if (fw > top.w || fd > top.h) return null;
+  if (type.freeOnSurface) {
+    // Small decor: any point on the top (SNAP px, whole px with snap off), kept inside the top rect; no overlap rule between free pieces, only the structural riders (register, taps) are kept clear.
+    const fx = clamp(snapCoord(x, snap), top.x + fw / 2, top.x + top.w - fw / 2);
+    const fy = clamp(snapCoord(y, snap), top.y + fd, top.y + top.h);
+    const fp = footprintRect({ x: fx, y: fy, facing }, type);
+    const blocked = ridersOf(items, surface.uid).some((r) => !types(r.typeId).freeOnSurface && rectsOverlap(fp, footprintRect(r, types(r.typeId))));
+    return blocked ? null : { x: fx, y: fy, onItemUid: surface.uid };
+  }
   const others = ridersOf(items, surface.uid).map((r) => footprintRect(r, types(r.typeId)));
-  const free = (px: number, py: number): boolean =>
+  const free =(px: number, py: number): boolean =>
     !others.some((o) => rectsOverlap(footprintRect({ x: px, y: py, facing }, type), o));
   // The rider sits on the surface's own cells: its corner is a cell corner of the surface.
   let best: SurfaceSpot | null = null;
@@ -346,10 +355,11 @@ export function planPlacement(
   facing: Facing,
   carrying = false,
   types: FurnitureLookup = getFurnitureType,
+  snap = true,
 ): Placement {
   if (type.wall) ({ x, y } = snapToWallBand(room, x, y));
   if (!carrying) {
-    const spot = snapToSurface(room, items, type, x, y, facing, types);
+    const spot = snapToSurface(room, items, type, x, y, facing, types, snap);
     if (spot) return { ...spot, facing, ok: true };
   }
   return { x, y, facing, onItemUid: null, ok: canPlace(room, items, type, x, y, facing, types) };
@@ -401,6 +411,14 @@ export function moveItem(
     const rt = types(r.typeId);
     const { w: rw, d: rd } = footprintSize(rt, r.facing);
     const off = rotateQuarter({ x: r.x - oldCenter.x, y: r.y - rd / 2 - oldCenter.y }, turns);
+    if (rt.freeOnSurface) {
+      // Free decor keeps its place on the top (turned with it), clamped inside the top rect; no cell snapping, no overlap rule.
+      const fx = clamp(Math.round(newCenter.x + off.x), top.x + rw / 2, top.x + top.w - rw / 2);
+      const fy = clamp(Math.round(newCenter.y + off.y + rd / 2), top.y + rd, top.y + top.h);
+      if (rw <= top.w && rd <= top.h && to.roomId !== null) riders.set(r.uid, { ...r, x: fx, y: fy, roomId: to.roomId });
+      else riders.set(r.uid, { ...r, roomId: null, onItemUid: null });
+      continue;
+    }
     // Riders stay on the cells of the surface (step BG1).
     const cellOf = (v: number, lo: number, size: number, hi: number): number => clamp(lo + Math.round((v - lo) / BUILD_CELL) * BUILD_CELL, lo, hi - size);
     const rx = cellOf(newCenter.x + off.x - rw / 2, top.x, rw, top.x + top.w) + rw / 2;

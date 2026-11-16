@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { BUILD_CELL } from './config.ts';
 import {
@@ -263,20 +264,23 @@ describe('wall items stay free (BG1: only floor items go per cell)', () => {
 });
 
 describe('surfaces', () => {
-  it('snaps an onSurface item to the nearest free cell on top', () => {
+  // The cell rules (register, tap stand) are tested with a lamp that is NOT free decor.
+  const CL: FurnitureType = { ...T('lamp'), freeOnSurface: false };
+  it('snaps a structural onSurface item to the nearest free cell on top', () => {
     const table = atCell('table', 6, 5); // top: columns 6..7, row 5: x 192..256, y 160..192
-    expect(snapToSurface(room, [table], T('lamp'), 200, 190, 'down')).toEqual({ x: 208, y: 192, onItemUid: table.uid });
+    expect(snapToSurface(room, [table], CL, 200, 190, 'down')).toEqual({ x: 208, y: 192, onItemUid: table.uid });
     // Near the edge it is pulled onto the last cell.
-    expect(snapToSurface(room, [table], T('lamp'), 252, 192, 'down')).toEqual({ x: 240, y: 192, onItemUid: table.uid });
+    expect(snapToSurface(room, [table], CL, 252, 192, 'down')).toEqual({ x: 240, y: 192, onItemUid: table.uid });
     // A second lamp goes to the other cell.
     const lamp = { ...item('lamp', 208, 192, 'down', table.uid) };
-    const spot = snapToSurface(room, [table, lamp], T('lamp'), 212, 190, 'down');
+    const cellTypes: FurnitureLookup = (id) => (id === 'lamp' ? CL : T(id));
+    const spot = snapToSurface(room, [table, lamp], CL, 212, 190, 'down', cellTypes);
     expect(spot).toEqual({ x: 240, y: 192, onItemUid: table.uid });
     // A full table has no free spot.
     const lamp2 = { ...item('lamp', 240, 192, 'down', table.uid) };
-    expect(snapToSurface(room, [table, lamp, lamp2], T('lamp'), 212, 190, 'down')).toBeNull();
+    expect(snapToSurface(room, [table, lamp, lamp2], CL, 212, 190, 'down', cellTypes)).toBeNull();
     // Not over a surface: no snap; on the floor it is a normal placement.
-    expect(snapToSurface(room, [table], T('lamp'), 400, 190, 'down')).toBeNull();
+    expect(snapToSurface(room, [table], CL, 400, 190, 'down')).toBeNull();
     const floorSpot = pose('lamp', 12, 5);
     expect(planPlacement(room, [table], T('lamp'), floorSpot.x, floorSpot.y, 'down')).toMatchObject({ onItemUid: null, ok: true });
     // Items that are not onSurface never snap.
@@ -305,7 +309,6 @@ describe('surfaces', () => {
     const fp = footprintRect(l, T('lamp'));
     expect(l.onItemUid).toBe(table.uid);
     expect(fp.x >= top.x && fp.y >= top.y && fp.x + fp.w <= top.x + top.w && fp.y + fp.h <= top.y + top.h).toBe(true);
-    expect(isOnGrid(l, T('lamp'))).toBe(true);
   });
 
   it('is one level only', () => {
@@ -314,7 +317,7 @@ describe('surfaces', () => {
     const table = atCell('table', 6, 5);
     const onTable = item('small_box', 208, 192, 'down', table.uid);
     // A lamp aimed at the box lands on the table's other cell, never on the box.
-    const spot = snapToSurface(room, [table, onTable], T('lamp'), 208, 190, 'down', types);
+    const spot = snapToSurface(room, [table, onTable], CL, 208, 190, 'down', types);
     expect(spot).toEqual({ x: 240, y: 192, onItemUid: table.uid });
     // A surface that carries items cannot itself go onto a surface.
     const p = planPlacement(room, [table], box, 208, 192, 'down', true, types);

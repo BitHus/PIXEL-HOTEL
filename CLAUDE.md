@@ -83,7 +83,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   cell (even widths: the left of the two centre cells); rotation swaps w and d, keeps the anchor
   cell. Valid if: on floor cells, no overlap with another blocking item (rugs and floor decor
   overlap anything), not on the door zone, the door still reaches the middle. onSurface items sit
-  on a cell of a surface item (one level): the bar and the prep table are surfaces; the register, tap stands, mugs and plates sit on them (T1). WALL items stay free: any x along a back wall band,
+  on a cell of a surface item (one level): the bar and the prep table are surfaces; the register, tap stands, mugs and plates sit on them (T1). FS1 (owner 17 Nov): small decor with freeOnSurface (candles, small lamps, statuettes, pots) sits at ANY point on the top of a surface (4 px snap, Shift = none), not per cell; register and tap stands stay per cell. WALL items stay free: any x along a back wall band,
   4 px snap (Shift = none), anchor y = the band's foot.
 - Draw order: floor, rugs, back wall, then ONE list of items and avatars sorted by y, x, uid; an
   item on a surface right after the item under it.
