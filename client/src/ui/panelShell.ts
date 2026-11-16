@@ -6,8 +6,7 @@
 // tabBar fills .panel-tabs: the open tab is raised, warm orange and shows its name.
 
 import { el } from './dom.ts';
-import { gemIconUrl } from './itemIcon.ts';
-import { pixelIcon, type IconName } from './pixelIcons.ts';
+import { pixelIcon, pixelIconUrl, type IconName } from './pixelIcons.ts';
 
 export interface PanelShell {
   /** The whole panel (give this to Panels.add). */
@@ -72,7 +71,7 @@ export function priceTag(price: number, gold?: number, currency: 'gold' | 'gems'
 /** The small gem picture (the second currency) next to a gem price. */
 export function gemImg(): HTMLElement {
   const img = el('img', 'gem-img');
-  img.src = gemIconUrl();
+  img.src = pixelIconUrl('gem');
   img.alt = 'gems';
   img.draggable = false;
   return img;

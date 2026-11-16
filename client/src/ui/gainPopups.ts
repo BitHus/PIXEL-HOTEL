@@ -8,6 +8,8 @@ import { GEMS_GAIN_ID, GOLD_GAIN_ID, POPUP_MAX, POPUP_MS, sparkles, type Gain, t
 import { el } from './dom.ts';
 import { gainIconUrl } from './itemIcon.ts';
 import { rankClassOf } from './rank.ts';
+import { gemIconName, goldIconName } from './pixelIconsCurrency.ts';
+import { pixelIconUrl } from './pixelIcons.ts';
 
 interface Shown {
   node: HTMLElement;
@@ -31,10 +33,13 @@ export interface GainPopups {
 export function gainChip(g: Gain): HTMLElement {
   const chip = el('div', `gain-chip ${rankClassOf(g.rank)}`);
   const img = el('img');
-  img.src = gainIconUrl(g.itemId, g.itemId === GEMS_GAIN_ID || g.itemId === GOLD_GAIN_ID ? undefined : g.rank);
+  // Currency (UI currency pass): the same pixel family as the HUD, a bigger heap for a bigger amount, and "+N".
+  const money = g.itemId === GEMS_GAIN_ID || g.itemId === GOLD_GAIN_ID;
+  img.src = g.itemId === GOLD_GAIN_ID ? pixelIconUrl(goldIconName(g.count)) : g.itemId === GEMS_GAIN_ID ? pixelIconUrl(gemIconName(g.count)) : gainIconUrl(g.itemId, g.rank);
   img.alt = '';
   img.draggable = false;
-  chip.append(img, el('span', '', g.count > 1 ? `x${g.count}` : ''));
+  if (money) chip.classList.add('gain-money', g.itemId === GOLD_GAIN_ID ? 'gain-gold' : 'gain-gems');
+  chip.append(img, el('span', '', money ? `+${g.count}` : g.count > 1 ? `x${g.count}` : ''));
   if (sparkles(g.rank)) {
     chip.classList.add('sparkle');
     for (let i = 0; i < 4; i++) chip.appendChild(el('span', `sparkle-star s${i}`));

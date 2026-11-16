@@ -108,7 +108,8 @@ export async function setupPointerInput(g: G15) {
       }
       st.marked = screenToWorld(screen, st.shown);
       cross.visible = label.visible;
-      redraw();
+      // A plain mouse hover only needs the redraw for the debug cross and label (the camera did not move).
+      if (kind !== 'hover' || label.visible) redraw();
       updateBlockGhost();
       if (kind === 'hover') return;
       // While the line is out every tap on the room is a fishing tap (the bar's ✗ stops).

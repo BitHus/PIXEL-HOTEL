@@ -31,7 +31,9 @@ import {
 } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { clothingIconUrl, furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
-import { panelShell, priceTag, tabBar } from './panelShell.ts';
+import { gemImg, panelShell, priceTag, tabBar } from './panelShell.ts';
+import { pixelIcon } from './pixelIcons.ts';
+import { setRank } from './rank.ts';
 import { drawPacks, type PacksData } from './packsView.ts';
 import { stylePreviewUrl } from '../render/styleArt.ts';
 
@@ -54,17 +56,18 @@ export interface CatalogHooks {
 
 export interface CatalogPanel {
   readonly el: HTMLElement;
+  /** `packs.owned` (optional): how many of each thing the player holds in the bag, for the "Own N" badge. */
   refresh(gold: number, unlocked: readonly string[], room: Room, packs?: PacksData): void;
 }
 
 const TABS = [
   ['home', 'chair', 'Home'],
-  ['shop', 'coin', 'Tavern'],
+  ['shop', 'food', 'Tavern'],
   ['decor', 'house', 'Decor'],
   ['blocks', 'hammer', 'Blocks'],
   ['seeds', 'sprout', 'Seeds'],
   ['clothes', 'shirt', 'Clothes'],
-  ['packs', 'bag', 'Packs'],
+  ['packs', 'gems', 'Packs'],
 ] as const;
 
 /** Where a furniture type goes, in words (for the confirm panel). */
@@ -78,30 +81,57 @@ export function growText(c: CropType): string {
 
 export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): CatalogPanel {
   const shell = panelShell(parent, 'catalog-panel', 'Catalog');
+  const purse = el('div', 'purse-strip');
+  const sortBar = el('div', 'sort-bar');
   const note = el('div', 'panel-info');
   const list = el('div', 'card-grid');
-  shell.body.append(note, list);
+  shell.body.append(purse, sortBar, note, list);
+  let sort: 'shelf' | 'cheap' | 'afford' = 'shelf';
+  const SORTS = [
+    ['shelf', 'Shelf'],
+    ['cheap', 'Cheapest'],
+    ['afford', 'I can afford'],
+  ] as const;
+  for (const [id, label] of SORTS) {
+    const b = el('button', 'btn small sort-btn', label);
+    b.type = 'button';
+    b.dataset.sort = id;
+    b.addEventListener('click', () => {
+      sort = id;
+      draw();
+      applySort();
+    });
+    sortBar.appendChild(b);
+  }
+  /** Cards of the tab in the order they were made, with what sorting needs. */
+  let made: { node: HTMLElement; price: number; owned: boolean }[] = [];
 
   let tab: CatalogTab = 'home';
   let gold = 0;
   let unlocked: readonly string[] = [];
   let room: Room | null = null;
   let packsData: PacksData = { gems: 0, unlocked: [], spares: {} };
+  let ownedCounts: Readonly<Record<string, number>> = {};
   const markTab = tabBar(shell.tabs, TABS, (t) => {
     tab = t;
     draw();
+    applySort();
     shell.body.scrollTop = 0;
   });
 
   /** One card: tag (or none), big icon, name, price. `owned` cards cannot be bought. */
-  const card = (img: string, name: string, price: number, tag: string | null, owned: boolean, buy: () => void, rankId: string | null = null): HTMLElement => {
+  const card = (img: string, name: string, price: number, tag: string | null, owned: boolean, buy: () => void, rankId: string | null = null, own = 0): HTMLElement => {
     const c = el('button', `shop-card${owned ? ' owned' : gold < price ? ' poor' : ''}`);
+    if (rankId !== null) setRank(c, rankId);
     c.type = 'button';
     const icon = el('img', 'shop-card-icon');
     icon.src = img;
     icon.alt = '';
     icon.draggable = false;
     c.append(icon, rankId === null ? el('span', 'shop-card-name', name) : rankName('span', 'shop-card-name', name, rankId), owned ? el('span', 'shop-card-owned', 'Owned') : priceTag(price, gold));
+    if (!owned && gold < price) c.appendChild(el('span', 'shop-card-short', `Need ${price - gold} more`));
+    if (own > 0 && !owned) c.appendChild(el('span', 'shop-card-own', `Own ${own}`));
+    made.push({ node: c, price, owned });
     if (tag) c.appendChild(el('span', 'shop-card-tag plate', tag));
     c.disabled = owned;
     c.addEventListener('click', buy);
@@ -110,7 +140,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   const furnitureCard = (t: FurnitureType): HTMLElement => {
     const fits = room === null || fitsRoomKind(t, room);
-    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Tavern only' : 'Not here', false, () => hooks.buyItem(t.id), t.id);
+    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Tavern only' : 'Not here', false, () => hooks.buyItem(t.id), t.id, ownedCounts[t.id] ?? 0);
   };
 
   const styleCard = (s: StyleType): HTMLElement =>
@@ -118,9 +148,9 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
       hooks.buyStyle(s.kind, s.id),
     );
 
-  const seedCard = (c: CropType): HTMLElement => card(materialIconUrl(c.seed), c.seedName, c.seedPrice ?? 0, null, false, () => hooks.buySeeds(c.seed), c.seed);
+  const seedCard = (c: CropType): HTMLElement => card(materialIconUrl(c.seed), c.seedName, c.seedPrice ?? 0, null, false, () => hooks.buySeeds(c.seed), c.seed, ownedCounts[c.seed] ?? 0);
 
-  const blockCard = (b: BlockType): HTMLElement => card(materialIconUrl(b.id), b.name, blockPrice(b.id), `${b.hardness} hit${b.hardness === 1 ? '' : 's'}`, false, () => hooks.buyBlock(b.id), b.id);
+  const blockCard = (b: BlockType): HTMLElement => card(materialIconUrl(b.id), b.name, blockPrice(b.id), `${b.hardness} hit${b.hardness === 1 ? '' : 's'}`, false, () => hooks.buyBlock(b.id), b.id, ownedCounts[b.id] ?? 0);
 
   const hatCard = (id: string): HTMLElement => {
     const h = HATS.find((x) => x.id === id)!;
@@ -130,6 +160,11 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   const draw = (): void => {
     markTab(tab);
     list.replaceChildren();
+    made = [];
+    // The purse: what you can spend here (gems on the Packs tab, gold elsewhere), so a price is easy to judge.
+    purse.replaceChildren(el('span', 'purse-label', 'Your purse'), tab === 'packs' ? gemImg() : pixelIcon('coin'), el('span', 'purse-amount', String(tab === 'packs' ? packsData.gems : gold)));
+    sortBar.hidden = tab === 'packs';
+    for (const b of sortBar.children) b.classList.toggle('on', (b as HTMLElement).dataset.sort === sort);
     note.hidden = tab !== 'seeds' && tab !== 'blocks' && tab !== 'packs' && tab !== 'clothes';
     list.classList.toggle('pack-list', tab === 'packs');
     if (tab === 'blocks') {
@@ -160,14 +195,26 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     for (const t of catalogTypes().filter((x) => categories.includes(x.category))) list.appendChild(furnitureCard(t));
   };
 
+  /** Applies the chosen sort to the cards just made (Shelf keeps the data order). */
+  const applySort = (): void => {
+    if (sort === 'shelf' || made.length === 0) return;
+    const short = (price: number): number => Number(gold < price);
+    const rows = [...made].sort((a, b) => Number(a.owned) - Number(b.owned) || (sort === 'cheap' ? a.price - b.price : short(a.price) - short(b.price) || b.price - a.price));
+    for (const r of rows) list.appendChild(r.node);
+  };
+
   return {
     el: shell.el,
     refresh(g, u, r, packs) {
-      if (packs) packsData = packs;
+      if (packs) {
+        packsData = packs;
+        ownedCounts = packs.owned ?? ownedCounts;
+      }
       gold = g;
       unlocked = u;
       room = r;
       draw();
+      applySort();
     },
   };
 }

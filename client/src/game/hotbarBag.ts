@@ -144,6 +144,13 @@ late.hotbar = hotbar;
 
   /** The "Sell what you do not need at the bar" hint shows once per visit, when the bag fills (step S2). */
   let sellHinted = false;
+  /** What the bag holds, by id, for the catalog's "Own N" badge (unplaced furniture and materials). */
+  const bagCounts = (): Record<string, number> => {
+    const out: Record<string, number> = { ...st.inventory.materials } as Record<string, number>;
+    for (const f of st.inventory.furniture) out[f.typeId] = (out[f.typeId] ?? 0) + 1;
+    return out;
+  };
+
   async function refreshInventory(): Promise<void> {
     st.inventory = await api.getInventory();
     if (!sellHinted && (await api.getSellRows()).length >= SELL_HINT_STACKS) {
@@ -174,7 +181,7 @@ late.hotbar = hotbar;
     st.walletGold = p.wallet.gold;
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
-    catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares });
+    catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares, owned: bagCounts() });
     roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null, st.room.kind === 'hotel' ? roomScore(st.room, st.items) : null);
     const materials = st.inventory.materials;
     const usable = (typeId: string): boolean =>

@@ -6,6 +6,7 @@ import {
   worldToScreen, type Camera,
 } from '@pixel-hotel/shared';
 import { CameraIntro } from '../input/cameraIntro.ts';
+import { pixelStep } from '../render/pixelStep.ts';
 import type { G4 } from './ctx.ts';
 
 export async function setupCameraSetup(g: G4) {
@@ -21,6 +22,7 @@ export async function setupCameraSetup(g: G4) {
 
   const redraw = (): void => {
     st.shown = snapCamera(st.camera, dpr());
+    pixelStep.v = 1 / (st.shown.zoom * dpr());
     backdrop.update(st.shown, app.screen.width, app.screen.height);
     view.world.scale.set(st.shown.zoom);
     view.world.position.set(-st.shown.x * st.shown.zoom, -st.shown.y * st.shown.zoom);

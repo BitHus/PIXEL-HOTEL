@@ -6,7 +6,7 @@
 import { PACK_TYPES, RANK_NAMES, getClothing, packOdds, piecesMissing, spareValue, type PackItem, type PackType } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { clothingIconUrl, materialIconUrl, packIconUrl } from './itemIcon.ts';
-import { iconBox, priceTag } from './panelShell.ts';
+import { gemImg, iconBox, priceTag } from './panelShell.ts';
 import { pixelIcon } from './pixelIcons.ts';
 import { rankClassOf, rankName } from './rank.ts';
 import type { MaterialId } from '@pixel-hotel/shared';
@@ -16,6 +16,8 @@ export interface PacksData {
   gems: number;
   unlocked: readonly string[];
   spares: Readonly<Record<string, number>>;
+  /** How many of each thing the player holds in the bag (the catalog's "Own N" badge). */
+  owned?: Readonly<Record<string, number>>;
 }
 
 export interface PacksHooks {
@@ -46,7 +48,7 @@ function chip(i: PackItem, owned: boolean): HTMLElement {
 }
 
 function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement {
-  const card = el('div', 'pack-card inset');
+  const card = el('div', `pack-card inset ${pack.id === 'common_clothes' || pack.id === 'rare_clothes' ? 'pack-leather' : 'pack-crate'}`);
   const head = el('div', 'pack-head');
   const info = el('div', 'pack-info');
   info.append(
@@ -60,10 +62,11 @@ function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement 
   const odds = el('div', 'pack-odds');
   for (const row of packOdds(pack)) {
     const line = el('div', 'pack-odds-row');
+    line.style.setProperty('--pct', `${Math.max(2, Math.min(100, Math.round(row.percent)))}%`);
     const label = el('div', 'pack-odds-label');
     label.append(rankName('span', 'pack-rank', RANK_NAMES[row.rank], row.items[0]!.id), el('span', 'pack-percent', percentText(row.percent)));
     // The rank colour of the name comes from the first item of the rank (a piece of clothing or a material: same rank).
-    line.append(label);
+    line.append(label, el('div', 'pack-odds-bar'));
     const chips = el('div', 'pack-chips');
     for (const i of row.items) chips.appendChild(chip(i, i.kind === 'clothing' && d.unlocked.includes(i.id)));
     line.appendChild(chips);
@@ -77,7 +80,12 @@ function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement 
   }
 
   const short = pack.gemPrice - d.gems;
-  const btn = textButton(short > 0 ? `Need ${short} more gem${short === 1 ? '' : 's'}` : `Open for ${pack.gemPrice} gems`, () => hooks.open(pack), 'pack-open');
+  const btn = textButton(short > 0 ? `Need ${short} more gem${short === 1 ? '' : 's'}` : 'Open for', () => hooks.open(pack), 'pack-open primary');
+  if (short <= 0) {
+    const cost = el('span', 'sell-gain');
+    cost.append(gemImg(), el('span', '', String(pack.gemPrice)));
+    btn.append(cost);
+  }
   btn.disabled = short > 0;
   card.appendChild(btn);
   return card;
@@ -91,7 +99,9 @@ function spareRow(id: string, n: number, hooks: PacksHooks): HTMLElement {
   img.alt = '';
   img.draggable = false;
   const sell = textButton('', () => hooks.sell(id), 'pack-sell');
-  sell.append(`Sell 1 for ${spareValue(id)}`, pixelIcon('coin'));
+  const gain = el('span', 'sell-gain');
+  gain.append(pixelIcon('coin'), el('span', '', String(spareValue(id))));
+  sell.append('Sell 1', gain);
   row.append(img, rankName('span', 'pack-spare-name', `${c.name} ×${n}`, id), sell);
   return row;
 }

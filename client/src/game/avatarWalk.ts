@@ -1,7 +1,7 @@
 // The own avatar's walking, sitting and serving (R1 split of main.ts: part 2 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { type Point } from '@pixel-hotel/shared';
+import { WALK_RESYNC_PX, type Point } from '@pixel-hotel/shared';
 import { AvatarSprite } from '../render/avatarSprite.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
 import { Seating } from '../render/seating.ts';
@@ -26,7 +26,7 @@ export async function setupAvatarWalk(g: G1) {
   const follow = (p: Point[]): void => {
     const first = p[0];
     // Only jump when the API's start point is clearly elsewhere (tiny timing differences are walked off).
-    if (first && Math.hypot(first.x - st.avatar.x, first.y - st.avatar.y) > 8) st.avatar = { ...st.avatar, x: first.x, y: first.y };
+    if (first && Math.hypot(first.x - st.avatar.x, first.y - st.avatar.y) > WALK_RESYNC_PX) st.avatar = { ...st.avatar, x: first.x, y: first.y };
     st.path = p.slice(1);
     seating.clear();
     st.serving = null;

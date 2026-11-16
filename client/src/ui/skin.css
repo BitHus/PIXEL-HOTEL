@@ -1410,3 +1410,299 @@
     transition: none !important;
   }
 }
+
+/* ======================================================================
+   Currency and shop pass: counters, gain chips, catalog, trader, packs, the shop slip
+   Gold = butter and amber, gems = cyan with magenta (client/src/ui/pixelIconsCurrency.ts).
+   ====================================================================== */
+
+/* HUD counters: two plates in a dark trough with a lit rim, the number in butter (gold) or cyan (gems). */
+.info-gold {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cur {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 0 6px 0 3px;
+  box-sizing: border-box;
+  background: var(--bar-bg);
+  color: var(--butter);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow:
+    inset 0 1px 0 var(--outline),
+    inset 0 -1px 0 var(--wood-hi),
+    0 0 0 1px var(--wood);
+}
+
+.cur-gems {
+  color: #2ce8f5;
+}
+
+.cur .pixel-icon,
+.sell-gain .pixel-icon,
+.sell-gain .gem-img,
+.purse-strip .pixel-icon,
+.purse-strip .gem-img,
+.slip-amount .pixel-icon,
+.slip-amount .gem-img {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* A change bumps the plate one pixel (stepped); a gain lights the rim, a spend turns it red. */
+@keyframes cur-bump {
+  0% { transform: translateY(-2px); }
+  50% { transform: translateY(-1px); }
+  100% { transform: translateY(0); }
+}
+
+.cur.bump-up {
+  animation: cur-bump 0.3s steps(3, end);
+  box-shadow: inset 0 1px 0 var(--outline), inset 0 -1px 0 var(--wood-hi), 0 0 0 1px var(--candle);
+}
+
+.cur.bump-down {
+  animation: cur-bump 0.3s steps(3, end);
+  color: #f6757a;
+  box-shadow: inset 0 1px 0 var(--outline), inset 0 -1px 0 var(--wood-hi), 0 0 0 1px var(--no);
+}
+
+/* Gain popups for money: a dark plate with butter or cyan "+N", the heap icon at whole pixels. */
+.gain-chip.gain-money {
+  background: var(--bar-bg);
+  border-color: var(--candle);
+  color: var(--butter);
+  text-shadow: 0 1px 0 var(--outline);
+}
+
+.gain-chip.gain-gems {
+  border-color: #2ce8f5;
+  color: #2ce8f5;
+}
+
+.gain-chip.gain-money img {
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+}
+
+/* Catalog: the purse strip, sort chips, rank-coloured picture wells, the short and own captions. */
+.purse-strip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  padding: 2px 8px;
+  background: var(--bar-bg);
+  color: var(--butter);
+  font-weight: 700;
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow: inset 0 1px 0 var(--outline), 0 0 0 1px var(--wood);
+}
+
+.purse-label {
+  margin-right: auto;
+  color: var(--cream);
+  font-size: 13px;
+}
+
+.sort-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 6px;
+}
+
+.sort-btn {
+  min-height: var(--touch);
+}
+
+.sort-btn.on {
+  background: var(--candle);
+  color: var(--outline);
+}
+
+.shop-card.rank-rare .shop-card-icon {
+  box-shadow: inset 0 0 0 2px var(--rank-rare), 0 0 0 1px var(--outline);
+}
+
+.shop-card.rank-ultra_rare .shop-card-icon {
+  box-shadow: inset 0 0 0 2px var(--rank-ultra_rare), 0 0 0 1px var(--outline);
+}
+
+.shop-card.rank-legendary .shop-card-icon {
+  box-shadow: inset 0 0 0 2px var(--rank-legendary), 0 0 0 1px var(--outline);
+}
+
+.shop-card-short {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--no);
+}
+
+.shop-card-own {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 14px;
+  background: var(--bar-bg);
+  color: var(--butter);
+  box-shadow: 0 0 0 1px var(--outline);
+}
+
+.shop-card.owned .shop-card-owned::before {
+  content: '\2713 ';
+}
+
+/* The trader's rows: the price tag with the coin, buttons with the gold they bring. */
+.sell-each {
+  font-size: 14px;
+}
+
+.sell-each-word {
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.sell-gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.sell-btn.primary {
+  min-width: 96px;
+}
+
+/* Packs: a wooden crate (blocks, seeds) or a stitched leather bag (clothes); odds with a bar under each rank. */
+.pack-crate .pack-icon,
+.pack-leather .pack-icon {
+  width: 64px;
+  height: 64px;
+  box-sizing: border-box;
+  padding: 8px;
+}
+
+.pack-crate .pack-icon {
+  background:
+    linear-gradient(var(--iron), var(--iron)) 0 14px / 100% 4px no-repeat,
+    linear-gradient(var(--iron), var(--iron)) 0 calc(100% - 14px) / 100% 4px no-repeat,
+    repeating-linear-gradient(90deg, var(--wood-light) 0 14px, var(--outline) 14px 15px);
+  box-shadow: inset 0 0 0 2px var(--wood), 0 0 0 1px var(--outline), 0 2px 0 1px rgba(24, 20, 37, 0.4);
+}
+
+.pack-leather .pack-icon {
+  background: radial-gradient(circle at 40% 35%, var(--wood-light) 0 30%, var(--wood-hi) 70%, var(--wood) 100%);
+  box-shadow: inset 0 0 0 2px var(--candle), 0 0 0 1px var(--outline), 0 2px 0 1px rgba(24, 20, 37, 0.4);
+  border-radius: 0;
+}
+
+.pack-odds-bar {
+  height: 4px;
+  background: var(--bar-bg);
+  box-shadow: 0 0 0 1px var(--outline);
+}
+
+.pack-odds-bar::before {
+  content: '';
+  display: block;
+  width: var(--pct, 0%);
+  height: 100%;
+  background: var(--rank-common, var(--candle));
+}
+
+.pack-odds-row:has(.rank-rare) .pack-odds-bar::before {
+  background: var(--rank-rare);
+}
+
+.pack-odds-row:has(.pack-rank.rank-ultra_rare) .pack-odds-bar::before {
+  background: var(--rank-ultra_rare);
+}
+
+.pack-odds-row:has(.pack-rank.rank-legendary) .pack-odds-bar::before {
+  background: var(--rank-legendary);
+}
+
+.pack-odds-row {
+  margin-bottom: 6px;
+}
+
+.pack-percent {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The shop slip (confirmBuy): a paper receipt with a ledger of purse, price and what is left. */
+.slip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0 2px;
+  padding: 6px 8px;
+  background: var(--cream);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--wood), 0 2px 0 1px rgba(24, 20, 37, 0.35);
+  /* torn top and bottom edge, in whole pixels */
+  clip-path: polygon(0 3px, 4px 0, 8px 3px, 12px 0, 16px 3px, 20px 0, 24px 3px, 28px 0, 32px 3px, 36px 0, 40px 3px, 44px 0, 48px 3px, 52px 0, 56px 3px, 60px 0, 64px 3px, 68px 0, 72px 3px, 76px 0, 80px 3px, 84px 0, 88px 3px, 92px 0, 96px 3px, 100% 0, 100% calc(100% - 3px), 96% 100%, 0 calc(100% - 3px));
+}
+
+.slip-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.slip-label {
+  font-weight: 700;
+}
+
+.slip-dots {
+  flex: 1;
+  height: 1px;
+  align-self: flex-end;
+  margin-bottom: 4px;
+  border-bottom: 1px dotted var(--wood);
+}
+
+.slip-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.slip-rule {
+  border-top: 2px dashed var(--wood);
+  margin: 2px 0;
+}
+
+.slip-total .slip-amount {
+  color: var(--ok);
+}
+
+@media (max-width: 480px) {
+  .sort-btn {
+    flex: 1 1 auto;
+  }
+  .sell-btn.primary {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cur.bump-up,
+  .cur.bump-down {
+    animation: none !important;
+  }
+}

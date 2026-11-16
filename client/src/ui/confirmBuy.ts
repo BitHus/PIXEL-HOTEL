@@ -6,7 +6,8 @@
 // Buy is greyed out; `more` adds a second buy button (seeds: the pack of 5).
 
 import { el, textButton } from './dom.ts';
-import { iconBox, priceTag } from './panelShell.ts';
+import { iconBox, priceTag, gemImg } from './panelShell.ts';
+import { pixelIcon } from './pixelIcons.ts';
 
 export interface BuyQuestion {
   /** e.g. "Red carpet". */
@@ -73,6 +74,19 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
     if (short(q.price)) info.append(el('div', 'confirm-short price-short', `Not enough ${q.currency ?? 'gold'}.`));
     what.appendChild(info);
 
+    // The shop slip: your purse, the price, a dashed rule and what is left (only when we know what the player has).
+    const slip = el('div', 'slip');
+    if (q.price !== null && q.gold !== undefined) {
+      const line = (label: string, n: number, cls = ''): HTMLElement => {
+        const r = el('div', `slip-row ${cls}`.trim());
+        const amount = el('span', 'slip-amount');
+        amount.append(q.currency === 'gems' ? gemImg() : pixelIcon('coin'), el('span', '', String(n)));
+        r.append(el('span', 'slip-label', label), el('span', 'slip-dots'), amount);
+        return r;
+      };
+      slip.append(line('Your purse', q.gold), line('Price', q.price), el('div', 'slip-rule'), line('Left', Math.max(0, q.gold - q.price), short(q.price) ? 'price-short' : 'slip-total'));
+    }
+
     const yes = textButton(q.price === null ? (q.yes ?? 'Buy') : `${q.yes ?? 'Buy'} for ${q.price}`, () => finish(true));
     yes.classList.add('confirm-yes', 'primary');
     yes.disabled = short(q.price);
@@ -87,7 +101,7 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
       buttons.append(more);
     }
 
-    box.append(close, el('h2', 'panel-title plate', q.title ?? `${q.yes ?? 'Buy'} this?`), what, ...(q.extra ? [q.extra] : []), buttons);
+    box.append(close, el('h2', 'panel-title plate', q.title ?? `${q.yes ?? 'Buy'} this?`), what, ...(slip.childElementCount > 0 ? [slip] : []), ...(q.extra ? [q.extra] : []), buttons);
     shade.appendChild(box);
     // A tap on the dark area around the panel cancels.
     shade.addEventListener('pointerdown', (e) => {

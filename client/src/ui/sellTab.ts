@@ -5,7 +5,9 @@
 import { SELL_CONFIRM_QTY, type MaterialId, type SellRow } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { clothingIconUrl, furnitureIconUrl, materialIconUrl } from './itemIcon.ts';
-import { iconBox } from './panelShell.ts';
+import { iconBox, priceTag } from './panelShell.ts';
+import { pixelIcon } from './pixelIcons.ts';
+import { goldIconName } from './pixelIconsCurrency.ts';
 import { rankName } from './rank.ts';
 
 export interface SellHooks {
@@ -13,8 +15,17 @@ export interface SellHooks {
   sell(row: SellRow, qty: number): void;
 }
 
-export const SELL_EMPTY_HELP = 'Nothing to sell right now. Things you gather, dig, catch or find can be sold here when you do not need them.';
-export const SELL_INTRO = 'Sell what you do not need. Nothing sells by itself; it only sells when you tap a button. Using a thing for cooking, brewing or crafting is worth more than selling it.';
+export const SELL_EMPTY_HELP = 'Your satchel is empty, friend. Bring me what you gather, dig, catch or find, and I will weigh it fairly.';
+export const SELL_INTRO = 'The trader buys what you do not need. Nothing sells by itself; I only buy when you tap a button. Cooking, brewing and crafting pay better than selling.';
+
+/** A sell button: its words, then the gold it brings with the coin icon. */
+function sellButton(label: string, gold: number, onClick: () => void, cls = ''): HTMLButtonElement {
+  const b = textButton(label, onClick, `sell-btn ${cls}`.trim());
+  const g = el('span', 'sell-gain');
+  g.append(pixelIcon(goldIconName(gold)), el('span', '', String(gold)));
+  b.append(g);
+  return b;
+}
 
 export function sellRowIcon(r: SellRow): string {
   if (r.kind === 'furniture') return furnitureIconUrl(r.id, r.rank);
@@ -26,10 +37,15 @@ export function sellRowIcon(r: SellRow): string {
 export function sellRow(r: SellRow, hooks: SellHooks): HTMLElement {
   const row = el('div', 'catalog-row sell-row');
   const info = el('div', 'catalog-info');
-  info.append(rankName('div', 'catalog-name', `${r.name} (${r.count})`, r.id), el('div', 'catalog-sub', `${r.unit} gold each.${r.inHotbar ? ' It is in your hotbar.' : ''}`));
+  info.append(rankName('div', 'catalog-name', `${r.name} (${r.count})`, r.id), el('div', 'catalog-sub'));
+  const each = priceTag(r.unit);
+  each.classList.add('sell-each');
+  each.append(el('span', 'sell-each-word', 'each'));
+  info.append(each);
+  if (r.inHotbar) info.append(el('div', 'catalog-sub', 'It is in your hotbar.'));
   const buttons = el('div', 'sell-buttons');
-  buttons.append(textButton(r.count === 1 ? `Sell ${r.unit}` : 'Sell 1', () => hooks.sell(r, 1)));
-  if (r.count > 1) buttons.append(textButton(`Sell all ${r.unit * r.count}`, () => hooks.sell(r, r.count)));
+  buttons.append(sellButton(r.count === 1 ? 'Sell' : 'Sell 1', r.unit, () => hooks.sell(r, 1)));
+  if (r.count > 1) buttons.append(sellButton('All', r.unit * r.count, () => hooks.sell(r, r.count), 'primary'));
   row.append(iconBox(sellRowIcon(r)), info, buttons);
   return row;
 }

@@ -1,7 +1,7 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { AVATAR_H, WALK_BOB_MS, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { AVATAR_H, FrameStats, WALK_BOB_MS, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
 import type { G16 } from './ctx.ts';
@@ -11,7 +11,7 @@ export async function setupGameLoop(g: G16) {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
     guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
     doBlock, placeBar, menu, orders, bubbles, emote, nameTag, popups, gemFly, splashGone, openRoom,
-    playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
+    label, playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
   } = g;
 
   fx.onSparkle = (at) => itemViews.props.ding(at);
@@ -26,7 +26,15 @@ export async function setupGameLoop(g: G16) {
   /** The avatars that stand or walk on the floor (their shadows). */
   const feet: Point[] = [];
   let lastStepBeat = 0;
+  // Frame times for the Debug line (real elapsed ms per frame, not the capped delta).
+  const frames = new FrameStats(120);
+  let frameLineAt = 0;
   app.ticker.add((ticker) => {
+    frames.add(ticker.elapsedMS);
+    if (label.visible && performance.now() - frameLineAt > 500) {
+      frameLineAt = performance.now();
+      label.setFrameLine(frames.text());
+    }
     if (dungeon.isActive !== fx.paused) {
       fx.paused = dungeon.isActive;
       if (fx.paused) {

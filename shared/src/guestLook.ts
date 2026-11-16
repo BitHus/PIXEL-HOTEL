@@ -2,7 +2,6 @@
 
 import { CUSTOMER_KIND_WEIGHTS, CUSTOMER_OUTSIDE_PX, CUSTOMER_TOLERANCE_MAX, CUSTOMER_TOLERANCE_MIN, LOOK_COLORS } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
-import { selectableClothing } from './clothing.ts';
 import { doorPoint } from './furniture.ts';
 import type { CustomerKind } from './npcTalk.ts';
 import { doorY, type Room } from './room.ts';
@@ -19,18 +18,29 @@ export function outsidePoint(room: Room): Point {
  * A guest's look from the free clothing and LOOK_COLORS, the same every time for the same id
  * (seeded by the id, so it survives a reload).
  */
+/** The pieces that have layer PNGs (client/src/assets/sprites/avatar): guests are drawn from these, so they use the layered sprites, not the box fallback. */
+export const GUEST_SPRITE_PIECES = {
+  hairStyle: ['short', 'long'],
+  top: ['tunic'],
+  bottoms: ['trousers'],
+  hat: ['straw_hat', 'hood_coif'],
+} as const;
+/** About one guest in four wears a hat. */
+export const GUEST_HAT_CHANCE = 0.25;
+
 export function guestLook(id: number): AvatarLook {
   const rng = seededRng(Math.imul(Math.abs(id) + 1, 0x9e3779b1) ^ 0x5bd1e995);
-  return {
+  const look: AvatarLook = {
     skin: rngPick(rng, LOOK_COLORS.skin),
     hair: rngPick(rng, LOOK_COLORS.hair),
-    hairStyle: rngPick(rng, selectableClothing('hair')).id,
-    top: rngPick(rng, selectableClothing('top')).id,
+    hairStyle: rngPick(rng, GUEST_SPRITE_PIECES.hairStyle),
+    top: rngPick(rng, GUEST_SPRITE_PIECES.top),
     shirt: rngPick(rng, LOOK_COLORS.top),
-    bottoms: rngPick(rng, selectableClothing('bottoms')).id,
+    bottoms: rngPick(rng, GUEST_SPRITE_PIECES.bottoms),
     legs: rngPick(rng, LOOK_COLORS.bottoms),
     shoes: rngPick(rng, LOOK_COLORS.shoes),
   };
+  return rng() < GUEST_HAT_CHANCE ? { ...look, hat: rngPick(rng, GUEST_SPRITE_PIECES.hat) } : look;
 }
 
 /** A guest kind by CUSTOMER_KIND_WEIGHTS. */

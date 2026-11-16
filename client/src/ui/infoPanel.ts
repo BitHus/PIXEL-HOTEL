@@ -6,7 +6,7 @@
 import type { RoomKind } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
-import { gemIconUrl } from './itemIcon.ts';
+import { countTween } from './countUp.ts';
 
 export interface InfoPanel {
   /** The top-left column (the hint box goes under the info panel). */
@@ -43,20 +43,19 @@ function bar(cls: string, icon: HTMLElement | SVGSVGElement | null): { root: HTM
 export function createInfoPanel(parent: HTMLElement): InfoPanel {
   const box = el('div', 'top-left');
   const info = el('div', 'frame info-panel');
+  // The purse (currency pass): two plates in the same dark trough, the gold coin with butter numbers and the cut gem with cyan numbers.
   const gold = el('div', 'info-gold');
-  const goldText = el('span', '', '0');
-  gold.append(pixelIcon('coin'), goldText);
-  gold.title = 'Gold';
-  // The gems (step BG5) sit right of the gold, with the gem square icon.
-  const gemIcon = el('img', 'info-gem-icon');
-  gemIcon.src = gemIconUrl();
-  gemIcon.alt = '';
-  gemIcon.draggable = false;
-  const gemText = el('span', '', '0');
-  const gems = el('span', 'info-gems');
-  gems.append(gemIcon, gemText);
+  const goldText = el('span', 'cur-num', '0');
+  const goldPlate = el('span', 'cur cur-gold');
+  goldPlate.append(pixelIcon('coin'), goldText);
+  goldPlate.title = 'Gold';
+  const gemText = el('span', 'cur-num', '0');
+  const gems = el('span', 'cur cur-gems');
+  gems.append(pixelIcon('gem'), gemText);
   gems.title = 'Gems: you find them by playing';
-  gold.append(gems);
+  gold.append(goldPlate, gems);
+  const goldCount = countTween(goldText, goldPlate);
+  const gemCount = countTween(gemText, gems);
   // Line 2: the room name, the level and a thin xp bar (the numbers are in its tooltip).
   const line = el('div', 'info-line');
   const name = el('span', 'info-room');
@@ -86,10 +85,10 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
       };
     },
     setGold(n) {
-      goldText.textContent = String(n);
+      goldCount.set(n);
     },
     setGems(n) {
-      gemText.textContent = String(n);
+      gemCount.set(n);
     },
     setInnName(n) {
       inn.textContent = n;

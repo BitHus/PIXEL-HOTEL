@@ -29,6 +29,47 @@ OUTDOORS REWORK (owner 16 Nov: dungeon and lakeside look ugly; plan docs/PLAN-RE
   Tester: T-OUT after C13 and again after C15. No save bump in any of them.
 Hooks (H3, H4) touch a few files in client/src/render/ (the artist's folder): while an H task runs, the artist does not edit the files it names.
 
+## DUNGEON REDO + SPLICE (lead 16 Nov; plan: docs/PLAN-SPLICE-DUNGEON.md; owner decisions; rank high, vibes/fun). Common rules as above. Lanes and file ownership: see NEXT ACTIONS in the plan. Read the plan section named in each prompt before coding.
+
+### DG1 [coder, lane L1] New dungeon layout (plan 1.3, 1.6)
+PROMPT: Read CLAUDE.md 10, docs/PLAN-SPLICE-DUNGEON.md sections 0A, 1. Move the current generateLayout into dungeon/legacyLayout.ts for the mine (unchanged, mine tests green). Build dungeon/{layout,rooms,themes,pacing}.ts and shared/data/{dungeonRooms,dungeonThemes}.json for kind 'crypt': 3x3 zones, room templates, door-to-door corridors max 5, loops, nooks, vault, secrets, landmark, themes, pacing fill, boss arena. One fixed rng order from floorRng(seed, n). New optional fields map.links, map.extras, decor (old stored runs must still load: test). Fix freeBlock to test isFloorBlock. Keep chest/enemy totals and loot; update generate.test.ts and add the tests of 1.6 (golden hash of seeds 1..20, flood fill covers all floor, corridor <= 5, loop, variety, pacing, route 25..70, time < 60 ms). Config constants in config/dungeon.ts. Run simulate:dungeon before/after (+-10%) and note it in NOTES. At the end apply the CLAUDE.md wording of 0A and BRIEF. No save bump, no client changes (stub decor kinds as strings). DONE WHEN: suite, typecheck green. FILES: shared/src/dungeon/*, shared/data/dungeon*.json, config/dungeon.ts, docs.
+
+### DG2 [coder, L1 then L3] View hooks (needs DG1)
+PROMPT: dungeonView.ts and fog read map.decor/extras/links: call drawDecor(kind, c, r) hooks (code fallback from the artist's DA1, else a coloured box), light for brazier kinds, minimap/fog use bounding rects + extras, one landmark toast per floor at reading pace. No rule in render. Tests: fog test with extras, decor-free old run. SAVE none.
+
+### DG3 / DG4 [coder, L1] Set-piece polish and tuning
+PROMPT DG3: ambush placement behind pillars, vault chest rules, secrets (chest or gem pile through gems.ts), crack markers. DG4: simulate:dungeon tables, beats per minute and route lengths on 300 seeds, fix list from the tester route on 20 seeds. DG5 (traps, torch puzzle, gate block, run.hazards, save bump) only after the owner says go.
+
+### SG4 [coder, L2] Plant on any block (plan 2.4) - FIRST, independent of the splice rule
+PROMPT: Read plan 0B, 2.4, 2.7 (10). In farm.ts plantProblem: valid cells = soil floor OR a cell holding a block; food crops need soil or a block with soilHost (add soilHost to dirt in blocks.json, new rich_soil later); rooms hotel/shop/farm; punching a block that carries a plant is refused ('planted') and a ripe plant is harvested first; PLANTS_ROOM_CAP (farm 80, hotel 16, tavern 8) in config/farm.ts; new problems needs_soil, planted, too_many_plants with texts. Update api/blocksFarmApi.ts only through GameAPI methods (L3 does the tap wiring in game/blockInput.ts). Bump SAVE_VERSION by one, MIGRATIONS entry (normalise plants), fixture test from the previous version. Tests: plant on dirt/planks/stone, crop on planks refused, crop on dirt ok, cap, punch refused while planted, host cannot vanish, nav unchanged, old soil farm unchanged. DONE WHEN: suite + typecheck + balance green.
+
+### SG4b [coder, L3] Plant tap wiring + hint (needs SG4)
+PROMPT: game/blockInput.ts: with a seed selected a tap on a block cell or soil cell in reach plants (walk closer first, as for blocks); no seed = tap punches as now. First-time hint for a selected seed (text.ts, reading pace). Faint tint hook on valid cells (artist fills). Tests with the API. No rule in client.
+
+### SG1 [coder, L2] General splice rule (plan 2.2; needs nothing, serialize after SG4 in config/farm.ts)
+PROMPT: Create shared/src/seedCategory.ts (derived category of every seed), shared/src/spliceRule.ts (spliceResult, allRecipes), shared/data/spliceRules.json (symmetric category weights), constants SPLICE_SALT, SPLICE_RANK_CAP, SPLICE_UP_ONE_IN in config/farm.ts. Specials in splice.json win; same seed, legendary, noSplice = null. fnv1a32 over `${SALT}:${pairKey}`; rank rule, category pick, pool (non-starter seeds, not a/b, sorted by id, step rank down then up). Switch recipeFor/splice/harvestPlant/spliceSeed to it; spliceGrowMs = max(grow a, grow b, grow of result rank) + SPLICE_BONUS_MS. Add splicePreview (pure). Tests: determinism, order free, special wins, rank cap, golden pins of 30 pairs, coverage, old 40 recipes unchanged. No save bump. Apply CLAUDE.md wording 0C at the end.
+
+### SG2 [coder, L2] Balance gate for the general rule (plan 2.7; after SG1)
+PROMPT: Generalise balance.ts chains(), spliceSellLoops(), seedProductValue to allRecipes(). Add the ten test groups of plan 2.7 to balance.test.ts (strict sell-back per pair and per chain, cell-minute value, seed ratio of every block seed < 0.85, 2 seeds in 1 out, gem rate and gold-per-gem >= 30, no pack contains splice-only seeds, cycle check depth 4, ore/drinks/furniture/styles caps, distribution and golden freeze, plants cap income <= 25% of a mixed hour). Add a splice section to `npm run simulate`. If a test fails, change config numbers or pool, never loosen a test. Record in NOTES.
+
+### SG3a..d [coder, L2 data only; artist SA2 supplies icons in the same data fields only after the coder commits] Content batches (plan 2.3)
+PROMPT: a) ~12 blocks (+ rich_soil soilHost) in blocks.json with seedId and icons, spliceSeeds.json entries; b) 8 crops (seedPrice null) + dishes in food.json + 6 drink seeds and drinks.json; c) 14 furniture + 10 clothes with seeds; d) copper/iron ore seeds, 16 style seeds (new SeedGrows kind 'style', unlock via unlockedStyles, duplicate returns the seed) and ~30 special recipes with name/hint. After each batch re-run SG2 tests and simulate, fix numbers. Every category >= 3 seeds per rank 0..2. All names original. Freeze after d (SALT and pools): note it in NOTES.
+
+### SG5 [coder, L3] Splice preview (plan 2.5, 2.6; needs SG1)
+PROMPT: GameAPI.previewSplice(roomId, c, r, seed) returning the splicePreview; client dialog (ui/spliceDialog.ts, panelShell + confirmBuy style): seeds, result or "?" with rank and grow time, "Uses up 1 [seed]. You get 1 new seed.", Splice / Cancel; skipped for known mixes of common seeds; first-found toast. Hold never splices. Tests on the API (nothing taken on cancel, preview matches result).
+
+### SG6 [coder, L3] Book Splice tab (plan 2.6; needs SG1, SG3 for full content)
+PROMPT: book.ts entries = SPECIAL recipes + one card per pool result seed; bookProgress/bookTotal/rewards use them; claimed rewards stay claimed (test); bookPanel.ts layout from the artist's SA1 CSS classes.
+
+### DA1 [artist, L4, CODE-ART, start now] Crypt props, landmarks, wall variants (plan 1.7)
+PROMPT: Read docs/ART-STYLE.md, PIXEL-ART-GUIDE.md. In new client/src/dungeon/propArt.ts export drawDecor(kind, ...) for: barrel, crate, bones, skull_pile, candle_stand, banner, cobweb, shelf, root, glowcap, fountain, statue, brazier_big, pillar_ring, sarcophagus, crack, vault_arch, pillar_variant. Cool crypt, few warm lights, Endesga 32, outline, top-left light. Landmarks readable from afar and glow-ready (brazier, fountain). Do not edit dungeonView.ts (coder DG2 calls you). Show a test sheet in the debug view or a dev page.
+
+### SA1 [artist, L4, CODE-ART, start now] Plant-on-block and splice UI look (plan 2.6, 2.9)
+PROMPT: In client/src/farm/farmArt.ts draw the 3 plant stages on the top face of a block (6 px up offset) and keep soil plants as now; 12x12 category badges (block, crop, drink, ore, furniture, clothing, style) in render/ (new categoryBadges.ts); ui.css classes for the splice dialog, Book splice cards (grey with rank border + badge), seed target tint (.seed-target), a 600 ms splice effect (two seed icons spiral to one, rank sparkle, effects setting respected). Names of classes in a comment at the top of ui.css block so L3 can use them.
+
+### SA2 / SA3 / DA2 [artist, L4] Icons and PNG art (after the matching coder data lands)
+PROMPT SA2 (CODE-ART): icon { shape, colors } for every new item of SG3 with per-category shapes (drawIcon.ts), furniture box models. SA3/DA2 (plugin): PNG icons, furniture, plant stages on blocks, prop and landmark PNGs, spike plate and gate (DG5), brazier lit/unlit, rarest first.
+
 ## CODER QUEUE
 
 ### C4 MB-2 Inn doors: rules and data (IN PROGRESS, SAVE 27: finish, do not restart)

@@ -41,7 +41,7 @@ describe('texts: the tavern is not called the shop (step 9t C)', () => {
 
   it('the catalog tab, the Map card and the info panel say Tavern', () => {
     const read = (p: string): string => readFileSync(join(root, p), 'utf8');
-    expect(read('client/src/ui/catalogPanel.ts')).toContain("['shop', 'coin', 'Tavern']");
+    expect(read('client/src/ui/catalogPanel.ts')).toContain("['shop', 'food', 'Tavern']");
     expect(read('client/src/ui/travelPanel.ts')).toContain("shop: ['Tavern', 'coin']");
     expect(read('client/src/ui/infoPanel.ts')).toContain("shop: 'Tavern'");
   });

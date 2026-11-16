@@ -4,7 +4,7 @@
 // depth-sorted list. A guest at a table sits (drawn right after the seat, like the own avatar), and
 // short gestures (a nod at a sip) play.
 
-import { CUSTOMER_WALK_SPEED, getFurnitureType, walkAvatar, type Avatar, type AvatarLook, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_WALK_SPEED, WALK_RESYNC_PX, getFurnitureType, skipPassed, walkAvatar, type Avatar, type AvatarLook, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import { AvatarSprite, type Gesture } from './avatarSprite.ts';
 import { avatarDepthKey } from './depthOrder.ts';
 import { idleShift } from './atmosphere.ts';
@@ -67,9 +67,9 @@ export class GuestViews {
         this.shown.set(c.id, s);
       } else {
         // Keep the shown position unless it is clearly off (tiny timing differences are walked off).
-        const off = Math.hypot(s.avatar.x - a.x, s.avatar.y - a.y) > 8;
+        const off = Math.hypot(s.avatar.x - a.x, s.avatar.y - a.y) > WALK_RESYNC_PX;
         s.avatar = off ? a : { ...s.avatar, facing: c.path.length > 0 ? s.avatar.facing : a.facing };
-        s.path = [...c.path];
+        s.path = off ? [...c.path] : skipPassed(s.avatar, c.path);
         s.seat = seat;
         s.sitFacing = c.sitFacing ?? null;
       }

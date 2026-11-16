@@ -229,7 +229,7 @@ export type BoxSel = 'top' | { z: number };
 export function boxAnchor(boxes: readonly BoxLike[], sel: BoxSel): { x: number; y: number } | null {
   if (boxes.length === 0) return null;
   const b = sel === 'top' ? boxes.reduce((m, c) => (c.z + c.h > m.z + m.h ? c : m)) : boxes.find((c) => c.z === sel.z);
-  return b ? { x: Math.round(b.dx + b.w / 2), y: b.dy - b.z } : null;
+  return b ? { x: Math.round(b.dx + b.w / 2) + 0, y: b.dy - b.z } : null;
 }
 
 /** A point of a PNG sprite (image px, origin top-left) as an offset from the anchor (bottom centre). */

@@ -6,7 +6,7 @@
 // Step 9c: the mine is drawn by the same view (run.place 'mine'): its own block colours, rocks in
 // the depth-sorted list (they crack per hit and shake when hit), no exit stairs.
 
-import { Container, Graphics, Sprite } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import {
   CHEST_OPEN_MS,
   DUNGEON_BLOCK,
@@ -123,6 +123,9 @@ export class DungeonView {
   /** The crypt light layer (outdoors rework C14); the old fog is its fallback. */
   readonly light = new DungeonLight();
   private fogCool = false;
+  private fogCanvas: HTMLCanvasElement | null = null;
+  private fogTex: Texture | null = null;
+  private readonly fogSprite = new Sprite(Texture.EMPTY);
   private fogDirty = false;
   /** On the floor under the objects: the wind-up telegraph rings (outdoors rework C12). */
   private readonly floorFx = new Graphics();
@@ -151,7 +154,7 @@ export class DungeonView {
     this.player = new AvatarSprite(look);
     this.player.container.eventMode = 'none';
     this.world.eventMode = 'none';
-    this.world.addChild(this.base, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog, this.light.container);
+    this.world.addChild(this.base, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog, this.fogSprite, this.light.container);
     this.objects.add(this.player.container, { y: 0, x: 0, uid: PLAYER_ID });
   }
 
@@ -631,24 +634,38 @@ export class DungeonView {
     g.rect(-B * 20, map.rows * B, (map.cols + 40) * B, B * 20).fill(CRYPT_OUTLINE);
     g.rect(-B * 20, 0, B * 20, map.rows * B).fill(CRYPT_OUTLINE);
     g.rect(map.cols * B, 0, B * 20, map.rows * B).fill(CRYPT_OUTLINE);
-    for (let r = 0; r < map.rows; r++) {
-      // Runs of equal blocks in a row become one rectangle.
-      let c = 0;
-      while (c < map.cols) {
-        const i = r * map.cols + c;
-        const kind = this.fogMemory.lit.has(i) ? 0 : this.fogMemory.seen.has(i) ? 1 : 2;
-        let end = c + 1;
-        while (end < map.cols) {
-          const j = r * map.cols + end;
-          const k = this.fogMemory.lit.has(j) ? 0 : this.fogMemory.seen.has(j) ? 1 : 2;
-          if (k !== kind) break;
-          end++;
-        }
-        // With the light layer on, seen blocks are tinted cool dark blue instead of black.
-        if (kind === 2) g.rect(c * B, r * B, (end - c) * B, B).fill({ color: CRYPT_OUTLINE, alpha: 1 });
-        else if (kind === 1) g.rect(c * B, r * B, (end - c) * B, B).fill(this.fogCool ? { color: SEEN_COOL, alpha: DUNGEON_SEEN_COOL } : { color: CRYPT_OUTLINE, alpha: DUNGEON_SEEN_DARK });
-        c = end;
-      }
+    // The blocks: one pixel per block in a small canvas, stretched with linear filtering, so the edges between lit, seen and unseen blocks are soft
+    // instead of hard 32 px squares.
+    if (!this.fogCanvas || this.fogCanvas.width !== map.cols || this.fogCanvas.height !== map.rows) {
+      this.fogCanvas = document.createElement('canvas');
+      this.fogCanvas.width = map.cols;
+      this.fogCanvas.height = map.rows;
+      this.fogTex?.destroy(true);
+      this.fogTex = Texture.from(this.fogCanvas);
+      this.fogTex.source.scaleMode = 'linear';
+      this.fogSprite.texture = this.fogTex;
     }
+    const rgb = (c: string): [number, number, number] => {
+      const n = parseInt(c.replace('#', ''), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    };
+    const dark = rgb(CRYPT_OUTLINE);
+    const seen = this.fogCool ? rgb(SEEN_COOL) : dark;
+    const seenA = this.fogCool ? DUNGEON_SEEN_COOL : DUNGEON_SEEN_DARK;
+    const ctx = this.fogCanvas.getContext('2d')!;
+    const img = ctx.createImageData(map.cols, map.rows);
+    for (let i = 0; i < map.cols * map.rows; i++) {
+      const isSeen = this.fogMemory.seen.has(i);
+      const col = isSeen ? seen : dark;
+      const a = this.fogMemory.lit.has(i) ? 0 : isSeen ? seenA : 1;
+      img.data[i * 4] = col[0];
+      img.data[i * 4 + 1] = col[1];
+      img.data[i * 4 + 2] = col[2];
+      img.data[i * 4 + 3] = Math.round(a * 255);
+    }
+    ctx.putImageData(img, 0, 0);
+    this.fogTex!.source.update();
+    this.fogSprite.width = map.cols * B;
+    this.fogSprite.height = map.rows * B;
   }
 }

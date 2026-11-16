@@ -449,8 +449,7 @@ export async function setupTavernLife(g: G9) {
     }
     if (!(await api.serveGuest(guestId))) toast('There is no way to the bar.');
     else {
-      sound.play('click');
-      guide.event('serve');
+      sound.play('click'); // the 'serve' step ticks on the 'served' event, not on the request
     }
     await refreshTavern();
   }
@@ -468,18 +467,7 @@ export async function setupTavernLife(g: G9) {
         return true;
       }
     }
-    const gid = guests.at(world);
-    const guest = gid === null ? undefined : st.tavern.guests.find((g) => g.id === gid);
-    if (guest?.phase === 'order' && guest.order) {
-      void serveTap(guest.id);
-      return true;
-    }
-    const m = tableMess.at(world);
-    if (m) {
-      if (st.tavern.holding || st.tavern.serveQueue.length > 0) toast('Serve the orders first.');
-      else void api.tidyTable(m.messId, m.what).then((ok) => ok || toast('There is no way to that table.'));
-      return true;
-    }
+    // A machine under the pointer wins over a guest whose body box overlaps it.
     if (hit && getFurnitureType(hit.typeId).cooks) {
       stoveTap(hit);
       return true;
@@ -494,6 +482,18 @@ export async function setupTavernLife(g: G9) {
     }
     if (hit && getFurnitureType(hit.typeId).taps) {
       standTap();
+      return true;
+    }
+    const gid = guests.at(world);
+    const guest = gid === null ? undefined : st.tavern.guests.find((g) => g.id === gid);
+    if (guest?.phase === 'order' && guest.order) {
+      void serveTap(guest.id);
+      return true;
+    }
+    const m = tableMess.at(world);
+    if (m) {
+      if (st.tavern.holding || st.tavern.serveQueue.length > 0) toast('Serve the orders first.');
+      else void api.tidyTable(m.messId, m.what).then((ok) => ok || toast('There is no way to that table.'));
       return true;
     }
     return false;
@@ -582,7 +582,17 @@ export async function setupTavernLife(g: G9) {
         pourFor = { standUid: e.standUid, item: e.item, guestId: e.guestId };
         pourControl.wait(e.standUid, e.item);
         const i = standInfo(e.standUid);
-        if (i) pour.wait(i.stand, i.bar, e.item);
+        if (i) {
+          pour.wait(i.stand, i.bar, e.item);
+          // The stand must be on screen to be pressed: when it is not (the camera is elsewhere), the camera glides there.
+          const sp = worldToScreen({ x: i.stand.x, y: i.floorY - 14 }, st.shown);
+          const w = g.app.screen.width;
+          const hh = g.app.screen.height;
+          if (sp.x < 70 || sp.x > w - 90 || sp.y < 110 || sp.y > hh - 110) {
+            const z = st.camera.zoom;
+            g.setCamera({ x: i.stand.x - w / (2 * z), y: i.floorY - 14 - hh / (2 * z), zoom: z }, true);
+          }
+        }
         if (!hintRaf) hintRaf = requestAnimationFrame(hintLoop);
         break;
       }
@@ -639,6 +649,6 @@ export async function setupTavernLife(g: G9) {
   });
 
   // A test hook for the headless end-to-end check (only with ?e2e in the address).
-  if (new URLSearchParams(location.search).has('e2e')) (window as unknown as { __ph: unknown }).__ph = { api, st, pourControl, pour, worldToScreen, tapStands, serveTap };
+  if (new URLSearchParams(location.search).has('e2e')) (window as unknown as { __ph: unknown }).__ph = { api, st, late, pourControl, pour, worldToScreen, tapStands, serveTap, standPoint: (uid: number) => { const i = standInfo(uid); return i ? worldToScreen({ x: i.stand.x, y: i.floorY - 14 }, st.shown) : null; } };
   return { fx, pour, pourControl, guests, tableMess, orders, syncTavern, tavernTap, barTap, cooking, brewing, stoveArrived, barrelArrived, caskArrived };
 }

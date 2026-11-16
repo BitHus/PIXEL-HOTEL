@@ -14,6 +14,7 @@ import {
   handAnchor,
   headOffset,
   rigPose,
+  snapToStep,
   walkFrame,
   WALK_BOB_MS,
   WALK_BOB_PX,
@@ -23,6 +24,7 @@ import {
   type FurnitureType,
 } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
+import { pixelStep } from './pixelStep.ts';
 import { lyingRects } from './lieArt.ts';
 import { SIT_DROP, avatarParts, sitParts, type Part } from './avatarParts.ts';
 import type { EmotePose } from './emoteAnim.ts';
@@ -172,7 +174,8 @@ export class AvatarSprite {
     this.lastTimeMs = timeMs;
     if (this.lastPos && avatar.state === 'walk') this.distance += Math.min(Math.hypot(avatar.x - this.lastPos.x, avatar.y - this.lastPos.y), 64);
     this.lastPos = { x: avatar.x, y: avatar.y };
-    this.container.position.set(Math.round(avatar.x), Math.round(avatar.y));
+    // Whole DEVICE pixels, not whole world pixels: at zoom 3 a walk of 2.1 world px per frame no longer rounds to 2,2,2,3 (judder).
+    this.container.position.set(snapToStep(avatar.x, pixelStep.v), snapToStep(avatar.y, pixelStep.v));
     this.show(avatar);
     const up = !this.bakedNow && avatar.state === 'walk' && Math.floor(timeMs / WALK_BOB_MS) % 2 === 1;
     this.bobPx = up ? -WALK_BOB_PX : 0;

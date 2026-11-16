@@ -16,7 +16,7 @@ describe('medieval icons', () => {
       expect(icon.rows, name).toHaveLength(16);
       for (const row of icon.rows) {
         expect(row.length, name).toBe(16);
-        for (const ch of row) if (ch !== '.') expect(icon.colors[ch], `${name} ${ch}`).toBeTruthy();
+        for (const ch of row) if (ch !== '.') expect((icon.colors as Record<string, string>)[ch], `${name} ${ch}`).toBeTruthy();
       }
     }
   });

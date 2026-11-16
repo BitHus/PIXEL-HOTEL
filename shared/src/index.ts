@@ -3,6 +3,7 @@ export * from './types.ts';
 export * from './room.ts';
 export * from './nav.ts';
 export * from './avatar.ts';
+export * from './smooth.ts';
 export * from './avatarRig.ts';
 export * from './view.ts';
 export * from './api.ts';

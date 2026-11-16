@@ -3,6 +3,7 @@
 
 import { PALETTE } from '@pixel-hotel/shared';
 import { MEDIEVAL_ICONS } from './pixelIconsMedieval.ts';
+import { CURRENCY_ICONS } from './pixelIconsCurrency.ts';
 
 type PixelMap = { rows: string[]; colors: Record<string, string> };
 
@@ -657,7 +658,7 @@ const BASE_ICONS = {
 } satisfies Record<string, PixelMap>;
 
 // UI round 4: the 16 x 16 medieval redraws win over the old 12 x 12 maps of the same name (and add level, refused).
-const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS };
+const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS, ...CURRENCY_ICONS };
 
 export type IconName = keyof typeof ICONS;
 
@@ -686,4 +687,31 @@ export function pixelIcon(name: IconName): SVGSVGElement {
     });
   });
   return svg;
+}
+
+const urlCache = new Map<string, string>();
+
+/** A pixel icon as a data URL of a 16 x 16 PNG (for <img> and the gain chips; shown at 16 or 32 px, whole pixels). Cached. */
+export function pixelIconUrl(name: IconName): string {
+  const hit = urlCache.get(name);
+  if (hit !== undefined) return hit;
+  const { rows, colors } = ICONS[name] as PixelMap;
+  const w = Math.max(...rows.map((r) => [...r].length));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = rows.length;
+  const g = canvas.getContext('2d');
+  if (g) {
+    rows.forEach((row, y) =>
+      [...row].forEach((ch, x) => {
+        const fill = colors[ch];
+        if (!fill) return;
+        g.fillStyle = fill;
+        g.fillRect(x, y, 1, 1);
+      }),
+    );
+  }
+  const url = canvas.toDataURL('image/png');
+  urlCache.set(name, url);
+  return url;
 }

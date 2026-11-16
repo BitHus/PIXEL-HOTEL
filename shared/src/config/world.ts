@@ -73,3 +73,6 @@ export const WALK_FRAME_PX = 12;
 export const WALK_BOB_MS = 150;
 /** Where a new avatar stands: this far above the bottom of the floor, centered (in the door zone). */
 export const AVATAR_START_FROM_BOTTOM = 24;
+
+/** A walker already moving keeps its shown position when the model's differs by less than this, px (a tick is up to 13 px at 128 px/s); only a bigger gap jumps. */
+export const WALK_RESYNC_PX = 24;
