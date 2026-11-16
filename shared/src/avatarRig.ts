@@ -216,7 +216,7 @@ export function avatarLayers(look: AvatarLook, outfit: AvatarOutfit | null, faci
   if (hides === 'all') {
     items.hair_back = null;
     items.hair_front = null;
-  } else if (hides === 'front') items.hair_front = null;
+  } else if (hides === 'front' && d.facing !== 'up') items.hair_front = null; // from behind the hair IS hair_front: a front-only hat keeps it (no bald head)
   const order: AvatarSlot[] = d.facing === 'up'
     ? ['body', 'shoes', 'legs', 'torso', 'outer', 'outer_back', 'hair_back', 'face', 'hair_front', 'hat']
     : [...AVATAR_SLOTS];

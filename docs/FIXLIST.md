@@ -44,3 +44,8 @@ Findings, severity order:
 ## UI currency and shop pass (ui, 16 Nov)
 - Done from TESTER RUN 1: 1 (panels and quest card start below the first-steps card via --ft-bottom; close X and Skip 44 px), 4 (Map badge grows left, card badge no shrink), 5 (HUD counters: first value instant), 9 quest card (shrinks to its seal after reading; hintBox.setCompact(true) for the coder to call when the avatar walks or outside the tavern).
 - Not mine, seen: client/src/dungeon/dungeonView.ts ~line 660 has type errors (map undefined) in the working tree (someone's WIP); typecheck is red there.
+
+## ICON-AUDIT (artist, 17 Nov)
+Code icons audited next to their models (146 shape icons without PNG, 69 PNG icons). Wrong read, now redrawn as PNG (art-src/aseprite/icons_audit_r1.aseprite): wall_clock (was a sign), wall_mirror (orb), music_box (chest), pet_basket (box), dartboard (sign), antler_mount (bone), tap_stand (candle stand), bat_wing_fan (banner), dice_cup (plain mug), coat_rack (lamp post), spice_bundle (single leaf), iron_brazier (torch), mimic_tongue (red tag).
+Checked and left (read fine): all fish, food bowls/plates, drinks, ores, bars, blocks, chairs/benches/tables/thrones, lamps, rugs, banners, crowns, rings. Weak but acceptable, redraw if time: window_curtains (banner shape), throne_piece (plain block), register (till box), cloth (pink slab), pearl_chandelier.
+Not checked in the game: only icons next to code icons in a contact sheet, not in the real bag or catalog.

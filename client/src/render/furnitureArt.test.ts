@@ -91,6 +91,13 @@ describe('heights match the sprites (ART-REDO R1 and R2)', () => {
       expect(type(id).height).toBe(d + top(id));
     }
   });
+  it('R9 register 34, lamp 28 and menu board z14-44 match the new sprites, footprints untouched', () => {
+    expect([type('register').height, type('lamp').height]).toEqual([34, 28]);
+    const mb = boxesForFacing(type('menu_board'), 'down').boxes;
+    expect([Math.min(...mb.map((x) => x.z)), Math.max(...mb.map((x) => x.z + x.h))]).toEqual([14, 44]);
+    for (const id of ['register', 'lamp']) expect([type(id).w, type(id).d]).toEqual([32, 32]);
+    expect([type('menu_board').w, type('menu_board').d]).toEqual([40, 4]);
+  });
   it('R6 kitchen boxes match the new sprites: prep 32, pantry 56, sink 33, hatch frame 42, footprints untouched', () => {
     const top = (id: string) => Math.max(...boxesForFacing(type(id), 'down').boxes.map((x) => x.z + x.h));
     expect([top('prep_table'), top('pantry'), top('sink'), top('serving_hatch')]).toEqual([32, 56, 33, 42]);

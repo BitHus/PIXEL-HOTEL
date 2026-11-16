@@ -11,6 +11,7 @@ import { growthStage, soilCells } from './farm.ts';
 import { SOIL_STYLE } from './config.ts';
 import { testRun } from './dungeon/testRun.ts';
 import type { FurnitureItem } from './types.ts';
+import type { BlockCell } from './blockTypes.ts';
 
 const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
 
@@ -667,8 +668,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 31 (30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(31);
+  it('SAVE_VERSION is 32 (31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(32);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');
@@ -890,5 +891,25 @@ describe('migration 30 -> 31 (step COD-1: the waiter tray)', () => {
     const b = readSave(JSON.stringify({ version: 30, savedAt: 9, state: old(null) }));
     if (b.ok) expect(b.state.tavern.tray).toEqual([]);
     expect(readSave(toSaveText(state, 9))).toMatchObject({ ok: true, migrated: false });
+  });
+});
+
+describe('migration 31 -> 32 (step ST1: stacked blocks)', () => {
+  it('every block of a version 31 save becomes a stack of one; nothing else changes', () => {
+    const state = createNewPlayer(undefined, 1);
+    const cell: BlockCell = { id: 'dirt', hits: 2, hitAt: 5 };
+    const old = { ...state, rooms: state.rooms.map((r, i) => (i === 0 ? { ...r, blocks: { '3,4': cell, '5,6': { id: 'planks', hits: 0, hitAt: 0 } } } : r)) };
+    const r = readSave(JSON.stringify({ version: 31, savedAt: 9, state: old }));
+    expect(r).toMatchObject({ ok: true, migrated: true });
+    if (r.ok) {
+      expect(r.state.rooms[0]!.blocks['3,4']).toEqual([cell]);
+      expect(r.state.rooms[0]!.blocks['5,6']).toEqual([{ id: 'planks', hits: 0, hitAt: 0 }]);
+      expect(r.state.rooms[1]).toEqual(state.rooms[1]);
+    }
+    // A save that is already stacked (version 32) loads as it is.
+    const stacked = { ...state, rooms: state.rooms.map((r, i) => (i === 0 ? { ...r, blocks: { '3,4': [cell, cell] } } : r)) };
+    const again = readSave(toSaveText(stacked, 9));
+    expect(again).toMatchObject({ ok: true, migrated: false });
+    if (again.ok) expect(again.state.rooms[0]!.blocks['3,4']).toHaveLength(2);
   });
 });

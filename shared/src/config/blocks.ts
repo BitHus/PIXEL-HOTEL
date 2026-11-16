@@ -3,6 +3,10 @@ import { TAP_MAX_MS } from './clientInput.ts';
 // ---------- Blocks, punching and gems (step BG5) ----------
 /** A block can be placed or punched this many cells from the avatar (centre to centre, in cells). */
 export const BLOCK_REACH = 3;
+/** ST1: the most blocks stacked on one cell of a room (bottom first; a stack blocks walking like one block). */
+export const BLOCK_STACK_MAX = 3;
+/** ST1: how many px each stacked block is drawn higher than the one under it (rendering only). */
+export const BLOCK_STACK_RISE_PX = 14;
 /** One punch per tap, at most every this many ms. */
 export const BLOCK_HIT_COOLDOWN_MS = 250;
 /** A half-broken block heals (its hits reset) when it was not hit for this long. */

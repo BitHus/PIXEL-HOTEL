@@ -63,9 +63,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - KITCHEN ZONE (T1): per tavern shape and level a cell rectangle (shared/data/roomShapes.json `kitchen`, level 1 a small corner next to the bar, levels 2 and 3 grow it). Staff only like behind the bar: guests never walk or sit there (npcGrid, tavernSeats); the owner's blocks and furniture are allowed. Shown as a faint tint while placing and in the Room panel.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
-- BLOCKS (BG5): Room.blocks = a foreground layer, one block per cell (shared/data/blocks.json, items
-  in the bag and hotbar). Never on the door zone, off the floor, on floor furniture, plants, or
-  under an avatar standing still. They block walking: a block that would shut the door
+- BLOCKS (BG5, ST1): Room.blocks = a foreground layer, a STACK of 1 to BLOCK_STACK_MAX (3, config) blocks per cell, bottom first (shared/data/blocks.json, items
+  in the bag and hotbar). A block goes on top of the stack (cell problem 'stack_full' at the max); a punch hits and breaks only the TOP block; a plant needs a single
+  bottom block ('stacked' otherwise). Never on the door zone, off the floor, on floor furniture, plants, or
+  under an avatar standing still. A stack blocks walking like one block (walkable heights are ST3): a block that would shut the door
   off from the middle or the counter's staff spot is refused. In hotel, shop and farm only (owner).
 
 6. MOVEMENT
@@ -268,7 +269,7 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the 
 - In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, smoothness pass
   (docs/FIXLIST.md). Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
 - Not done: step 10 (server, a placeholder), the playtest (nobody has run the game in a browser yet: do that first when a browser tool exists).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 31 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding). LocalGameAPI only. The indoor lighting look is approved: keep it.
+- DUNGEON_ROUND is 1. SAVE_VERSION is 32 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, e2e (Playwright smoke, e2e/), simulate, simulate:dungeon. Vite base stays './'.
@@ -315,7 +316,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 31) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 32) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

@@ -24,7 +24,8 @@ export async function setupSettingsPanels(g: G11) {
 late.avatarPanel = avatarPanel;
   avatarPanel.setLook(st.avatar.look, (await api.getPlayer()).unlockedClothing);
   avatarPanel.setName(st.avatar.name);
-  panels.add('avatar', avatarPanel.el);
+  // Hats unlock from events (Book, fish, splice, boss): re-read what is owned each time the panel opens, else a new hat stays a locked silhouette.
+  panels.add('avatar', avatarPanel.el, () => void api.getPlayer().then((p) => avatarPanel.setLook(st.avatar.look, p.unlockedClothing)));
 
   const chat = createChatPanel(ui, (text) => void api.chat(text));
   panels.add('chat', chat.el, () => chat.focus());

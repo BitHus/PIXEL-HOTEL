@@ -5,7 +5,7 @@
 // are in shared/src/blocks.ts). Art is placeholder boxes drawn in code (palette names from the data).
 
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { BUILD_CELL, blockList, crackStage, getBlockType, paletteColor, type BlockType, type PaletteName, type Room } from '@pixel-hotel/shared';
+import { BLOCK_STACK_MAX, BLOCK_STACK_RISE_PX, BUILD_CELL, blockList, crackStage, getBlockType, paletteColor, type BlockType, type PaletteName, type Room } from '@pixel-hotel/shared';
 import type { DepthKey } from './depthOrder.ts';
 import type { RoomView } from './roomView.ts';
 import { spriteTexture } from './spriteStore.ts';
@@ -120,6 +120,7 @@ interface BlockView {
   id: string;
   c: number;
   r: number;
+  level: number;
   node: Container;
   cracks: Graphics;
   stage: number;
@@ -158,8 +159,8 @@ export class BlockViews {
       this.roomId = room.id;
     }
     const live = new Set<string>();
-    for (const { c, r, block } of blockList(room)) {
-      const key = `${c},${r}`;
+    for (const { c, r, block, level } of blockList(room)) {
+      const key = `${c},${r},${level}`; // ST1: one view per block of a stack
       live.add(key);
       let v = this.views.get(key);
       if (v && v.id !== block.id) {
@@ -175,11 +176,11 @@ export class BlockViews {
         if (art instanceof Graphics) drawBlockArt(art, type);
         const cracks = new Graphics();
         node.addChild(art, cracks);
-        node.position.set(c * BUILD_CELL, r * BUILD_CELL);
+        node.position.set(c * BUILD_CELL, r * BUILD_CELL - level * BLOCK_STACK_RISE_PX); // stub: each level is drawn higher
         node.eventMode = 'none';
-        v = { id: block.id, c, r, node, cracks, stage: 0, shakeMs: 0 };
+        v = { id: block.id, c, r, level, node, cracks, stage: 0, shakeMs: 0 };
         this.views.set(key, v);
-        this.view.objects.add(node, this.keyOf(c, r));
+        this.view.objects.add(node, this.keyOf(c, r, level));
       }
       const stage = crackStage(block, type.hardness, now);
       if (stage !== v.stage) {
@@ -194,9 +195,9 @@ export class BlockViews {
     }
   }
 
-  private keyOf(c: number, r: number): DepthKey {
+  private keyOf(c: number, r: number, level = 0): DepthKey {
     // Like an item whose foot is the cell's bottom edge; negative uids never tie with items or avatars.
-    return { y: (r + 1) * BUILD_CELL, x: c * BUILD_CELL + BUILD_CELL / 2, uid: -2_000_000 - r * 1000 - c };
+    return { y: (r + 1) * BUILD_CELL, x: c * BUILD_CELL + BUILD_CELL / 2, uid: -2_000_000 - r * 1000 - c + level };
   }
 
   private drop(v: BlockView): void {
@@ -206,8 +207,13 @@ export class BlockViews {
 
   /** A punch: the block shakes for a moment. */
   punch(c: number, r: number): void {
-    const v = this.views.get(`${c},${r}`);
-    if (v) v.shakeMs = SHAKE_MS;
+    for (let level = BLOCK_STACK_MAX - 1; level >= 0; level--) {
+      const v = this.views.get(`${c},${r},${level}`);
+      if (v) {
+        v.shakeMs = SHAKE_MS; // the top block of the stack
+        return;
+      }
+    }
   }
 
   /** A block broke (it is already gone from the room): a puff of bits in its colours. */

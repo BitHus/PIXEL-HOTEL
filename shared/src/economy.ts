@@ -129,9 +129,9 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   next = clearDoorSpots(next, roomId, at).state;
   const room3 = next.rooms.find((r) => r.id === roomId) ?? grown;
   if (!doorReachesMiddle(room3, roomBlockers(room3, next.items))) {
-    next = returnBlocks(next, roomId, Object.keys(room3.blocks).map((k) => {
+    next = returnBlocks(next, roomId, Object.entries(room3.blocks).flatMap(([k, stack]) => {
       const [c, r] = k.split(',').map(Number) as [number, number];
-      return { c, r, id: room3.blocks[k]!.id as string };
+      return stack.map((b, level) => ({ c, r, id: b.id as string, level }));
     }), at);
   }
   return next;
@@ -151,14 +151,14 @@ export function buyGear(state: GameState, id: ShopGearId, at: number): GameState
 }
 
 /** Takes these blocks out of a room's layer and puts them back in the bag (ledger 'block_return'). */
-function returnBlocks(state: GameState, roomId: number, cells: { c: number; r: number; id: string }[], at: number): GameState {
+function returnBlocks(state: GameState, roomId: number, cells: { c: number; r: number; id: string; level?: number }[], at: number): GameState {
   if (cells.length === 0) return state;
   const room = state.rooms.find((r) => r.id === roomId);
   if (!room) return state;
   const blocks = { ...room.blocks };
   const back: Record<string, number> = {};
   for (const b of cells) {
-    if (!blocks[`${b.c},${b.r}`]) continue;
+    if (!room.blocks[`${b.c},${b.r}`]) continue; // ST1: every block of a stack is listed; the whole stack leaves the cell
     delete blocks[`${b.c},${b.r}`];
     back[b.id] = (back[b.id] ?? 0) + 1;
   }

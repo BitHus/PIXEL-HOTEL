@@ -79,7 +79,7 @@ describe('where a block may stand', () => {
     expect(why(8, 10)).toBe('door');
     expect(why(9, 11)).toBe('door');
     expect(why(7, 10)).toBeNull(); // next to the zone is fine
-    expect(why(2, 2, put(s, id, 2, 2))).toBe('taken');
+    expect(why(2, 2, put(s, id, 2, 2))).toBeNull(); // ST1: a block goes on top of a block (stackedBlocks.test.ts)
     expect(why(2, 2, s, 'brick')).toBe('empty');
     expect(why(1.5, 2)).toBe('floor');
   });

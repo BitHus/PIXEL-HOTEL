@@ -37,7 +37,7 @@ describe('blocks through the GameAPI', () => {
     const near = await api.placeBlock(9, 9, 'dirt');
     expect(near).toMatchObject({ kind: 'placed', c: 9, r: 9 });
     if (near.kind !== 'placed') return;
-    expect(near.room.blocks['9,9']).toMatchObject({ id: 'dirt' });
+    expect(near.room.blocks['9,9']![0]).toMatchObject({ id: 'dirt' });
     expect((await api.getInventory()).materials.dirt).toBe(29);
     // Far away: the avatar walks closer; nothing is placed yet.
     const far = await api.placeBlock(9, 2, 'dirt');
@@ -57,7 +57,9 @@ describe('blocks through the GameAPI', () => {
     await api.enterRoom(s.player.hotelRoomId);
     expect(await api.placeBlock(8, 10, 'dirt')).toEqual({ kind: 'refused', problem: 'door' });
     expect(await api.placeBlock(9, 9, 'dirt')).toMatchObject({ kind: 'placed' });
-    expect(await api.placeBlock(9, 9, 'dirt')).toEqual({ kind: 'refused', problem: 'taken' });
+    expect(await api.placeBlock(9, 9, 'dirt')).toMatchObject({ kind: 'placed' }); // ST1: stacks on top
+    expect(await api.placeBlock(9, 9, 'dirt')).toMatchObject({ kind: 'placed' });
+    expect(await api.placeBlock(9, 9, 'dirt')).toEqual({ kind: 'refused', problem: 'stack_full' });
     expect(await api.placeBlock(8, 9, 'brick')).toEqual({ kind: 'refused', problem: 'empty' });
     // The cell the avatar stands on (it stands still at the door point: cell 9, 10 is the zone; use its own cell).
     const lake = (await api.getPlayer()).lakesideRoomId;
@@ -153,7 +155,7 @@ describe('blocks through the GameAPI', () => {
     await api.enterRoom(s.player.hotelRoomId);
     expect(await api.placeBlock(9, 9, 'dirt')).toMatchObject({ kind: 'placed' });
     const again = LocalGameAPI.open(storage, clock, seededRng(2)).api;
-    expect((await again.getRoom(s.player.hotelRoomId))!.blocks['9,9']).toMatchObject({ id: 'dirt' });
+    expect((await again.getRoom(s.player.hotelRoomId))!.blocks['9,9']![0]).toMatchObject({ id: 'dirt' });
     // A wall across row 9. A cell the avatar stands on is refused ('avatar'): it moves on and tries again.
     const results: string[] = [];
     const tryCell = async (c: number): Promise<void> => {

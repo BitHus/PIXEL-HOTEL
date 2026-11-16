@@ -94,6 +94,8 @@ describe('avatarLayers', () => {
     expect(HATS.find((h) => h.id === 'straw_hat')!.hides).toBe('front');
     expect(slots('down', { ...look, hat: 'straw_hat' })).not.toContain('hair_front');
     expect(slots('down', { ...look, hat: 'straw_hat' })).toContain('hair_back');
+    expect(slots('up', { ...look, hat: 'straw_hat' })).toContain('hair_front'); // seen from behind: no bald head
+    expect(slots('up', { ...look, hat: 'knight_helm' })).not.toContain('hair_front');
     const helm = slots('down', { ...look, hat: 'knight_helm' });
     expect(helm).not.toContain('hair_front');
     expect(helm).not.toContain('hair_back');

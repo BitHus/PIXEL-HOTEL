@@ -28,6 +28,8 @@ export async function setupBlockInput(g: G14) {
     no_soil: 'Seeds only grow on soil. Paint soil in the Room panel (Paint soil).',
     nothing_happens: 'Nothing happens. Both seeds are safe in your bag.',
     already_spliced: 'This cell already holds two seeds.',
+    stack_full: 'The stack is as high as it goes.',
+    stacked: 'A plant needs a single block, not a stack.',
     taken: '',
   };
   /** Why the selected block or seed does not fit in this cell (null = it fits); `standing` = avatars standing still. */

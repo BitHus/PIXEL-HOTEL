@@ -224,7 +224,7 @@ describe('clearing door spots', () => {
       ],
       rooms: s0.rooms.map((r) =>
         r.id === hotel.id
-          ? { ...r, blocks: { [`${hs.col + 1},${hs.row}`]: { id: 'planks', hits: 0, hitAt: 0 }, '0,5': { id: 'planks', hits: 0, hitAt: 0 } } }
+          ? { ...r, blocks: { [`${hs.col + 1},${hs.row}`]: [{ id: 'planks', hits: 0, hitAt: 0 }], '0,5': [{ id: 'planks', hits: 0, hitAt: 0 }] } }
           : r.id === farm.id
             ? { ...r, plants: { [`${fs.col},${fs.row}`]: { seed: 'turnip_seed', plantedAt: 0, readyAt: 100 } } }
             : r,

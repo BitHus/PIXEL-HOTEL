@@ -349,6 +349,20 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     });
     return { ...state, rooms };
   },
+  // 31 -> 32 (step ST1, stacked blocks): Room.blocks per cell was ONE block, now a stack (array, bottom first): every block becomes a stack of one.
+  31: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms)) return state;
+    const rooms = (state.rooms as unknown[]).map((room) => {
+      if (!isObject(room) || !isObject(room.blocks)) return room;
+      const blocks: Record<string, unknown[]> = {};
+      for (const [key, b] of Object.entries(room.blocks)) {
+        if (Array.isArray(b)) blocks[key] = b;
+        else if (isObject(b)) blocks[key] = [b];
+      }
+      return { ...room, blocks };
+    });
+    return { ...state, rooms };
+  },
   // 30 -> 31 (step COD-1, the waiter's tray): TavernState.holding (one mug, tied to a guest) becomes TavernState.tray (up to TRAY_MAX mugs, tied to nobody).
   30: (state) => {
     if (!isObject(state) || !isObject(state.tavern)) return state;

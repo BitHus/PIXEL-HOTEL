@@ -1,7 +1,7 @@
 // Blocks and punching (step BG5). Pure rules on plain data: where a block may stand, putting one in
 // a cell, hitting one until it breaks, and what it drops. Time and rng are passed in.
 //
-// A block lives in the room's foreground layer (Room.blocks), one per cell. It never stands on the
+// A block lives in the room's foreground layer (Room.blocks), a stack of up to BLOCK_STACK_MAX per cell (ST1). It never stands on the
 // door zone, outside the floor, on a cell with floor furniture, on the farm's plots or pot, or on a
 // cell where an avatar stands still. Blocks block walking, so a placement that would shut the door
 // off from the middle of the room, or the shopkeeper's spot behind the counter, is refused.
@@ -10,7 +10,7 @@
 
 import { innDoorSpotRects } from './innDoors.ts';
 import { kitchenZone } from './kitchen.ts';
-import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BUILD_CELL } from './config.ts';
+import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BLOCK_STACK_MAX, BUILD_CELL } from './config.ts';
 import { getBlockType, isBlockId, type BlockCell, type BlockLookup, type BlockType } from './blockTypes.ts';
 import { footprintRect, getFurnitureType, behindPoint, behindReachable, doorPoint, doorReachesMiddle, roomBlockers, type FurnitureLookup } from './furniture.ts';
 import { noPlaceRects, fixedBlockers } from './farmLayout.ts';
@@ -19,7 +19,7 @@ import { seatKey, tavernSeats } from './tavern.ts';
 import type { GameState } from './gameState.ts';
 import { blockGemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
-import { blockInCell, blockKey, cellOf, cellOnFloor, cellRectOf, doorZoneRect, plantInCell, rectsOverlap, type Room, type RoomKind } from './room.ts';
+import { blockInCell, blockKey, blockStack, cellOf, cellOnFloor, cellRectOf, doorZoneRect, plantInCell, rectsOverlap, type Room, type RoomKind } from './room.ts';
 import type { FurnitureItem, MaterialId, Point, Rect, Rng } from './types.ts';
 
 export type BlockProblem =
@@ -30,7 +30,9 @@ export type BlockProblem =
   | 'floor' // the cell is not (all) floor
   | 'door' // on the door zone
   | 'inn_door' // on the spot in front of an Inn door (step MB-2)
-  | 'taken' // a block is already there
+  | 'taken' // a plant is already there (or a block, for a plant)
+  | 'stack_full' // ST1: the cell already holds BLOCK_STACK_MAX blocks
+  | 'stacked' // ST1: a plant sits only on a single block, not on a stack
   | 'furniture' // floor furniture is there
   | 'fixed' // the farm's plots or the cooking pot
   | 'avatar' // an avatar stands still there
@@ -94,7 +96,7 @@ export function cellProblem(
   r: number,
   ctx: BlockContext,
   types: FurnitureLookup = getFurnitureType,
-  /** True = a block already in the cell is fine (a plant on a block host, step SG4); a plant there never is. */
+  /** True = a plant (step SG4): a single block in the cell is its host; a stack of 2 or more is refused ('stacked'). False = a block: it goes on top of a stack under BLOCK_STACK_MAX. */
   allowBlock = false,
 ): BlockProblem | null {
   if (room.kind === 'lakeside') return 'not_buildable';
@@ -103,7 +105,9 @@ export function cellProblem(
   const cell = cellRectOf(c, r);
   if (rectsOverlap(cell, doorZoneRect(room))) return 'door';
   if (innDoorSpotRects(room).some((x) => rectsOverlap(cell, x))) return 'inn_door';
-  if ((!allowBlock && blockInCell(room, c, r)) || plantInCell(room, c, r)) return 'taken';
+  if (plantInCell(room, c, r)) return 'taken';
+  const height = blockStack(room, c, r).length;
+  if (allowBlock ? height > 1 : height >= BLOCK_STACK_MAX) return allowBlock ? 'stacked' : 'stack_full';
   if (floorFurniture(room, items, types).some((i) => rectsOverlap(cell, footprintRect(i, types(i.typeId))))) return 'furniture';
   if ([...noPlaceRects(room), ...fixedBlockers(room)].some((x) => rectsOverlap(cell, x))) return 'fixed';
   if (ctx.standing.some((p) => cellOf(p).c === c && cellOf(p).r === r)) return 'avatar';
@@ -175,7 +179,7 @@ export function placeBlock(
   const paid = applyChange(state, { reason: 'block_place', materials: { [type.id]: -1 }, note: `${type.id}@${blockKey(c, r)}` }, at);
   if (!paid) return { ok: false, problem: 'empty' };
   const cell: BlockCell = { id: type.id, hits: 0, hitAt: at };
-  return { ok: true, state: withRoom(paid, { ...room, blocks: { ...room.blocks, [blockKey(c, r)]: cell } }) };
+  return { ok: true, state: withRoom(paid, { ...room, blocks: { ...room.blocks, [blockKey(c, r)]: stackPush(blockStack(room, c, r), cell) } }) };
 }
 
 function isKnown(id: string, lookup: BlockLookup): boolean {
@@ -186,6 +190,21 @@ function isKnown(id: string, lookup: BlockLookup): boolean {
   } catch {
     return false;
   }
+}
+
+/** The stack with one block put on top (pure; the caller checked BLOCK_STACK_MAX). */
+export function stackPush(stack: readonly BlockCell[], cell: BlockCell): BlockCell[] {
+  return [...stack, cell];
+}
+
+/** The stack without its top block (empty stays empty). */
+export function stackPop(stack: readonly BlockCell[]): BlockCell[] {
+  return stack.slice(0, -1);
+}
+
+/** True when no block fits on top any more. */
+export function stackFull(stack: readonly BlockCell[]): boolean {
+  return stack.length >= BLOCK_STACK_MAX;
 }
 
 /** Hits a block has taken now: a block that was left alone for BLOCK_HEAL_MS has healed. */
@@ -252,23 +271,26 @@ export function hitBlock(
   const hits = hitsNow(cell, at) + 1;
   const key = blockKey(c, r);
   if (hits < type.hardness) {
-    const blocks = { ...room.blocks, [key]: { ...cell, hits, hitAt: at } };
+    const blocks = { ...room.blocks, [key]: [...stackPop(blockStack(room, c, r)), { ...cell, hits, hitAt: at }] };
     return { ok: true, kind: 'cracked', state: withRoom(state, { ...room, blocks }), hits, hardness: type.hardness };
   }
   const drops = blockDrops(type, rng);
   const blocks = { ...room.blocks };
-  delete blocks[key];
+  const rest = stackPop(blockStack(room, c, r)); // ST1: only the TOP block breaks
+  if (rest.length > 0) blocks[key] = rest;
+  else delete blocks[key];
   const paid = applyChange(state, { reason: 'block_break', ...(Object.keys(drops.materials).length > 0 ? { materials: drops.materials } : {}), ...(drops.gems > 0 ? { gems: drops.gems } : {}), note: `${type.id}@${key}` }, at);
   if (!paid) return { ok: false, problem: 'no_block' };
   return { ok: true, kind: 'broken', state: withRoom(paid, { ...room, blocks }), drops };
 }
 
-/** The blocks of a room whose cells overlap a rectangle (for the door zone after an upgrade). */
-export function blocksOverlapping(room: Room, rect: { x: number; y: number; w: number; h: number }): { c: number; r: number; id: string }[] {
+/** Every block (each level of a stack) of a room whose cell overlaps a rectangle (for the door zone after an upgrade). */
+export function blocksOverlapping(room: Room, rect: { x: number; y: number; w: number; h: number }): { c: number; r: number; id: string; level: number }[] {
   return Object.entries(room.blocks)
-    .map(([k, b]) => {
+    .flatMap(([k, stack]) => {
       const [c, r] = k.split(',').map(Number) as [number, number];
-      return { c, r, id: b.id as string };
+      const levels: readonly BlockCell[] = Array.isArray(stack) ? stack : [stack as BlockCell]; // an older save (before the 31 -> 32 migration) still holds one block per cell
+      return levels.map((b, level) => ({ c, r, id: b.id as string, level })); // every block of a stack
     })
     .filter((b) => rectsOverlap(cellRectOf(b.c, b.r), rect));
 }

@@ -126,8 +126,9 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   keeps its position. The door moves to the new level's door, and any item standing in the new
   door zone goes back to the inventory (blocks there go back to the bag too). Costs are in config.
 - BLOCKS (step BG5, owner's decisions): every buildable room (hotel, shop/tavern, farm; the
-  lakeside stays unbuildable) has a foreground layer Room.blocks: one block per cell
-  ("col,row" -> { id, hits, hitAt }). Block types are data (shared/data/blocks.json: id, name,
+  lakeside stays unbuildable) has a foreground layer Room.blocks: a STACK of 1 to BLOCK_STACK_MAX (3, ST1) blocks per cell, bottom first
+  ("col,row" -> [{ id, hits, hitAt }, ...]); a block is placed on top (refused 'stack_full' at the max), a punch breaks only the top block, a plant needs a single
+  bottom block ('stacked'), a stack blocks walking like one block (door and counter reachability unchanged; SAVE 32). Block types are data (shared/data/blocks.json: id, name,
   hardness = hits to break, rank, baseValue, inCatalog, drops, seedId (`<id>_seed`, BG6), placeIn,
   icon); 10 starter blocks (dirt, clay, thatch, glass, planks, lantern block, stone, brick, mossy
   stone, cinder block), hardness 1 to 8. Blocks are items: they stack in Player.materials (group

@@ -53,8 +53,8 @@ export interface Room {
   /** Cells painted with another floor style (step BG1): "col,row" -> style id. Absent = none. */
   floorCells?: Record<string, string>;
   wallStyle: string;
-  /** The foreground layer (step BG5): one block per cell, key "col,row". Empty = none. */
-  blocks: Record<string, BlockCell>;
+  /** The foreground layer (step BG5, ST1): a STACK of 1 to BLOCK_STACK_MAX blocks per cell (bottom first), key "col,row". Empty = none. */
+  blocks: Record<string, BlockCell[]>;
   /** Plants growing on soil cells (step BG6), one per cell, key "col,row"; a cell has a block or a plant, never both. */
   plants: Record<string, Plant>;
   ownerId: number;
@@ -392,16 +392,22 @@ export function blockKey(c: number, r: number): string {
   return `${c},${r}`;
 }
 
-/** The block standing in a cell, or null. */
-export function blockInCell(room: Room, c: number, r: number): BlockCell | null {
-  return room.blocks[blockKey(c, r)] ?? null;
+/** The blocks stacked in a cell, bottom first (empty = none). */
+export function blockStack(room: Room, c: number, r: number): readonly BlockCell[] {
+  return room.blocks[blockKey(c, r)] ?? [];
 }
 
-/** Every block of the room with its cell. */
-export function blockList(room: Room): { c: number; r: number; block: BlockCell }[] {
-  return Object.entries(room.blocks).map(([k, block]) => {
+/** The block on TOP of the stack in a cell (the one a punch hits), or null. */
+export function blockInCell(room: Room, c: number, r: number): BlockCell | null {
+  const s = blockStack(room, c, r);
+  return s.length > 0 ? s[s.length - 1]! : null;
+}
+
+/** Every block of the room with its cell and its level in the stack (0 = bottom), bottom first. */
+export function blockList(room: Room): { c: number; r: number; block: BlockCell; level: number }[] {
+  return Object.entries(room.blocks).flatMap(([k, stack]) => {
     const [c, r] = k.split(',').map(Number) as [number, number];
-    return { c, r, block };
+    return stack.map((block, level) => ({ c, r, block, level }));
   });
 }
 
@@ -420,6 +426,6 @@ export function plantList(room: Room): { c: number; r: number; plant: Plant }[] 
 
 /** The cells of the blocks and the plants, as rectangles: they block walking (a plant is a small block). */
 export function blockRects(room: Room): Rect[] {
-  return [...blockList(room).map((b) => cellRectOf(b.c, b.r)), ...plantList(room).map((p) => cellRectOf(p.c, p.r))];
+  return [...Object.keys(room.blocks).map((k) => { const [c, r] = k.split(',').map(Number) as [number, number]; return cellRectOf(c, r); }), ...plantList(room).map((p) => cellRectOf(p.c, p.r))];
 }
 

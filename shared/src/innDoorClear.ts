@@ -40,10 +40,12 @@ export function clearDoorSpots(state: GameState, roomId: number, at: number): Do
   const blocks: Record<string, number> = {};
   const seeds: Record<string, number> = {};
   const blockLayer = { ...room.blocks };
+  const counted = new Set<string>();
   const plantLayer = { ...room.plants };
   for (const spot of spots) {
     for (const b of blocksOverlapping(room, spot)) {
-      if (!blockLayer[`${b.c},${b.r}`]) continue;
+      if (!room.blocks[`${b.c},${b.r}`] || counted.has(`${b.c},${b.r},${b.level}`)) continue; // ST1: each block of a stack once
+      counted.add(`${b.c},${b.r},${b.level}`);
       delete blockLayer[`${b.c},${b.r}`];
       blocks[b.id] = (blocks[b.id] ?? 0) + 1;
       moved++;
