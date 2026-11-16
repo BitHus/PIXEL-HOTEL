@@ -15,7 +15,7 @@ import type { IconName } from './pixelIcons.ts';
 /** [panel, icon, tooltip, short label in the More grid (null = always in the column, 'hotbar' = next to the hotbar)]. */
 const BUTTONS: [PanelName, IconName, string, string | null][] = [
   ['bag', 'bag', 'Bag (I)', 'hotbar'],
-  ['catalog', 'book', 'Catalog (C)', null],
+  ['catalog', 'catalog', 'Catalog (C)', null],
   ['workshop', 'workshop', 'Workshop: crafting and the Blacksmith', 'Workshop'],
   ['book', 'journal', 'Book: everything you found (J)', 'Book'],
   ['room', 'house', 'Room', 'Room'],

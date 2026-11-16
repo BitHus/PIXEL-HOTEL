@@ -349,6 +349,13 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     });
     return { ...state, rooms };
   },
+  // 30 -> 31 (step COD-1, the waiter's tray): TavernState.holding (one mug, tied to a guest) becomes TavernState.tray (up to TRAY_MAX mugs, tied to nobody).
+  30: (state) => {
+    if (!isObject(state) || !isObject(state.tavern)) return state;
+    const { holding, ...tavern } = state.tavern;
+    const tray = isObject(holding) && typeof holding.item === 'string' ? [{ item: holding.item, ...(holding.perfect === true ? { perfect: true } : {}) }] : Array.isArray(tavern.tray) ? tavern.tray : [];
+    return { ...state, tavern: { ...tavern, tray } };
+  },
   // 28 -> 29 (step G2, hands-on pour): a mug in the hands has `perfect` (false). Nothing else changes.
   28: (state) => {
     if (!isObject(state) || !isObject(state.tavern) || !isObject(state.tavern.holding)) return state;

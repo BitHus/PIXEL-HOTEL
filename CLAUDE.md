@@ -41,7 +41,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   0.5 to 4 (pinch, wheel), smooth during the gesture; after it, it eases (0.15 s) to the nearest
   zoom where zoom * devicePixelRatio is whole (or the overview zoom if closer) and the camera
   snaps to whole device px. The canvas renders at full devicePixelRatio. Overview zoom = the
-  largest where the whole room fits (at least 0.5; else the camera follows the avatar).
+  largest where the whole room fits (at least 0.5; else the camera follows the avatar). COD-1: in the TAVERN the camera glides after the avatar (Settings: Follow camera, default on; shared/src/cameraFollow.ts, tau CAMERA_FOLLOW_TAU_MS; a drag, pinch or wheel pauses it CAMERA_FOLLOW_PAUSE_MS; the shown camera still snaps to whole device px).
 - Camera intro when a room opens: overview, wait 0.6 s, zoom in over 0.8 s to the settled zoom
   nearest 3 device px per art px, centered on the avatar. Any tap, drag, pinch or wheel skips it.
 - BUILD GRID (BG1): rooms are cell maps of BUILD_CELL = 32 px (config); the nav grid is the build
@@ -113,7 +113,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   shows its drink and mugs (max TAP_CAP = 12); Load moves mugs of ONE drink from the bag (a number or Fill; ledger 'tap'), Unload gives them back (TavernState.taps, shared/src/taps.ts).
   A DRINK is on the menu only while a tap holds at least one mug (menu stock = mugs on taps; an open order only reserves a mug); dishes still come from the bag and the stove. SERVING a
   drink (G2, hands-on): the avatar walks to the taps (stage 'bar') and WAITS (stage 'pourwait', event 'pour_ready'); the player PRESSES AND HOLDS THE TAP STAND in the world (no button; a press near the stand belongs to the pour and never walks or pans; mouse, touch, or Space/Enter held) and the mug fills (pourFill: POUR_FULL_MS = 1400 ms to full, a hold ends by itself at POUR_HOLD_CAP_MS; shared/src/pour.ts); the tap pressed is the one holding the ordered drink (one tap: a press anywhere on the stand; two: the nearest; another drink or empty: a toast, nothing poured; pickPourTap);
-  releasing calls pourHeld(heldMs, pick): the tap drops by one, a release inside POUR_PERFECT_RANGE (0.85 to 1.15, the green window drawn at the mug) is a PERFECT pour = a tip of POUR_TIP_RATE (10%) of the price in the guest's coins (holding.perfect); under or over only misses the tip, the drink is never lost. Then the player TAPS the guest, its seat, its table or its order bubble: carryHeld() walks the mug to the table and sets it down (not automatic; dishes stay automatic). An empty tap says "Tap is empty" and
+  releasing calls pourHeld(heldMs, pick): the tap drops by one, a release inside POUR_PERFECT_RANGE (0.85 to 1.15, the green window drawn at the mug) is a PERFECT pour = a tip of POUR_TIP_RATE (10%) of the price in the guest's coins (TrayMug.perfect); under or over only misses the tip, the drink is never lost. ONE POUR = ONE MUG, and the mug goes on the waiter's TRAY (COD-1: TavernState.tray, up to TRAY_MAX = 3 mugs or dishes, shared/src/tray.ts; the avatar holds a code-art tray). A mug is not tied to a guest: it goes to ANY guest whose open order is that item. While mugs are on the tray the guests who want one PULSE (guestsWaitingFor / guestsTrayCanServe), and tapping such a guest, its seat, its table, its order bubble or its chip in the ORDERS STRIP (top of the screen, one chip per open order: icon, patience bar, state waiting/queued/ready; ordersStrip()) calls carryHeld(guestId): exactly ONE mug walks to that table (not automatic; dishes stay automatic). After a pour the avatar stays at the taps while more pours are queued (queue max SERVE_QUEUE_MAX, never more pours than guests want that item). 'Put back' returns the tray to the bag (returnTray, ledger 'tap'). The pour bar (ui/pourBar.ts) floats over the mug and fills while the stand is held (green = the perfect window). An empty tap says "Tap is empty" and
   the order stays open. A stand that leaves the bar gives its mugs back. Old saves (version 24) get a register and a tap stand on the bar (else in the bag), drinks stay in the bag.
 - KITCHEN EFFECT (T1): each prep table (surface; kitchen pieces prep_table, pantry, sink, serving_hatch, placeIn 'shop') inside the kitchen zone and cell-adjacent to a stove inside it adds
   +1 dish per batch (PREP_BONUS max +2; fixed when the batch starts, the inputs stay those of the batch). A stove outside the zone works without the bonus. Taps, register and kitchen
@@ -123,7 +123,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   'shop_closed'). GOLD sources: tavern guests (main), dungeon run gold, the trader (S2: tap-to-sell Sell tab on the bar; never automatic).
 - THE TRADER (S2): the bar's panel has Serve, Menu, Sell. Sell lists materials, blocks, seeds, crops, fish, ore, bars, spare clothes and
   furniture NOT placed; each row: icon, count, gold per piece, Sell 1 / Sell all. Price = baseValue * the rate of its group (S3: SELL_RATES in
-  config: crops 0.1, seeds 0.2, wood and loot 0.3, blocks 0.3, fish and things 0.4, bars 0.5, ore 0.85, splice results 0.05; at least 1
+  config: crops 0.1, seeds 0.2, wood and loot 0.3, blocks 0.3, fish and things 0.5, bars 0.5, ore 0.85, splice results 0.03 (COD-1 retune: wood and loot 0.12 so a splice material never sells for more than its starter seeds' gold); at least 1
   gold); spare clothes keep SPARE_SELL. Food, drinks (menu, lunch box), worn gear, placed items and the counter never list. Selling
   more than 5 pieces (SELL_CONFIRM_QTY), any ultra_rare or legendary thing, or a hotbar item asks first (confirmBuy). Ledger reason
   'sell' (pure rule shared/src/trader.ts; GameAPI.getSellRows / sell), gold popup, no Book find. Nothing ever sells by itself. Closed
@@ -140,7 +140,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - GEM SINK (BG8, numbers BG9): packs cost gems (config PACKS; shared/data/packs.json; pure openPack in shared/src/packs.ts):
   Random Blocks 40, Basic Seeds 30 (5 rolls each), Common Clothes 75, Rare Clothes 225 (3 rolls). Rank first (RANK_WEIGHTS times
   the pack's multiplier), then an item. A clothes piece found again is a SPARE (Player.clothingSpares), sold for baseValue *
-  SPARE_SELL (0.1) gold. GEM INCOME (BG9, config GEMS + BLOCK_DROPS, targets BALANCE_TARGETS): a mixed hour gives about 55 gems
+  SPARE_SELL (0.06, COD-1 retune) gold. GEM INCOME (BG9, config GEMS + BLOCK_DROPS, targets BALANCE_TARGETS): a mixed hour gives about 55 gems
   (new player), 70 (level 3), 100 (level 8); no source over 40%; first pack about 25 min, Common Clothes about 1 h, Rare Clothes
   about 3 h at level 3. Closed loops: seed ratio of every block seed under 0.85, gold per gem through catalog blocks at least 30,
   a pack sells for less than its price, playing a pack's contents gives back at most half its price. shared/src/balance.ts (maths)
@@ -184,7 +184,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   chance of a block or crop, gems 'splice'); results grow blocks, crops, drinks, furniture or clothes.
   Paths and fences are blocks. Hold to repeat: see INPUT.
 - COOKING (K1, owner 15 Nov) happens in the TAVERN, never in the farm: a STOVE (furniture 'stove', 1 cell, light, placeIn
-  'shop', common, in the catalog; a new game starts with one next to the bar) cooks ONE batch at a time: 1 to STOVE_BATCH_MAX
+  'shop', common, in the catalog; a new game starts with one a few cells from the bar, COD-1 f: bar, taps and kitchen are spaced apart in the starter tavern) cooks ONE batch at a time: 1 to STOVE_BATCH_MAX
   (4) dishes of one recipe (+ the T1 prep bonus up to +2 from prep tables in the kitchen zone next to it) (shared/data/food.json, cookMs per batch; config COOK_MS = the default by rank; turnip roast 20 s,
   stew 1 min, rarer up to 5 min; the first dish is ready within 30 s). Inputs go in (ledger 'cook'), the batch cooks in real
   time also while the game is closed (TavernState.cooks, time passed in), and the player TAPS the stove to collect (a popup).
@@ -265,7 +265,7 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the 
 - In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, smoothness pass
   (docs/FIXLIST.md). Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
 - Not done: step 10 (server, a placeholder), the playtest (nobody has run the game in a browser yet: do that first when a browser tool exists).
-- DUNGEON_ROUND is 1. SAVE_VERSION is 29 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour). LocalGameAPI only. The indoor lighting look is approved: keep it.
+- DUNGEON_ROUND is 1. SAVE_VERSION is 31 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, simulate, simulate:dungeon. Vite base stays './'.
@@ -312,7 +312,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 29) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 31) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

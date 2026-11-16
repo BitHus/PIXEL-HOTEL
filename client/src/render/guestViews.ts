@@ -48,6 +48,8 @@ function walkerAvatar(c: Walker, roomId: number): Avatar {
 export class GuestViews {
   private readonly shown = new Map<number, Shown>();
   private timeMs = 0;
+  /** Guests who wait for what is on the tray (COD-1): they glow while a matching mug is held. */
+  private pulse: ReadonlySet<number> = new Set();
 
   constructor(private readonly view: RoomView) {}
 
@@ -76,6 +78,11 @@ export class GuestViews {
     }
   }
 
+  /** COD-1: these guests pulse (a warm tint that breathes) until the next call; an empty set stops it. */
+  setPulse(ids: ReadonlySet<number>): void {
+    this.pulse = ids;
+  }
+
   clear(): void {
     for (const [id, s] of this.shown) this.drop(id, s);
   }
@@ -89,6 +96,8 @@ export class GuestViews {
       const sitting = s.seat !== null && s.path.length === 0;
       if (sitting) s.avatar = { ...s.avatar, state: 'sit', facing: s.sitFacing ?? s.seat!.facing };
       s.sprite.update(s.avatar, timeMs);
+      s.sprite.container.tint = this.pulse.has(id) ? (Math.floor(timeMs / 450) % 2 === 0 ? 0xffffff : 0xffe9a8) : 0xffffff;
+      s.sprite.container.tint = this.pulse.has(id) ? (Math.floor(timeMs / 450) % 2 === 0 ? 0xffffff : 0xffe9a8) : 0xffffff;
       s.sprite.setSeatLift(sitting ? seatLiftFor(getFurnitureType(s.seat!.typeId)) : 0);
       // Standing guests shift a little now and then (atmosphere step).
       s.sprite.setShift(s.path.length === 0 && !sitting ? idleShift(id, timeMs) : 0);

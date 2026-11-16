@@ -62,7 +62,7 @@ describe('save files', () => {
     const r = readSave(JSON.stringify({ version: 3, savedAt: 0, state: v3 }));
     expect(r).toMatchObject({ ok: true, migrated: true });
     if (!r.ok) return;
-    expect(r.state.items.find((i) => i.typeId === 'counter')).toMatchObject({ x: 176, y: 96 }); // on the cell grid (step BG1)
+    expect(r.state.items.find((i) => i.typeId === 'counter')).toMatchObject({ y: 96 }); // on the cell grid (step BG1)
   });
 
   it('migrates a version 4 save: square rooms, the old look as clothing, and no character creation', () => {
@@ -221,7 +221,7 @@ describe('save files', () => {
     expect(s.player.seen.bar_stool?.count).toBe(2);
     // The tavern is the shop room, empty, and the game still has to explain it once.
     const barrel = gift.find((i) => i.typeId === 'brewing_barrel')!;
-    expect(s.tavern).toMatchObject({ roomId: s.player.shopRoomId, guests: [], mess: [], menu: {}, serveQueue: [], holding: null, introSeen: false, updatedAt: 5000 });
+    expect(s.tavern).toMatchObject({ roomId: s.player.shopRoomId, guests: [], mess: [], menu: {}, serveQueue: [], tray: [], introSeen: false, updatedAt: 5000 });
     expect(s.tavern.brews).toEqual([{ barrelUid: barrel.uid, drink: 'root_ale', readyAt: 5000 }]);
     // Everything else is as it was.
     expect(s.items.filter((i) => !START.includes(i.typeId))).toEqual(v12.items);
@@ -667,8 +667,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 30 (29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(30);
+  it('SAVE_VERSION is 31 (30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(31);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');
@@ -839,10 +839,10 @@ describe('migration 28 -> 29 (step G2: the hands-on pour)', () => {
     const holding = { ...state, tavern: { ...state.tavern, holding: { guestId: 1, item: 'root_ale' } } };
     const r = readSave(JSON.stringify({ version: 28, savedAt: 9, state: holding }));
     expect(r).toMatchObject({ ok: true, migrated: true });
-    if (r.ok) expect(r.state.tavern.holding).toEqual({ guestId: 1, item: 'root_ale', perfect: false });
+    if (r.ok) expect(r.state.tavern.tray).toEqual([{ item: 'root_ale' }]);
     const e = readSave(JSON.stringify({ version: 28, savedAt: 9, state }));
     expect(e).toMatchObject({ ok: true, migrated: true });
-    if (e.ok) expect(e.state.tavern.holding).toBeNull();
+    if (e.ok) expect(e.state.tavern.tray).toEqual([]);
   });
 });
 
@@ -873,5 +873,22 @@ describe('migration 29 -> 30 (step SG4: plants on any block)', () => {
     const farm = r.state.rooms.find((x) => x.kind === 'farm')!;
     const both = { ...r.state, rooms: r.state.rooms.map((x) => (x.id === farm.id ? { ...x, blocks: { '2,2': { id: 'planks', hits: 0, hitAt: 0 } } } : x)) };
     expect(readSave(toSaveText(both as never, 9))).toMatchObject({ ok: true, migrated: false });
+  });
+});
+
+describe('migration 30 -> 31 (step COD-1: the waiter tray)', () => {
+  it('the mug in the hands (holding) becomes a one-mug tray; empty hands become an empty tray; a perfect pour stays perfect; holding is gone', () => {
+    const state = createNewPlayer(undefined, 1);
+    const { tray: _t, ...tavernNoTray } = state.tavern;
+    const old = (holding: unknown) => ({ ...state, tavern: { ...tavernNoTray, holding } });
+    const a = readSave(JSON.stringify({ version: 30, savedAt: 9, state: old({ guestId: -2, item: 'root_ale', perfect: true }) }));
+    expect(a).toMatchObject({ ok: true, migrated: true });
+    if (a.ok) {
+      expect(a.state.tavern.tray).toEqual([{ item: 'root_ale', perfect: true }]);
+      expect('holding' in a.state.tavern).toBe(false);
+    }
+    const b = readSave(JSON.stringify({ version: 30, savedAt: 9, state: old(null) }));
+    if (b.ok) expect(b.state.tavern.tray).toEqual([]);
+    expect(readSave(toSaveText(state, 9))).toMatchObject({ ok: true, migrated: false });
   });
 });

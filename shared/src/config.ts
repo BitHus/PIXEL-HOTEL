@@ -93,6 +93,8 @@ export const GUEST_TALK_MIN_MS = 6000;
 export const GUEST_TALK_MAX_MS = 14_000;
 /** The player's taps on guests queue up: at most this many orders wait to be carried. */
 export const SERVE_QUEUE_MAX = 3;
+/** COD-1: the waiter's tray carries at most this many poured mugs (or dishes) at once; one pour is one mug. */
+export const TRAY_MAX = 3;
 /** While the player is elsewhere (or the game is closed) at most this many guests sit with an open order. */
 export const AWAY_ORDERS_MAX = 3;
 /** The menu panel shows this many last prices paid per drink or dish. */
@@ -126,3 +128,9 @@ export const POUR_PERFECT_RANGE = [0.85, 1.15] as const;
 export const POUR_MAX_FILL = 1.4;
 /** A perfect pour adds this share of the order's price to the coins (at least 1 gold). Missing it only loses the bonus. */
 export const POUR_TIP_RATE = 0.1;
+/** COD-1 (a): the follow camera glides to the avatar with this time constant, ms (smaller = tighter). */
+export const CAMERA_FOLLOW_TAU_MS = 220;
+/** A drag, pinch or wheel by the player pauses the follow camera for this long, ms (it comes back when the avatar walks on). */
+export const CAMERA_FOLLOW_PAUSE_MS = 2500;
+/** The follow camera stops gliding when it is this close to its target, px (the final snap to whole device px follows in the redraw). */
+export const CAMERA_FOLLOW_EPS_PX = 0.25;

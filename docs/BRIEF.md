@@ -275,8 +275,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   K2). It lies on the table spot next to the coins (Mess.gems, save version 23); one tap takes both; a popup shows gold and gem.
 - THE TRADER (step S2): the bar's panel has a third tab, Sell. It lists what the player owns and does not need: materials, blocks,
   seeds, crops, fish, ore, bars, spare clothes and furniture that is not placed. Each row shows the icon, the count, the gold for one
-  piece and two buttons, Sell 1 and Sell all. The price is baseValue * the rate of its group (step S3, config SELL_RATES: crops 0.1, seeds 0.2, wood and loot 0.3, blocks 0.3, fish and things 0.4, bars 0.5, ore 0.85, splice results 0.05; at least 1 gold); a spare piece of
-  clothing keeps SPARE_SELL (0.1). Food and drinks (menu, lunch box), worn gear, placed furniture and the counter are never listed.
+  piece and two buttons, Sell 1 and Sell all. The price is baseValue * the rate of its group (step S3, config SELL_RATES: crops 0.1, seeds 0.2, wood and loot 0.12, blocks 0.3, fish and things 0.5, bars 0.5, ore 0.85, splice results 0.03; at least 1 gold); a spare piece of
+  clothing keeps SPARE_SELL (0.06). Food and drinks (menu, lunch box), worn gear, placed furniture and the counter are never listed.
   NEVER AUTOMATIC: nothing sells unless the player taps. Selling more than 5 pieces at once (SELL_CONFIRM_QTY), any ultra_rare or
   legendary thing, or something in the hotbar asks first. One ledger entry per tap (reason 'sell'), a gold popup above the head,
   and no Book find. When the bag fills (24 sellable stacks) a toast says "Sell what you do not need at the bar".
@@ -308,7 +308,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   roll picks a rank first (RANK_WEIGHTS times the pack's multiplier, as for loot), then an item of that rank in the
   pool (blocks.json; crop and block seeds; clothing.json pieces that are hidden until unlocked, each with a rank).
   The first copy of a piece of clothing unlocks it forever; every further copy is a spare (Player.clothingSpares,
-  shown as "Spare x2"), which sells for gold (baseValue * config SPARE_SELL = 0.1, so a spare is always worth far less than a pack piece costs) until trading exists. Blocks and seeds
+  shown as "Spare x2"), which sells for gold (baseValue * config SPARE_SELL = 0.06, so a spare is always worth far less than a pack piece costs) until trading exists. Blocks and seeds
   stack as always. Pack finds count in the Book like everything else. The Packs tab of the Catalog shows, per
   pack: the price in gems, how many things it gives, every possible item with its rank odds in percent and, for
   clothes, how many pieces are still missing. Every buy asks first. Opening plays a short pop, then the items

@@ -166,7 +166,7 @@
   min-height: 36px;
   min-width: 36px;
   padding: 0 6px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -331,7 +331,7 @@
   position: absolute;
   right: 2px;
   bottom: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.1;
   font-weight: 700;
   color: var(--cream);
@@ -348,7 +348,7 @@
   position: absolute;
   left: 3px;
   top: 2px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   line-height: 1;
   color: var(--wood);
   pointer-events: none;
@@ -396,7 +396,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 16px;
   white-space: nowrap;
 }
@@ -461,7 +461,7 @@
 }
 
 .more-label {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1;
 }
 
@@ -608,7 +608,7 @@
 }
 
 .panel-info {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .panel-section {
@@ -620,7 +620,7 @@
 .panel-section h3,
 .panel-body h3 {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--wood);
 }
 
@@ -663,7 +663,7 @@
 .tab-name {
   display: none;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .tab-btn.on {
@@ -824,7 +824,7 @@
   background: var(--cream);
   border: 1px solid var(--wood);
   box-shadow: inset 1px 1px 0 var(--wood-mid);
-  font-size: 14px;
+  font-size: var(--fs-md);
   user-select: text;
   -webkit-user-select: text;
   overflow-wrap: anywhere;
@@ -873,7 +873,7 @@
   background: var(--cream);
   color: var(--outline);
   border: var(--px) solid var(--outline);
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.2;
   overflow-wrap: anywhere;
   pointer-events: none;
@@ -1071,7 +1071,7 @@
 
 
 .catalog-sub {
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--text);
 }
 
@@ -1086,7 +1086,7 @@
 
 .price-label {
   flex: 1 1 auto;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .price-row .btn.step {
@@ -1173,7 +1173,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 2px 8px;
   padding: 4px 6px;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .style-grid {
@@ -1216,7 +1216,7 @@
   width: min(230px, calc(100vw - var(--side-col) - 2 * var(--edge) - 6px));
   box-sizing: border-box;
   padding: 2px 6px 4px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   cursor: pointer;
   pointer-events: auto;
   transform-origin: top right;
@@ -1278,7 +1278,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--wood);
   border-bottom: 1px solid var(--wood-mid);
@@ -1298,7 +1298,7 @@
 .quest-hide {
   margin-top: 2px;
   text-align: right;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--wood);
 }
 
@@ -1441,7 +1441,7 @@
 
 .look-label {
   align-self: flex-start;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   padding: 1px 6px;
 }
 
@@ -1452,7 +1452,7 @@
 }
 
 .look-step {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .look-value {
@@ -1618,7 +1618,7 @@
   top: 4px;
   left: 4px;
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .charmaker-stage .avatar-preview {
@@ -1753,7 +1753,7 @@
   align-items: center;
   gap: 4px;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1;
 }
 
@@ -1829,7 +1829,7 @@
   bottom: -4px;
   padding: 0 3px;
   min-width: 10px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 13px;
   font-weight: 700;
   text-align: center;
@@ -1893,7 +1893,7 @@
   align-items: center;
   gap: 3px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .run-gold .pixel-icon {
@@ -1926,7 +1926,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .run-list-title {
@@ -2000,7 +2000,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 2px 8px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 /* ---------- Step 9b: the travel panel (Map), the lunch box picker ---------- */
@@ -2174,7 +2174,7 @@
 
   .run-leave {
     padding: 0 4px;
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 }
 
@@ -2231,14 +2231,14 @@
 .shop-card-name {
   max-width: 100%;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.1;
   text-align: center;
   overflow-wrap: anywhere;
 }
 
 .shop-card-owned {
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 700;
   color: var(--ok);
 }
@@ -2261,7 +2261,7 @@
   left: 2px;
   top: 2px;
   padding: 0 4px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   line-height: 14px;
 }
 
@@ -2272,7 +2272,7 @@
 .here-tag {
   margin-left: auto;
   margin-right: 4px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   padding: 1px 5px;
 }
 
@@ -2280,7 +2280,7 @@
   position: absolute;
   left: 4px;
   top: 4px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   padding: 1px 6px;
 }
 
@@ -2289,7 +2289,7 @@
 }
 
 .look-kind {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 400;
   color: var(--wood);
 }
@@ -2347,7 +2347,7 @@
 }
 
 .confirm-short {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 /* ---------- Settings: sound and lighting (atmosphere step) ---------- */
@@ -2407,7 +2407,7 @@
 
 .panel-note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--wood);
 }
 
@@ -2447,7 +2447,7 @@
 }
 
 .bubble-icon .npc-line {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 /* ---------- Step 9e: ranks and the Book ---------- */
@@ -2638,7 +2638,7 @@
   padding: 3px 2px;
   background: var(--cream);
   border: 1px solid var(--wood);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .book-reward.locked {
@@ -2675,7 +2675,7 @@
   min-height: 30px;
   padding: 0 2px;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   background: var(--warm);
 }
 
@@ -2732,14 +2732,14 @@
 
 .book-name {
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
 
 .book-sub,
 .book-count {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -2758,7 +2758,7 @@
   left: -2px;
   top: -2px;
   padding: 0 4px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 16px;
 }
 
@@ -2786,7 +2786,7 @@
 }
 
 .book-drop-name {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -2953,7 +2953,7 @@
 }
 
 .paint-hint {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   text-align: center;
 }
 
@@ -3010,7 +3010,7 @@
   border: 2px solid var(--rank-common, var(--wood));
   color: var(--text);
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1;
   white-space: nowrap;
 }
@@ -3140,7 +3140,7 @@
   padding: 1px 4px 1px 2px;
   background: var(--slot-bg);
   border: 2px solid var(--rank-common);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.1;
 }
 
@@ -3408,7 +3408,7 @@
   align-items: center;
   gap: 6px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 16px;
   color: var(--wood);
 }
@@ -3452,7 +3452,7 @@
   align-self: center;
   min-width: 34px;
   text-align: right;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--wood-light);
   font-variant-numeric: tabular-nums;
 }
@@ -3477,7 +3477,7 @@
     inset 0 1px 0 1px var(--wood-light),
     0 1px 0 rgba(24, 20, 37, 0.45);
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 15px;
   letter-spacing: 0.5px;
   text-shadow: 0 1px 0 var(--outline);
@@ -3523,7 +3523,7 @@
 /* Phones: one px smaller, panels that start under the info panel keep their offset (--info-h grows by the plate). */
 @media (max-width: 600px) {
   .info-inn {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     max-width: 150px;
     padding: 0 10px 1px;
   }
@@ -3846,7 +3846,7 @@
 }
 
 .hat-hint {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 16px;
   color: var(--text-dim, var(--text));
   text-align: center;

@@ -2,7 +2,10 @@
 // panel and always end above the hotbar (ui.css): --info-h (the info panel's height) and --bar-h
 // (the height of the hotbar, or of the run bag that takes its place in the dungeon).
 
+import { watchSizeClass } from './layout.ts';
+
 export function watchLayout(root: HTMLElement, info: HTMLElement, bars: readonly HTMLElement[]): void {
+  watchSizeClass(root, document.documentElement); // the size class (layout.ts) sets data-size, read by sizes.css
   const apply = (): void => {
     const infoH = info.offsetHeight;
     if (infoH > 0) root.style.setProperty('--info-h', `${infoH}px`);

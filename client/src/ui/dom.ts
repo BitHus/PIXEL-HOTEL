@@ -23,6 +23,8 @@ export function iconButton(icon: IconName, title: string, onClick: () => void, c
   b.type = 'button';
   b.title = title;
   b.setAttribute('aria-label', title);
+  // The short word under the icon on a phone (sizes.css); the old 'map' icon is the Worlds button now.
+  b.dataset.label = icon === 'map' || icon === 'worlds' ? 'Worlds' : (title.split(/[ (:,]/)[0] ?? '');
   b.appendChild(pixelIcon(icon));
   b.addEventListener('click', onClick);
   return b;

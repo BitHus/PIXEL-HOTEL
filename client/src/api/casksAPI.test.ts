@@ -59,7 +59,7 @@ describe('casks through the GameAPI (step K2)', () => {
     expect(view.guests.every((g) => g.phase === 'order' || g.phase === 'eat' || g.phase === 'leave')).toBe(true);
     expect(await tapMugs(second)).toBe(before); // no serving while away
     expect(view.serveQueue).toEqual([]);
-    expect(view.holding).toBeNull();
+    expect(view.tray).toEqual([]);
     expect((await second.getCasks()).find((c) => c.slot === 0)).toMatchObject({ drink: 'root_ale', mugs: 7, tier: 'fresh' });
     const end = second.snapshot();
     expect(ledgerMaterials(end)).toEqual(end.player.materials);

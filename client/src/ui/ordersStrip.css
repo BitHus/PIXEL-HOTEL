@@ -1,0 +1,121 @@
+/* The orders strip (COD-1). Minimal and functional: the UI worker restyles it (this file only uses the tokens of ui.css). */
+.orders-strip {
+  position: absolute;
+  top: var(--edge);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 2 * var(--side-col));
+  padding: 4px 6px;
+  background: var(--parch);
+  border: var(--px) solid var(--outline);
+  box-shadow: var(--shadow);
+  font-family: var(--font);
+  color: var(--text);
+  pointer-events: none;
+}
+.orders-strip[hidden] { display: none; }
+@media (max-width: 700px) {
+  .orders-strip { top: calc(var(--info-h) + 2 * var(--edge)); }
+}
+.orders-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  min-width: 0;
+}
+.orders-chip {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--touch);
+  height: var(--touch);
+  padding: 2px 2px 8px;
+  background: var(--slot-bg);
+  border: var(--px) solid var(--outline);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.orders-chip img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.orders-patience {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 2px;
+  height: 4px;
+  background: var(--outline);
+}
+.orders-patience-fill {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+.orders-chip.urgent .orders-patience-fill { background: var(--no); }
+.orders-chip.urgent { animation: orders-shake 0.5s steps(2) infinite; }
+.orders-chip[data-state='queued'] { opacity: 0.6; }
+.orders-chip[data-state='ready'] {
+  background: var(--warm);
+  animation: orders-pulse 0.9s steps(2) infinite;
+}
+.orders-tray {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 8px;
+  border-left: var(--px) solid var(--outline);
+}
+.orders-tray[hidden] { display: none; }
+.orders-tray-icons { display: flex; gap: 2px; }
+.orders-tray-icons img { width: 24px; height: 24px; image-rendering: pixelated; }
+.orders-putback {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--wood-mid);
+  border: var(--px) solid var(--outline);
+  cursor: pointer;
+  pointer-events: auto;
+}
+@keyframes orders-pulse { 0% { filter: brightness(1); } 100% { filter: brightness(1.25); } }
+@keyframes orders-shake { 0% { transform: translateX(-1px); } 100% { transform: translateX(1px); } }
+/* The order bubble over a guest whose drink is on the tray (the guest pulses too, see guestViews.setPulse). */
+.order-bubble.ready { animation: orders-pulse 0.9s steps(2) infinite; outline: var(--px) solid var(--warm); }
+@media (prefers-reduced-motion: reduce) {
+  .orders-chip, .order-bubble.ready { animation: none !important; }
+}
+
+/* The pour bar over the mug (COD-1 e). skin.css restyles .pour-bar; the position and the size are set here. */
+.pour-bar-over {
+  position: absolute;
+  z-index: 31;
+  width: 132px;
+  height: 14px;
+  transform: translate(-50%, -100%);
+  background: var(--night);
+  border: var(--px) solid var(--outline);
+  pointer-events: none;
+  user-select: none;
+}
+.pour-bar-over[hidden] { display: none; }
+.pour-bar-over .pour-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--warm);
+}
+.pour-bar-over .pour-bar-mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border: var(--px) solid #63c74d;
+  box-sizing: border-box;
+}
+.pour-bar-over.in-window .pour-bar-fill { background: #63c74d; }

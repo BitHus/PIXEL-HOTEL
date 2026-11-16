@@ -58,7 +58,7 @@ export function serveAll(s: GameState, rng: Rng): GameState {
   for (const g of openOrders(s.tavern)) {
     const asked = requestServe(s, g.id);
     const picked = asked && pourOrder(asked);
-    s = (picked && !picked.empty && deliverOrder(picked.state, rng)?.state) || (picked ? picked.state : asked) || s;
+    s = (picked && !picked.empty && deliverOrder(picked.state, rng, g.id)?.state) || (picked ? picked.state : asked) || s;
   }
   return s;
 }

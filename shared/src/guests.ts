@@ -45,6 +45,7 @@ import {
   REMARK_APPEAL_MIN,
 } from './config.ts';
 import { pourTip } from './pour.ts';
+import { returnTray, takeMug } from './tray.ts';
 import { guestLook, outsidePoint, rollGuestKind, rollTolerance } from './guestLook.ts';
 import { kitchenZone } from './kitchen.ts';
 import { guestZones, npcGrid, npcPath } from './npcNav.ts';
@@ -172,13 +173,13 @@ function reserve(state: GameState, item: MaterialId, at: number): GameState | nu
   return applyChange(state, { reason: 'tavern_order', materials: { [item]: -1 }, note: `ordered: ${item}` }, at);
 }
 
-/** A guest leaves unserved: the order goes back to the bag and out of the player's queue and hands. */
+/** A guest leaves unserved: the order goes back to the bag and out of the player's queue (a mug on the tray stays: any guest wanting it can have it). */
 function giveBack(state: GameState, g: Guest, at: number): GameState {
   if (!g.order) return state;
   // A drink was never taken from the bag (it is poured from the tap when served): only the queue and the hands are cleared.
   const back = isDrinkId(g.order.item) ? state : applyChange(state, { reason: 'tavern_order', materials: { [g.order.item]: 1 }, note: `not served: ${g.order.item}` }, at) ?? state;
   const t = back.tavern;
-  return withTavern(back, { serveQueue: t.serveQueue.filter((id) => id !== g.id), holding: t.holding?.guestId === g.id ? null : t.holding });
+  return withTavern(back, { serveQueue: t.serveQueue.filter((id) => id !== g.id) });
 }
 
 /**
@@ -200,16 +201,18 @@ function leaveMess(state: GameState, g: Guest, seat: TavernSeat | undefined, rng
 }
 
 /**
- * The player puts the order in their hands on the guest's table: the guest starts eating. Null
- * with empty hands, or when that guest no longer waits.
+ * The player puts ONE mug (or dish) of the tray on the table of the guest guestId: that guest starts eating. The mug taken is one of the
+ * guest's own item (COD-1: a mug is not tied to the guest it was poured for). Null when that guest no longer waits or the tray
+ * has no mug of what they ordered.
  */
-export function deliverOrder(state: GameState, rng: Rng): { state: GameState; guestId: number; item: MaterialId } | null {
-  const hold = state.tavern.holding;
-  const guest = hold ? state.tavern.guests.find((g) => g.id === hold.guestId && g.phase === 'order') : undefined;
-  if (!hold || !guest) return null;
+export function deliverOrder(state: GameState, rng: Rng, guestId: number): { state: GameState; guestId: number; item: MaterialId } | null {
+  const guest = state.tavern.guests.find((g) => g.id === guestId && g.phase === 'order');
+  const taken = guest?.order ? takeMug(state.tavern.tray, guest.order.item) : null;
+  if (!guest || !taken) return null;
+  const hold = taken.mug;
   const tip = pourTip(hold.perfect === true, guest.order?.price ?? 0);
   const eating: Guest = { ...guest, ...(tip > 0 && guest.order ? { order: { ...guest.order, coins: guest.order.coins + tip } } : {}), phase: 'eat', waitMs: between(rng, GUEST_EAT_MIN_MS, GUEST_EAT_MAX_MS), sipInMs: between(rng, GUEST_SIP_MIN_MS, GUEST_SIP_MAX_MS) };
-  return { state: withTavern(state, { holding: null, guests: state.tavern.guests.map((g) => (g.id === guest.id ? eating : g)) }), guestId: guest.id, item: hold.item };
+  return { state: withTavern(state, { tray: taken.tray, guests: state.tavern.guests.map((g) => (g.id === guest.id ? eating : g)) }), guestId: guest.id, item: hold.item };
 }
 
 /**
@@ -401,14 +404,14 @@ export function repathGuests(state: GameState, w: TavernWorld): GameState {
  * The catch-up after a break (the game was closed, or a long gap): maths only, nobody walks.
  * Guests with an open order stay on their seats, however long it took. Guests who were eating
  * have finished: their coins and dish lie on the table. Everyone else is gone, and the player's
- * serve queue and hands are empty. Then the guests who would have come meanwhile (one group every
+ * serve queue is empty and a tray goes back to the bag. Then the guests who would have come meanwhile (one group every
  * guestIntervalMs, looking back at most OFFLINE_MAX_MS) sit down with an open order, until
  * AWAY_ORDERS_MAX wait; one who finds no seat or nothing at their price is not there.
  */
 export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng: Rng): { state: GameState; arrived: number } {
   const seats = tavernSeats(w.items, w.room.id, kitchenZone(w.room));
   const find = (c: Guest): TavernSeat | undefined => (c.seat ? seats.find((k) => seatKey(k) === seatKey(c.seat!)) : undefined);
-  let s = withTavern(state, { serveQueue: [], holding: null });
+  let s = withTavern(returnTray(state, at) ?? state, { serveQueue: [] });
   const kept: Guest[] = [];
   for (const c of state.tavern.guests) {
     const seat = find(c);

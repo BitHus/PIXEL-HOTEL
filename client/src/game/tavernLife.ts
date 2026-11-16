@@ -6,6 +6,7 @@ import {
   tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, CASK_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen, pourTip,
+  guestsTrayCanServe, ordersStrip as ordersStripData,
 } from '@pixel-hotel/shared';
 import { createPourControl } from './pourControl.ts';
 import { createBrewingPanel } from '../ui/brewingPanel.ts';
@@ -24,7 +25,9 @@ import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
 import { GuestViews, type Walker } from '../render/guestViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
 import { createOrderBubbles, type OrderMark } from '../ui/orderBubbles.ts';
-import { drawGood } from '../render/slotGoods.ts';
+import { createOrdersStrip } from '../ui/ordersStrip.ts';
+import { createPourBar } from '../ui/pourBar.ts';
+import { drawTray } from '../render/trayArt.ts';
 import { pixelIcon } from '../ui/pixelIcons.ts';
 import type { G9 } from './ctx.ts';
 
@@ -81,13 +84,16 @@ export async function setupTavernLife(g: G9) {
   hint.textContent = 'Hold the tap';
   hint.style.cssText = 'position:absolute;z-index:30;display:none;transform:translate(-50%,-100%);pointer-events:none;user-select:none;padding:4px 10px;font-family:var(--font);font-size:14px;font-weight:700;background:#3e2731;color:#fee761;border:2px solid #f6ca9f;white-space:nowrap';
   uiRoot.appendChild(hint);
+  // COD-1 (e): the pour bar over the mug (fills while the stand is held, green = the perfect window).
+  const pourBar = createPourBar(uiRoot);
   let hintRaf = 0;
   const hintLoop = (): void => {
     const info = pourFor ? standInfo(pourFor.standUid) : null;
+    if (info && pourBar.visible) pourBar.place(worldToScreen({ x: info.stand.x, y: info.floorY - 44 }, st.shown));
     if (!info || pourControl.pressing || hintDone()) {
       hint.style.display = 'none';
     } else {
-      const p = worldToScreen({ x: info.stand.x, y: info.floorY - 40 }, st.shown);
+      const p = worldToScreen({ x: info.stand.x, y: info.floorY - 64 }, st.shown);
       hint.style.display = 'block';
       hint.style.left = `${Math.round(p.x)}px`;
       hint.style.top = `${Math.round(p.y)}px`;
@@ -97,6 +103,7 @@ export async function setupTavernLife(g: G9) {
   const endWait = (stopFx: boolean): void => {
     pourControl.cancel();
     pourFor = null;
+    pourBar.hide();
     hint.style.display = 'none';
     cancelAnimationFrame(hintRaf);
     hintRaf = 0;
@@ -121,6 +128,7 @@ export async function setupTavernLife(g: G9) {
       const i = pourFor ? standInfo(pourFor.standUid) : null;
       if (!i || !pourFor) return;
       pour.setFill(f);
+      pourBar.setFill(f);
       fx.pourSplash({ x: i.stand.x, y: i.floorY - 10 }, i.floorY, getDrinkType(pourFor.item as DrinkId).color, 160);
     },
     glug: (pitch) => sound.play('pourTick', 'common', pitch),
@@ -144,11 +152,26 @@ export async function setupTavernLife(g: G9) {
     list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing }));
   const inTavern = (): boolean => st.room.id === st.tavern.roomId;
   const orders = createOrderBubbles(ui, (id) => void serveTap(id));
-  /** The open orders for the order bubbles: queued or carried ones are dimmed, a guest with little patience is urgent. */
-  const orderMarks = (): OrderMark[] =>
-    st.tavern.guests.flatMap((g) =>
-      g.phase === 'order' && g.order ? [{ guestId: g.id, item: g.order.item, urgent: g.warned, taken: st.tavern.serveQueue.includes(g.id) || st.tavern.holding?.guestId === g.id }] : [],
-    );
+  // COD-1 (d): the orders strip at the top: one chip per open order (data from the pure shared/src/tray.ts ordersStrip).
+  const strip = createOrdersStrip(uiRoot, {
+    onChip: (id) => void serveTap(id),
+    onPutBack: () => void api.returnTray().then(async (ok) => {
+      if (ok) {
+        sound.play('pop');
+        toast('The tray is back in the bag.');
+        await refreshTavern();
+        await late.refreshInventory();
+      }
+    }),
+  });
+  /** The open orders for the order bubbles: queued ones are dimmed, a guest whose mug is ready on the tray pulses, little patience is urgent. */
+  const orderMarks = (): OrderMark[] => {
+    const chips = new Map(ordersStripData(st.tavern).map((c) => [c.guestId, c]));
+    return st.tavern.guests.flatMap((g) => {
+      const c = chips.get(g.id);
+      return g.phase === 'order' && g.order ? [{ guestId: g.id, item: g.order.item, urgent: g.warned, taken: c?.state === 'queued', ready: c?.state === 'ready' }] : [];
+    });
+  };
   /** What guests eat or drink now, on their table spots (the served item stays there until they leave). */
   const meals = (): Meal[] => {
     const seats = tavernSeats(st.items, st.tavern.roomId, kitchenZone(st.room));
@@ -164,12 +187,25 @@ export async function setupTavernLife(g: G9) {
     guests.sync(on ? walkers(st.tavern.guests) : [], st.room.id, st.items);
     tableMess.sync(on ? st.tavern.mess : [], on ? meals() : [], st.items);
     orders.sync(on ? orderMarks() : []);
+    // COD-1 (c, d): the strip, and the guests who wait for a mug that is on the tray pulse.
+    if (on) strip.sync(ordersStripData(st.tavern), st.tavern.tray.map((m) => m.item));
+    else strip.hide();
+    guests.setPulse(on ? new Set(guestsTrayCanServe(st.tavern)) : new Set());
     updateBadge();
     syncMachines();
   };
   st.onItemsSynced = syncTavern;
+  /** What the avatar's hands show now (the tray), so a save that loads with mugs on the tray shows them too. */
+  let heldKey = '';
+  const showTray = (): void => {
+    const key = st.tavern.tray.map((m) => m.item).join(',');
+    if (key === heldKey) return;
+    heldKey = key;
+    sprite.setHeld(drawTray(st.tavern.tray.map((m) => m.item)));
+  };
   async function refreshTavern(): Promise<void> {
     st.tavern = await api.getTavern();
+    showTray();
     syncTavern();
     refreshCooks();
     brewing.setBrews(st.tavern.brews);
@@ -438,9 +474,10 @@ export async function setupTavernLife(g: G9) {
   }
   /** A tap on a guest or an order bubble: the order is carried (G2: a poured drink waits for a second tap on the guest). to the table (taps queue up, at most SERVE_QUEUE_MAX). */
   async function serveTap(guestId: number): Promise<void> {
-    // G2: a poured mug waits in the hands: a tap on its guest (or bubble) carries it over.
-    if (st.tavern.holding?.guestId === guestId) {
-      if (await api.carryHeld()) sound.play('click');
+    // COD-1: a mug for this guest is on the tray: the avatar carries exactly that ONE mug over.
+    if (guestsTrayCanServe(st.tavern).includes(guestId)) {
+      if (await api.carryHeld(guestId)) sound.play('click');
+      else toast('There is no way to that table.');
       return;
     }
     if (st.tavern.serveQueue.length >= SERVE_QUEUE_MAX) {
@@ -456,14 +493,18 @@ export async function setupTavernLife(g: G9) {
   /** A tap on something of the tavern: a guest with an order, coins or a dish on a table, a brewing barrel. True when handled. */
   const tavernTap = (world: Point, hit: FurnitureItem | undefined): boolean => {
     if (!inTavern()) return false;
-    // A poured mug waits in the hands: a tap on its guest, their seat or their table carries it over.
-    const hold = st.tavern.holding;
-    if (hold && !pourControl.pressing) {
-      const hg = st.tavern.guests.find((x) => x.id === hold.guestId);
-      const seat = hg?.seat ? tavernSeats(st.items, st.tavern.roomId, kitchenZone(st.room)).find((k) => seatKey(k) === seatKey(hg.seat!)) : undefined;
+    // Mugs wait on the tray: a tap on a guest who wants one, their seat or their table carries ONE mug over.
+    if (st.tavern.tray.length > 0 && !pourControl.pressing) {
+      const seats = tavernSeats(st.items, st.tavern.roomId, kitchenZone(st.room));
       const gAt = guests.at(world);
-      if (gAt === hold.guestId || (seat && (hit?.uid === seat.uid || hit?.uid === seat.tableUid || Math.hypot(world.x - seat.spot.x, world.y - seat.spot.y) <= 36))) {
-        void serveTap(hold.guestId);
+      const target = guestsTrayCanServe(st.tavern).find((id) => {
+        if (id === gAt) return true;
+        const hg = st.tavern.guests.find((x) => x.id === id);
+        const seat = hg?.seat ? seats.find((k) => seatKey(k) === seatKey(hg.seat!)) : undefined;
+        return !!seat && (hit?.uid === seat.uid || hit?.uid === seat.tableUid || Math.hypot(world.x - seat.spot.x, world.y - seat.spot.y) <= 36);
+      });
+      if (target !== undefined) {
+        void serveTap(target);
         return true;
       }
     }
@@ -492,7 +533,7 @@ export async function setupTavernLife(g: G9) {
     }
     const m = tableMess.at(world);
     if (m) {
-      if (st.tavern.holding || st.tavern.serveQueue.length > 0) toast('Serve the orders first.');
+      if (st.tavern.serveQueue.length > 0) toast('Serve the orders first.');
       else void api.tidyTable(m.messId, m.what).then((ok) => ok || toast('There is no way to that table.'));
       return true;
     }
@@ -539,20 +580,27 @@ export async function setupTavernLife(g: G9) {
         follow(e.path);
         st.goal = null;
         break;
-      case 'holding':
-        if (e.item) {
-          if (isDrinkId(e.item)) sound.play('clink'); // the full mug is lifted off the bar
-          if (pourFor) {
-            pourFor = null;
-            pourControl.done();
-          }
-        } else if (pourFor) {
-          // The order was dropped while the avatar waited (the guest left, the player walked away): nothing is taken.
+      case 'tray': {
+        // COD-1: the tray changed. A mug added = the full mug is lifted off the bar; the avatar holds the tray (code-art placeholder).
+        const more = e.mugs.length > st.tavern.tray.length;
+        if (more && isDrinkId(e.mugs[e.mugs.length - 1]!.item)) sound.play('clink');
+        if (more && pourFor) {
+          pourFor = null;
+          pourBar.hide();
+          pourControl.done();
+        }
+        st.tavern = { ...st.tavern, tray: e.mugs };
+        showTray();
+        syncTavern();
+        void refreshTavern();
+        break;
+      }
+      case 'pour_cancel':
+        // The wait at the taps was dropped (the guest left, the player walked away or went to serve): nothing is taken.
+        if (pourFor) {
           endWait(true);
           if (on) toast('The pour was cancelled. The order stays open.');
         }
-        sprite.setHeld(e.item ? drawGood({ kind: 'material', id: e.item, qty: 1 }) : null);
-        void refreshTavern();
         break;
       case 'served':
         sound.play('clink');
@@ -581,6 +629,7 @@ export async function setupTavernLife(g: G9) {
         if (!on) break;
         pourFor = { standUid: e.standUid, item: e.item, guestId: e.guestId };
         pourControl.wait(e.standUid, e.item);
+        pourBar.show();
         const i = standInfo(e.standUid);
         if (i) {
           pour.wait(i.stand, i.bar, e.item);
@@ -611,7 +660,7 @@ export async function setupTavernLife(g: G9) {
             fx.sparkle({ x: i.stand.x, y: i.floorY - 14 }, 4, 0xffffff);
             sound.play('coin');
           }
-          toast(perfect ? 'Perfect pour! Tap the guest to carry it over.' : 'Poured. Tap the guest to carry it over.');
+          toast(perfect ? 'Perfect pour! Tap a guest who wants it.' : 'Poured. Tap a guest who wants it.');
         }
         break;
       }

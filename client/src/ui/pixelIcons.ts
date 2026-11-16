@@ -4,6 +4,7 @@
 import { PALETTE } from '@pixel-hotel/shared';
 import { MEDIEVAL_ICONS } from './pixelIconsMedieval.ts';
 import { CURRENCY_ICONS } from './pixelIconsCurrency.ts';
+import { UI_ICONS } from './pixelIconsUi.ts';
 
 type PixelMap = { rows: string[]; colors: Record<string, string> };
 
@@ -658,7 +659,7 @@ const BASE_ICONS = {
 } satisfies Record<string, PixelMap>;
 
 // UI round 4: the 16 x 16 medieval redraws win over the old 12 x 12 maps of the same name (and add level, refused).
-const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS, ...CURRENCY_ICONS };
+const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS, ...CURRENCY_ICONS, ...UI_ICONS };
 
 export type IconName = keyof typeof ICONS;
 

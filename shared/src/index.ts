@@ -58,6 +58,8 @@ export * from './innDoors.ts';
 export * from './innDoorClear.ts';
 export * from './taps.ts';
 export * from './pour.ts';
+export * from './tray.ts';
+export * from './cameraFollow.ts';
 export * from './casks.ts';
 export * from './forge.ts';
 export * from './tavern.ts';

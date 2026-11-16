@@ -32,7 +32,7 @@ export function createBuildMode(parent: HTMLElement, hooks: BuildModeHooks): Bui
     button.setAttribute('aria-pressed', String(on));
     hooks.onChange(on);
   };
-  const button = iconButton('hammer', 'Build (B)', () => set(!on));
+  const button = iconButton('build', 'Build (B)', () => set(!on));
   button.setAttribute('aria-pressed', 'false');
 
   // Capture phase: runs before the panel and placing handlers see (and use up) Escape.

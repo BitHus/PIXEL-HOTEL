@@ -44,7 +44,11 @@ export function tabBar<T extends string>(host: HTMLElement, defs: readonly (read
     return [id, b] as const;
   });
   return (open) => {
-    for (const [id, b] of buttons) b.classList.toggle('on', id === open);
+    for (const [id, b] of buttons) {
+      b.classList.toggle('on', id === open);
+      // A tab row that scrolls (phone): bring the open tab into view, sideways only.
+      if (id === open && host.scrollWidth > host.clientWidth) host.scrollLeft = Math.max(0, b.offsetLeft - (host.clientWidth - b.offsetWidth) / 2);
+    }
   };
 }
 

@@ -26,6 +26,8 @@ import {
   nextOrder,
   pourOrder,
   pourStop,
+  returnTray,
+  guestsTrayCanServe,
   tapFor,
   isDrinkId,
   pourGrade,
@@ -56,7 +58,7 @@ export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
     const room = h.roomById(t.roomId);
-    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, holding: t.holding, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, appeal: room ? tavernAppeal(room, h.state.items) : 0, at: h.now(), introSeen: t.introSeen });
+    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, appeal: room ? tavernAppeal(room, h.state.items) : 0, at: h.now(), introSeen: t.introSeen });
   },
 
   /** What a guest step needs: the room, its items, the nav grid (rebuilt when the furniture changes) and the seats the player holds. */
@@ -76,6 +78,8 @@ export const tavernApi = {
 
   async serveGuest(h: LocalGameAPI, guestId: number): Promise<boolean> {
     if (!h.inTavern()) return false;
+    // COD-1: a mug for this guest is already on the tray: carry exactly that one over.
+    if (guestsTrayCanServe(h.state.tavern).includes(guestId)) return tavernApi.carryHeld(h, guestId);
     // A drink needs a mug on a tap (step T1): with the taps empty the order stays open and nothing is queued.
     const order = openOrders(h.state.tavern).find((g) => g.id === guestId)?.order;
     if (order && isDrinkId(order.item) && !tapFor(h.state.tavern.taps, order.item)) {
@@ -86,7 +90,7 @@ export const tavernApi = {
     if (!next) return false;
     h.commit(next);
     h.emitTavern({ t: 'queue', queue: [...next.tavern.serveQueue] });
-    if (h.errand || next.tavern.holding) return true; // The queue is worked off after the order the avatar is carrying.
+    if (h.errand) return true; // The queue is worked off after the walk or the pour the avatar is busy with.
     if (h.nextServe()) return true;
     h.dropServe();
     return false;
@@ -98,7 +102,7 @@ export const tavernApi = {
     if (!mess || (what === 'coins' ? mess.coins <= 0 : mess.dish === null)) return false;
     // With an order in the hands, or orders queued, serving comes first.
     const t = h.state.tavern;
-    if (t.holding || t.serveQueue.length > 0) return false;
+    if (t.serveQueue.length > 0) return false;
     return h.startErrand({ x: mess.x, y: mess.y }, { stage: 'mess', messId, what });
   },
 
@@ -226,21 +230,49 @@ export const tavernApi = {
       return false;
     }
     const grade = pourGrade(pourHeldClamp(heldMs));
-    h.commit({ ...r.state, tavern: { ...r.state.tavern, holding: { guestId: r.guestId, item: r.item, perfect: grade === 'perfect' } } });
+    // One pour = ONE mug: the one just put on the tray carries the grade.
+    const tray = r.state.tavern.tray.map((m, i, all) => (i === all.length - 1 ? { ...m, perfect: grade === 'perfect' } : m));
+    h.commit({ ...r.state, tavern: { ...r.state.tavern, tray } });
     h.emitTavern({ t: 'poured', grade });
-    h.emitTavern({ t: 'holding', item: r.item });
+    h.emitTavern({ t: 'tray', mugs: tray.map((m) => ({ ...m })) });
     h.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
+    tavernApi.armNextPour(h); // more queued and room on the tray: the avatar stays at the taps for the next mug
     return true;
   },
 
-  /** G2: the player taps the guest: the avatar carries the mug in its hands to the table. */
-  async carryHeld(h: LocalGameAPI): Promise<boolean> {
-    const hold = h.state.tavern.holding;
-    if (!h.inTavern() || !hold || h.errand) return false;
-    const stops = serveStops(h.state, hold.guestId);
-    if (stops && h.startErrand(stops.table, { stage: 'table', guestId: hold.guestId })) return true;
-    h.dropServe();
-    return false;
+  /** COD-1: at the taps with room on the tray and a drink queued: wait for the next pour (event 'pour_ready'). False = nothing to pour here. */
+  armNextPour(h: LocalGameAPI): boolean {
+    const next = nextOrder(h.state);
+    const stop = next && isDrinkId(next.item) ? pourStop(h.state, next.item) : null;
+    if (!next || !stop) return false;
+    h.walkState = { ...h.walkState, task: { stage: 'pourwait', guestId: next.guestId, item: next.item } };
+    h.errand = true;
+    h.emitTavern({ t: 'pour_ready', guestId: next.guestId, item: next.item, standUid: stop.stand.uid });
+    return true;
+  },
+
+  /** COD-1: puts the whole tray back in the bag. */
+  async returnTray(h: LocalGameAPI): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const next = returnTray(h.state, h.now());
+    if (!next) return false;
+    h.commit(next);
+    h.emitTavern({ t: 'tray', mugs: [] });
+    return true;
+  },
+
+  /** COD-1: the player taps a guest who waits for something on the tray: the avatar carries ONE matching mug to their table. */
+  async carryHeld(h: LocalGameAPI, guestId: number): Promise<boolean> {
+    if (!h.inTavern() || !guestsTrayCanServe(h.state.tavern).includes(guestId)) return false;
+    // Waiting at the taps for a pour: the player chose to serve now, the pour wait is dropped (the queue stays).
+    if (h.errand && h.walkState.task?.stage === 'pourwait') {
+      h.walkState = { ...h.walkState, task: undefined };
+      h.errand = false;
+      h.emitTavern({ t: 'pour_cancel' });
+    }
+    if (h.errand) return false;
+    const stops = serveStops(h.state, guestId);
+    return stops !== null && h.startErrand(stops.table, { stage: 'table', guestId });
   },
 
   /** Starts the next queued order: to the bar. False when nobody waits any more or there is no way. */
@@ -263,11 +295,12 @@ export const tavernApi = {
 
   /** Forgets the queue and the order in the hands (the orders stay open). */
   dropServe(h: LocalGameAPI): void {
+    const was = h.errand;
     h.errand = false;
-    if (h.state.tavern.serveQueue.length === 0 && h.state.tavern.holding === null) return;
+    if (was) h.emitTavern({ t: 'pour_cancel' }); // the client drops a wait at the taps (it ignores the event otherwise)
+    if (h.state.tavern.serveQueue.length === 0) return;
     h.commit(cancelServe(h.state));
     h.emitTavern({ t: 'queue', queue: [] });
-    h.emitTavern({ t: 'holding', item: null });
   },
 
   /** Called every clock tick: an errand that arrived does its job (pick up, put down, collect) and the next one starts. */
@@ -290,14 +323,7 @@ export const tavernApi = {
     h.errand = false;
     if (task.stage === 'bar') {
       // A drink is poured by hand (step G2): the avatar waits at the taps for pourHeld.
-      const next = nextOrder(h.state);
-      const stop = next && isDrinkId(next.item) ? pourStop(h.state, next.item) : null;
-      if (next && stop) {
-        h.walkState = { ...h.walkState, task: { stage: 'pourwait', guestId: next.guestId, item: next.item } };
-        h.errand = true;
-        h.emitTavern({ t: 'pour_ready', guestId: next.guestId, item: next.item, standUid: stop.stand.uid });
-        return;
-      }
+      if (tavernApi.armNextPour(h)) return;
     }
     if (task.stage === 'bar') {
       const r = pourOrder(h.state);
@@ -313,22 +339,20 @@ export const tavernApi = {
         return;
       }
       h.commit(r.state);
-      h.emitTavern({ t: 'holding', item: r.item });
+      h.emitTavern({ t: 'tray', mugs: r.state.tavern.tray.map((m) => ({ ...m })) });
       h.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
-      // A drink waits in the hands until the player taps the guest (carryHeld); a dish goes on by itself.
+      // A drink waits on the tray until the player taps a guest who wants it (carryHeld); a dish goes on by itself.
       if (isDrinkId(r.item)) return;
       const stops = serveStops(h.state, r.guestId);
       if (!stops || !h.startErrand(stops.table, { stage: 'table', guestId: r.guestId })) h.dropServe();
     } else if (task.stage === 'table') {
       const spot = serveStops(h.state, task.guestId)?.table;
-      const d = deliverOrder(h.state, h.rng);
+      const d = deliverOrder(h.state, h.rng, task.guestId);
       if (d && spot) {
         h.commit(d.state);
         h.emitTavern({ t: 'served', guestId: d.guestId, item: d.item, spot });
-      } else if (h.state.tavern.holding) {
-        h.commit(cancelServe(h.state));
       }
-      h.emitTavern({ t: 'holding', item: null });
+      h.emitTavern({ t: 'tray', mugs: h.state.tavern.tray.map((m) => ({ ...m })) });
       if (!h.nextServe()) h.dropServe();
     } else {
       const mess = h.state.tavern.mess.find((m) => m.id === task.messId);

@@ -27,6 +27,7 @@ import type { Cask, CaskView } from './casks.ts';
 import type { Tap } from './taps.ts';
 import type { TavernEvent } from './guests.ts';
 import type { SellKind, SellResult, SellRow } from './trader.ts';
+import type { TrayMug } from './tray.ts';
 
 export interface RoomState {
   room: Room;
@@ -75,8 +76,8 @@ export interface TavernView {
   mess: Mess[];
   /** The guests whose orders the player will carry next, in order. */
   serveQueue: number[];
-  /** The order in the player's hands. */
-  holding: { guestId: number; item: MaterialId; perfect?: boolean } | null;
+  /** COD-1: the waiter's tray (poured mugs and dishes, at most TRAY_MAX). */
+  tray: TrayMug[];
   /** What brews in the barrels (barrel uid, drink, the time it is ready). */
   brews: Brew[];
   /** What cooks on the stoves (stove uid, dish, how many, the time it is ready; step K1). */
@@ -112,8 +113,10 @@ export type TavernClientEvent =
   | TavernEvent
   /** The own avatar walks this path (to the bar, to a table). Starts at the avatar. */
   | { t: 'walk'; path: Point[] }
-  /** The player picked an order up at the bar (item) or has empty hands again (null). */
-  | { t: 'holding'; item: MaterialId | null }
+  /** COD-1: the tray changed (first mug = the one drawn in the hand; empty = hands free). */
+  | { t: 'tray'; mugs: TrayMug[] }
+  /** COD-1: the pour wait at the taps was dropped (the player went to serve a guest instead). */
+  | { t: 'pour_cancel' }
   /** G2: the avatar stands at the taps and waits for the player to hold the pour (pourHeld). */
   | { t: 'pour_ready'; guestId: number; item: MaterialId; standUid: number }
   /** G2: the pour was released: the grade of the fill (a perfect one pays a tip on delivery). */
@@ -377,8 +380,10 @@ export interface GameAPI {
   serveGuest(guestId: number): Promise<boolean>;
   /** G2: the avatar waits at the taps (event 'pour_ready'); the player held the pour for heldMs (capped) on the tap `pick` (default: the first tap holding the drink). Takes the mug; false = nothing to pour. */
   pourHeld(heldMs: number, pick?: { standUid: number; slot: number }): Promise<boolean>;
-  /** G2: the player taps the guest, bubble or table: the avatar carries the poured mug there (a dish goes by itself). False = nothing in the hands. */
-  carryHeld(): Promise<boolean>;
+  /** COD-1: the player taps a guest who waits for something on the tray: the avatar carries exactly ONE matching mug to their table (a dish goes by itself). False = no matching mug or no way. */
+  carryHeld(guestId: number): Promise<boolean>;
+  /** COD-1: puts every mug of the tray back in the bag. False = the tray was empty. */
+  returnTray(): Promise<boolean>;
   /** Walks to a table spot and takes its coins (`what` 'coins') or clears its empty mug or plate ('dish'). False = refused. */
   tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean>;
   /** Collects the mugs of a ready brew from a barrel in the tavern. Null if it is not ready. */

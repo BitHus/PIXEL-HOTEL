@@ -184,7 +184,7 @@ describe('pouring (rules): the avatar takes the mug off the tap', () => {
     if (p.empty) return;
     expect(p).toMatchObject({ guestId: g.id, item: 'root_ale', standUid: standOf(s).uid, slot: 0 });
     expect(mugsOnTaps(p.state.tavern.taps, 'root_ale')).toBe(5);
-    expect(p.state.tavern.holding).toEqual({ guestId: g.id, item: 'root_ale' });
+    expect(p.state.tavern.tray).toEqual([{ item: 'root_ale' }]);
     expect(p.state.tavern.serveQueue).toEqual([]);
     expect(p.state.player.materials).toEqual(ledgerMaterials(p.state));
   });
@@ -196,7 +196,7 @@ describe('pouring (rules): the avatar takes the mug off the tap', () => {
     s = unloadTap(s, standOf(s).uid, 0, 'all', 0)!; // the player emptied the tap after the order
     const p = pourOrder(s)!;
     expect(p.empty).toBe(true);
-    expect(p.state.tavern.holding).toBeNull();
+    expect(p.state.tavern.tray).toEqual([]);
     expect(p.state.tavern.serveQueue).toEqual([]);
     expect(openOrders(p.state.tavern).map((x) => x.id)).toContain(g.id);
     expect(tapFor(p.state.tavern.taps, 'root_ale')).toBeUndefined();

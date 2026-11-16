@@ -139,11 +139,11 @@ describe('guests: the order and serve chain (step 9t)', () => {
     s = requestServe(s, guest.id)!;
     const picked = pickUpOrder(s)!;
     expect(picked.item).toBe('root_ale');
-    const served = deliverOrder(picked.state, rng)!;
+    const served = deliverOrder(picked.state, rng, guest.id)!;
     expect(served).toMatchObject({ guestId: guest.id, item: 'root_ale' });
     s = served.state;
-    expect(s.tavern.holding).toBeNull();
-    expect(deliverOrder(s, rng)).toBeNull();
+    expect(s.tavern.tray).toEqual([]);
+    expect(deliverOrder(s, rng, guest.id)).toBeNull();
     const eating = s.tavern.guests.find((g) => g.id === guest.id)!;
     expect(eating.phase).toBe('eat');
     expect(eating.waitMs).toBeGreaterThanOrEqual(GUEST_EAT_MIN_MS);
@@ -226,7 +226,6 @@ describe('guests: the order and serve chain (step 9t)', () => {
     expect(said.some((line) => NPC_LINES.unhappy.includes(line))).toBe(true);
     const gone = s.tavern.guests.find((g) => g.id === guest.id)!;
     expect(gone).toMatchObject({ phase: 'leave', order: null, seat: null, reaction: 'frown' });
-    expect(s.tavern.holding).toBeNull();
     expect(s.tavern.mess).toEqual([]);
     expect(ale(s)).toBe(6 - openOrders(s.tavern).length);
     expect(s.player.materials).toEqual(ledgerMaterials(s));
@@ -361,5 +360,5 @@ describe('guests: the away rule (step 9t)', () => {
 function serveOne(s: GameState, rng: () => number): GameState {
   const g = openOrders(s.tavern)[0];
   const picked = g ? pickUpOrder(requestServe(s, g.id) ?? s) : null;
-  return (picked && deliverOrder(picked.state, rng)?.state) ?? s;
+  return (picked && g && deliverOrder(picked.state, rng, g.id)?.state) ?? s;
 }

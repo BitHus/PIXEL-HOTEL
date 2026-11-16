@@ -227,10 +227,11 @@ describe('the serve queue (step 9t)', () => {
     // At the bar the player picks up the first order; with full hands nothing more.
     const picked = pickUpOrder(s)!;
     expect(picked).toMatchObject({ guestId: -2, item: 'root_ale' });
-    expect(picked.state.tavern.holding).toEqual({ guestId: -2, item: 'root_ale' });
+    expect(picked.state.tavern.tray).toEqual([{ item: 'root_ale' }]);
     expect(picked.state.tavern.serveQueue).toEqual([-1, -3]);
-    expect(pickUpOrder(picked.state)).toBeNull();
-    expect(requestServe(picked.state, -2)).toBeNull();
+    expect(pickUpOrder(picked.state)).not.toBeNull(); // COD-1: a tray holds up to TRAY_MAX, not one
+    // A mug on the tray is not tied to its guest: -2 may still be queued while 4 guests want the ale and 3 mugs are claimed.
+    expect(requestServe(picked.state, -2)?.tavern.serveQueue).toEqual([-1, -3, -2]);
     // Now there is room in the queue again.
     expect(requestServe(picked.state, -4)?.tavern.serveQueue).toEqual([-1, -3, -4]);
   });

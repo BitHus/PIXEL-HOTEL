@@ -1,0 +1,207 @@
+/* THE SIZE CLASSES (UI-1, docs/OWNER-PLAYTEST-2.md). Loaded after skin.css; ui/layout.ts puts data-size
+   ("phone" | "tablet" | "desktop") on <html> and #ui, and every text and spacing value reads the tokens here:
+     --fs      body text            --fs-md   second-level text (14 on desktop)   --fs-sm   small text   --fs-xs   tiny labels
+     --lh      line height of running text (never under 1.35)
+     --pad     padding inside panels and cards     --gap   gap between rows, cards and buttons
+   ui.css and skin.css use var(--fs-xs|sm|md); new CSS must too (no raw font-size under 14 px on a phone).
+   The values below are the DEFAULT = desktop; the phone class is the roomy one (the owner: text too tight on a phone). */
+
+:root {
+  --fs: 16px;
+  --fs-md: 14px;
+  --fs-sm: 13px;
+  --fs-xs: 12px;
+  --lh: 1.35;
+  --pad: 6px;
+  --gap: 6px;
+  --row-gap: 6px;
+}
+
+:root[data-size='tablet'] {
+  --fs-md: 15px;
+  --fs-sm: 14px;
+  --fs-xs: 13px;
+  --lh: 1.4;
+  --pad: 8px;
+  --gap: 8px;
+  --row-gap: 8px;
+}
+
+:root[data-size='phone'] {
+  --fs-md: 15px;
+  --fs-sm: 14px;
+  --fs-xs: 13px;
+  --lh: 1.45;
+  --pad: 8px;
+  --gap: 8px;
+  --row-gap: 10px;
+  --side-btn: 56px;
+}
+
+/* ---------- Running text breathes ---------- */
+#ui {
+  font: var(--fs) / var(--lh) var(--font);
+}
+
+.bubble,
+.quest-text,
+.first-ten-text,
+.splice-note,
+.title-note,
+.room-star-tip,
+.hat-hint,
+.book-name,
+.book-count,
+.book-drop-name,
+.fish-text,
+.shop-card-name,
+.shop-card-own,
+.recipe-needs .need {
+  line-height: var(--lh);
+}
+
+.panel-frame,
+.confirm-panel {
+  gap: var(--gap);
+  padding: var(--pad);
+}
+
+.travel-list,
+.catalog-grid,
+.recipe-list,
+.menu-list {
+  gap: var(--row-gap);
+}
+
+/* Tap rows and cards: air inside, never less than the touch size. */
+.travel-card,
+.shop-card,
+.recipe-row,
+.menu-row {
+  padding: calc(var(--pad) - 2px) var(--pad);
+}
+
+.travel-info,
+.catalog-info {
+  gap: 3px;
+}
+
+/* Name tags and bubbles live in the world and stay BELOW the panels (UI-1): a panel covers them. */
+.nametag {
+  z-index: 0;
+}
+
+.bubble-layer {
+  z-index: 0;
+}
+
+/* ---------- Toasts: one readable block, not a narrow column ---------- */
+.toast {
+  width: max-content;
+  max-width: min(calc(100vw - 2 * var(--edge)), 460px);
+  padding: 8px 12px;
+  font-size: var(--fs-md);
+  line-height: var(--lh);
+}
+
+:root[data-size='phone'] .toast {
+  max-width: calc(100vw - 2 * var(--edge) - var(--side-col) * 0);
+}
+
+/* ---------- Phone: the side column gets short labels under its icons ---------- */
+:root[data-size='phone'] .side-buttons {
+  gap: 6px;
+}
+
+:root[data-size='phone'] .side-buttons > .icon-btn,
+:root[data-size='phone'] .side-buttons .more-btn {
+  height: calc(var(--side-btn) + 14px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px 0 1px;
+}
+
+:root[data-size='phone'] .side-buttons > .icon-btn::after,
+:root[data-size='phone'] .side-buttons .more-btn::after {
+  content: attr(data-label);
+  font-size: 11px;
+  letter-spacing: -0.3px;
+  line-height: 1;
+  color: var(--text);
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+:root[data-size='phone'] .side-buttons .icon-btn.on::after {
+  color: var(--outline);
+}
+
+:root[data-size='phone'] .side-buttons .more-item::after {
+  content: none;
+}
+
+/* ---------- Tabs: on a phone the row scrolls sideways (the open tab is kept in view by panelShell.tabBar) ---------- */
+:root[data-size='phone'] .panel-tabs {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+:root[data-size='phone'] .panel-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+:root[data-size='phone'] .panel-tabs .tab-btn {
+  flex: none;
+}
+
+:root[data-size='phone'] .panel-tabs .tab-btn.on .tab-name {
+  display: none; /* icon only, to save width; the title ribbon names the panel */
+}
+
+/* The key-cost badge sits at the top corner on a phone, so it never covers the label. */
+:root[data-size='phone'] .side-buttons .btn-badge {
+  top: -4px;
+  bottom: auto;
+}
+
+/* Bold Pixelify draws a capital C like an O ("Oatalog"): the ribbon titles use the regular weight. */
+.panel-title.plate,
+.charmaker-title.plate {
+  font-weight: 400;
+}
+
+/* ---------- Character maker on a phone: name and inn side by side, a taller stage so the turn buttons show ---------- */
+:root[data-size='phone'] .name-field {
+  flex: 1 1 120px;
+}
+
+:root[data-size='phone'] .charmaker-stage {
+  flex-basis: 40%;
+}
+
+:root[data-size='phone'] .charmaker-stage .avatar-preview {
+  height: calc(100% - 108px);
+  margin-top: 36px;
+}
+
+/* Every list row (crafting, potions, forge, packs): the picture frame sits in the vertical middle of its row. */
+.catalog-row {
+  align-items: center;
+  gap: var(--gap);
+}
+
+.catalog-row > .slot,
+.catalog-row > .iconbox {
+  flex: none;
+  align-self: center;
+}
+
+.catalog-row > .btn {
+  align-self: center;
+}

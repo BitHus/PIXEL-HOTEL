@@ -14,11 +14,12 @@
 //   plate on the spot (a Mess) and goes. Coins are only ever collected by the player (ledger
 //   'tavern'); a spot with coins or a dish on it takes no new guest.
 
-import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TABLE_SPOT_INSET_PX, TASTE_AGED_CHANCE } from './config.ts';
+import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TRAY_MAX, TABLE_SPOT_INSET_PX, TASTE_AGED_CHANCE } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
 import type { Cask } from './casks.ts';
 import type { Cook } from './cooking.ts';
+import type { TrayMug } from './tray.ts';
 import { kitchenZone } from './kitchen.ts';
 import { inStaffZone, staffZones } from './npcNav.ts';
 import { behindPoint, footprintRect, getFurnitureType } from './furniture.ts';
@@ -118,8 +119,8 @@ export interface TavernState {
   taps: Tap[];
   /** Guests the player tapped: their orders wait to be carried, in this order. */
   serveQueue: number[];
-  /** The order in the player's hands. */
-  holding: { guestId: number; item: MaterialId; /** G2: poured in the perfect window (a small tip on delivery). */ perfect?: boolean } | null;
+  /** COD-1: the waiter's tray, up to TRAY_MAX poured mugs or dishes (one pour = one mug). A mug goes to ANY guest who waits for that item. */
+  tray: TrayMug[];
   /** The last MENU_HISTORY_LENGTH prices paid per drink or dish (oldest first). */
   history: Record<string, number[]>;
   lastLines: Partial<Record<NpcMoment, number>>;
@@ -143,7 +144,7 @@ export function emptyTavern(roomId: number, at: number): TavernState {
     casks: [],
     taps: [],
     serveQueue: [],
-    holding: null,
+    tray: [],
     history: {},
     lastLines: {},
     updatedAt: at,
@@ -387,24 +388,29 @@ export function openOrders(tavern: TavernState): Guest[] {
 export function requestServe(state: GameState, guestId: number): GameState | null {
   const t = state.tavern;
   if (!openOrders(t).some((g) => g.id === guestId)) return null;
-  if (t.serveQueue.includes(guestId) || t.holding?.guestId === guestId || t.serveQueue.length >= SERVE_QUEUE_MAX) return null;
+  if (t.serveQueue.includes(guestId) || t.serveQueue.length >= SERVE_QUEUE_MAX) return null;
+  // COD-1: no more is poured than guests want it: mugs on the tray plus queued pours must stay under the guests waiting for that item.
+  const item = openOrders(t).find((g) => g.id === guestId)!.order!.item;
+  const wanting = openOrders(t).filter((g) => g.order!.item === item).length;
+  const claimed = t.tray.filter((m) => m.item === item).length + t.serveQueue.filter((id) => openOrders(t).some((g) => g.id === id && g.order!.item === item)).length;
+  if (claimed >= wanting) return null;
   return withTavern(state, { serveQueue: [...t.serveQueue, guestId] });
 }
 
 /**
  * At the bar: the player picks up the next order of the queue (orders of guests who left meanwhile
- * are skipped). Null with empty hands and nothing to carry, or with full hands.
+ * are skipped). Null with nothing queued, or with a full tray.
  */
 export function pickUpOrder(state: GameState): { state: GameState; guestId: number; item: MaterialId } | null {
   const n = nextOrder(state);
   if (!n) return null;
-  return { state: withTavern(state, { serveQueue: n.queue.slice(1), holding: { guestId: n.guestId, item: n.item } }), guestId: n.guestId, item: n.item };
+  return { state: withTavern(state, { serveQueue: n.queue.slice(1), tray: [...state.tavern.tray, { item: n.item }] }), guestId: n.guestId, item: n.item };
 }
 
 /** The order the player carries next (orders of guests who left are skipped), with the cleaned queue. Null with full hands or an empty queue. */
 export function nextOrder(state: GameState): { guestId: number; item: MaterialId; queue: number[] } | null {
   const t = state.tavern;
-  if (t.holding) return null;
+  if (t.tray.length >= TRAY_MAX) return null;
   const open = openOrders(t);
   const queue = t.serveQueue.filter((id) => open.some((g) => g.id === id));
   const guest = open.find((g) => g.id === queue[0]);
@@ -431,12 +437,12 @@ export function pourOrder(state: GameState, pick?: { standUid: number; slot: num
   const tap = picked && picked.drink === n.item && picked.mugs > 0 ? picked : tapFor(state.tavern.taps, n.item);
   if (!tap) return { empty: true, state: withTavern(state, { serveQueue: n.queue.slice(1) }), guestId: n.guestId, item: n.item };
   const taps = setTap(state.tavern.taps, { ...tap, mugs: tap.mugs - 1 });
-  return { empty: false, state: withTavern(state, { taps, serveQueue: n.queue.slice(1), holding: { guestId: n.guestId, item: n.item } }), guestId: n.guestId, item: n.item, standUid: tap.standUid, slot: tap.slot };
+  return { empty: false, state: withTavern(state, { taps, serveQueue: n.queue.slice(1), tray: [...state.tavern.tray, { item: n.item }] }), guestId: n.guestId, item: n.item, standUid: tap.standUid, slot: tap.slot };
 }
 
-/** Forgets the taps and what is in the player's hands (the orders stay open). */
+/** Forgets the serve queue (the orders stay open). Mugs already on the tray stay there (tray.ts returnTray puts them back). */
 export function cancelServe(state: GameState): GameState {
-  return withTavern(state, { serveQueue: [], holding: null });
+  return withTavern(state, { serveQueue: [] });
 }
 
 /** Where the player goes for a guest's order: behind the bar, then the guest's table spot. Null without a bar or that seat. */

@@ -63,14 +63,14 @@ describe('the stove', () => {
     expect(t.icon.shape).toBe('stove');
   });
 
-  it('a new game starts with one stove in the tavern, next to the bar, on every shop shape', () => {
+  it('a new game starts with one stove in the tavern, near the bar, on every shop shape', () => {
     for (const shape of ROOM_SHAPES.filter((r) => r.shopStart)) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const list = stoves(s.items, s.tavern.roomId);
       expect(list, shape.id).toHaveLength(1);
       const counter = s.items.find((i) => i.typeId === 'counter')!;
       expect(list[0]!.y, shape.id).toBe(counter.y);
-      expect(Math.abs(list[0]!.x - counter.x), shape.id).toBeLessThanOrEqual(80);
+      expect(Math.abs(list[0]!.x - counter.x), shape.id).toBeLessThanOrEqual(160); // COD-1 (f): the kitchen is a few cells from the bar, not on top of it
       // It stands where it may stand, with every other start item (and the counter's staff spot stays reachable).
       const room = s.rooms.find((r) => r.id === s.tavern.roomId)!;
       const others = s.items.filter((i) => i.uid !== list[0]!.uid);

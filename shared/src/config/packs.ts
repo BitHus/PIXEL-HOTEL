@@ -12,7 +12,7 @@ export const PACKS = {
 /** Client only: the pack's pop animation (shake, then burst) lasts this long, ms. */
 export const PACK_POP_MS = 700;
 /** A spare piece of clothing sells for its baseValue times this (gold, until trading exists). */
-export const SPARE_SELL = 0.1;
+export const SPARE_SELL = 0.06;
 /**
  * The balance targets of the block world (step BG9; the owner confirmed them). shared/src/balance.test.ts fails when a number
  * drifts away from them. Hours are of MIXED play (equal time in every open activity).

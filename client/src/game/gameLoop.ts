@@ -1,7 +1,8 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { AVATAR_H, FrameStats, WALK_BOB_MS, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { AVATAR_H, FrameStats, WALK_BOB_MS, followStep, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { followPaused } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
 import type { G16 } from './ctx.ts';
@@ -11,7 +12,7 @@ export async function setupGameLoop(g: G16) {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
     guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
     doBlock, placeBar, menu, orders, bubbles, emote, nameTag, popups, gemFly, splashGone, openRoom,
-    label, playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
+    label, prefs, playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
   } = g;
 
   fx.onSparkle = (at) => itemViews.props.ding(at);
@@ -53,6 +54,11 @@ export async function setupGameLoop(g: G16) {
     hold.tick();
     const step = intro.update(ticker.deltaMS, app.screen.width, app.screen.height);
     if (step) setCamera(step.camera, step.done);
+    // COD-1 (a): in the tavern the camera glides after the avatar (Settings: Follow camera); the intro and the player's own drag win.
+    else if (prefs.followCamera && st.room.id === st.tavern.roomId && !intro.active && !followPaused()) {
+      const next = followStep(st.camera, { x: st.avatar.x, y: st.avatar.y - 24 }, ticker.deltaMS, app.screen.width, app.screen.height, st.bounds);
+      if (next !== st.camera) setCamera(next);
+    }
     control.update(ticker.deltaMS);
     clockMs += ticker.deltaMS;
     if (!seating.busy) ({ avatar: st.avatar, path: st.path } = walkAvatar(st.avatar, st.path, ticker.deltaMS));

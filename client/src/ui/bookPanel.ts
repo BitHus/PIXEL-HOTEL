@@ -36,7 +36,7 @@ export interface BookPanel {
   refresh(player: Player, fresh?: boolean): void;
 }
 
-const TAB_ICONS: Record<BookTab, IconName> = { materials: 'wood', blocks: 'hammer', furniture: 'chair', food: 'food', fish: 'fish', enemies: 'sword', splice: 'hammer' };
+const TAB_ICONS: Record<BookTab, IconName> = { materials: 'wood', blocks: 'bricks', furniture: 'chair', food: 'food', fish: 'fish', enemies: 'sword', splice: 'hammer' };
 
 /** Enemy pictures, drawn in code (placeholders): rows of palette letters, '.' = empty. */
 const ENEMY_ART: Record<string, { rows: string[]; colors: Record<string, number> }> = {

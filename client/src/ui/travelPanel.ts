@@ -1,12 +1,12 @@
-// The travel panel (step 9b, docs/UI-REFERENCE.md "Travel / Map"): the Map button at the top of the
-// right column (under the quest button) opens it. One card per place: Hotel, Shop, Farm, Lakeside
-// (step 9f), Mine and the Dungeon, each with an icon, the name and a short status ("3 crops ripe", "2 items for sale",
+// The WORLDS panel (step 9b travel panel; UI-2 renamed it, docs/OWNER-PLAYTEST-2.md): the globe button at the top of the
+// right column (under the quest button) opens it. One card per place, like a navigator: Hotel, Tavern, Farm, Lakeside
+// (step 9f), Mine and the Dungeon, each with a small picture (worldArt.ts), the name and a short status ("3 crops ripe", "2 items for sale",
 // "Opens at level 3", "Key: 10 gold"). A tap on a card goes there. A locked place is greyed out
 // with the reason. It replaces the old Hotel / Shop switcher under the info panel.
 
 import { el } from './dom.ts';
-import { iconBox, panelShell } from './panelShell.ts';
-import { pixelIcon, type IconName } from './pixelIcons.ts';
+import { panelShell } from './panelShell.ts';
+import { worldArtUrl } from './worldArt.ts';
 
 export type Place = 'hotel' | 'shop' | 'farm' | 'lakeside' | 'mine' | 'dungeon';
 
@@ -26,32 +26,37 @@ export interface TravelPanel {
   refresh(cards: readonly PlaceCard[]): void;
 }
 
-const NAMES: Record<Place, [string, IconName]> = {
-  hotel: ['Hotel room', 'house'],
-  shop: ['Tavern', 'coin'],
-  farm: ['Farm', 'sprout'],
-  lakeside: ['Lakeside', 'fish'],
-  mine: ['Mine', 'hammer'],
-  dungeon: ['Dungeon', 'dungeon'],
+const NAMES: Record<Place, string> = {
+  hotel: 'Hotel room',
+  shop: 'Tavern',
+  farm: 'Farm',
+  lakeside: 'Lakeside',
+  mine: 'Mine',
+  dungeon: 'Dungeon',
 };
 
 export function createTravelPanel(parent: HTMLElement, go: (place: Place) => void): TravelPanel {
-  const shell = panelShell(parent, 'travel-panel', 'Map');
+  const shell = panelShell(parent, 'travel-panel worlds-panel', 'Worlds');
   const panel = shell.el;
   const list = el('div', 'travel-list');
-  shell.body.append(list);
+  shell.body.append(el('p', 'worlds-hint', 'Where to? Tap a world to walk through its door.'), list);
   return {
     el: panel,
     refresh(cards) {
       list.replaceChildren(
         ...cards.map((c) => {
-          const [name, icon] = NAMES[c.place];
-          const b = el('button', `travel-card place-${c.place}${c.here ? ' here' : ''}${c.locked ? ' locked' : ''}`);
+          const name = NAMES[c.place];
+          const b = el('button', `travel-card world-card place-${c.place}${c.here ? ' here' : ''}${c.locked ? ' locked' : ''}`);
           b.type = 'button';
-          const slot = iconBox(pixelIcon(icon));
+          const pic = el('div', 'world-pic');
+          const img = el('img', 'world-img');
+          img.src = worldArtUrl(c.place);
+          img.alt = '';
+          img.draggable = false;
+          pic.append(img);
           const info = el('div', 'travel-info');
           info.append(el('div', 'catalog-name', name), el('div', 'catalog-sub', c.locked ?? c.status));
-          b.append(slot, info);
+          b.append(pic, info);
           if (c.badge) b.append(el('span', 'btn-badge card-badge', c.badge));
           if (c.here) b.append(el('span', 'plate here-tag', 'Here'));
           if (c.locked) b.append(el('span', 'lock-tag', 'Locked'));

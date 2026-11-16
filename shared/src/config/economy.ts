@@ -98,14 +98,14 @@ export const SELL_RATE = 0.3;
  */
 export const SELL_RATES = {
   block: SELL_RATE,
-  material: 0.3,
+  material: 0.12,
   ore: 0.85,
   seed: 0.2,
   crop: 0.1,
   bar: 0.5,
-  fish: 0.4,
-  thing: 0.4,
-  splice: 0.05,
+  fish: 0.5,
+  thing: 0.5,
+  splice: 0.03,
 } as const;
 /** Selling MORE than this many pieces in one tap asks first (ui/confirmBuy.ts). Ultra rare and legendary things always ask. */
 export const SELL_CONFIRM_QTY = 5;

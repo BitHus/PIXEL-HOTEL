@@ -64,7 +64,7 @@ const TABS = [
   ['home', 'chair', 'Home'],
   ['shop', 'food', 'Tavern'],
   ['decor', 'house', 'Decor'],
-  ['blocks', 'hammer', 'Blocks'],
+  ['blocks', 'bricks', 'Blocks'],
   ['seeds', 'sprout', 'Seeds'],
   ['clothes', 'shirt', 'Clothes'],
   ['packs', 'gems', 'Packs'],

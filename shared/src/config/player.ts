@@ -30,7 +30,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 30;
+export const SAVE_VERSION = 31;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */

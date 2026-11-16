@@ -43,7 +43,7 @@ export const START_WALL_STYLE = 'bare';
  * center; the stall_table in the middle.
  */
 export const SHOP_START_ITEMS = [
-  { typeId: 'counter', x: 176, y: 96, facing: 'down' },
+  { typeId: 'counter', x: 80, y: 96, facing: 'down' },
   { typeId: 'stall_table', x: 304, y: 192, facing: 'down' },
 ] as const;
 

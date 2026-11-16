@@ -16,7 +16,7 @@ export interface SettingsHooks {
   newGame(): void;
   onDebug(on: boolean): void;
   /** The device settings as stored (atmosphere step), and what happens when they change. */
-  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean; reduceEffects: boolean };
+  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean; reduceEffects: boolean; followCamera: boolean };
   onSound(on: boolean): void;
   onVolume(volume: number): void;
   onLighting(on: boolean): void;
@@ -25,6 +25,8 @@ export interface SettingsHooks {
   onNameTags(on: boolean): void;
   /** Reduce effects (outdoors rework C11): a device pref read by the dungeon screen each frame. */
   onReduceEffects(on: boolean): void;
+  /** COD-1 (a): the camera follows the avatar in the tavern. */
+  onFollowCamera(on: boolean): void;
 }
 
 export interface SettingsPanel {
@@ -141,8 +143,18 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   fxBtn.classList.toggle('on', reduceFx);
   const fxNote = el('p', 'panel-note', 'Calmer fights: no screen shake, freeze frames, sparks or bursts. Damage numbers and sounds stay.');
 
+  let follow = hooks.prefs.followCamera;
+  const followBtn = textButton(`Follow camera: ${follow ? 'on' : 'off'}`, () => {
+    follow = !follow;
+    followBtn.textContent = `Follow camera: ${follow ? 'on' : 'off'}`;
+    followBtn.classList.toggle('on', follow);
+    hooks.onFollowCamera(follow);
+  });
+  followBtn.classList.toggle('on', follow);
+  const followNote = el('p', 'panel-note', 'In the tavern the camera glides after you. A drag or pinch pauses it for a moment.');
+
   // The on/off buttons become peg-and-groove switches (skin.css .btn.switch).
-  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, debugBtn]) b.classList.add('switch');
+  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, followBtn, debugBtn]) b.classList.add('switch');
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section settings-group');
     s.append(el('h3', 'ribbon', title), ...buttons);
@@ -154,6 +166,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'Pixel Hotel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, followBtn, followNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

@@ -17,6 +17,8 @@ export interface OrderMark {
   urgent: boolean;
   /** The order is in the serve queue or in the player's hands. */
   taken: boolean;
+  /** COD-1: a mug for this guest is on the tray: the bubble pulses (tap = carry it over). */
+  ready?: boolean;
 }
 
 export interface OrderBubbles {
@@ -63,7 +65,8 @@ export function createOrderBubbles(parent: HTMLElement, onTap: (guestId: number)
         }
         s.button.classList.toggle('taken', o.taken);
         s.button.classList.toggle('urgent', o.urgent && !o.taken);
-        s.button.title = o.taken ? 'On its way' : 'Tap to serve';
+        s.button.classList.toggle('ready', o.ready === true);
+        s.button.title = o.ready ? 'Tap to carry the mug over' : o.taken ? 'On its way' : 'Tap to serve';
       }
     },
     update(heads) {

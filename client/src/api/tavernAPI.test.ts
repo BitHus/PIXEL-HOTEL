@@ -54,9 +54,9 @@ describe('the tavern through the GameAPI', () => {
     // The avatar goes to the taps and waits; the pour is held, then the guest is tapped to carry the mug (G2).
     expect(await until(async () => events.some((e) => e.t === 'pour_ready'))).toBe(true);
     expect(await api.pourHeld(800)).toBe(true);
-    expect(await api.carryHeld()).toBe(true);
+    expect(await api.carryHeld(guest.id)).toBe(true);
     expect(await until(async () => events.some((e) => e.t === 'served' && e.guestId === guest.id))).toBe(true);
-    expect(events.filter((e) => e.t === 'holding').map((e) => (e.t === 'holding' ? e.item : 'x'))).toEqual(['root_ale', null]);
+    expect(events.filter((e) => e.t === 'tray').map((e) => (e.t === 'tray' ? e.mugs.length : -1))).toEqual([1, 0]);
     expect((await api.getTavern()).guests.find((g) => g.id === guest.id)?.phase).toBe('eat');
     // Nothing is collected by itself: the coins wait on the table until the player taps them.
     expect(await until(async () => (await api.getTavern()).mess.length > 0)).toBe(true);

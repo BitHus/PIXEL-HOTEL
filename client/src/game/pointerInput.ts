@@ -6,6 +6,7 @@ import { createItemUse } from './itemUse.ts';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
 import { walkDoorGoal } from './doorGoal.ts';
+import { pauseFollow } from './followCam.ts';
 
 export async function setupPointerInput(g: G15) {
   const {
@@ -24,7 +25,10 @@ export async function setupPointerInput(g: G15) {
     setCamera: (cam, snap) => (dungeon.isActive ? dungeon.setCamera(cam) : setCamera(cam, snap)),
     getOverviewZoom: overviewZoom,
     getDevicePixelRatio: dpr,
-    onGestureStart: () => intro.cancel(),
+    onGestureStart: () => {
+      intro.cancel();
+      pauseFollow(); // COD-1 (a): the player moves the camera by hand
+    },
     onPress: (screen) => {
       // G2: while the avatar waits at the taps, a press on the stand (or near it) is the pour: hold = pour, release = done.
       if (!dungeon.isActive && !build.on && !paint.active && !placer.active && !lakeside.fishing && pourControl.claims(screen)) {
