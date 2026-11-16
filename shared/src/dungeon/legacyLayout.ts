@@ -18,13 +18,12 @@ import {
   WOODEN_CHESTS_MAX,
   WOODEN_CHESTS_MIN,
   ENEMIES_PER_ROOM_MAX,
-  type DungeonRoundId,
 } from '../config.ts';
 import { rngInt, rngPick } from '../rng.ts';
 import type { Rng } from '../types.ts';
 import { blockAt, blockCenter, isFloorBlock } from './grid.ts';
 import { NO_EXIT, blockDistances, chestSpotOk, floorRng, makeEnemy, rollRockKind, roomBlocks, type FloorPlan, type LayoutRules } from './layoutCommon.ts';
-import type { BlockRect, Chest, ChestKind, DungeonBlock, DungeonMap, Enemy, Rock } from './run.ts';
+import type { BlockRect, Chest, ChestKind, DungeonBlock, DungeonMap, DungeonRoundId, Enemy, Rock } from './run.ts';
 
 /** The old crypt layout (kept for tests that compare totals). */
 export function generateLegacyCrypt(seed: number, n: number, round: DungeonRoundId): FloorPlan {

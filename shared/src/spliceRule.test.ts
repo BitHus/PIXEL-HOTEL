@@ -13,7 +13,7 @@ const rk = (s: SeedId): number => RANKS.indexOf(seedRank(s));
 
 // Frozen results of 30 general pairs (step SG1). If this test fails, a change to SPLICE_SALT, spliceRules.json, the pool or the hash moved
 // results players may already have found: do not "fix" it by re-pinning once the content has shipped (NOTES SG1).
-const GOLDEN: [SeedId, SeedId, SeedId][] = [
+const GOLDEN: [string, string, string][] = [
   ['amberbud_seed', 'baggy_seed', 'flower_crown_seed'],
   ['amberbud_seed', 'glowcap_spore', 'flaxbloom_seed'],
   ['amberbud_seed', 'stone_seed', 'gilded_chair_seed'],
@@ -142,9 +142,9 @@ describe('the general splice rule (step SG1)', () => {
 
   it('GOLDEN: 30 general results are frozen (a changed rule or pool shows here)', () => {
     for (const [a, b, result] of GOLDEN) {
-      expect(isSpecialPair(a, b), `${a}+${b} must be a general pair`).toBe(false);
-      expect(generalResult(a, b), `${a}+${b}`).toBe(result);
-      expect(spliceResult(b, a), `${b}+${a}`).toBe(result);
+      expect(isSpecialPair(a as SeedId, b as SeedId), `${a}+${b} must be a general pair`).toBe(false);
+      expect(generalResult(a as SeedId, b as SeedId), `${a}+${b}`).toBe(result);
+      expect(spliceResult(b as SeedId, a as SeedId), `${b}+${a}`).toBe(result);
     }
   });
 

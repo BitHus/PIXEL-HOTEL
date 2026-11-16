@@ -288,3 +288,74 @@ REMAINING ids: materials mithril_ore mithril_bar crystal gem bone cloth resin am
 ### PAUSE NOTE update (artist, icons, round 2)
 Done since: critic points fixed (steel_pickaxe pointed tips; copper_ore warm brown with orange veins, iron_ore cool grey-blue with silver flecks). New 32x32 PNGs (sheets icons_b4, icons_f1, icons_f2 in art-src/aseprite): seeds turnip_seed potato_seed carrot_seed pumpkin_seed glowcap_spore (a pile of seeds per crop colour), mithril_ore mithril_bar mithril_sword; furniture lamp rug bookshelf bench sofa crate barrel potted_flowers shelf desk banner sign hanging_lantern shop_rug mug_shelf menu_board. Critic on f1/f2 fixed: lamp outline, rug dotted fringe removed, bench now has a backrest, sofa widened, barrel top, mug handles, lantern sparks. Open: shelf top tier is busy.
 Still to draw (catalog furniture): wall_clock wall_mirror music_box pet_basket dice_cup bard_stool barrel_table tankard_rack dartboard window_curtains writing_desk display_case keg_rack register tap_stand prep_table pantry sink serving_hatch. Items still open: drinks glowcap_tonic, food (carrot_soup pumpkin_pie glowcap_broth grilled_perch carp_stew eel_pie), mithril_armor mithril_rod leather_armor iron_armor, fish (18), packs (4), dungeon drops and gems/materials listed above, UI icons (pixelIcons.ts) not started.
+
+## PAUSE NOTE (artist, 16 Nov, DA1/MOBS/SA1)
+DONE: DA1 client/src/dungeon/propArt.ts (drawProp/drawDecor(kind, variant, clockMs), PROP_INFO, propLight, drawPropSheet; 30 kinds; test propArt.test.ts). MOBS: actors/slime_idle, bat_idle, mimic_idle PNG strips (64x32, 2 frames of 32x32; sources art-src/aseprite/mob_*.aseprite) plus client/src/dungeon/enemySprites.ts enemyIdleFrame(kind, mimic, clockMs) for the dungeon coder to wire (null = code art). BLOCKS audit: all 10 blocks in blocks.json have a PNG, nothing missing. SA1: render/categoryBadges.ts (+test), skin.css block (splice dialog, .splice-card, .cat-badge, .seed-target, splice fx; names in the comment), farmArt.ts drawPlantOnBlock (6 px lift).
+LEFT: skeleton (32x64) and Bone King (64x96) PNG strips; the two reskin mobs; new block tiles only after the coder adds blocks (SG3a); the coder must toggle `reduce-fx` on the UI root and wire the hooks; no visual check in the browser yet (prop sheet via drawPropSheet).
+
+## PAUSE NOTE (coder, pour, 16 Nov): hands-on pour rework is WORKING
+ROOT CAUSE of "nothing works": the old "Hold to pour" button was a child of #ui, which has pointer-events:none, and .pour-btn never set pointer-events:auto, so presses fell through to the canvas (walk). Also the camera could be elsewhere so the stand was off screen.
+NEW (no button): hold the tap stand itself. client/src/game/pourControl.ts (state machine, claims/down/up, Space/Enter, blur/visibility/cap), render/pourFx.ts (world-drawn lever, stream, mug level, foam, green gauge window, shake), tavernLife.ts (wiring, hint "Hold the tap", camera glides to the stand, Perfect! float), pointerInput.ts (onPress claim), shared/src/pour.ts (POUR_FULL_MS 1400, POUR_HOLD_CAP_MS, pickPourTap, pourHeldClamp, tests), tavernApi.runErrand drops a stale pourwait. Delivery: tap guest, seat or table. Also hood_coif hat and apron hidden while sitting.
+PROVEN headless (Chrome + ?e2e hook window.__ph, build + vite preview): guest order -> avatar at taps -> hold 1.4 s -> perfect, tap 7->6 -> tap guest -> served (eat) -> 10 coins on the table. NOT exercised: tapping the coins (old code), touch, keyboard, two stands, under/other-drink toasts.
+NEXT: by-hand touch test; artist: tap lever frames + mug fill frames (boxes now); CSS for .pour-hint (inline default); optional: remove the ?e2e hook. Open, not mine: balance.test.ts "splice result sold back" fails and shared typecheck (guestLook GUEST_SPRITE_PIECES) from other WIP.
+
+## PAUSE NOTE (UI round 5, 16 Nov)
+DONE (code, not yet seen in a browser): panels.ts close slide-out (.panel-leaving, 130 ms, off for reduced motion); hotbar pressed state and just-selected pop (hotbar.ts, skin.css); toasts 40 px higher (clear of the name plate), gain popups clamped above the hotbar (gainPopups.ts); hotbarBag.ts interval compacts the quest card (hint.setCompact) after 1.5 s of walking and sets .walk-compact on the UI root (first-steps card keeps seal and pips); mug gauges (mugGauge in tapsPanel.ts: Taps rows and the Menu tab strip, drink rows); Menu rows (coin stepper, peg On/Off switch, candle edge); recipe cards with ingredient chips (needChip) and vessel bars (vesselBar pot/tankard) and a pulsing Collect in cookingPanel.ts and brewingPanel.ts; Room panel stars, appeal bar, tip note. CSS: end of skin.css "UI round 5". Client tests (ui) green, client tsc clean, vite build ok.
+LEFT: ONE headless Chrome run (build + preview, bar panel, Book, Bag at 1000x700 and 420x760; driver draft in the session scratchpad cdp.cjs); check the 12-pip gauge and 52 px switch fit at 420 px; Cask tier ribbons, Book, Bag, Settings and the quest list were only audited (round 1 to 4 CSS already there), no new work. shared/ tsc is red from another WIP (dungeon/legacyLayout.ts, save.test.ts), not UI.
+
+## PAUSE NOTE (coder L2, 16 Nov, SG4/SG1/SG2)
+DONE SG4: plantProblem(room,items,c,r,ctx,types,seed?) in shared/src/farm.ts (soil or block host; food seeds need soil/soilHost; PLANT_ROOMS, PLANTS_ROOM_CAP in config/farm.ts; PLANT_REFUSALS texts there), cellProblem(..., allowBlock), hitBlock refuses 'planted', BlockProblem + needs_soil/planted/too_many_plants, soilHost on dirt, SAVE_VERSION 30 + MIGRATIONS[29] (normalise plants) + tests (plantsOnBlocks.test.ts, save.test.ts), keepSoilUnderPlants skips host cells.
+DONE SG1: seedCategory.ts, spliceRule.ts (spliceResult, generalResult, allRecipes, fnv1a32, resultRankIndex, categoryWeights), data/spliceRules.json, SPLICE_SALT/RANK_CAP/UP_ONE_IN in config/farm.ts, splice.ts (recipeFor/splice use the rule, spliceGrowMs uses result rank, splicePreview), seeds.ts (isFoodSeed, isStarterSeed, isSpliceable, allSeedIds), optional flags spliceOnly/noSplice on crops/blocks/splice seeds (packs.ts skips spliceOnly), spliceRule.test.ts with 30 golden pairs.
+SG2 STARTED: balance.ts chains()/spliceSellLoops() now use allRecipes(). balance.test.ts STRICT test is RED on purpose: flower_crown_seed (ultra clothing) comes from cheap common seeds (gold 8, spare sells 12) because the pool has no common/rare clothing, so the rank fallback steps UP. Fix (not the test): limit upward fallback to max input rank + 1 (then re-pin GOLDEN), or let SG3 content fill the pools; then add the 10 test groups of plan 2.7 (plants cap needs a net-of-seed-cost rate, not baseValue).
+LEFT: SG2 test groups + simulate splice section; CLAUDE.md sections 9, 10b and SAVE_VERSION 30 wording, docs/BRIEF.md, NOTES; full suite, typecheck (dungeon files have errors from the dungeon coder), build, npm run simulate.
+CLIENT NEEDS (SG4b/SG5): BLOCK_REFUSALS texts from PLANT_REFUSALS, plantSeed passes the seed (already via farm.plantSeed), tap on a planted block must call hitPlant first, GameAPI.previewSplice wraps splicePreview.
+
+## PAUSE NOTE (coder L1, DG1, 16 Nov)
+State: typecheck green; generate.ts is STILL the old generator (nothing wired). Added, unused so far: shared/src/dungeon/{legacyLayout.ts (old layout moved, exports generateLegacyCrypt, generateLegacyLayout; freeBlock now tests isFloorBlock), layoutCommon.ts (shared helpers moved out of generate.ts), rooms.ts (templates + masks + maskConnected), themes.ts, pacing.ts (routeBetween, cheb, nearest, worstBeatDistance, longestStretchWithout)}, shared/data/{dungeonRooms,dungeonThemes}.json, config/dungeon.ts constants (DUNGEON_ZONES, CORRIDOR_MAX, LOOPS, PACE_*, ROUTE_LEN_*, LAYOUT_ATTEMPTS), optional map fields links/extras/decor/roomInfo in run.ts (types DecorProp, MapLink, RoomInfo). The sim baseline (simulate:dungeon before) did not finish; rerun it first.
+Next steps: 1) write shared/src/dungeon/layout.ts (generateCryptLayout(seed,n,round): FloorPlan; the file was lost, a heredoc failed): zones growth, templates, rooms placed beside the parent in the zone direction with straight door-to-door corridors (gap 1..3, linkOptions on mask edge cells), loops (rooms>=4), retry attempts until loop + route 25..70, nooks/vault/secrets as extras, themes, enemies/chests (same totals; vault holds the golden or one wooden chest), props, landmark, pacing fill (prop within PACE_NEAR of every route point, move enemies for PACE_ENEMY_GAP). 2) generate.ts: re-export layoutCommon, generateFloor -> layout, generateMine -> generateLegacyLayout (mine rules). 3) tests (determinism, golden hash seeds 1..20, flood fill covers all floor, corridor <=5, loop, variety, beat coverage, totals vs generateLegacyCrypt, old map without new fields loads). 4) simulate:dungeon before/after within +-10%, NOTES, CLAUDE.md section 10 LAYOUT wording (plan section 0A) and BRIEF. DG2 not started.
+
+SIM BASELINE (before DG1, simulate:dungeon, old generator, tail 40 lines):
+350 ms                  12.3         11.2         14.6         14.1          0.0
+500 ms                  14.7         12.6         11.5         11.9          0.0
+700 ms                  11.8         13.7         16.6         12.4          0.0
+500 ms + iron           14.8         13.0         12.9         12.8          0.0
+
+=== Round 2: 1000 runs per row, level 1, no potions ===
+bot            survive  value/run  value/banked  gold/banked  floors  minutes  timeouts  avg level after 10 runs
+350 ms           91%      387        418          166     2.95     2.5        0      8.00
+500 ms           65%      283        398          155     2.89     2.4        0      8.00
+700 ms           40%      159        303          127     2.67     2.3        0      8.00
+500 ms + iron   100%      427        427          167     3.00     2.6        0      8.00
+
+Rare drops found (banked or lost) per 100 runs:
+bot               bone_chair   skull_lamp coffin_table   wall_torch throne_piece
+350 ms                  48.4         47.1         50.5         50.0        127.3
+500 ms                  46.7         47.3         48.1         49.3         81.4
+700 ms                  39.1         37.1         37.1         37.7         26.0
+500 ms + iron           50.9         51.5         51.0         53.2        148.5
+
+=== Round 1: survival per gear tier (sword + armor of the tier), level 1, no potions, 1000 runs per cell ===
+tier          350 ms   500 ms   700 ms   |  with food:   350 ms   500 ms   700 ms
+starting        100%     100%     100%   |                 100%     100%     100%
+copper          100%     100%     100%   |                 100%     100%     100%
+iron            100%     100%     100%   |                 100%     100%     100%
+mithril         100%     100%     100%   |                 100%     100%     100%
+
+=== Round 2: survival per gear tier (sword + armor of the tier), level 1, no potions, 1000 runs per cell ===
+tier          350 ms   500 ms   700 ms   |  with food:   350 ms   500 ms   700 ms
+starting         91%      65%      40%   |                 100%      99%      84%
+copper          100%      95%      70%   |                 100%     100%      99%
+iron            100%     100%      99%   |                 100%     100%     100%
+mithril         100%     100%     100%   |                 100%     100%     100%
+
+=== Step 9e: average kills for one drop of each rank (400000 kills rolled per enemy; drop chance 10% per kill, the Bone King always drops) ===
+enemy             common        rare  ultra_rare   legendary   kills/run (500 ms + iron, round 2)
+slime               13.3        50.5         222        1869   4.18
+bat                 13.3        49.8         216        2010   4.38
+skeleton            13.4        50.1         222        1961   4.48
+mimic               22.3        25.3        74.9         474   1.56
+bone_king            3.6         2.1         4.8        21.5   0.97
+
+real	7m12.377s
+user	0m0.200s
+sys	0m0.310s

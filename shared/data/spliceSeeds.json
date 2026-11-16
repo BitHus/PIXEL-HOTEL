@@ -224,7 +224,7 @@
     "id": "flower_crown_seed",
     "name": "Crown bloom seed",
     "rank": "ultra_rare",
-    "baseValue": 40,
+    "baseValue": 20,
     "icon": {
       "shape": "seed",
       "colors": [
