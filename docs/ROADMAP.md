@@ -36,6 +36,7 @@ ONLINE (phase 6, step 10): after depth and a clean playtest. Order inside: AM-1 
 NOT NOW: phase 8 release (name, legal, Windows app) until the game is playable end to end; trading and marketplace and PvP stay held; real money, daily rewards, limited offers and lucky wheels stay rejected.
 
 ## DONE
+Since 15 Nov (all merged and pushed 16 Nov): K2 casks and ripening, MB-2/MB-3 doors, hats and emotes (9g-1), usable furniture + cat rules + room stars (9g-2, 9g-3), first ten minutes (FP-1), tavern juice and sound (JU-1, AU-1), hands-on pouring, outdoors rework (crypt and lakeside art, effects, light, life), UI skin rounds 1 to 3, redrawn icons (63+), furniture redo R1 to R3, avatar layer art (down/up/right), medieval furniture, pixel art guide, research docs.
 Rooms, avatar, walking, furniture, placing, inventory, chat, saving (steps 1 to 5b). Shop with
 customers and the till (7), room shapes and character creation (7b), dungeon (8, 9), farm and
 cooking (9b), mine and forge (9c), UI polish, atmosphere (light, shadows, sound), logo splash,
