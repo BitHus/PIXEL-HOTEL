@@ -20,7 +20,7 @@ import { spriteFrames } from './spriteStore.ts';
 const MUG = { x0: -5, x1: 5, top: -11, bottom: 2 }; // outer box (10 x 13)
 const IN = { x0: -4, x1: 4, top: -10, bottom: 1 }; // inside (8 x 11)
 const GAUGE = { x0: 10, x1: 15, top: -31, bottom: 2 }; // outer box of the gauge (5 x 33)
-const SPOUT = { x: 0, y: -24 };
+const SPOUT = { x: 0, y: -18 };
 const PIVOT = { x: 5, y: -30 };
 const LEVER_LEN = 8;
 const PULL_MS = 140;

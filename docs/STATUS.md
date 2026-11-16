@@ -21,3 +21,14 @@ tester (TESTER RUN 2 -> docs/FIXLIST.md). Animator and artist idle (one Aseprite
 Avatar style lock; pushing (allowed for green batches today only, 16 Nov); big tools/plugins need a look first; ranked block values are low (balance floor) - owner may want a bigger rank gap; DG5 traps; dungeon round 2 on.
 
 ## Last push: SG3b/c content (8 crops, 10 dishes, 6 drinks, 14 furniture, seeds), R6 kitchen set and dungeon props, check-palette tool. Owner priorities open: starting furniture models and scale (round table, keg, stool, counter), hat not shown when equipped.
+
+## STACKING PLAN (owner OK 17 Nov, tasks ST1-ST5 in docs/QUEUE.md): stacked blocks max 3 -> stack look + fade -> walkable heights -> conveyors (original) -> obstacle courses/showcase. Do ST1 first after the tester fix list.
+
+## OWNER WISHES (17 Nov, from "what I liked in Growtopia"): trading, parkour, building, splicing, showing off, breaking
+Have already (solo): building, breaking, splicing, farming. Missing: parkour (needs jumping = side view), showing off to OTHERS (needs visitors/online or NPC visitors), trading (CLAUDE.md says no trading in v1; needs the server, step 10, safety first).
+DECISION (owner 17 Nov): NO side-view Block World; the game stays top-down 2D as it is. (Old proposal, parked:) a "Block World" room kind in 2D SIDE VIEW (Growtopia style: gravity, jump, parkour courses, build/break/plant on a grid, same blocks and seeds), reached from the Map; the tavern and hotel stay top-down. Showing off = suite/world showcase with NPC visitors first, real visitors with step 10. Trading = after step 10 with a safe design (no recycle exploits).
+So the Growtopia likes are served top-down: building/breaking/splicing/planting (done, keep deepening: more blocks, splice discoveries, Book), SHOWING OFF = suite/room showcase, stars and One Inn score, NPC visitors that react to your build (D pillar, soon), real visitors and then SAFE TRADING with step 10 (online, owner go, safety first), PARKOUR-like fun = timed obstacle/jump-free challenge courses in the dungeon or a block "obstacle course" room kind (later idea, top-down, no jumping).
+
+## Left open at the usage limit (17 Nov)
+ARTIST: counter_up/right, register, tap_stand (arch with two levers), lamp, menu_board redrawn but NOT seen in the game; still to draw: shop_rug recolour, mug_shelf, banner; ghost lever (static right lever stays visible while the lever strip plays: hide it); coder must align furniture.json heights (register ~34, lamp ~28, menu_board z14-44). Aseprite sources of the last batches are UNSAVED documents in the open Aseprite window (save them to art-src/aseprite/ before closing; the PNGs are exported and committed).
+TESTER: running a playtest (TESTER RUN 2 in docs/FIXLIST.md incl. the hat bug); read it first, fix list = next coder task. After it: ST1 stacking, then SG3d, SG4b, SG5.

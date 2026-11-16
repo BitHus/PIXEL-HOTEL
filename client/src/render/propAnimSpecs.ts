@@ -324,7 +324,7 @@ export const PROP_ANIMS: Readonly<Record<string, PropSpec>> = {
   },
   // The bar: the brewing barrel bubbles, the tap stand drips, the register dings.
   brewing_barrel: { emits: [{ kind: 'bubble', at: { png: [16, 4], code: [0, -45] }, everyMs: 600 }] },
-  tap_stand: { drips: [{ png: [8, 19], code: [-6, -34] }, { png: [23, 19], code: [6, -34] }] },
+  tap_stand: { drips: [{ png: [16, 30], code: [-6, -34] }] },
   register: { register: true },
   // A window lets a shaft of dust motes fall onto the floor in front of it.
   window_curtains: { emits: [{ kind: 'mote', at: { code: [0, -4] }, everyMs: 900, area: [44, 34] }] },
