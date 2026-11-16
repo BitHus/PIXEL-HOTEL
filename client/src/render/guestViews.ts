@@ -21,6 +21,7 @@ interface Shown {
   seat: FurnitureItem | null;
   /** The way they look while seated (guests), or null: the seat's way. */
   sitFacing: Facing | null;
+  eating: boolean;
 }
 
 /**
@@ -38,6 +39,8 @@ export interface Walker {
   speed?: number;
   seat: { uid: number } | null;
   sitFacing?: Facing;
+  /** True while the guest eats or drinks (CH1: the eat strips play). */
+  eating?: boolean;
 }
 
 function walkerAvatar(c: Walker, roomId: number): Avatar {
@@ -65,7 +68,7 @@ export class GuestViews {
         const sprite = new AvatarSprite(c.look, false);
         sprite.container.eventMode = 'none';
         this.view.objects.add(sprite.container, avatarDepthKey(a));
-        s = { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite, seat, sitFacing: c.sitFacing ?? null };
+        s = { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite, seat, sitFacing: c.sitFacing ?? null, eating: c.eating ?? false };
         this.shown.set(c.id, s);
       } else {
         // Keep the shown position unless it is clearly off (tiny timing differences are walked off).
@@ -74,6 +77,7 @@ export class GuestViews {
         s.path = off ? [...c.path] : skipPassed(s.avatar, c.path);
         s.seat = seat;
         s.sitFacing = c.sitFacing ?? null;
+        s.eating = c.eating ?? false;
       }
     }
   }
@@ -95,6 +99,7 @@ export class GuestViews {
       s.path = r.path;
       const sitting = s.seat !== null && s.path.length === 0;
       if (sitting) s.avatar = { ...s.avatar, state: 'sit', facing: s.sitFacing ?? s.seat!.facing };
+      s.sprite.setEating(sitting && s.eating);
       s.sprite.update(s.avatar, timeMs);
       s.sprite.container.tint = this.pulse.has(id) ? (Math.floor(timeMs / 450) % 2 === 0 ? 0xffffff : 0xffe9a8) : 0xffffff;
       s.sprite.container.tint = this.pulse.has(id) ? (Math.floor(timeMs / 450) % 2 === 0 ? 0xffffff : 0xffe9a8) : 0xffffff;

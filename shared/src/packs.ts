@@ -56,7 +56,7 @@ export interface PackItem {
 
 /** Everything a pool holds: all blocks; the crop seeds and block seeds; the clothing that is hidden until unlocked. */
 export function packPool(pool: PackPool): PackItem[] {
-  if (pool === 'blocks') return BLOCK_TYPES.map((b) => ({ kind: 'material', id: b.id, name: b.name, rank: b.rank }));
+  if (pool === 'blocks') return BLOCK_TYPES.filter((b) => !b.spliceOnly).map((b) => ({ kind: 'material', id: b.id, name: b.name, rank: b.rank }));
   if (pool === 'seeds') {
     const seeds: MaterialId[] = [...CROP_TYPES.filter((c) => !c.spliceOnly).map((c) => c.seed as MaterialId), ...BLOCK_TYPES.flatMap((b) => (b.seedId && !b.spliceOnly ? [b.seedId] : []))];
     return seeds.map((id) => {

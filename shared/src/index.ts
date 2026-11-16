@@ -26,6 +26,7 @@ export * from './rng.ts';
 export * from './prices.ts';
 export * from './appeal.ts';
 export * from './bar.ts';
+export * from './drawnPieces.ts';
 export * from './guestLook.ts';
 export * from './ranks.ts';
 export * from './gains.ts';

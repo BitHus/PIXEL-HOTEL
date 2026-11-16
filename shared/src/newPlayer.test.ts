@@ -87,7 +87,7 @@ describe('a new player from character creation (step 7b)', () => {
     const config = configForChoice(choice)!;
     const s = createNewPlayer(config, 5);
     expect(s.player.name).toBe('Ada Lovely 7');
-    expect(s.look).toEqual(look);
+    expect(s.look).toEqual({ ...look, hairStyle: 'long', top: 'tunic', bottoms: 'trousers' }); // CH1: only drawn pieces
     expect(s.rooms.find((r) => r.id === s.player.hotelRoomId)).toMatchObject({ shape: 'l_shape', level: 1, kind: 'hotel' });
     expect(s.rooms.find((r) => r.id === s.player.shopRoomId)).toMatchObject({ shape: 'plus', level: 1, kind: 'shop' });
     expect(s.player.unlockedClothing).toEqual([]);
@@ -115,9 +115,9 @@ describe('a new player from character creation (step 7b)', () => {
 
   it('only free clothing is selectable at the start', () => {
     expect(selectableClothing('hair').map((c) => c.id)).toEqual(['short', 'long', 'ponytail', 'buzz']);
-    expect(selectableClothing('top').map((c) => c.id)).toEqual(['t_shirt', 'long_sleeve', 'vest']);
+    expect(selectableClothing('top').map((c) => c.id)).toEqual(['t_shirt', 'long_sleeve', 'vest', 'tunic']);
     expect(selectableClothing('bottoms').map((c) => c.id)).toEqual(['trousers', 'shorts', 'skirt']);
-    for (const c of CLOTHING.filter((x) => !x.free)) expect(selectableClothing(c.slot).some((x) => x.id === c.id)).toBe(false);
+    for (const c of CLOTHING.filter((x) => !x.free && !x.starter)) expect(selectableClothing(c.slot).some((x) => x.id === c.id)).toBe(false);
     // Unlocked later (catalog or dungeon): then it shows.
     expect(selectableClothing('hair', ['mohawk']).map((c) => c.id)).toContain('mohawk');
     expect(lookAllowed(START_LOOK)).toBe(true);

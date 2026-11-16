@@ -44,14 +44,20 @@ function framePixels(tex: Texture): Uint8ClampedArray | null {
   return px;
 }
 
-const strip = (ref: LayerRef): Texture[] | null => {
-  const frames = spriteFrames('avatar', ref.id, ref.tag, LAYER_W);
-  return frames && frames.length === ref.frames ? frames : null;
+/** The strip a layer draws now: its own file, else the first alternative that exists (CH1: idle -> walk, eat -> sit, blink -> still). `first`: draw frame 0 only. */
+const strip = (ref: LayerRef): { frames: Texture[]; first: boolean } | null => {
+  const own = spriteFrames('avatar', ref.id, ref.tag, LAYER_W);
+  if (own && own.length === ref.frames) return { frames: own, first: false };
+  for (const a of ref.alts) {
+    const f = spriteFrames('avatar', ref.id, a.tag, LAYER_W);
+    if (f && f.length === a.frames) return { frames: f, first: a.first };
+  }
+  return null;
 };
 
 /** The layer plan and fallback decision for a look/pose/facing (pure rules in avatarBake.ts; only the file lookup is here). */
-export function decide(look: AvatarLook, pose: RigPose, facing: Facing, outfit: AvatarOutfit | null = null): SpriteDecision {
-  return decideSprites(avatarLayers(look, outfit, drawnFacing(facing).facing, pose), (ref) => strip(ref) !== null);
+export function decide(look: AvatarLook, pose: RigPose, facing: Facing, outfit: AvatarOutfit | null = null, blink = false): SpriteDecision {
+  return decideSprites(avatarLayers(look, outfit, drawnFacing(facing).facing, pose, blink), (ref) => strip(ref) !== null);
 }
 
 /** True when the baked avatar can be drawn for this look, pose and facing (every needed layer file exists); else the box avatar is used. */
@@ -60,7 +66,7 @@ export function hasAvatarSprites(look: AvatarLook, pose: RigPose, facing: Facing
 }
 
 /** The baked avatar (bytes, texture on demand) or null = use the box avatar. `facing` left is baked as right: mirror it yourself. */
-export function bakeAvatar(look: AvatarLook, pose: RigPose, facing: Facing, frame: number, head: { dx: number; dy: number }, outfit: AvatarOutfit | null = null): BakedAvatar | null {
+export function bakeAvatar(look: AvatarLook, pose: RigPose, facing: Facing, frame: number, head: { dx: number; dy: number }, outfit: AvatarOutfit | null = null, blink = false): BakedAvatar | null {
   const f = drawnFacing(facing).facing;
   const lk = lookKey(look, outfit);
   let per = lookCache.get(lk);
@@ -72,15 +78,16 @@ export function bakeAvatar(look: AvatarLook, pose: RigPose, facing: Facing, fram
     lookCache.set(lk, per);
     if (lookCache.size > MAX_LOOKS) lookCache.delete(lookCache.keys().next().value!);
   }
-  const fk = `${pose}|${f}|${frame}|${head.dx}|${head.dy}`;
+  const fk = `${pose}|${f}|${frame}|${head.dx}|${head.dy}|${blink ? 1 : 0}`;
   if (per.has(fk)) return per.get(fk)!;
-  const d = decide(look, pose, f, outfit);
+  const d = decide(look, pose, f, outfit, blink);
   let baked: BakedAvatar | null = null;
   if (d.ok) {
     const layers: BakeLayer[] = [];
     let complete = true;
     for (const p of bakePlan(d.layers, frame, head)) {
-      const px = strip(p.ref)?.[p.frame];
+      const st = strip(p.ref);
+      const px = st ? st.frames[st.first ? 0 : Math.min(p.frame, st.frames.length - 1)] : undefined;
       const data = px ? framePixels(px) : null;
       if (!data) {
         complete = false;

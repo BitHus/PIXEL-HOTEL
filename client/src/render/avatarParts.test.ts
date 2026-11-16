@@ -11,7 +11,7 @@ const looks: AvatarLook[] = CLOTHING.map((c) => ({
 describe('avatar clothing styles (step 7b)', () => {
   it('the old look (short hair, long sleeves, trousers) is drawn exactly as the approved base', () => {
     // The approved down-facing figure from step 3: legs, shoes, arms, hands, torso, neck, head, hair.
-    const p = avatarParts(START_LOOK, 'down');
+    const p = avatarParts({ ...START_LOOK, top: 'long_sleeve' }, 'down');
     expect(p.map(([x, y, w, h]) => [x, y, w, h])).toEqual([
       [-5, -26, 4, 22], [1, -26, 4, 22], [-6, -4, 5, 4], [1, -4, 5, 4],
       [-10, -43, 3, 15], [-10, -28, 3, 3], [7, -43, 3, 15], [7, -28, 3, 3],

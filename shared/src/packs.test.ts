@@ -56,7 +56,7 @@ describe('the pack data', () => {
 
   it('the pools have something for every rank the packs can roll (nothing falls through by accident)', () => {
     for (const rank of RANKS) expect(packPool('clothing').some((i) => i.rank === rank)).toBe(true);
-    expect(packPool('blocks').length).toBe(BLOCK_TYPES.length);
+    expect(packPool('blocks').length).toBe(BLOCK_TYPES.filter((b) => !b.spliceOnly).length); // SG3a: splice-only blocks never come from a pack
   });
 });
 

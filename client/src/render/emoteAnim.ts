@@ -8,6 +8,8 @@ export type EmoteKind = 'wave' | 'dance' | 'laugh' | 'cheer' | 'sleep';
 export const EMOTE_KINDS: readonly EmoteKind[] = ['wave', 'dance', 'laugh', 'cheer', 'sleep'];
 
 export type EmotePose = {
+  /** Which emote this is (null = neutral): the sprite picks the wave strip for wave and cheer. */
+  kind: EmoteKind | null;
   /** Offset of the whole body in art px. */
   dx: number;
   dy: number;
@@ -21,11 +23,15 @@ export type EmotePose = {
   overlay: 'zzz' | 'heart' | 'note' | null;
 };
 
-export const NEUTRAL_POSE: EmotePose = { dx: 0, dy: 0, headDy: 0, armLift: 0, armSwing: 0, overlay: null };
+export const NEUTRAL_POSE: EmotePose = { kind: null, dx: 0, dy: 0, headDy: 0, armLift: 0, armSwing: 0, overlay: null };
 
 const phase = (t: number, period: number, steps: number): number => Math.floor((((t % period) + period) % period) / (period / steps));
 
 export function emotePose(kind: EmoteKind, tMs: number): EmotePose {
+  return { ...emoteShape(kind, tMs), kind };
+}
+
+function emoteShape(kind: EmoteKind, tMs: number): EmotePose {
   switch (kind) {
     case 'wave':
       return { ...NEUTRAL_POSE, armLift: 14, armSwing: phase(tMs, 360, 2) === 0 ? -2 : 2 };

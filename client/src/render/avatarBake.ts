@@ -166,7 +166,7 @@ export function bakePlan(layers: readonly LayerRef[], frame: number, head: { dx:
 
 /** The cache key of a look as worn (and with an outfit): every field that changes a pixel. */
 export function lookKey(look: AvatarLook, outfit: AvatarOutfit | null = null): string {
-  return [look.skin, look.hair, look.hairStyle, look.top, look.shirt, look.bottoms, look.legs, look.shoes, look.hat ?? '', outfit?.outer ?? '', outfit?.outerBack ?? ''].join('|');
+  return [look.skin, look.hair, look.hairStyle, look.top, look.shirt, look.bottoms, look.legs, look.shoes, look.hat ?? '', outfit?.outer ?? look.outer ?? '', outfit?.outerBack ?? ''].join('|');
 }
 
 export interface SpriteDecision {

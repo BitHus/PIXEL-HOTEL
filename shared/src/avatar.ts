@@ -19,6 +19,8 @@ export interface AvatarLook {
   shoes: number;
   /** A hat (clothing id, step 9g-1); missing or empty = no hat. Only an owned hat is allowed (lookAllowed). */
   hat?: string;
+  /** An outer layer (clothing id of slot 'outer': belt, tabard, cloak; SG3c); missing or empty = none. Only an owned piece is allowed. */
+  outer?: string;
 }
 
 export type AvatarState = 'idle' | 'walk' | 'sit' | 'lie';

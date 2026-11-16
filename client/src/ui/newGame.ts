@@ -17,7 +17,7 @@ import {
   doorRect,
   floorRects,
   roomBoundsRect,
-  selectableClothing,
+  pickableClothing,
   shapesFor,
   wallBands,
   type AvatarLook,
@@ -94,7 +94,7 @@ function screen(parent: HTMLElement): HTMLElement {
 /** A random look from the free choices (UI only: the pick is validated again by createPlayer). */
 function randomLook(base: AvatarLook): AvatarLook {
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
-  const style = (slot: 'hair' | 'top' | 'bottoms'): string => pick(selectableClothing(slot)).id;
+  const style = (slot: 'hair' | 'top' | 'bottoms'): string => pick(pickableClothing(slot)).id;
   return {
     ...base,
     skin: pick(LOOK_COLORS.skin),

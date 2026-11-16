@@ -5,6 +5,7 @@ Updated 2026-11-15. The main Claude session is the project manager. The user sai
 ## START HERE (auto-read at every session start; updated 16 Nov)
 You are the main Claude session = the project manager. The owner opens you from the desktop shortcut (or at PC start). Do this, without asking:
 1. Read this file, docs/ROADMAP.md (PRIORITY ORDER at the top), docs/QUEUE.md, docs/FIXLIST.md and the memory notes (MEMORY.md index). Check git status in C:UsersajrenPIXEL-HOTEL-rebased (branch claude/inn-1b-rebased, the real working tree) and C:UsersajrenPIXEL-HOTEL (main; kept fast-forwarded to the rebased branch).
+1-0. STATUS: read docs/STATUS.md FIRST (where we are in the roadmap, what runs, what is next, owner decisions open); you rewrite it after every batch so the next session knows exactly where to continue.
 1a. NEWS: read the top 30 lines of docs/NEWS.md (project news from all workers); add your own entry when you finish or change something others must know.
 1b. THE GAME IN ONE PAGE: docs/GAME-VISION.md (three pillars: tavern = heart, block world = engine, identity and home; one loop). Every task must fit it.
 2. DIRECTION (owner, 16 Nov): vibes and fun first; a cozy MEDIEVAL pixel game in the style of Travellers Rest (original art only). Four art/feel tracks run beside the features: furniture and icon redo (docs/ART-REDO.md), real pixel avatar and NPCs (docs/PLAN-CHARACTERS.md; proportions option B), outdoors rework of dungeon and lakeside (docs/PLAN-REWORK-OUTDOORS.md), UI redo (docs/PLAN-UI.md). Lessons from Travellers Rest, Growtopia, Pixel Worlds, Habbo: docs/RESEARCH-DEEP.md; pixel art rules: docs/PIXEL-ART-GUIDE.md; style: docs/ART-STYLE.md (MEDIEVAL DIRECTION).
@@ -15,7 +16,7 @@ You are the main Claude session = the project manager. The owner opens you from 
 6. You decide small things; ask the owner only for big ones (pushing, game balance changes, fixed CLAUDE.md rules, style locks). Short replies. Running agents do not survive a restart: start them again from QUEUE.md.
 
 ## The team (agent definitions live in ~/.claude/agents/, all model: sonnet)
-- lead: plans, writes docs/PLAN-*.md, no production code (tools: Read, Glob, Grep, Write, Edit, WebSearch, WebFetch; no shell, so the manager runs tests).
+- lead (agent type may be unavailable; then the manager plans and writes docs/PLAN-*.md and QUEUE prompts itself): plans, writes docs/PLAN-*.md, no production code (tools: Read, Glob, Grep, Write, Edit, WebSearch, WebFetch; no shell, so the manager runs tests).
 - coder: logic, data, tests, UI panel logic. Owns shared/, api/, game/, ui/ logic.
 - artist: art, CSS, sprites. Owns render/, ui.css, icons, art/icon/light fields, art-src/, client/src/assets/sprites/. Draws pixel art in Aseprite with the Aseprite AI Artist plugin (aseprite@aseprite-ai-artist; Aseprite must be open and connected: call preflight).
 - animator (new 16 Nov, ~/.claude/agents/animator.md, sonnet): walk/sit/eat/wave cycles for avatars, NPCs, guests and enemies, furniture animation strips (stove_fire first, see docs/PLAN-ANIMATION.md); uses the Aseprite plugin skills animate/rig; owns animation strips and avatarRig.json small edits; starts after C18 renderer is stable, one at a time with the artist.
@@ -37,7 +38,7 @@ You are the main Claude session = the project manager. The owner opens you from 
 - docs/ART-STYLE.md: Traveller's Rest + Growtopia mood, Endesga 32, 1 px outline, light top-left. art-src/RAMPS.md: colour ramps.
 - CLAUDE.md: the project brief; docs/ROADMAP.md, NEXT-STEPS.md, NOTES.md.
 
-## State (2026-11-16)
+## State (OLD, 15-16 Nov morning; the live state is docs/STATUS.md)
 - DONE since 15 Nov: K2a (casks, tier drinks), K2b (cask panel), H2 (blocks from PNG), art rounds A1 and A3 (10 block sprites), A2 (tier band, cask CSS, keg_rack). Coder is on C4 (MB-2 Inn doors rules; SAVE_VERSION 27). Next coder: H3 (floor/wall hook), C5 (MB-3), G1 (gameplay fix pass from the tester list), N1 (content batch + plant hook), C6 (9g-1), C7 (9h-1 round 2). Prompts: docs/QUEUE.md.
 - ARTIST: the Aseprite plugin is NOT attached now. Run the CODE-ART tasks B1 to B6 in docs/QUEUE.md (door stub, hat/emote stubs, better code models for the hotel set, plants and trees, icon shapes, phone UI audit); the PLUGIN tasks (floors, walls, icons, tavern core sprites) wait until it is back.
 - OPEN FOR THE USER: sign the style lock (R2), the CP-1 playtest, round 2 dungeon on, U1 avatar, pushing. Manager to check that the A1/A3 block PNGs are on branch claude/inn-1b-rebased (not seen under sprites/blocks in the rebased tree on 16 Nov).
@@ -60,3 +61,10 @@ You are the main Claude session = the project manager. The owner opens you from 
 - CI: .github/workflows/ci.yml runs test, typecheck and build on every push (no deploy). Committed locally; a push still waits for the owner.
 - Not installed on purpose: Serena, Context7, Tiled/LDtk, Yarn Spinner, Excalidraw, FFmpeg, ImageMagick (see the 16 Nov audit); ChipTone and Audacity are for the owner by hand when AU-1 sound starts.
 - ADDED 16 Nov (owner: "download everything"): devDependencies fast-check (property tests, see shared/src/fastcheck.test.ts), @biomejs/biome (`npm run lint`, warnings only for now), sharp, pixelmatch, pngjs (sprite checks in tools/), free-tex-packer-core (atlases, only when load time needs it), stats.js. .mcp.json adds the Playwright MCP (headless; approve it on first use). .github/dependabot.yml monthly. Installed on the PC with winget: ImageMagick (magick), FFmpeg, Audacity. Manual web tools for the owner: sfxr.me/jsfxr, BeepBox, ChipTone. Playwright visual snapshots: use toHaveScreenshot in e2e/.
+
+## How the team works best (researched 16 Nov: Anthropic multi-agent research post, coding-agent coordination guides)
+- Orchestrator (manager) + a few focused workers beats many: multi-agent costs far more tokens than one agent, and coordination is the bottleneck, so max 3 workers, parallel only on separable files (coder: shared/ and game/; artist/animator: sprites and render; tester: read-only copy). One Aseprite window = one drawing worker.
+- Every task prompt carries: objective, files owned, tests/gates, output format, and what NOT to do. Effort scales with the task: small data fix = one short prompt; a feature = a plan of at most 8 lines in the prompt.
+- Handoffs are artifacts: the worker report ends with HOOKS NEEDED / OPEN / PROVEN / NOT SEEN (in each agent file). The manager forwards hooks to the next worker by SendMessage or writes them in docs/QUEUE.md, never from memory.
+- Gates beat reminders: `npm run check` (exit 0), balance tests, Playwright screenshots. A hook that blocks a commit when check fails is proposed to the owner (settings change).
+- The manager commits after each green batch (never workers), pushes when the owner allowed it, and logs the batch in docs/NEWS.md; docs/NEWS.md is the shared blackboard. The manager trims NEWS monthly.

@@ -37,6 +37,14 @@ describe('furniture sprite files', () => {
     it(`${file} has a valid name, a PNG header and the right size`, () => {
       const name = parseSpritePath(`furniture/${file}`);
       expect(name, 'file name').not.toBeNull();
+      const cut = name!.id.lastIndexOf('_');
+      if (!known(() => getFurnitureType(name!.id)) && cut > 0 && known(() => getFurnitureType(name!.id.slice(0, cut)))) {
+        // An animation strip `<typeId>_<tag>.png` (stove_fire, tap_stand_lever): equal frames in a row, no footprint rule.
+        const strip = sizeOf('furniture', file);
+        expect(strip.header).toEqual(PNG_SIGNATURE);
+        expect(strip.w % strip.h === 0 || strip.w > strip.h, 'a row of frames').toBe(true);
+        return;
+      }
       const type = getFurnitureType(name!.id); // throws for an unknown id
       expect(neededFacings(type), 'facing allowed').toContain(name!.variant);
       const { w, h, header } = sizeOf('furniture', file);

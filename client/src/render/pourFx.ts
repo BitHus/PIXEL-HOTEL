@@ -6,7 +6,7 @@
 // no glow pulse, no tremble, no shake (the level, the stream and the gauge stay: they are information).
 // Art wanted from the artist (optional): tap lever frames (rest / half / pulled) and mug fill frames; this draws boxes until they exist.
 
-import { Graphics } from 'pixi.js';
+import { Graphics, Sprite, type Texture } from 'pixi.js';
 import { POUR_MAX_FILL, POUR_PERFECT_RANGE, PALETTE, getDrinkType, getFurnitureType, type DrinkId, type FurnitureItem, type MaterialId } from '@pixel-hotel/shared';
 import { easeOutBack, easeOutQuad, clamp01 } from '../fx/ease.ts';
 import { shakeOffset } from '../fx/shake.ts';
@@ -14,6 +14,7 @@ import { itemDepthKey } from './depthOrder.ts';
 import { surfaceHeight } from './furnitureArt.ts';
 import { DARK_WARM } from './bareStyles.ts';
 import type { RoomView } from './roomView.ts';
+import { spriteFrames } from './spriteStore.ts';
 
 // Local coordinates: origin = the stand's foot on the bar top, y up is negative.
 const MUG = { x0: -5, x1: 5, top: -11, bottom: 2 }; // outer box (10 x 13)
@@ -26,6 +27,26 @@ const PULL_MS = 140;
 const SPRING_MS = 260;
 const DONE_MS = 520;
 const SHAKE_MS = 260;
+
+// Art strips (animator A1, optional, the code boxes stay the fallback): furniture/tap_stand_lever.png (3 frames 14 x 16, pivot cap centre at frame px (3, 9)),
+// tap_stand_mug.png and tap_stand_mugfill.png (4 frames 16 x 21: empty, 1/3, 2/3, full; the fill one is tinted with the drink colour).
+const LEVER_FRAME = { w: 14, pivotX: 3, pivotY: 9 };
+const MUG_FRAME = { w: 16, x: -6, y: -17 };
+
+/** Lever frame for the pull amount (0 rest .. 1 pulled): rest below 0.34, half below 0.8, else pulled (pure). */
+export const leverFrame = (t: number): number => (t < 0.34 ? 0 : t < 0.8 ? 1 : 2);
+/** Mug fill frame for a fill (1 = full): empty, 1/3, 2/3, full (pure). */
+export const mugFillFrame = (fill: number, frames = 4): number => Math.max(0, Math.min(frames - 1, Math.round(Math.max(0, Math.min(1, fill)) * (frames - 1))));
+
+interface ArtLayer {
+  fill: Sprite;
+  mug: Sprite;
+  front: Graphics;
+  lever: Sprite;
+  fillTex: Texture[];
+  mugTex: Texture[];
+  leverTex: Texture[];
+}
 
 const FOAM = PALETTE[2];
 const FOAM_LIGHT = PALETTE[19];
@@ -43,6 +64,7 @@ const lighter = (css: string): string => (css === PALETTE[10] ? BUTTER : css ===
 export class PourFx {
   private a: {
     g: Graphics;
+    art: ArtLayer | null;
     phase: Phase;
     color: string;
     fill: number;
@@ -75,8 +97,26 @@ export class PourFx {
     g.position.set(Math.round(stand.x), Math.round(stand.y - top));
     this.view.objects.add(g, bar ? itemDepthKey(stand, bar) : { y: stand.y, x: stand.x, uid: stand.uid });
     const color = PALETTE[getDrinkType(drink as DrinkId).color] ?? PALETTE[9];
-    this.a = { g, phase, color, fill: 0, shownFill: 0, pullT: 0, springMs: -1, ageMs: 0, doneMs: 0, perfect: false, auto: null };
+    const art = this.makeArt(g, PALETTE[getDrinkType(drink as DrinkId).color] ?? PALETTE[9]);
+    this.a = { g, art, phase, color, fill: 0, shownFill: 0, pullT: 0, springMs: -1, ageMs: 0, doneMs: 0, perfect: false, auto: null };
     this.draw();
+  }
+
+  /** The sprite layers over the code Graphics when all three strips exist, else null (the code mug and lever are drawn). */
+  private makeArt(g: Graphics, color: string): ArtLayer | null {
+    const mugTex = spriteFrames('furniture', 'tap_stand', 'mug', MUG_FRAME.w);
+    const fillTex = spriteFrames('furniture', 'tap_stand', 'mugfill', MUG_FRAME.w);
+    const leverTex = spriteFrames('furniture', 'tap_stand', 'lever', LEVER_FRAME.w);
+    if (!mugTex || !fillTex || !leverTex || mugTex.length < 4 || fillTex.length < 4 || leverTex.length < 3) return null;
+    const fill = new Sprite(fillTex[0]);
+    fill.tint = color;
+    const mug = new Sprite(mugTex[0]);
+    const front = new Graphics();
+    const lever = new Sprite(leverTex[0]);
+    lever.position.set(PIVOT.x - LEVER_FRAME.pivotX, PIVOT.y - LEVER_FRAME.pivotY);
+    for (const o of [fill, mug, front, lever]) o.eventMode = 'none';
+    g.addChild(fill, mug, front, lever);
+    return { fill, mug, front, lever, fillTex, mugTex, leverTex };
   }
 
   /** The avatar waits at the taps: an empty mug and the gauge appear, the stand glows. */
@@ -190,6 +230,19 @@ export class PourFx {
       else if (a.phase === 'done' && a.springMs >= -1 && a.doneMs < SHAKE_MS) sx = shakeOffset(2, a.doneMs, SHAKE_MS, this.seed, 50).x;
     }
     this.drawGauge(g, fill, pouring);
+    if (a.art) {
+      // Strips: sprites for mug, liquid and lever; the stream and the gauge stay code (information).
+      const art = a.art;
+      art.front.clear();
+      art.mug.position.set(MUG_FRAME.x + sx, MUG_FRAME.y);
+      art.fill.position.set(MUG_FRAME.x + sx, MUG_FRAME.y);
+      const idx = mugFillFrame(fill);
+      art.fill.texture = art.fillTex[idx]!;
+      art.mug.texture = art.mugTex[idx]!;
+      art.lever.texture = art.leverTex[leverFrame(a.pullT)]!;
+      if (pouring && fill < POUR_MAX_FILL) this.drawStream(art.front, a, fill, sx);
+      return;
+    }
     this.drawMug(g, a, fill, sx);
     if (pouring && fill < POUR_MAX_FILL) this.drawStream(g, a, fill, sx);
     this.drawLever(g, a.pullT);

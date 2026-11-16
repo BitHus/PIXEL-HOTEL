@@ -2,10 +2,10 @@
 // tab at a time, so nothing needs long scrolling: Body (skin tone), Hair (style + colour), Top
 // (style + colour), Bottoms (style + colour), Shoes (colour), as icon tabs. Styles step with small
 // square ◀ ▶ buttons on both sides of a name plate ("Hair 2  Ponytail") through the
-// free and unlocked clothing (selectableClothing); colours are swatches from config LOOK_COLORS.
+// free and unlocked clothing (pickableClothing); colours are swatches from config LOOK_COLORS.
 // Every tap calls onChange at once, so the preview updates the moment a choice is made.
 
-import { HATS, LOOK_COLORS, PALETTE, RANK_COLORS, SLOT_FIELD, hatWearable, selectableClothing, type AvatarLook, type ClothingSlot } from '@pixel-hotel/shared';
+import { HATS, LOOK_COLORS, PALETTE, RANK_COLORS, SLOT_FIELD, hatWearable, pickableClothing, type AvatarLook, type ClothingSlot } from '@pixel-hotel/shared';
 import { drawAvatarOnCanvas, partBounds } from '../render/avatarParts.ts';
 import { hatBoxes } from '../render/hatParts.ts';
 import { el, textButton } from './dom.ts';
@@ -105,7 +105,7 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
   const row = (l: AvatarLook, r: Exclude<Row, { kind: 'hat' }>): HTMLElement => {
     const out = el('div', 'look-row');
     if (r.kind === 'style') {
-      const options = selectableClothing(r.slot, unlocked);
+      const options = pickableClothing(r.slot, unlocked);
       const field = SLOT_FIELD[r.slot];
       const at = Math.max(0, options.findIndex((c) => c.id === l[field]));
       const step = (d: number): void => {

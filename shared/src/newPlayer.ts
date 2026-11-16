@@ -41,6 +41,7 @@ import { emptyTavern } from './tavern.ts';
 import { getDrinkType, getFoodType } from './materials.ts';
 import type { FurnitureItem } from './types.ts';
 import type { MaterialId, StyleKind } from './types.ts';
+import { drawnLook } from './drawnPieces.ts';
 
 export interface NewPlayerConfig {
   playerId: number;
@@ -219,7 +220,7 @@ export function addShopStartItems(state: GameState): GameState {
 /** The state with its hotbar and bag layout matched to its inventory (bag.ts arrangeSlots). */
 export function arrangeState(state: GameState): GameState {
   const l = arrangeForInventory({ hotbar: state.hotbar, bag: state.bag }, state.items, state.player.materials);
-  return { ...state, hotbar: l.hotbar, bag: l.bag };
+  return { ...state, hotbar: l.hotbar, bag: l.bag, look: drawnLook(state.look) };
 }
 
 /**

@@ -28,7 +28,8 @@ describe('hat data', () => {
   it('keeps hats out of the clothes pack pools', () => {
     const ids = packPool('clothing').map((i) => i.id);
     for (const h of HATS) expect(ids).not.toContain(h.id);
-    expect(ids.length).toBe(CLOTHING.filter((c) => !c.free && c.slot !== 'hat').length);
+    for (const o of CLOTHING.filter((c) => c.slot === 'outer')) expect(ids).not.toContain(o.id);
+    expect(ids.length).toBe(CLOTHING.filter((c) => !c.free && c.slot !== 'hat' && c.slot !== 'outer').length);
     for (const p of PACK_TYPES.filter((x) => x.pool === 'clothing')) {
       for (const row of packOdds(p)) for (const it of row.items) expect(HATS.some((h) => h.id === it.id)).toBe(false);
     }

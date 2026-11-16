@@ -33,9 +33,9 @@ function put(s: GameState, roomId: number, c: number, r: number, id = 'dirt', ct
 }
 
 describe('the block data', () => {
-  it('has ten blocks, hardness 1 to 8, with unique ids and a rank each', () => {
-    expect(BLOCK_TYPES).toHaveLength(10);
-    expect(new Set(BLOCK_TYPES.map((b) => b.id)).size).toBe(10);
+  it('has 22 blocks (10 starters + 12 splice-only, SG3a), hardness 1 to 8, with unique ids and a rank each', () => {
+    expect(BLOCK_TYPES).toHaveLength(22);
+    expect(new Set(BLOCK_TYPES.map((b) => b.id)).size).toBe(22);
     expect(Math.min(...BLOCK_TYPES.map((b) => b.hardness))).toBe(1);
     expect(Math.max(...BLOCK_TYPES.map((b) => b.hardness))).toBe(8);
     for (const b of BLOCK_TYPES) {

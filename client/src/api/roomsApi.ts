@@ -21,6 +21,7 @@ import {
   unlockStyle,
   upgradeRoom,
   lookAllowed,
+  drawnLook,
   buildNavGrid,
   confirmPlacing,
   getFurnitureType,
@@ -152,7 +153,8 @@ export const roomsApi = {
 
   async setLook(h: LocalGameAPI, look: AvatarLook): Promise<AvatarLook> {
     // Free or unlocked clothing and colours from the lists only (step 7b).
-    if (lookAllowed(look, h.state.player.unlockedClothing)) h.commit({ ...h.state, look: { ...look } });
+    const drawn = drawnLook(look);
+    if (lookAllowed(drawn, h.state.player.unlockedClothing)) h.commit({ ...h.state, look: { ...drawn } });
     return { ...h.state.look };
   },
 

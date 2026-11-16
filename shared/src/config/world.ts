@@ -71,6 +71,10 @@ export const WALK_FRAMES = 4;
 export const WALK_FRAME_PX = 12;
 /** The walk bob switches between up and down every this many ms. */
 export const WALK_BOB_MS = 150;
+/** CH1: the face blinks (the closed-eye picture) for BLINK_CLOSED_MS every BLINK_MIN_MS to BLINK_MAX_MS (a fixed interval per avatar, seeded). */
+export const BLINK_CLOSED_MS = 120;
+export const BLINK_MIN_MS = 3000;
+export const BLINK_MAX_MS = 5000;
 /** Where a new avatar stands: this far above the bottom of the floor, centered (in the door zone). */
 export const AVATAR_START_FROM_BOTTOM = 24;
 

@@ -3,7 +3,7 @@
 
 import rigData from '../data/avatarRig.json';
 import rampData from '../data/ramps.json';
-import { WALK_FRAME_PX } from './config.ts';
+import { BLINK_CLOSED_MS, BLINK_MAX_MS, BLINK_MIN_MS, WALK_FRAME_PX } from './config.ts';
 import { getClothing, type ClothingType } from './clothing.ts';
 import type { AvatarLook, AvatarState } from './avatar.ts';
 import { PALETTE_NAMES, type PaletteName } from './palette.ts';
@@ -64,10 +64,13 @@ export function rampForIndex(index: number): Ramp | null {
 }
 
 // ---------- Rig tables ----------
-export type RigPose = 'walk' | 'sit';
+export type RigPose = 'walk' | 'sit' | 'idle' | 'eat' | 'wave';
+export const RIG_POSES: readonly RigPose[] = ['walk', 'sit', 'idle', 'eat', 'wave'];
 type Table = Record<'down' | 'up' | 'right', [number, number][]>;
 interface PoseData {
   frames: number;
+  /** ms per frame of a timed pose (idle, eat, wave); walk frames come from the distance walked. */
+  frameMs?: number;
   sitSeat: number;
   head: Table;
   hand: Table;
@@ -86,9 +89,29 @@ export function drawnFacing(facing: Facing): { facing: 'down' | 'up' | 'right'; 
   return facing === 'left' ? { facing: 'right', mirror: true } : { facing, mirror: false };
 }
 
-/** Which rig pose an avatar state uses: idle is walk frame 0, lie is drawn by code (null). */
-export function rigPose(state: AvatarState): RigPose | null {
-  return state === 'lie' ? null : state === 'sit' ? 'sit' : 'walk';
+/** Which rig pose an avatar state uses (CH1): standing still is 'idle' (2 frames), seated is 'sit' ('eat' while `eating`), a wave or cheer emote on two feet is 'wave'; lie is drawn by code (null). */
+export function rigPose(state: AvatarState, opts: { eating?: boolean; waving?: boolean } = {}): RigPose | null {
+  if (state === 'lie') return null;
+  if (state === 'sit') return opts.eating ? 'eat' : 'sit';
+  if (state === 'walk') return 'walk';
+  return opts.waving ? 'wave' : 'idle';
+}
+
+/** The frame of a timed pose (idle, eat, wave) at time tMs; `phaseMs` shifts one avatar against the others so a room does not breathe in step. Poses without a frameMs give 0. */
+export function timedFrame(pose: RigPose, tMs: number, phaseMs = 0): number {
+  const p = RIG.poses[pose];
+  if (!p.frameMs || p.frames <= 1) return 0;
+  const n = Math.floor((tMs + phaseMs) / p.frameMs);
+  return ((n % p.frames) + p.frames) % p.frames;
+}
+
+/** Is the face blinking at tMs? One blink of BLINK_CLOSED_MS per interval; the interval (BLINK_MIN_MS to BLINK_MAX_MS) and the start depend on the seed only (pure, no rng). */
+export function blinkClosed(tMs: number, seed: number): boolean {
+  const h = (Math.imul(Math.floor(seed) | 0, 2654435761) >>> 0) / 4294967296;
+  const h2 = (Math.imul((Math.floor(seed) | 0) ^ 0x9e3779b9, 2246822519) >>> 0) / 4294967296;
+  const period = BLINK_MIN_MS + Math.floor(h * (BLINK_MAX_MS - BLINK_MIN_MS + 1));
+  const t = (((tMs + h2 * period) % period) + period) % period;
+  return t < BLINK_CLOSED_MS;
 }
 
 /** Frames of a pose (a strip has this many frames of the canvas width). */
@@ -110,7 +133,8 @@ export function headOffset(pose: RigPose, facing: Facing, frame: number, tMs = 0
   const rows = RIG.poses[pose].head[d.facing];
   const [dx, dy] = rows[((frame % rows.length) + rows.length) % rows.length]!;
   let by = dy;
-  if (!moving) {
+  // Idle, eat and wave have their own frames (the breath is in the strips); only walk and sit get the code breath.
+  if (!moving && (pose === 'walk' || pose === 'sit')) {
     const t = ((tMs % RIG.breath.periodMs) + RIG.breath.periodMs) % RIG.breath.periodMs;
     if (t < RIG.breath.durationMs) by += RIG.breath.dy;
   }
@@ -132,6 +156,13 @@ export interface AvatarOutfit {
   outerBack?: string;
 }
 
+export interface LayerAlt {
+  tag: string;
+  frames: number;
+  /** Always draw frame 0 of this strip (a different pose: its frame 1 is not the same picture). */
+  first: boolean;
+}
+
 export interface LayerRef {
   slot: AvatarSlot;
   /** `<slot>_<item>`: the sprite id in the `avatar` kind. */
@@ -140,10 +171,23 @@ export interface LayerRef {
   /** The strip tag `<anim>_<facing>` (spriteFrames('avatar', id, tag, 32)). */
   tag: string;
   frames: number;
+  /** Other strips to use when this one's file is missing (idle falls back to walk, eat to sit, blink to still): tried in order. */
+  alts: readonly LayerAlt[];
   /** Draw the file mirrored (facing left). */
   mirror: boolean;
   /** An optional layer is skipped when its file is missing (a plain look has no outer or back hair); the others must exist or the box avatar is used. */
   optional: boolean;
+}
+
+/** The strips a body layer may use when the file of the pose is missing (art arrives piece by piece): idle and wave fall back to walk frame 0, eat to sit. */
+export function poseAlts(pose: RigPose, facing: 'down' | 'up' | 'right'): LayerAlt[] {
+  const alt = (p: RigPose, first: boolean): LayerAlt => ({ tag: `${p}_${facing}`, frames: poseFrames(p), first });
+  switch (pose) {
+    case 'idle': return [alt('walk', true)];
+    case 'wave': return [alt('idle', false), alt('walk', true)];
+    case 'eat': return [alt('sit', true)];
+    default: return [];
+  }
 }
 
 const hatHides = (hat: ClothingType | undefined): 'none' | 'front' | 'all' => hat?.hides ?? 'none';
@@ -153,7 +197,7 @@ const hatHides = (hat: ClothingType | undefined): 'none' | 'front' | 'all' => ha
  * torso, outer, hair_back, face, hair_front, hat. Up: outer_back moves over the worn clothes (a cloak covers the back) and the face is
  * not drawn. A hat that hides 'front' drops hair_front, 'all' drops both hair layers. Clothing ids are used as given.
  */
-export function avatarLayers(look: AvatarLook, outfit: AvatarOutfit | null, facing: Facing, pose: RigPose): LayerRef[] {
+export function avatarLayers(look: AvatarLook, outfit: AvatarOutfit | null, facing: Facing, pose: RigPose, blink = false): LayerRef[] {
   const d = drawnFacing(facing);
   const hat = look.hat ? getClothing(look.hat) : undefined;
   const hides = hatHides(hat);
@@ -163,14 +207,12 @@ export function avatarLayers(look: AvatarLook, outfit: AvatarOutfit | null, faci
     shoes: 'boots',
     legs: look.bottoms,
     torso: look.top,
-    outer: outfit?.outer ?? null,
+    outer: outfit?.outer ?? (look.outer ? look.outer : null),
     hair_back: look.hairStyle,
     face: d.facing === 'up' ? null : 'default',
     hair_front: look.hairStyle,
     hat: look.hat ? look.hat : null,
   };
-  // The apron (outer) has no sit frame yet: hide it while sitting (remove this line when the sit frame exists).
-  if (pose === 'sit') items.outer = null;
   if (hides === 'all') {
     items.hair_back = null;
     items.hair_front = null;
@@ -183,12 +225,14 @@ export function avatarLayers(look: AvatarLook, outfit: AvatarOutfit | null, faci
     const item = items[slot];
     if (!item) continue;
     const body = isBodySlot(slot);
+    const blinking = slot === 'face' && blink;
     out.push({
       slot,
       id: `${slot}_${item}`,
       item,
-      tag: `${body ? pose : 'still'}_${d.facing}`,
+      tag: `${body ? pose : blinking ? 'blink' : 'still'}_${d.facing}`,
       frames: body ? poseFrames(pose) : 1,
+      alts: body ? poseAlts(pose, d.facing) : blinking ? [{ tag: `still_${d.facing}`, frames: 1, first: true }] : [],
       mirror: d.mirror,
       optional: slot === 'outer' || slot === 'outer_back' || slot === 'hair_back',
     });

@@ -203,5 +203,10 @@
     "a": "mohawk_seed",
     "b": "honeybloom_seed",
     "result": "flower_crown_seed"
+  },
+  {
+    "a": "dirt_seed",
+    "b": "thatch_seed",
+    "result": "planks_seed"
   }
 ]

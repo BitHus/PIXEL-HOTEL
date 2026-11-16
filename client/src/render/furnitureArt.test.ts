@@ -82,4 +82,13 @@ describe('heights match the sprites (ART-REDO R1 and R2)', () => {
     expect(base).toBeDefined();
     expect(surfaceHeight(rug)).toBe(0);
   });
+  it('R5 boxes match the new sprites: crate 30, shelf 80, display case 60, stall table 36, footprints untouched', () => {
+    const top = (id: string) => Math.max(...boxesForFacing(type(id), 'down').boxes.map((x) => x.z + x.h));
+    expect([top('crate'), top('shelf'), top('display_case'), top('stall_table')]).toEqual([30, 80, 60, 36]);
+    expect(surfaceHeight(type('crate'))).toBe(30);
+    for (const [id, w, d] of [['crate', 32, 32], ['shelf', 64, 32], ['display_case', 64, 32], ['stall_table', 96, 64]] as const) {
+      expect([type(id).w, type(id).d]).toEqual([w, d]);
+      expect(type(id).height).toBe(d + top(id));
+    }
+  });
 });

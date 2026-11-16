@@ -10,7 +10,7 @@ import type { Icon } from './icons.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Rank } from './types.ts';
 
-export type ClothingSlot = 'hair' | 'top' | 'bottoms' | 'hat';
+export type ClothingSlot = 'hair' | 'top' | 'bottoms' | 'hat' | 'outer';
 
 /** Where a hat comes from (step 9g-1); the unlock events grant it through the ledger (addClothing). */
 export type HatSource = 'catalog' | 'book' | 'fish' | 'loot' | 'splice' | 'boss' | 'sunken' | 'mine';
@@ -20,6 +20,8 @@ export interface ClothingType {
   slot: ClothingSlot;
   name: string;
   free: boolean;
+  /** CH1: a drawn piece every new player may wear and pick (the tunic) though it is also a drop; not free for the packs and the splice. */
+  starter?: boolean;
   /** How hard it is to find (step BG8; the clothes packs roll the rank first). */
   rank: Rank;
   /** Gold a spare copy sells for (times config SPARE_SELL). */
@@ -43,11 +45,11 @@ export function getClothing(id: string): ClothingType | undefined {
 
 /** The clothing of a slot the player may pick: free ones and unlocked ones, in data order. */
 export function selectableClothing(slot: ClothingSlot, unlocked: readonly string[] = []): ClothingType[] {
-  return CLOTHING.filter((c) => c.slot === slot && (c.free || unlocked.includes(c.id)));
+  return CLOTHING.filter((c) => c.slot === slot && (c.free || c.starter === true || unlocked.includes(c.id)));
 }
 
 /** The look's field for a clothing slot. */
-export const SLOT_FIELD = { hair: 'hairStyle', top: 'top', bottoms: 'bottoms', hat: 'hat' } as const;
+export const SLOT_FIELD = { hair: 'hairStyle', top: 'top', bottoms: 'bottoms', hat: 'hat', outer: 'outer' } as const;
 
 /** The hats (step 9g-1), in data order. */
 export const HATS = CLOTHING.filter((c) => c.slot === 'hat');
@@ -67,12 +69,14 @@ export function hatWearable(id: string, unlocked: readonly string[]): boolean {
 export function lookAllowed(look: AvatarLook, unlocked: readonly string[] = []): boolean {
   const styleOk = (slot: ClothingSlot): boolean => selectableClothing(slot, unlocked).some((c) => c.id === look[SLOT_FIELD[slot]]);
   const hatOk = !look.hat || hatWearable(look.hat, unlocked);
+  const outerOk = !look.outer || selectableClothing('outer', unlocked).some((c) => c.id === look.outer);
   const colorOk = (list: readonly number[], v: number): boolean => list.includes(v);
   return (
     styleOk('hair') &&
     styleOk('top') &&
     styleOk('bottoms') &&
     hatOk &&
+    outerOk &&
     colorOk(LOOK_COLORS.skin, look.skin) &&
     colorOk(LOOK_COLORS.hair, look.hair) &&
     colorOk(LOOK_COLORS.top, look.shirt) &&

@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { keyChannelOf, PALETTE, PALETTE_NAMES, RIG, SLOT_KEYS, type RigPose } from '@pixel-hotel/shared';
+import { DRAWN_PIECES, keyChannelOf, PALETTE, PALETTE_NAMES, RIG, SLOT_KEYS, type RigPose } from '@pixel-hotel/shared';
 import { parseAvatarFile } from './spriteIndex.ts';
 
 const dir = join(import.meta.dirname, '..', 'assets', 'sprites', 'avatar');
@@ -64,8 +64,10 @@ describe('avatar layer PNGs', () => {
       const { w, h, rgba } = decode(readFileSync(join(dir, file)));
       expect(h, 'height 64').toBe(RIG.canvas.h);
       const pose = n!.anim as RigPose;
-      const frames = n!.anim === 'still' ? 1 : RIG.poses[pose]?.frames;
-      expect(frames, `anim ${n!.anim} is walk, sit or still`).toBeDefined();
+      // A1: idle, eat and wave strips are 2 frames, blink (a face picture) is 1; art for the coder to hook (poses are not in avatarRig.json yet).
+      const EXTRA: Record<string, number> = { idle: 2, eat: 2, wave: 2, blink: 1 };
+      const frames = n!.anim === 'still' ? 1 : (EXTRA[n!.anim] ?? RIG.poses[pose]?.frames);
+      expect(frames, `anim ${n!.anim} is walk, sit, still, idle, eat, wave or blink`).toBeDefined();
       expect(w, 'width = frames * 32').toBe(frames! * RIG.canvas.w);
       const allowed = SLOT_KEYS[n!.slot];
       for (let i = 0; i < rgba.length; i += 4) {
@@ -82,4 +84,23 @@ describe('avatar layer PNGs', () => {
       }
     });
   }
+});
+
+describe('outer pieces', () => {
+  it('belt, tabard and cloak have walk and sit PNGs for every facing', () => {
+    for (const id of ['belt', 'tabard', 'cloak']) for (const pose of ['walk', 'sit']) for (const f of ['down', 'right', 'up']) expect(existsSync(join(dir, `outer_${id}_${pose}_${f}.png`)), `${id} ${pose} ${f}`).toBe(true);
+  });
+});
+
+describe('drawn pieces (CH1)', () => {
+  it('every piece the pickers offer has its layer PNGs (walk, sit and idle for body layers, still for hair), so the player is always the layered figure', () => {
+    const has = (f: string): boolean => existsSync(join(dir, `${f}.png`));
+    for (const f of ['down', 'right', 'up']) {
+      for (const pose of ['walk', 'sit', 'idle']) {
+        for (const id of DRAWN_PIECES.top) expect(has(`torso_${id}_${pose}_${f}`), `torso ${id} ${pose} ${f}`).toBe(true);
+        for (const id of DRAWN_PIECES.bottoms) expect(has(`legs_${id}_${pose}_${f}`), `legs ${id} ${pose} ${f}`).toBe(true);
+      }
+      for (const id of DRAWN_PIECES.hair) expect(has(`hair_front_${id}_still_${f}`), `hair ${id} ${f}`).toBe(true);
+    }
+  });
 });

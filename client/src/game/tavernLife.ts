@@ -149,7 +149,7 @@ export async function setupTavernLife(g: G9) {
   const tableMess = new TableMess(view);
   /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
   const walkers = (list: readonly Guest[]): Walker[] =>
-    list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing }));
+    list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing, eating: g.phase === 'eat' }));
   const inTavern = (): boolean => st.room.id === st.tavern.roomId;
   const orders = createOrderBubbles(ui, (id) => void serveTap(id));
   // COD-1 (d): the orders strip at the top: one chip per open order (data from the pure shared/src/tray.ts ordersStrip).

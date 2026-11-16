@@ -160,7 +160,8 @@ export interface FurnitureItem {
 // ---------- Economy (section 9) ----------
 /** Dungeon materials (section 10). */
 /** The blocks (shared/data/blocks.json, step BG5). They stack in the bag like materials. */
-export type BlockId = 'dirt' | 'clay' | 'thatch' | 'planks' | 'stone' | 'glass' | 'brick' | 'lantern_block' | 'mossy_stone' | 'cinder_block';
+export type BlockId = 'dirt' | 'clay' | 'thatch' | 'planks' | 'stone' | 'glass' | 'brick' | 'lantern_block' | 'mossy_stone' | 'cinder_block'
+  | 'sandstone' | 'hay_bale' | 'wicker' | 'copper_plate' | 'rich_soil' | 'marble' | 'frost_brick' | 'rune_stone' | 'amber_block' | 'lava_glass' | 'quartz' | 'obsidian';
 export type BaseMaterialId =
   | 'bone'
   | 'cloth'

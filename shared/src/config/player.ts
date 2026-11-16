@@ -10,7 +10,7 @@ export const START_SHOP_ROOM_ID = 2;
 export const START_FARM_ROOM_ID = 3;
 export const START_LAKESIDE_ROOM_ID = 4;
 /** The starting avatar look (palette indices; styles are clothing.json ids). */
-export const START_LOOK = { skin: 30, hair: 5, hairStyle: 'short', top: 'long_sleeve', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 } as const;
+export const START_LOOK = { skin: 30, hair: 5, hairStyle: 'short', top: 'tunic', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 } as const;
 /** Colour choices per look slot (palette indices), for character creation and the Avatar panel. */
 export const LOOK_COLORS = {
   skin: [30, 31, 3, 4, 5],

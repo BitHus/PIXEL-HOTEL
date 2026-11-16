@@ -13,7 +13,9 @@ import {
   drawnFacing,
   handAnchor,
   headOffset,
+  blinkClosed,
   rigPose,
+  timedFrame,
   snapToStep,
   walkFrame,
   WALK_BOB_MS,
@@ -22,6 +24,7 @@ import {
   type AvatarLook,
   type Facing,
   type FurnitureType,
+  type RigPose,
 } from '@pixel-hotel/shared';
 import { DARK_WARM } from './bareStyles.ts';
 import { pixelStep } from './pixelStep.ts';
@@ -84,8 +87,12 @@ export class AvatarSprite {
   /** Distance walked so far (px): the walk frame comes from it, so no speed ever skates. */
   private distance = 0;
   private lastPos: { x: number; y: number } | null = null;
+  /** CH1: this avatar's own phase (idle breath, blink) so a room of guests does not move in step. */
+  private readonly seed = nextSeed++;
+  private eating = false;
+  private waving = false;
   /** What the baked avatar shows now (null = the box views), for the hand anchor. */
-  private bakedNow: { pose: 'walk' | 'sit'; facing: 'down' | 'up' | 'right'; frame: number } | null = null;
+  private bakedNow: { pose: RigPose; facing: 'down' | 'up' | 'right'; frame: number } | null = null;
 
   /** `shadow` false: the room draws the shadow itself, under everything (atmosphere step). */
   constructor(
@@ -102,8 +109,20 @@ export class AvatarSprite {
     this.container.addChild(this.body, this.held, this.overlay);
   }
 
+  /** CH1: a seated guest is eating (the eat strips play, else the sit pose). */
+  setEating(on: boolean): void {
+    if (on === this.eating) return;
+    this.eating = on;
+    this.show(this.last);
+  }
+
   /** Plays an emote pose (null = none). tMs: the time since it started (the overlay animates with it). */
   setEmote(pose: EmotePose | null, tMs = 0): void {
+    const waving = pose?.kind === 'wave' || pose?.kind === 'cheer';
+    if (waving !== this.waving) {
+      this.waving = waving;
+      this.show(this.last);
+    }
     this.emoteDx = pose?.dx ?? 0;
     this.emoteDy = pose?.dy ?? 0;
     drawOverlay(this.overlay, pose?.overlay ?? null, tMs);
@@ -208,16 +227,19 @@ export class AvatarSprite {
   }
 
   private showBaked(state: Avatar['state'], facing: Facing): boolean {
-    const pose = rigPose(state);
+    const pose = rigPose(state, { eating: this.eating, waving: this.waving });
     let b: ReturnType<typeof bakeAvatar> = null;
+    let blink = false;
     let frame = 0;
     let df: 'down' | 'up' | 'right' = 'down';
     let head = { dx: 0, dy: 0 };
     if (pose) {
       df = drawnFacing(facing).facing;
-      frame = pose === 'walk' && state === 'walk' ? walkFrame(this.distance) : 0;
+      // Walk: the frame comes from the distance; idle, eat and wave from the clock (steady, one phase per avatar); sit and walk have the code breath in the head offset.
+      frame = pose === 'walk' ? (state === 'walk' ? walkFrame(this.distance) : 0) : timedFrame(pose, this.lastTimeMs, this.seed * 397);
       head = headOffset(pose, df, frame, this.lastTimeMs, state === 'walk');
-      b = bakeAvatar(this.look, pose, df, frame, head);
+      blink = pose !== 'walk' && df !== 'up' && blinkClosed(this.lastTimeMs, this.seed);
+      b = bakeAvatar(this.look, pose, df, frame, head, null, blink);
     }
     this.bakedNow = b && pose ? { pose, facing: df, frame } : null;
     this.setCodeHat(b?.codeHat ?? false, df, head);
@@ -256,6 +278,8 @@ export class AvatarSprite {
     this.body.scale.x = facing === 'left' ? -1 : 1;
   }
 }
+
+let nextSeed = 1;
 
 /** Held items sit with their bottom here, relative to the feet (just above the hands). */
 const HAND_Y = -24;

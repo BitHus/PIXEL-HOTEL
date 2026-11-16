@@ -20,7 +20,7 @@
 
   { "id": "mohawk", "slot": "hair", "name": "Mohawk", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "hair", "colors": ["crimson", "red"]}},
   { "id": "spiky", "slot": "hair", "name": "Spiky", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "hair", "colors": ["orange", "butter"]}},
-  { "id": "tunic", "slot": "top", "name": "Tunic", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "shirt", "colors": ["crimson", "clay"]}},
+  { "id": "tunic", "slot": "top", "name": "Tunic", "free": false, "starter": true, "rank": "rare", "baseValue": 60, "icon": {"shape": "shirt", "colors": ["crimson", "clay"]}},
   { "id": "jerkin", "slot": "top", "name": "Leather jerkin", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "shirt", "colors": ["walnut", "tan"]}},
   { "id": "kilt", "slot": "bottoms", "name": "Kilt", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "skirt", "colors": ["pine", "crimson"]}},
   { "id": "breeches", "slot": "bottoms", "name": "Riding breeches", "free": false, "rank": "rare", "baseValue": 60, "icon": {"shape": "trousers", "colors": ["cream", "tan"]}},
@@ -44,5 +44,8 @@
   { "id": "knight_helm", "slot": "hat", "hides": "all", "name": "Knight helm", "free": false, "rank": "ultra_rare", "baseValue": 200, "pack": false, "source": "boss", "unlock": "Defeat the Bone King.", "icon": {"shape": "hat", "colors": ["steel","silver"]}},
   { "id": "gold_crown", "slot": "hat", "name": "Gold crown", "free": false, "rank": "legendary", "baseValue": 600, "pack": false, "source": "book", "unlock": "Fill 100% of a Book tab.", "icon": {"shape": "hat", "colors": ["gold","butter"]}},
   { "id": "sunken_crown_hat", "slot": "hat", "name": "Sunken crown", "free": false, "rank": "legendary", "baseValue": 600, "pack": false, "source": "sunken", "unlock": "Fish up the sunken crown.", "icon": {"shape": "hat", "colors": ["sky","steel"]}},
-  { "id": "miner_lamp_cap", "slot": "hat", "name": "Miner lamp cap", "free": false, "rank": "rare", "baseValue": 60, "pack": false, "source": "mine", "unlock": "Visit the mine 10 times.", "icon": {"shape": "hat", "colors": ["orange","butter"]}}
+  { "id": "miner_lamp_cap", "slot": "hat", "name": "Miner lamp cap", "free": false, "rank": "rare", "baseValue": 60, "pack": false, "source": "mine", "unlock": "Visit the mine 10 times.", "icon": {"shape": "hat", "colors": ["orange","butter"]}},
+  { "id": "belt", "slot": "outer", "name": "Leather belt", "free": false, "rank": "common", "baseValue": 20, "pack": false, "source": "splice", "unlock": "Grown from a spliced seed.", "icon": {"shape": "shirt", "colors": ["walnut","gold"]}},
+  { "id": "tabard", "slot": "outer", "name": "Tabard", "free": false, "rank": "rare", "baseValue": 60, "pack": false, "source": "splice", "unlock": "Grown from a spliced seed.", "icon": {"shape": "shirt", "colors": ["crimson","gold"]}},
+  { "id": "cloak", "slot": "outer", "name": "Travelling cloak", "free": false, "rank": "rare", "baseValue": 60, "pack": false, "source": "splice", "unlock": "Grown from a spliced seed.", "icon": {"shape": "shirt", "colors": ["forest","pine"]}}
 ]
