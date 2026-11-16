@@ -11,6 +11,7 @@ import type { NewPlayerChoice } from './newPlayer.ts';
 import type { Avatar, AvatarLook } from './avatar.ts';
 import type { Room } from './room.ts';
 import type { ActiveEmote } from './emotes.ts';
+import type { UseResult } from './itemUse.ts';
 import type { ChatLine } from './gameState.ts';
 import type { SeatSpot } from './seats.ts';
 import type { BagLayout, BagTab, SlotLayout, SlotRef } from './bag.ts';
@@ -421,6 +422,13 @@ export interface GameAPI {
    * Walking or sitting ends it: `currentEmote()` then gives null.
    */
   emote(kind: string): Promise<ActiveEmote | null>;
+  /**
+   * A tap on a usable placed piece (step 9g-2): toggles a lamp or fire (saved), plays a tune, tells the time, asks for the mirror's Avatar panel,
+   * adopts the cat at the pet basket, or plays a pastime. Returns what happened (the client shows `text`), null = nothing to use. Never changes gold or items.
+   */
+  useItem(uid: number): Promise<UseResult | null>;
+  /** Renames the adopted cat (letters, digits, spaces, at most PET_NAME_MAX). False = no cat or a bad name. */
+  renamePet(name: string): Promise<boolean>;
   /** The emote playing now, or null. */
   currentEmote(): Promise<ActiveEmote | null>;
   /** The trader's list (step S2, the bar's Sell tab): what the player may sell, with the gold for one piece. Nothing sells by itself. */

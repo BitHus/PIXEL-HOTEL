@@ -2,9 +2,10 @@
 // storage and used for Export / Import. Old versions are migrated step by step with MIGRATIONS;
 // a version without a migration path is refused ('too_old'), and the caller resets with a message.
 
-import { CUSTOMER_FIRST_ID, DEFAULT_INN_NAME, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
+import { CUSTOMER_FIRST_ID, DEFAULT_INN_NAME, HOTBAR_SLOTS, PLAYER_ATTACK_COOLDOWN_MS, SAVE_BACKUP_KEY, SAVE_KEY_PREFIX, SAVE_VERSION, SHOP_START_ITEMS } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 import { emptyBag } from './bag.ts';
+import { hasOnOff } from './itemUse.ts';
 import { addBarFittings, addShopStartItems, addStove, addTavern } from './newPlayer.ts';
 import { placedCount, snapItemsToGrid } from './gridMigration.ts';
 import { convertLegacyFarm, emptyLegacyFarm, type LegacyFarm } from './legacyFarm.ts';
@@ -327,6 +328,20 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     if (!isObject(state) || !isObject(state.tavern)) return state;
     return { ...state, tavern: { ...state.tavern, casks: Array.isArray(state.tavern.casks) ? state.tavern.casks : [] } };
   },
+  // 27 -> 28 (step 9g-2, usable furniture and the cat): Player.pet = null, and lamps, fires and the like get their on/off state (on, as they always shone).
+  // Nothing else changes.
+  27: (state) => {
+    if (!isObject(state) || !isObject(state.player) || !Array.isArray(state.items)) return state;
+    const items = (state.items as unknown[]).map((i) => {
+      if (!isObject(i) || typeof i.typeId !== 'string' || typeof i.on === 'boolean') return i;
+      try {
+        return hasOnOff(getFurnitureType(i.typeId)) ? { ...i, on: true } : i;
+      } catch {
+        return i;
+      }
+    });
+    return { ...state, items, player: { ...state.player, pet: state.player.pet === undefined ? null : state.player.pet } };
+  },
   // 26 -> 27 (step MB-2, Inn doors): every hotel, tavern and farm room has door spots now. Furniture, blocks and plants standing on a spot go back to
   // the bag (ledger 'door_spot'; a plant gives its seed); nothing else changes.
   26: (state) => {
@@ -340,6 +355,48 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     }
   },
 };
+
+/** What the title screen needs to know about the saved game (UI round 4: Continue / New game). Pure: `get` reads a storage key. */
+export interface SavePeek {
+  /** Some save text exists under the current key, an older versioned key or the automatic backup. */
+  exists: boolean;
+  /** True when it reads (after migration) and the character was made: Continue will work. */
+  canContinue: boolean;
+  version?: number;
+  savedAt?: number;
+  /** For the Continue card: the player's name, the Inn name and the level. */
+  playerName?: string;
+  innName?: string;
+  level?: number;
+  problem?: SaveProblem;
+}
+
+/** Looks for a save without loading it into the game: the current key first, then older versions, then the backup. */
+export function peekSave(get: (key: string) => string | null): SavePeek {
+  const keys = [saveKey(), ...Array.from({ length: SAVE_VERSION - 1 }, (_, k) => saveKey(SAVE_VERSION - 1 - k)), SAVE_BACKUP_KEY];
+  let found = false;
+  let problem: SaveProblem | undefined;
+  for (const key of keys) {
+    const text = get(key);
+    if (text === null) continue;
+    found = true;
+    const r = readSave(text);
+    if (!r.ok) {
+      problem ??= r.problem;
+      continue;
+    }
+    let savedAt: number | undefined;
+    try {
+      const f = JSON.parse(text) as { savedAt?: unknown };
+      if (typeof f.savedAt === 'number') savedAt = f.savedAt;
+    } catch {
+      // savedAt stays unknown
+    }
+    const p = r.state.player;
+    return { exists: true, canContinue: r.state.playerCreated, version: r.version, savedAt, playerName: p.name, innName: p.innName, level: p.level };
+  }
+  return { exists: found, canContinue: false, problem };
+}
 
 /** The storage key for a save version. */
 export function saveKey(version = SAVE_VERSION): string {
@@ -403,6 +460,7 @@ export function isGameState(x: unknown): x is GameState {
   if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
   if (!Array.isArray(p.unlockedClothing) || !Array.isArray(p.splicesFound) || !isObject(p.clothingSpares) || !isObject(p.packsOpened) || typeof x.playerCreated !== 'boolean' || typeof p.innName !== 'string') return false;
+  if (p.pet !== null && !(isObject(p.pet) && typeof p.pet.name === 'string')) return false;
   if (!Array.isArray(x.items) || !x.items.every((i) => isObject(i) && isInt(i.uid) && typeof i.typeId === 'string')) return false;
   if (!Array.isArray(x.hotbar) || x.hotbar.length !== HOTBAR_SLOTS) return false;
   if (!x.hotbar.every((h) => h === null || typeof h === 'string')) return false;

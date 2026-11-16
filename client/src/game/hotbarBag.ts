@@ -3,7 +3,7 @@
 
 import {
   countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId,
-  type SeedId, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries, SELL_HINT_STACKS, SELL_HINT_TEXT,
+  type SeedId, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries, SELL_HINT_STACKS, SELL_HINT_TEXT,
 } from '@pixel-hotel/shared';
 import { createHotbar } from '../ui/hotbar.ts';
 import { createBagPanel } from '../ui/bagPanel.ts';
@@ -169,7 +169,7 @@ late.hotbar = hotbar;
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares });
-    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null);
+    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null, st.room.kind === 'hotel' ? roomScore(st.room, st.items) : null);
     const materials = st.inventory.materials;
     const usable = (typeId: string): boolean =>
       countInInventory(st.inventory.furniture, typeId) > 0 && fitsRoomKind(getFurnitureType(typeId), st.room);

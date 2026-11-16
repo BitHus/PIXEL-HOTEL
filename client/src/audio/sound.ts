@@ -125,6 +125,17 @@ export class Sound {
     this.murmurGain = null;
   }
 
+  /** A short tune (step 9g-2): notes of [Hz, ms], soft triangle tones, one after the other. Follows the sound setting. */
+  playTune(notes: readonly (readonly [number, number])[]): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master || !this.enabled || this.volume <= 0 || ctx.state !== 'running') return;
+    let at = 0;
+    for (const [hz, ms] of notes) {
+      this.tone('triangle', hz, hz, (ms / 1000) * 1.1, 0.08, at, 0.02);
+      at += ms / 1000;
+    }
+  }
+
   setEnabled(on: boolean): void {
     this.enabled = on;
     this.applyVolume();

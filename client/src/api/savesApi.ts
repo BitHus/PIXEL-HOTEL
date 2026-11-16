@@ -4,11 +4,13 @@
 import {
   SAVE_BACKUP_KEY,
   createNewPlayer,
+  peekSave,
   readSave,
   toSaveText,
 } from '@pixel-hotel/shared';
 import { type SaveResult } from './apiShared.ts';
-import type { SaveProblem } from '@pixel-hotel/shared';
+import type { SavePeek, SaveProblem } from '@pixel-hotel/shared';
+import type { SaveStorage } from './saveStorage.ts';
 import type { LocalGameAPI } from './localGameAPI.ts';
 
 export function problemMessage(problem: SaveProblem): string {
@@ -23,6 +25,15 @@ export function problemMessage(problem: SaveProblem): string {
     case 'invalid':
       return 'That save file is damaged.';
   }
+}
+
+/**
+ * The title screen's hook (UI round 4): is there a saved game to continue? Call it BEFORE LocalGameAPI.open (open always writes a save).
+ * `canContinue` = the save reads and the character was made: show Continue (with playerName, innName, level, savedAt) and New game;
+ * else show only New game. Choosing New game on an existing save: open the API, then api.newGame() (the old save becomes the backup).
+ */
+export function peekSavedGame(storage: SaveStorage): SavePeek {
+  return peekSave((key) => storage.get(key));
 }
 
 export const savesApi = {

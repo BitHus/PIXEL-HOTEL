@@ -152,6 +152,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       splicesFound: [],
       clothingSpares: {},
       packsOpened: {},
+      pet: null,
     },
     look: { ...config.look },
     rooms: [

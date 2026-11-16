@@ -283,6 +283,7 @@
   },
   {
     "id": "stone_fireplace",
+    "use": "fire",
     "name": "Stone fireplace",
     "category": "carpentry_furniture",
     "theme": "carpentry",
@@ -389,6 +390,7 @@
   },
   {
     "id": "glass_lamp",
+    "use": "toggle",
     "name": "Glass lamp",
     "category": "carpentry_furniture",
     "theme": "carpentry",
@@ -846,6 +848,7 @@
   },
   {
     "id": "lantern_post",
+    "use": "toggle",
     "name": "Lantern post",
     "category": "carpentry_furniture",
     "theme": "carpentry",

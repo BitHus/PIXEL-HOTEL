@@ -1,3 +1,4 @@
+// Run: copy to client/src/a24-sheet.ts, add client/a24-sheet.html (script type=module src=/src/a24-sheet.ts), `npx vite` in client/, screenshot with headless Chrome; delete both afterwards.
 // TEMPORARY contact sheet for A24 (deleted after the screenshot): bakes the prototype layers the way C18 will
 window.addEventListener('unhandledrejection', (e) => { document.body.insertAdjacentText('beforeend', String(e.reason)); });
 window.addEventListener('error', (e) => { document.body.insertAdjacentText('beforeend', e.message); });

@@ -3,7 +3,7 @@
 // with the player's unlocked styles. Picking a style shows it on the room at once (applying is
 // free, so the live preview is the change itself; pick again to go back).
 
-import { BUILD_CELL, PREP_BONUS, ROOM_MAX_LEVEL, STYLE_TYPES, kitchenZone, soilCells, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
+import { BUILD_CELL, PREP_BONUS, ROOM_MAX_LEVEL, STYLE_TYPES, STAR_THRESHOLDS, type RoomStars, kitchenZone, soilCells, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
 import { ROOM_NAMES } from './infoPanel.ts';
 import { el, textButton } from './dom.ts';
 import { panelShell } from './panelShell.ts';
@@ -18,7 +18,8 @@ export interface RoomHooks {
 
 export interface RoomPanel {
   readonly el: HTMLElement;
-  refresh(room: Room, gold: number, unlocked: readonly string[], appeal: number | null): void;
+  /** `stars` = the hotel's room stars (step 9g-3, shared roomScore), else null. */
+  refresh(room: Room, gold: number, unlocked: readonly string[], appeal: number | null, stars?: RoomStars | null): void;
 }
 
 export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPanel {
@@ -45,11 +46,15 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
 
   return {
     el: panel,
-    refresh(room, gold, unlocked, appeal) {
+    refresh(room, gold, unlocked, appeal, stars = null) {
       title.textContent = ROOM_NAMES[room.kind];
       const facts = el('div', 'room-facts inset');
       facts.append(el('div', '', `Level ${room.level} of ${ROOM_MAX_LEVEL}`), el('div', '', `Size ${room.w} x ${room.h}`));
       if (appeal !== null) facts.append(el('div', '', `Appeal ${appeal} / 100`));
+      if (stars) {
+        facts.append(el('div', 'room-stars', `Comfort ${stars.stars} of ${STAR_THRESHOLDS.length} stars`));
+        facts.append(el('div', 'room-star-tip', `${stars.tip}${stars.toNext !== null ? ` (${stars.toNext} more points for the next star)` : ''}`));
+      }
       // The kitchen zone (step T1): a staff-only corner; its tint shows while you place things.
       const kitchen = kitchenZone(room);
       if (kitchen) facts.append(el('div', '', `Kitchen ${kitchen.w / BUILD_CELL} x ${kitchen.h / BUILD_CELL} cells (staff only)`));

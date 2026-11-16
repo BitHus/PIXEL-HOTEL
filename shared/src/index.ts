@@ -70,3 +70,7 @@ export * from './packs.ts';
 export * from './hold.ts';
 export * from './balance.ts';
 export * from './trader.ts';
+export * from './itemUse.ts';
+export * from './pastimes.ts';
+export * from './pet.ts';
+export * from './roomScore.ts';

@@ -22,11 +22,12 @@ import {
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
   type Player, type Point, type Rect, type Room, type RoomState, type SitResult,
 } from '@pixel-hotel/shared';
-import type { ActiveEmote } from '@pixel-hotel/shared';
+import type { ActiveEmote, UseResult } from '@pixel-hotel/shared';
 import type { SaveStorage } from './saveStorage.ts';
 import { type SaveResult, type TavernTask, type WalkState } from './apiShared.ts';
 import { walkApi } from './walkApi.ts';
 import { roomsApi } from './roomsApi.ts';
+import { usableApi } from './usableApi.ts';
 import { catalogApi } from './catalogApi.ts';
 import { blocksFarmApi } from './blocksFarmApi.ts';
 import { dungeonApi } from './dungeonApi.ts';
@@ -38,7 +39,7 @@ import { savesApi } from './savesApi.ts';
 import { tavernApi } from './tavernApi.ts';
 
 export type { SaveResult, TavernTask } from './apiShared.ts';
-export { problemMessage } from './savesApi.ts';
+export { peekSavedGame, problemMessage } from './savesApi.ts';
 
 /** Save tools that only exist for a local game (the settings panel uses them). */
 export interface LocalSaves {
@@ -247,6 +248,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async buyHat(hatId: string): Promise<boolean> { return packsApi.buyHat(this, hatId); }
   async emote(kind: string): Promise<ActiveEmote | null> { return roomsApi.emote(this, kind); }
   async currentEmote(): Promise<ActiveEmote | null> { return roomsApi.currentEmote(this); }
+  async useItem(uid: number): Promise<UseResult | null> { return usableApi.useItem(this, uid); }
+  async renamePet(name: string): Promise<boolean> { return usableApi.renamePet(this, name); }
   async getSellRows(): Promise<SellRow[]> { return traderApi.getSellRows(this); }
   async sell(kind: SellKind, id: string, qty: number): Promise<SellResult | null> { return traderApi.sell(this, kind, id, qty); }
   async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> { return blocksFarmApi.buySeeds(this, seed, qty); }

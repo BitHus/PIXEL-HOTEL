@@ -57,6 +57,9 @@ export interface ArtBox {
 
 export type FurnitureArt = { boxes: ArtBox[] } | { sprite: string };
 
+/** What a tap on a placed piece does (step 9g-2): switch a light or fire, play a tune, show the time, open the Avatar panel, the cat's basket, or a pastime (darts, dice). */
+export type UseKind = 'toggle' | 'fire' | 'music' | 'clock' | 'mirror' | 'pet' | 'darts' | 'dice' | 'none';
+
 export interface FurnitureType {
   id: string;
   name: string;
@@ -110,6 +113,10 @@ export interface FurnitureType {
   kitchen?: boolean;
   /** A light source (atmosphere step): the client draws a warm pool around the item. Drawing only. */
   light?: LightSource;
+  /** What a tap does in play mode (step 9g-2). Absent = nothing. 'toggle' and 'fire' keep an on/off state on the item (FurnitureItem.on). */
+  use?: UseKind;
+  /** For use 'music': the tune id in shared/data/tunes.json. */
+  tune?: string;
   /** A small fish swimming in the item (the fish tank; step 9f). Drawing only: dx and z (px) of its start, size, how far it swims, colour. */
   swim?: { dx: number; z: number; w: number; h: number; range: number; color: number };
   art: FurnitureArt;
@@ -143,6 +150,8 @@ export interface FurnitureItem {
   facing: Facing;
   /** null, or the uid of the surface item it stands on. */
   onItemUid: number | null;
+  /** On/off state of a usable piece (use 'toggle' or 'fire', step 9g-2, save 28). Absent = on (isOn in itemUse.ts). */
+  on?: boolean;
 }
 
 // ---------- Avatars (section 8) ----------
@@ -347,6 +356,8 @@ export interface Player {
   clothingSpares: Record<string, number>;
   /** How many packs of each kind were opened (step BG8; for quests later). */
   packsOpened: Record<string, number>;
+  /** The adopted cat (step 9g-2, save 28): null until the pet basket is used. Only the name is saved; the cat's place is not. */
+  pet: { name: string } | null;
 }
 
 export interface SeenEntry {

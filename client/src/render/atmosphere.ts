@@ -2,6 +2,7 @@
 // game rules: only numbers for drawing. Time comes in as a parameter.
 
 import {
+  isOn,
   DUST_MAX,
   DUST_PER_LIGHT,
   FLICKER_BRIGHTNESS,
@@ -69,7 +70,7 @@ export function itemLights(items: readonly FurnitureItem[], roomId: number, type
   for (const item of items) {
     if (item.roomId !== roomId || hidden.has(item.uid)) continue;
     const type = typeOf(item.typeId);
-    if (type.light) out.push({ ...lightPoint(item, type), light: type.light, seed: item.uid });
+    if (type.light && isOn(item)) out.push({ ...lightPoint(item, type), light: type.light, seed: item.uid });
   }
   return out;
 }

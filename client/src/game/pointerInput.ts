@@ -1,7 +1,8 @@
 // Pointer input: camera control, taps, drags (R1 split of main.ts: part 16 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween } from '@pixel-hotel/shared';
+import { blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween, isUsable } from '@pixel-hotel/shared';
+import { createItemUse } from './itemUse.ts';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
 import { walkDoorGoal } from './doorGoal.ts';
@@ -14,6 +15,7 @@ export async function setupPointerInput(g: G15) {
     blockers, st,
   } = g;
 
+  const useTap = createItemUse({ api, applyItems, toast, sound, panels });
   app.stage.hitArea = app.screen;
   const control = attachCameraControl(app.stage, app.canvas, {
     getCamera: () => (dungeon.isActive ? dungeon.camera : st.camera),
@@ -161,6 +163,11 @@ export async function setupPointerInput(g: G15) {
           itemViews.shake(barItem.uid);
           toast('There is no way to get behind the bar.');
         });
+        return;
+      }
+      // A usable piece (lamp, fire, music box, clock, mirror, pet basket, darts, dice; step 9g-2): the tap uses it.
+      if (hit && isUsable(getFurnitureType(hit.typeId)) && !hasSeats(getFurnitureType(hit.typeId))) {
+        useTap(hit);
         return;
       }
       // An item with seats: walk to its nearest free side, then sit or lie (it shakes if no seat

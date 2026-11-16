@@ -14,6 +14,7 @@ export * from './config/atmosphere.ts';
 export * from './config/blocks.ts';
 export * from './config/packs.ts';
 export * from './config/ripen.ts';
+export * from './config/home.ts';
 
 
 // ---------- The tavern (step 9t) ----------
