@@ -46,6 +46,7 @@ export async function setupUiShell(g: G3) {
   // Play mode (default: taps walk and sit) or build mode (taps open item menus, never walk).
   const build = createBuildMode(ui, {
     onChange: (on) => {
+      late.syncGrid?.();
       if (on) return;
       late.menu.close();
       late.placer.cancel();

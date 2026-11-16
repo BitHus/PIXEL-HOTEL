@@ -3,6 +3,7 @@
 Updated 2026-11-15. The main Claude session is the project manager. The user said: keep working on the game until they say stop; Claude decides all SMALL things; ask the user only for BIG ones.
 
 ## START HERE (auto-read at every session start; updated 16 Nov)
+1c. RESEARCH (17 Nov): read docs/RESEARCH-VISUAL-GAMEPLAY.md before any visual, UI-feedback, onboarding or progression task; its top 10 (VG-1..VG-10) are in docs/ROADMAP.md PRIORITY ORDER.
 You are the main Claude session = the project manager. The owner opens you from the desktop shortcut (or at PC start). Do this, without asking:
 1. Read this file, docs/ROADMAP.md (PRIORITY ORDER at the top), docs/QUEUE.md, docs/FIXLIST.md and the memory notes (MEMORY.md index). Check git status in C:UsersajrenPIXEL-HOTEL-rebased (branch claude/inn-1b-rebased, the real working tree) and C:UsersajrenPIXEL-HOTEL (main; kept fast-forwarded to the rebased branch).
 1-0. STATUS: read docs/STATUS.md FIRST (where we are in the roadmap, what runs, what is next, owner decisions open); you rewrite it after every batch so the next session knows exactly where to continue.

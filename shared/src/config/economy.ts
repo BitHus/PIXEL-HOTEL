@@ -5,6 +5,8 @@ export const START_PLAYER_LEVEL = 1;
 export const START_XP = 0;
 export const START_GOLD = 100;
 export const START_MATERIALS = { wood: 4, cloth: 2 } as const;
+/** First-steps goal 1 needs one root ale brew: the API gives these crops to a NEW GAME only (ledger reason start_crops), not to createNewPlayer. */
+export const START_CROPS = { turnip: 2, potato: 1 } as const;
 
 /** Prices are whole gold from 1 to this. */
 export const SHOP_PRICE_MAX = 99_999;

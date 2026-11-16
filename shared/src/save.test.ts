@@ -390,13 +390,13 @@ describe('15 -> 16 (step BG6: seeds and the free-form farm)', () => {
     if (!r.ok) throw new Error('not ok');
     const room = r.state.rooms.find((x) => x.id === farmId)!;
     const turnip = plantInCell(room, 2, 2)!;
-    expect(turnip).toEqual({ seed: 'turnip_seed', plantedAt: 10_000, readyAt: 10_000 + 5 * MIN });
+    expect(turnip).toEqual({ seed: 'turnip_seed', plantedAt: 10_000, readyAt: 10_000 + 2 * MIN });
     const pumpkin = plantInCell(room, 4, 4)!; // plot 3 = (128, 128)
-    expect(pumpkin).toEqual({ seed: 'pumpkin_seed', plantedAt: 20_000, readyAt: 20_000 + 120 * MIN });
+    expect(pumpkin).toEqual({ seed: 'pumpkin_seed', plantedAt: 20_000, readyAt: 20_000 + 20 * MIN });
     // The same stage as the old plot had: half the time gone = the small plant, then ripe at the same moment.
-    expect(growthStage(turnip, 10_000 + 2 * MIN)).toBe('sprout');
-    expect(growthStage(turnip, 10_000 + 3 * MIN)).toBe('small');
-    expect(growthStage(turnip, 10_000 + 5 * MIN)).toBe('full');
+    expect(growthStage(turnip, 10_000 + 0.8 * MIN)).toBe('sprout');
+    expect(growthStage(turnip, 10_000 + 1.2 * MIN)).toBe('small');
+    expect(growthStage(turnip, 10_000 + 2 * MIN)).toBe('full');
     expect(plantInCell(room, 6, 2)).toBeNull();
   });
 

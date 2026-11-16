@@ -80,6 +80,12 @@ export function firstTenFinished(s: FirstTenState): boolean {
   return FIRST_TEN_STEPS.every((k) => s.done.includes(k));
 }
 
+/** The "one more done" toast fires only when the step that ticked is the goal the card shows (or it was the last one); other steps tick off silently. */
+export function firstTenToastDue(before: FirstTenState, step: FirstTenStep, waiting: readonly FirstTenStep[] = []): boolean {
+  if (!before.active || before.done.includes(step)) return false;
+  return firstTenGoal(before, waiting) === step || firstTenFinished(firstTenEvent(before, step));
+}
+
 /** A machine tip is due the first time only; returns the new state and whether to show it. */
 export function machineTipOnce(s: FirstTenState, tip: MachineTip): { state: FirstTenState; show: boolean } {
   if (s.tips.includes(tip)) return { state: s, show: false };

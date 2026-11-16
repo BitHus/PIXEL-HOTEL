@@ -2674,3 +2674,95 @@
 .newgame-frame {
   background-color: var(--warm);
 }
+
+/* Catalog polish (UI-CAT): search box, rank-coloured card edge, a Buy chip, an empty note. */
+.shop-card[hidden],
+.catalog-empty[hidden],
+.catalog-search[hidden] {
+  display: none;
+}
+
+.catalog-search {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 4px;
+}
+
+.catalog-search .purse-strip {
+  flex: 0 0 auto;
+  margin: 0;
+  min-height: var(--touch);
+}
+
+.catalog-search .purse-label {
+  display: none;
+}
+
+.catalog-search-input {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0 10px;
+  font: inherit;
+  font-size: var(--fs-md);
+  color: var(--text);
+  background: var(--cream);
+  border: 1px solid var(--wood);
+  border-radius: 0;
+  box-shadow: inset 1px 1px 0 var(--wood-mid);
+}
+
+.catalog-search-input::placeholder {
+  color: var(--wood-mid);
+}
+
+.catalog-search-input:focus {
+  outline: 2px solid var(--candle);
+  outline-offset: 1px;
+}
+
+.catalog-empty {
+  padding: 18px 8px;
+  text-align: center;
+  color: var(--wood-mid);
+  font-size: var(--fs-md);
+}
+
+.shop-card.rank-rare {
+  border-color: var(--rank-rare);
+}
+
+.shop-card.rank-ultra_rare {
+  border-color: var(--rank-ultra_rare);
+}
+
+.shop-card.rank-legendary {
+  border-color: var(--rank-legendary);
+}
+
+.shop-card.rank-rare,
+.shop-card.rank-ultra_rare,
+.shop-card.rank-legendary {
+  border-width: 2px;
+}
+
+.shop-card-buy {
+  box-sizing: border-box;
+  width: calc(100% - 8px);
+  margin-top: 2px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  background: var(--candle);
+  color: var(--outline);
+  box-shadow: inset 1px 1px 0 var(--butter), 0 0 0 1px var(--outline);
+}
+
+.shop-card.poor .shop-card-buy {
+  background: var(--wood-light);
+  color: var(--wood-mid);
+}

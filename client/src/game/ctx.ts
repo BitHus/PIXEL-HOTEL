@@ -67,6 +67,8 @@ export interface State {
 
 export interface Late {
   placer: Placer;
+  /** Shows or hides the build grid and the kitchen tint (defined in placing.ts). */
+  syncGrid: () => void;
   paint: FloorPaint;
   menu: ReturnType<typeof createItemMenu>;
   roomLevel: (id: number) => number;

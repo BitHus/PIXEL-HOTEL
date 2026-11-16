@@ -1735,3 +1735,11 @@ simulate:dungeon (1000 runs per row, before -> after): round 1 value/run 97/96/9
 ## FS1: free small decor on surfaces (coder, 17 Nov; no save change)
 - FurnitureType.freeOnSurface (optional) on 13 onSurface pieces; register and tap_stand keep the cell rules. snapToSurface(..., types, snap): free pieces take any point on the top (snapCoord 4 px, whole px with Shift), clamped so the footprint stays inside the surface top; no overlap between free pieces; refused (null) only where a structural rider (register, tap stand) is. planGhost feeds the raw pointer (not the cell) for free types; moveItem keeps a free rider at its offset from the surface centre (turned with it), clamped inside the new top, not cell-snapped; pick up still returns riders. x,y stay the anchor, so no new field and no SAVE bump (old saves have lamps on cell spots, which are valid free spots).
 - Draw order and lift already came from onItemUid (itemDepthKey sub order, surfaceHeight of the surface), so render/placer needed no code. Tests: furniture.test.ts (free decor group incl. fast-check), placing.test.ts.
+
+## FIX-R2 (17 Nov, coder): TESTER RUN 2 fixes
+- Farm: soil and plants render (e2e/farm.spec.ts); the tester planted through __ph.api, which bypasses the client room refresh, and the camera framed the avatar at the door.
+- crops.json growMinutes now equals SEED_GROW_MS[rank] (2 / 20 / 180 min); only the legacy 15->16 migration reads it (save.test updated). Test in farm.test.ts.
+- New game: createPlayer adds START_CROPS (turnip 2, potato 1) via ledger reason start, after createNewPlayer (so shared tests keep the old bag). Gold simulation does not model the bag; one extra brew is about 60 gold once.
+- firstTenToastDue (shared/src/firstTen.ts): the done-toast only fires for the step on the card.
+- Build mode (B) now shows the grid and the kitchen tint (late.syncGrid); the Settings grid toggle still hides both.
+- Counter: top art box z36+h4, height 72; surfaceHeight 40 moves register, taps, mug and the pour bar with it (they derive from it, no SPOUT change needed).

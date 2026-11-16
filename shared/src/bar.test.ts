@@ -7,7 +7,7 @@ describe('the bar', () => {
   it('has a coin point on top of the counter, and none without one', () => {
     const bar = createNewPlayer(undefined, 0).items.find((i) => i.typeId === 'counter')!;
     const p = barCoinPoint(bar)!;
-    expect(p.y).toBe(bar.y - 16 - 32 - 12); // above the bar's top (32 px)
+    expect(p.y).toBe(bar.y - 16 - 40 - 12); // above the bar's top (40 px since the R10 counter art)
     expect(Math.abs(p.x - bar.x)).toBe(32);
     expect(barCoinPoint(undefined)).toBeNull();
   });

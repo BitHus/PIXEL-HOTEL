@@ -11,7 +11,7 @@ import {
   gainsSince, smelt, buySeeds, openPack, sellSpare, buyBlocks, placeBlock, hitBlock, claimBookReward, fishStep,
   hitPlant, plantSeed, spliceSeed, buyGear, SHOP_CATCH_UP_GAP_MS, SHOP_TICK_MS, applyStyle, paintFloor, buyCatalog,
   catchUpTavern, stepTavern, collectBrew, upgradeRoom,
-  configForChoice, TAVERN_BAR_NOTICE, innDoorNotice, SAVE_BACKUP_KEY, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
+  configForChoice, TAVERN_BAR_NOTICE, innDoorNotice, SAVE_BACKUP_KEY, START_CROPS, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
   saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type GainList, type BarId, type GearId,
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
@@ -155,6 +155,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     const config = configForChoice(choice);
     if (!config) return false;
     this.commit({ ...createNewPlayer(config, this.now()), playerCreated: true });
+    // The first-steps goal 1 (a brew) needs crops: a new game gets one root ale brew (START_CROPS), through the ledger.
+    const gift = applyChange(this.state!, { reason: 'start', materials: START_CROPS, note: 'first brew' }, this.now());
+    if (gift) this.commit(gift);
     this.walkState = this.doorWalk();
     this.grid = this.buildGrid();
     this.tavernGrid = null;

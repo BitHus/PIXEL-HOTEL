@@ -102,7 +102,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 
 9. ECONOMY (all numbers in shared/config.ts)
 - One currency: gold (integer). Everything has a baseValue. New player (createNewPlayer): level
-  1, 100 gold, bare styles, 4 wood and 2 cloth, no furniture in the inventory.
+  1, 100 gold, bare styles, 4 wood and 2 cloth (plus 2 turnip and 1 potato for the first brew, ledger reason start), no furniture in the inventory.
 - TAVERN (9t, done; S1 retired the loot shop): the shop room is the tavern (kind 'shop', same room id; the counter is the bar). GUESTS (alone,
   pairs, groups of 3, every 45 s * 100 / (100 + appeal), never more than seats) sit at a table, order from the MENU (tap the bar: Serve and
   Menu tabs; each drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest:

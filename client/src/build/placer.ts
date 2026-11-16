@@ -230,8 +230,6 @@ export class Placer {
     const type = getFurnitureType(s.typeId);
     const color = plan.ok ? OK_COLOR : BAD_COLOR;
     const fp = footprintRect(plan, type);
-    this.outline.clear().rect(fp.x, fp.y, fp.w, fp.h).fill({ color, alpha: 0.35 }).stroke({ color, width: 1, alignment: 1 });
-
     if (this.sprite?.type !== type) {
       this.sprite?.destroy();
       this.sprite = new FurnitureSprite(type);
@@ -241,6 +239,14 @@ export class Placer {
     const lift = under ? surfaceHeight(getFurnitureType(under.typeId)) : 0;
     this.sprite.set(plan.x, plan.y, plan.facing, lift);
     this.sprite.container.tint = color;
+    // A small free-standing piece (lamp, candle) shows its real sprite size, not the 32 x 32 cell.
+    let box = { x: fp.x, y: fp.y, w: fp.w, h: fp.h };
+    if (type.freeOnSurface) {
+      const c = this.sprite.container;
+      const lb = c.getLocalBounds();
+      if (lb.width > 0 && lb.height > 0) box = { x: Math.round(c.x + lb.x), y: Math.round(c.y + lb.y), w: Math.round(lb.width), h: Math.round(lb.height) };
+    }
+    this.outline.clear().rect(box.x, box.y, box.w, box.h).fill({ color, alpha: 0.35 }).stroke({ color, width: 1, alignment: 1 });
 
     // What stands on a moved item moves with it.
     this.riders.removeChildren().forEach((c) => c.destroy({ children: true }));

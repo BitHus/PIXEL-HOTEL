@@ -60,12 +60,13 @@ export async function setupPlacing(g: G5) {
     view.ghostLayer,
   );
 late.placer = placer;
+  late.syncGrid = () => syncGrid();
   // ---------- Painting floors per cell (step BG1) ----------
   /** The floors the paint bar offers: the farm paints soil and grass (free), other rooms the unlocked floors. */
   const paintableStyles = (): readonly string[] => (st.room.kind === 'farm' ? [styleKey('floor', 'soil'), styleKey('floor', 'grass')] : st.unlockedStyles);
   /** The grid shows while placing or painting (unless it is switched off in Settings). */
   const syncGrid = (): void => {
-    cellGrid.visible = prefs.cellGrid && (placer.active || paint.active || st.selectedBlock !== null);
+    cellGrid.visible = prefs.cellGrid && (placer.active || paint.active || g.build.on || st.selectedBlock !== null);
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     ui.classList.toggle('painting', paint.active);
   };

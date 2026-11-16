@@ -4,7 +4,7 @@
 
 import {
   FIRST_TEN_ALL_DONE_TEXT, FIRST_TEN_DONE_TEXT, FIRST_TEN_KEY, FIRST_TEN_NEW, FIRST_TEN_STEPS, FIRST_TEN_TEXT, MACHINE_TIP_TEXT, firstTenEvent,
-  firstTenFinished, firstTenGoal, firstTenSkip, machineTipOnce, parseFirstTen, type FirstTenState, type FirstTenStep, type MachineTip,
+  firstTenFinished, firstTenGoal, firstTenSkip, firstTenToastDue, machineTipOnce, parseFirstTen, type FirstTenState, type FirstTenStep, type MachineTip,
 } from '@pixel-hotel/shared';
 import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
@@ -76,9 +76,10 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
     event(step) {
       const next = firstTenEvent(state, step);
       if (next === state) return;
+      const due = firstTenToastDue(state, step, waiting);
       state = next;
       save();
-      toast(firstTenFinished(state) ? FIRST_TEN_ALL_DONE_TEXT : FIRST_TEN_DONE_TEXT);
+      if (due) toast(firstTenFinished(state) ? FIRST_TEN_ALL_DONE_TEXT : FIRST_TEN_DONE_TEXT);
       draw();
     },
     tip(tip) {

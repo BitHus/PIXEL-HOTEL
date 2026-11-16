@@ -289,3 +289,9 @@ describe('upgrading the farm', () => {
     ledgerAddsUp(top);
   });
 });
+
+describe('crops.json growMinutes (TESTER RUN 2 finding 10)', () => {
+  it('matches the real grow time of its rank (SEED_GROW_MS), so no stale text', () => {
+    for (const c of CROP_TYPES) expect(c.growMinutes * 60_000, c.id).toBe(SEED_GROW_MS[c.rank]);
+  });
+});

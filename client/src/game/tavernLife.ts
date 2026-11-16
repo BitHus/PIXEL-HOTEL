@@ -88,8 +88,9 @@ export async function setupTavernLife(g: G9) {
   const pourBar = createPourBar(uiRoot);
   let hintRaf = 0;
   const hintLoop = (): void => {
+    // The bar sits right over the mug (mug top = floorY - 17, PourFx MUG_FRAME): 4 world px above it, not at the avatar head.
     const info = pourFor ? standInfo(pourFor.standUid) : null;
-    if (info && pourBar.visible) pourBar.place(worldToScreen({ x: info.stand.x, y: info.floorY - 44 }, st.shown));
+    if (info && pourBar.visible) pourBar.place(worldToScreen({ x: info.stand.x, y: info.floorY - 21 }, st.shown));
     if (!info || pourControl.pressing || hintDone()) {
       hint.style.display = 'none';
     } else {

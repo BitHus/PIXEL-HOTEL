@@ -83,9 +83,20 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   const shell = panelShell(parent, 'catalog-panel', 'Catalog');
   const purse = el('div', 'purse-strip');
   const sortBar = el('div', 'sort-bar');
+  const searchRow = el('div', 'catalog-search');
+  const search = el('input', 'catalog-search-input') as HTMLInputElement;
+  search.type = 'search';
+  search.placeholder = 'Search by name';
+  search.setAttribute('aria-label', 'Search the catalog');
+  search.autocomplete = 'off';
+  search.addEventListener('keydown', (e) => e.stopPropagation());
+  search.addEventListener('input', () => applySort());
+  searchRow.append(search, purse);
+  const empty = el('div', 'catalog-empty');
+  empty.hidden = true;
   const note = el('div', 'panel-info');
   const list = el('div', 'card-grid');
-  shell.body.append(purse, sortBar, note, list);
+  shell.body.append(searchRow, sortBar, note, list, empty);
   let sort: 'shelf' | 'cheap' | 'afford' = 'shelf';
   const SORTS = [
     ['shelf', 'Shelf'],
@@ -104,7 +115,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     sortBar.appendChild(b);
   }
   /** Cards of the tab in the order they were made, with what sorting needs. */
-  let made: { node: HTMLElement; price: number; owned: boolean }[] = [];
+  let made: { node: HTMLElement; price: number; owned: boolean; name: string }[] = [];
 
   let tab: CatalogTab = 'home';
   let gold = 0;
@@ -131,7 +142,9 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     c.append(icon, rankId === null ? el('span', 'shop-card-name', name) : rankName('span', 'shop-card-name', name, rankId), owned ? el('span', 'shop-card-owned', 'Owned') : priceTag(price, gold));
     if (!owned && gold < price) c.appendChild(el('span', 'shop-card-short', `Need ${price - gold} more`));
     if (own > 0 && !owned) c.appendChild(el('span', 'shop-card-own', `Own ${own}`));
-    made.push({ node: c, price, owned });
+    if (!owned) c.appendChild(el('span', 'shop-card-buy', gold < price ? 'Too dear' : 'Buy'));
+    made.push({ node: c, price, owned, name });
+    c.setAttribute('aria-label', owned ? `${name}, owned` : `${name}, ${price}`);
     if (tag) c.appendChild(el('span', 'shop-card-tag plate', tag));
     c.disabled = owned;
     c.addEventListener('click', buy);
@@ -164,6 +177,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     // The purse: what you can spend here (gems on the Packs tab, gold elsewhere), so a price is easy to judge.
     purse.replaceChildren(el('span', 'purse-label', 'Your purse'), tab === 'packs' ? gemImg() : pixelIcon('coin'), el('span', 'purse-amount', String(tab === 'packs' ? packsData.gems : gold)));
     sortBar.hidden = tab === 'packs';
+    searchRow.hidden = tab === 'packs';
     for (const b of sortBar.children) b.classList.toggle('on', (b as HTMLElement).dataset.sort === sort);
     note.hidden = tab !== 'seeds' && tab !== 'blocks' && tab !== 'packs' && tab !== 'clothes';
     list.classList.toggle('pack-list', tab === 'packs');
@@ -197,6 +211,15 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   /** Applies the chosen sort to the cards just made (Shelf keeps the data order). */
   const applySort = (): void => {
+    const q = tab === 'packs' ? '' : search.value.trim().toLowerCase();
+    let shown = 0;
+    for (const m of made) {
+      const hit = q === '' || m.name.toLowerCase().includes(q);
+      m.node.hidden = !hit;
+      if (hit) shown += 1;
+    }
+    empty.textContent = q === '' ? 'Nothing for sale here yet.' : 'Nothing matches. Try another word or tab.';
+    empty.hidden = tab === 'packs' || shown > 0;
     if (sort === 'shelf' || made.length === 0) return;
     const short = (price: number): number => Number(gold < price);
     const rows = [...made].sort((a, b) => Number(a.owned) - Number(b.owned) || (sort === 'cheap' ? a.price - b.price : short(a.price) - short(b.price) || b.price - a.price));

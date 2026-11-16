@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenSkip, machineTipOnce, parseFirstTen } from './firstTen.ts';
+import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenSkip, firstTenToastDue, machineTipOnce, parseFirstTen } from './firstTen.ts';
 
 describe('first ten minutes', () => {
   it('shows one goal at a time, in order', () => {
@@ -25,6 +25,16 @@ describe('first ten minutes', () => {
     expect(s).toMatchObject({ active: false, skipped: true });
     expect(firstTenEvent(s, 'barrel')).toBe(s);
     expect(firstTenGoal(s)).toBeNull();
+  });
+  it('toasts only when the ticked step is the goal on the card', () => {
+    expect(firstTenToastDue(FIRST_TEN_NEW, 'barrel')).toBe(true);
+    expect(firstTenToastDue(FIRST_TEN_NEW, 'menu')).toBe(false);
+    expect(firstTenToastDue(FIRST_TEN_NEW, 'menu', ['barrel', 'collect', 'load'])).toBe(true);
+    expect(firstTenToastDue(firstTenEvent(FIRST_TEN_NEW, 'barrel'), 'barrel')).toBe(false);
+    expect(firstTenToastDue(FIRST_TEN_OFF, 'barrel')).toBe(false);
+    let s = FIRST_TEN_NEW;
+    for (const k of FIRST_TEN_STEPS.slice(0, -1)) s = firstTenEvent(s, k);
+    expect(firstTenToastDue(s, 'coins')).toBe(true);
   });
   it('shows each machine tip once', () => {
     const a = machineTipOnce(FIRST_TEN_OFF, 'stove');
