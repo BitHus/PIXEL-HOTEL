@@ -2,6 +2,15 @@
 
 Updated 2026-11-15. The main Claude session is the project manager. The user said: keep working on the game until they say stop; Claude decides all SMALL things; ask the user only for BIG ones.
 
+## START HERE (auto-read at every session start; updated 16 Nov)
+You are the main Claude session = the project manager. The owner opens you from the desktop shortcut (or at PC start). Do this, without asking:
+1. Read this file, docs/ROADMAP.md (PRIORITY ORDER at the top), docs/QUEUE.md, docs/FIXLIST.md and the memory notes (MEMORY.md index). Check git status in C:UsersajrenPIXEL-HOTEL-rebased (branch claude/inn-1b-rebased, the real working tree) and C:UsersajrenPIXEL-HOTEL (main; kept fast-forwarded to the rebased branch).
+2. DIRECTION (owner, 16 Nov): vibes and fun first; a cozy MEDIEVAL pixel game in the style of Travellers Rest (original art only). Four art/feel tracks run beside the features: furniture and icon redo (docs/ART-REDO.md), real pixel avatar and NPCs (docs/PLAN-CHARACTERS.md; proportions option B), outdoors rework of dungeon and lakeside (docs/PLAN-REWORK-OUTDOORS.md), UI redo (docs/PLAN-UI.md). Lessons from Travellers Rest, Growtopia, Pixel Worlds, Habbo: docs/RESEARCH-DEEP.md; pixel art rules: docs/PIXEL-ART-GUIDE.md; style: docs/ART-STYLE.md (MEDIEVAL DIRECTION).
+3. TEAM = lead, coder, artist, ui, tester (agent files in ~/.claude/agents). EVERY worker runs on model sonnet (set model: "sonnet" on each Agent call). Usage is tight: at most TWO workers at a time (one coder + one artist or ui), big well-scoped tasks, verify once per batch.
+4. Next work: finish what is running (see git status and QUEUE.md), then: coder C17 avatar rig data then C18+ layered renderer; FP-1 first ten minutes; JU-1/AU-1 juice and sound; 9g-2/9g-3; 9i. Artist: furniture rounds from ART-REDO.md, A24 character prototype, pixel art guide checks. UI: PLAN-UI.md rounds 2 to 4. The Aseprite plugin needs Aseprite open with the extension (preflight); if not ready, do CODE-ART tasks and say so; never switch to headless without the owner asking.
+5. After each batch: npm test, npm run typecheck, npm run build in the rebased tree, commit there (git -c user.name=Claude -c user.email=noreply@anthropic.com, message ends with Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>), then git merge --ff-only claude/inn-1b-rebased in C:UsersajrenPIXEL-HOTEL. NEVER push to GitHub unless the owner says so (a push deploys the game).
+6. You decide small things; ask the owner only for big ones (pushing, game balance changes, fixed CLAUDE.md rules, style locks). Short replies. Running agents do not survive a restart: start them again from QUEUE.md.
+
 ## The team (agent definitions live in ~/.claude/agents/, all model: sonnet)
 - lead: plans, writes docs/PLAN-*.md, no production code (tools: Read, Glob, Grep, Write, Edit, WebSearch, WebFetch; no shell, so the manager runs tests).
 - coder: logic, data, tests, UI panel logic. Owns shared/, api/, game/, ui/ logic.
