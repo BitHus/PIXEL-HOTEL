@@ -64,22 +64,25 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
     close.addEventListener('click', () => finish(false));
 
     const what = el('div', 'confirm-what inset');
+    box.classList.toggle('confirm-gems', q.currency === 'gems');
     if (q.image) what.appendChild(iconBox(q.image, 'confirm-icon'));
     const info = el('div', 'confirm-info');
     const price = q.price === null ? el('div', 'catalog-price', 'Free') : priceTag(q.price, q.gold, q.currency);
+    price.classList.add('hang-tag');
     info.append(el('div', 'catalog-name', q.name), el('div', 'catalog-sub', q.detail), price);
     if (short(q.price)) info.append(el('div', 'confirm-short price-short', `Not enough ${q.currency ?? 'gold'}.`));
     what.appendChild(info);
 
     const yes = textButton(q.price === null ? (q.yes ?? 'Buy') : `${q.yes ?? 'Buy'} for ${q.price}`, () => finish(true));
-    yes.classList.add('confirm-yes');
+    yes.classList.add('confirm-yes', 'primary');
     yes.disabled = short(q.price);
     const no = textButton('Cancel', () => finish(false));
+    no.classList.add('quiet');
     const buttons = el('div', 'confirm-buttons');
     buttons.append(no, yes);
     if (q.more) {
       const more = textButton(`${q.more.label} for ${q.more.price}`, () => finish('more'));
-      more.classList.add('confirm-yes');
+      more.classList.add('confirm-yes', 'primary');
       more.disabled = short(q.more.price);
       buttons.append(more);
     }

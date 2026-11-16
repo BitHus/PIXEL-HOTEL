@@ -3,6 +3,9 @@
 
 import { EMOTE_KINDS, EMOTE_LABELS, type EmoteKind } from '@pixel-hotel/shared';
 import { el, iconButton } from './dom.ts';
+import { pixelIcon, type IconName } from './pixelIcons.ts';
+
+const EMOTE_ICONS: Record<EmoteKind, IconName> = { wave: 'smile', dance: 'big_smile', laugh: 'big_smile', cheer: 'heart', sleep: 'frown' };
 
 export interface EmoteButton {
   readonly button: HTMLButtonElement;
@@ -18,7 +21,8 @@ export function createEmoteButton(parent: HTMLElement, onPick: (kind: EmoteKind)
   menu.setAttribute('role', 'menu');
   const items = new Map<EmoteKind, HTMLButtonElement>();
   for (const kind of EMOTE_KINDS) {
-    const b = el('button', 'btn', EMOTE_LABELS[kind].slice(0, 4));
+    const b = el('button', 'btn emote-item');
+    b.append(pixelIcon(EMOTE_ICONS[kind]), el('span', 'emote-label', EMOTE_LABELS[kind]));
     b.type = 'button';
     b.title = EMOTE_LABELS[kind];
     b.setAttribute('aria-label', EMOTE_LABELS[kind]);

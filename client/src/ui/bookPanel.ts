@@ -168,6 +168,11 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
     const total = bookTotal(p.seen, p.splicesFound);
     const line = el('div', 'book-progress');
     line.append(el('span', 'book-found', `${prog.found} / ${prog.total} found`), el('span', 'book-total', `Whole book: ${total.percent}%`));
+    // The ribbon: a skin bar with a tick at every reward step (25, 50, 75, 100) so the seals below line up with it.
+    const ribbon = el('div', 'skin-bar book-ribbon');
+    const fill = el('i');
+    fill.style.width = `${prog.total > 0 ? Math.min(100, Math.round((prog.found / prog.total) * 100)) : 0}%`;
+    ribbon.appendChild(fill);
     const rewards = el('div', 'book-rewards');
     for (const r of bookRewards(p, tab)) {
       const box = el('div', `book-reward ${r.state}`);
@@ -185,7 +190,7 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
       }
       rewards.appendChild(box);
     }
-    head.replaceChildren(el('div', 'catalog-name', BOOK_TAB_NAMES[tab]), line, rewards);
+    head.replaceChildren(el('div', 'catalog-name', BOOK_TAB_NAMES[tab]), line, ribbon, rewards);
     grid.replaceChildren(...bookEntries(tab).map((e) => (e.kind === 'recipe' ? recipeCard(e, p) : card(e, p))));
     mark(tab);
   };

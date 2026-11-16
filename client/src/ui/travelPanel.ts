@@ -46,7 +46,7 @@ export function createTravelPanel(parent: HTMLElement, go: (place: Place) => voi
       list.replaceChildren(
         ...cards.map((c) => {
           const [name, icon] = NAMES[c.place];
-          const b = el('button', `travel-card${c.here ? ' here' : ''}${c.locked ? ' locked' : ''}`);
+          const b = el('button', `travel-card place-${c.place}${c.here ? ' here' : ''}${c.locked ? ' locked' : ''}`);
           b.type = 'button';
           const slot = iconBox(pixelIcon(icon));
           const info = el('div', 'travel-info');
@@ -54,6 +54,7 @@ export function createTravelPanel(parent: HTMLElement, go: (place: Place) => voi
           b.append(slot, info);
           if (c.badge) b.append(el('span', 'btn-badge card-badge', c.badge));
           if (c.here) b.append(el('span', 'plate here-tag', 'Here'));
+          if (c.locked) b.append(el('span', 'lock-tag', 'Locked'));
           b.disabled = c.locked !== null || c.here;
           b.title = c.locked ?? (c.here ? `You are in the ${name.toLowerCase()}` : `Go to the ${name.toLowerCase()}`);
           b.addEventListener('click', () => go(c.place));

@@ -29,15 +29,21 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   const save = (): void => void storage.set(FIRST_TEN_KEY, JSON.stringify(state));
   const card = el('div', 'frame first-ten');
   card.setAttribute('role', 'status');
-  Object.assign(card.style, { position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: '8px', maxWidth: 'calc(100% - 180px)', padding: '6px 10px', zIndex: '5', pointerEvents: 'auto' });
+  // Placement and look are in skin.css (.first-ten): top centre on a wide screen, between the info panel and the button column on a phone.
   const count = el('span', 'first-ten-count');
   const text = el('span', 'first-ten-text');
+  const pips = el('span', 'first-ten-pips');
+  for (let i = 0; i < FIRST_TEN_STEPS.length; i++) pips.appendChild(el('i'));
+  const body = el('span', 'first-ten-body');
+  const head = el('span', 'first-ten-head', 'First steps');
+  body.append(head, text);
   const skip = textButton('Skip', () => {
     state = firstTenSkip(state);
     save();
     draw();
   }, 'small first-ten-skip');
-  card.append(count, text, skip);
+  card.append(count, body, skip);
+  body.appendChild(pips);
   card.hidden = true;
   parent.appendChild(card);
 
@@ -47,6 +53,8 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
     if (goal === null) return;
     count.textContent = `${state.done.length + 1}/${FIRST_TEN_STEPS.length}`;
     text.textContent = FIRST_TEN_TEXT[goal];
+    pips.querySelectorAll('i').forEach((p, i) => p.classList.toggle('done', i < state.done.length));
+    card.setAttribute('aria-label', `First steps, ${count.textContent}`);
   }
   draw();
   return {

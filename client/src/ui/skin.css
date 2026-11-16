@@ -416,3 +416,629 @@
     height: calc(100% - 94px);
   }
 }
+
+/* ======================================================================
+   Rounds 2 and 3 (docs/PLAN-UI.md): close ring, ribbons, hotbar, bag, toasts,
+   confirm hang tag, catalog cards, Book ribbon and seals, Map, Settings, emotes,
+   name tags and the first-ten goal card.
+   ====================================================================== */
+
+/* ---------- Shared: a small wood ribbon (section heading) ---------- */
+.ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  align-self: stretch;
+  margin: 2px 0 0;
+  padding: 1px 8px 2px;
+  min-height: 20px;
+  box-sizing: border-box;
+  background: var(--wood);
+  color: var(--butter);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 18px;
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    inset 0 -2px 0 var(--wood-dk),
+    0 0 0 1px var(--outline);
+}
+
+.ribbon-note {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--cream);
+}
+
+.btn.quiet {
+  background: var(--parch-dk);
+  font-weight: 400;
+}
+
+/* ---------- Panel close: an iron ring ---------- */
+.panel-close {
+  background: var(--iron);
+  color: var(--butter);
+  font-weight: 700;
+  text-shadow: 0 1px 0 var(--outline);
+  border-color: var(--outline);
+  box-shadow:
+    inset 0 0 0 2px var(--iron-hi),
+    inset 0 0 0 4px var(--iron),
+    0 0 0 1px var(--outline),
+    var(--shadow);
+}
+
+@media (hover: hover) {
+  .panel-close:hover:not(:disabled) {
+    background: var(--no);
+    color: var(--cream);
+  }
+}
+
+/* ---------- Hotbar: oak tray, name plate over the chosen slot, dim empty slots ---------- */
+.frame.hotbar {
+  background-color: var(--wood-mid);
+}
+
+.hotbar-name {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  max-width: 170px;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--wood);
+  color: var(--butter);
+  font-size: 13px;
+  line-height: 20px;
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    0 0 0 1px var(--outline),
+    0 2px 0 1px var(--candle);
+}
+
+.hotbar-name[hidden] {
+  display: none;
+}
+
+.hotbar-slot.is-empty:not(.selected) {
+  background: #a8684c;
+  box-shadow:
+    inset 0 0 0 1px var(--wood),
+    inset 3px 3px 0 rgba(62, 39, 49, 0.45),
+    0 0 0 1px var(--wood),
+    0 2px 0 1px rgba(24, 20, 37, 0.45);
+}
+
+.hotbar-slot.is-empty .slot-key {
+  opacity: 0.55;
+}
+
+/* ---------- Toasts: icon, text, a coloured edge (gold = good, crimson = refused) ---------- */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.toast[hidden] {
+  display: none;
+}
+
+.toast-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.toast-text {
+  min-width: 0;
+}
+
+.toast-good {
+  box-shadow:
+    inset 0 0 0 1px var(--candle),
+    inset 0 3px 0 0 var(--candle),
+    inset 0 0 0 2px var(--parch-dk),
+    var(--shadow);
+}
+
+.toast-warn {
+  box-shadow:
+    inset 0 0 0 1px var(--no),
+    inset 0 3px 0 0 var(--no),
+    inset 0 0 0 2px var(--parch-dk),
+    var(--shadow);
+}
+
+/* ---------- Confirm: velvet slot, hang tag price, a gold primary ---------- */
+.confirm-what {
+  gap: 10px;
+}
+
+.confirm-icon {
+  --slot: 72px;
+  width: 72px;
+  height: 72px;
+  background: radial-gradient(circle at 50% 40%, #a22633 0 30%, #7a1f2b 70%, #3e2731 100%);
+  box-shadow:
+    inset 0 0 0 2px var(--candle),
+    inset 0 0 0 3px var(--outline),
+    0 2px 0 1px rgba(24, 20, 37, 0.45);
+}
+
+.confirm-icon .slot-icon {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+}
+
+.hang-tag {
+  align-self: flex-start;
+  position: relative;
+  margin-top: 2px;
+  padding: 2px 8px 2px 18px;
+  background: var(--wood-hi);
+  color: var(--outline);
+  box-shadow:
+    inset 1px 1px 0 var(--cream),
+    0 0 0 1px var(--outline),
+    0 2px 0 1px rgba(24, 20, 37, 0.4);
+}
+
+/* The string hole. */
+.hang-tag::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  background: var(--outline);
+  box-shadow: 0 0 0 1px var(--wood);
+}
+
+.hang-tag.price-short {
+  color: var(--no);
+}
+
+.confirm-buttons .quiet {
+  margin-right: auto;
+}
+
+/* ---------- Catalog cards: velvet picture well, price hang tag, hover lip ---------- */
+.shop-card {
+  background: var(--slot-bg) var(--specks);
+}
+
+.shop-card-icon {
+  width: 64px;
+  height: 64px;
+  box-sizing: border-box;
+  padding: 4px;
+  background: radial-gradient(circle at 50% 40%, #a22633 0 28%, #7a1f2b 70%, #3e2731 100%);
+  box-shadow:
+    inset 0 0 0 1px var(--candle),
+    0 0 0 1px var(--outline);
+}
+
+@media (hover: hover) {
+  .shop-card:hover:not(:disabled) {
+    box-shadow:
+      inset 0 3px 0 var(--candle),
+      inset 1px 1px 0 var(--cream),
+      var(--shadow);
+  }
+}
+
+.shop-card .catalog-price {
+  padding: 0 8px;
+  background: var(--wood);
+  color: var(--butter);
+  font-size: 14px;
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    0 0 0 1px var(--outline);
+}
+
+.shop-card .catalog-price.price-short {
+  background: var(--no);
+  color: var(--cream);
+}
+
+/* ---------- Book: a progress ribbon with ticks at the four reward steps, wax seals ---------- */
+.book-ribbon {
+  height: 14px;
+  margin: 2px 0 0;
+}
+
+.book-ribbon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--outline), var(--outline)) 25% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--outline), var(--outline)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--outline), var(--outline)) 75% 0 / 1px 100% no-repeat;
+}
+
+.book-reward {
+  background: transparent;
+  border: 0;
+  gap: 3px;
+}
+
+.book-reward-step {
+  min-width: 40px;
+  padding: 3px 6px;
+  text-align: center;
+  background: var(--no);
+  color: var(--cream);
+  text-shadow: 0 1px 0 var(--outline);
+  clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%);
+}
+
+.book-reward.locked .book-reward-step {
+  background: var(--wood-dk);
+  color: var(--parch-dk);
+}
+
+.book-reward.taken .book-reward-step {
+  background: var(--ok);
+}
+
+.book-reward.ready .book-reward-step {
+  background: var(--candle);
+  color: var(--outline);
+  text-shadow: 0 1px 0 var(--butter);
+}
+
+/* ---------- Map: a parchment map, a dotted road behind the place icons, locks ---------- */
+.travel-list {
+  position: relative;
+  padding: 6px;
+  gap: 6px;
+  background: var(--parch-dk) var(--specks);
+  box-shadow:
+    inset 0 0 0 2px var(--wood-hi),
+    inset 0 0 0 3px var(--wood-mid);
+}
+
+.travel-list::before {
+  content: '';
+  position: absolute;
+  left: 32px;
+  top: 22px;
+  bottom: 22px;
+  border-left: 4px dotted var(--wood-mid);
+  pointer-events: none;
+}
+
+.travel-card {
+  position: relative;
+  z-index: 1;
+}
+
+.travel-card .slot {
+  --slot: 40px;
+}
+
+.place-hotel .slot {
+  background: var(--wood-hi);
+}
+
+.place-shop .slot {
+  background: var(--candle);
+}
+
+.place-farm .slot {
+  background: #63c74d;
+}
+
+.place-lakeside .slot {
+  background: #0099db;
+}
+
+.place-mine .slot {
+  background: #8b9bb4;
+}
+
+.place-dungeon .slot {
+  background: var(--iron-dk);
+}
+
+.lock-tag {
+  position: relative;
+  margin-left: auto;
+  margin-right: 4px;
+  padding-left: 14px;
+  font-size: 12px;
+  color: var(--wood);
+}
+
+/* The padlock: a body and a shackle. */
+.lock-tag::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 6px;
+  margin-top: -1px;
+  background: var(--iron);
+  box-shadow: 0 0 0 1px var(--outline);
+}
+
+.lock-tag::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -6px;
+  border: 1px solid var(--outline);
+  border-bottom: 0;
+}
+
+/* ---------- Settings: ribbons per group, peg-and-groove switches, a rope slider ---------- */
+.settings-group {
+  gap: 6px;
+}
+
+.settings-group > h3.ribbon {
+  margin: 0;
+  font-size: 14px;
+  color: var(--butter);
+}
+
+.btn.switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: var(--touch);
+  padding: 0 64px 0 10px;
+  text-align: left;
+}
+
+/* The groove. */
+.btn.switch::before {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 40px;
+  height: 14px;
+  margin-top: -7px;
+  background: var(--bar-bg);
+  box-shadow:
+    inset 0 2px 0 rgba(24, 20, 37, 0.7),
+    0 0 0 1px var(--outline),
+    0 0 0 2px var(--wood-light);
+}
+
+/* The peg: left = off (wood), right = on (candle). */
+.btn.switch::after {
+  content: '';
+  position: absolute;
+  right: 36px;
+  top: 50%;
+  width: 14px;
+  height: 22px;
+  margin-top: -11px;
+  background: var(--wood-hi);
+  box-shadow:
+    inset 1px 1px 0 var(--cream),
+    0 0 0 1px var(--outline);
+}
+
+.btn.switch.on {
+  background: var(--parch);
+  box-shadow: none;
+  transform: none;
+}
+
+.btn.switch.on::before {
+  background: var(--ok);
+}
+
+.btn.switch.on::after {
+  right: 10px;
+  background: var(--candle);
+}
+
+.btn.switch:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.volume-slider::-webkit-slider-runnable-track {
+  background: repeating-linear-gradient(90deg, var(--wood-hi) 0 4px, var(--wood-light) 4px 6px);
+}
+
+.volume-slider::-moz-range-track {
+  background: repeating-linear-gradient(90deg, var(--wood-hi) 0 4px, var(--wood-light) 4px 6px);
+}
+
+.volume-slider::-webkit-slider-thumb {
+  box-shadow: inset 1px 1px 0 var(--butter);
+}
+
+/* ---------- Emote menu: icon over a label, 52 px cells ---------- */
+.emote-menu {
+  grid-template-columns: repeat(5, 52px);
+}
+
+.emote-menu .emote-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 52px;
+  min-height: 52px;
+  font-size: 11px;
+}
+
+.emote-item .pixel-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.emote-label {
+  line-height: 12px;
+}
+
+/* ---------- Name tag: a small hanging wooden sign ---------- */
+.nametag {
+  background: var(--wood);
+  color: var(--cream);
+  padding: 1px 8px 2px;
+  border: 0;
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    inset 0 -2px 0 var(--wood-dk),
+    0 0 0 1px var(--outline),
+    0 2px 0 1px rgba(24, 20, 37, 0.5);
+}
+
+.nametag.own {
+  color: var(--butter);
+  box-shadow:
+    inset 1px 1px 0 var(--wood-light),
+    inset 0 -2px 0 var(--candle),
+    0 0 0 1px var(--outline),
+    0 2px 0 1px rgba(24, 20, 37, 0.5);
+}
+
+/* ---------- The first-ten goal card (firstTenGuide.ts) ----------
+   Wide screen: top centre, kept clear of the info panel (--info-w, measured by layoutVars.ts) and of the
+   button column. Phone: in the gap between the info panel and the button column, a seal, two or three lines
+   of text and Skip underneath, so it never covers the info panel. Panels (z-index 1, later in the DOM) cover it. */
+.first-ten {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--edge) + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(460px, calc(100vw - 2 * (var(--info-w, 150px) + 18px)));
+  padding: 5px 6px;
+  pointer-events: auto;
+}
+
+.first-ten[hidden] {
+  display: none;
+}
+
+.first-ten-count {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 34px;
+  background: var(--no);
+  color: var(--cream);
+  font-size: 13px;
+  font-weight: 700;
+  text-shadow: 0 1px 0 var(--outline);
+  clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%);
+}
+
+.first-ten-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.first-ten-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--wood);
+}
+
+.first-ten-text {
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.first-ten-pips {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.first-ten-pips i {
+  width: 12px;
+  height: 4px;
+  background: var(--parch-dk);
+  box-shadow: 0 0 0 1px var(--wood-mid);
+}
+
+.first-ten-pips i.done {
+  background: var(--candle);
+  box-shadow: 0 0 0 1px var(--outline);
+}
+
+.first-ten-skip {
+  flex: none;
+}
+
+@media (max-width: 680px) {
+  .first-ten {
+    left: calc(var(--edge) + var(--info-w, 150px) + 6px + env(safe-area-inset-left));
+    right: calc(var(--side-col) + 4px + env(safe-area-inset-right));
+    transform: none;
+    width: auto;
+    max-width: none;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 2px 6px;
+    padding: 4px 6px;
+  }
+
+  .first-ten-count {
+    width: 30px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .first-ten-head,
+  .first-ten-pips {
+    display: none;
+  }
+
+  .first-ten-text {
+    font-size: 13px;
+    line-height: 15px;
+  }
+
+  .first-ten-skip {
+    grid-column: 2;
+    justify-self: end;
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+}

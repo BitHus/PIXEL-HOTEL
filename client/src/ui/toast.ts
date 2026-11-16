@@ -4,6 +4,19 @@
 
 import { TEXT_FADE_MS, readingMs } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
+import { gemImg } from './panelShell.ts';
+import { pixelIcon, type IconName } from './pixelIcons.ts';
+
+/** The banner's look from its words (a pure view choice: the text is all the caller gives). good = gold edge, warn = crimson edge. */
+export function toastKind(text: string): { icon: IconName | 'gem'; tone: 'good' | 'warn' | 'info' } {
+  const t = text.toLowerCase();
+  if (/not enough|cannot|can't|nothing|refused|too |no .* left|need more|you need|full|blocked|not grown|opens at/.test(t)) return { icon: 'shrug', tone: 'warn' };
+  if (/gem/.test(t)) return { icon: 'gem', tone: 'good' };
+  if (/gold|sold|coin/.test(t)) return { icon: 'coin', tone: 'good' };
+  if (/book|recipe/.test(t)) return { icon: 'book', tone: 'good' };
+  if (/level|unlocked|new /.test(t)) return { icon: 'quest', tone: 'good' };
+  return { icon: 'journal', tone: 'info' };
+}
 
 /** An optional button in the toast (BG8: "Wear it"). A tap on it runs `run` and hides the toast. */
 export interface ToastAction {
@@ -35,7 +48,11 @@ export function createToast(parent: HTMLElement): Toast {
     box.hidden = true;
   });
   return (text, action) => {
-    box.textContent = text;
+    const kind = toastKind(text);
+    box.className = `frame toast toast-${kind.tone}`;
+    const icon = kind.icon === 'gem' ? gemImg() : pixelIcon(kind.icon);
+    icon.classList.add('toast-icon');
+    box.replaceChildren(icon, el('span', 'toast-text', text));
     if (action) {
       const b = el('button', 'btn toast-action', action.label);
       b.type = 'button';
@@ -45,7 +62,7 @@ export function createToast(parent: HTMLElement): Toast {
         window.clearTimeout(hideTimer);
         box.hidden = true;
       });
-      box.append(' ', b);
+      box.append(b);
     }
     box.hidden = false;
     box.classList.remove('fading');

@@ -34,6 +34,21 @@ export interface Hotbar {
 
 export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
   const bar = el('div', 'frame hotbar');
+  // The name plate above the selected slot (a pure view of the slot names the client already passes).
+  const plate = el('div', 'plate hotbar-name');
+  plate.hidden = true;
+  plate.setAttribute('aria-hidden', 'true');
+  let selected: number | null = null;
+  const names: string[] = [];
+  plate.style.transform = 'translateX(-50%)';
+  const showName = (): void => {
+    const n = selected === null ? '' : (names[selected] ?? '');
+    plate.textContent = n;
+    plate.hidden = n === '';
+    // Centred over the chosen slot (the bar is the plate's offset parent).
+    const slot = selected === null ? undefined : slots[selected]?.root;
+    if (slot) plate.style.left = `${slot.offsetLeft + slot.offsetWidth / 2}px`;
+  };
   const slots: { root: HTMLElement; img: HTMLImageElement; count: HTMLElement }[] = [];
   for (let i = 0; i < HOTBAR_SLOTS; i++) {
     const root = el('div', 'slot hotbar-slot');
@@ -47,8 +62,10 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
     root.append(el('span', 'slot-key', String(i + 1)), img, count);
     attachPress(root, { onTap: () => hooks.onTap(i), onHold: () => hooks.onHold(i) });
     bar.appendChild(root);
+    root.classList.add('is-empty');
     slots.push({ root, img, count });
   }
+  bar.appendChild(plate);
   parent.appendChild(bar);
 
   window.addEventListener('keydown', (e) => {
@@ -70,13 +87,18 @@ export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
         s.root.classList.toggle('dim', v.typeId !== null && !v.usable);
         setRank(s.root, v.typeId);
         s.root.title = v.typeId === null ? 'Empty slot' : `${v.name} (${v.count})`;
+        s.root.classList.toggle('is-empty', v.typeId === null);
+        names[i] = v.typeId === null ? '' : v.count > 1 ? `${v.name} x${v.count}` : v.name;
       });
+      showName();
     },
     setHidden(hidden) {
       bar.hidden = hidden;
     },
     setSelected(index) {
       slots.forEach((s, i) => s.root.classList.toggle('selected', i === index));
+      selected = index;
+      showName();
     },
     setChoosing(on) {
       bar.classList.toggle('choosing', on);

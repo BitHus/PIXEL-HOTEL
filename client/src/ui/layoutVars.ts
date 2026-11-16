@@ -6,6 +6,9 @@ export function watchLayout(root: HTMLElement, info: HTMLElement, bars: readonly
   const apply = (): void => {
     const infoH = info.offsetHeight;
     if (infoH > 0) root.style.setProperty('--info-h', `${infoH}px`);
+    // The info panel's width: the first-ten goal card (firstTenGuide.ts) keeps clear of it.
+    const infoW = info.offsetWidth;
+    if (infoW > 0) root.style.setProperty('--info-w', `${infoW}px`);
     const barH = Math.max(0, ...bars.map((b) => b.offsetHeight));
     // A hidden hotbar (while placing) keeps the last height: no panel is open then anyway.
     if (barH > 0) root.style.setProperty('--bar-h', `${barH}px`);

@@ -101,7 +101,13 @@ export function createBagPanel(parent: HTMLElement, hooks: BagHooks): BagPanel {
   const hotbarRow = el('div', 'tray bag-section bag-hotbar-row');
   const grid = el('div', 'tray bag-section bag-grid');
   const info = el('div', 'panel-info bag-info');
-  shell.body.append(hotbarRow, el('div', 'divider'), grid, info);
+  const hotRibbon = el('div', 'ribbon');
+  hotRibbon.append(el('span', '', 'Hotbar'), el('span', 'ribbon-note', 'keys 1 to 6'));
+  const storeRibbon = el('div', 'ribbon');
+  const storeName = el('span', '', 'Storage');
+  const storeCount = el('span', 'ribbon-note', '');
+  storeRibbon.append(storeName, storeCount);
+  shell.body.append(hotRibbon, hotbarRow, storeRibbon, grid, info);
   const tool = (icon: IconName, label: string, title: string, how: 'sort' | 'stack'): HTMLButtonElement => {
     const b = el('button', 'btn small');
     b.type = 'button';
@@ -271,6 +277,8 @@ export function createBagPanel(parent: HTMLElement, hooks: BagHooks): BagPanel {
     const l = contents.layout;
     hotbarSlots.forEach((s, i) => fillSlot(s, l.hotbar[i] ?? null, i + 1));
     const ids = l.bag[tab];
+    storeName.textContent = tab === 'furniture' ? 'Furniture' : 'Materials';
+    storeCount.textContent = `${ids.filter((x) => x !== null).length} / ${ids.length}`;
     const shown = shownSlots(ids, phone.matches ? BAG_COLUMNS_PHONE : BAG_COLUMNS);
     if (gridSlots.length !== shown || grid.dataset.tab !== tab) {
       grid.dataset.tab = tab;

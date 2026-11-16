@@ -141,9 +141,11 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   fxBtn.classList.toggle('on', reduceFx);
   const fxNote = el('p', 'panel-note', 'Calmer fights: no screen shake, freeze frames, sparks or bursts. Damage numbers and sounds stay.');
 
+  // The on/off buttons become peg-and-groove switches (skin.css .btn.switch).
+  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, debugBtn]) b.classList.add('switch');
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
-    const s = el('div', 'panel-section');
-    s.append(el('h3', '', title), ...buttons);
+    const s = el('div', 'panel-section settings-group');
+    s.append(el('h3', 'ribbon', title), ...buttons);
     return s;
   };
   // The logo, small, at the top (x0.5: 128 px, every art px = 2 device px on a phone with ratio 2+).
