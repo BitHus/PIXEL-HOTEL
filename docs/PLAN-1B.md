@@ -250,3 +250,26 @@ PAUSE NOTE (artist, ART-T1)
 - T1b: NOT started.
 - Tests and typecheck: NOT run since these edits (last known green state unknown; counter surface:true may break furniture/seat tests).
 - Next step: run npm test and typecheck, fix fallout from the counter change, then build shared/src/taps.ts. Design: drinks are not reserved from the bag; available mugs = tap mugs minus open drink orders (not yet poured); the mug is taken at the pour step; a held mug goes back to the bag if the guest leaves or cancelServe runs.
+
+## PAUSE NOTE (artist, 16 Nov): avatar prototype state and exact next steps
+DONE (client/src/assets/sprites/avatar/, sources art-src/aseprite/): body_base, shoes_boots, legs_trousers, legs_hose (walk 4 frames: down, up, right), torso_tunic (down, up, right),
+hair_front_short (down, up, right), hair_front_long (down, up), hair_back_long (down, up), face_default (down, right), hat_straw_hat and hat_felt_cap (down, up, right), outer_apron (down, up).
+Down was reviewed by the critic (12/16, then fixed); UP and RIGHT facings and the new items were NOT yet reviewed by the critic and have no composed contact sheet. Hat doubling: the straw hat and the
+felt cap were two visible layers in head_proto.aseprite; the felt cap now lives in its own file art-src/aseprite/hat_felt_cap.aseprite and every hat PNG holds only its own hat.
+NEXT STEPS (in order):
+1. Contact sheet: copy tools/avatar-prototype-sheet.ts to client/src/a24-sheet.ts (it reads the down files; extend its file list for up and right and the new items), run vite, screenshot; then run the pixel-critic on up and right.
+2. A25 still missing: SIT frames per facing (body_base, torso_tunic, legs, shoes, one 32x64 frame each: body and torso shifted down 8 px, the head layers follow with a sit head offset of (0, 8) to be put in avatarRig.json),
+   hair_front_long and hair_back_long for the right facing, face_default for the up view is not needed, outer_apron for the right facing and its sit frames, legs_hose right is trousers plus garter (not narrowed like down).
+3. Checks to do: right-facing walk frames (arm swing, legs), the 1 px outline at bake, the key-colour test over the new PNGs (npx vitest run client/src/render), the gap between head and torso (row 29) now that the neck is gone.
+4. Hat tweak: the straw hat reads summer or cowboy; the felt cap with a feather is the medieval option; a hood plus coif is still to draw (hat_hood_coif, down, up, right).
+5. Owner decisions pending: the character style lock (proportions B were chosen provisionally), hair colour ramps, which hat is the default.
+6. Do not edit shared/, api/, game/; the 50 save-migration test failures belong to the coder's save 28 work.
+
+## PAUSE NOTE (coder, G2)
+Done: (1) empty hotbar slots are selectable (client/src/game/hotbarBag.ts onTap: empty slot deselects the item and takes the selected frame; keys 1-6 use the same path). (2) Pour RULES done and tested: shared/src/pour.ts (pourFill, pourGrade, pourTip), config POUR_FULL_MS / POUR_PERFECT_RANGE / POUR_MAX_FILL / POUR_TIP_RATE, shared/src/pour.test.ts. typecheck and npm test green (1399).
+Left for G2:
+- API: new task stage 'pourwait' in client/src/api/tavernApi.ts runErrand (stage 'bar' arrives -> stop, emit 'pour_ready'; today it auto-pours POUR_MS); new GameAPI call pourHeld(heldMs) -> pourOrder + holding.perfect + 'holding' event; new carryHeld() that starts the 'table' errand when the player taps the guest, order bubble or table (no longer automatic for drinks; dishes stay automatic).
+- Add `perfect?: boolean` to TavernState.holding (save version bump + migration + test), and deliverOrder adds pourTip(perfect, price) to the mess coins. Add a balance test that the tip rate stays small.
+- Client: game/tavernLife.ts (pour button over the tap: pointerdown starts, pointerup calls pourHeld; tavernTap on the holding guest calls carryHeld), render/pourFx.ts + tavernFx.ts (fill follows the hold, lever, foam), audio/sound.ts (pour pitch rises). UI worker CSS: .pour-btn and a .pour-bar (fill bar with the perfect window mark) near the tap.
+- Update CLAUDE.md section 9 (THE BAR AND THE TAPS) and docs/BRIEF.md for the new pour rule.
+- Cat loop: client/src/render/catView.ts (drawCat box) plus a gameLoop call of stepPet when player.pet is set and a pet_basket is placed (shared/src/pet.ts is ready).

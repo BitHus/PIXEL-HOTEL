@@ -59,7 +59,13 @@ late.startPlacing = startPlacing;
         return;
       }
       const typeId = st.inventory.hotbar[index];
-      if (!typeId) return;
+      if (!typeId) {
+        // An empty slot is selectable (G2): it shows the selected frame and puts away what was selected.
+        selectBlock(null, null);
+        selectedSlot = index;
+        hotbar.setSelected(index);
+        return;
+      }
       // Seeds (step BG6): select one; a tap on a free soil cell of your farm plants it (hold to plant a line).
       if (isSeedId(typeId)) {
         const n = st.inventory.materials[typeId] ?? 0;

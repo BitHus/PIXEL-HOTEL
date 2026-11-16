@@ -114,3 +114,13 @@ export const TAP_CAP = 12;
 export const POUR_MS = 800;
 /** A prep table inside the kitchen zone, cell-adjacent to a stove, adds this many dishes to its batch; at most `max` in all. */
 export const PREP_BONUS = { perTable: 1, max: 2 } as const;
+
+// ---------- Hands-on pouring (step G2) ----------
+/** Holding the tap fills the mug in this many ms (POUR_MS = the minimum feel of one pour). */
+export const POUR_FULL_MS = POUR_MS;
+/** Releasing with the fill between these fractions of full is a perfect pour (forgiving window). */
+export const POUR_PERFECT_RANGE = [0.85, 1.15] as const;
+/** The mug overflows at this fraction; holding longer changes nothing. */
+export const POUR_MAX_FILL = 1.4;
+/** A perfect pour adds this share of the order's price to the coins (at least 1 gold). Missing it only loses the bonus. */
+export const POUR_TIP_RATE = 0.1;
