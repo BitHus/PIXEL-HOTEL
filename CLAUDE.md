@@ -128,7 +128,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   more than 5 pieces (SELL_CONFIRM_QTY), any ultra_rare or legendary thing, or a hotbar item asks first (confirmBuy). Ledger reason
   'sell' (pure rule shared/src/trader.ts; GameAPI.getSellRows / sell), gold popup, no Book find. Nothing ever sells by itself. Closed
   loops in balance.ts: ingredients sold < the dish or brew; a bought catalog block sells back for less; a pack sold back < its gems at the
-  gold-per-gem floor; a splice result and its seed sold back <= the GOLD of its starter seeds (S3, strict); selling crops never beats guests, run gold or the mine.
+  gold-per-gem floor; a splice result and its seed sold back <= the GOLD of its starter seeds (S3, strict; SG2: tested over every pair of the general rule and every special recipe, balance.test.ts group SG2); selling crops never beats guests, run gold or the mine.
 - GOLD BALANCE (S3, balance.ts, `npm run simulate`): a mixed hour is about 375 gold (new), 480 (level 3), 630 (level 8); tavern guests, dungeon run gold
   and the trader are each 10% to 50% of it (now about 45% / 14% / 40%). A new game earns about 220 gold in its first 30 minutes and 460 in its
   first hour at the tavern (7 root ale per 8-minute brew, roasted turnip on the menu, 3 seats), plus a few dozen per first run. T1 keeps these numbers (the start ale is on a tap; the pour adds 0.8 s; the best kitchen lifts the guest share to 51%, cap 55% with prep tables).
@@ -171,17 +171,19 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 10b. FARM
 - Outdoor room (kind 'farm', 3 levels, open from the start), FREE-FORM since BG6: no fixed plots and, since K1, nothing
   fixed at all (the cooking pot is gone). SOIL = floor cells painted 'soil' (new farm: a 6 x 2 patch; the player paints
-  or removes soil for free, Room > Paint soil). Every block and every crop has a SEED item (`<block>_seed`,
-  crops.json seeds, icon = the seed shape in its colours). Select a seed, tap a soil cell in reach (BLOCK_REACH):
-  one plant per cell, it blocks the cell like a small block. It grows in 3 stages (sprout, small, full) in real
+  or removes soil for free, Room > Paint soil). Soil is for FOOD crops: every other seed (block, ore, drink, furniture, clothing, style) is planted on any BLOCK cell
+  (the block stays, the plant sits on its top face) in hotel, tavern and farm; food crop seeds need a soil cell or a block with soilHost (dirt, rich soil); PLANTS_ROOM_CAP
+  limits plants per room (farm 80, hotel 16, tavern 8) (SG4). Every block and every crop has a SEED item (`<block>_seed`,
+  crops.json seeds, icon = the seed shape in its colours). Select a seed, tap a soil cell or a block cell in reach (BLOCK_REACH):
+  one plant per cell (a plant on soil blocks the cell like a small block; on a block it adds nothing; a block with a plant cannot be punched: a punch harvests a ripe plant, else it shakes). It grows in 3 stages (sprout, small, full) in real
   time, also while the game is closed (SEED_GROW_MS by rank: common 2 min, rare 20 min, ultra_rare 3 h,
   legendary 12 h; no watering, no rotting). Harvest = PUNCH the full plant (one hit, hold works): SEED_YIELD
   blocks or crops by rank (1 to 4), SEED_BACK_CHANCE for the seed, gemDrop 'harvest'. An unripe plant only shakes
   and says when it is ready. Basic crop seeds are sold (gold); block seeds and rarer ones come from drops.
   SPLICING (BG7): with a seed selected, tap a young plant: the second seed goes in and the cell grows the pair's
-  NEW seed (shared/data/splice.json, order free, no random failure; a wrong pair or the same seed = "nothing
-  happens", nothing taken) for the longer grow time + SPLICE_BONUS_MS. Harvest gives the new seed (+ a small
-  chance of a block or crop, gems 'splice'); results grow blocks, crops, drinks, furniture or clothes.
+  NEW seed (any seed with almost any other, SG1: the GENERAL RULE shared/src/spliceRule.ts, a pure hash of the sorted pair key into result pools by category and rank, plus the hand-authored
+  SPECIAL recipes in shared/data/splice.json which win; order free, no random failure; the same seed twice, a legendary seed or a noSplice seed = "nothing happens", nothing taken; 2 seeds in, 1 out) for the longer grow time + SPLICE_BONUS_MS. Harvest gives the new seed (+ a small
+  chance of a block or crop, gems 'splice'); results grow blocks, crops, drinks, furniture or clothes (ore and styles come with SG3).
   Paths and fences are blocks. Hold to repeat: see INPUT.
 - COOKING (K1, owner 15 Nov) happens in the TAVERN, never in the farm: a STOVE (furniture 'stove', 1 cell, light, placeIn
   'shop', common, in the catalog; a new game starts with one a few cells from the bar, COD-1 f: bar, taps and kitchen are spaced apart in the starter tavern) cooks ONE batch at a time: 1 to STOVE_BATCH_MAX
@@ -270,10 +272,10 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the 
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, e2e (Playwright smoke, e2e/), simulate, simulate:dungeon. Vite base stays './'.
-- shared/src: all rules (pure), config.ts (re-exports config/*.ts: the constants by topic; tavern numbers stay in config.ts), types.ts, api.ts (GameAPI),
+- shared/src: all rules (pure), config.ts (re-exports config/*.ts: the constants by topic; tavern numbers stay in config.ts), types.ts, api.ts (GameAPI), spliceRule.ts + seedCategory.ts (general splice rule),
   palette.ts, save.ts (migrations); shared/src/dungeon: run, step, generate (crypt -> layout.ts; mine -> legacyLayout.ts), layout, rooms, themes, pacing, layoutCommon, loot, bank.
 - shared/data: JSON data (furniture, materials, styles, roomShapes, clothing, loot, levels, gear,
-  forge, recipes, crops, food, fish, npcLines, bookRewards).
+  forge, recipes, crops, food, fish, npcLines, bookRewards, splice, spliceSeeds, spliceRules).
 - client/src: main.ts (only wiring: start() runs the parts in game/ in order), game/ (one part per area:
   core, avatarWalk, roomItems, uiShell, cameraSetup, placing, shopPanels, craftPanels, placeLife, tavernLife,
   hotbarBag, settingsPanels, dungeonMode, roomFlow, blockInput, pointerInput, gameLoop; ctx.ts = shared state

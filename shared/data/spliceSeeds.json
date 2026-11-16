@@ -207,7 +207,7 @@
     "id": "heartwood_throne_seed",
     "name": "Heartwood seed",
     "rank": "legendary",
-    "baseValue": 90,
+    "baseValue": 60,
     "icon": {
       "shape": "seed",
       "colors": [

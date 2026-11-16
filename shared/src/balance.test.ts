@@ -39,14 +39,25 @@ import {
   seedProductValue,
   seedRatio,
   starterSeeds,
+  bestHarvestGemsPerCellMinute,
+  spliceGemRows,
+  plantsCapGoldPerHour,
+  cheapestSpliceCycle,
+  gemsPerEvent,
+  harvestYield,
 } from './balance.ts';
-import { BALANCE_TARGETS, PACKS, POUR_MS, PREP_BONUS, SELL_RATES, SPARE_SELL, STOVE_BATCH_MAX, TAP_CAP } from './config.ts';
+import { BALANCE_TARGETS, PACKS, PLANTS_ROOM_CAP, POUR_MS, PREP_BONUS, SELL_RATES, SEED_BACK_CHANCE, SPARE_SELL, SPLICE_BONUS_CHANCE, SPLICE_GEM_CAP, STOVE_BATCH_MAX, TAP_CAP } from './config.ts';
 import { CROP_TYPES, getMaterialType } from './materials.ts';
 import { getFurnitureType } from './furniture.ts';
 import { materialSellPrice, furnitureSellPrice } from './trader.ts';
 import { PACK_TYPES } from './packs.ts';
 import { seededRng } from './rng.ts';
 import { SPLICE_RECIPES } from './splice.ts';
+import { allRecipes, categoryWeights } from './spliceRule.ts';
+import { SEED_CATEGORIES, seedCategory } from './seedCategory.ts';
+import { allSeedIds, isSpliceable, isStarterSeed, seedGrows, seedRank } from './seeds.ts';
+import { packPool } from './packs.ts';
+import { clothingSellPrice } from './trader.ts';
 
 const cheapestPack = Math.min(...PACK_TYPES.map((p) => p.gemPrice));
 
@@ -322,5 +333,116 @@ describe('taps, the pour and the prep tables keep the S3 numbers (T1)', () => {
       expect(tapLastsMin(stage, 2), stage).toBeGreaterThan(2);
     }
     expect(TAP_CAP * 2).toBeGreaterThanOrEqual(poursPerHour('new') / 6); // two taps cover ten minutes of pours at the start
+  });
+});
+
+// ---------- Step SG2: the economy gate of the general splice rule (plan 2.7). Over allRecipes(), special and general pairs. ----------
+describe('SG2 splice gate: every pair of the general rule', () => {
+  const ch = chains();
+  const start = starterSeeds();
+  const all = allRecipes();
+  const results = [...new Set(all.map((x) => x.result))].filter((s) => !start.has(s));
+  const rate = bestCropGoldPerCellMinute();
+
+  it('1. reachability: every non-starter result has a finite chain (ms, gold, cell-minutes) from the starter seeds', () => {
+    expect(results.length).toBeGreaterThan(0);
+    for (const s of results) {
+      const c = ch.get(s)!;
+      expect(Number.isFinite(c.ms) && Number.isFinite(c.gold) && Number.isFinite(c.cellMs), s).toBe(true);
+    }
+  });
+
+  it('2. STRICT sell-back per chain: the result seed and one harvest of its product sold together pay no more than the gold of its starter seeds', () => {
+    for (const r of spliceSellLoops()) expect(r.seedSold + r.productSold, r.seed).toBeLessThanOrEqual(r.gold);
+  });
+  it('2. STRICT sell-back per step: for every pair, the result seed and its product sold pay no more than the chains of the two seeds put in', () => {
+    for (const x of all) {
+      if (start.has(x.result)) continue;
+      const g = seedGrows(x.result);
+      const product = g.kind === 'material' ? materialSellPrice(g.id) * harvestYield(seedRank(x.result)) : g.kind === 'furniture' ? furnitureSellPrice(g.id) : clothingSellPrice(g.id);
+      expect(materialSellPrice(x.result) + product, `${x.a} + ${x.b} -> ${x.result}`).toBeLessThanOrEqual(ch.get(x.a)!.gold + ch.get(x.b)!.gold);
+    }
+  });
+
+  it('3. cell-minutes: what a result is worth per cell-minute of its chain is under the best plain crop cell, for EVERY result', () => {
+    for (const s of results) expect(seedProductValue(s) / (ch.get(s)!.cellMs / 60_000), s).toBeLessThan(rate);
+  });
+
+  it('4. seeds: two seeds in, one out (the seed count falls with every splice); the bonus item cannot make up for it', () => {
+    expect(SEED_BACK_CHANCE).toBeLessThan(1);
+    for (const x of all) expect(x.result === x.a && x.result === x.b, 'a splice never gives both seeds back').toBe(false);
+    // One splice gives exactly 1 new seed (the rule returns one id) plus the bonus item (SPLICE_BONUS_CHANCE) which, if a block, returns at most seedRatio of a seed.
+    const worstBlock = Math.max(...BLOCK_TYPES.map((b) => seedRatio(b.id)));
+    expect(1 + SPLICE_BONUS_CHANCE * worstBlock).toBeLessThan(2);
+    for (const b of BLOCK_TYPES) expect(seedRatio(b.id), b.id).toBeLessThan(BALANCE_TARGETS.maxSeedRatio);
+  });
+
+  it('5. gems: per cell-minute a splice chain stays under SPLICE_GEM_CAP times the best plain harvest, and its gems are worth no more gold than the chain costs', () => {
+    const cap = bestHarvestGemsPerCellMinute() * SPLICE_GEM_CAP;
+    for (const r of spliceGemRows()) {
+      expect(r.perCellMin, r.seed).toBeLessThanOrEqual(cap);
+      expect(r.gemGold, r.seed).toBeLessThanOrEqual(r.cost);
+    }
+    expect(cheapestGoldPerGem()).toBeGreaterThanOrEqual(BALANCE_TARGETS.minGoldPerGem);
+    for (const stage of STAGES) expect(biggestShare(stage).share, stage).toBeLessThanOrEqual(BALANCE_TARGETS.maxSourceShare);
+  });
+
+  it('6. packs: a pack sold back pays less than its price and no pack can hand out a splice-only seed', () => {
+    for (const p of PACK_TYPES) {
+      expect(packSellValue(p), p.id).toBeLessThan(p.gemPrice);
+      for (const item of packPool(p.pool)) {
+        if (item.kind === 'material' && allSeedIds().includes(item.id as never)) expect(isStarterSeed(item.id as never), `${p.id} ${item.id}`).toBe(true);
+      }
+    }
+    for (const s of results) for (const p of PACK_TYPES) expect(packPool(p.pool).some((i) => i.id === s), `${p.id} has ${s}`).toBe(false);
+  });
+
+  it('7. cycles (depth 4): no loop of splices gives a seed back for free (every loop costs gold or cell-time)', () => {
+    const loops = cheapestSpliceCycle(4);
+    for (const l of loops) expect(l.cost, l.seed).toBeGreaterThan(0);
+  });
+
+  it('8. ore, drinks, furniture and styles: furniture seeds sell at most the splice rate, ore per cell-minute stays under the mine, a brew is worth more than its crops', () => {
+    const mine = traderByActivity('level8', seededRng(11)).find((r) => r.id === 'mine');
+    for (const s of results) {
+      const g = seedGrows(s);
+      if (seedCategory(s) === 'ore' && g.kind === 'material' && mine) {
+        const perMin = (materialSellPrice(g.id) * harvestYield(seedRank(s))) / (ch.get(s)!.cellMs / 60_000);
+        expect(perMin, s).toBeLessThan(mine.focused / 60);
+      }
+      if (g.kind === 'furniture') expect(furnitureSellPrice(g.id), s).toBeLessThanOrEqual(Math.max(1, Math.round(getFurnitureType(g.id).baseValue * SELL_RATES.splice)));
+    }
+    for (const d of brewSellLoops()) expect(d.sold, d.id).toBeLessThanOrEqual(d.made);
+  });
+
+  it('9. distribution: every result seed of the pool is made by at least 2 pairs and no category strays more than 8 points from its weight', () => {
+    const made = new Map<string, number>();
+    for (const x of all) made.set(x.result, (made.get(x.result) ?? 0) + 1);
+    const pool = allSeedIds().filter((s) => !isStarterSeed(s) && isSpliceable(s));
+    for (const s of pool) expect(made.get(s) ?? 0, s).toBeGreaterThanOrEqual(2);
+    const general = all.filter((x) => !x.special);
+    // Only categories that HAVE a pool seed can be hit; until SG3 fills the pools the weights are renormalised over those (every category with 3+ seeds per rank 0..2 means all).
+    const live = SEED_CATEGORIES.filter((c) => pool.some((s) => seedCategory(s) === c));
+    const expected = new Map<string, number>();
+    const actual = new Map<string, number>();
+    for (const x of general) {
+      const w = categoryWeights(seedCategory(x.a), seedCategory(x.b));
+      const total = live.reduce((a, c) => a + (w[c] ?? 0), 0);
+      if (total > 0) for (const c of live) expected.set(c, (expected.get(c) ?? 0) + (w[c] ?? 0) / total / general.length);
+      actual.set(seedCategory(x.result), (actual.get(seedCategory(x.result)) ?? 0) + 1 / general.length);
+    }
+    for (const c of live) expect(Math.abs((actual.get(c) ?? 0) - (expected.get(c) ?? 0)) * 100, c).toBeLessThanOrEqual(8);
+    for (const x of SPLICE_RECIPES) expect(allSeedIds(), 'special result is a seed').toContain(x.result);
+  });
+
+  it('10. plants: a full cap of plants earns at most 25% of a mixed hour at level 8, and food crops need soil or a soil host', () => {
+    const farmShare = 1 / activities('level8').length; // a mixed hour gives each open activity an equal share of the time
+    expect(plantsCapGoldPerHour('level8') * farmShare).toBeLessThanOrEqual(goldShares('level8', seededRng(11)).total * 0.25);
+    expect(PLANTS_ROOM_CAP.farm).toBeGreaterThan(PLANTS_ROOM_CAP.shop);
+    expect(BLOCK_TYPES.filter((b) => b.soilHost).length).toBeGreaterThan(0);
+  });
+  it('the gem yardsticks of test 5 are above zero', () => {
+    expect(bestHarvestGemsPerCellMinute()).toBeGreaterThan(0);
+    expect(gemsPerEvent('splice', 'common')).toBeGreaterThan(0);
   });
 });

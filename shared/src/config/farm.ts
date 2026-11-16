@@ -84,3 +84,5 @@ export const SPLICE_SALT = 'pixel-hotel.splice.v1';
 export const SPLICE_RANK_CAP = 'ultra_rare' as const;
 /** Two seeds of the same rank make one rank higher once in this many pairs (a hash of the pair; at most SPLICE_RANK_CAP). */
 export const SPLICE_UP_ONE_IN = 8;
+/** Gems per cell-minute of a splice harvest stay under this many times the best plain harvest's (SG2 gate, balance.test.ts). */
+export const SPLICE_GEM_CAP = 2;

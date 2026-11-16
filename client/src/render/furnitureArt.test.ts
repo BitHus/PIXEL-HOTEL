@@ -72,4 +72,14 @@ describe('heights match the sprites (ART-REDO R1 and R2)', () => {
     expect(seatLiftFor(type('chair'))).toBe(4);
     expect(seatLiftFor(type('table'))).toBe(0);
   });
+  it('R4 boxes match the new sprites: sofa seat 16 and back 38, bench seat 18, desk top 28, rug fills its footprint', () => {
+    expect(seatHeight(type('sofa'))).toBe(16);
+    expect(Math.max(...boxesForFacing(type('sofa'), 'down').boxes.map((b) => b.z + b.h))).toBe(38);
+    expect(seatHeight(type('bench'))).toBe(18);
+    expect(surfaceHeight(type('desk'))).toBe(28);
+    const rug = type('rug');
+    const base = boxesForFacing(rug, 'down').boxes.find((b) => b.w === rug.w && b.d === rug.d);
+    expect(base).toBeDefined();
+    expect(surfaceHeight(rug)).toBe(0);
+  });
 });

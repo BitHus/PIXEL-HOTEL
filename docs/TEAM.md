@@ -18,6 +18,7 @@ You are the main Claude session = the project manager. The owner opens you from 
 - lead: plans, writes docs/PLAN-*.md, no production code (tools: Read, Glob, Grep, Write, Edit, WebSearch, WebFetch; no shell, so the manager runs tests).
 - coder: logic, data, tests, UI panel logic. Owns shared/, api/, game/, ui/ logic.
 - artist: art, CSS, sprites. Owns render/, ui.css, icons, art/icon/light fields, art-src/, client/src/assets/sprites/. Draws pixel art in Aseprite with the Aseprite AI Artist plugin (aseprite@aseprite-ai-artist; Aseprite must be open and connected: call preflight).
+- animator (new 16 Nov, ~/.claude/agents/animator.md, sonnet): walk/sit/eat/wave cycles for avatars, NPCs, guests and enemies, furniture animation strips (stove_fire first, see docs/PLAN-ANIMATION.md); uses the Aseprite plugin skills animate/rig; owns animation strips and avatarRig.json small edits; starts after C18 renderer is stable, one at a time with the artist.
 - tester (new, ~/.claude/agents/tester.md): runs the game in a browser after each feature round and reports crashes, missing sprites, UI problems; no code changes.
 - docs/QUEUE.md (written by the lead): the next coder and artist tasks as ready-to-paste prompts, so no lane waits.
 - Aseprite plugin helper agents (also Sonnet): animation-director, palette-smith, pixel-critic, rig-builder.

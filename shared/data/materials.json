@@ -32,6 +32,6 @@
   {"id": "crown_shard", "name": "Crown shard", "baseValue": 60, "color": 11, "rank": "ultra_rare", "icon": {"shape": "crown", "colors": ["butter", "gold"]}},
   {"id": "kings_heart", "name": "King's heart", "baseValue": 250, "color": 26, "rank": "legendary", "icon": {"shape": "heart", "colors": ["magenta", "plum"]}},
   {"id": "resin", "name": "Resin", "baseValue": 14, "color": 9, "rank": "rare", "icon": {"shape": "blob", "colors": ["orange", "gold"]}},
-  {"id": "amber", "name": "Amber", "baseValue": 40, "color": 10, "rank": "ultra_rare", "icon": {"shape": "gem", "colors": ["orange", "butter"]}},
+  {"id": "amber", "name": "Amber", "baseValue": 36, "color": 10, "rank": "ultra_rare", "icon": {"shape": "gem", "colors": ["orange", "butter"]}},
   {"id": "golden_acorn", "name": "Golden acorn", "baseValue": 220, "color": 11, "rank": "legendary", "icon": {"shape": "acorn", "colors": ["gold", "butter"]}}
 ]

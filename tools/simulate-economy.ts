@@ -87,6 +87,10 @@ import {
   BALANCE_TARGETS as TARGETS,
 } from '../shared/src/index.ts';
 
+import { bestHarvestGemsPerCellMinute, cheapestSpliceCycle, plantsCapGoldPerHour, spliceGemRows } from '../shared/src/balance.ts';
+import { allRecipes } from '../shared/src/spliceRule.ts';
+import { SPLICE_GEM_CAP, PLANTS_ROOM_CAP } from '../shared/src/config.ts';
+
 const MINUTE = 60_000;
 const pad = (s: string | number, n: number): string => String(s).padEnd(n);
 const RUNS = 500;
@@ -185,6 +189,31 @@ for (const id of results) {
 console.log('Wall clock = branches planted in parallel in their own cells; a splice cell takes the longer seed time + SPLICE_BONUS_MS. Value per cell-min must stay under a plain crop cell, else a chain makes value from nothing.');
 console.log('Time by result rank (fastest result of each rank):' + (['common', 'rare', 'ultra_rare', 'legendary'] as const).map((rk) => { const ids = results.filter((i) => seedRank(i) === rk); return ids.length ? ` ${RANK_NAMES[rk]} ${hr(Math.min(...ids.map((i) => ch.get(i)!.ms)) / 3_600_000)}-${hr(Math.max(...ids.map((i) => ch.get(i)!.ms)) / 3_600_000)}` : ''; }).join(';'));
 
+console.log('\n=== SG2. The general splice rule: every pair (special and general), chain cost and gems (the gate is balance.test.ts, group SG2) ===');
+{
+  const all = allRecipes();
+  const gen = all.filter((x) => !x.special).length;
+  const chs = chains();
+  const rate = bestCropGoldPerCellMinute();
+  const sold = new Map(spliceSellLoops().map((x) => [x.seed, x.seedSold + x.productSold]));
+  const rows = spliceGemRows().sort((p, q) => chs.get(p.seed)!.gold - chs.get(q.seed)!.gold || chs.get(p.seed)!.cellMs - chs.get(q.seed)!.cellMs);
+  console.log(`${all.length} pairs make something (${all.length - gen} special, ${gen} by the general rule), ${rows.length} distinct non-starter results. A plain crop cell makes ${f1(rate)} gold per cell-min.`);
+  const show = (label: string, list: typeof rows): void => {
+    console.log(label);
+    console.log(pad('result', 24) + pad('rank', 11) + pad('wall clock', 12) + pad('seed gold', 11) + pad('cell-min', 10) + pad('worth', 8) + pad('worth/cell-min', 16) + pad('sold back', 11) + pad('gems/harvest', 14) + 'gems per cell-min');
+    for (const r of list) {
+      const c = chs.get(r.seed)!;
+      console.log(pad(r.seed, 24) + pad(RANK_NAMES[seedRank(r.seed)], 11) + pad(hr(c.ms / 3_600_000), 12) + pad(c.gold, 11) + pad(f1(c.cellMs / MINUTE), 10) + pad(seedProductValue(r.seed), 8) + pad(f1(seedProductValue(r.seed) / (c.cellMs / MINUTE)), 16) + pad(sold.get(r.seed)!, 11) + pad(r.gems.toFixed(2), 14) + r.perCellMin.toFixed(3));
+    }
+  };
+  show('The 10 cheapest results (by starter-seed gold):', rows.slice(0, 10));
+  show('The 10 most expensive results:', rows.slice(-10));
+  const cap = bestHarvestGemsPerCellMinute();
+  console.log(`Gem rate: the best plain harvest gives ${cap.toFixed(3)} gems per cell-min; the splice cap is x${SPLICE_GEM_CAP} = ${(cap * SPLICE_GEM_CAP).toFixed(3)}; the best splice chain gives ${Math.max(...rows.map((r) => r.perCellMin)).toFixed(3)}.`);
+  const loops = cheapestSpliceCycle(4);
+  console.log(`Cycles (depth 4): ${loops.length} seeds can be had back by a loop; the cheapest loop costs ${loops.length ? f1(Math.min(...loops.map((l) => l.cost))) : '-'} gold-equivalent (must stay above 0).`);
+  console.log(`Plants cap: ${Object.entries(PLANTS_ROOM_CAP).map(([k, v]) => k + ' ' + v).join(', ')} slots; ceiling of a full set sold at the trader (net of seed): ${f1(plantsCapGoldPerHour('level8'))} gold per focused hour at level 8, a mixed hour has about ${f1(goldShares('level8', seededRng(11)).total)} gold in all.`);
+}
 console.log('\n=== K1. The tavern kitchen: dishes per hour per stove and gold per dish through the menu ===');
 const AVG_GROUP = GUEST_GROUP_WEIGHTS.reduce((sum, w, i) => sum + w * (i + 1), 0) / GUEST_GROUP_WEIGHTS.reduce((a, b) => a + b, 0);
 const GUESTS_PER_HOUR = (appeal: number): number => (3_600_000 / (GUEST_BASE_INTERVAL_MS * (100 / (100 + appeal)))) * AVG_GROUP;

@@ -15,6 +15,7 @@
     "simulate": "tsx tools/simulate-economy.ts",
     "e2e": "playwright test",
     "lint": "biome lint",
+    "check": "npm test && npm run typecheck && npm run build",
     "simulate:dungeon": "tsx tools/simulate-dungeon.ts"
   },
   "devDependencies": {

@@ -282,7 +282,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   and no Book find. When the bag fills (24 sellable stacks) a toast says "Sell what you do not need at the bar".
   Closed loops (shared/src/balance.ts, tests in balance.test.ts): the ingredients of a dish or brew sold pay less than the dish or the
   mugs; a catalog block bought and sold back loses gold; a pack's contents sold back are worth less than its gems at the gold-per-gem
-  floor (30); a splice result sold back is worth less than its seeds plus the cell-minutes at the best crop rate.
+  floor (30); a splice result sold back is worth less than its seeds plus the cell-minutes at the best crop rate (SG2: strict, tested over every pair of the general rule and every special recipe; gems per cell-minute of a splice chain stay under SPLICE_GEM_CAP times the best plain harvest; the plant cap earns at most 25% of a mixed hour).
 - Tavern appeal: every decoration has an appeal number. tavernAppeal = min(100, sum of the appeal of placed items, decor too, each
   type counted at most 3 times, plus the appeal of the floor style and wall style (bare gives 0, the others give 4 each)).
   It sets the guest rate: a guest group every 45 s * 100 / (100 + appeal) (step 9t, unchanged).
@@ -439,6 +439,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   with a seed icon in its colours; they stack in the bag and the hotbar. Basic crop seeds are sold in the
   Catalog (Seeds tab, gold); block seeds drop from broken blocks (BLOCK_SEED_CHANCE), harvests (SEED_BACK_CHANCE)
   and splicing (BG7). The glowcap spore still only drops in the dungeon.
+- PLANTING (SG4): any seed that does not grow a food crop may also go on a BLOCK cell (the block stays, the plant sits on its top face; hotel, tavern and farm); food crops need soil or a block with soilHost (dirt, rich soil); a block with a plant cannot be punched; PLANTS_ROOM_CAP: farm 80, hotel 16, tavern 8.
 - PLANTING: select a seed in the hotbar and tap a free soil cell of a farm room within BLOCK_REACH cells (farther:
   the avatar walks closer first; holding still 300 ms and dragging plants a line). One plant per cell. A plant
   blocks its cell like a small block (nav grids rebuilt, never on the door zone, furniture, an avatar
@@ -452,8 +453,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   (a shake and "ready in n min"), so a tap never destroys it. All results go through the gains list and ledger
   (reasons 'plant', 'harvest'). Pure functions: plantSeed, growthStage, harvestPlant, hitPlant (shared/src/farm.ts).
 - SPLICING (BG7): select a seed and tap a planted, unripe, not yet spliced cell: the second seed is used up and
-  the cell grows the NEW seed of the pair (shared/data/splice.json { a, b, result }, a + b = b + a, about 40
-  recipes, chains of 2 to 3 steps, a result is never lower in rank than the lower input). The clock restarts:
+  the cell grows the NEW seed of the pair (SG1, the GENERAL RULE shared/src/spliceRule.ts: a pure hash of the sorted pair key picks the result by category and rank from the pools, rank = the higher input, one up in 1 of SPLICE_UP_ONE_IN pairs, at most SPLICE_RANK_CAP; the hand-authored SPECIAL recipes shared/data/splice.json { a, b, result }, a + b = b + a, about 40
+  recipes, win; chains of 2 to 3 steps, a result is never lower in rank than the lower input). The clock restarts:
   readyAt = now + max(grow time of both, SEED_GROW_MS by rank) + SPLICE_BONUS_MS (config, 1 min). No random
   failure: a pair not in the table, and a seed with itself, answer "nothing happens" and take nothing. A ripe
   spliced plant is harvested by punching: exactly the result seed (no seed back), a SPLICE_BONUS_CHANCE (25%)

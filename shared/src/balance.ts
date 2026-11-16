@@ -26,7 +26,9 @@ import {
   MINE_HINT,
   RANK_WEIGHTS,
   ROCK_GEM_RANK,
+  PLANTS_ROOM_CAP,
   SEED_BACK_CHANCE,
+  SEED_GROW_MS,
   SEED_YIELD,
   SPARE_SELL,
 } from './config.ts';
@@ -471,6 +473,81 @@ export function spliceSellLoops(): { seed: SeedId; seedSold: number; productSold
       g.kind === 'material' ? materialSellPrice(g.id) * harvestYield(seedRank(seed)) : g.kind === 'furniture' ? furnitureSellPrice(g.id) : clothingSellPrice(g.id);
     const c = ch.get(seed)!;
     out.push({ seed, seedSold: materialSellPrice(seed), productSold, gold: c.gold, cost: c.gold + (c.cellMs / 60_000) * rate });
+  }
+  return out;
+}
+
+// ---------- The general splice rule's gate (step SG2, plan 2.7) ----------
+
+/** Gems per cell-minute of the best plain harvest (any rank): the yardstick of the splice gem cap. */
+export function bestHarvestGemsPerCellMinute(): number {
+  return Math.max(...RANKS.map((rank) => gemsPerEvent('harvest', rank) / (SEED_GROW_MS[rank] / 60_000)));
+}
+
+/** For every spliced result: the gems of one splice harvest, per cell-minute of the whole chain, and their worth in gold at the cheapest gold-per-gem against the chain's cost. */
+export function spliceGemRows(): { seed: SeedId; gems: number; perCellMin: number; gemGold: number; cost: number }[] {
+  const ch = chains();
+  const start = starterSeeds();
+  const rate = bestCropGoldPerCellMinute();
+  const perGem = cheapestGoldPerGem();
+  const out: { seed: SeedId; gems: number; perCellMin: number; gemGold: number; cost: number }[] = [];
+  for (const seed of new Set(allRecipes().map((x) => x.result))) {
+    if (start.has(seed)) continue;
+    const c = ch.get(seed)!;
+    const gems = gemsPerEvent('splice', seedRank(seed));
+    out.push({ seed, gems, perCellMin: gems / (c.cellMs / 60_000), gemGold: gems * perGem, cost: c.gold + (c.cellMs / 60_000) * rate });
+  }
+  return out;
+}
+
+/**
+ * Gold per hour the PLANT CAP can earn at the trader (plan 2.7 group 10): every plant slot of every room full of the crop with the best profit per
+ * harvest (sold at the trader's crop rate, net of the seed that comes back only SEED_BACK_CHANCE), harvested as fast as the slots ripen but never
+ * faster than a player does nothing but farm (the farm activity's harvests per hour at this stage). Base value is NOT the measure: a crop is
+ * only worth its baseValue inside a dish, and that gold is the tavern's (guest-limited). An upper bound.
+ */
+export function plantsCapGoldPerHour(stage: Stage = 'level8'): number {
+  const slots = Object.values(PLANTS_ROOM_CAP).reduce((a, n) => a + n, 0);
+  const focused = activities(stage).find((x) => x.id === 'farm')!.lines[0]!.perHour;
+  let best = 0;
+  for (const crop of CROP_TYPES) {
+    if (crop.seedPrice === null) continue;
+    const profit = Math.max(0, harvestYield(crop.rank) * materialSellPrice(crop.id) - crop.seedPrice * (1 - SEED_BACK_CHANCE));
+    const cycles = Math.min(slots * (3_600_000 / seedGrowMs(crop.seed as SeedId)), focused);
+    best = Math.max(best, cycles * profit);
+  }
+  return best;
+}
+
+/**
+ * The bounded cycle check (plan 2.7 group 7): the cheapest way to get a seed BACK by a loop of at most `depth` splices, root + partner -> ... -> root.
+ * Each step costs the partner's chain (gold plus cell-minutes at the best plain crop rate) and the splice cell's own cell-minutes. A loop gives back
+ * nothing new (the root again), so its cost must stay above zero: no loop is free. Dynamic programming over the recipes, no walk of all paths.
+ */
+export function cheapestSpliceCycle(depth: number): { seed: SeedId; cost: number }[] {
+  const ch = chains();
+  const rate = bestCropGoldPerCellMinute();
+  const recipes = allRecipes().filter((x) => x.result !== x.a && x.result !== x.b);
+  const step = (partner: SeedId, a: SeedId, b: SeedId): number => ch.get(partner)!.gold + ((ch.get(partner)!.cellMs + spliceGrowMs(a, b)) / 60_000) * rate;
+  const roots = new Set<SeedId>(recipes.flatMap((x) => [x.a, x.b]));
+  const out: { seed: SeedId; cost: number }[] = [];
+  for (const root of roots) {
+    let best = new Map<SeedId, number>([[root, 0]]);
+    let back = Infinity;
+    for (let d = 0; d < depth; d++) {
+      const next = new Map<SeedId, number>();
+      for (const x of recipes) {
+        for (const [at, partner] of [[x.a, x.b], [x.b, x.a]] as const) {
+          const have = best.get(at);
+          if (have === undefined) continue;
+          const cost = have + step(partner, x.a, x.b);
+          if (x.result === root) back = Math.min(back, cost);
+          else if (cost < (next.get(x.result) ?? Infinity)) next.set(x.result, cost);
+        }
+      }
+      best = next;
+    }
+    if (Number.isFinite(back)) out.push({ seed: root, cost: back });
   }
   return out;
 }
