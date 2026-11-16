@@ -229,19 +229,10 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   inCatalog = false only come from the dungeon. An item can only be placed in a room that
   matches its placeIn. Step 4 builds 12 home items. Shop items arrive in step 7.
 
-8. AVATARS
-- Layers drawn in order: body, shoes, legs, torso, hair, hat, held item. Each layer is
-  recolorable (palette index swap).
-- Proportions like the classic hotel games: a slim figure with normal proportions, the head
-  about one quarter of the height. Not chibi.
-- 4 facings, three of them drawn: down, up and right. Left is right mirrored. Canvas 32x64
-  px, feet at the bottom center. Animations: idle, sit (down, left and right only), and walk
-  (4 frames). In pass 1 only the idle sprite is drawn, and the game bobs the sprite 2 px up
-  and down while the avatar walks. Walk frames are added later and used when they exist.
-- Placeholder avatar: drawn in code from boxes. The current box avatar (its look,
-  proportions and colours, client/src/render/avatarParts.ts) is the approved base for the
-  character: do not change its shape, and future avatar art (sprites, walk and sit frames)
-  keeps these proportions.
+8. AVATARS (U1, owner go 16 Nov; same text as CLAUDE.md section 8)
+- Layers (U1, owner go 16 Nov): body (head, hands, skin), shoes, legs (bottoms), torso (top with sleeves), outer (cloak, tabard, apron, belt; optional), hair (back and front), face, hat, held item. Body layers are frame strips; head layers (hair, face, hat) are one picture per facing placed by a per-frame head offset (shared/data/avatarRig.json). Each recolourable layer uses key colours that are swapped for a ramp of the chosen colour (shared/data/ramps.json); hats keep fixed colours.
+- Proportions (option B of docs/art-sheets/avatar-proportions.png, chosen 16 Nov by the manager; the owner can veto at the style lock after A24): cosy three-head figure on a 32x64 canvas, feet at the bottom centre: about 54 px tall (head 17 px, shoulders 14 px wide) with the hat zone above it (nothing above 64). Down, up, right drawn, left mirrored. Stand = one walk frame; walk = 4 frames chosen by distance walked; sit = 1 frame per facing; eating, wave and cheer add 2 frames each later; face moods are single frames.
+- Look: medieval (docs/ART-STYLE.md MEDIEVAL DIRECTION): tunics, jerkins, aprons, hoods, cloaks, tabards, boots, belts. Endesga 32 only; a 1 px dark warm outline is added by code around the composed figure; light top-left. The box avatar (client/src/render/avatarParts.ts) is the FALLBACK until every layer exists and is retired when the owner signs the new avatar off.
 - Clothing (step 7b) is data in shared/data/clothing.json: { id, slot: 'hair'|'top'|'bottoms',
   name, free }. Free at the start: hair short, long, ponytail, buzz; tops t_shirt, long_sleeve,
   vest (over a shirt); bottoms trousers, shorts, skirt. Items with free = false exist but stay

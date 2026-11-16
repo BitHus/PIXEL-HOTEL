@@ -33,3 +33,6 @@ The world is a small medieval inn and village: no modern shapes, no plastic, no 
 ## Tooling
 - Pixel art is made in Aseprite through the Aseprite AI Artist plugin (installed 2026-11-15; extension 0.8.3).
 - OPEN DECISION: the game currently draws art in code (`art`, `icon`, `light` fields in shared/data/furniture/*.json, plus render/). How exported Aseprite sprites get loaded is not decided yet; the lead should plan this before the artist ships any sprite.
+
+## Read first
+Artists and UI workers: read docs/PIXEL-ART-GUIDE.md (technique rules, the before-you-export checklist and the critic rubric) before any art task.

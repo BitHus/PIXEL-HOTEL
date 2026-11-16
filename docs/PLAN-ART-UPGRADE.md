@@ -113,3 +113,6 @@ THE USER'S (recommendation in brackets):
 - U3 New things: approve the list in section 4 as a backlog, built only in the step it names or as "data only" decor. (Yes; strike anything you dislike.)
 - U4 Pace: one art round after every feature round, with the style lock after R2. (Yes.)
 - U5 Name check: flower names and the new items stay original (no copying of another game's lists). (Yes.)
+
+## 8. Technique guide
+Read docs/PIXEL-ART-GUIDE.md before drawing or reviewing: rules, the before-you-export checklist (extends section 6) and the critic rubric. Artist and UI workers must read it.

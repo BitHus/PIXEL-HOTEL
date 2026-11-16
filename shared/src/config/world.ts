@@ -67,6 +67,8 @@ export const AVATAR_H = 64;
 /** While walking without walk frames, the idle sprite bobs this many px. */
 export const WALK_BOB_PX = 2;
 export const WALK_FRAMES = 4;
+/** U1/C17: the layered avatar picks its walk frame by DISTANCE walked: one frame per this many px (guests and the player never skate). */
+export const WALK_FRAME_PX = 12;
 /** The walk bob switches between up and down every this many ms. */
 export const WALK_BOB_MS = 150;
 /** Where a new avatar stands: this far above the bottom of the floor, centered (in the door zone). */

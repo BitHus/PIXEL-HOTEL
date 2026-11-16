@@ -2,7 +2,7 @@
 // `<id>.png` (facing down) or `<id>_<facing>.png` (up, right). Left is never drawn: it is right mirrored.
 // A piece uses its sprites only when EVERY facing its type allows has a file; else the whole piece keeps its code art.
 
-import type { Facing } from '@pixel-hotel/shared';
+import { AVATAR_SLOTS, type AvatarSlot, type Facing } from '@pixel-hotel/shared';
 
 export type SpriteFacing = Exclude<Facing, 'left'>;
 
@@ -29,7 +29,7 @@ export function neededFacings(type: { facings: readonly Facing[] }): SpriteFacin
  * dungeon (crypt and mine tiles, 32 x 32), actors (enemies and chests) and lake (water, trees, pier, decor) are the outdoors kinds (PLAN-REWORK-OUTDOORS
  * section 4). Their files are `<id>.png`; an animation STRIP is `<id>_<tag>.png` (see stripId): a horizontal row of equal frames.
  */
-export const SPRITE_KINDS = ['furniture', 'icons', 'blocks', 'floors', 'walls', 'plants', 'dungeon', 'actors', 'lake'] as const;
+export const SPRITE_KINDS = ['furniture', 'icons', 'blocks', 'floors', 'walls', 'plants', 'dungeon', 'actors', 'lake', 'avatar'] as const;
 export type SpriteKind = (typeof SPRITE_KINDS)[number];
 
 /** One sprite file: its kind (the folder), the id, and the variant: the facing (furniture), the growth stage 1 to 3 (plants), else ''. */
@@ -93,3 +93,27 @@ export function stripFrameCount(width: number, frameW: number): number {
 
 /** The x offset of frame `i` in a strip. */
 export const stripFrameX = (i: number, frameW: number): number => i * frameW;
+
+
+// ---------- Avatar layers (U1/C17, docs/PLAN-CHARACTERS.md section 6) ----------
+/** A layer file in sprites/avatar/ is `<slot>_<item>_<anim>_<facing>.png`: id = `<slot>_<item>`, strip tag = `<anim>_<facing>` (stripId(id, tag) is the file id). */
+export interface AvatarFileName {
+  slot: AvatarSlot;
+  item: string;
+  id: string;
+  anim: string;
+  facing: 'down' | 'up' | 'right';
+}
+
+/** Splits an avatar file name or path (`torso_tunic_walk_down.png`, `hair_back_long_still_right.png`), or null. Slots may hold an underscore, so the slot is the longest known prefix; left is never drawn. */
+export function parseAvatarFile(file: string): AvatarFileName | null {
+  const base = file.split(/[\/]/).pop() ?? '';
+  const m = /^([a-z0-9]+(?:_[a-z0-9]+)*)_([a-z0-9]+)_(down|up|right)\.png$/.exec(base);
+  if (!m) return null;
+  const rest = m[1]!;
+  const slot = [...AVATAR_SLOTS].sort((a, b) => b.length - a.length).find((s) => rest.startsWith(`${s}_`));
+  if (!slot) return null;
+  const item = rest.slice(slot.length + 1);
+  if (!item) return null;
+  return { slot, item, id: `${slot}_${item}`, anim: m[2]!, facing: m[3] as AvatarFileName['facing'] };
+}

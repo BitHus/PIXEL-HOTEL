@@ -31,6 +31,8 @@ export interface ClothingType {
   /** Hats: where it comes from, and the hint shown while it is locked. */
   source?: HatSource;
   unlock?: string;
+  /** Hats (U1/C17): which hair layers the hat covers. Missing = none. */
+  hides?: 'none' | 'front' | 'all';
 }
 
 export const CLOTHING = clothingData as ClothingType[];

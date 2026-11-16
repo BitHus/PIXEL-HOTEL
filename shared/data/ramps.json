@@ -1,0 +1,27 @@
+{
+  "identity": ["silver", "steel", "slate", "dusk"],
+  "ramps": {
+    "skin": ["cream", "skin", "tan", "oak"],
+    "tan": ["skin", "tan", "oak", "walnut"],
+    "sand": ["cream", "sand", "oak", "walnut"],
+    "oak": ["sand", "oak", "walnut", "outline"],
+    "walnut": ["oak", "walnut", "outline", "ink"],
+    "outline": ["walnut", "outline", "ink", "ink"],
+    "rust": ["clay", "rust", "crimson", "walnut"],
+    "clay": ["sand", "clay", "rust", "walnut"],
+    "gold": ["butter", "gold", "orange", "oak"],
+    "cream": ["white", "cream", "sand", "oak"],
+    "night": ["dusk", "night", "ink", "ink"],
+    "silver": ["white", "silver", "steel", "slate"],
+    "crimson": ["red", "crimson", "walnut", "outline"],
+    "green": ["lime", "green", "forest", "pine"],
+    "navy": ["sky", "navy", "dusk", "night"],
+    "plum": ["orchid", "plum", "night", "ink"],
+    "forest": ["green", "forest", "pine", "night"],
+    "orange": ["gold", "orange", "rust", "crimson"],
+    "slate": ["silver", "slate", "dusk", "night"],
+    "dusk": ["slate", "dusk", "night", "ink"],
+    "pine": ["forest", "pine", "night", "ink"],
+    "ink": ["night", "ink", "ink", "ink"]
+  }
+}

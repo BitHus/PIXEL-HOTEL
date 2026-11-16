@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOCK_TYPES } from '@pixel-hotel/shared';
-import { neededFacings, parseSpriteName, parseSpritePath, plantComplete, spriteComplete, stripFrameCount, stripFrameX, stripId } from './spriteIndex.ts';
+import { neededFacings, parseAvatarFile, parseSpriteName, parseSpritePath, plantComplete, spriteComplete, stripFrameCount, stripFrameX, stripId } from './spriteIndex.ts';
 
 describe('sprite names', () => {
   it('parses id and facing; plain id = down', () => {
@@ -94,5 +94,25 @@ describe('outdoors kinds and animation strips (C11)', () => {
   });
   it('frame i starts at i * frame width', () => {
     expect([0, 1, 2].map((i) => stripFrameX(i, 32))).toEqual([0, 32, 64]);
+  });
+});
+
+describe('avatar layer files (C17)', () => {
+  it('avatar is a sprite kind and a path parses as id with no variant', () => {
+    expect(parseSpritePath('../assets/sprites/avatar/torso_tunic_walk_down.png')).toEqual({ kind: 'avatar', id: 'torso_tunic_walk_down', variant: '' });
+  });
+  it('parses slot, item, anim and facing (slots with an underscore too)', () => {
+    expect(parseAvatarFile('torso_tunic_walk_down.png')).toEqual({ slot: 'torso', item: 'tunic', id: 'torso_tunic', anim: 'walk', facing: 'down' });
+    expect(parseAvatarFile('../x/hair_back_long_still_right.png')).toMatchObject({ slot: 'hair_back', item: 'long', id: 'hair_back_long', anim: 'still' });
+    expect(parseAvatarFile('hat_straw_hat_still_up.png')).toMatchObject({ slot: 'hat', item: 'straw_hat', facing: 'up' });
+    expect(parseAvatarFile('body_base_sit_right.png')).toMatchObject({ slot: 'body', item: 'base', anim: 'sit' });
+    expect(stripId('torso_tunic', 'walk_down')).toBe('torso_tunic_walk_down');
+  });
+  it('rejects left, unknown slots, missing item, bad names', () => {
+    expect(parseAvatarFile('torso_tunic_walk_left.png')).toBeNull();
+    expect(parseAvatarFile('cape_red_walk_down.png')).toBeNull();
+    expect(parseAvatarFile('torso_walk_down.png')).toBeNull();
+    expect(parseAvatarFile('Torso_tunic_walk_down.png')).toBeNull();
+    expect(parseAvatarFile('torso_tunic_walk_down.jpg')).toBeNull();
   });
 });

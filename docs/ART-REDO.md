@@ -68,3 +68,9 @@ writing_desk with candle (already planned as writing_desk), wall_tapestry (wall,
 CRAFT AND MINE FLAVOUR (decor, rare): anvil (1x1, tie to the forge flavour), grindstone (1x1), tool_wall (wall: hammers and tongs), bellows_forge_display.
 OUTDOOR (farm and lakeside, placeIn those rooms): well (2x2), scarecrow (already planned), cart (2x1), hay_cart, fence_post_lantern, dovecote (1x1 tall).
 Suggested first batch of about 5 (data only, art after): trestle_table, keg_stack, iron_chandelier, weapon_rack, anvil.
+
+- R3 (16 Nov, medieval candidates, STAGED not shipped): trestle_table (96x58, down), keg_stack (32x40), iron_chandelier (40x52, wall/ceiling, candles), weapon_rack (64x80: shield, two swords, spear),
+  anvil (32x56, on a stump, glowing bar) + 5 icons. They are in art-src/staging/furniture-r3/ (icons in icons/), sources art-src/aseprite/<id>.aseprite and icons_medieval_r3.aseprite.
+  They are NOT in client/src/assets/sprites/furniture/ because the ids are not in the furniture data yet (the spriteAssets test throws on an unknown id). When the coder adds the data
+  (sizes: trestle_table 96x32 surface z 26; keg_stack 32x32; iron_chandelier wall 40x4; weapon_rack 64x32; anvil 32x32), copy the PNGs into assets/sprites/furniture and assets/sprites/icons.
+  Only the facing down is drawn for all five (add right/up when the data lists them). Round 3 was checked against docs/PIXEL-ART-GUIDE.md section 5 and 6.
