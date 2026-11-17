@@ -22,6 +22,10 @@ export const CONTEXT_HINTS: readonly ContextHint[] = [
 /** Shown the first time a seed is selected (key 'seed'). */
 export const SEED_HINT = { key: 'seed', text: 'Tap a soil cell or a block to plant' } as const;
 
+/** RUN 5: the Book's Splice tab says how the first splice is found (shown while none is found yet). */
+export const SPLICE_BOOK_HINT =
+  'How to splice: plant a seed, and while it is still young select ANOTHER seed and tap the plant. Two seeds go in and the plant grows a new seed. Punch it when grown.';
+
 /** In reach of a thing (world px between the avatar and its anchor). */
 export const HINT_REACH_PX = 96;
 

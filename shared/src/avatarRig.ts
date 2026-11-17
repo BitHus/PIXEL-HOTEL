@@ -64,8 +64,11 @@ export function rampForIndex(index: number): Ramp | null {
 }
 
 // ---------- Rig tables ----------
-export type RigPose = 'walk' | 'sit' | 'idle' | 'eat' | 'wave';
-export const RIG_POSES: readonly RigPose[] = ['walk', 'sit', 'idle', 'eat', 'wave'];
+/** lean and drink (RUN 5, art LOOK2): a guest standing at the bar, seen from behind (only the UP strips are drawn; down and right fall back to idle). */
+export type RigPose = 'walk' | 'sit' | 'idle' | 'eat' | 'wave' | 'lean' | 'drink';
+export const RIG_POSES: readonly RigPose[] = ['walk', 'sit', 'idle', 'eat', 'wave', 'lean', 'drink'];
+/** The standing poses of a bar guest (TF): leaning on the bar, or drinking from the mug. */
+export type BarPose = 'lean' | 'drink';
 type Table = Record<'down' | 'up' | 'right', [number, number][]>;
 interface PoseData {
   frames: number;
@@ -90,11 +93,12 @@ export function drawnFacing(facing: Facing): { facing: 'down' | 'up' | 'right'; 
 }
 
 /** Which rig pose an avatar state uses (CH1): standing still is 'idle' (2 frames), seated is 'sit' ('eat' while `eating`), a wave or cheer emote on two feet is 'wave'; lie is drawn by code (null). */
-export function rigPose(state: AvatarState, opts: { eating?: boolean; waving?: boolean } = {}): RigPose | null {
+export function rigPose(state: AvatarState, opts: { eating?: boolean; waving?: boolean; bar?: BarPose | null } = {}): RigPose | null {
   if (state === 'lie') return null;
   if (state === 'sit') return opts.eating ? 'eat' : 'sit';
   if (state === 'walk') return 'walk';
-  return opts.waving ? 'wave' : 'idle';
+  // A wave wins over a bar pose; a standing bar guest leans or drinks (RUN 5 hook for TF bar guests).
+  return opts.waving ? 'wave' : (opts.bar ?? 'idle');
 }
 
 /** The frame of a timed pose (idle, eat, wave) at time tMs; `phaseMs` shifts one avatar against the others so a room does not breathe in step. Poses without a frameMs give 0. */
@@ -133,7 +137,7 @@ export function headOffset(pose: RigPose, facing: Facing, frame: number, tMs = 0
   const rows = RIG.poses[pose].head[d.facing];
   const [dx, dy] = rows[((frame % rows.length) + rows.length) % rows.length]!;
   let by = dy;
-  // Idle, eat and wave have their own frames (the breath is in the strips); only walk and sit get the code breath.
+  // Idle, eat, wave, lean and drink have their own frames (the breath is in the strips); only walk and sit get the code breath.
   if (!moving && (pose === 'walk' || pose === 'sit')) {
     const t = ((tMs % RIG.breath.periodMs) + RIG.breath.periodMs) % RIG.breath.periodMs;
     if (t < RIG.breath.durationMs) by += RIG.breath.dy;
@@ -179,13 +183,16 @@ export interface LayerRef {
   optional: boolean;
 }
 
-/** The strips a body layer may use when the file of the pose is missing (art arrives piece by piece): idle and wave fall back to walk frame 0, eat to sit. */
+/** The strips a body layer may use when the file of the pose is missing (art arrives piece by piece): idle and wave fall back to walk frame 0, eat to sit, lean and drink to idle. */
 export function poseAlts(pose: RigPose, facing: 'down' | 'up' | 'right'): LayerAlt[] {
   const alt = (p: RigPose, first: boolean): LayerAlt => ({ tag: `${p}_${facing}`, frames: poseFrames(p), first });
   switch (pose) {
     case 'idle': return [alt('walk', true)];
     case 'wave': return [alt('idle', false), alt('walk', true)];
     case 'eat': return [alt('sit', true)];
+    // Bar poses: only the body and torso of the UP view are drawn; every other layer and facing uses the idle (then walk) strips.
+    case 'lean':
+    case 'drink': return [alt('idle', false), alt('walk', true)];
     default: return [];
   }
 }

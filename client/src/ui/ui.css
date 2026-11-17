@@ -3982,15 +3982,17 @@
   }
 }
 
-/* OA-14 / OA-11: the OPEN / CLOSED sign under the info panel (tavern only): a small hanging plaque in the frame palette. 30 px tall to the eye, a 44 px touch box. */
+/* OA-14 / OA-11: the OPEN / CLOSED sign under the info panel (tavern only): a small hanging plaque in the frame palette. A 44 px touch box. */
 .btn.open-sign {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 5px;
   width: auto;
-  height: 30px;
-  min-height: 30px;
+  /* RUN 5: the plaque itself is the 44 px touch box (was 30 px plus an invisible ring). */
+  height: var(--touch);
+  min-height: var(--touch);
+  min-width: var(--touch);
   padding: 0 8px 0 5px;
   background: var(--wood);
   border: 0;

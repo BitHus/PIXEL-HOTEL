@@ -4,7 +4,7 @@
 
 import {
   FIRST_TEN_ALL_DONE_TEXT, FIRST_TEN_DONE_TEXT, FIRST_TEN_KEY, FIRST_TEN_NEW, FIRST_TEN_STEPS, MACHINE_TIP_TEXT, firstTenEvent,
-  firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, type FirstTenState, type FirstTenStep, type MachineTip,
+  firstTenFinished, firstTenGoal, firstTenOpen, firstTenStepNumber, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, type FirstTenState, type FirstTenStep, type MachineTip,
 } from '@pixel-hotel/shared';
 import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
@@ -28,6 +28,8 @@ export interface FirstTenGuide {
 
 /** True on a touch screen: the texts say Tap/hold your finger, else Click/hold the mouse button. */
 const isTouch = (): boolean => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+/** The phone layout of the card (skin.css: one folded line under 680 px). */
+const isPhone = (): boolean => typeof matchMedia === 'function' && matchMedia('(max-width: 680px)').matches;
 
 export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, toast: Toast, newGame = false): FirstTenGuide {
   let state = firstTenOpen(storage.get(FIRST_TEN_KEY), newGame);
@@ -56,7 +58,7 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   card.addEventListener('click', (e) => {
     if (e.target instanceof HTMLElement && e.target.closest('.first-ten-skip')) return;
     card.classList.toggle('expanded');
-    announce();
+    draw();
   });
   parent.appendChild(card);
 
@@ -70,9 +72,10 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
       announce();
       return;
     }
-    count.textContent = `${state.done.length + 1}/${FIRST_TEN_STEPS.length}`;
-    text.textContent = guideText(goal, isTouch());
-    pips.querySelectorAll('i').forEach((p, i) => p.classList.toggle('done', i < state.done.length));
+    count.textContent = `${firstTenStepNumber(goal)}/${FIRST_TEN_STEPS.length}`;
+    // RUN 5: a folded card on a phone shows the step's short line (never cut off); a tap on the card shows the whole text.
+    text.textContent = guideText(goal, isTouch(), isPhone() && !card.classList.contains('expanded'));
+    pips.querySelectorAll('i').forEach((p, i) => p.classList.toggle('done', state.done.includes(FIRST_TEN_STEPS[i]!)));
     card.setAttribute('aria-label', `First steps, ${count.textContent}`);
     announce();
   }
@@ -81,7 +84,7 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
     parent.style.setProperty('--ft-bottom', card.hidden ? '0px' : `${card.offsetTop + card.offsetHeight + 6}px`);
     window.dispatchEvent(new Event('first-ten-layout'));
   }
-  window.addEventListener('resize', announce);
+  window.addEventListener('resize', draw);
   draw();
   return {
     begin() {

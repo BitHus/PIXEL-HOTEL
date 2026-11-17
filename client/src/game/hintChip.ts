@@ -29,6 +29,8 @@ export function startHintChip(g: G9, guideBusy: () => boolean) {
     if (key === null) return;
     const p = anchor();
     if (performance.now() > until || p === null || dungeon.isActive) return hide();
+    // RUN 5: never over an open panel (the Book on a phone); it shows again when the panel closes, while its time lasts.
+    chip.classList.toggle('on', panels.open === null);
     chip.classList.toggle('calm', prefs.reduceEffects);
     chip.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
   };

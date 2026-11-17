@@ -1779,8 +1779,10 @@
   font-size: 20px;
 }
 
-.first-ten-skip {
+/* RUN 5: the Skip button itself is a full 44 px box (.btn.small gave 36 px plus an invisible ring). */
+.btn.small.first-ten-skip {
   min-height: var(--touch);
+  min-width: var(--touch);
 }
 
 /* The Map button's "N orders" badge grows to the left instead of being clipped; the Tavern card's badge never shrinks. */

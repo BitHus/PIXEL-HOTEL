@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, firstTenToastDue, guideAutoEvents, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type GuideContext } from './firstTen.ts';
+import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, firstTenStepNumber, firstTenToastDue, guideAutoEvents, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type GuideContext } from './firstTen.ts';
 import { getFurnitureType } from './furniture.ts';
 import { FIRST_GUEST_DELAY_MS } from './config.ts';
 
@@ -155,5 +155,28 @@ describe('guide waiting and pointer targets', () => {
     expect(guideAutoEvents(none)).toEqual([]);
     expect(guideAutoEvents({ ...none, walked: true, cooking: true, inFarm: true, buildOn: true, inDungeon: true })).toEqual(['walk', 'stove', 'farm', 'build', 'dungeon']);
     expect(guideAutoEvents({ ...none, inFarm: true })).toEqual(['farm']);
+  });
+});
+
+describe('RUN 5: the step count follows the goal text', () => {
+  it('a step done out of order does not push the count past the goal shown', () => {
+    // walk and stove done, menu (step 2) is still the goal: the card must say 2/18, not 3/18.
+    const s = firstTenEvent(firstTenEvent(FIRST_TEN_NEW, 'walk'), 'stove');
+    const goal = firstTenGoal(s);
+    expect(goal).toBe('menu');
+    expect(firstTenStepNumber(goal!)).toBe(2);
+    for (const [i, k] of FIRST_TEN_STEPS.entries()) expect(firstTenStepNumber(k)).toBe(i + 1);
+  });
+});
+
+describe('RUN 5: phone short lines', () => {
+  it('every step has a short line that fits the folded phone card', () => {
+    for (const s of GUIDE_STEPS) {
+      expect(s.short, s.id).toBeTruthy();
+      expect(guideText(s.id, true, true).length, s.id).toBeLessThanOrEqual(32);
+    }
+    expect(guideText('menu', true, true)).toBe('Tap the register');
+    expect(guideText('menu', false, true)).toBe('Click the register');
+    expect(guideText('menu', true)).toContain('serve, set prices, sell');
   });
 });

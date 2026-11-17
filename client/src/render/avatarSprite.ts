@@ -22,6 +22,7 @@ import {
   WALK_BOB_PX,
   type Avatar,
   type AvatarLook,
+  type BarPose,
   type Facing,
   type FurnitureType,
   type RigPose,
@@ -91,6 +92,7 @@ export class AvatarSprite {
   private readonly seed = nextSeed++;
   private eating = false;
   private waving = false;
+  private bar: BarPose | null = null;
   /** What the baked avatar shows now (null = the box views), for the hand anchor. */
   private bakedNow: { pose: RigPose; facing: 'down' | 'up' | 'right'; frame: number } | null = null;
 
@@ -113,6 +115,13 @@ export class AvatarSprite {
   setEating(on: boolean): void {
     if (on === this.eating) return;
     this.eating = on;
+    this.show(this.last);
+  }
+
+  /** RUN 5 hook (TF bar guests): a guest standing at the bar leans on it or drinks (null = plain idle). Only UP has its own art; other facings show idle. */
+  setBarPose(pose: BarPose | null): void {
+    if (pose === this.bar) return;
+    this.bar = pose;
     this.show(this.last);
   }
 
@@ -230,7 +239,7 @@ export class AvatarSprite {
   }
 
   private showBaked(state: Avatar['state'], facing: Facing): boolean {
-    const pose = rigPose(state, { eating: this.eating, waving: this.waving });
+    const pose = rigPose(state, { eating: this.eating, waving: this.waving, bar: this.bar });
     let b: ReturnType<typeof bakeAvatar> = null;
     let blink = false;
     let frame = 0;

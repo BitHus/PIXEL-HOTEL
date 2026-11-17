@@ -7,7 +7,8 @@
 // customer. Nothing is added while the page is hidden, and one avatar shows at most
 // CHAT_BUBBLES_PER_AVATAR bubbles (the oldest goes).
 
-import { CHAT_BUBBLE_FADE_MS, CHAT_BUBBLE_GAP_PX, CHAT_BUBBLE_MS, CHAT_BUBBLES_PER_AVATAR, readingMs, type ChatLine, type Point } from '@pixel-hotel/shared';
+import { CHAT_BUBBLE_FADE_MS, CHAT_BUBBLE_GAP_PX, CHAT_BUBBLE_MS, CHAT_BUBBLES_MAX, CHAT_BUBBLES_PER_AVATAR, readingMs, type ChatLine, type Point } from '@pixel-hotel/shared';
+import { placeBubbles, type BubbleIn } from './bubbleLayout.ts';
 import { el } from './dom.ts';
 
 interface Bubble {
@@ -41,6 +42,8 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       old.el.remove();
       bubbles = bubbles.filter((x) => x !== old);
     }
+    // RUN 5: a cap for the whole screen (several guests talking at once): the oldest goes.
+    while (bubbles.length > CHAT_BUBBLES_MAX) bubbles.shift()!.el.remove();
   };
 
   return {
@@ -61,28 +64,27 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       const now = performance.now();
       for (const b of bubbles.filter((x) => now - x.born >= x.life)) b.el.remove();
       bubbles = bubbles.filter((b) => now - b.born < b.life);
-      // Per avatar: the newest bubble sits right above the head, older ones above it.
-      const bottom = new Map<number, number>();
-      const col = document.querySelector('.side-buttons')?.getBoundingClientRect();
+      // Per avatar the newest bubble sits right above the head, older ones above it; bubbles of different avatars never overlap, an order icon is
+      // never covered and the button column is avoided (pure: bubbleLayout.ts placeBubbles).
+      const col = document.querySelector('.side-buttons')?.getBoundingClientRect() ?? null;
       const orders = [...document.querySelectorAll('.order-bubble')].filter((o) => !(o as HTMLElement).hidden).map((o) => o.getBoundingClientRect());
+      const shown: Bubble[] = [];
+      const input: BubbleIn[] = [];
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i]!;
         const head = heads.get(b.avatarId);
         b.el.hidden = !head;
         if (!head) continue;
-        let y = bottom.get(b.avatarId) ?? head.y;
-        const h = b.el.offsetHeight;
-        const w = b.el.offsetWidth;
-        let x = Math.min(Math.max(head.x - w / 2, 4), window.innerWidth - w - 4);
-        // An order icon (tap target) is never covered: the line moves up above it.
-        for (const o of orders) if (x < o.right && x + w > o.left && y > o.top && y - h < o.bottom) y = Math.min(y, o.top - 2);
-        // A bubble never covers the right button column: it slides left of it when it would overlap.
-        if (col && y - h < col.bottom && y > col.top && x + w > col.left - 4) x = Math.max(4, col.left - w - 4);
-        b.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y - h)}px)`;
-        b.el.classList.toggle('tail', !bottom.has(b.avatarId));
-        b.el.style.opacity = String(Math.min(1, (b.life - (now - b.born)) / CHAT_BUBBLE_FADE_MS));
-        bottom.set(b.avatarId, y - h - CHAT_BUBBLE_GAP_PX);
+        shown.push(b);
+        input.push({ avatarId: b.avatarId, headX: head.x, headY: head.y, w: b.el.offsetWidth, h: b.el.offsetHeight });
       }
+      const at = placeBubbles(input, window.innerWidth, CHAT_BUBBLE_GAP_PX, orders, col);
+      shown.forEach((b, i) => {
+        const p = at[i]!;
+        b.el.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
+        b.el.classList.toggle('tail', p.tail);
+        b.el.style.opacity = String(Math.min(1, (b.life - (now - b.born)) / CHAT_BUBBLE_FADE_MS));
+      });
     },
   };
 }

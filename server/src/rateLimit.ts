@@ -19,6 +19,11 @@ export class RateLimiter {
     return true;
   }
 
+  /** True when the key is at its limit right now (nothing is counted). */
+  blocked(key: string, now: number): boolean {
+    return (this.hits.get(key) ?? []).filter((t) => now - t < this.windowMs).length >= this.max;
+  }
+
   /** Forgets keys with no recent hit (call now and then). */
   sweep(now: number): void {
     for (const [k, v] of this.hits) if (v.every((t) => now - t >= this.windowMs)) this.hits.delete(k);

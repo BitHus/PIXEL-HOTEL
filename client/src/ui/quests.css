@@ -1,11 +1,376 @@
-/* The Quest panel (TUT-2 part 3): rows with a progress bar and a Take button. Only what the panel needs; the look follows the frame style in ui.css. */
-.quest-list { display: flex; flex-direction: column; gap: 8px; }
-.quest-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; padding: 6px 8px; border: 2px solid #3e2731; background: rgba(0, 0, 0, 0.18); }
-.quest-row.done { opacity: 0.6; }
-.quest-row.ready { border-color: #fee761; }
-.quest-row-text { grid-column: 1; font-family: var(--font); }
-.quest-row-side { grid-column: 2; grid-row: 1 / span 2; min-width: 64px; text-align: right; font-family: var(--font); }
-.quest-bar { grid-column: 1; height: 6px; background: #181425; }
-.quest-bar-fill { height: 100%; background: #63c74d; }
-.quest-take { min-height: 44px; }
-.quest-event-name { margin: 0; font-family: var(--font); }
+/* The Quest panel (TUT-2 part 3, UI pass): tabs Daily / Events / Achievements in the medieval skin.
+   Row = icon slot, text + progress bar, and at the right the reward chip (open), the Claim button (ready) or a Done stamp.
+   Colours are the skin's tokens (Endesga 32); hard edges, no blur. Loaded after skin.css (game/craftPanels.ts). */
+
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ---------- The row: a parchment card with a dark pixel edge ---------- */
+.quest-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 52px;
+  padding: 5px 6px;
+  box-sizing: border-box;
+  border: 2px solid var(--outline);
+  background: var(--wood-hi);
+  box-shadow: inset 0 2px 0 var(--cream), inset 0 -2px 0 var(--wood-mid);
+  font-family: var(--font);
+  color: var(--text);
+}
+
+.quest-row-icon {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--outline);
+  background: var(--wood);
+  box-shadow: inset 0 2px 0 var(--wood-light);
+}
+
+.quest-row-icon .pixel-icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.quest-row-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quest-row-text {
+  font-size: var(--fs-md);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* A long text shows 2 lines until it is tapped. */
+.quest-row-text.long {
+  cursor: pointer;
+}
+
+.quest-row-text.long:not(.open) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.quest-meter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quest-bar {
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 8px;
+}
+
+.quest-bar > i {
+  background: #63c74d;
+  box-shadow: inset 0 1px 0 #a8e072;
+}
+
+.quest-count {
+  flex: none;
+  font-family: var(--font);
+  font-size: var(--fs-sm, 12px);
+  color: var(--wood);
+  white-space: nowrap;
+}
+
+.quest-row-side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 44px;
+}
+
+/* The reward: a coin and a number on a small dark chip. */
+.quest-reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px;
+  border: 1px solid var(--outline);
+  background: var(--bar-bg);
+  color: var(--butter);
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.quest-reward .pixel-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* ---------- States ---------- */
+/* Open: the reward waits, a little dimmed. */
+.quest-row.todo .quest-reward {
+  opacity: 0.75;
+}
+
+/* Ready: a candle-gold edge and a warm card; the bar is full and gold. */
+.quest-row.ready {
+  border-color: var(--outline);
+  background: var(--cream);
+  box-shadow:
+    inset 0 0 0 2px var(--candle),
+    0 0 0 1px var(--candle);
+}
+
+.quest-row.ready .quest-row-icon {
+  background: var(--candle);
+  box-shadow: inset 0 2px 0 var(--butter);
+}
+
+.quest-row.ready .quest-bar > i {
+  background: var(--candle);
+  box-shadow: inset 0 1px 0 var(--butter);
+}
+
+.quest-take {
+  min-height: 44px;
+  min-width: 64px;
+  padding: 2px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  line-height: 1;
+}
+
+.quest-take .quest-reward {
+  padding: 1px 4px;
+  font-size: var(--fs-sm, 12px);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.quest-take .quest-reward .pixel-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Taken: flat and quiet, a green check on the icon and a small stamp. */
+.quest-row.done {
+  background: var(--parch-dk);
+  box-shadow: none;
+  border-color: var(--wood-mid);
+  min-height: 44px;
+}
+
+.quest-row.done .quest-row-text {
+  color: var(--wood);
+}
+
+.quest-row.done .quest-row-icon {
+  background: var(--wood-mid);
+  border-color: var(--wood);
+  box-shadow: none;
+}
+
+.quest-row.done .quest-row-icon .pixel-icon {
+  opacity: 0.45;
+}
+
+.quest-row.done .quest-meter {
+  display: none;
+}
+
+/* A pixel check mark, drawn with two bars. */
+.quest-check {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--outline);
+  background:
+    linear-gradient(var(--cream), var(--cream)) 2px 6px / 2px 2px no-repeat,
+    linear-gradient(var(--cream), var(--cream)) 4px 8px / 2px 2px no-repeat,
+    linear-gradient(var(--cream), var(--cream)) 6px 6px / 2px 2px no-repeat,
+    linear-gradient(var(--cream), var(--cream)) 8px 4px / 2px 2px no-repeat,
+    linear-gradient(var(--cream), var(--cream)) 10px 2px / 2px 2px no-repeat,
+    var(--ok);
+}
+
+.quest-stamp {
+  padding: 2px 5px;
+  border: 1px solid var(--ok);
+  color: var(--ok);
+  font-family: var(--font);
+  font-size: var(--fs-sm, 12px);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ---------- The line on top of a list: label, bar, n / m ---------- */
+.quest-tally {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  font-family: var(--font);
+}
+
+.quest-tally-label {
+  flex: none;
+  font-size: var(--fs-md);
+  color: var(--wood);
+}
+
+.quest-tally .quest-bar > i {
+  background: var(--candle);
+  box-shadow: inset 0 1px 0 var(--butter);
+}
+
+/* ---------- First step (the tutorial's line), the note, the event head ---------- */
+.quest-first {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border: 2px solid var(--outline);
+  background: var(--bar-bg);
+  color: var(--cream);
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  line-height: 1.2;
+}
+
+.quest-first .pixel-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.quest-note {
+  padding: 2px 2px 0;
+  font-size: var(--fs-sm, 12px);
+  color: var(--wood);
+}
+
+.quest-event {
+  padding: 5px 6px;
+  border: 2px solid var(--outline);
+  background: var(--wood);
+  color: var(--cream);
+  box-shadow: inset 0 2px 0 var(--wood-light);
+}
+
+.quest-event .quest-event-name {
+  margin: 0 0 2px;
+  font-family: var(--font);
+  font-size: var(--fs-lg, 16px);
+  color: var(--butter);
+}
+
+.quest-event .panel-info {
+  color: var(--cream);
+}
+
+/* ---------- Empty states ---------- */
+.quest-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 10px 14px;
+  text-align: center;
+  font-family: var(--font);
+}
+
+.quest-empty-icon {
+  width: 52px;
+  height: 52px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--wood-mid);
+}
+
+.quest-empty-icon .pixel-icon {
+  width: 32px;
+  height: 32px;
+  opacity: 0.55;
+}
+
+.quest-empty-title {
+  font-size: var(--fs-lg, 16px);
+  color: var(--wood);
+}
+
+.quest-empty .panel-info {
+  color: var(--wood);
+}
+
+/* ---------- Ready dots: on a tab and on the Quest side button (data-ready is set in game/craftPanels.ts) ---------- */
+.quest-panel .tab-btn {
+  position: relative;
+}
+
+.quest-tab-dot {
+  right: -2px;
+  top: -4px;
+  background: var(--candle);
+}
+
+.quest-btn[data-ready='1']::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  width: 10px;
+  height: 10px;
+  box-sizing: content-box;
+  background: var(--candle);
+  border: 2px solid var(--outline);
+  pointer-events: none;
+}
+
+/* ---------- Narrow phones: a slimmer icon so the text keeps its room ---------- */
+@media (max-width: 380px) {
+  .quest-row {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 5px;
+  }
+
+  .quest-row-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .quest-row-icon .pixel-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .quest-take {
+    min-width: 58px;
+    padding: 2px 5px;
+  }
+}

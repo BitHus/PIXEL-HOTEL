@@ -90,7 +90,10 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   search.setAttribute('aria-label', 'Search the catalog');
   search.autocomplete = 'off';
   search.addEventListener('keydown', (e) => e.stopPropagation());
-  search.addEventListener('input', () => applySort());
+  search.addEventListener('input', () => {
+    draw();
+    applySort();
+  });
   searchRow.append(search, purse);
   const empty = el('div', 'catalog-empty');
   empty.hidden = true;
@@ -99,6 +102,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   clear.type = 'button';
   clear.addEventListener('click', () => {
     search.value = '';
+    draw();
     applySort();
   });
   empty.append(el('div', 'catalog-empty-icon'), emptyText, clear);
@@ -191,32 +195,30 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     for (const b of sortBar.children) b.classList.toggle('on', (b as HTMLElement).dataset.sort === sort);
     note.hidden = tab !== 'seeds' && tab !== 'blocks' && tab !== 'packs' && tab !== 'clothes';
     list.classList.toggle('pack-list', tab === 'packs');
-    if (tab === 'blocks') {
-      note.textContent = 'Select a block in the hotbar, tap a free cell to place it, tap a block to punch it. More kinds drop from punching.';
-      for (const b of catalogBlocks()) list.appendChild(blockCard(b));
+    // RUN 5: a search looks through every tab but Packs, so a name is found wherever it is sold.
+    if (tab !== 'packs' && search.value.trim() !== '') {
+      note.hidden = true;
+      for (const [t] of TABS) if (t !== 'packs') addCards(t);
       return;
     }
-    if (tab === 'packs') {
-      note.textContent = 'Packs cost gems, which you only earn by playing. The odds and everything a pack can give are on its card. Duplicates are possible.';
-      drawPacks(list, packsData, { open: hooks.openPack, sell: hooks.sellSpare });
-      return;
+    if (tab === 'blocks') note.textContent = 'Select a block in the hotbar, tap a free cell to place it, tap a block to punch it. More kinds drop from punching.';
+    if (tab === 'packs') note.textContent = 'Packs cost gems, which you only earn by playing. The odds and everything a pack can give are on its card. Duplicates are possible.';
+    if (tab === 'seeds') note.textContent = `Plant seeds in the soil of your farm and punch them when grown. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`;
+    if (tab === 'clothes') note.textContent = 'Hats for your avatar: wear them in the Avatar panel. Rarer hats cannot be bought: find them while you play.';
+    addCards(tab);
+  };
+
+  /** The cards of one tab, appended to the list. */
+  const addCards = (t: CatalogTab): void => {
+    if (t === 'blocks') for (const b of catalogBlocks()) list.appendChild(blockCard(b));
+    else if (t === 'packs') drawPacks(list, packsData, { open: hooks.openPack, sell: hooks.sellSpare });
+    else if (t === 'seeds') for (const c of seedsForSale()) list.appendChild(seedCard(c));
+    else if (t === 'clothes') for (const h of HATS.filter((x) => hatCatalogPrice(x.id) !== null)) list.appendChild(hatCard(h.id));
+    else if (t === 'decor') for (const s of STYLE_TYPES.filter((x) => x.inCatalog)) list.appendChild(styleCard(s));
+    else {
+      const categories = t === 'home' ? ['home_furniture', 'suite_furniture'] : ['shop_furniture'];
+      for (const f of catalogTypes().filter((x) => categories.includes(x.category))) list.appendChild(furnitureCard(f));
     }
-    if (tab === 'seeds') {
-      note.textContent = `Plant seeds in the soil of your farm and punch them when grown. The glowcap spore (${getCropType('glowcap').name}) only drops in the dungeon.`;
-      for (const c of seedsForSale()) list.appendChild(seedCard(c));
-      return;
-    }
-    if (tab === 'clothes') {
-      note.textContent = 'Hats for your avatar: wear them in the Avatar panel. Rarer hats cannot be bought: find them while you play.';
-      for (const h of HATS.filter((x) => hatCatalogPrice(x.id) !== null)) list.appendChild(hatCard(h.id));
-      return;
-    }
-    if (tab === 'decor') {
-      for (const s of STYLE_TYPES.filter((x) => x.inCatalog)) list.appendChild(styleCard(s));
-      return;
-    }
-    const categories = tab === 'home' ? ['home_furniture', 'suite_furniture'] : ['shop_furniture'];
-    for (const t of catalogTypes().filter((x) => categories.includes(x.category))) list.appendChild(furnitureCard(t));
   };
 
   /** Applies the chosen sort to the cards just made (Shelf keeps the data order). */

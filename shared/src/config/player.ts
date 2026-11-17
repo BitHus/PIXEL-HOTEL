@@ -44,8 +44,10 @@ export const CHAT_BUBBLE_MS = 6000;
 export const CHAT_BUBBLE_FADE_MS = 900;
 /** Gap between stacked bubbles and above the head, screen px. */
 export const CHAT_BUBBLE_GAP_PX = 4;
-/** One avatar shows at most this many bubbles at once (the oldest goes). */
-export const CHAT_BUBBLES_PER_AVATAR = 3;
+/** One avatar shows at most this many bubbles at once (the oldest goes). RUN 5: 2 (was 3), so a table of guests does not pile up. */
+export const CHAT_BUBBLES_PER_AVATAR = 2;
+/** RUN 5: at most this many bubbles on screen at once (all avatars; the oldest goes). Bubbles of different avatars never overlap (ui/bubbleLayout.ts). */
+export const CHAT_BUBBLES_MAX = 6;
 /** The chat log keeps this many lines. */
 export const CHAT_LOG_MAX = 100;
 /** Reading pace (fix after 7b): every text on screen (toasts, chat bubbles) stays at least

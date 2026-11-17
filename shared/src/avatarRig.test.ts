@@ -175,3 +175,33 @@ describe('CH1 animation timing', () => {
     expect(avatarLayers(look, null, 'right', 'wave').find((l) => l.slot === 'torso')!.alts.map((a) => a.tag)).toEqual(['idle_right', 'walk_right']);
   });
 });
+
+describe('RUN 5 bar-guest poses (lean, drink)', () => {
+  it('a standing bar guest leans or drinks; a wave wins; walking and sitting ignore it', () => {
+    expect(rigPose('idle', { bar: 'lean' })).toBe('lean');
+    expect(rigPose('idle', { bar: 'drink' })).toBe('drink');
+    expect(rigPose('idle', { bar: 'lean', waving: true })).toBe('wave');
+    expect(rigPose('walk', { bar: 'drink' })).toBe('walk');
+    expect(rigPose('sit', { bar: 'drink' })).toBe('sit');
+  });
+  it('2 frames of 700 ms; lean drops the head 3 px from behind; drink holds the mug up at the right', () => {
+    for (const p of ['lean', 'drink'] as const) {
+      expect(RIG.poses[p].frames).toBe(2);
+      expect(RIG.poses[p].frameMs).toBe(700);
+      expect(timedFrame(p, 699)).toBe(0);
+      expect(timedFrame(p, 700)).toBe(1);
+    }
+    const idleUp = headOffset('idle', 'up', 0);
+    expect(headOffset('lean', 'up', 0).dy - idleUp.dy).toBe(3);
+    expect(headOffset('lean', 'up', 1).dy - headOffset('idle', 'up', 1).dy).toBe(3);
+    expect(headOffset('drink', 'up', 0)).toEqual(idleUp);
+    expect(handAnchor('drink', 'up', 0)).toEqual({ x: 11, y: -40 });
+    // Down and right have no own art: same tables as idle, so the fallback strips line up.
+    for (const f of ['down', 'right'] as const) for (const fr of [0, 1]) expect(headOffset('lean', f, fr)).toEqual(headOffset('idle', f, fr));
+  });
+  it('body and torso use the lean/drink strips with idle then walk as fallback', () => {
+    const torso = avatarLayers(look, null, 'up', 'lean').find((l) => l.slot === 'torso')!;
+    expect(torso).toMatchObject({ tag: 'lean_up', frames: 2 });
+    expect(torso.alts.map((a) => a.tag)).toEqual(['idle_up', 'walk_up']);
+  });
+});

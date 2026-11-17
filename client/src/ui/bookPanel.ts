@@ -10,6 +10,7 @@ import {
   BOOK_TAB_NAMES,
   PALETTE,
   RANK_NAMES,
+  SPLICE_BOOK_HINT,
   bookEntries,
   bookProgress,
   bookRewards,
@@ -192,6 +193,7 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
       rewards.appendChild(box);
     }
     head.replaceChildren(el('div', 'catalog-name', BOOK_TAB_NAMES[tab]), line, ribbon, rewards);
+    if (tab === 'splice' && prog.found === 0) head.appendChild(el('div', 'panel-info book-splice-hint', SPLICE_BOOK_HINT));
     grid.replaceChildren(...bookEntries(tab).map((e) => (e.kind === 'recipe' ? recipeCard(e, p) : card(e, p))));
     mark(tab);
   };

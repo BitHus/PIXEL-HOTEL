@@ -14,14 +14,17 @@ export interface GuideStepData {
   id: FirstTenStep;
   target: GuideTarget;
   text: string;
+  /** RUN 5: the one line of the folded first-steps card on a phone (same {Tap} words). */
+  short?: string;
 }
 
 export const GUIDE_STEPS: readonly GuideStepData[] = guideData.steps as GuideStepData[];
 export const FIRST_TEN_STEPS: readonly FirstTenStep[] = GUIDE_STEPS.map((s) => s.id);
 
-/** The goal line for a step; {Tap}/{tap}/{hold} read right for touch and for mouse. */
-export function guideText(step: FirstTenStep, touch: boolean): string {
-  const raw = GUIDE_STEPS.find((s) => s.id === step)?.text ?? '';
+/** The goal line for a step; {Tap}/{tap}/{hold} read right for touch and for mouse. `short` = the phone's folded one-liner (the full text when a step has none). */
+export function guideText(step: FirstTenStep, touch: boolean, short = false): string {
+  const data = GUIDE_STEPS.find((s) => s.id === step);
+  const raw = (short ? data?.short : undefined) ?? data?.text ?? '';
   return raw
     .replaceAll('{Tap}', touch ? 'Tap' : 'Click')
     .replaceAll('{tap}', touch ? 'tap' : 'click')
@@ -170,6 +173,14 @@ export function firstTenSkip(s: FirstTenState): FirstTenState {
 export function firstTenGoal(s: FirstTenState, waiting: readonly FirstTenStep[] = []): FirstTenStep | null {
   if (!s.active) return null;
   return FIRST_TEN_STEPS.find((k) => !s.done.includes(k) && !waiting.includes(k)) ?? null;
+}
+
+/**
+ * RUN 5: the number the card shows next to the goal text = that goal's place in the step list (1-based). Steps can be done out of order (a stove
+ * started before the register was opened), so `done.length + 1` drifted ahead of the text ("3/18" over the step 2 text).
+ */
+export function firstTenStepNumber(goal: FirstTenStep): number {
+  return FIRST_TEN_STEPS.indexOf(goal) + 1;
 }
 
 /** True when every step is done (the guide ended by itself). */

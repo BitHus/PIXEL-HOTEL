@@ -40,6 +40,38 @@ const MIGRATIONS: readonly string[] = [
      blob BLOB NOT NULL,
      PRIMARY KEY (account_id, revision)
    );`,
+  // 2: visits (PLAN-ONLINE P2). A room without a row in room_shares is PRIVATE. view = the gzip JSON room view built from the owner's save.
+  `CREATE TABLE room_shares (
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     room_id INTEGER NOT NULL,
+     visibility TEXT NOT NULL CHECK (visibility IN ('code', 'public')),
+     code TEXT NOT NULL UNIQUE,
+     title TEXT,
+     kind TEXT NOT NULL,
+     owner_name TEXT NOT NULL,
+     stars INTEGER NOT NULL,
+     view BLOB NOT NULL,
+     shared_at INTEGER NOT NULL,
+     updated_at INTEGER NOT NULL,
+     PRIMARY KEY (account_id, room_id)
+   );
+   CREATE INDEX room_shares_public ON room_shares(visibility, updated_at);
+   CREATE TABLE visit_blocks (
+     owner_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     blocked_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     created_at INTEGER NOT NULL,
+     PRIMARY KEY (owner_id, blocked_id)
+   );
+   CREATE TABLE reports (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     reporter_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+     target_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+     room_id INTEGER NOT NULL,
+     kind TEXT NOT NULL,
+     note TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     status TEXT NOT NULL
+   );`,
 ];
 
 export function openDb(path: string): Db {
