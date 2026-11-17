@@ -5,7 +5,7 @@
 // slot (config LOOK_COLORS). The styles only change the hair, top and bottoms boxes of the avatar.
 
 import clothingData from '../data/clothing.json';
-import { DEFAULT_INN_NAME, DISPLAY_NAME_MAX, LOOK_COLORS } from './config.ts';
+import { DEFAULT_INN_NAME, DISPLAY_NAME_MAX, LEGACY_INN_NAME, LOOK_COLORS } from './config.ts';
 import type { Icon } from './icons.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Rank } from './types.ts';
@@ -95,7 +95,18 @@ export function cleanDisplayName(name: string): string | null {
   return /^[\p{L}\p{N} ]+$/u.test(s) ? s : null;
 }
 
-/** The Inn name (MB-1): the same rules as a display name; nothing typed = the default; null when not allowed. */
+/** ONBOARD-1: the tavern name derived from the player's name ("Ada's Tavern"); the saved field is still player.innName. */
+export function defaultTavernName(playerName: string): string {
+  const n = playerName.trim();
+  return n === '' ? DEFAULT_INN_NAME : `${n}'s Tavern`;
+}
+
+/** What the screens show for a saved tavern name: the old default 'The Inn' reads as the new fallback. */
+export function tavernLabel(saved: string): string {
+  return saved === LEGACY_INN_NAME ? DEFAULT_INN_NAME : saved;
+}
+
+/** The tavern name (MB-1): the same rules as a display name; nothing typed = the default; null when not allowed. */
 export function cleanInnName(name: string | undefined): string | null {
   if (name === undefined || name.trim() === '') return DEFAULT_INN_NAME;
   return cleanDisplayName(name);

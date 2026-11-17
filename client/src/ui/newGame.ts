@@ -6,13 +6,11 @@
 // Resolves with the choice; the GameAPI checks it again (createPlayer).
 
 import {
-  DEFAULT_INN_NAME,
   DISPLAY_NAME_MAX,
   LOOK_COLORS,
   START_LOOK,
   borderRects,
   cleanDisplayName,
-  cleanInnName,
   createRoom,
   doorRect,
   floorRects,
@@ -131,12 +129,6 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: st
     name.placeholder = 'Your name';
     name.autocomplete = 'off';
     name.setAttribute('aria-label', 'Display name');
-    // MB-1: the Inn's name, the same character rules; left empty it becomes the default.
-    const inn = el('input', 'chat-input name-input inn-name-input');
-    inn.maxLength = DISPLAY_NAME_MAX;
-    inn.placeholder = DEFAULT_INN_NAME;
-    inn.autocomplete = 'off';
-    inn.setAttribute('aria-label', 'Inn name');
     const problem = el('div', 'panel-info newgame-problem');
     const done = textButton('Begin your story', () => {
       const clean = cleanDisplayName(name.value);
@@ -145,18 +137,11 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: st
         name.focus();
         return;
       }
-      const innClean = cleanInnName(inn.value);
-      if (!innClean) {
-        problem.textContent = `Pick an Inn name: up to ${DISPLAY_NAME_MAX} letters, digits and spaces.`;
-        inn.focus();
-        return;
-      }
       preview.stop();
       s.remove();
-      resolve({ name: clean, innName: innClean, look });
+      resolve({ name: clean, innName: '', look }); // ONBOARD-1: blank = the derived "<Name>'s Tavern" (configForChoice)
     }, 'newgame-next primary');
     name.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
-    inn.addEventListener('keydown', (e) => e.key === 'Enter' && done.click());
     const stage = el('div', 'charmaker-stage');
     // The stage: a candle-lit tavern corner (CSS, skin.css) with the avatar on a rug, turn arrows and a dice.
     const turnLeft = textButton('◀', () => preview.turn(-1), 'turn-btn small');
@@ -182,7 +167,7 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: st
       f.append(el('span', 'name-label', label), input);
       return f;
     };
-    names.append(field('You', name), field('Your inn', inn));
+    names.append(field('You', name));
     panel.append(names, problem, el('div', 'divider'), choices, done);
     side.append(pickers.tabs, panel);
     s.append(stage, side);

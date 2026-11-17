@@ -45,6 +45,8 @@ export * from './emotes.ts';
 export * from './firstTen.ts';
 export * from './hats.ts';
 export * from './text.ts';
+export * from './hints.ts';
+export * from './guideSpot.ts';
 export * from './levels.ts';
 export * from './gear.ts';
 export * from './crafting.ts';

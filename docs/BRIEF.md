@@ -246,7 +246,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - Character creation (step 7b): once, at the very start of a new game, a full-screen panel
   shows the avatar large in the middle, turning slowly (down, right, up, left), with pickers for
   skin tone, hair style and colour, top and colour, bottoms and colour, shoes colour, and a
-  display name (max 16 characters: letters, digits, spaces; no real names asked). The Avatar
+  display name (max 16 characters: letters, digits, spaces; no real names asked). ONBOARD-1: no tavern-name question; the tavern is named "<Name>'s Tavern"
+  (saved in player.innName, shown as is; old 'The Inn' shows as 'Your Tavern'); texts say tavern, never inn. The first-steps
+  guide is data (shared/data/guide.json, docs/GUIDE-UPDATE.md) with an animated pointer on the exact thing to tap, Settings > Replay. The Avatar
   panel uses the same pickers later, with the same free/unlocked rule.
 - The new-game intro (after character creation, once): pick the hotel shape, then the shop
   shape, from cards with a small top-down preview. Then the camera shows the empty shop at the

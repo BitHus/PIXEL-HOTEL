@@ -164,7 +164,7 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
     const next = textButton('▶', () => step(1), 'look-step small');
     next.setAttribute('aria-label', 'Next hat');
     const plate = el('span', 'look-value plate light');
-    plate.append(el('span', 'look-kind', `Hat ${hatAt}`), el('span', '', hat ? (owned ? hat.name : '???') : 'No hat'));
+    plate.append(el('span', 'look-kind', `Hat ${hatAt} of ${HATS.length}`), el('span', '', hat ? (owned ? hat.name : 'Locked hat') : 'No hat'));
     if (hat && owned) plate.style.color = PALETTE[RANK_COLORS[hat.rank]] ?? '';
     const stepper = el('div', 'look-stepper');
     stepper.append(prev, plate, next);
@@ -174,7 +174,9 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
       const h = i === 0 ? null : HATS[i - 1]!;
       const t = el('button', `look-tile hat-tile${i === hatAt ? ' selected' : ''}${h && !hatWearable(h.id, unlocked) ? ' locked' : ''}`);
       t.type = 'button';
-      t.setAttribute('aria-label', h ? h.name : 'No hat');
+      const tileOwned = h === null || hatWearable(h.id, unlocked);
+      t.setAttribute('aria-label', h ? (tileOwned ? h.name : `Locked hat. ${h.unlock ?? ''}`) : 'No hat');
+      t.title = h ? (tileOwned ? h.name : `Locked: ${h.unlock ?? ''}`) : 'No hat';
       if (h) t.appendChild(hatCanvas(h.id, !hatWearable(h.id, unlocked)));
       else t.appendChild(el('span', 'look-tile-none', '✕'));
       t.addEventListener('click', () => {
@@ -184,7 +186,7 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
       grid.appendChild(t);
     }
     out.append(grid, stepper);
-    if (hat && !owned) out.appendChild(el('div', 'hat-hint', hat.unlock ?? ''));
+    if (hat && !owned) out.appendChild(el('div', 'hat-hint hat-lock-hint', hat.unlock ? `How to get it: ${hat.unlock}` : 'Find it while you play.'));
     const wearing = (l.hat ?? '') === (hat?.id ?? '');
     if (owned) {
       const b = textButton(wearing ? 'Worn' : hat ? 'Wear' : 'Take off', () => set({ ...l, hat: hat?.id ?? '' }), 'look-wear');

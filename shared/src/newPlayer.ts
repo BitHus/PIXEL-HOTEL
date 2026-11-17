@@ -35,7 +35,7 @@ import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { canPlace, footprintRect, getFurnitureType, snapToSurface } from './furniture.ts';
 import { createRoom, defaultShape, getRoomShape, paintFloorCells, shapesFor, type Room } from './room.ts';
-import { cleanDisplayName, cleanInnName, lookAllowed } from './clothing.ts';
+import { cleanDisplayName, cleanInnName, defaultTavernName, lookAllowed } from './clothing.ts';
 import { emptyLakeside } from './woodcut.ts';
 import { emptyTavern } from './tavern.ts';
 import { getDrinkType, getFoodType } from './materials.ts';
@@ -77,7 +77,7 @@ export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
 /** What the player chooses when a new game starts (character creation and the room shapes). */
 export interface NewPlayerChoice {
   name: string;
-  /** The Inn's name (MB-1); empty or missing = the default "The Inn". */
+  /** The Inn's name (MB-1); optional since ONBOARD-1: empty or missing = "<Name>'s Tavern". */
   innName?: string;
   look: AvatarLook;
   hotelShape: string;
@@ -91,8 +91,11 @@ export interface NewPlayerChoice {
 export function configForChoice(choice: NewPlayerChoice): NewPlayerConfig | null {
   const name = cleanDisplayName(choice.name);
   if (!name || !lookAllowed(choice.look)) return null;
-  const innName = cleanInnName(choice.innName);
-  if (!innName) return null;
+  // ONBOARD-1: nobody is asked for a tavern name any more; blank or missing = "<Name>'s Tavern" (a given clean name still wins, e.g. a later rename).
+  const given = choice.innName !== undefined && choice.innName.trim() !== '';
+  const typed = given ? cleanInnName(choice.innName) : null;
+  if (given && !typed) return null;
+  const innName = typed ?? defaultTavernName(name);
   if (!shapesFor('hotel').some((s) => s.id === choice.hotelShape)) return null;
   if (!shapesFor('shop').some((s) => s.id === choice.shopShape && s.shopStart)) return null;
   return { ...DEFAULT_NEW_PLAYER, name, innName, look: { ...choice.look }, hotelShape: choice.hotelShape, shopShape: choice.shopShape };

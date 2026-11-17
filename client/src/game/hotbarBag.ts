@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId,
+  countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId, PLANT_ROOMS, SEED_HINT,
   type SeedId, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries, SELL_HINT_STACKS, SELL_HINT_TEXT,
 } from '@pixel-hotel/shared';
 import { createHotbar } from '../ui/hotbar.ts';
@@ -92,11 +92,12 @@ late.startPlacing = startPlacing;
           toast('Seeds put away.');
         } else if (n === 0) {
           toast(`No ${name} left. Buy seeds in the Catalog (Seeds), or find them in drops and harvests.`);
-        } else if (st.room.kind !== 'farm') {
-          toast(`${name}: plant it on your farm (Map). Seeds only grow on soil.`);
+        } else if (!(PLANT_ROOMS as readonly string[]).includes(st.room.kind)) {
+          toast(`${name}: plant it in your hotel, tavern or farm (Map).`);
         } else {
           selectBlock(typeId, index);
-          toast(`${name}: tap a soil cell to plant it. Punch a grown plant to harvest it.`);
+          // SG4b: the first time a seed is selected, a chip says where it goes (later: the short toast only).
+          if (!late.showHint(SEED_HINT.key, SEED_HINT.text)) toast(`${name}: tap soil or a block to plant it. Punch a grown plant to harvest it.`);
         }
         return;
       }

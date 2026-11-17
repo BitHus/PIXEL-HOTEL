@@ -27,6 +27,8 @@ export interface SettingsHooks {
   onReduceEffects(on: boolean): void;
   /** COD-1 (a): the camera follows the avatar in the tavern. */
   onFollowCamera(on: boolean): void;
+  /** ONBOARD-1: start the first-steps guide again. */
+  onReplayGuide(): void;
 }
 
 export interface SettingsPanel {
@@ -151,6 +153,8 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
     hooks.onFollowCamera(follow);
   });
   followBtn.classList.toggle('on', follow);
+  const guideBtn = textButton('Replay the first steps', () => hooks.onReplayGuide());
+  const guideNote = el('p', 'panel-note', 'Shows the step-by-step tavern guide again, with the pointers.');
   const followNote = el('p', 'panel-note', 'In the tavern the camera glides after you. A drag or pinch pauses it for a moment.');
 
   // The on/off buttons become peg-and-groove switches (skin.css .btn.switch).
@@ -166,6 +170,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'Pixel Hotel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, followBtn, followNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, followBtn, followNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

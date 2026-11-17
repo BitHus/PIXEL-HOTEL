@@ -77,6 +77,10 @@ late.avatarPanel = avatarPanel;
       popups.setEnabled(on);
       savePrefs(storage, prefs);
     },
+    onReplayGuide: () => {
+      late.replayGuide();
+      panels.close();
+    },
     onFollowCamera: (on) => {
       prefs.followCamera = on;
       savePrefs(storage, prefs);

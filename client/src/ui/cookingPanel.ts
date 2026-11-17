@@ -136,8 +136,11 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     const plus = textButton('+', () => { qty = Math.min(STOVE_BATCH_MAX, qty + 1); render(); }, 'cook-step');
     minus.disabled = qty <= 1;
     plus.disabled = qty >= STOVE_BATCH_MAX;
-    step.append(el('span', 'cook-qty-label', 'Dishes in this batch'), minus, el('span', 'cook-qty', bonus > 0 ? `${qty} + ${bonus}` : String(qty)), plus);
-    top.replaceChildren(step, el('div', 'panel-info', bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).'), el('div', 'panel-info', `A stove cooks one batch at a time, up to ${STOVE_BATCH_MAX} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`));
+    step.append(el('span', 'cook-qty-label', 'Dishes per batch'), minus, el('span', 'cook-qty', bonus > 0 ? `${qty} + ${bonus}` : String(qty)), plus);
+    // The long help is folded behind a small "?" so the recipes show first (TESTER RUN 2: 5 lines before the first recipe).
+    const help = el('details', 'help-fold');
+    help.append(el('summary', '', '?'), el('div', 'panel-info', bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).'), el('div', 'panel-info', `A stove cooks one batch at a time, up to ${STOVE_BATCH_MAX} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`));
+    top.replaceChildren(step, help);
     list.replaceChildren(...(player ? FOOD_TYPES.map((f) => row(f, player!)) : []));
   };
 

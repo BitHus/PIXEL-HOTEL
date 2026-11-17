@@ -85,6 +85,10 @@ export interface Late {
   /** Steps through an Inn door with the room fade (step MB-3). */
   useDoor: (doorId: string) => Promise<boolean>;
   openRoomKind: (kind: RoomKind) => Promise<void>;
+  /** ONBOARD-1: Settings > Replay the first steps (set by tavernLife). */
+  replayGuide: () => void;
+  /** VG-1: shows a one-time hint chip (once per key, per device); false when seen already (set by guideWorld). */
+  showHint: (key: string, text: string, at?: () => Point | null) => boolean;
 }
 
 /** What main.ts starts with. */

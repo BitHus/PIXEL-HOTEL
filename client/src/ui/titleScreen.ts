@@ -3,7 +3,7 @@
 // old save becomes the backup), Settings (sound and volume, device settings kept in prefs). It resolves with the choice;
 // core.ts does the rest (open the API, api.newGame() when a save was there). Markup only: no game rules here.
 
-import type { SavePeek } from '@pixel-hotel/shared';
+import { tavernLabel, type SavePeek } from '@pixel-hotel/shared';
 import { problemMessage } from '../api/localGameAPI.ts';
 import { loadPrefs, savePrefs } from '../api/prefs.ts';
 import type { SaveStorage } from '../api/saveStorage.ts';
@@ -17,8 +17,8 @@ export type TitleChoice = 'continue' | 'new';
 export function continueNote(peek: SavePeek): string {
   if (!peek.exists) return 'No saved game yet.';
   if (!peek.canContinue) return peek.problem ? problemMessage(peek.problem) : 'That save has no character yet.';
-  const who = peek.playerName ? peek.playerName : 'Your inn';
-  const inn = peek.innName ? `, ${peek.innName}` : '';
+  const who = peek.playerName ? peek.playerName : 'Your tavern';
+  const inn = peek.innName ? `, ${tavernLabel(peek.innName)}` : '';
   const lvl = peek.level ? `, level ${peek.level}` : '';
   return `${who}${inn}${lvl}`;
 }
@@ -35,7 +35,7 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
     logo.src = LOGO_URL;
     logo.alt = '';
     logo.draggable = false;
-    board.append(logo, el('h1', 'title-name', 'Pixel Hotel'), el('p', 'title-tag', 'An inn of your own'));
+    board.append(logo, el('h1', 'title-name', 'Pixel Hotel'), el('p', 'title-tag', 'A tavern of your own'));
     sign.append(board);
     const candleL = el('div', 'title-candle left');
     const candleR = el('div', 'title-candle right');

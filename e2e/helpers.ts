@@ -19,12 +19,11 @@ function test_project(page: Page): string {
   return v && v.width < 600 ? 'phone' : 'desktop';
 }
 
-/** Title, New game, name, Inn name, pick shapes, skip the intro. */
+/** Title, New game, name, pick shapes, skip the intro. */
 export async function newGame(page: Page): Promise<void> {
   await page.goto('/');
   await page.getByText('New game').first().click();
   await page.getByLabel('Display name').fill('Tester');
-  await page.getByLabel('Inn name').fill('Test Inn');
   await shot(page, '01-charmaker');
   await page.getByText('Begin your story').click();
   await shot(page, '02-hotelshape');

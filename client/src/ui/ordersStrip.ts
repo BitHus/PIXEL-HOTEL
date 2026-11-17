@@ -21,6 +21,9 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
   root.setAttribute('role', 'list');
   root.setAttribute('aria-label', 'Open orders');
   parent.appendChild(root);
+  // The top stack (UI-CAT): the strip is the top band; the first-steps card and the quest card start below it (skin.css reads --orders-h).
+  const setH = (): void => parent.style.setProperty('--orders-h', root.hidden ? '0px' : `${root.offsetHeight + 6}px`);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(setH).observe(root);
   const chipsEl = el('div', 'orders-chips');
   const trayEl = el('div', 'orders-tray');
   const trayIcons = el('span', 'orders-tray-icons');
@@ -38,6 +41,7 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
   return {
     sync(chips, tray) {
       root.hidden = chips.length === 0 && tray.length === 0;
+      setH();
       const ids = new Set(chips.map((c) => c.guestId));
       for (const [id, s] of shown) {
         if (ids.has(id)) continue;
@@ -93,6 +97,7 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
     },
     hide() {
       root.hidden = true;
+      setH();
     },
   };
 }

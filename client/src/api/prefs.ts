@@ -22,9 +22,11 @@ export interface Prefs {
   reduceEffects: boolean;
   /** COD-1 (a): the camera glides after the avatar in the tavern (default on). */
   followCamera: boolean;
+  /** VG-1: keys of the one-time hint chips already shown (shared/src/hints.ts). */
+  hintsSeen: string[];
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, followCamera: true };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, followCamera: true, hintsSeen: [] };
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -46,6 +48,7 @@ export function parsePrefs(text: string | null): Prefs {
     doorHintSeen: typeof o.doorHintSeen === 'boolean' ? o.doorHintSeen : DEFAULT_PREFS.doorHintSeen,
     reduceEffects: typeof o.reduceEffects === 'boolean' ? o.reduceEffects : DEFAULT_PREFS.reduceEffects,
     followCamera: typeof o.followCamera === 'boolean' ? o.followCamera : DEFAULT_PREFS.followCamera,
+    hintsSeen: Array.isArray(o.hintsSeen) ? o.hintsSeen.filter((k): k is string => typeof k === 'string').slice(0, 64) : [],
   };
 }
 

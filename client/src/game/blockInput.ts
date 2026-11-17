@@ -28,6 +28,8 @@ export async function setupBlockInput(g: G14) {
     no_soil: 'Seeds only grow on soil. Paint soil in the Room panel (Paint soil).',
     nothing_happens: 'Nothing happens. Both seeds are safe in your bag.',
     already_spliced: 'This cell already holds two seeds.',
+    needs_soil: 'This seed needs soil or a block that holds soil (dirt, rich soil).',
+    too_many_plants: 'This room cannot hold more plants.',
     stack_full: 'The stack is as high as it goes.',
     stacked: 'A plant needs a single block, not a stack.',
     taken: '',
@@ -35,8 +37,14 @@ export async function setupBlockInput(g: G14) {
   /** Why the selected block or seed does not fit in this cell (null = it fits); `standing` = avatars standing still. */
   const selectedProblem = (c: number, r: number, standing: Point[]) =>
     st.selectedBlock !== null && isSeedId(st.selectedBlock)
-      ? plantProblem(st.room, st.items, c, r, { standing, from: null })
+      ? plantProblem(st.room, st.items, c, r, { standing, from: null }, undefined, st.selectedBlock)
       : blockProblem(st.room, st.items, getBlockType(st.selectedBlock!), c, r, { standing, from: null });
+  /** A seed is selected and the cell is a block with no plant: a tap plants on its top (or says why not) and a press never punches it (SG4b). */
+  const seedOnBlock = (c: number, r: number): boolean => {
+    if (st.selectedBlock === null || !isSeedId(st.selectedBlock) || !blockInCell(st.room, c, r) || plantInCell(st.room, c, r)) return false;
+    const problem = selectedProblem(c, r, []);
+    return problem === null || problem === 'needs_soil' || problem === 'too_many_plants';
+  };
   /**
    * Sends a place or punch to the GameAPI and draws what came back. `line` = a place hold along cells: out of
    * reach or refused cells are skipped quietly (no walking, no toasts). Returns what a hold should do next.
@@ -115,6 +123,13 @@ export async function setupBlockInput(g: G14) {
   const blockTap = (p: Point): boolean => {
     if (st.room.kind === 'lakeside') return false;
     const { c, r } = cellOf(p);
+    if (seedOnBlock(c, r)) {
+      const standing = st.path.length === 0 && st.avatar.state !== 'walk' ? [{ x: st.avatar.x, y: st.avatar.y }] : [];
+      const why = selectedProblem(c, r, standing);
+      if (why === null) void doBlock('place', c, r, st.selectedBlock);
+      else toast(BLOCK_REFUSALS[why] ?? '');
+      return true;
+    }
     if (blockInCell(st.room, c, r) || plantInCell(st.room, c, r)) {
       void doBlock('hit', c, r, null);
       return true;
@@ -196,7 +211,7 @@ export async function setupBlockInput(g: G14) {
     if (holdBusyElsewhere()) return null;
     const world = screenToWorld(screen, st.shown);
     const { c, r } = cellOf(world);
-    if (st.room.kind !== 'lakeside' && blockInCell(st.room, c, r)) return { kind: 'block', c, r };
+    if (st.room.kind !== 'lakeside' && blockInCell(st.room, c, r) && !seedOnBlock(c, r)) return { kind: 'block', c, r };
     if (st.room.kind === 'farm' && plantInCell(st.room, c, r)) return { kind: 'plant', c, r };
     const tree = lakeside.treeUnder(world);
     return tree === null ? null : { kind: 'tree', index: tree };

@@ -24,7 +24,10 @@ export interface ToastAction {
   run: () => void;
 }
 
-export type Toast = (text: string, action?: ToastAction) => void;
+export type Toast = ((text: string, action?: ToastAction) => void) & {
+  /** Hides the toast at once (call on a room change so a stale tutorial line does not stay). */
+  clear?: () => void;
+};
 
 export function createToast(parent: HTMLElement): Toast {
   const box = el('div', 'frame toast');
@@ -47,7 +50,7 @@ export function createToast(parent: HTMLElement): Toast {
     window.clearTimeout(hideTimer);
     box.hidden = true;
   });
-  return (text, action) => {
+  const show: Toast = (text, action) => {
     const kind = toastKind(text);
     box.className = `frame toast toast-${kind.tone}`;
     const icon = kind.icon === 'gem' ? gemImg() : pixelIcon(kind.icon);
@@ -70,4 +73,10 @@ export function createToast(parent: HTMLElement): Toast {
     window.clearTimeout(hideTimer);
     showTimer = window.setTimeout(hide, readingMs(text));
   };
+  show.clear = () => {
+    window.clearTimeout(showTimer);
+    window.clearTimeout(hideTimer);
+    box.hidden = true;
+  };
+  return show;
 }

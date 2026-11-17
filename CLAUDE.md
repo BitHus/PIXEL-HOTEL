@@ -98,7 +98,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Proportions (option B of docs/art-sheets/avatar-proportions.png, chosen 16 Nov by the manager; the owner can veto at the style lock after A24): cosy three-head figure on a 32x64 canvas, feet at the bottom centre: about 54 px tall (head 17 px, shoulders 14 px wide) with the hat zone above it (nothing above 64). Down, up, right drawn, left mirrored. Stand = one walk frame; walk = 4 frames chosen by distance walked; sit = 1 frame per facing; eating, wave and cheer add 2 frames each later; face moods are single frames.
 - Look: medieval (docs/ART-STYLE.md MEDIEVAL DIRECTION): tunics, jerkins, aprons, hoods, cloaks, tabards, boots, belts. Endesga 32 only; a 1 px dark warm outline is added by code around the composed figure; light top-left. The box avatar (client/src/render/avatarParts.ts) is the FALLBACK until every layer exists and is retired when the owner signs the new avatar off.
 - Clothing is data (shared/data/clothing.json; free items, others hidden until unlocked); an id never changes, only its display name and sprite. AvatarLook stays compatible (a later optional `outer`). NPCs (guests, staff, roles) use the same body and layers; roles are data (shared/data/npcRoles.json).
-- Character creation once at a new game (look pickers, display name max 16: letters, digits, spaces), then the hotel shape and the shop shape, then the new-game intro in the shop (a tap skips it). The Avatar panel uses the same pickers.
+- Character creation once at a new game (look pickers, display name max 16: letters, digits, spaces; ONBOARD-1: NO tavern-name question, the saved player.innName is derived as "<Name>'s Tavern", shown as such; player-facing text says "tavern", never "inn"), then the hotel shape and the shop shape, then the new-game intro in the shop (a tap skips it). The Avatar panel uses the same pickers.
 
 9. ECONOMY (all numbers in shared/config.ts)
 - One currency: gold (integer). Everything has a baseValue. New player (createNewPlayer): level
@@ -261,14 +261,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   (https://bithus.github.io/PIXEL-HOTEL/). Commit and push at the end of every step.
 
 CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the live task list is docs/TEAM.md START HERE + docs/QUEUE.md)
-- Done (16 Nov 2026): the game loops (hotel, tavern with taps/register/kitchen/casks, dungeon, farm, mine, lakeside), blocks and seeds, gems and packs, the One Inn doors (suite, tavern, garden),
-  hats and emotes, usable furniture and the cat rules (cat not drawn yet), room stars, first-ten-minutes guide, hands-on tap pouring (hold, perfect-window tip, tap the guest), hold/drag walking in
+- Done (17 Nov 2026): the game loops (hotel, tavern with taps/register/kitchen/casks, dungeon, farm, mine, lakeside), blocks and seeds, gems and packs, the One Inn doors (suite, tavern, garden),
+  hats and emotes, usable furniture and the cat rules (cat not drawn yet), room stars, first-steps guide v2 (data shared/data/guide.json, animated pointer, ready dots, one-time hint chip, replay in Settings), stacked blocks (max 3), planting on a block with a tap (SG4b), hands-on tap pouring (hold, perfect-window tip, tap the guest), hold/drag walking in
   the dungeon, 70+ furniture (5 medieval pieces added), the outdoors rework (crypt and lakeside art, fx module, light layer, lakeside life), the UI skin (client/src/ui/skin.css), 63+ redrawn icons.
 - Art direction (owner): cozy MEDIEVAL pixel look like Travellers Rest, original only: docs/ART-STYLE.md, PIXEL-ART-GUIDE.md, ART-REDO.md, PLAN-CHARACTERS.md (cosy three-head avatar, layers in
   client/src/assets/sprites/avatar, rig data shared/data/avatarRig.json and ramps.json), PLAN-UI.md, PLAN-REWORK-OUTDOORS.md; research: RESEARCH-GAMES.md and RESEARCH-DEEP.md.
-- In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, smoothness pass
-  (docs/FIXLIST.md). Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
-- Not done: step 10 (server, a placeholder), the playtest (nobody has run the game in a browser yet: do that first when a browser tool exists).
+- In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, tester run 2 fixes
+  (docs/FIXLIST.md), SG3d/SG5/SG6, ST2 stack look. Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
+- Not done: step 10 (server, a placeholder), cat art, renown/regulars (tavern deep). The game has been run in a browser (Playwright e2e and tester runs); the avatar style lock is still the owner's.
 - DUNGEON_ROUND is 1. SAVE_VERSION is 32 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)

@@ -1,0 +1,19 @@
+{
+  "_help": "The first-steps guide (ONBOARD-1). One entry per step, in the order they are offered; the player may do them in any order. id = the step and the event that ticks it off (client calls guide.event(id)). target = what the animated pointer sits on: furniture (typeId, first one in the tavern), guest (a waiting guest), stand (the tap stand when the avatar waits to pour, else a waiting guest), coins (coins on a table), ui (a button by its aria-label start), floor (a spot of floor beside the avatar), none. text uses {Tap} (Tap or Click), {tap}, {hold} (Hold your finger on / Hold the mouse button on) so one line serves touch and mouse. Update this file and docs/GUIDE-UPDATE.md when a first-ten-minutes flow changes.",
+  "steps": [
+    { "id": "walk", "target": { "kind": "floor" }, "text": "{Tap} the floor to walk there. Keep {hold} the floor and your avatar follows." },
+    { "id": "menu", "target": { "kind": "furniture", "typeId": "register" }, "text": "{Tap} the register on the bar to open the menu: serve, set prices, sell." },
+    { "id": "pour", "target": { "kind": "stand" }, "text": "A guest wants a drink. {Tap} the guest, then {hold} the tap stand until the mug is full." },
+    { "id": "serve", "target": { "kind": "guest" }, "text": "{Tap} the guest who waits to bring them the mug." },
+    { "id": "coins", "target": { "kind": "coins" }, "text": "{Tap} the coins on the table to collect your gold." },
+    { "id": "barrel", "target": { "kind": "furniture", "typeId": "brewing_barrel" }, "text": "{Tap} the brewing barrel and start a brew for more drinks." },
+    { "id": "collect", "target": { "kind": "furniture", "typeId": "brewing_barrel" }, "text": "The brew is ready: {tap} the barrel to collect the mugs." },
+    { "id": "load", "target": { "kind": "furniture", "typeId": "tap_stand" }, "text": "{Tap} a tap stand and load the mugs on it." },
+    { "id": "stove", "target": { "kind": "furniture", "typeId": "stove" }, "text": "{Tap} the stove and cook a dish for the menu." },
+    { "id": "farm", "target": { "kind": "ui", "label": "Worlds" }, "text": "{Tap} Worlds and visit the farm: crops grow there while you play." },
+    { "id": "build", "target": { "kind": "ui", "label": "Build" }, "text": "{Tap} Build to move furniture and place new pieces." },
+    { "id": "dungeon", "target": { "kind": "ui", "label": "Dungeon" }, "text": "{Tap} Dungeon to fight for loot. One hit per {tap}, so go fast!" }
+  ],
+  "done": "Nice, that is one more done.",
+  "allDone": "You know the tavern now. Have fun, tavern keeper!"
+}

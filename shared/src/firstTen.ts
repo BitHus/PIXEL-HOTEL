@@ -1,23 +1,99 @@
+// ONBOARD-1: the steps, their texts and pointer targets are DATA (shared/data/guide.json). Update that file, then docs/GUIDE-UPDATE.md, when a first-ten-minutes flow changes.
+import guideData from '../data/guide.json';
+
+export type FirstTenStep = 'walk' | 'menu' | 'pour' | 'serve' | 'coins' | 'barrel' | 'collect' | 'load' | 'stove' | 'farm' | 'build' | 'dungeon';
+
+/** What the animated pointer sits on (see guide.json _help). */
+export type GuideTarget =
+  | { kind: 'floor' | 'guest' | 'stand' | 'coins' | 'none' }
+  | { kind: 'furniture'; typeId: string }
+  | { kind: 'ui'; label: string };
+
+export interface GuideStepData {
+  id: FirstTenStep;
+  target: GuideTarget;
+  text: string;
+}
+
+export const GUIDE_STEPS: readonly GuideStepData[] = guideData.steps as GuideStepData[];
+export const FIRST_TEN_STEPS: readonly FirstTenStep[] = GUIDE_STEPS.map((s) => s.id);
+
+/** The goal line for a step; {Tap}/{tap}/{hold} read right for touch and for mouse. */
+export function guideText(step: FirstTenStep, touch: boolean): string {
+  const raw = GUIDE_STEPS.find((s) => s.id === step)?.text ?? '';
+  return raw
+    .replaceAll('{Tap}', touch ? 'Tap' : 'Click')
+    .replaceAll('{tap}', touch ? 'tap' : 'click')
+    .replaceAll('{hold}', touch ? 'hold your finger on' : 'hold the mouse button on');
+}
+
+export function guideTargetOf(step: FirstTenStep): GuideTarget {
+  return GUIDE_STEPS.find((s) => s.id === step)?.target ?? { kind: 'none' };
+}
+
+/** Done line shown when a step ticks off. */
+export const FIRST_TEN_DONE_TEXT: string = guideData.done;
+export const FIRST_TEN_ALL_DONE_TEXT: string = guideData.allDone;
+
+/** What the world looks like now (the client fills it; this file never reads the game). */
+export interface GuideContext {
+  /** A brew is ready to collect. */
+  brewReady: boolean;
+  /** A seated guest has an open order. */
+  guestWaiting: boolean;
+  /** The avatar waits at the taps to pour. */
+  pouring: boolean;
+  /** The tray holds a mug a waiting guest wants. */
+  trayServes: boolean;
+  /** Coins lie on a table. */
+  coinsOnTable: boolean;
+}
+
+/** What the world shows about the steps that have no event of their own (the client fills it; polled). */
+export interface GuideWorld {
+  /** The avatar has walked. */
+  walked: boolean;
+  /** A stove holds a batch. */
+  cooking: boolean;
+  /** The player stands in the farm. */
+  inFarm: boolean;
+  /** Build mode is on. */
+  buildOn: boolean;
+  /** A dungeon run is on. */
+  inDungeon: boolean;
+}
+
+/** Steps the world state proves are done (walk, stove, farm, build, dungeon); the client sends each as an event. */
+export function guideAutoEvents(w: GuideWorld): FirstTenStep[] {
+  const out: FirstTenStep[] = [];
+  if (w.walked) out.push('walk');
+  if (w.cooking) out.push('stove');
+  if (w.inFarm) out.push('farm');
+  if (w.buildOn) out.push('build');
+  if (w.inDungeon) out.push('dungeon');
+  return out;
+}
+
+/** Steps that cannot be done yet (they are skipped as the goal until they can be). */
+export function guideWaiting(s: FirstTenState, c: GuideContext): FirstTenStep[] {
+  const w: FirstTenStep[] = [];
+  if (!c.guestWaiting && !c.pouring) w.push('pour');
+  if (!c.guestWaiting && !c.trayServes) w.push('serve');
+  if (!c.coinsOnTable) w.push('coins');
+  if (!(s.done.includes('collect') || c.brewReady)) w.push('collect', 'load');
+  return w;
+}
+
+/** Where the pointer goes for the goal step: the stand while the avatar waits to pour (else the guest to tap first); serve = the guest the tray can serve. */
+export function guidePointerKind(step: FirstTenStep, c: GuideContext): GuideTarget {
+  const t = guideTargetOf(step);
+  if (t.kind === 'stand') return c.pouring ? t : { kind: 'guest' };
+  return t;
+}
+
 // The first ten minutes (FP-1): a short, skippable, guided opening in a new game. Pure: the client keeps the state (device storage, no save bump) and
 // feeds events; this file knows the steps, their texts and which one to show. It never blocks play: a step can be done in any order, and a step that has
 // to wait (a brew that is not ready) is skipped for the goal until it can be done.
-
-export const FIRST_TEN_STEPS = ['barrel', 'collect', 'load', 'menu', 'serve', 'coins'] as const;
-export type FirstTenStep = (typeof FIRST_TEN_STEPS)[number];
-
-/** The one on-screen goal for each step. */
-export const FIRST_TEN_TEXT: Record<FirstTenStep, string> = {
-  barrel: 'Tap the brewing barrel and start a brew.',
-  collect: 'Collect the mugs when the brew is ready.',
-  load: 'Open a tap stand and load the mugs on it.',
-  menu: 'Tap the register to open the menu.',
-  serve: 'Tap a guest who waits to serve the first order.',
-  coins: 'Tap the coins on the table.',
-};
-
-/** Done line shown when a step ticks off. */
-export const FIRST_TEN_DONE_TEXT = 'Nice, that is one more done.';
-export const FIRST_TEN_ALL_DONE_TEXT = 'You know the tavern now. Have fun, innkeeper!';
 
 /** One-time tooltips on the first touch of a machine, never again. */
 export const MACHINE_TIPS = ['barrel', 'stove', 'tap'] as const;
@@ -62,6 +138,11 @@ export function firstTenEvent(s: FirstTenState, step: FirstTenStep): FirstTenSta
   if (!s.active || s.done.includes(step)) return s;
   const done = FIRST_TEN_STEPS.filter((k) => k === step || s.done.includes(k));
   return { ...s, done, active: done.length < FIRST_TEN_STEPS.length };
+}
+
+/** Replay (Settings): the guide starts again from step 1; the machine tips stay seen. */
+export function firstTenReplay(s: FirstTenState): FirstTenState {
+  return { active: true, skipped: false, done: [], tips: s.tips };
 }
 
 /** Skip: the guide goes away for good. */

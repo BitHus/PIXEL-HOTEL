@@ -3,7 +3,7 @@
 // (step 9c) the name is "Mine" and the lantern bar shows how long the lantern still burns. (The Hotel /
 // Shop switcher that sat under it is gone since step 9b: the Map button's travel panel replaced it.)
 
-import type { RoomKind } from '@pixel-hotel/shared';
+import { tavernLabel, type RoomKind } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { pixelIcon } from './pixelIcons.ts';
 import { countTween } from './countUp.ts';
@@ -71,7 +71,7 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
   lantern.root.hidden = true;
   lantern.root.title = 'Lantern: when it goes out, you walk out with everything';
   const inn = el('div', 'info-inn');
-  inn.title = 'Your Inn';
+  inn.title = 'Your tavern';
   info.append(inn, gold, line, lantern.root, hp.root);
   box.append(info);
   parent.appendChild(box);
@@ -91,7 +91,7 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
       gemCount.set(n);
     },
     setInnName(n) {
-      inn.textContent = n;
+      inn.textContent = tavernLabel(n);
       inn.hidden = n === '';
     },
     setRoom(kind) {

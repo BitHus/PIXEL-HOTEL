@@ -3,8 +3,8 @@
 // has its own class .first-ten for the artist to style; until then it is placed with inline style.
 
 import {
-  FIRST_TEN_ALL_DONE_TEXT, FIRST_TEN_DONE_TEXT, FIRST_TEN_KEY, FIRST_TEN_NEW, FIRST_TEN_STEPS, FIRST_TEN_TEXT, MACHINE_TIP_TEXT, firstTenEvent,
-  firstTenFinished, firstTenGoal, firstTenSkip, firstTenToastDue, machineTipOnce, parseFirstTen, type FirstTenState, type FirstTenStep, type MachineTip,
+  FIRST_TEN_ALL_DONE_TEXT, FIRST_TEN_DONE_TEXT, FIRST_TEN_KEY, FIRST_TEN_NEW, FIRST_TEN_STEPS, MACHINE_TIP_TEXT, firstTenEvent,
+  firstTenFinished, firstTenGoal, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, parseFirstTen, type FirstTenState, type FirstTenStep, type MachineTip,
 } from '@pixel-hotel/shared';
 import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
@@ -19,8 +19,15 @@ export interface FirstTenGuide {
   tip(tip: MachineTip): void;
   /** Redraws; `waiting` = steps that cannot be done yet (they are skipped as the goal); `visible` = false hides the card (other rooms). */
   refresh(waiting: readonly FirstTenStep[], visible: boolean): void;
+  /** Settings: start the guide again from step 1. */
+  replay(): void;
+  /** The step the card shows now (null = none), for the pointer. */
+  goal(): FirstTenStep | null;
   readonly state: FirstTenState;
 }
+
+/** True on a touch screen: the texts say Tap/hold your finger, else Click/hold the mouse button. */
+const isTouch = (): boolean => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
 export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, toast: Toast): FirstTenGuide {
   let state = parseFirstTen(storage.get(FIRST_TEN_KEY));
@@ -50,12 +57,15 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   function draw(): void {
     const goal = firstTenGoal(state, waiting);
     card.hidden = !visible || goal === null;
+    // Stack order: the orders strip is above the card; when it shows, the card sits right under it.
+    const strip = document.querySelector<HTMLElement>('.orders-strip:not([hidden])');
+    card.style.top = strip ? `${strip.offsetTop + strip.offsetHeight + 6}px` : '';
     if (goal === null) {
       announce();
       return;
     }
     count.textContent = `${state.done.length + 1}/${FIRST_TEN_STEPS.length}`;
-    text.textContent = FIRST_TEN_TEXT[goal];
+    text.textContent = guideText(goal, isTouch());
     pips.querySelectorAll('i').forEach((p, i) => p.classList.toggle('done', i < state.done.length));
     card.setAttribute('aria-label', `First steps, ${count.textContent}`);
     announce();
@@ -72,6 +82,14 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
       state = { ...FIRST_TEN_NEW };
       save();
       draw();
+    },
+    replay() {
+      state = firstTenReplay(state);
+      save();
+      draw();
+    },
+    goal() {
+      return visible ? firstTenGoal(state, waiting) : null;
     },
     event(step) {
       const next = firstTenEvent(state, step);

@@ -94,9 +94,9 @@ describe('a new player from character creation (step 7b)', () => {
     expect(s.playerCreated).toBe(false); // the API sets it once the player is made
   });
 
-  it('names the Inn (MB-1): the default, a chosen clean name, and the same rules as the display name', () => {
-    expect(createNewPlayer(configForChoice(choice)!, 1).player.innName).toBe('The Inn');
-    expect(createNewPlayer(configForChoice({ ...choice, innName: '   ' })!, 1).player.innName).toBe('The Inn');
+  it('names the tavern (ONBOARD-1): derived from the player name; a given clean name still wins, same rules as the display name', () => {
+    expect(createNewPlayer(configForChoice(choice)!, 1).player.innName).toBe("Ada Lovely 7's Tavern");
+    expect(createNewPlayer(configForChoice({ ...choice, innName: '   ' })!, 1).player.innName).toBe("Ada Lovely 7's Tavern");
     expect(createNewPlayer(configForChoice({ ...choice, innName: '  The  Gilded Mug 2 ' })!, 1).player.innName).toBe('The Gilded Mug 2');
     expect(configForChoice({ ...choice, innName: 'a'.repeat(17) })).toBeNull();
     expect(configForChoice({ ...choice, innName: 'Inn<b>' })).toBeNull();

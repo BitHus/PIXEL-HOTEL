@@ -2,8 +2,9 @@
 /** The local player's id and name (one player per browser until accounts exist). */
 export const LOCAL_PLAYER_ID = 1;
 export const LOCAL_PLAYER_NAME = 'You';
-/** The Inn's default name (MB-1); the player can pick another at the start (same rules as the display name). */
-export const DEFAULT_INN_NAME = 'The Inn';
+/** The tavern's fallback name (ONBOARD-1: the player is no longer asked; a new game derives "<Name>'s Tavern", see defaultTavernName). Saves that hold the old default 'The Inn' show as this. */
+export const DEFAULT_INN_NAME = 'Your Tavern';
+export const LEGACY_INN_NAME = 'The Inn';
 /** Room ids of a new local player's two rooms. */
 export const START_HOTEL_ROOM_ID = 1;
 export const START_SHOP_ROOM_ID = 2;

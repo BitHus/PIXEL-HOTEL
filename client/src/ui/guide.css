@@ -1,0 +1,102 @@
+/* ONBOARD-1: the animated guide pointer (guidePointer.ts). A soft ring that pulses under a small hand that bobs. Never takes the pointer.
+   Reduce effects (class .calm on the pointer): no animation, a still ring and arrow. */
+.guide-pointer {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 180ms linear;
+}
+.guide-pointer.on { opacity: 1; }
+.guide-ring {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  border: 3px solid var(--candle, #fee761);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--outline, #3e2731), inset 0 0 0 1px var(--outline, #3e2731);
+  animation: guide-pulse 1400ms ease-in-out infinite;
+}
+.guide-hand {
+  position: absolute;
+  left: -9px;
+  top: -52px;
+  width: 18px;
+  height: 22px;
+  animation: guide-bob 900ms ease-in-out infinite;
+}
+/* The arrow points down at the thing (pure CSS, two layers for the dark outline). */
+.guide-hand::before,
+.guide-hand::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+}
+.guide-hand::before { top: 0; border-top: 18px solid var(--outline, #3e2731); }
+.guide-hand::after { top: 2px; left: 2px; border-left-width: 7px; border-right-width: 7px; border-top: 13px solid var(--candle, #fee761); }
+.guide-pointer.calm .guide-ring,
+.guide-pointer.calm .guide-hand { animation: none; }
+@keyframes guide-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.95; }
+  50% { transform: scale(1.12); opacity: 0.55; }
+}
+@keyframes guide-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-ring, .guide-hand { animation: none; }
+}
+
+/* VG-1: the ready dot over a stove or barrel whose batch can be collected. */
+.ready-dot {
+  position: absolute;
+  z-index: 4;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  background: var(--candle, #fee761);
+  border: 2px solid var(--outline, #3e2731);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: guide-pulse 1100ms ease-in-out infinite;
+}
+.ready-dot.calm { animation: none; }
+
+/* VG-1: the one-time hint chip (game/hintChip.ts). A small label that bobs over the thing to use; calm under Reduce effects. Never takes the pointer. */
+.hint-chip {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms linear;
+  white-space: nowrap;
+  padding: 3px 8px;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--outline, #3e2731);
+  background: var(--candle, #fee761);
+  border: 2px solid var(--outline, #3e2731);
+  border-radius: 4px;
+  margin: -26px 0 0 0;
+  translate: -50% 0;
+}
+.hint-chip.on { opacity: 1; animation: hint-bob 900ms ease-in-out infinite; }
+.hint-chip.calm { animation: none; }
+@keyframes hint-bob { 0%, 100% { margin-top: -26px; } 50% { margin-top: -31px; } }

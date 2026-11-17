@@ -94,6 +94,15 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   searchRow.append(search, purse);
   const empty = el('div', 'catalog-empty');
   empty.hidden = true;
+  const emptyText = el('div', 'catalog-empty-text');
+  const clear = el('button', 'btn small', 'Clear search');
+  clear.type = 'button';
+  clear.addEventListener('click', () => {
+    search.value = '';
+    applySort();
+  });
+  empty.append(el('div', 'catalog-empty-icon'), emptyText, clear);
+  const count = el('span', 'catalog-count');
   const note = el('div', 'panel-info');
   const list = el('div', 'card-grid');
   shell.body.append(searchRow, sortBar, note, list, empty);
@@ -114,6 +123,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     });
     sortBar.appendChild(b);
   }
+  sortBar.appendChild(count);
   /** Cards of the tab in the order they were made, with what sorting needs. */
   let made: { node: HTMLElement; price: number; owned: boolean; name: string }[] = [];
 
@@ -218,8 +228,10 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
       m.node.hidden = !hit;
       if (hit) shown += 1;
     }
-    empty.textContent = q === '' ? 'Nothing for sale here yet.' : 'Nothing matches. Try another word or tab.';
+    emptyText.textContent = q === '' ? 'Nothing for sale here yet. More things come as you play.' : `Nothing matches "${search.value.trim()}".`;
+    clear.hidden = q === '';
     empty.hidden = tab === 'packs' || shown > 0;
+    count.textContent = made.length === 0 ? '' : q === '' ? `${made.length} things` : `${shown} of ${made.length}`;
     if (sort === 'shelf' || made.length === 0) return;
     const short = (price: number): number => Number(gold < price);
     const rows = [...made].sort((a, b) => Number(a.owned) - Number(b.owned) || (sort === 'cheap' ? a.price - b.price : short(a.price) - short(b.price) || b.price - a.price));

@@ -17,7 +17,8 @@ import { PourFx } from '../render/pourFx.ts';
 import { TavernFx } from '../render/tavernFx.ts';
 import { surfaceHeight } from '../render/furnitureArt.ts';
 import { createFirstTenGuide } from '../ui/firstTenGuide.ts';
-import { brewReady as brewIsReady, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
+import { startGuideWorld, type GuideWorldApi } from './guideWorld.ts';
+import { brewReady as brewIsReady, guideWaiting, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { sellDetail, sellRowIcon } from '../ui/sellTab.ts';
@@ -41,6 +42,8 @@ export async function setupTavernLife(g: G9) {
   // FP-1: the first ten minutes (a skippable guide in a new game) and JU-1 juice; AU-1 sounds are played from the events below.
   const guide = createFirstTenGuide(uiRoot, storage, toast);
   if (st.introPending) guide.begin();
+  late.replayGuide = () => guide.replay();
+  let guideWorld: GuideWorldApi | null = null;
   const fx = new TavernFx(view, () => prefs.reduceEffects);
   let readyNow = new Set<string>();
   /** Steam from ready machines, a "ding" when one becomes ready, the guide's waiting steps and the ambient bed. */
@@ -60,7 +63,8 @@ export async function setupTavernLife(g: G9) {
     }
     readyNow = ready;
     fx.setSteam(steam);
-    const waiting: FirstTenStep[] = guide.state.done.includes('collect') || [...ready].some((k) => k[0] === 'b') ? [] : ['collect', 'load'];
+    const brewReady = [...ready].some((k) => k[0] === 'b');
+    const waiting: FirstTenStep[] = guideWorld ? guideWaiting(guide.state, guideWorld.context(brewReady)) : [];
     guide.refresh(waiting, on);
     sound.setAmbience(on ? 'tavern' : null, Math.min(1, st.seatedGuests / 6));
   };
@@ -142,7 +146,7 @@ export async function setupTavernLife(g: G9) {
         if (!ok) {
           endWait(true);
           toast('Nothing to pour.');
-        }
+        } else guide.event('pour');
       });
     },
   });
@@ -152,6 +156,7 @@ export async function setupTavernLife(g: G9) {
   const walkers = (list: readonly Guest[]): Walker[] =>
     list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing, eating: g.phase === 'eat' }));
   const inTavern = (): boolean => st.room.id === st.tavern.roomId;
+  guideWorld = startGuideWorld(g, { guide, pouring: () => pourFor !== null, inTavern, ready: () => readyNow });
   const orders = createOrderBubbles(ui, (id) => void serveTap(id));
   // COD-1 (d): the orders strip at the top: one chip per open order (data from the pure shared/src/tray.ts ordersStrip).
   const strip = createOrdersStrip(uiRoot, {

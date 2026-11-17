@@ -762,7 +762,7 @@ describe('migrates a version 24 save (MB-1, the Inn name)', () => {
     const r = readSave(JSON.stringify({ version: 24, savedAt: 9, state: old }));
     expect(r).toMatchObject({ ok: true, migrated: true, version: 24 });
     if (!r.ok) return;
-    expect(r.state.player.innName).toBe('The Inn');
+    expect(r.state.player.innName).toBe('Your Tavern');
     expect({ ...r.state.player, innName: undefined }).toEqual({ ...base.player, innName: undefined });
     expect(r.state.items).toEqual(base.items);
     expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
@@ -828,7 +828,7 @@ describe('migrates a version 25 save (K2, casks) and the whole chain 24 -> 27 (G
     const r = readSave(JSON.stringify({ version: 24, savedAt: 9, state: { ...base, player, tavern } }));
     expect(r).toMatchObject({ ok: true, migrated: true, version: 24 });
     if (!r.ok) return;
-    expect(r.state.player.innName).toBe('The Inn');
+    expect(r.state.player.innName).toBe('Your Tavern');
     expect(r.state.tavern.casks).toEqual([]);
     expect(readSave(toSaveText(r.state, 9))).toMatchObject({ ok: true, migrated: false });
   });
