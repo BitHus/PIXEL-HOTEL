@@ -76,6 +76,8 @@ export interface DungeonMap {
   extras?: BlockRect[];
   /** Props and landmarks (decor kinds are strings; the client draws them). */
   decor?: DecorProp[];
+  /** OA-9: the blocks that hold a chest (a wall torch never burns above one). Set by generateFloor; old runs have none. */
+  chestBlocks?: { c: number; r: number }[];
   /** Template and theme of every main room, same order as rooms. */
   roomInfo?: RoomInfo[];
 }

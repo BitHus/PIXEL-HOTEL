@@ -44,7 +44,7 @@ describe('crypt layout (DG1, section 10 LAYOUT)', () => {
     }
     let h = 0x811c9dc5;
     for (let i = 0; i < all.length; i++) h = Math.imul(h ^ all.charCodeAt(i), 0x01000193) >>> 0;
-    expect(h.toString(16)).toBe('c31e44ec');
+    expect(h.toString(16)).toBe('abf4146e');
   });
 
   it('is 40 x 40, rooms disjoint, 3 to 4 rooms in round 1 and 5 to 8 in round 2, outer ring wall', () => {

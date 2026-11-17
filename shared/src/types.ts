@@ -99,6 +99,9 @@ export interface FurnitureType {
    *  from the anchor: on a shelf board, inside a case). Other facings and types without it: spread
    *  along the top. */
   slotSpots?: { dx: number; dy: number }[];
+  /** OA-2: the safe area of the DRAWN table top for dishes, mugs and coins, in footprint coordinates from the anchor (dx, dy = its top-left, w, d). A round table's
+   *  art top is only its front part of the square footprint. Missing = the footprint. Used by tableSpots.ts. */
+  topFace?: { dx: number; dy: number; w: number; d: number };
   /** True for the brewing barrel (step 9t): crops go in, mugs come out (brewing.ts). */
   brews?: boolean;
   /** True for the keg rack (step K2): it holds CASK_SLOTS casks, each ripening mugs of one drink (casks.ts). */

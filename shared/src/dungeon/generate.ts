@@ -14,12 +14,15 @@ import { MINE_ENEMIES, MINE_ENEMIES_PER_ROOM_MAX, MINE_ROOMS_MAX, MINE_ROOMS_MIN
 import { generateCryptLayout } from './layout.ts';
 import { generateLegacyLayout } from './legacyLayout.ts';
 import type { FloorPlan } from './layoutCommon.ts';
+import { blockAt } from './grid.ts';
 import type { DungeonRoundId } from './run.ts';
 
 export { NO_EXIT, blockDistances, blocksFromRect, chestSpotOk, enemyHp, floorRng, makeEnemy, rollRockKind, type FloorPlan } from './layoutCommon.ts';
 
 export function generateFloor(seed: number, n: number, round: DungeonRoundId = DUNGEON_ROUND): FloorPlan {
-  return generateCryptLayout(seed, n, round);
+  const plan = generateCryptLayout(seed, n, round);
+  plan.map.chestBlocks = plan.chests.map((c) => blockAt(c));
+  return plan;
 }
 
 /** A mine visit's layout (step 9c): a new one from every seed; `visit` is the visit number (1 = first). */

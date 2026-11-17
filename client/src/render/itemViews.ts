@@ -4,7 +4,7 @@
 // find the item under it. A refused rotate shakes the item (shake(), call update() every frame).
 
 import { Graphics, type Container } from 'pixi.js';
-import { PALETTE, POP_MS, SHAKE_MS, SHAKE_PX, getFurnitureType, type FurnitureItem, type Rect } from '@pixel-hotel/shared';
+import { PALETTE, POP_MS, SHAKE_MS, SHAKE_PX, getFurnitureType, type FurnitureItem, type MachineState, type Rect } from '@pixel-hotel/shared';
 import { FurnitureSprite } from './furnitureSprite.ts';
 import { surfaceHeight } from './furnitureArt.ts';
 import { PropAnim } from './propAnim.ts';
@@ -41,6 +41,15 @@ export class ItemViews {
     reduce: () => boolean = () => false,
   ) {
     this.props = new PropAnim(view, reduce);
+  }
+
+  /** OA-5: busy stoves and barrels (uid -> state); anything missing is cold. */
+  private machines: ReadonlyMap<number, MachineState> = new Map();
+
+  /** Sets the state of the stoves and barrels (machineStates in shared): cold ones show their cold body, no fire, no bubbles. */
+  setMachineStates(states: ReadonlyMap<number, MachineState>): void {
+    this.machines = states;
+    this.props.setMachineStates(states);
   }
 
   /** Flames, smoke, steam, the register's drawer (render/propAnim.ts). */
@@ -119,7 +128,10 @@ export class ItemViews {
     // The fish in a fish tank swim (step 9f).
     this.clockMs += dtMs;
     this.props.update(dtMs, this.clockMs);
-    for (const sprite of this.sprites.values()) if (sprite.type.swim) sprite.animate(this.clockMs);
+    for (const [uid, sprite] of this.sprites) {
+      if (sprite.type.swim) sprite.animate(this.clockMs);
+      if (sprite.type.cooks || sprite.type.brews) sprite.setMachine(this.machines.get(uid) ?? 'cold', this.clockMs);
+    }
     for (const [uid, t] of this.pops) {
       const c = this.sprites.get(uid)?.container;
       const next = t + dtMs;

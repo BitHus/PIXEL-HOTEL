@@ -14,7 +14,7 @@
 //   plate on the spot (a Mess) and goes. Coins are only ever collected by the player (ledger
 //   'tavern'); a spot with coins or a dish on it takes no new guest.
 
-import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TRAY_MAX, TABLE_SPOT_INSET_PX, TASTE_AGED_CHANCE } from './config.ts';
+import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TRAY_MAX, TASTE_AGED_CHANCE } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
 import type { Cask } from './casks.ts';
@@ -28,6 +28,7 @@ import { applyChange } from './ledger.ts';
 import { getDrinkType, getMaterialType, isDrinkId, materialGroup, MATERIAL_TYPES } from './materials.ts';
 import type { CustomerKind, NpcMoment } from './npcTalk.ts';
 import { seatSpots } from './seats.ts';
+import { plateSlot } from './tableSpots.ts';
 import { mugsOnTaps, pourStop, setTap, stockFor, tapFor, tapOf, type Tap } from './taps.ts';
 import { decide, validPrice } from './prices.ts';
 import type { Facing, FurnitureItem, FurnitureType, MaterialId, Point, Reaction, Rect, Rng } from './types.ts';
@@ -309,11 +310,6 @@ function rectDistance(p: Point, r: Rect): number {
   return Math.hypot(dx, dy);
 }
 
-function clampInto(v: number, lo: number, size: number): number {
-  if (size < 2 * TABLE_SPOT_INSET_PX) return lo + size / 2;
-  return Math.min(lo + size - TABLE_SPOT_INSET_PX, Math.max(lo + TABLE_SPOT_INSET_PX, v));
-}
-
 /** The way a guest on a seat looks: toward their table spot (the dominant axis), whatever way the stool was turned. */
 function facingToward(from: Point, to: Point, fallback: Facing): Facing {
   const dx = to.x - from.x;
@@ -340,13 +336,13 @@ export function tavernSeats(items: readonly FurnitureItem[], roomId: number, kit
   const zones = kitchen ? [...staffZones(items, roomId), kitchen] : staffZones(items, roomId);
   const tables = floor.flatMap((i) => {
     const type = getFurnitureType(i.typeId);
-    return isTable(type) ? [{ uid: i.uid, rect: footprintRect(i, type) }] : [];
+    return isTable(type) ? [{ uid: i.uid, rect: footprintRect(i, type), item: i, type }] : [];
   });
   const out: TavernSeat[] = [];
   for (const item of floor) {
     for (const s of seatSpots(item, getFurnitureType(item.typeId))) {
       if (s.pose !== 'sit' || inStaffZone(zones, s)) continue;
-      let best: { uid: number; rect: Rect } | null = null;
+      let best: { uid: number; rect: Rect; item: FurnitureItem; type: FurnitureType } | null = null;
       let bestD = GUEST_TABLE_NEAR_PX;
       for (const t of tables) {
         const d = rectDistance(s, t.rect);
@@ -356,8 +352,7 @@ export function tavernSeats(items: readonly FurnitureItem[], roomId: number, kit
         }
       }
       if (!best) continue;
-      const r = best.rect;
-      const spot = { x: clampInto(s.x, r.x, r.w), y: clampInto(s.y, r.y, r.h) };
+      const spot = plateSlot(s, best.item, best.type);
       out.push({ uid: item.uid, index: s.index, x: s.x, y: s.y, facing: facingToward(s, spot, s.facing), tableUid: best.uid, spot });
     }
   }

@@ -7,7 +7,7 @@
 // Anchors are the feet / the bottom middle of the footprint, as everywhere else.
 
 import { Container, Graphics } from 'pixi.js';
-import { DUNGEON_BLOCK, PALETTE, ROCK_HITS, type DungeonMap, type EnemyKind, type RockKind, type RunPlace } from '@pixel-hotel/shared';
+import { DUNGEON_BLOCK, PALETTE, ROCK_HITS, torchAllowed, type DungeonMap, type EnemyKind, type RockKind, type RunPlace } from '@pixel-hotel/shared';
 import { desaturate, shade } from '../render/colors.ts';
 
 const B = DUNGEON_BLOCK;
@@ -75,7 +75,9 @@ export const TORCH_FRAMES = 3;
 export const TORCH_FRAME_MS = 110;
 
 /** A wall front shows a torch on about 1 in 8 blocks (the crypt only); stable from the block index. */
-function hasTorch(c: number, r: number): boolean {
+export function hasTorch(c: number, r: number, map?: DungeonMap): boolean {
+  // OA-9: never above a chest (the wall block c, r has the floor block c, r + 1 below it).
+  if (map?.chestBlocks && !torchAllowed({ c, r: r + 1 }, map.chestBlocks)) return false;
   return hash(c, r) % 8 === 3;
 }
 
@@ -89,7 +91,7 @@ export function wallTorchSpots(map: DungeonMap, place: RunPlace = 'crypt'): { x:
   const floor = (c: number, r: number): boolean => c >= 0 && r >= 0 && c < map.cols && r < map.rows && map.blocks[r * map.cols + c] === 'floor';
   for (let r = 0; r < map.rows; r++) {
     for (let c = 0; c < map.cols; c++) {
-      if (map.blocks[r * map.cols + c] === 'floor' || !floor(c, r + 1) || !hasTorch(c, r)) continue;
+      if (map.blocks[r * map.cols + c] === 'floor' || !floor(c, r + 1) || !hasTorch(c, r, map)) continue;
       out.push({ x: c * B + B / 2, y: r * B + B - WALL_FRONT_H - 1 });
     }
   }
@@ -265,7 +267,7 @@ export function drawBlocks(map: DungeonMap, place: RunPlace = 'crypt', clockMs =
             for (let k = 0; k < 5; k++) px(g, x + 24, fy0 + 2 + k * 2, 2, 1, P.steel);
             px(g, x + 23, fy0 + 11, 4, 2, P.slate);
           }
-          if (hasTorch(c, r)) torch(g, x + B / 2, fy0 + 4, clockMs);
+          if (hasTorch(c, r, map)) torch(g, x + B / 2, fy0 + 4, clockMs);
         }
         // The mine: a small warm lantern on every few wall fronts.
         if (lanterns && ((c * 7 + r * 3) % 9 === 0)) {

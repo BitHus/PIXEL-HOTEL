@@ -1,16 +1,19 @@
 // One furniture item on screen: the box placeholder art for its facing, at its anchor (the
 // bottom center of the footprint). Items on a surface are lifted by the surface height.
 
-import { Container, Graphics, Sprite } from 'pixi.js';
-import { PALETTE, type Facing, type FurnitureType } from '@pixel-hotel/shared';
+import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import { PALETTE, footprintSize, type Facing, type FurnitureType, type MachineState } from '@pixel-hotel/shared';
 import { drawFurniture } from './furnitureArt.ts';
-import { spriteFor } from './spriteStore.ts';
+import { READY_FRAME_MS } from './propAnimSpecs.ts';
+import { spriteFor, spriteFrames } from './spriteStore.ts';
 
 export class FurnitureSprite {
   /** Positioned at the anchor, in world px. */
   readonly container = new Container();
   private art: Container | null = null;
   private facing: Facing | null = null;
+  /** The plain PNG body (the 'cooking' look); the cold and ready art swap it (OA-5, setMachine). */
+  private baseTex: Texture | null = null;
   /** The small fish swimming in a fish tank (FurnitureType.swim, step 9f), or null. */
   private fish: Graphics | null = null;
 
@@ -24,6 +27,7 @@ export class FurnitureSprite {
     this.art?.destroy();
     // A PNG sprite (docs/PLAN-SPRITES.md) when the piece has all its facings, else the code art. Anchor = bottom centre.
     const tex = spriteFor(this.type.id, facing);
+    this.baseTex = tex;
     if (tex) {
       const s = new Sprite(tex);
       s.anchor.set(0.5, 1);
@@ -44,6 +48,23 @@ export class FurnitureSprite {
       this.container.addChild(g);
       this.animate(0);
     }
+  }
+
+  /**
+   * OA-5: the body of a stove or a brewing barrel by state: cold = `<id>_cold.png` (no fire), cooking = the plain body, ready = the `<id>_ready.png`
+   * strip (frames as wide as the footprint, READY_FRAME_MS each). A missing file keeps the plain body. Only the facing the art is drawn for (down).
+   */
+  setMachine(state: MachineState, clockMs: number): void {
+    const art = this.art;
+    if (!(this.type.cooks || this.type.brews) || !(art instanceof Sprite) || !this.baseTex || this.facing !== 'down') return;
+    const w = footprintSize(this.type, 'down').w;
+    let tex: Texture = this.baseTex;
+    if (state === 'cold') tex = spriteFrames('furniture', this.type.id, 'cold', w)?.[0] ?? tex;
+    else if (state === 'ready') {
+      const frames = spriteFrames('furniture', this.type.id, 'ready', w);
+      if (frames) tex = frames[Math.floor(clockMs / READY_FRAME_MS) % frames.length]!;
+    }
+    if (art.texture !== tex) art.texture = tex;
   }
 
   /** Moves the swimming fish (a slow there and back, turning at the ends). Whole px. */

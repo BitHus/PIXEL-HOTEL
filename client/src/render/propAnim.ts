@@ -5,7 +5,7 @@
 // Reduce effects: no particles, drips or motes, flames still loop. OS prefers-reduced-motion: flames hold still too.
 
 import { Container, Sprite, Texture } from 'pixi.js';
-import { PALETTE, getFurnitureType, isOn, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
+import { PALETTE, getFurnitureType, isOn, type Facing, type FurnitureItem, type MachineState, type Point } from '@pixel-hotel/shared';
 import { ParticlePool, type ParticleKind } from '../fx/particles.ts';
 import { boxesForFacing } from './furnitureArt.ts';
 import { spriteFrames } from './spriteStore.ts';
@@ -96,6 +96,8 @@ interface Entry {
   key: string;
   mirror: number;
   on: boolean;
+  /** A stove or barrel: fire and bubbles only while it cooks (OA-5). */
+  machine: boolean;
   flames: FlameRun[];
   emits: EmitRun[];
   drips: DripRun[];
@@ -112,6 +114,7 @@ export class PropAnim {
   private readonly dots: Sprite[] = [];
   private meals: MealSpot[] = [];
   private mealAccum: number[] = [];
+  private machines: ReadonlyMap<number, MachineState> = new Map();
   private readonly mq: MediaQueryList | null = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
 
   constructor(view: RoomView, private readonly reduce: () => boolean) {
@@ -143,6 +146,11 @@ export class PropAnim {
     e.on = isOn(item);
   }
 
+  /** OA-5: a stove or barrel only shows its fire and bubbles while a batch cooks; cold and ready ones are still. */
+  setMachineStates(states: ReadonlyMap<number, MachineState>): void {
+    this.machines = states;
+  }
+
   private build(fs: FurnitureSprite, item: FurnitureItem, pngTex: Texture | null, key: string): Entry {
     const type = getFurnitureType(item.typeId);
     const spec = PROP_ANIMS[item.typeId]!;
@@ -156,7 +164,7 @@ export class PropAnim {
     const mirror = item.facing === 'left' ? -1 : 1;
     deco.scale.x = mirror;
     fs.container.addChild(deco);
-    const e: Entry = { uid: item.uid, container: fs.container, deco, key, mirror, on: true, flames: [], emits: [], drips: [], glints: [], reg: null };
+    const e: Entry = { uid: item.uid, container: fs.container, deco, key, mirror, on: true, machine: !!(type.cooks || type.brews), flames: [], emits: [], drips: [], glints: [], reg: null };
     (spec.flames ?? []).forEach((f, i) => {
       const p = resolve(f.at);
       const size = FLAME_SIZE[f.kind];
@@ -230,9 +238,10 @@ export class PropAnim {
     const level = this.level();
     for (const e of this.entries.values()) {
       if (!e.container.visible) continue;
+      const lit = e.on && (!e.machine || this.machines.get(e.uid) === 'cooking');
       for (const f of e.flames) {
-        f.sprite.visible = e.on;
-        if (!e.on) continue;
+        f.sprite.visible = lit;
+        if (!lit) continue;
         const n = flameFrame(f.seed, clockMs, f.flicker, level === 2) % f.frames.length;
         if (n !== f.frame) {
           f.frame = n;
@@ -262,7 +271,7 @@ export class PropAnim {
       }
       for (const d of e.drips) {
         const dr = dripAt(d.seed, clockMs, 3400);
-        d.sprite.visible = dr.state !== 'none' && e.on;
+        d.sprite.visible = dr.state !== 'none' && lit;
         if (dr.state === 'splash') {
           d.sprite.position.set(d.pos.x - 1, d.pos.y + dr.dy);
           d.sprite.width = 3;
@@ -273,7 +282,7 @@ export class PropAnim {
           d.sprite.height = dr.size;
         }
       }
-      if (!e.on) continue;
+      if (!lit) continue;
       for (const m of e.emits) {
         m.accum += dtMs;
         if (m.accum < m.next) continue;

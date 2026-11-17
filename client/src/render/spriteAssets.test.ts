@@ -39,9 +39,22 @@ describe('furniture sprite files', () => {
       expect(name, 'file name').not.toBeNull();
       const cut = name!.id.lastIndexOf('_');
       if (!known(() => getFurnitureType(name!.id)) && cut > 0 && known(() => getFurnitureType(name!.id.slice(0, cut)))) {
-        // An animation strip `<typeId>_<tag>.png` (stove_fire, tap_stand_lever): equal frames in a row, no footprint rule.
         const strip = sizeOf('furniture', file);
         expect(strip.header).toEqual(PNG_SIGNATURE);
+        const tag = name!.id.slice(cut + 1);
+        if (tag === 'cold' || tag === 'ready') {
+          // OA-5 state body `<typeId>_cold|ready.png`: replaces the body, so every frame is as wide as the footprint (a ready strip has 2 or more
+          // frames in a row, cold is one) and as tall as a body may be.
+          const type = getFurnitureType(name!.id.slice(0, cut));
+          const fp = footprintSize(type, 'down');
+          expect(strip.w % fp.w, 'a whole number of frames, each as wide as the footprint').toBe(0);
+          if (tag === 'cold') expect(strip.w, 'cold = one frame').toBe(fp.w);
+          else expect(strip.w / fp.w, 'ready = at least 2 frames').toBeGreaterThanOrEqual(2);
+          expect(strip.h, 'height').toBeGreaterThanOrEqual(fp.d);
+          expect(strip.h, 'height').toBeLessThanOrEqual(fp.d + type.height + 8);
+          return;
+        }
+        // Any other animation strip `<typeId>_<tag>.png` (stove_fire, tap_stand_lever): equal frames in a row, no footprint rule.
         expect(strip.w % strip.h === 0 || strip.w > strip.h, 'a row of frames').toBe(true);
         return;
       }

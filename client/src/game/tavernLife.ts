@@ -19,7 +19,7 @@ import { TavernFx } from '../render/tavernFx.ts';
 import { surfaceHeight } from '../render/furnitureArt.ts';
 import { createFirstTenGuide } from '../ui/firstTenGuide.ts';
 import { startGuideWorld, type GuideWorldApi } from './guideWorld.ts';
-import { brewReady as brewIsReady, guideWaiting, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
+import { brewReady as brewIsReady, guideWaiting, machineStates, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { sellDetail, sellRowIcon } from '../ui/sellTab.ts';
@@ -68,6 +68,10 @@ export async function setupTavernLife(g: G9) {
     }
     readyNow = ready;
     fx.setSteam(steam);
+    // OA-5: cold / cooking / ready look of the stoves and barrels; a cold stove gives no light.
+    const states = machineStates(st.tavern, now);
+    g.itemViews.setMachineStates(states);
+    g.atmosphere.setUnlit(new Set(st.items.filter((i) => getFurnitureType(i.typeId).cooks && states.get(i.uid) !== 'cooking').map((i) => i.uid)));
     const brewReady = [...ready].some((k) => k[0] === 'b');
     const waiting: FirstTenStep[] = guideWorld ? guideWaiting(guide.state, guideWorld.context(brewReady)) : [];
     guide.refresh(waiting, on);

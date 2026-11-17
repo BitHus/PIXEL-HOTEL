@@ -330,6 +330,9 @@ export const PROP_ANIMS: Readonly<Record<string, PropSpec>> = {
   window_curtains: { emits: [{ kind: 'mote', at: { code: [0, -4] }, everyMs: 900, area: [44, 34] }] },
 };
 
+/** OA-5: how long one frame of a machine's `_ready` strip shows, ms (the art is drawn for 450). */
+export const READY_FRAME_MS = 450;
+
 /** How often a steam wisp rises from a hot dish and from a drink on a table, ms. */
 export const MEAL_STEAM_MS = { hot: 450, warm: 1100 } as const;
 /** At most this many table spots steam (the cost stays small in a full tavern). */

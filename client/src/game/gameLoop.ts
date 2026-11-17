@@ -70,6 +70,7 @@ export async function setupGameLoop(g: G16) {
     }
     itemViews.props.setMealSpots(g.tableMess.steamSpots());
     itemViews.update(ticker.deltaMS);
+    g.tableMess.update(ticker.deltaMS);
     guests.update(ticker.deltaMS, clockMs);
     catLife.update(ticker.deltaMS, clockMs);
     pour.update(ticker.deltaMS);

@@ -44,6 +44,7 @@ import {
 import { rngInt, rngPick } from '../rng.ts';
 import type { Rng } from '../types.ts';
 import { blockCenter } from './grid.ts';
+import { floorFn, propSpotOk } from './placement.ts';
 import { generateLegacyCrypt } from './legacyLayout.ts';
 import { blockDistances, chestSpotOk, floorRng, makeEnemy, type FloorPlan } from './layoutCommon.ts';
 import { cheb, longestStretchWithout, nearest, routeBetween, type Cell } from './pacing.ts';
@@ -615,8 +616,8 @@ export function generateCryptLayout(seed: number, n: number, round: DungeonRound
   // Props of the themes, one per free block, never on a door block.
   propKinds.forEach((kinds, ri) => {
     for (const kind of kinds) {
-      const free = freeCells(ri);
-      if (free.length === 0) break;
+      const free = freeCells(ri, (p) => propSpotOk(kind, floorFn(map), p));
+      if (free.length === 0) continue;
       addDecor(kind, rngPick(rng, free));
     }
   });
@@ -676,7 +677,8 @@ export function generateCryptLayout(seed: number, n: number, round: DungeonRound
       if (ring.length > 0) spot = rngPick(rng, ring);
     }
     if (!spot) continue;
-    addDecor(rngPick(rng, CORRIDOR_PROPS), spot);
+    const here: Cell = spot;
+    addDecor(rngPick(rng, CORRIDOR_PROPS.filter((k) => propSpotOk(k, floorFn(map), here))), spot);
     beats.push(spot);
   }
 

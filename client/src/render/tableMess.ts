@@ -21,6 +21,19 @@ export function emptyDishIcon(id: MaterialId): Icon {
   return materialGroup(id) === 'drink' ? { shape: 'mug', colors: ['clay', 'sand'] } : { shape: 'plate', colors: ['cream', 'sand'] };
 }
 
+/** OA-2: coins a guest leaves drop onto the table over this many ms (a short hop in whole px), they never fly across the room. */
+export const LAND_MS = 240;
+const LAND_FROM_PX = 14;
+
+/** How many px above its place a landing pile is, `ageMs` after it appeared: a fall, a small bounce, then 0. Whole px, pure. */
+export function landOffsetPx(ageMs: number): number {
+  if (ageMs <= 0) return LAND_FROM_PX;
+  if (ageMs >= LAND_MS) return 0;
+  const k = ageMs / LAND_MS;
+  if (k < 0.6) return Math.round(LAND_FROM_PX * (1 - (k / 0.6) ** 2));
+  return Math.round(3 * Math.sin(((k - 0.6) / 0.4) * Math.PI));
+}
+
 /** A drink or dish being eaten at a table spot (not a Mess yet): drawn full, not tappable. */
 export interface Meal {
   guestId: number;
@@ -51,10 +64,15 @@ interface Shown {
   dishAt: Point | null;
   /** Where steam rises (a full dish or drink being eaten), or null. */
   steamAt: { x: number; y: number; hot: boolean } | null;
+  /** Ms since a fresh pile of coins appeared (it hops onto the table), or null when it rests. */
+  landAge: number | null;
+  baseY: number;
 }
 
 export class TableMess {
   private readonly shown = new Map<string, Shown>();
+  /** False until the first sync: what lies on the tables when a room opens just rests, only new piles hop. */
+  private primed = false;
 
   constructor(private readonly view: RoomView) {}
 
@@ -117,8 +135,21 @@ export class TableMess {
       const probe = { ...(table ?? { typeId: '', ownerId: 0, roomId: 0, facing: 'down' as const, onItemUid: null }), uid: m.uid, x: mx, y: my } as FurnitureItem;
       this.view.objects.add(container, table ? itemDepthKey(probe, table) : { y: my, x: mx, uid: probe.uid });
       const steamAt = m.full && m.dish !== null && dishAt ? { x: dishAt.x, y: dishAt.y - DISH_PX / 2, hot: materialGroup(m.dish) !== 'drink' } : null;
-      s = { container, key, coinsAt, dishAt, steamAt, messId: m.messId };
+      const fresh = this.primed && !s && m.coins > 0 && m.messId !== null;
+      s = { container, key, coinsAt, dishAt, steamAt, messId: m.messId, landAge: fresh ? 0 : null, baseY: container.y };
+      if (fresh) container.y = s.baseY - landOffsetPx(0);
       this.shown.set(m.key, s);
+    }
+    this.primed = true;
+  }
+
+  /** Runs the hop of new coin piles (call every frame). */
+  update(dtMs: number): void {
+    for (const s of this.shown.values()) {
+      if (s.landAge === null) continue;
+      s.landAge += dtMs;
+      s.container.y = s.baseY - landOffsetPx(s.landAge);
+      if (s.landAge >= LAND_MS) s.landAge = null;
     }
   }
 
@@ -148,6 +179,7 @@ export class TableMess {
   }
 
   clear(): void {
+    this.primed = false;
     for (const s of this.shown.values()) {
       this.view.objects.remove(s.container);
       s.container.destroy({ children: true });

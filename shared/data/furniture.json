@@ -2893,6 +2893,7 @@
       "dy": 24
     },
     "seats": [],
+    "topFace": { "dx": -22, "dy": -28, "w": 44, "d": 20 },
     "baseValue": 12,
     "rank": "common",
     "inCatalog": true,

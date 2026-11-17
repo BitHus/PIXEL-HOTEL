@@ -69,6 +69,7 @@ export * from './casks.ts';
 export * from './forge.ts';
 export * from './tavern.ts';
 export * from './brewing.ts';
+export * from './machineState.ts';
 export * from './menuEdit.ts';
 export * from './guests.ts';
 export * from './blockTypes.ts';

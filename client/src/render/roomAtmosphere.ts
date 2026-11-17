@@ -151,8 +151,22 @@ export class RoomAtmosphere {
     this.dirty = true;
   }
 
+  private lastItems: readonly FurnitureItem[] = [];
+  private lastHidden: ReadonlySet<number> = new Set();
+  /** OA-5: machines with no light now (a cold stove): kept out of the light pools. */
+  private unlit: ReadonlySet<number> = new Set();
+
+  /** OA-5: the uids of the stoves that have nothing cooking give no light. Rebuilds the lights only when the set changed. */
+  setUnlit(uids: ReadonlySet<number>): void {
+    if (uids.size === this.unlit.size && [...uids].every((u) => this.unlit.has(u))) return;
+    this.unlit = uids;
+    this.setItems(this.lastItems, this.lastHidden);
+  }
+
   /** The placed items changed: new shadows and new light sources. */
   setItems(items: readonly FurnitureItem[], hidden: ReadonlySet<number> = new Set()): void {
+    this.lastItems = items;
+    this.lastHidden = hidden;
     const room = this.room;
     if (!room) return;
     const g = this.itemShadows.clear();
@@ -165,7 +179,7 @@ export class RoomAtmosphere {
       drawShadow(g, Math.round(item.x) + SHADOW_DX, Math.round(item.y), s.rx, s.ry);
     }
     // Daylight outdoors: furniture gives no light pools there.
-    this.lights = OUTDOOR_KINDS.includes(room.kind) ? [] : itemLights(items, room.id, getFurnitureType, hidden);
+    this.lights = OUTDOOR_KINDS.includes(room.kind) ? [] : itemLights(items, room.id, getFurnitureType, this.unlit.size ? new Set([...hidden, ...this.unlit]) : hidden);
     this.syncSpecks();
     this.dirty = true;
   }
