@@ -21,3 +21,9 @@
 - Workers that only see Aseprite zooms miss in-game problems: use the viewer.
 - Owner's big lines first, then small logical improvements the manager decides itself; ask only for big decisions.
 - Ship after every green batch: check -> add -A -> commit -> push -> `POCKETBARREL_HOST=149.245.246.67 bash tools/deploy.sh` -> curl 200 -> rewrite docs/STATUS.md.
+
+## From web research (17 Nov)
+- Parallel coders on overlapping files: use Agent isolation worktree (each gets its own git worktree, merge after) instead of sharing the tree. Subagents cannot spawn subagents; multi-agent costs ~15x tokens, so keep prompts tight and workers few.
+- Game studio style gates (design -> implement -> review -> done): our npm run check + tester spec per bug is the gate; add a pixel-critic gate for art.
+- Aseprite MCP servers exist with art-QA sweeps and screenshot loops; our plugin already has validate, look and pixel-critic: no new install needed.
+- Genre lessons: a tavern sim needs a relaxed mode (no pressure), narrative events (rumours board, regulars) and a visible money feedback loop; core systems must be tuned until fun.
