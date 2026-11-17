@@ -6,4 +6,4 @@ Description=PocketBarrel daily sqlite backup
 Type=oneshot
 User=pocketbarrel
 EnvironmentFile=/etc/pocketbarrel.env
-ExecStart=/opt/pocketbarrel/current/tools/ops/backup-db.sh
+ExecStart=/usr/bin/env bash /opt/pocketbarrel/current/tools/ops/backup-db.sh

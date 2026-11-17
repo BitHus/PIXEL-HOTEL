@@ -31,7 +31,10 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 33;
+export const SAVE_VERSION = 34;
+/** The ledger is folded into per-reason counters (GameState.quests.folded) when it passes LEDGER_TRIM_AT entries: the newest LEDGER_KEEP stay. */
+export const LEDGER_KEEP = 2000;
+export const LEDGER_TRIM_AT = 2500;
 /** localStorage key of the save: SAVE_KEY_PREFIX + version. */
 export const SAVE_KEY_PREFIX = 'pixel-hotel.save.v';
 /** One automatic backup: the save as it was when the game was opened (or before an import). */

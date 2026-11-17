@@ -3,6 +3,8 @@
 
 import type { GameState } from './gameState.ts';
 import { getFurnitureType } from './furniture.ts';
+import { LEDGER_KEEP, LEDGER_TRIM_AT } from './config.ts';
+import { foldLedger } from './ledgerFold.ts';
 import { addSeen } from './seen.ts';
 import type { FurnitureItem, LedgerReason, MaterialId } from './types.ts';
 
@@ -119,11 +121,13 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
     for (const item of added) seen = addSeen(seen, item.typeId, 1, at);
     for (const [id, n] of Object.entries(clothingDelta)) if (n > 0) seen = addSeen(seen, id, n, at);
   }
-  return {
+  const next: GameState = {
     ...state,
     player: { ...p, wallet: { gold, gems }, materials, seen, unlockedClothing, clothingSpares: spares },
     items: [...state.items.filter((i) => !remove.has(i.uid)), ...returned, ...added],
     nextUid,
     ledger: [...state.ledger, entry],
   };
+  // The ledger never grows without end: old entries fold into per-reason counters (achievements keep their progress).
+  return next.ledger.length > LEDGER_TRIM_AT ? foldLedger(next, LEDGER_KEEP) : next;
 }

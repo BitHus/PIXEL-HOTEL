@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FOOD_TYPES, batchInputs, canCook, collectCook, cookMs, cookOf, cookReadyInMs, cookReady, maxBatchWith, returnOrphanCooks, startCook, stoves,
+  FOOD_TYPES, batchInputs, canCook, collectCook, cookMs, cookOf, cookReadyInMs, cookReady, maxBatchWith, returnOrphanCooks, startCook, stoves, tutorialCookSupplies,
 } from './cooking.ts';
 import { COOK_MS, STOVE_BATCH_MAX, TAVERN_START_ITEMS } from './config.ts';
 import { getFurnitureType, canPlace, roomBlockers } from './furniture.ts';
@@ -9,6 +9,7 @@ import { applyChange } from './ledger.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { ROOM_SHAPES } from './room.ts';
 import { readSave, toSaveText } from './save.ts';
+import { getFoodType } from './materials.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
 import type { MaterialId } from './types.ts';
 
@@ -186,5 +187,17 @@ describe('cooking in real time', () => {
     expect(gone.tavern.cooks).toEqual([]);
     expect(ledgerMaterials(gone)).toEqual(gone.player.materials);
     expect(returnOrphanCooks(gone, 6).player.materials).toEqual(gone.player.materials);
+  });
+});
+
+describe('tutorial cook supplies', () => {
+  it('gives 2 turnips (ledger start) only when no dish can be cooked', () => {
+    let s = createNewPlayer(undefined, 0);
+    s = applyChange(s, { reason: 'debug', materials: Object.fromEntries(Object.entries(s.player.materials).map(([k, v]) => [k, -(v ?? 0)])) }, 1)!;
+    expect(FOOD_TYPES.some((f) => canCook(f, s))).toBe(false);
+    const g = tutorialCookSupplies(s, 2)!;
+    expect(canCook(getFoodType('roasted_turnip'), g)).toBe(true);
+    expect(g.ledger.at(-1)).toMatchObject({ reason: 'start', note: 'tutorial cook' });
+    expect(tutorialCookSupplies(g, 3)).toBeNull();
   });
 });

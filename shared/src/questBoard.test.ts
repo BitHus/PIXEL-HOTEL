@@ -86,3 +86,78 @@ describe('save migration 32 -> 33', () => {
     expect(next.hintsDone).toBe(4);
   });
 });
+
+describe('review fixes 17 Nov', () => {
+  const dayA = dayInfo(Date.UTC(2026, 10, 18, 0, 30), 0);
+  const dayB = dayInfo(Date.UTC(2026, 10, 17, 23, 30), 0); // the day before, reached by a clock flip
+  const doAll = (s: ReturnType<typeof createNewPlayer>, d: typeof dayA, at: number) => {
+    let st = s;
+    for (const q of dailyQuests(d.key, 1)) {
+      for (let i = 0; i < q.target; i++) st = applyChange(st, { reason: q.reasons[0] as never, gold: q.reasons[0] === 'tavern' ? 1 : 0, materials: q.measure === 'made' ? { wood: 1 } : { wood: -0 } }, at + i)!;
+    }
+    return st;
+  };
+  it('finding 1: flipping the clock back and forth never pays a daily twice', () => {
+    let s = createNewPlayer(undefined, 0);
+    s = doAll(s, dayB, dayB.startMs + 1000);
+    s = doAll(s, dayA, dayA.startMs + 1000);
+    let paid = 0;
+    for (let cycle = 0; cycle < 3; cycle++) {
+      for (const d of [dayA, dayB]) {
+        for (const r of questBoard(s, d).daily) {
+          const next = claimQuest(s, r.claimId, d, d.startMs + 5000);
+          if (next) {
+            paid += next.player.wallet.gold - s.player.wallet.gold;
+            s = next;
+          }
+        }
+      }
+    }
+    expect(paid).toBeLessThanOrEqual(QUEST_DATA.dailyCount * QUEST_DATA.dailyGoldMax * 2);
+    for (const d of [dayA, dayB]) expect(questBoard(s, d).daily.every((r) => !r.ready)).toBe(true);
+  });
+  it('finding 1: entries stamped tomorrow do not count today; tz offset is clamped', () => {
+    let s = createNewPlayer(undefined, 0);
+    const pick = dailyQuests(day.key, 1)[0]!;
+    for (let i = 0; i < pick.target; i++) s = applyChange(s, { reason: pick.reasons[0] as never, materials: { wood: 1 } }, day.startMs + 86_400_000 + 5 + i)!;
+    expect(questBoard(s, day).daily.every((r) => r.progress === 0)).toBe(true);
+    expect(dayInfo(Date.UTC(2026, 10, 17, 12), 99999)).toEqual(dayInfo(Date.UTC(2026, 10, 17, 12), 720));
+    expect(dayInfo(Date.UTC(2026, 10, 17, 12), -99999)).toEqual(dayInfo(Date.UTC(2026, 10, 17, 12), -840));
+  });
+  it('finding 3: a run that ended in death (or Abandon) does not count as brought home', () => {
+    let s = createNewPlayer(undefined, 0);
+    s = applyChange(s, { reason: 'dungeon_bank', note: 'dungeon run dead' }, 5)!;
+    const run5 = QUEST_DATA.achievements.find((q) => q.id === 'run_5')!;
+    expect(questBoard(s, day).achievements.find((r) => r.text === run5.text)!.progress).toBe(0);
+    s = applyChange(s, { reason: 'dungeon_bank', note: 'dungeon run left' }, 6)!;
+    expect(questBoard(s, day).achievements.find((r) => r.text === run5.text)!.progress).toBe(1);
+  });
+  it('finding 4: a level-up does not re-roll the day (only a gated quest is swapped)', () => {
+    for (const k of keys(200)) {
+      const l2 = dailyQuests(k, 2);
+      const l3 = dailyQuests(k, 3);
+      expect(l2).toHaveLength(QUEST_DATA.dailyCount);
+      expect(l3).toHaveLength(QUEST_DATA.dailyCount);
+      expect(l3.filter((q) => !l2.includes(q)).length).toBeLessThanOrEqual(1);
+      expect(l2.some((q) => (q.minLevel ?? 1) > 2)).toBe(false);
+    }
+  });
+  it('finding 2: folding the ledger keeps achievement progress and daily progress of recent entries', () => {
+    let s = createNewPlayer(undefined, 0);
+    for (let i = 0; i < 2600; i++) s = applyChange(s, { reason: 'plant', materials: { wood: 0 } }, 1000 + i)!;
+    expect(s.ledger.length).toBeLessThan(2600);
+    expect(s.ledger.length).toBeLessThanOrEqual(2500);
+    expect(s.quests.folded?.plant?.n).toBeGreaterThan(0);
+    expect(s.ledger.at(-1)!.id).toBeGreaterThan(2600);
+    const ach = QUEST_DATA.achievements.find((q) => q.reasons.includes('plant'));
+    if (ach) expect(questBoard(s, day).achievements.find((r) => r.text === ach.text)!.progress).toBe(Math.min(ach.target, s.quests.folded!.plant!.n + s.ledger.filter((e) => e.reason === 'plant').length));
+  });
+});
+
+describe('save migration 33 -> 34', () => {
+  it('keeps quests (folded is optional)', () => {
+    const s = createNewPlayer(undefined, 0);
+    const next = MIGRATIONS[33]!({ ...s, quests: { claimed: ['x'] } }) as { quests: { claimed: string[] } };
+    expect(next.quests).toEqual({ claimed: ['x'] });
+  });
+});

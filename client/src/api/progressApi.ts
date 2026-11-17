@@ -14,6 +14,7 @@ import {
   claimQuest,
   dayInfo,
   questBoard,
+  tutorialCookSupplies,
   type QuestBoard,
   openBook,
   type BookClaim,
@@ -47,6 +48,14 @@ export const progressApi = {
     const gold = next.player.wallet.gold - h.state.player.wallet.gold;
     h.commit(next);
     return { gold };
+  },
+
+  /** The tutorial's stove step: when the bag has nothing to cook, gives 2 turnips (reason 'start'). True = given. */
+  async ensureTutorialCookSupplies(h: LocalGameAPI): Promise<boolean> {
+    const next = tutorialCookSupplies(h.state, h.now());
+    if (!next) return false;
+    h.commit(next);
+    return true;
   },
 
   async currentHint(h: LocalGameAPI): Promise<string | null> {

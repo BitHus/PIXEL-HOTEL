@@ -147,7 +147,7 @@ describe('register and login', () => {
     expect(good.headers.get('access-control-allow-origin')).toBe('https://pocketbarrel.com');
     const evil = await fetch(`${base}/api/health`, { headers: { origin: 'https://evil.example' } });
     expect(evil.headers.get('access-control-allow-origin')).toBeNull();
-    expect(((await good.json()) as { ok: boolean }).ok).toBe(true);
+    expect(await good.json()).toMatchObject({ ok: true, saveVersion: SAVE_VERSION });
   });
 });
 

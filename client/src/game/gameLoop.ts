@@ -71,7 +71,8 @@ export async function setupGameLoop(g: G16) {
     itemViews.props.setMealSpots(g.tableMess.steamSpots());
     itemViews.update(ticker.deltaMS);
     g.tableMess.update(ticker.deltaMS);
-    guests.update(ticker.deltaMS, clockMs);
+    // Guests walk on REAL elapsed time (deltaMS is capped at 100 ms): the model moves them in real time, so a slow frame (a pan or pinch redraw) must not leave the shown guest behind and then snap (teleport) at the next resync.
+    guests.update(Math.min(ticker.elapsedMS, 500), clockMs);
     catLife.update(ticker.deltaMS, clockMs);
     pour.update(ticker.deltaMS);
     fx.update(ticker.deltaMS);

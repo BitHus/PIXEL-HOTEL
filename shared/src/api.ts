@@ -346,6 +346,8 @@ export interface GameAPI {
   getRoom(roomId: number): Promise<Room | null>;
   /** The first-run hint to show now, or null when all are done. */
   currentHint(): Promise<string | null>;
+  /** Tutorial stove step: gives 2 turnips when nothing can be cooked (ledger 'start'). True = given. */
+  ensureTutorialCookSupplies(): Promise<boolean>;
   /**
    * Gains the calls did not return themselves (step BG4: the gems a finished quest pays). Returns them once and
    * forgets them: the client calls it after every action that may finish a quest and shows the popups.

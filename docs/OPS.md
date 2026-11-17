@@ -55,6 +55,8 @@ Rate limits: 10 req/s per IP on /api (burst 20), 1 req/s on login and register (
 Build the client with `VITE_CLOUD_SAVE=1 VITE_SERVER_URL=https://server.pocketbarrel.com` (flag default stays off in the repo). `PB_ORIGINS` must be `https://pocketbarrel.com` (CORS).
 
 ## 7. Backups
+REVIEW 6-9 (17 Nov): `/api/health` also returns `saveVersion`; deploy.sh compares it with the client SAVE_VERSION and warns on a mismatch (deploy the server with `DEPLOY_SERVER=1`). The server health check retries about 20 s; a failed FIRST deploy removes the `current` link, later ones roll back only to an existing previous release. The ops .sh files are mode 755 in git and the backup unit runs `bash` on the script. The backup refuses a missing or empty DB or one without the accounts table, uses umask 077 and rsync WITHOUT --delete (prune the remote yourself).
+
 `pocketbarrel-backup.timer` runs `tools/ops/backup-db.sh` daily at about 03:30 as `pocketbarrel`: sqlite `.backup` (safe while the server writes), integrity check, gzip into `PB_BACKUP_DIR`, delete files older than `PB_BACKUP_KEEP` days (14). Test: `systemctl start pocketbarrel-backup && ls -l /var/backups/pocketbarrel`; list timers: `systemctl list-timers pocketbarrel-backup.timer`.
 OFF-BOX TARGET (open, owner decides): set `PB_BACKUP_REMOTE=user@host:/path/` in `/etc/pocketbarrel.env` (rsync over ssh; the `pocketbarrel` user needs its own key) or any other target. Empty = local only, which does NOT survive losing the VPS.
 Restore: stop the server, `gunzip -c backup.sqlite.gz > /var/lib/pocketbarrel/pb.sqlite`, remove stale `pb.sqlite-wal` and `-shm`, `chown pocketbarrel:pocketbarrel`, start.

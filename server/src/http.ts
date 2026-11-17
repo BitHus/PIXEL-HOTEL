@@ -2,6 +2,7 @@
 // and the visits of PLAN-ONLINE P2: /api/rooms/mine, /api/rooms/share, /api/rooms/public, /api/rooms/block, /api/visit/<code>, /api/visit/report.
 // Every input is validated, bodies are size-limited, rate limits follow docs/PLAN-ONLINE.md section 4, CORS allows only the configured origins.
 
+import { SAVE_VERSION } from '@pixel-hotel/shared';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { authenticate, checkLogin, createSession, endSession, hashIp, registerAccount } from './accounts.ts';
 import type { ServerConfig } from './config.ts';
@@ -109,7 +110,7 @@ export function createApp(deps: AppDeps): { handle: (req: IncomingMessage, res: 
 
     if (path === '/api/health' && method === 'GET') {
       db.prepare('SELECT 1').get();
-      return send(res, 200, { ok: true, time: t }, origin);
+      return send(res, 200, { ok: true, time: t, saveVersion: SAVE_VERSION }, origin);
     }
 
     if (path === '/api/register' && method === 'POST') {
@@ -181,7 +182,7 @@ export function createApp(deps: AppDeps): { handle: (req: IncomingMessage, res: 
     if (path === '/api/rooms/public' && method === 'GET') {
       const pageText = url.searchParams.get('page') ?? '0';
       const sort = url.searchParams.get('sort') ?? 'new';
-      if (!/^d{1,3}$/.test(pageText) || Number(pageText) > PUBLIC_PAGE_MAX || (sort !== 'new' && sort !== 'stars')) throw new HttpError(400, 'bad_request');
+      if (!/^\d{1,3}$/.test(pageText) || Number(pageText) > PUBLIC_PAGE_MAX || (sort !== 'new' && sort !== 'stars')) throw new HttpError(400, 'bad_request');
       return send(res, 200, listPublic(db, who.accountId, Number(pageText), sort), origin);
     }
 

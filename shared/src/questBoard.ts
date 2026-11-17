@@ -7,6 +7,7 @@ import questData from '../data/quests.json';
 import { HINTS } from './config.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { entryDead, entryMade } from './ledgerFold.ts';
 
 export type QuestMeasure = 'count' | 'made';
 export interface QuestDef {
@@ -19,6 +20,8 @@ export interface QuestDef {
   gold: number;
   area?: string;
   minLevel?: number;
+  /** A run that ended in death or an Abandon does not count (only 'left' runs). */
+  notDead?: boolean;
 }
 export interface EventDef {
   id: string;
@@ -44,7 +47,8 @@ export interface DayInfo {
   key: string;
   startMs: number;
 }
-export function dayInfo(nowMs: number, tzOffsetMin: number): DayInfo {
+export function dayInfo(nowMs: number, tzOffsetMinRaw: number): DayInfo {
+  const tzOffsetMin = Math.max(-840, Math.min(720, Math.round(Number.isFinite(tzOffsetMinRaw) ? tzOffsetMinRaw : 0))); // real zones only
   const local = nowMs - tzOffsetMin * 60_000;
   const dayStartLocal = Math.floor(local / 86_400_000) * 86_400_000;
   return { key: new Date(dayStartLocal).toISOString().slice(0, 10), startMs: dayStartLocal + tzOffsetMin * 60_000 };
@@ -97,7 +101,8 @@ function pickDay(pool: readonly QuestDef[], dayKey: string, recent: ReadonlySet<
  * is left out (inside a DAILY_BLOCK_DAYS block). Pure: only the date and the level go in. Missing a day costs nothing.
  */
 export function dailyQuests(dayKey: string, level: number): QuestDef[] {
-  const pool = QUEST_DATA.daily.filter((q) => (q.minLevel ?? 1) <= level);
+  // The history chain uses the WHOLE pool (level-free), so a level-up never re-rolls the day; a quest the player cannot do yet is swapped at the end.
+  const pool = QUEST_DATA.daily;
   const idx = dayIndex(dayKey);
   const start = idx - (((idx % DAILY_BLOCK_DAYS) + DAILY_BLOCK_DAYS) % DAILY_BLOCK_DAYS);
   const history: string[][] = [];
@@ -108,7 +113,16 @@ export function dailyQuests(dayKey: string, level: number): QuestDef[] {
     out = pickDay(pool, key, recent);
     history.push(out.map((q) => q.id));
   }
-  return out;
+  if (out.every((q) => (q.minLevel ?? 1) <= level)) return out;
+  const spare = shuffled(pool, dayKey).filter((q) => (q.minLevel ?? 1) <= level && !out.includes(q));
+  const result = out.map((q) => ((q.minLevel ?? 1) <= level ? q : null));
+  for (let i = 0; i < result.length; i++) {
+    if (result[i]) continue;
+    const pick = spare.find((s) => !result.some((r) => r?.area === s.area)) ?? spare[0];
+    if (pick) spare.splice(spare.indexOf(pick), 1);
+    result[i] = pick ?? null;
+  }
+  return result.filter((q): q is QuestDef => q !== null);
 }
 
 /** The event running on a day key, with the key of the day this run of it began (claims are per run, so it can come back next year). */
@@ -126,11 +140,22 @@ export function activeEvent(dayKey: string): { event: EventDef; startKey: string
 }
 
 /** How far a quest is: ledger entries since `sinceMs` with its reasons (the 'quest' and 'debug' reasons are never listed in the data). */
-export function questProgress(state: GameState, q: QuestDef, sinceMs: number): number {
+export function questProgress(state: GameState, q: QuestDef, sinceMs: number, untilMs = Number.POSITIVE_INFINITY): number {
   let n = 0;
+  // Ever-counting quests (achievements) also take the counters of the entries folded out of the ledger.
+  if (sinceMs <= 0) {
+    for (const reason of q.reasons) {
+      const f = state.quests.folded?.[reason];
+      const dead = state.quests.folded?.[`${reason}:dead`];
+      if (!f) continue;
+      const one = q.measure === 'made' ? f.made - (q.notDead ? (dead?.made ?? 0) : 0) : f.n - (q.notDead ? (dead?.n ?? 0) : 0);
+      n += Math.max(0, one);
+    }
+  }
   for (const e of state.ledger) {
-    if (e.at < sinceMs || !q.reasons.includes(e.reason)) continue;
-    if (q.measure === 'made' && !Object.values(e.materials ?? {}).some((v) => (v ?? 0) > 0)) continue;
+    if (e.at < sinceMs || e.at >= untilMs || !q.reasons.includes(e.reason)) continue;
+    if (q.measure === 'made' && !entryMade(e)) continue;
+    if (q.notDead && entryDead(e)) continue;
     n++;
   }
   return Math.min(n, q.target);
@@ -159,9 +184,9 @@ export interface QuestBoard {
 
 const claimedOf = (state: GameState): string[] => state.quests?.claimed ?? [];
 
-function row(state: GameState, kind: QuestKind, claimId: string, q: QuestDef, since: number): QuestRow {
+function row(state: GameState, kind: QuestKind, claimId: string, q: QuestDef, since: number, until = Number.POSITIVE_INFINITY): QuestRow {
   const claimed = claimedOf(state).includes(claimId);
-  const progress = claimed ? q.target : questProgress(state, q, since);
+  const progress = claimed ? q.target : questProgress(state, q, since, until);
   return { claimId, kind, text: q.text, progress, target: q.target, gold: q.gold, claimed, ready: !claimed && progress >= q.target };
 }
 
@@ -172,7 +197,7 @@ function hintRows(state: GameState): QuestRow[] {
 
 export function questBoard(state: GameState, day: DayInfo): QuestBoard {
   const level = state.player.level;
-  const daily = dailyQuests(day.key, level).map((q) => row(state, 'daily', `daily:${day.key}:${q.id}`, q, day.startMs));
+  const daily = dailyQuests(day.key, level).map((q) => row(state, 'daily', `daily:${day.key}:${q.id}`, q, day.startMs, day.startMs + 86_400_000));
   const active = activeEvent(day.key);
   const event = active
     ? {
@@ -201,6 +226,11 @@ export function claimQuest(state: GameState, claimId: string, day: DayInfo, at: 
   if (!target || !target.ready) return null;
   const paid = applyChange(state, { reason: 'quest', gold: target.gold, note: claimId }, at);
   if (!paid) return null;
-  const keep = (id: string): boolean => !id.startsWith('daily:') || id.startsWith(`daily:${day.key}:`);
-  return { ...paid, quests: { claimed: [...claimedOf(paid).filter(keep), claimId] } };
+  // Only dated claims two or more days older than today are dropped (day indices; a clock or zone flip back to a recent day finds its claim kept).
+  const today = dayIndex(day.key);
+  const keep = (id: string): boolean => {
+    const m = /^daily:(d{4}-d{2}-d{2}):/.exec(id);
+    return !m || dayIndex(m[1]!) > today - 2;
+  };
+  return { ...paid, quests: { ...paid.quests, claimed: [...claimedOf(paid).filter(keep), claimId] } };
 }

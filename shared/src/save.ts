@@ -349,6 +349,8 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     });
     return { ...state, rooms };
   },
+  // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  33: (state) => (isObject(state) ? { ...state, quests: isObject(state.quests) && Array.isArray(state.quests.claimed) ? state.quests : { claimed: [] } } : state),
   // 32 -> 33 (TUT-2 part 3, daily quests and achievements): GameState.quests = { claimed: [] }. The first-run hint quests become the first_* achievements, derived from hintsDone (nothing is lost or paid twice).
   32: (state) => (isObject(state) ? { ...state, quests: isObject(state.quests) && Array.isArray(state.quests.claimed) ? state.quests : { claimed: [] } } : state),
   // 31 -> 32 (step ST1, stacked blocks): Room.blocks per cell was ONE block, now a stack (array, bottom first): every block becomes a stack of one.

@@ -45,7 +45,8 @@ export function mergeGains(...lists: readonly (readonly Gain[])[]): GainList {
  */
 export function gainsSince(before: GameState, after: GameState): GainList {
   const list: GainList = [];
-  for (const e of after.ledger.slice(before.ledger.length)) {
+  const lastId = before.ledger[before.ledger.length - 1]?.id ?? 0;
+  for (const e of after.ledger.filter((x) => x.id > lastId)) {
     if (NOT_GAINS.includes(e.reason)) continue;
     for (const [id, n] of Object.entries(e.materials ?? {})) if (n > 0) list.push(gain(id, n));
     // Gems (step BG5) are a gain with the id 'gems'.

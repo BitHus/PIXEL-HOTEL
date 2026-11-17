@@ -29,7 +29,7 @@ export interface GameState {
   /** How many first-run hints (config HINTS) are done; they show one at a time. */
   hintsDone: number;
   /** TUT-2 part 3 (save 33): daily, event and achievement rewards already taken (QuestRow.claimId). Progress is counted from the ledger. */
-  quests: { claimed: string[] };
+  quests: { claimed: string[]; /** Save 34: old ledger entries folded into counters per reason (reason, and reason:dead for a run that ended in death): n = entries, made = entries that put something in the bag. */ folded?: Record<string, { n: number; made: number }> };
   /** The dungeon run in progress (step 9), saved so a reload resumes it; null between runs. */
   run: DungeonRun | null;
   /** The lakeside's trees (step 9f, woodcut.ts); the lakeside room itself is in rooms. */

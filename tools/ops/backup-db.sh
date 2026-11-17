@@ -7,6 +7,11 @@ DB="${PB_DB:-/var/lib/pocketbarrel/pb.sqlite}"
 DIR="${PB_BACKUP_DIR:-/var/backups/pocketbarrel}"
 KEEP="${PB_BACKUP_KEEP:-14}"
 REMOTE="${PB_BACKUP_REMOTE:-}"
+umask 077
+if [ ! -s "$DB" ]; then echo "refusing to back up: database missing or empty: $DB" >&2; exit 1; fi
+if [ "$(sqlite3 "$DB" "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='accounts';")" != "1" ]; then
+  echo "refusing to back up: no accounts table in $DB" >&2; exit 1
+fi
 mkdir -p "$DIR"
 OUT="$DIR/pb-$(date -u +%Y%m%d-%H%M%S).sqlite"
 # .backup is safe while the server writes (WAL), unlike cp.
@@ -18,5 +23,5 @@ if [ "$(sqlite3 "$OUT" 'PRAGMA integrity_check;')" != "ok" ]; then
 fi
 gzip -f "$OUT"
 find "$DIR" -name 'pb-*.sqlite.gz' -mtime +"$KEEP" -delete
-if [ -n "$REMOTE" ]; then rsync -a --delete-after "$DIR/" "$REMOTE"; fi
+if [ -n "$REMOTE" ]; then rsync -a "$DIR/" "$REMOTE"; fi
 echo "backup ok: $OUT.gz"

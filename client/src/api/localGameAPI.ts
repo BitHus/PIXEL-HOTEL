@@ -222,6 +222,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async upgradeRoom(roomId: number): Promise<Room | null> { return roomsApi.upgradeRoom(this, roomId); }
   async getRoom(roomId: number): Promise<Room | null> { return roomsApi.getRoom(this, roomId); }
   async currentHint(): Promise<string | null> { return progressApi.currentHint(this); }
+  async ensureTutorialCookSupplies(): Promise<boolean> { return progressApi.ensureTutorialCookSupplies(this); }
 
   // ---------- The dungeon (step 9) ----------
 

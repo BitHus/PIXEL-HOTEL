@@ -124,3 +124,10 @@ export function returnOrphanCooks(state: GameState, at: number): GameState {
   }
   return next;
 }
+
+/** The tutorial's stove step (guide.json 'stove') gives the early dish's ingredient when the player has none: the first brew eats the starter crops (START_CROPS), so the cook step would find an empty bag. Null when a dish can be cooked already. */
+export const TUTORIAL_COOK_CROPS = { turnip: 2 } as const;
+export function tutorialCookSupplies(state: GameState, at: number): GameState | null {
+  if (FOOD_TYPES.some((f) => canCook(f, state))) return null;
+  return applyChange(state, { reason: 'start', materials: TUTORIAL_COOK_CROPS, note: 'tutorial cook' }, at);
+}

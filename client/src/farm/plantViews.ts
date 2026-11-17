@@ -118,7 +118,16 @@ export class PlantViews {
   private paint(v: PlantView): void {
     v.sprite?.destroy();
     v.sprite = null;
+    v.sparkle?.destroy();
+    v.sparkle = null;
     v.art.clear();
+    // OA-5b: the ripe sparkle over a full plant when plants/ripe_sparkle.png is loaded (update() animates it).
+    const sparkleFrames = v.stage === 'full' ? spriteFrames('plants', 'ripe', 'sparkle', BUILD_CELL) : null;
+    if (sparkleFrames?.[0]) {
+      v.sparkle = new Sprite(sparkleFrames[0]);
+      v.sparkle.eventMode = 'none';
+      v.node.addChild(v.sparkle);
+    }
     const sprite = plantSprite(v.seed, v.stage);
     if (sprite) {
       v.sprite = sprite;

@@ -19,7 +19,7 @@ import { TavernFx } from '../render/tavernFx.ts';
 import { surfaceHeight } from '../render/furnitureArt.ts';
 import { createFirstTenGuide } from '../ui/firstTenGuide.ts';
 import { startGuideWorld, type GuideWorldApi } from './guideWorld.ts';
-import { brewReady as brewIsReady, guideWaiting, machineStates, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
+import { brewReady as brewIsReady, firstTenGoal, guideWaiting, machineStates, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { sellDetail, sellRowIcon } from '../ui/sellTab.ts';
@@ -58,6 +58,7 @@ export async function setupTavernLife(g: G9) {
   const fx = new TavernFx(view, () => prefs.reduceEffects);
   let readyNow = new Set<string>();
   /** Steam from ready machines, a "ding" when one becomes ready, the guide's waiting steps and the ambient bed. */
+  let stoveSupplyAsked = false;
   const syncMachines = (): void => {
     const on = st.room.id === st.tavern.roomId && !fx.paused;
     const now = Date.now();
@@ -82,6 +83,11 @@ export async function setupTavernLife(g: G9) {
     const waiting: FirstTenStep[] = guideWorld ? guideWaiting(guide.state, guideWorld.context(brewReady)) : [];
     // The tutorial card shows in every room (farm, mine, lakeside steps) except inside a dungeon run.
     guide.refresh(waiting, !g.dungeon.isActive);
+    // The stove step needs something to cook: the first brew used the starter crops, so top up once when it becomes the goal.
+    if (!stoveSupplyAsked && firstTenGoal(guide.state, waiting) === 'stove') {
+      stoveSupplyAsked = true;
+      void api.ensureTutorialCookSupplies();
+    }
     sound.setAmbience(on ? 'tavern' : null, Math.min(1, st.seatedGuests / 6));
   };
   // G2: the hands-on pour. The avatar waits at the taps; the player presses and HOLDS THE TAP STAND itself (pointerInput asks pourControl.claims first).

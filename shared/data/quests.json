@@ -11,7 +11,7 @@
     { "id": "d_harvest3", "text": "Harvest 3 plants.", "area": "farm", "reasons": ["harvest"], "target": 3, "gold": 15 },
     { "id": "d_chop3", "text": "Fell 3 trees at the lakeside.", "area": "lakeside", "reasons": ["chop"], "target": 3, "gold": 12 },
     { "id": "d_fish2", "text": "Catch 2 fish.", "area": "lakeside", "reasons": ["fish"], "target": 2, "gold": 15 },
-    { "id": "d_run", "text": "Finish one dungeon run and bring your bag home.", "area": "dungeon", "reasons": ["dungeon_bank"], "target": 1, "gold": 20 },
+    { "id": "d_run", "text": "Finish one dungeon run and bring your bag home.", "area": "dungeon", "reasons": ["dungeon_bank"], "notDead": true, "target": 1, "gold": 20 },
     { "id": "d_mine", "text": "Finish one visit to the mine.", "area": "mine", "reasons": ["mine_bank"], "target": 1, "gold": 20, "minLevel": 3 },
     { "id": "d_craft", "text": "Craft something at the Workshop.", "area": "craft", "reasons": ["craft"], "target": 1, "gold": 15 },
     { "id": "d_sell", "text": "Sell a surplus thing at the bar's Sell tab.", "area": "trade", "reasons": ["sell"], "target": 1, "gold": 10 }
@@ -40,7 +40,7 @@
       "quests": [
         { "id": "ml_brew", "text": "Brew 3 batches of drinks.", "reasons": ["brew"], "measure": "made", "target": 3, "gold": 25 },
         { "id": "ml_serve", "text": "Collect the coins of 20 tables.", "reasons": ["tavern"], "target": 20, "gold": 25 },
-        { "id": "ml_run", "text": "Finish 2 dungeon runs.", "reasons": ["dungeon_bank"], "target": 2, "gold": 25 }
+        { "id": "ml_run", "text": "Finish 2 dungeon runs.", "reasons": ["dungeon_bank"], "notDead": true, "target": 2, "gold": 25 }
       ]
     },
     {
@@ -82,8 +82,8 @@
     { "id": "chop_25", "text": "Fell 25 trees.", "reasons": ["chop"], "target": 25, "gold": 30 },
     { "id": "fish_10", "text": "Catch 10 fish.", "reasons": ["fish"], "target": 10, "gold": 30 },
     { "id": "fish_50", "text": "Catch 50 fish.", "reasons": ["fish"], "target": 50, "gold": 80 },
-    { "id": "run_5", "text": "Bring 5 dungeon runs home.", "reasons": ["dungeon_bank"], "target": 5, "gold": 30 },
-    { "id": "run_25", "text": "Bring 25 dungeon runs home.", "reasons": ["dungeon_bank"], "target": 25, "gold": 80 },
+    { "id": "run_5", "text": "Bring 5 dungeon runs home.", "reasons": ["dungeon_bank"], "notDead": true, "target": 5, "gold": 30 },
+    { "id": "run_25", "text": "Bring 25 dungeon runs home.", "reasons": ["dungeon_bank"], "notDead": true, "target": 25, "gold": 80 },
     { "id": "mine_5", "text": "Finish 5 visits to the mine.", "reasons": ["mine_bank"], "target": 5, "gold": 30 },
     { "id": "craft_5", "text": "Craft 5 things.", "reasons": ["craft"], "target": 5, "gold": 30 },
     { "id": "splice_3", "text": "Splice 3 pairs of seeds.", "reasons": ["splice"], "target": 3, "gold": 40 }
