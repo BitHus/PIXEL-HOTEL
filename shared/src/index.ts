@@ -88,3 +88,5 @@ export * from './pet.ts';
 export * from './roomScore.ts';
 export * from './petWorld.ts';
 export * from './blockTap.ts';
+export * from './workRooms.ts';
+export * from './cellarRooms.ts';

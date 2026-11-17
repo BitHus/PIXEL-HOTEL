@@ -7,6 +7,7 @@
 
 import { COOK_MS, STOVE_BATCH_MAX } from './config.ts';
 import { getFurnitureType } from './furniture.ts';
+import { inRooms, kitchenRoomIds } from './workRooms.ts';
 import { prepBonus } from './kitchen.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
@@ -44,12 +45,12 @@ export function cookReadyInMs(cook: Cook, now: number): number {
 }
 
 /** The stoves placed in the tavern, in uid order. */
-export function stoves(items: readonly FurnitureItem[], roomId: number): FurnitureItem[] {
-  return items.filter((i) => i.roomId === roomId && getFurnitureType(i.typeId).cooks === true).sort((a, b) => a.uid - b.uid);
+export function stoves(items: readonly FurnitureItem[], roomId: number | readonly number[]): FurnitureItem[] {
+  return items.filter((i) => inRooms(i.roomId, roomId) && getFurnitureType(i.typeId).cooks === true).sort((a, b) => a.uid - b.uid);
 }
 
 function placedStove(state: GameState, uid: number): FurnitureItem | undefined {
-  return stoves(state.items, state.tavern.roomId).find((i) => i.uid === uid);
+  return stoves(state.items, kitchenRoomIds(state)).find((i) => i.uid === uid);
 }
 
 function withCooks(state: GameState, cooks: Cook[]): GameState {
@@ -92,7 +93,7 @@ export function startCook(state: GameState, stoveUid: number, food: string, qty:
   const used: Partial<Record<MaterialId, number>> = {};
   for (const [id, n] of Object.entries(batchInputs(type, qty)) as [MaterialId, number][]) used[id] = -n;
   const paid = applyChange(state, { reason: 'cook', materials: used, note: `cooking ${qty} x ${food}` }, at);
-  const bonus = prepBonus(state.items, state.rooms.find((r) => r.id === state.tavern.roomId), stoveUid);
+  const bonus = prepBonus(state.items, state.rooms.find((r) => r.id === state.items.find((i) => i.uid === stoveUid)?.roomId), stoveUid);
   return paid && withCooks(paid, [...paid.tavern.cooks, { stoveUid, food, qty, ...(bonus > 0 ? { bonus } : {}), readyAt: at + cookMs(type) }]);
 }
 

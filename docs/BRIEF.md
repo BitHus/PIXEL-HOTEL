@@ -64,7 +64,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   that is closer, and the camera snaps to whole device pixels. The canvas renders at the
   full devicePixelRatio. The default (overview) zoom is the
   largest one where the whole room fits on screen, and at least 0.5. If the room does not
-  fit at zoom 0.5, the camera follows the avatar and the player can pan.
+  fit at zoom 0.5, the camera follows the avatar and the player can pan. CAM-LOCK: while the avatar walks the camera is locked on it (exactly centred, no pan; soft edge clamp 64 px); standing still a drag pans, walking again eases back. Settings: Camera Locked while walking / Free look.
 - Camera intro: when a room opens, the camera starts at the overview zoom, waits 0.6 s
   (INTRO_WAIT_MS), then zooms in smoothly over 0.8 s (INTRO_ZOOM_MS) to the settled zoom
   (the zooms above where zoom * devicePixelRatio is whole) nearest to 3 real pixels per art
@@ -81,7 +81,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Draw order: see section 7.
 
 5. ROOMS
-- A room is { id, kind: 'hotel' | 'shop' | 'farm' | 'lakeside', level, shape, w, h (the floor's bounding box in px),
+- KITCHEN AND CELLAR (OA-7, CEL-1..5; every number is the plan's PROPOSAL, used with the owner's OK; docs/PLAN-CELLAR.md): kinds 'kitchen' and 'cellar', same Room record, shapes kitchen_room 6x5 / 8x5 / 8x7 and
+  cellar_room 8x5 / 10x5 / 10x7 cells, reached only by a doorway in the back wall of the tavern (innDoors.json) and back; guests never enter. Kitchen: free, in a new game with the start stove and
+  barrel (Player.kitchenRoomId); upgrades ROOM_UPGRADE_COST 300 / 800; the whole room is the kitchen zone. Barrels, stoves, prep tables, pantry, sink and hatch work in the tavern and the kitchen
+  (workRooms.ts kitchenRoomIds). Cellar: Room panel > Build the cellar at player level 2 (CELLAR_UNLOCK_LEVEL), 300 gold (CELLAR_BUILD_COST, ledger 'build'), one free keg rack, upgrades 400 / 900
+  (CELLAR_UPGRADE_COST), racks 2 / 4 / 6 per level (CELLAR_RACK_MAX_BY_LEVEL, canPlace). Ripening tiers fresh / aged 1.6x (after 30 min) / vintage 3x (180) / reserve 5x, tip 1.5x (720 min common; rare
+  1440, ultra rare 2880, legendary 5760), reserve only in a cellar of level 2 or more (RESERVE_MIN_CELLAR_LEVEL); TASTE_RESERVE_CHANCE 0.1. Tavern appeal counts the pieces of both rooms. Save 36 migrates old saves
+  (kitchen with the machines moved in, a free cellar for owned keg racks). Open: balance test CEL 3 (about 59% guest share vs the 55% cap with a full level 3 cellar), CEL-6 ripe dots, CEL-8 art.
+- A room is { id, kind: 'hotel' | 'shop' | 'farm' | 'lakeside' ('kitchen' | 'cellar' since CEL-1), level, shape, w, h (the floor's bounding box in px),
   floorStyle, wallStyle }. Its floor is a union of rectangles (step 7b), from its shape and
   level. Shapes are data in shared/data/roomShapes.json: { id, name, kind: 'hotel'|'shop'|'both',
   levels: [ { rects: [{x, y, w, h}], door: {x} } x3 ] } (plus shopStart: where a new shop's

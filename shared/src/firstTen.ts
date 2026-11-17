@@ -2,12 +2,14 @@
 import guideData from '../data/guide.json';
 
 export type FirstTenStep =
-  | 'walk' | 'menu' | 'pour' | 'serve' | 'coins' | 'barrel' | 'collect' | 'load' | 'stove' | 'farm' | 'plant' | 'harvest' | 'build' | 'wall' | 'dungeon' | 'mine' | 'lakeside' | 'fish';
+  | 'walk' | 'menu' | 'pour' | 'serve' | 'coins' | 'kitchen' | 'barrel' | 'collect' | 'load' | 'cellar' | 'stove' | 'farm' | 'plant' | 'harvest' | 'build' | 'wall' | 'dungeon' | 'mine' | 'lakeside' | 'fish';
 
 /** What the animated pointer sits on (see guide.json _help). */
 export type GuideTarget =
   | { kind: 'floor' | 'guest' | 'stand' | 'coins' | 'none' }
   | { kind: 'furniture'; typeId: string }
+  /** CEL-3: an Inn door of the room the player stands in (shared/data/innDoors.json id). */
+  | { kind: 'door'; id: string }
   | { kind: 'ui'; label: string };
 
 export interface GuideStepData {
@@ -53,6 +55,8 @@ export interface GuideContext {
   coinsOnTable: boolean;
   /** The mine is open (player level high enough); the mine step waits until then. */
   mineOpen: boolean;
+  /** CEL-3: the cellar room is built (the cellar step waits until then). */
+  cellarBuilt?: boolean;
 }
 
 /** What the world shows about the steps that have no event of their own (the client fills it; polled). */
@@ -61,6 +65,8 @@ export interface GuideWorld {
   walked: boolean;
   /** A stove holds a batch. */
   cooking: boolean;
+  /** CEL-3: the player stands in the kitchen room (the kitchen step). */
+  inKitchen?: boolean;
   /** The player stands in the farm. */
   inFarm: boolean;
   /** Build mode is on. */
@@ -77,6 +83,7 @@ export interface GuideWorld {
 export function guideAutoEvents(w: GuideWorld): FirstTenStep[] {
   const out: FirstTenStep[] = [];
   if (w.walked) out.push('walk');
+  if (w.inKitchen) out.push('kitchen');
   if (w.cooking) out.push('stove');
   if (w.inFarm) out.push('farm');
   if (w.buildOn) out.push('build');
@@ -95,6 +102,8 @@ export function guideWaiting(s: FirstTenState, c: GuideContext): FirstTenStep[] 
   if (!(s.done.includes('collect') || c.brewReady)) w.push('collect', 'load');
   // The mine opens at a player level: until then its step waits and the tutorial shows nothing for it (other helpers stay hidden only while a goal shows).
   if (!c.mineOpen) w.push('mine');
+  // CEL-3: the cellar step is offered only once the cellar is built; it ticks on filling a cask, never on waiting.
+  if (!c.cellarBuilt) w.push('cellar');
   return w;
 }
 

@@ -19,6 +19,7 @@ import {
   returnOrphanCooks,
   unlockStyle,
   upgradeRoom,
+  buildCellar,
   lookAllowed,
   drawnLook,
   buildWalkGrid,
@@ -186,6 +187,14 @@ export const roomsApi = {
     h.grid = h.buildGrid();
     h.tavernGrid = null;
     return h.roomById(roomId);
+  },
+
+  async buildCellar(h: LocalGameAPI): Promise<Room | null> {
+    const next = buildCellar(h.state, h.now());
+    if (!next) return null;
+    h.commit(next);
+    h.tavernGrid = null;
+    return h.roomById(next.player.cellarRoomId!);
   },
 
   async getRoom(h: LocalGameAPI, roomId: number): Promise<Room | null> {

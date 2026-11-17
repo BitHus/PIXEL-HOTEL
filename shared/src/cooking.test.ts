@@ -8,6 +8,7 @@ import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { ROOM_SHAPES } from './room.ts';
+import { kitchenRoomIds } from './workRooms.ts';
 import { readSave, toSaveText } from './save.ts';
 import { getFoodType } from './materials.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
@@ -15,7 +16,7 @@ import type { MaterialId } from './types.ts';
 
 const SEC = 1000;
 const withGoods = (m: Partial<Record<MaterialId, number>>, s: GameState = createNewPlayer(undefined, 0)): GameState => applyChange(s, { reason: 'debug', materials: m }, 0)!;
-const stoveUid = (s: GameState): number => stoves(s.items, s.tavern.roomId)[0]!.uid;
+const stoveUid = (s: GameState): number => stoves(s.items, kitchenRoomIds(s))[0]!.uid;
 const food = (id: string) => FOOD_TYPES.find((f) => f.id === id)!;
 
 /** A second stove, placed on a free spot of the start tavern (the square shop). */
@@ -64,16 +65,15 @@ describe('the stove', () => {
     expect(t.icon.shape).toBe('stove');
   });
 
-  it('a new game starts with one stove in the tavern, near the bar, on every shop shape', () => {
+  it('a new game starts with one stove, in the attached kitchen room (CEL-2), on every shop shape', () => {
     for (const shape of ROOM_SHAPES.filter((r) => r.shopStart)) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
-      const list = stoves(s.items, s.tavern.roomId);
+      const list = stoves(s.items, kitchenRoomIds(s));
       expect(list, shape.id).toHaveLength(1);
-      const counter = s.items.find((i) => i.typeId === 'counter')!;
-      expect(list[0]!.y, shape.id).toBe(counter.y);
-      expect(Math.abs(list[0]!.x - counter.x), shape.id).toBeLessThanOrEqual(160); // COD-1 (f): the kitchen is a few cells from the bar, not on top of it
-      // It stands where it may stand, with every other start item (and the counter's staff spot stays reachable).
-      const room = s.rooms.find((r) => r.id === s.tavern.roomId)!;
+      const room = s.rooms.find((r) => r.id === list[0]!.roomId)!;
+      expect(room.kind, shape.id).toBe('kitchen');
+      expect(s.player.kitchenRoomId).toBe(room.id);
+      // It stands where it may stand, with every other start item of the kitchen.
       const others = s.items.filter((i) => i.uid !== list[0]!.uid);
       expect(canPlace(room, others, getFurnitureType('stove'), list[0]!.x, list[0]!.y, 'down'), shape.id).toBe(true);
       expect(roomBlockers(room, s.items).length).toBeGreaterThan(0);
@@ -155,7 +155,7 @@ describe('cooking in real time', () => {
 
   it('two stoves cook two batches in parallel, each on its own time', () => {
     const s0 = withGoods({ turnip: 6, potato: 4 }, withSecondStove(createNewPlayer(undefined, 0)));
-    const [a, b] = stoves(s0.items, s0.tavern.roomId).map((i) => i.uid) as [number, number];
+    const [a, b] = stoves(s0.items, kitchenRoomIds(s0)).map((i) => i.uid) as [number, number];
     expect(a).not.toBe(b);
     let s = startCook(s0, a, 'roasted_turnip', 4, 1_000)!;
     s = startCook(s, b, 'potato_stew', 1, 1_000)!;

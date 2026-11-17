@@ -24,12 +24,13 @@ function withRack(): GameState {
 }
 
 describe('the tier items (built from drinks.json)', () => {
-  it('every drink has an aged and a vintage item with the QUEUE numbers: 1.6x and 3x, same icon, vintage one rank up at most', () => {
-    expect(TIER_DRINK_TYPES).toHaveLength(DRINK_TYPES.length * 2);
-    expect(RIPEN.map((r) => [r.tier, r.valueMult])).toEqual([['aged', 1.6], ['vintage', 3]]);
+  it('every drink has an aged, a vintage and a reserve item with the numbers 1.6x, 3x and 5x (CEL-5), same icon, vintage and reserve one rank up at most', () => {
+    expect(TIER_DRINK_TYPES).toHaveLength(DRINK_TYPES.length * 3);
+    expect(RIPEN.map((r) => [r.tier, r.valueMult, r.tipMult])).toEqual([['aged', 1.6, 1.2], ['vintage', 3, 1], ['reserve', 5, 1.5]]);
     const ale = getDrinkType('root_ale');
     expect(getMaterialType('root_ale_aged')).toMatchObject({ name: 'Aged root ale', group: 'drink', baseValue: Math.round(ale.baseValue * 1.6), rank: 'common' });
     expect(getMaterialType('root_ale_vintage')).toMatchObject({ name: 'Vintage root ale', baseValue: ale.baseValue * 3, rank: 'rare' });
+    expect(getMaterialType('root_ale_reserve')).toMatchObject({ name: 'Reserve root ale', baseValue: ale.baseValue * 5, rank: 'rare' });
     expect(getMaterialType('glowcap_tonic_vintage').rank).toBe('ultra_rare');
     expect(getDrinkType('root_ale_aged').icon).toEqual(ale.icon);
     expect(getDrinkType('glowcap_tonic_aged').tip).toBeCloseTo(0.25 * 1.2);

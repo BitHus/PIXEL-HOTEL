@@ -21,7 +21,7 @@ import tavern2Data from '../data/furniture/tavern2.json';
 import tavern3Data from '../data/furniture/tavern3.json';
 import medievalData from '../data/furniture/medieval.json';
 import spliceFurnitureData from '../data/furniture/splice.json';
-import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
+import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX, CELLAR_RACK_MAX_BY_LEVEL,
   STAFF_ZONE_DEPTH_PX,
   STAFF_ZONE_SIDE_PX, SNAP, WALL_BAND } from './config.ts';
 import { barExtensionsConnected, canRemoveBarPiece, isBarPiece } from './barExtension.ts';
@@ -141,7 +141,17 @@ export function fitsRoomKind(type: FurnitureType, room: Room): boolean {
   if (room.kind === 'lakeside') return false;
   // The farm (step 9b) takes home decorations: everything that may go in the hotel room.
   if (room.kind === 'farm') return type.placeIn === 'both' || type.placeIn === 'hotel';
+  // CEL-2: the kitchen room takes the kitchen pieces (barrel, stove, prep table, pantry, sink, hatch); the cellar takes keg racks; both take any piece that may
+  // go in the hotel room AND the tavern ('both': decor), never the tavern's own pieces (bar, tables, taps, register).
+  if (room.kind === 'kitchen') return type.placeIn === 'both' || KITCHEN_PIECES.has(type.id);
+  if (room.kind === 'cellar') return type.placeIn === 'both' || type.casks === true;
   return type.placeIn === 'both' || type.placeIn === room.kind;
+}
+
+/** Tavern pieces that may also stand in the attached kitchen room (CEL-2); old layouts keep them in the tavern too. */
+const KITCHEN_PIECES: ReadonlySet<string> = new Set(['brewing_barrel', 'stove', 'prep_table', 'pantry', 'sink', 'serving_hatch']);
+export function isKitchenPiece(typeId: string): boolean {
+  return KITCHEN_PIECES.has(typeId);
 }
 
 /** Items standing on the item with this uid. */
@@ -242,6 +252,8 @@ export function canPlace(
   types: FurnitureLookup = getFurnitureType,
 ): boolean {
   if (!fitsRoomKind(type, room) || !type.facings.includes(facing)) return false;
+  // CEL-4: a cellar takes only so many keg racks per level (the others are in the list without the one being moved).
+  if (room.kind === 'cellar' && type.casks && items.filter((o) => o.roomId === room.id && types(o.typeId).casks === true).length >= (CELLAR_RACK_MAX_BY_LEVEL[room.level - 1] ?? 0)) return false;
   if (type.wall) {
     // OA-10: anywhere on a back wall band (free x and y, the whole item inside one band).
     const wr = wallItemRect({ x, y, facing }, type);

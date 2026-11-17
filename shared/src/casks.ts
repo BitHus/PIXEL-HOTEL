@@ -4,8 +4,9 @@
 // plain drink ids (`root_ale_aged`, materials.ts), so taps, the menu, the ledger and the Book work with them unchanged. Mugs move through applyChange
 // (ledger 'cask_fill' and 'cask_collect').
 
-import { CASK_SLOTS, RIPEN_AFTER_MIN } from './config.ts';
+import { CASK_SLOTS, RESERVE_MIN_CELLAR_LEVEL, RIPEN_AFTER_MIN } from './config.ts';
 import { getFurnitureType } from './furniture.ts';
+import { cellarRoomIds, inRooms } from './workRooms.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { getDrinkType, isBaseDrinkId } from './materials.ts';
@@ -24,12 +25,12 @@ export interface Cask {
 export type CaskTier = 'fresh' | DrinkTier;
 
 /** The keg racks placed in the tavern, in uid order. */
-export function kegRacks(items: readonly FurnitureItem[], roomId: number): FurnitureItem[] {
-  return items.filter((i) => i.roomId === roomId && getFurnitureType(i.typeId).casks === true).sort((a, b) => a.uid - b.uid);
+export function kegRacks(items: readonly FurnitureItem[], roomId: number | readonly number[]): FurnitureItem[] {
+  return items.filter((i) => inRooms(i.roomId, roomId) && getFurnitureType(i.typeId).casks === true).sort((a, b) => a.uid - b.uid);
 }
 
 function rackPlaced(state: GameState, uid: number): boolean {
-  return kegRacks(state.items, state.tavern.roomId).some((i) => i.uid === uid);
+  return kegRacks(state.items, cellarRoomIds(state)).some((i) => i.uid === uid);
 }
 
 function withCasks(state: GameState, casks: Cask[]): GameState {
@@ -40,21 +41,40 @@ export function caskOf(casks: readonly Cask[], rackUid: number, slot: number): C
   return casks.find((c) => c.rackUid === rackUid && c.slot === slot);
 }
 
-/** The minutes after which a mug of this drink is aged and vintage (by the rank of the PLAIN drink). */
-export function ripenMinutes(drink: BaseDrinkId): { aged: number; vintage: number } {
+/** The minutes after which a mug of this drink is aged, vintage and reserve (by the rank of the PLAIN drink). */
+export function ripenMinutes(drink: BaseDrinkId): { aged: number; vintage: number; reserve: number } {
   return RIPEN_AFTER_MIN[getDrinkType(drink).rank];
 }
 
-/** The tier a cask is at, at time `at`: fresh below the aged mark, aged from it (the exact millisecond counts), vintage from the vintage mark. */
-export function caskTier(cask: Cask, at: number): CaskTier {
+/** The highest tier a rack gives (CEL-5): reserve only from a cellar of level RESERVE_MIN_CELLAR_LEVEL; a level 1 cellar and a rack in the tavern stop at vintage. */
+export type CaskCap = 'vintage' | 'reserve';
+export function rackTierCap(state: Pick<GameState, 'items' | 'rooms'>, rackUid: number): CaskCap {
+  const room = state.rooms.find((r) => r.id === state.items.find((i) => i.uid === rackUid)?.roomId);
+  return room?.kind === 'cellar' && room.level >= RESERVE_MIN_CELLAR_LEVEL ? 'reserve' : 'vintage';
+}
+
+/**
+ * The tier a cask is at, at time `at`: fresh below the aged mark, aged from it (the exact millisecond counts), vintage from the vintage mark, reserve from the
+ * reserve mark when the rack allows it (`cap`, default reserve).
+ */
+export function caskTier(cask: Cask, at: number, cap: CaskCap = 'reserve'): CaskTier {
   const m = ripenMinutes(cask.drink);
   const elapsed = at - cask.startedAt;
+  if (elapsed >= m.reserve * 60_000 && cap === 'reserve') return 'reserve';
   return elapsed >= m.vintage * 60_000 ? 'vintage' : elapsed >= m.aged * 60_000 ? 'aged' : 'fresh';
 }
 
+/** ms until the next tier the rack allows (0 when the cask is at its top tier); `elapsed` ms since it was filled. */
+export function nextTierInMs(drink: BaseDrinkId, elapsed: number, cap: CaskCap = 'reserve'): number {
+  const m = ripenMinutes(drink);
+  const marks = [m.aged, m.vintage, ...(cap === 'reserve' ? [m.reserve] : [])].map((x) => x * 60_000);
+  const next = marks.find((x) => x > elapsed);
+  return next === undefined ? 0 : next - elapsed;
+}
+
 /** The item a cask gives at its current tier. */
-export function caskItem(cask: Cask, at: number): DrinkId {
-  const tier = caskTier(cask, at);
+export function caskItem(cask: Cask, at: number, cap: CaskCap = 'reserve'): DrinkId {
+  const tier = caskTier(cask, at, cap);
   return tier === 'fresh' ? cask.drink : (`${cask.drink}_${tier}` as DrinkId);
 }
 
@@ -74,9 +94,10 @@ export function fillCask(state: GameState, rackUid: number, slot: number, drink:
 export function collectCask(state: GameState, rackUid: number, slot: number, at: number): { state: GameState; item: DrinkId; mugs: number; tier: CaskTier } | null {
   const cask = caskOf(state.tavern.casks, rackUid, slot);
   if (!cask || !rackPlaced(state, rackUid)) return null;
-  const item = caskItem(cask, at);
+  const cap = rackTierCap(state, rackUid);
+  const item = caskItem(cask, at, cap);
   const got = applyChange(state, { reason: 'cask_collect', materials: { [item]: cask.mugs }, note: `collected ${cask.mugs} x ${item}` }, at);
-  return got && { state: withCasks(got, got.tavern.casks.filter((c) => c !== cask)), item, mugs: cask.mugs, tier: caskTier(cask, at) };
+  return got && { state: withCasks(got, got.tavern.casks.filter((c) => c !== cask)), item, mugs: cask.mugs, tier: caskTier(cask, at, cap) };
 }
 
 /** One slot as the Cask panel shows it. */
@@ -87,27 +108,29 @@ export interface CaskView {
   drink: BaseDrinkId | null;
   mugs: number;
   tier: CaskTier;
-  /** ms until the next tier (0 when vintage or free). */
+  /** CEL-5: the highest tier this rack allows (reserve only in a cellar of level 2 or more). */
+  cap: CaskCap;
+  /** ms until the next tier the rack allows (0 when at the top or free). */
   nextInMs: number;
-  /** 0..1 along the way to vintage. */
+  /** 0..1 along the way to the top tier the rack allows. */
   progress: number;
 }
 
 /** Every slot of every keg rack in the tavern (free ones too), with the tier at time `at`. */
 export function caskViews(state: GameState, at: number): CaskView[] {
   const out: CaskView[] = [];
-  for (const rack of kegRacks(state.items, state.tavern.roomId)) {
+  for (const rack of kegRacks(state.items, cellarRoomIds(state))) {
     for (let slot = 0; slot < CASK_SLOTS; slot++) {
       const cask = caskOf(state.tavern.casks, rack.uid, slot);
+      const cap = rackTierCap(state, rack.uid);
       if (!cask) {
-        out.push({ rackUid: rack.uid, slot, drink: null, mugs: 0, tier: 'fresh', nextInMs: 0, progress: 0 });
+        out.push({ rackUid: rack.uid, slot, drink: null, mugs: 0, tier: 'fresh', cap, nextInMs: 0, progress: 0 });
         continue;
       }
       const m = ripenMinutes(cask.drink);
       const elapsed = Math.max(0, at - cask.startedAt);
-      const tier = caskTier(cask, at);
-      const nextInMs = tier === 'vintage' ? 0 : (tier === 'fresh' ? m.aged : m.vintage) * 60_000 - elapsed;
-      out.push({ rackUid: rack.uid, slot, drink: cask.drink, mugs: cask.mugs, tier, nextInMs, progress: Math.min(1, elapsed / (m.vintage * 60_000)) });
+      const tier = caskTier(cask, at, cap);
+      out.push({ rackUid: rack.uid, slot, drink: cask.drink, mugs: cask.mugs, tier, cap, nextInMs: nextTierInMs(cask.drink, elapsed, cap), progress: Math.min(1, elapsed / ((cap === 'reserve' ? m.reserve : m.vintage) * 60_000)) });
     }
   }
   return out;

@@ -64,8 +64,8 @@ export async function debugOn(page: Page, followOff = true): Promise<void> {
   const dbg = page.getByRole('button', { name: /Debug: off/ });
   await dbg.dispatchEvent('click');
   if (followOff) {
-    const f = page.getByRole('button', { name: /Follow camera/i });
-    if ((await f.count()) && /on/i.test((await f.first().textContent()) ?? '')) await f.first().dispatchEvent('click');
+    const f = page.getByRole('button', { name: /Camera:/i });
+    if ((await f.count()) && /Locked/i.test((await f.first().textContent()) ?? '')) await f.first().dispatchEvent('click');
   }
   await page.keyboard.press('Escape');
 }

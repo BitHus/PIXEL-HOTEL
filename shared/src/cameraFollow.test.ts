@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { followLock, followStep, followTarget } from './cameraFollow.ts';
+import { followLock, followStep, followTarget, lockTarget } from './cameraFollow.ts';
 import { cameraAt, cameraCenter } from './view.ts';
 
 const ROOM = { x: 0, y: 0, w: 800, h: 600 };
@@ -58,7 +58,23 @@ describe('followLock (OA-13)', () => {
     const start = { x: 0, y: 0, zoom: 3 };
     const target = { x: 500, y: 350 };
     const one = followLock(start, target, W, H, ROOM);
-    expect(one).toEqual(followTarget(start, target, W, H, ROOM));
+    expect(one).toEqual(lockTarget(start, target, W, H, ROOM));
     expect(followLock(one, target, W, H, ROOM)).toBe(one);
+  });
+});
+
+describe('lockTarget (CAM-LOCK)', () => {
+  it('keeps the avatar exactly in the middle at a wall corner', () => {
+    const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: 5, y: 5 }, W, H, ROOM);
+    expect(cameraCenter(t, W, H)).toEqual({ x: 5, y: 5 });
+  });
+  it('never centres more than the margin beyond the room edge', () => {
+    const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: -500, y: 300 }, W, H, ROOM);
+    expect(cameraCenter(t, W, H)).toEqual({ x: -64, y: 300 });
+  });
+  it('a room that fits on an axis stays centred on that axis only', () => {
+    const wide = { x: 0, y: 0, w: 100, h: 600 };
+    const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: 10, y: 400 }, W, H, wide);
+    expect(cameraCenter(t, W, H)).toEqual({ x: 50, y: 400 });
   });
 });

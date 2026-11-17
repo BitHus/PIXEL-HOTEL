@@ -26,7 +26,7 @@ export interface SettingsHooks {
   onNameTags(on: boolean): void;
   /** Reduce effects (outdoors rework C11): a device pref read by the dungeon screen each frame. */
   onReduceEffects(on: boolean): void;
-  /** COD-1 (a): the camera follows the avatar in the tavern. */
+  /** CAM-LOCK: true = camera locked on the avatar while it walks (old followCamera), false = free look. */
   onFollowCamera(on: boolean): void;
   /** ONBOARD-1: start the first-steps guide again. */
   onReplayGuide(): void;
@@ -149,16 +149,16 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   const fxNote = el('p', 'panel-note', 'Calmer fights: no screen shake, freeze frames, sparks or bursts. Damage numbers and sounds stay.');
 
   let follow = hooks.prefs.followCamera;
-  const followBtn = textButton(`Follow camera: ${follow ? 'on' : 'off'}`, () => {
+  const followBtn = textButton(`Camera: ${follow ? 'Locked while walking' : 'Free look'}`, () => {
     follow = !follow;
-    followBtn.textContent = `Follow camera: ${follow ? 'on' : 'off'}`;
+    followBtn.textContent = `Camera: ${follow ? 'Locked while walking' : 'Free look'}`;
     followBtn.classList.toggle('on', follow);
     hooks.onFollowCamera(follow);
   });
   followBtn.classList.toggle('on', follow);
   const guideBtn = textButton('Replay the first steps', () => hooks.onReplayGuide());
   const guideNote = el('p', 'panel-note', 'Shows the step-by-step tavern guide again, with the pointers.');
-  const followNote = el('p', 'panel-note', 'In the tavern the camera glides after you. A drag or pinch pauses it for a moment.');
+  const followNote = el('p', 'panel-note', 'Locked: while you walk you stay exactly in the middle of the screen. Standing still, drag to look around; walking again brings the camera back. Free look: the camera stays where you put it.');
 
   // The on/off buttons become peg-and-groove switches (skin.css .btn.switch).
   for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, followBtn, debugBtn]) b.classList.add('switch');

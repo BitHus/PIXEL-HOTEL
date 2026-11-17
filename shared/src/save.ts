@@ -13,6 +13,7 @@ import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
 import { isSeedId } from './materials.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
+import { addCellarForRacks, addKitchenRoom } from './cellarRooms.ts';
 import { applyChange, type Change } from './ledger.ts';
 import type { LootRef, Player } from './types.ts';
 import type { GameState } from './gameState.ts';
@@ -350,6 +351,13 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     return { ...state, rooms };
   },
   // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  // 35 -> 36 (CEL-2/4): the attached kitchen room (Player.kitchenRoomId; stove, barrel, prep tables, pantry, sink and hatch move in from the tavern, level = the tavern's)
+  // and, when the player owns a keg rack, a cellar with the racks (Player.cellarRoomId, free). Brews, cooks and casks are keyed by furniture uid, so batches in progress and
+  // cask start times stay exact; what does not fit goes to the bag; the tavern's two new doors clear their spots.
+  35: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms) || !Array.isArray(state.items) || !isObject(state.player) || !isObject(state.tavern)) return state;
+    return addCellarForRacks(addKitchenRoom(state as unknown as GameState));
+  },
   // 34 -> 35 (CEL-1): Player.kitchenRoomId and cellarRoomId are optional (missing = no such room yet) and Room.kind may be 'kitchen' or 'cellar'; nothing to change in an old save (the kitchen and the cellar are created and filled when the doors exist, CEL-2/4).
   34: (state) => state,
   33: (state) => (isObject(state) ? { ...state, quests: isObject(state.quests) && Array.isArray(state.quests.claimed) ? state.quests : { claimed: [] } } : state),
@@ -510,7 +518,7 @@ export function isGameState(x: unknown): x is GameState {
   const p = x.player;
   if (!isObject(p) || !isInt(p.id) || !isObject(p.wallet) || !isInt(p.wallet.gold) || !isInt(p.wallet.gems) || !isObject(p.materials)) return false;
   if (!isObject(x.look) || !Array.isArray(x.rooms) || x.rooms.length === 0) return false;
-  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside') && typeof r.shape === 'string')) return false;
+  if (!x.rooms.every((r) => isObject(r) && isInt(r.id) && (r.kind === 'hotel' || r.kind === 'shop' || r.kind === 'farm' || r.kind === 'lakeside' || r.kind === 'kitchen' || r.kind === 'cellar') && typeof r.shape === 'string')) return false;
   if (typeof x.look.hairStyle !== 'string' || typeof x.look.top !== 'string' || typeof x.look.bottoms !== 'string') return false;
   if (!Array.isArray(p.unlockedClothing) || !Array.isArray(p.splicesFound) || !isObject(p.clothingSpares) || !isObject(p.packsOpened) || typeof x.playerCreated !== 'boolean' || typeof p.innName !== 'string') return false;
   if (p.pet !== null && !(isObject(p.pet) && typeof p.pet.name === 'string')) return false;

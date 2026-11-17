@@ -3,7 +3,7 @@
 // targets are shared/data/guide.json. Lives next to tavernLife (which owns the guide) and is started from there.
 
 import {
-  AVATAR_H, BUILD_CELL, LAKE_WATER, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
+  AVATAR_H, BUILD_CELL, LAKE_WATER, innDoorSpots, isKitchenPiece, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
   type GuideContext, type GuideTarget, type Point,
 } from '@pixel-hotel/shared';
 import { surfaceHeight } from '../render/furnitureArt.ts';
@@ -19,6 +19,8 @@ export interface GuideWorldHooks {
   pouring: () => boolean;
   /** True while the tavern room is the one on screen. */
   inTavern: () => boolean;
+  /** CEL-3: the tavern or its attached kitchen or cellar is on screen. */
+  inWork: () => boolean;
   /** Keys of the machines that are ready ('s<uid>' stove, 'b<uid>' barrel), for the ready dots (VG-1). */
   ready: () => ReadonlySet<string>;
 }
@@ -46,6 +48,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
       trayServes: guestsTrayCanServe(t).length > 0,
       coinsOnTable: t.mess.some((m) => m.coins > 0),
       mineOpen,
+      cellarBuilt: t.cellarRoomId !== undefined,
     };
   };
 
@@ -83,6 +86,19 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     const w = LAKE_WATER[0];
     return w ? worldToScreen({ x: w.x + w.w / 2, y: w.y + w.h / 2 }, st.shown) : null;
   };
+  /** CEL-3: the pointer on an Inn door of the room on screen (null when it has no such door). */
+  const doorScreen = (id: string): Point | null => {
+    const d = innDoorSpots(st.room).find((x) => x.id === id);
+    return d ? worldToScreen({ x: d.spot.x + d.spot.w / 2, y: d.spot.y + 12 }, st.shown) : null;
+  };
+  /** CEL-3: the door that leads to the thing the pointer wants, when it stands in another room of the tavern area (null = it is here or no routing). */
+  const routeDoor = (t: GuideTarget): string | null => {
+    const typeId = t.kind === 'furniture' ? t.typeId : t.kind === 'stand' ? 'tap_stand' : null;
+    const home = typeId ? (isKitchenPiece(typeId) ? 'kitchen' : getFurnitureType(typeId).casks ? 'cellar' : 'shop') : t.kind === 'guest' || t.kind === 'coins' ? 'shop' : null;
+    if (home === null || home === st.room.kind) return null;
+    if (typeId && st.items.some((i) => i.roomId === st.room.id && i.typeId === typeId)) return null;
+    return st.room.kind === 'shop' ? `tavern_to_${home}` : `${st.room.kind}_to_tavern`;
+  };
   const button = (label: string): HTMLElement | null => document.querySelector<HTMLElement>(`button[aria-label^="${label}"]`);
 
   const resolve = (t: GuideTarget): void => {
@@ -101,6 +117,9 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
         pointer.place(m ? worldToScreen({ x: m.x, y: m.y - 4 }, st.shown) : null);
         break;
       }
+      case 'door':
+        pointer.place(doorScreen(t.id));
+        break;
       case 'ui':
         pointer.placeOn(button(t.label));
         break;
@@ -115,7 +134,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   // VG-1: a small pulsing dot over every ready stove or barrel (always on, not only while the guide runs).
   const dots = new Map<string, HTMLElement>();
   const dotFrame = (): void => {
-    const on = h.inTavern() && dungeon.isActive === false;
+    const on = h.inWork() && dungeon.isActive === false;
     const want = on ? h.ready() : new Set<string>();
     for (const [k, d] of dots) {
       if (!want.has(k)) {
@@ -149,7 +168,10 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     const base = guideTargetOf(goal);
     const t = guidePointerKind(goal, context(brewReady));
     // World things show only in the tavern; elsewhere the pointer shows the way back (the Worlds button) instead of nothing.
-    if (tavernTarget(base.kind) && (!h.inTavern() || st.room.id !== st.tavern.roomId)) return pointer.placeOn(button('Worlds'));
+    if (tavernTarget(base.kind) && !h.inWork()) return pointer.placeOn(button('Worlds'));
+    // CEL-3: the thing is in the kitchen, the cellar or the tavern but not in this room: point at the door that leads there.
+    const via = routeDoor(t);
+    if (via !== null) return pointer.place(doorScreen(via));
     // Steps with no tap target of their own: harvest points at a ripe plant on the farm, fish at the water of the lakeside.
     if (goal === 'harvest' && st.room.kind === 'farm') return pointer.place(ripePlantScreen());
     if (goal === 'fish' && st.room.kind === 'lakeside') return pointer.place(waterScreen());
@@ -168,6 +190,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     const w = {
       walked,
       cooking: st.tavern.cooks.length > 0,
+      inKitchen: st.room.kind === 'kitchen',
       inFarm: st.room.kind === 'farm',
       buildOn: g.build.on,
       inDungeon: dungeon.isActive,

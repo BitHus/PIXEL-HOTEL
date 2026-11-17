@@ -132,8 +132,8 @@ export const POUR_MAX_FILL = 1.4;
 export const POUR_TIP_RATE = 0.1;
 /** COD-1 (a): the follow camera glides to the avatar with this time constant, ms (smaller = tighter). */
 export const CAMERA_FOLLOW_TAU_MS = 220;
-/** A drag, pinch or wheel by the player pauses the follow camera for this long, ms (it comes back when the avatar walks on). */
-export const CAMERA_FOLLOW_PAUSE_MS = 2500;
+/** CAM-LOCK: the locked camera may centre the avatar up to this far (px, 2 cells) beyond the room edge (empty backdrop shows). */
+export const CAMERA_LOCK_MARGIN_PX = 64;
 /** OWN-4: the camera eases back to the avatar over this long when the pan pause ends (no jump). */
 export const CAMERA_FOLLOW_EASE_MS = 350;
 /** OWN-4: a shown guest is only snapped to the model when it is farther than this (a slow frame must not teleport it). */

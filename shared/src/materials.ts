@@ -89,17 +89,17 @@ function nextRank(r: Rank): Rank {
   return RANK_LADDER[Math.min(RANK_LADDER.length - 1, RANK_LADDER.indexOf(r) + 1)]!;
 }
 
-/** The aged and vintage item of every drink, built from drinks.json (never hand-copied): same icon and brew data, value and tip by RIPEN, vintage one rank up. */
+/** The aged, vintage and reserve item of every drink, built from drinks.json (never hand-copied): same icon and brew data, value and tip by RIPEN, vintage one rank up. */
 export const TIER_DRINK_TYPES: DrinkType[] = DRINK_TYPES.flatMap((d) =>
   RIPEN.map((r): DrinkType => ({
     ...d,
     id: `${d.id as BaseDrinkId}_${r.tier}`,
     baseId: d.id as BaseDrinkId,
     tier: r.tier,
-    name: `${r.tier === 'aged' ? 'Aged' : 'Vintage'} ${d.name.charAt(0).toLowerCase()}${d.name.slice(1)}`,
+    name: `${r.tier === 'aged' ? 'Aged' : r.tier === 'vintage' ? 'Vintage' : 'Reserve'} ${d.name.charAt(0).toLowerCase()}${d.name.slice(1)}`,
     baseValue: Math.round(d.baseValue * r.valueMult),
     tip: d.tip * r.tipMult,
-    rank: r.tier === 'vintage' ? nextRank(d.rank) : d.rank,
+    rank: r.tier === 'aged' ? d.rank : nextRank(d.rank), // vintage and reserve: one rank up (CEL-5: reserve stays at the vintage rank, its value is the 5x)
   })),
 );
 export const FOOD_TYPES = foodData as FoodType[];

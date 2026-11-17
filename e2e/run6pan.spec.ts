@@ -39,8 +39,8 @@ function analyse(s: Sample[]): { avatarJumps: string[]; guestJumps: string[]; mo
 
 async function setFollow(page: import('@playwright/test').Page, on: boolean): Promise<void> {
   await openSide(page, 'Settings');
-  const f = page.getByRole('button', { name: /Follow camera/i }).first();
-  const isOn = /on/i.test((await f.textContent()) ?? '');
+  const f = page.getByRole('button', { name: /Camera:/i }).first();
+  const isOn = /Locked/i.test((await f.textContent()) ?? '');
   if (isOn !== on) await f.dispatchEvent('click');
   await page.keyboard.press('Escape');
 }
@@ -154,21 +154,57 @@ test('pan that cancels a walk leaves client avatar and API avatar in sync', asyn
   expect(gap, 'client avatar vs API avatar after a pan cancelled the walk').toBeLessThan(24);
 });
 
-/** Follow ON: a drag pans freely (paused), then the camera must come back to the avatar WITHOUT a one-frame jump of the whole screen; while following it never leaves the avatar. */
-test('follow ON: free pan then return to the avatar is smooth', async ({ page }) => {
+/** CAM-LOCK (hybrid): standing still a drag pans to look around; the moment the avatar walks the camera eases back (no one-frame jump) and then keeps the avatar exactly in the middle (within 1 device px) every frame. */
+test('locked: free look while still, then walking centres the avatar smoothly and exactly', async ({ page }) => {
   test.setTimeout(120000);
   await freshGame(page);
   await setFollow(page, true);
   const vp = page.viewportSize()!;
-  await startSampler(page);
+  const dpr = await page.evaluate(() => window.devicePixelRatio);
   await page.mouse.move(vp.width * 0.5, vp.height * 0.5);
   await page.mouse.down();
   for (let i = 0; i < 15; i++) { await page.mouse.move(vp.width * 0.5 + i * 12, vp.height * 0.5 + i * 8); await page.waitForTimeout(16); }
   await page.mouse.up();
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(600);
+  const still = await page.evaluate(() => { const h = (window as any).__ph; return { b: { ...h.st.bounds }, cam: { ...h.st.camera }, zoom: h.st.camera.zoom, av: { x: h.st.avatar.x, y: h.st.avatar.y } }; });
+  await startSampler(page);
+  await page.mouse.click(vp.width / 2, vp.height * 0.55); // the free-look view shows open floor in the middle
+  await page.waitForTimeout(3500);
   const s = await stopSampler(page);
-  let worst = 0; let at = 0;
-  for (let i = 1; i < s.length; i++) { const d = Math.hypot(s[i].shown.x - s[i - 1].shown.x, s[i].shown.y - s[i - 1].shown.y) * s[i].shown.zoom; if (d > worst && s[i].t - s[0].t > 600) { worst = d; at = s[i].t - s[0].t; } }
-  console.log(`follow ON worst per-frame camera move after the drag: ${worst.toFixed(0)} screen px at +${at.toFixed(0)} ms`);
-  expect(worst, 'camera jumps back in one frame when the follow pause ends').toBeLessThan(40);
+  let worst = 0; let at = 0; let checked = 0; let maxOff = 0;
+  for (let i = 1; i < s.length; i++) {
+    const d = Math.hypot(s[i].shown.x - s[i - 1].shown.x, s[i].shown.y - s[i - 1].shown.y) * s[i].shown.zoom;
+    const t = s[i].t - s[0].t;
+    if (d > worst) { worst = d; at = t; }
+    const moving = Math.hypot(s[i].av.x - s[i - 1].av.x, s[i].av.y - s[i - 1].av.y) > 0.01;
+    if (moving && t > 700) { // after the 350 ms ease
+      checked++;
+      const cx = s[i].shown.x + vp.width / 2 / s[i].shown.zoom; const cy = s[i].shown.y + vp.height / 2 / s[i].shown.zoom;
+      // an axis on which the whole room fits on screen stays on the room centre by design (overview of a small room)
+      const fitX = vp.width / s[i].shown.zoom >= still.b.w; const fitY = vp.height / s[i].shown.zoom >= still.b.h;
+      maxOff = Math.max(maxOff, Math.hypot(fitX ? 0 : cx - s[i].av.x, fitY ? 0 : cy - (s[i].av.y - 24)) * s[i].shown.zoom * dpr);
+    }
+  }
+  console.log(`locked: panned by hand: ${JSON.stringify(still.cam)}; worst per-frame camera move ${worst.toFixed(0)} screen px at +${at.toFixed(0)} ms; first-walk frames checked ${checked}; max centre error ${maxOff.toFixed(2)} device px`);
+  expect(worst, 'camera jumps when the lock starts').toBeLessThan(120);
+  // second walk, from the locked state: a tap to the left of the (centred) avatar; every walking frame is centred
+  await startSampler(page);
+  const s2: Sample[] = [];
+  for (const [dx, dy] of [[-220, 40], [220, 40], [0, 160], [0, -120], [-220, -60]]) {
+    await page.mouse.click(vp.width / 2 + dx, vp.height / 2 + dy);
+    await page.waitForTimeout(2000);
+  }
+  s2.push(...(await stopSampler(page)));
+  let lastTap = s2[0]?.t ?? 0;
+  for (let i = 1; i < s2.length; i++) {
+    const idle = Math.hypot(s2[i].av.x - s2[i - 1].av.x, s2[i].av.y - s2[i - 1].av.y) <= 0.01;
+    if (idle) { lastTap = s2[i].t; continue; }
+    if (s2[i].t - lastTap < 450) continue; // the first 350 ms of a walk may still ease in
+    checked++;
+    const cx = s2[i].shown.x + vp.width / 2 / s2[i].shown.zoom; const cy = s2[i].shown.y + vp.height / 2 / s2[i].shown.zoom;
+    const fitX = vp.width / s2[i].shown.zoom >= still.b.w; const fitY = vp.height / s2[i].shown.zoom >= still.b.h;
+    maxOff = Math.max(maxOff, Math.hypot(fitX ? 0 : cx - s2[i].av.x, fitY ? 0 : cy - (s2[i].av.y - 24)) * s2[i].shown.zoom * dpr);
+  }
+  expect(checked, 'avatar walked').toBeGreaterThan(5);
+  expect(maxOff, 'avatar centred within 1 device px while walking').toBeLessThanOrEqual(1.01);
 });

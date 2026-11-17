@@ -4,7 +4,7 @@
 
 import type { QuestBoard } from './questBoard.ts';
 import type { BookTab } from './book.ts';
-import type { BarId, CropId, DrinkId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SeedId, StyleKind } from './types.ts';
+import type { BarId, CropId, DrinkId, DrinkTier, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SeedId, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
 import type { ChopKind } from './woodcut.ts';
 import type { RoomLevel } from './config.ts';
@@ -73,6 +73,11 @@ export type ItemsResult = FurnitureItem[] | null;
 /** The tavern as the client sees it (step 9t). */
 export interface TavernView {
   roomId: number;
+  /** CEL-2: the tavern plus its attached kitchen and cellar rooms (where machines work); the tavern is first. */
+  workRooms: number[];
+  /** CEL-2: the attached rooms, when they exist. */
+  kitchenRoomId?: number;
+  cellarRoomId?: number;
   guests: Guest[];
   /** Coins and dishes left on table spots. */
   mess: Mess[];
@@ -88,6 +93,8 @@ export interface TavernView {
   taps: Tap[];
   /** The casks ripening on the keg racks (rack uid, slot, drink, mugs, start; step K2). */
   casks: Cask[];
+  /** CEL-5: the highest tier of each keg rack (rack uid -> vintage or reserve; reserve only in a cellar of level 2 or more). */
+  caskCaps: Record<number, 'vintage' | 'reserve'>;
   /** The tavern's appeal 0..100 (placed items, decor too, plus the styles; it sets how fast guests come). */
   appeal: number;
   /** The API's clock when this was read (to count down a brew). */
@@ -345,6 +352,8 @@ export interface GameAPI {
   buyBlocks(blockId: string, qty: number): Promise<GainList | null>;
   /** Upgrades a room one level (the items keep their places). Null = max level or not enough gold. */
   upgradeRoom(roomId: number): Promise<Room | null>;
+  /** CEL-4: builds the cellar (player level CELLAR_UNLOCK_LEVEL, CELLAR_BUILD_COST gold, one free keg rack). Null when it cannot be built. */
+  buildCellar(): Promise<Room | null>;
   getRoom(roomId: number): Promise<Room | null>;
   /** The first-run hint to show now, or null when all are done. */
   currentHint(): Promise<string | null>;
@@ -401,7 +410,7 @@ export interface GameAPI {
   /** Puts qty fresh mugs (1 to one brew's mugs) of a brewed drink from the bag into a free cask slot; it ripens in real time. False = refused. */
   fillCask(rackUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean>;
   /** Takes the mugs out at their CURRENT tier (fresh when too early); the slot is free again. Null = refused. */
-  collectCask(rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | 'aged' | 'vintage'; gains: GainList } | null>;
+  collectCask(rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | DrinkTier; gains: GainList } | null>;
   /**
    * Starts a brew in an empty barrel that stands in the tavern: the crops leave the bag (ledger 'brew') and the drink
    * brews in real time, also while the game is closed. False = refused (not in the tavern, not a free barrel, not a

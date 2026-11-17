@@ -12,10 +12,10 @@ import { npcGrid, npcPath } from './npcNav.ts';
 import { ROOM_SHAPES, roomAtLevel, shapesFor, floorRects, rectInsideFloor } from './room.ts';
 import { tavernSeats } from './tavern.ts';
 import { tavernAppeal } from './appeal.ts';
-import { withItem } from './tavernTest.ts';
+import { withItem, withTavernMachines } from './tavernTest.ts';
 import { itemBlockers } from './furniture.ts';
 
-const fresh = (shape = 'square_shop'): GameState => createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape }, 0);
+const fresh = (shape = 'square_shop'): GameState => withTavernMachines(createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape }, 0));
 const roomOf = (s: GameState) => s.rooms.find((r) => r.id === s.tavern.roomId)!;
 const stoveOf = (s: GameState) => s.items.find((i) => i.typeId === 'stove')!;
 const crops = (s: GameState): GameState => applyChange(s, { reason: 'debug', materials: { turnip: 20 } }, 0)!;
@@ -114,7 +114,7 @@ describe('guests never enter the kitchen (nav)', () => {
     const room = roomOf(s);
     const zone = kitchenZone(room)!;
     expect(canPlace(room, s.items, getFurnitureType('prep_table'), zone.x + 96, zone.y + 96, 'down')).toBe(true);
-    expect(canPlace(room, s.items, getFurnitureType('pantry'), zone.x + 64, zone.y + 32, 'down')).toBe(true);
+    expect(canPlace(room, s.items, getFurnitureType('pantry'), zone.x + 64, zone.y + 64, 'down')).toBe(true);
   });
 });
 

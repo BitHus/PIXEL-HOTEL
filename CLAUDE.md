@@ -42,7 +42,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   0.5 to 4 (pinch, wheel), smooth during the gesture; after it, it eases (0.15 s) to the nearest
   zoom where zoom * devicePixelRatio is whole (or the overview zoom if closer) and the camera
   snaps to whole device px. The canvas renders at full devicePixelRatio. Overview zoom = the
-  largest where the whole room fits (at least 0.5; else the camera follows the avatar). OA-13 / OWN-4 (was the COD-1 glide): in EVERY room (not in build mode, not the dungeon) the camera keeps the avatar centred at all times, no lag (Settings: Follow camera, default on, a stored 'off' stays; shared/src/cameraFollow.ts followLock; a drag, pinch or wheel pauses it CAMERA_FOLLOW_PAUSE_MS and it EASES back over CAMERA_FOLLOW_EASE_MS (never a jump); the shown camera still snaps to whole device px).
+  largest where the whole room fits (at least 0.5; else the camera follows the avatar). CAM-LOCK (hybrid, was OA-13 / COD-1): in EVERY room (not build mode, not the dungeon) the camera is LOCKED on the avatar while it MOVES (tap-walk, hold-walk, steer): the avatar sits exactly in the middle every frame, a drag never pans then (it steers the hold-walk or does nothing); standing still a one-finger drag pans to look around, and when walking starts again the camera EASES back over CAMERA_FOLLOW_EASE_MS (never a jump) and locks. Edge clamp is soft: the centre may leave the room by CAMERA_LOCK_MARGIN_PX (64 = 2 cells, dark backdrop shows); a room that fits on an axis at the zoom stays centred on that axis. Settings: Camera: Locked while walking (default, pref followCamera true) / Free look (false, old saves keep it); shared/src/cameraFollow.ts lockTarget/followLock. Pinch and wheel zoom always work; the shown camera snaps to whole device px.
 - Camera intro when a room opens: overview, wait 0.6 s, zoom in over 0.8 s to the settled zoom
   nearest 3 device px per art px, centered on the avatar. Any tap, drag, pinch or wheel skips it.
 - BUILD GRID (BG1): rooms are cell maps of BUILD_CELL = 32 px (config); the nav grid is the build
@@ -50,7 +50,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Pixel-perfect: no texture smoothing, sprites at whole world pixels.
 
 5. ROOMS
-- Room { id (integer), kind: 'hotel'|'shop'|'farm'|'lakeside', level, shape, w, h, floorStyle,
+- Room { id (integer), kind: 'hotel'|'shop'|'farm'|'lakeside'|'kitchen'|'cellar', level, shape, w, h, floorStyle,
   wallStyle }. The floor is a union of rectangles from shared/data/roomShapes.json (shape + level
   1..3; each level contains the previous one; data in whole CELLS). Shapes: square / square_shop, long,
   l_shape, plus, wide_hall. The player picks one for the hotel and one for the shop at the start.
@@ -61,6 +61,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
 - New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a REGISTER and a TAP STAND standing on the bar (T1; the 7 root ale of a new game are loaded on the first tap), a round table with 3 stools (S3 had a bar stool in front of the bar for the 3rd seat; G2 removed it, the 3rd stool stands at the table; old saves keep their furniture), an idle brewing barrel and one stove (K1: you cook there, inside the kitchen zone); the early dish roasted turnip is on the menu.
 - The counter (the bar): one per tavern, movable, never picked up; the spot behind it must stay reachable. T1: it is a SURFACE item (one level): the register and tap stands are onSurface pieces on its 3 cells.
+- KITCHEN AND CELLAR ROOMS (OA-7, CEL-2..5, owner: use the plan's numbers, docs/PLAN-CELLAR.md): two attached rooms, reached only by a doorway in the tavern's back wall (innDoors.json: tavern_to_kitchen, tavern_to_cellar and the way back; guests never enter). The KITCHEN is free: a new game has it (Player.kitchenRoomId, 6 x 5 / 8 x 5 / 8 x 7 cells, upgrades 300 / 800) with the start stove and barrel inside; barrels, stoves, prep tables, pantry, sink and hatch work in the tavern (old layouts) and the kitchen (shared/src/workRooms.ts), and in the kitchen the whole room is the kitchen zone (prep bonus unchanged). The CELLAR (Player.cellarRoomId, 8 x 5 / 10 x 5 / 10 x 7) is built from the Room panel at player level 2 for 300 gold (ledger 'build', one free keg rack), upgrades 400 / 900, keg racks per level 2 / 4 / 6 (canPlace). Casks, taps and the register stay as before. RESERVE tier: a third ripening tier (x5 value, tip x1.5; after 720 / 1440 / 2880 / 5760 min by rank) only from a cellar of level 2 or more; level 1 cellars and tavern racks stop at vintage; TASTE_RESERVE_CHANCE 0.1. Tavern appeal counts the pieces of both rooms. Old saves (migration 35 -> 36) get the kitchen with their stove, barrel and prep tables moved in, and a free cellar with their keg racks.
 - KITCHEN ZONE (T1): per tavern shape and level a cell rectangle (shared/data/roomShapes.json `kitchen`, level 1 a small corner next to the bar, levels 2 and 3 grow it). Staff only like behind the bar: guests never walk or sit there (npcGrid, tavernSeats); the owner's blocks and furniture are allowed. Shown as a faint tint while placing and in the Room panel.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
@@ -270,7 +271,7 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the 
 - In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, tester run 2 fixes
   (docs/FIXLIST.md), SG3d/SG5/SG6, ST2 stack look. Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
 - Not done: step 10 (server, a placeholder), cat art, renown/regulars (tavern deep). The game has been run in a browser (Playwright e2e and tester runs); the avatar style lock is still the owner's.
-- DUNGEON_ROUND is 1. SAVE_VERSION is 34 (34 ledger folds into quests.folded counters past 2500 entries, 33 quests.claimed for daily quests and achievements, 24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
+- DUNGEON_ROUND is 1. SAVE_VERSION is 36 (36 the attached kitchen and cellar rooms, 35 room kinds kitchen and cellar, 34 ledger folds into quests.folded counters past 2500 entries, 33 quests.claimed for daily quests and achievements, 24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, e2e (Playwright smoke, e2e/), simulate, simulate:dungeon. Vite base stays './'.
@@ -317,7 +318,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 34) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 36) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

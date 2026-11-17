@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { barrels, brewCards, brewOf, brewReady, brewReadyInMs, collectBrew, returnOrphanBrews, startBrew } from './brewing.ts';
+import { kitchenRoomIds } from './workRooms.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { DRINK_TYPES, getMaterialType } from './materials.ts';
@@ -42,7 +43,7 @@ describe('brewing (step 9t)', () => {
   it('a barrel with a ready brew gives 7 root ale (collect)', () => {
     const s = fresh();
     const uid = barrelUid(s);
-    expect(barrels(s.items, s.tavern.roomId).map((b) => b.uid)).toEqual([uid]);
+    expect(barrels(s.items, kitchenRoomIds(s)).map((b) => b.uid)).toEqual([uid]);
     expect(s.tavern.brews).toEqual([{ barrelUid: uid, drink: 'root_ale', readyAt: 1000 }]);
     const got = collectBrew(s, uid, 1000)!;
     expect(got).toMatchObject({ drink: 'root_ale', mugs: 7 });

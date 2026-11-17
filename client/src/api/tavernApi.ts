@@ -12,6 +12,9 @@ import {
   clearDish,
   collectBrew,
   caskViews,
+  rackTierCap,
+  getFurnitureType,
+  type DrinkTier,
   fillCask,
   collectCask,
   type CaskView,
@@ -52,9 +55,13 @@ import {
   type TavernClientEvent,
   type TavernView,
   type Point,
+  tavernWorkRoomIds,
 } from '@pixel-hotel/shared';
 import type { TavernTask } from './apiShared.ts';
 import type { LocalGameAPI } from './localGameAPI.ts';
+
+/** CEL-2: the ids of the attached kitchen and cellar rooms. */
+const attachedRooms = (s: GameState): number[] => tavernWorkRoomIds(s).filter((id) => id !== s.tavern.roomId);
 
 export const tavernApi = {
   /**
@@ -84,7 +91,7 @@ export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
     const room = h.roomById(t.roomId);
-    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, appeal: room ? tavernAppeal(room, h.state.items) : 0, at: h.now(), introSeen: t.introSeen, open: tavernOpen(t) });
+    return structuredClone({ roomId: t.roomId, workRooms: tavernWorkRoomIds(h.state), ...(h.state.player.kitchenRoomId !== undefined ? { kitchenRoomId: h.state.player.kitchenRoomId } : {}), ...(h.state.player.cellarRoomId !== undefined ? { cellarRoomId: h.state.player.cellarRoomId } : {}), guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, caskCaps: Object.fromEntries(h.state.items.filter((i) => getFurnitureType(i.typeId).casks === true).map((i) => [i.uid, rackTierCap(h.state, i.uid)])), appeal: room ? tavernAppeal(room, h.state.items, attachedRooms(h.state)) : 0, at: h.now(), introSeen: t.introSeen, open: tavernOpen(t) });
   },
 
   /** What a guest step needs: the room, its items, the nav grid (rebuilt when the furniture changes) and the seats the player holds. */
@@ -94,7 +101,7 @@ export const tavernApi = {
     h.tavernGrid ??= buildNavGrid(room, [...itemBlockers(state.items, room.id), ...blockRects(room)]);
     // The own avatar's seat in the tavern (guests do not sit there).
     const seated = state.currentRoomId === room.id ? h.walkState.seated : null;
-    return { room, items: state.items, grid: h.tavernGrid, playerHere: state.currentRoomId === room.id, seatsTaken: seated ? [seated] : [] };
+    return { room, items: state.items, attached: attachedRooms(state), grid: h.tavernGrid, playerHere: state.currentRoomId === room.id, seatsTaken: seated ? [seated] : [] };
   },
 
   onTavern(h: LocalGameAPI, listener: (e: TavernClientEvent) => void): () => void {
@@ -133,7 +140,7 @@ export const tavernApi = {
   },
 
   async collectBrew(h: LocalGameAPI, barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null> {
-    if (!h.inTavern()) return null;
+    if (!h.inWork()) return null;
     const r = collectBrew(h.state, barrelUid, h.now());
     if (!r) return null;
     const gains = gainsSince(h.state, r.state);
@@ -146,15 +153,15 @@ export const tavernApi = {
   },
 
   async fillCask(h: LocalGameAPI, rackUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean> {
-    if (!h.inTavern()) return false;
+    if (!h.inWork()) return false;
     const next = fillCask(h.state, rackUid, slot, drink, qty, h.now());
     if (!next) return false;
     h.commit(next);
     return true;
   },
 
-  async collectCask(h: LocalGameAPI, rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | 'aged' | 'vintage'; gains: GainList } | null> {
-    if (!h.inTavern()) return null;
+  async collectCask(h: LocalGameAPI, rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | DrinkTier; gains: GainList } | null> {
+    if (!h.inWork()) return null;
     const r = collectCask(h.state, rackUid, slot, h.now());
     if (!r) return null;
     const gains = gainsSince(h.state, r.state);
@@ -163,7 +170,7 @@ export const tavernApi = {
   },
 
   async startBrew(h: LocalGameAPI, barrelUid: number, drink: DrinkId): Promise<boolean> {
-    if (!h.inTavern()) return false;
+    if (!h.inWork()) return false;
     const next = startBrew(h.state, barrelUid, drink, h.now());
     if (!next) return false;
     h.commit(next);
@@ -213,7 +220,7 @@ export const tavernApi = {
   },
 
   async startCook(h: LocalGameAPI, stoveUid: number, food: FoodId, qty: number): Promise<boolean> {
-    if (!h.inTavern()) return false;
+    if (!h.inWork()) return false;
     const next = startCook(h.state, stoveUid, food, qty, h.now());
     if (!next) return false;
     h.commit(next);
@@ -221,12 +228,17 @@ export const tavernApi = {
   },
 
   async collectCook(h: LocalGameAPI, stoveUid: number): Promise<{ food: FoodId; qty: number; gains: GainList } | null> {
-    if (!h.inTavern()) return null;
+    if (!h.inWork()) return null;
     const r = collectCook(h.state, stoveUid, h.now());
     if (!r) return null;
     const gains = gainsSince(h.state, r.state);
     h.commit(r.state);
     return { food: r.food, qty: r.qty, gains };
+  },
+
+  /** CEL-2: the tavern or its attached kitchen or cellar (where barrels, stoves and racks work). */
+  inWork(h: LocalGameAPI): boolean {
+    return tavernWorkRoomIds(h.state).includes(h.state.currentRoomId);
   },
 
   inTavern(h: LocalGameAPI): boolean {

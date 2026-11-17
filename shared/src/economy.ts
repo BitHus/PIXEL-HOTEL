@@ -10,7 +10,7 @@
 //   moves to the new level's door, and an item standing in the new door zone goes back to the
 //   inventory (with what stands on it).
 
-import { CATALOG_PRICE_MULT, FARM_UPGRADE_COST, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, SOIL_STYLE, type RoomLevel } from './config.ts';
+import { CATALOG_PRICE_MULT, CELLAR_UPGRADE_COST, FARM_UPGRADE_COST, ROOM_MAX_LEVEL, ROOM_UPGRADE_COST, SOIL_STYLE, type RoomLevel } from './config.ts';
 import { keepSoilUnderPlants, plantsOverlapping } from './farm.ts';
 import { FURNITURE_TYPES, doorReachesMiddle, footprintRect, getFurnitureType, pickUpItem, roomBlockers } from './furniture.ts';
 import type { GameState } from './gameState.ts';
@@ -75,6 +75,7 @@ export function upgradeCost(room: Room): number | null {
   // The lakeside is not upgradeable (step 9f).
   if (room.kind === 'lakeside' || room.level >= ROOM_MAX_LEVEL) return null;
   const to = (room.level + 1) as 2 | 3;
+  if (room.kind === 'cellar') return CELLAR_UPGRADE_COST[to - 2]!;
   return room.kind === 'farm' ? FARM_UPGRADE_COST[to] : ROOM_UPGRADE_COST[to];
 }
 

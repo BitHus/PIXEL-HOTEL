@@ -74,7 +74,7 @@ export function sourceOf(id: string): string {
   if (isSpliceResult(id) || FURNITURE_GROWN.has(id) || CLOTHING_GROWN.has(id) || (material?.group === 'seed' && (SPLICE_SEEDS.some((s) => s.id === id) || CROP_TYPES.some((c) => c.seed === id && c.spliceOnly)))) parts.push('Splicing');
   if (material?.group === 'crop') parts.push('Farm');
   if (material?.group === 'food') parts.push('Cooked');
-  if (material?.group === 'drink') parts.push(/_(aged|vintage)$/.test(id) ? 'Ripened in a cask' : 'Brewed');
+  if (material?.group === 'drink') parts.push(/_(aged|vintage|reserve)$/.test(id) ? 'Ripened in a cask' : 'Brewed');
   if (material?.group === 'block') {
     if (BLOCK_TYPES.find((b) => b.id === id)?.inCatalog) parts.push('Catalog');
     parts.push('Punching blocks');

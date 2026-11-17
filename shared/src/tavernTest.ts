@@ -1,6 +1,7 @@
 // Test helpers for the tavern (not part of the game, not exported from the index).
 
-import { SHOP_TICK_MS } from './config.ts';
+import { SHOP_TICK_MS, TAVERN_START_ITEMS } from './config.ts';
+import { getRoomShape } from './room.ts';
 import { collectBrew } from './brewing.ts';
 import { itemBlockers } from './furniture.ts';
 import type { GameState } from './gameState.ts';
@@ -25,8 +26,23 @@ export function tavernWorld(s: GameState, playerHere = true): TavernWorld {
  * The tavern start the rules tests were written with, before step S3: two stools at the round table (no third stool), an empty menu setting
  * (drinks on, dishes off). The real new game (3 seats, the early dish on, 7 mugs) is tested in newPlayer.test.ts and tavernStart.test.ts.
  */
+/** CEL-2: a new game has its stove and barrel in the kitchen room; the rules tests of the tavern machines use the old layout (both back in the tavern at the shape's old spots). */
+export function withTavernMachines(s: GameState): GameState {
+  const room = s.rooms.find((r) => r.id === s.tavern.roomId)!;
+  const start = getRoomShape(room.shape).shopStart;
+  return {
+    ...s,
+    items: s.items.map((i) => {
+      if (i.typeId !== 'stove' && i.typeId !== 'brewing_barrel') return i;
+      const at = start?.[i.typeId];
+      const old = TAVERN_START_ITEMS.find((t) => t.typeId === i.typeId)!;
+      return { ...i, roomId: room.id, x: at?.x ?? old.x, y: at?.y ?? old.y };
+    }),
+  };
+}
+
 export function legacyStart(): GameState {
-  const s = createNewPlayer(undefined, 0);
+  const s = withTavernMachines(createNewPlayer(undefined, 0));
   const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'round_table' && c.y + 32 === i.y))!; // the third (front) stool of the round table
   // The start barrel holds a ready brew again and the taps are empty (as before step T1: the ale is collected from the barrel).
   const barrel = s.items.find((i) => i.typeId === 'brewing_barrel')!;

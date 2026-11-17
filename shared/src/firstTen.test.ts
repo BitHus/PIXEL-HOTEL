@@ -111,7 +111,7 @@ describe('guide data (shared/data/guide.json, ONBOARD-1)', () => {
     expect(new Set(FIRST_TEN_STEPS).size).toBe(FIRST_TEN_STEPS.length);
     for (const st of GUIDE_STEPS) {
       expect(st.text.length).toBeGreaterThan(10);
-      expect(['floor', 'guest', 'stand', 'coins', 'none', 'furniture', 'ui']).toContain(st.target.kind);
+      expect(['floor', 'guest', 'stand', 'coins', 'none', 'furniture', 'ui', 'door']).toContain(st.target.kind);
       if (st.target.kind === 'furniture') expect(() => getFurnitureType(st.target.kind === 'furniture' ? st.target.typeId : '')).not.toThrow();
     }
   });

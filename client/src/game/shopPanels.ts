@@ -4,7 +4,7 @@
 import {
   STYLE_TYPES, styleKey, fitsRoomKind, getBlockType, blockPrice, getFurnitureType, catalogPrice, getStyle,
   stylePrice, upgradeCost, hatCatalogPrice, getMaterialType, CROP_TYPES, getClothing, SLOT_FIELD, type Room, type StyleKind,
-  BLOCK_PACK, SEED_PACK,
+  BLOCK_PACK, SEED_PACK, CELLAR_BUILD_COST, CELLAR_RACK_MAX_BY_LEVEL,
 } from '@pixel-hotel/shared';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createPackFlow } from '../ui/packOpening.ts';
@@ -164,6 +164,21 @@ export async function setupShopPanels(g: G6) {
         toast(`Upgraded to level ${next.level}!`);
         await late.openRoom(next.id, false);
       });
+    },
+    openRoom: (roomId) => {
+      panels.close();
+      void late.openRoom(roomId, false);
+    },
+    buildCellar: async () => {
+      if (!(await confirmBuy(ui, { name: 'The cellar', detail: `A cool room under the tavern. It comes with one keg rack: mugs you leave there ripen and sell for more. Up to ${CELLAR_RACK_MAX_BY_LEVEL[0]} racks at first.`, price: CELLAR_BUILD_COST, yes: 'Build', gold: st.walletGold }))) return;
+      const room = await api.buildCellar();
+      if (!room) {
+        toast('The cellar cannot be built yet.');
+        return;
+      }
+      toast('Your cellar is built. The door is in the back wall of the tavern.');
+      await late.refreshInventory();
+      await late.openRoom(room.id, false);
     },
     startPaint: () => {
       // The brush starts as the first unlocked floor that is not the room's own (painting the room's

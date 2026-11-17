@@ -3,7 +3,7 @@
 // with the player's unlocked styles. Picking a style shows it on the room at once (applying is
 // free, so the live preview is the change itself; pick again to go back).
 
-import { BUILD_CELL, PREP_BONUS, ROOM_MAX_LEVEL, STYLE_TYPES, STAR_THRESHOLDS, type RoomStars, kitchenZone, soilCells, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
+import { BUILD_CELL, CELLAR_BUILD_COST, CELLAR_RACK_MAX_BY_LEVEL, CELLAR_UNLOCK_LEVEL, PREP_BONUS, ROOM_MAX_LEVEL, STYLE_TYPES, STAR_THRESHOLDS, type RoomStars, kitchenZone, soilCells, styleKey, upgradeCost, type Room, type StyleKind } from '@pixel-hotel/shared';
 import { ROOM_NAMES } from './infoPanel.ts';
 import { el, textButton } from './dom.ts';
 import { panelShell } from './panelShell.ts';
@@ -14,12 +14,24 @@ export interface RoomHooks {
   applyStyle(roomId: number, kind: StyleKind, id: string): void;
   /** Starts painting floor cells (step BG1): the panel closes and the paint bar opens. */
   startPaint(): void;
+  /** CEL-2/4: opens another room of the tavern area (tavern, kitchen, cellar). */
+  openRoom(roomId: number): void;
+  /** CEL-4: builds the cellar (the caller asks first). */
+  buildCellar(): void;
+}
+
+/** The rooms of the tavern area (CEL-2/4), for the Rooms cards. */
+export interface RoomLinks {
+  tavernId: number;
+  kitchenId?: number;
+  cellarId?: number;
+  playerLevel: number;
 }
 
 export interface RoomPanel {
   readonly el: HTMLElement;
   /** `stars` = the hotel's room stars (step 9g-3, shared roomScore), else null. */
-  refresh(room: Room, gold: number, unlocked: readonly string[], appeal: number | null, stars?: RoomStars | null): void;
+  refresh(room: Room, gold: number, unlocked: readonly string[], appeal: number | null, stars?: RoomStars | null, links?: RoomLinks | null): void;
 }
 
 export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPanel {
@@ -44,9 +56,33 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
     return grid;
   };
 
+  const roomCards = (room: Room, links: RoomLinks, gold: number): HTMLElement[] => {
+    const cards: HTMLElement[] = [el('div', 'divider'), el('h3', '', 'Rooms')];
+    const open = (label: string, id: number | undefined, note: string): void => {
+      const row = el('div', 'room-card');
+      const b = textButton(id === room.id ? `${label} (here)` : `Open ${label.toLowerCase()}`, () => id !== undefined && hooks.openRoom(id));
+      b.disabled = id === undefined || id === room.id;
+      row.append(b, el('div', 'panel-info', note));
+      cards.push(row);
+    };
+    open('Tavern', links.tavernId, 'Guests, the bar, the taps.');
+    open('Kitchen', links.kitchenId, 'Brew at the barrel, cook at the stove. The door is in the back wall of the tavern.');
+    if (links.cellarId !== undefined) open('Cellar', links.cellarId, `Mugs left on a keg rack ripen and sell for more. Racks here: up to ${CELLAR_RACK_MAX_BY_LEVEL[(room.kind === 'cellar' ? room.level : 1) - 1]}.`);
+    else {
+      const b = textButton(`Build the cellar: ${CELLAR_BUILD_COST} gold`, () => hooks.buildCellar());
+      const locked = links.playerLevel < CELLAR_UNLOCK_LEVEL;
+      b.disabled = locked;
+      b.classList.toggle('poor', !locked && gold < CELLAR_BUILD_COST);
+      const row = el('div', 'room-card');
+      row.append(b, el('div', 'panel-info', locked ? `The cellar opens at level ${CELLAR_UNLOCK_LEVEL}.` : 'A cool room under the tavern with a keg rack: mugs ripen there.'));
+      cards.push(row);
+    }
+    return cards;
+  };
+
   return {
     el: panel,
-    refresh(room, gold, unlocked, appeal, stars = null) {
+    refresh(room, gold, unlocked, appeal, stars = null, links = null) {
       title.textContent = ROOM_NAMES[room.kind];
       const facts = el('div', 'room-facts inset');
       facts.append(el('div', '', `Level ${room.level} of ${ROOM_MAX_LEVEL}`), el('div', '', `Size ${room.w} x ${room.h}`));
@@ -72,6 +108,8 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       const kitchen = kitchenZone(room);
       if (kitchen) facts.append(el('div', '', `Kitchen ${kitchen.w / BUILD_CELL} x ${kitchen.h / BUILD_CELL} cells (staff only)`));
       const cost = upgradeCost(room);
+      // CEL-2/4: the tavern, its kitchen and its cellar: Open cards (the doors in the back wall do the same) and the cellar's Build card.
+      const rooms = links && (room.kind === 'shop' || room.kind === 'kitchen' || room.kind === 'cellar') ? roomCards(room, links, gold) : [];
       const up = textButton(cost === null ? 'Top level' : `Upgrade: ${cost} gold`, () => hooks.upgrade(room.id));
       up.disabled = cost === null;
       up.classList.toggle('poor', cost !== null && gold < cost);
@@ -97,6 +135,7 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       body.replaceChildren(
         facts,
         up,
+        ...rooms,
         el('div', 'divider'),
         el('h3', '', 'Floor'),
         picker(room, 'floor', unlocked),

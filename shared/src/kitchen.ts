@@ -14,7 +14,10 @@ import type { FurnitureItem, Rect } from './types.ts';
 
 /** The kitchen zone of a tavern room in world px, or null (no tavern, or a shape without one). */
 export function kitchenZone(room: Room | undefined): Rect | null {
-  if (!room || room.kind !== 'shop') return null;
+  if (!room) return null;
+  // CEL-2: in the attached kitchen room the whole room is the zone (the numbers of the prep bonus stay the same).
+  if (room.kind === 'kitchen') return { x: 0, y: 0, w: room.w, h: room.h };
+  if (room.kind !== 'shop') return null;
   const r = getRoomShape(room.shape).kitchen?.[room.level - 1];
   return r ? { x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL } : null;
 }

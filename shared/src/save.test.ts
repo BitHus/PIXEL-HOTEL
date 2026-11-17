@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { MIGRATIONS, readSave, saveKey, toSaveText } from './save.ts';
+import { MIGRATIONS, readSave as readSaveReal, saveKey, toSaveText } from './save.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
+import { withTavernMachines } from './tavernTest.ts';
 import { arrangeState, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { FARM_HINT, HINTS, MINE_HINT, PACK_HINT, SAVE_VERSION, SPLICE_HINT } from './config.ts';
@@ -13,7 +14,41 @@ import { testRun } from './dungeon/testRun.ts';
 import type { FurnitureItem } from './types.ts';
 import type { BlockCell } from './blockTypes.ts';
 
-const state = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
+/** A new game as it was before CEL-2 (save 35): no kitchen room, the stove and the barrel stand in the tavern. */
+function oldNew(): ReturnType<typeof createNewPlayer> {
+  const s = withTavernMachines(createNewPlayer(undefined, 1));
+  const { kitchenRoomId: _k, ...player } = s.player;
+  return { ...s, player, rooms: s.rooms.filter((r) => r.kind !== 'kitchen') };
+}
+
+/**
+ * The old-version tests below compare a migrated save with the save it started from. Migration 35 -> 36 (CEL-2) adds the attached kitchen and moves the
+ * machines into it; this reader undoes exactly that (the kitchen room and id are dropped, a moved machine goes back where the input had it, a machine that a
+ * migration created goes to its old tavern spot) so those tests keep checking what they were written for. The kitchen itself is tested in cellarRooms.test.ts.
+ */
+function readSave(text: string): ReturnType<typeof readSaveReal> {
+  const r = readSaveReal(text);
+  if (!r.ok) return r;
+  const k = r.state.player.kitchenRoomId;
+  let input: { player?: { kitchenRoomId?: number }; items?: FurnitureItem[] } | undefined;
+  try {
+    input = (JSON.parse(text) as { state?: typeof input }).state;
+  } catch {
+    return r;
+  }
+  if (k === undefined || input?.player?.kitchenRoomId !== undefined || !Array.isArray(input?.items)) return r;
+  const was = new Map(input.items.map((i) => [i.uid, i]));
+  const { kitchenRoomId: _k, ...player } = r.state.player;
+  const back = (i: FurnitureItem): FurnitureItem => {
+    if (i.roomId !== k) return i;
+    const old = was.get(i.uid);
+    if (old) return { ...i, roomId: old.roomId, x: old.x, y: old.y, facing: old.facing };
+    return withTavernMachines({ ...r.state, items: [i] }).items[0]!;
+  };
+  return { ...r, state: { ...r.state, player, rooms: r.state.rooms.filter((x) => x.id !== k), items: r.state.items.map(back) } };
+}
+
+const state = applyChange(oldNew(), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
 
 describe('save files', () => {
   it('saving then loading gives an identical state', () => {
@@ -234,7 +269,7 @@ describe('save files', () => {
 
 
 describe('migrates a version 13 save to the cell grid (step BG1)', () => {
-  const base = createNewPlayer(undefined, 1);
+  const base = oldNew();
   const hotelId = base.player.hotelRoomId;
   const shopId = base.player.shopRoomId;
   let uid = 500;
@@ -326,7 +361,7 @@ describe('migrates a version 13 save to the cell grid (step BG1)', () => {
 
 describe('14 -> 15 (step BG5: blocks and gems)', () => {
   it('gives every room an empty block layer and the wallet 0 gems', () => {
-    const now = createNewPlayer(undefined, 1);
+    const now = oldNew();
     const old = {
       ...now,
       rooms: now.rooms.map((r) => {
@@ -348,7 +383,7 @@ describe('14 -> 15 (step BG5: blocks and gems)', () => {
 
 describe('15 -> 16 (step BG6: seeds and the free-form farm)', () => {
   const MIN = 60_000;
-  const now = createNewPlayer(undefined, 1);
+  const now = oldNew();
   const farmId = now.player.farmRoomId;
   /** A version 15 farm: plots in the old order, some planted. The old plots 0, 3 (level 1) are turnip and pumpkin. */
   const oldFarm = {
@@ -421,7 +456,7 @@ describe('15 -> 16 (step BG6: seeds and the free-form farm)', () => {
 });
 
 describe('16 -> 17 (step BG4: gems in a saved run)', () => {
-  const now = createNewPlayer(undefined, 1);
+  const now = oldNew();
   const run = testRun();
   const oldBag = (b: { slots: unknown[]; gold: number }) => ({ slots: b.slots, gold: b.gold });
   const oldRun = (() => {
@@ -447,7 +482,7 @@ describe('16 -> 17 (step BG4: gems in a saved run)', () => {
 });
 
 describe('19 -> 20 (step BG9: the pack quest sits before the mine quest)', () => {
-  const now = createNewPlayer(undefined, 1);
+  const now = oldNew();
   it('moves a player who was at the mine quest (5) or later up by one, and leaves earlier ones alone', () => {
     for (const [from, to] of [[0, 0], [4, 4], [5, 6], [6, 7], [7, 8]] as const) {
       const r = readSave(JSON.stringify({ version: 19, savedAt: 9, state: { ...now, hintsDone: from } }));
@@ -464,7 +499,7 @@ describe('19 -> 20 (step BG9: the pack quest sits before the mine quest)', () =>
 describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
   /** What a version 20 save looked like: no stove, no cooks list, a farm with a planted turnip and some crops. */
   const v20 = (): Record<string, unknown> => {
-    const base = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', materials: { turnip: 3, potato: 2 }, gold: 50 }, 2)!;
+    const base = applyChange(oldNew(), { reason: 'debug', materials: { turnip: 3, potato: 2 }, gold: 50 }, 2)!;
     const farm = base.rooms.find((r) => r.kind === 'farm')!;
     const planted = { ...base, rooms: base.rooms.map((r) => (r.id === farm.id ? { ...r, plants: { '3,2': { seed: 'turnip_seed', plantedAt: 5, readyAt: 125_005 } } } : r)) };
     const items = planted.items.filter((i) => i.typeId !== 'stove');
@@ -513,14 +548,14 @@ describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
   });
 
   it('a save that already has a stove keeps it (no second one)', () => {
-    const withStove = createNewPlayer(undefined, 1);
+    const withStove = oldNew();
     const { cooks: _c, ...tavern } = withStove.tavern;
     const r = load({ ...withStove, tavern });
     expect(r.ok && r.state.items.filter((i) => i.typeId === 'stove')).toHaveLength(1);
   });
 
   it('an old save from version 12 gets exactly one stove too', () => {
-    const r12 = createNewPlayer(undefined, 1);
+    const r12 = oldNew();
     const { tavern: _t, ...old } = { ...r12, items: r12.items.filter((i) => !['stove', 'round_table', 'bar_stool', 'brewing_barrel'].includes(i.typeId)) };
     const r = readSave(JSON.stringify({ version: 12, savedAt: 9, state: old }));
     expect(r).toMatchObject({ ok: true, kitchenChanged: true });
@@ -531,7 +566,7 @@ describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
 describe('21 -> 22 (step S1: the shop is the tavern, nobody sells loot to customers any more)', () => {
   /** What a version 21 save looked like: GameState.shop with goods on slots, a sale history and walking customers. */
   const v21 = () => {
-    const base = applyChange(createNewPlayer(undefined, 1), { reason: 'debug', materials: { wood: 5, cloth: 2 }, addFurniture: ['chair'], gold: 40 }, 2)!;
+    const base = applyChange(oldNew(), { reason: 'debug', materials: { wood: 5, cloth: 2 }, addFurniture: ['chair'], gold: 40 }, 2)!;
     const chair = base.items.find((i) => i.typeId === 'chair')!;
     // Two goods on the stall: one wood (a material) and the chair (furniture, out of the items list while it is on the slot).
     const onStall = applyChange(base, { reason: 'shelf', materials: { wood: -1 }, removeFurniture: [chair.uid], note: 'on sale' }, 3)!;
@@ -592,7 +627,7 @@ describe('21 -> 22 (step S1: the shop is the tavern, nobody sells loot to custom
   });
 
   it('a save with no goods on the slots loses nothing and gets no ledger entry', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const { tavern, ...rest } = base;
     const { nextGuestId: _n, ...oldTavern } = tavern as typeof tavern & { nextGuestId?: number };
     const old = { ...rest, tavern: oldTavern, shop: { roomId: tavern.roomId, slots: [], nextCustomerInMs: 1, saleHistory: {}, customers: [], nextCustomerId: -1, updatedAt: 0, lastLines: {} } };
@@ -613,7 +648,7 @@ describe('21 -> 22 (step S1: the shop is the tavern, nobody sells loot to custom
 describe('22 -> 23 (step S3: a table spot can hold the gem a happy guest tipped)', () => {
   /** A version 22 save: piles on tables have coins and a dish but no `gems`. */
   const v22 = () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const { version: _v, ...rest } = { version: 22, ...base };
     const mess = [
       { id: 1, seatUid: 4, seatIndex: 0, x: 400, y: 224, coins: 9, dish: 'root_ale' },
@@ -646,7 +681,7 @@ describe('22 -> 23 (step S3: a table spot can hold the gem a happy guest tipped)
   });
 
   it('a save with no piles on tables migrates and a new save does not migrate again', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const r = load(base);
     expect(r).toMatchObject({ ok: true, migrated: true });
     if (!r.ok) return;
@@ -658,7 +693,7 @@ describe('22 -> 23 (step S3: a table spot can hold the gem a happy guest tipped)
 describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => {
   /** A version 23 save: the bar is a plain counter (no register, no tap stand), no taps; 7 root ale sit in the bag. */
   const v23 = (mutate: (items: FurnitureItem[]) => FurnitureItem[] = (i) => i) => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const items = mutate(base.items.filter((i) => i.typeId !== 'register' && i.typeId !== 'tap_stand'));
     const { taps: _t, ...tavern } = base.tavern;
     let state = { ...base, items, tavern };
@@ -668,8 +703,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 35 (34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(35);
+  it('SAVE_VERSION is 36 (35 -> 36 the attached kitchen and cellar rooms, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(36);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');
@@ -724,7 +759,7 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   });
 
   it('a save that already has a register and a tap stand keeps exactly one of each; a migrated save does not migrate again', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const r = load(base);
     if (!r.ok) throw new Error('load failed');
     expect(r.state.items.filter((i) => i.typeId === 'register')).toHaveLength(1);
@@ -748,7 +783,7 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   });
 
   it('every older save (v1) still loads through the whole chain and ends with taps and a bar that has its pieces', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const { bag: _b, hintsDone: _h, tavern: _t, ...v1 } = base;
     expect(readSave(JSON.stringify({ version: 1, savedAt: 0, state: v1 })).ok).toBe(true);
   });
@@ -756,7 +791,7 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
 
 describe('migrates a version 24 save (MB-1, the Inn name)', () => {
   it('gives an old save the default Inn name, keeps a name that is already there, and does not migrate twice', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const { innName: _gone, ...player } = base.player;
     const old = { ...base, player };
     const r = readSave(JSON.stringify({ version: 24, savedAt: 9, state: old }));
@@ -772,7 +807,7 @@ describe('migrates a version 24 save (MB-1, the Inn name)', () => {
 
 describe('migrates a version 26 save (MB-2, Inn doors)', () => {
   it('sends furniture, blocks and plants on a door spot back to the bag, keeps everything else, and does not migrate twice', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const hotel = base.rooms.find((r) => r.kind === 'hotel')!;
     const farm = base.rooms.find((r) => r.kind === 'farm')!;
     const spot = innDoorSpots(hotel)[0]!;
@@ -811,7 +846,7 @@ describe('migrates a version 26 save (MB-2, Inn doors)', () => {
 
 describe('migrates a version 25 save (K2, casks) and the whole chain 24 -> 27 (G1)', () => {
   it('a v25 save without casks gets an empty list; a save with casks keeps them', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const { casks: _c, ...tavern } = base.tavern;
     const r = readSave(JSON.stringify({ version: 25, savedAt: 9, state: { ...base, tavern } }));
     expect(r).toMatchObject({ ok: true, migrated: true, version: 25 });
@@ -822,7 +857,7 @@ describe('migrates a version 25 save (K2, casks) and the whole chain 24 -> 27 (G
   });
 
   it('a v24 save (no Inn name, no casks) walks every step to the current version and reads clean again', () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const { casks: _c, ...tavern } = base.tavern;
     const { innName: _n, ...player } = base.player;
     const r = readSave(JSON.stringify({ version: 24, savedAt: 9, state: { ...base, player, tavern } }));
@@ -836,7 +871,7 @@ describe('migrates a version 25 save (K2, casks) and the whole chain 24 -> 27 (G
 
 describe('migration 28 -> 29 (step G2: the hands-on pour)', () => {
   it('a mug in the hands gets perfect false; empty hands and other saves are untouched', () => {
-    const state = createNewPlayer(undefined, 1);
+    const state = oldNew();
     const holding = { ...state, tavern: { ...state.tavern, holding: { guestId: 1, item: 'root_ale' } } };
     const r = readSave(JSON.stringify({ version: 28, savedAt: 9, state: holding }));
     expect(r).toMatchObject({ ok: true, migrated: true });
@@ -849,7 +884,7 @@ describe('migration 28 -> 29 (step G2: the hands-on pour)', () => {
 
 describe('migration 29 -> 30 (step SG4: plants on any block)', () => {
   const planted = () => {
-    const base = createNewPlayer(undefined, 1);
+    const base = oldNew();
     const farm = base.rooms.find((r) => r.kind === 'farm')!;
     const plants = {
       '2,2': { seed: 'turnip_seed', plantedAt: 10, readyAt: 130_010 },
@@ -879,7 +914,7 @@ describe('migration 29 -> 30 (step SG4: plants on any block)', () => {
 
 describe('migration 30 -> 31 (step COD-1: the waiter tray)', () => {
   it('the mug in the hands (holding) becomes a one-mug tray; empty hands become an empty tray; a perfect pour stays perfect; holding is gone', () => {
-    const state = createNewPlayer(undefined, 1);
+    const state = oldNew();
     const { tray: _t, ...tavernNoTray } = state.tavern;
     const old = (holding: unknown) => ({ ...state, tavern: { ...tavernNoTray, holding } });
     const a = readSave(JSON.stringify({ version: 30, savedAt: 9, state: old({ guestId: -2, item: 'root_ale', perfect: true }) }));
@@ -896,7 +931,7 @@ describe('migration 30 -> 31 (step COD-1: the waiter tray)', () => {
 
 describe('migration 31 -> 32 (step ST1: stacked blocks)', () => {
   it('every block of a version 31 save becomes a stack of one; nothing else changes', () => {
-    const state = createNewPlayer(undefined, 1);
+    const state = oldNew();
     const cell: BlockCell = { id: 'dirt', hits: 2, hitAt: 5 };
     const old = { ...state, rooms: state.rooms.map((r, i) => (i === 0 ? { ...r, blocks: { '3,4': cell, '5,6': { id: 'planks', hits: 0, hitAt: 0 } } } : r)) };
     const r = readSave(JSON.stringify({ version: 31, savedAt: 9, state: old }));

@@ -20,6 +20,8 @@ import { FARM_START_SOIL, SOIL_STYLE,
   START_SHOP_ROOM_ID,
   START_FARM_ROOM_ID,
   START_LAKESIDE_ROOM_ID,
+  START_KITCHEN_ROOM_ID,
+  KITCHEN_START_ITEMS,
   START_WALL_STYLE,
   START_XP,
   SHOP_START_ITEMS,
@@ -51,6 +53,8 @@ export interface NewPlayerConfig {
   shopRoomId: number;
   farmRoomId: number;
   lakesideRoomId: number;
+  /** CEL-2: the attached kitchen room (the start stove and barrel stand there). */
+  kitchenRoomId: number;
   gold: number;
   materials: Partial<Record<MaterialId, number>>;
   look: AvatarLook;
@@ -67,6 +71,7 @@ export const DEFAULT_NEW_PLAYER: NewPlayerConfig = {
   shopRoomId: START_SHOP_ROOM_ID,
   farmRoomId: START_FARM_ROOM_ID,
   lakesideRoomId: START_LAKESIDE_ROOM_ID,
+  kitchenRoomId: START_KITCHEN_ROOM_ID,
   gold: START_GOLD,
   materials: { ...START_MATERIALS },
   look: { ...START_LOOK },
@@ -125,7 +130,11 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
   const startItems: FurnitureItem[] = [
     ...SHOP_START_ITEMS.filter((s) => s.typeId !== 'stall_table').map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.typeId] ?? { x: s.x, y: s.y }, facing: s.facing })),
     ...TAVERN_START_ITEMS.map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.key] ?? { x: s.x, y: s.y }, facing: s.facing })),
-  ].map((s, k) => ({ uid: k + 1, typeId: s.typeId, ownerId: config.playerId, roomId: config.shopRoomId, x: s.at.x, y: s.at.y, facing: s.facing, onItemUid: null }));
+  ].map((s, k) => {
+    // CEL-2: the start stove and barrel stand in the attached kitchen room.
+    const kitchen = KITCHEN_START_ITEMS.find((i) => i.typeId === s.typeId);
+    return { uid: k + 1, typeId: s.typeId, ownerId: config.playerId, roomId: kitchen ? config.kitchenRoomId : config.shopRoomId, x: kitchen ? kitchen.x : s.at.x, y: kitchen ? kitchen.y : s.at.y, facing: kitchen ? kitchen.facing : s.facing, onItemUid: null };
+  });
   // The register and a tap stand stand ON the bar, side by side (step T1); the start ale is loaded on the first tap.
   const bar = startItems.find((i) => i.typeId === 'counter')!;
   const riders = TAVERN_START_RIDERS.map((r, k) => ({ uid: startItems.length + k + 1, typeId: r.typeId as string, ownerId: config.playerId, roomId: config.shopRoomId, x: bar.x + r.dx, y: bar.y, facing: 'down' as const, onItemUid: bar.uid }));
@@ -148,6 +157,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       shopRoomId: config.shopRoomId,
       farmRoomId: config.farmRoomId,
       lakesideRoomId: config.lakesideRoomId,
+      kitchenRoomId: config.kitchenRoomId,
       biggest: {},
       mineVisits: 0,
       seen: {},
@@ -164,6 +174,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
       createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape),
       startFarmRoom(createRoom(config.farmRoomId, 'farm', 1, config.playerId)),
       createRoom(config.lakesideRoomId, 'lakeside', 1, config.playerId),
+      createRoom(config.kitchenRoomId, 'kitchen', 1, config.playerId),
     ],
     items: startItems,
     hotbar: Array.from({ length: HOTBAR_SLOTS }, () => null),

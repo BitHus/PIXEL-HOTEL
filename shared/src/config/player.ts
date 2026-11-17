@@ -10,6 +10,13 @@ export const START_HOTEL_ROOM_ID = 1;
 export const START_SHOP_ROOM_ID = 2;
 export const START_FARM_ROOM_ID = 3;
 export const START_LAKESIDE_ROOM_ID = 4;
+/** CEL-2: a new game's attached kitchen room (the cellar gets the next free id when it is built). */
+export const START_KITCHEN_ROOM_ID = 5;
+/** CEL-2: where the start stove and barrel stand in a new kitchen (level 1, 6 x 5 cells; anchors in px; the door to the tavern is the 2 cells at the left of the back wall). */
+export const KITCHEN_START_ITEMS = [
+  { typeId: 'stove', x: 112, y: 64, facing: 'down' },
+  { typeId: 'brewing_barrel', x: 176, y: 64, facing: 'down' },
+] as const;
 /** The starting avatar look (palette indices; styles are clothing.json ids). */
 export const START_LOOK = { skin: 30, hair: 5, hairStyle: 'short', top: 'tunic', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 } as const;
 /** Colour choices per look slot (palette indices), for character creation and the Avatar panel. */
@@ -31,7 +38,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 35;
+export const SAVE_VERSION = 36;
 /**
  * CEL-1 (docs/PLAN-CELLAR.md; all PROPOSALS, the owner said use them): the cellar is built with gold at player level CELLAR_UNLOCK_LEVEL,
  * includes one free keg rack, upgrades cost CELLAR_UPGRADE_COST (level 2, 3), racks allowed per cellar level CELLAR_RACK_MAX_BY_LEVEL. Used from CEL-4.
@@ -87,6 +94,8 @@ export const TAVERN_INTRO_OLD =
 /** A new game gets this short line after the intro. */
 export const TAVERN_INTRO_NEW = 'Welcome to your tavern! Guests sit and order: tap them to serve. Tap the register for the menu and the tap stand to load drinks; tap the barrel to brew.';
 /** The one-time hint at the first Inn door (step MB-3). */
+/** CEL-2: the notice an old save gets once (save 35 -> 36). */
+export const KITCHEN_MOVED_NOTICE = 'Your tavern has a kitchen now: your stove, barrel and prep tables moved into the room behind the door in the back wall of the tavern.';
 export const INN_DOOR_HINT = 'Doors lead to the tavern and the garden. Walk onto the doorway to step through.';
 /**
  * The opening notice of an old save (step T1, version below 24): the bar got a register and taps, and the tavern a kitchen.

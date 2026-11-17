@@ -31,6 +31,11 @@ import {
   SEED_GROW_MS,
   SEED_YIELD,
   SPARE_SELL,
+  RIPEN_AFTER_MIN,
+  CELLAR_RACK_MAX_BY_LEVEL,
+  CASK_SLOTS,
+  TASTE_RESERVE_CHANCE,
+  TAP_SLOTS,
 } from './config.ts';
 import { BLOCK_TYPES, getBlockType, isBlockId } from './blockTypes.ts';
 import { getClothing } from './clothing.ts';
@@ -800,4 +805,60 @@ export function tavernTipGemsPerHour(stage: Stage): number {
   const drinks = stage === 'new' ? DRINK_TYPES.filter((d) => d.id === TAVERN_START_DRINK) : PLAIN_DRINKS;
   const avg = drinks.reduce((a, d) => a + tavernTipGems(d.rank), 0) / drinks.length;
   return t.sold * HAPPY_SHARE * avg * TAVERN_ATTENTION_BY_STAGE[stage];
+}
+
+// ---------- CEL: the cellar's ripening tiers (docs/PLAN-CELLAR.md 4.3) ----------
+
+/** CEL (PROPOSAL, owner: use it): a cask slot's gold per hour of a tier stays under the best fresh barrel's gold per hour times this. */
+export const CEL_RACK_RATIO_MAX = 1.6;
+/** CEL: the cap on the guest share of the best-kitchen mixed hour (BALANCE_TARGETS: 55% with prep tables). */
+export const CEL_GUEST_SHARE_MAX = 0.55;
+/** CEL: the best kitchen = prep tables up to PREP_BONUS.max. */
+const BEST_KITCHEN = PREP_BONUS.max;
+
+function tierMinutesOf(drink: { id: string; rank: Rank }, tier: 'aged' | 'vintage' | 'reserve'): number {
+  return RIPEN_AFTER_MIN[drink.rank][tier];
+}
+
+/** The gold ONE cask slot adds per hour over selling the same mugs fresh, when it is refilled the moment a tier is reached (a drink at a tier). */
+export function rackGoldPerHour(drinkId: string, tier: 'aged' | 'vintage' | 'reserve'): number {
+  const d = getDrinkType(drinkId as never);
+  const t = getDrinkType(`${drinkId}_${tier}` as never);
+  return ((drinkGold(t.id) - drinkGold(d.id)) * d.mugs * 60) / tierMinutesOf(d, tier);
+}
+
+/** The gold per hour of the best fresh path: one barrel brewing the best drink and selling every mug at once. */
+export function bestFreshBarrelGoldPerHour(): number {
+  return Math.max(...DRINK_TYPES.map((d) => mugsPerHour(d.id) * drinkGold(d.id)));
+}
+
+/** The gold a cask slot adds per DAY at a tier (refilled as soon as the tier is reached; the choice between tiers is real when reserve is not far above vintage). */
+export function rackDayGold(drinkId: string, tier: 'aged' | 'vintage' | 'reserve'): number {
+  return rackGoldPerHour(drinkId, tier) * 24;
+}
+
+/** Reserve drinks a full level 3 cellar (CELLAR_RACK_MAX_BY_LEVEL[2] racks x CASK_SLOTS casks) can supply per hour of the best drink (casks refilled at once). */
+export function fullCellarReserveSupplyPerHour(): { drink: string; mugsPerHour: number; extraGoldPerHour: number } {
+  const casks = CELLAR_RACK_MAX_BY_LEVEL[2] * CASK_SLOTS;
+  const best = DRINK_TYPES.map((d) => ({ drink: d.id, mugsPerHour: (casks * d.mugs * 60) / tierMinutesOf(d, 'reserve'), extraGoldPerHour: casks * rackGoldPerHour(d.id, 'reserve') })).sort((a, b) => b.extraGoldPerHour - a.extraGoldPerHour)[0]!;
+  return best;
+}
+
+/** What guests can take of it per hour: orders per hour at the stage times the share of orders that can be a reserve drink (the taste guests, and the rest picking it among the menu's drinks on a stand's two taps). */
+export function reserveDemandPerHour(stage: Stage, prepBonus = BEST_KITCHEN): number {
+  const orders = guestGoldPerHour(stage, prepBonus).sold;
+  return orders * (TASTE_RESERVE_CHANCE + (1 - TASTE_RESERVE_CHANCE) / TAP_SLOTS);
+}
+
+/** The guest share of the mixed hour at a stage when a full level 3 cellar sells reserve drinks (flow = the smaller of supply and demand; the extra is the gold over the fresh mug; at the bar's attention). */
+export function guestShareWithReserve(stage: Stage, rng: Rng, prepBonus = BEST_KITCHEN): { share: number; extraMixed: number; extraFocused: number } {
+  const supply = fullCellarReserveSupplyPerHour();
+  const per = supply.extraGoldPerHour / supply.mugsPerHour;
+  const flow = Math.min(supply.mugsPerHour, reserveDemandPerHour(stage, prepBonus));
+  const extraFocused = flow * per;
+  const extraMixed = extraFocused * TAVERN_ATTENTION_BY_STAGE[stage];
+  const rows = goldBySource(stage, rng, prepBonus);
+  const total = rows.reduce((a, r) => a + r.mixed, 0);
+  const guests = rows.find((r) => r.id === 'guests')!.mixed;
+  return { share: (guests + extraMixed) / (total + extraMixed), extraMixed, extraFocused };
 }

@@ -6,14 +6,14 @@ import { createItemUse } from './itemUse.ts';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
 import { walkDoorGoal } from './doorGoal.ts';
-import { pauseFollow } from './followCam.ts';
+import { avatarMoving } from './followCam.ts';
 
 export async function setupPointerInput(g: G15) {
   const {
     app, dungeon, setCamera, overviewZoom, dpr, intro, holdTargetAt, lakeside, hold, holdBusyElsewhere, menu,
     steerWalk, panels, cross, label, redraw, updateBlockGhost, placer, paint, roomItem, itemViews, build,
     openMenu, api, applyItems, sound, blockTap, tavernTap, barTap, serveAt, toast, sitOn, walkTo,
-    blockers, st, pourControl, late, stackTapAt,
+    blockers, st, pourControl, late, stackTapAt, prefs,
   } = g;
   /** True while a press belongs to the pour (the hold on the tap stand): it never walks, pans or hits. */
   let pourClaim = false;
@@ -25,9 +25,9 @@ export async function setupPointerInput(g: G15) {
     setCamera: (cam, snap) => (dungeon.isActive ? dungeon.setCamera(cam) : setCamera(cam, snap)),
     getOverviewZoom: overviewZoom,
     getDevicePixelRatio: dpr,
+    isCameraLocked: () => prefs.followCamera && !dungeon.isActive && !build.on && !paint.active && !placer.active && avatarMoving(st.avatar, st.path.length),
     onGestureStart: () => {
       intro.cancel();
-      pauseFollow(); // COD-1 (a): the player moves the camera by hand
     },
     onPress: (screen) => {
       // G2: while the avatar waits at the taps, a press on the stand (or near it) is the pour: hold = pour, release = done.

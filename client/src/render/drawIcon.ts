@@ -13,9 +13,9 @@ const canvases = new Map<string, HTMLCanvasElement>();
 const urls = new Map<string, string>();
 const textures = new Map<string, Texture>();
 
-/** A drink's ripening tier (K2): a 3 px band across the middle of the mug, gold for aged, red for vintage. */
-export type IconTier = 'aged' | 'vintage';
-const TIER_BAND: Record<IconTier, PaletteName> = { aged: 'gold', vintage: 'red' };
+/** A drink's ripening tier (K2): a 3 px band across the middle of the mug, gold for aged, red for vintage, orchid for reserve (CEL-5). */
+export type IconTier = 'aged' | 'vintage' | 'reserve';
+const TIER_BAND: Record<IconTier, PaletteName> = { aged: 'gold', vintage: 'red', reserve: 'orchid' };
 
 function keyOf(icon: Icon, rank: Rank | undefined, size: number, tier?: IconTier): string {
   return `${iconKey(icon)}|${rank ?? ''}|${size}|${tier ?? ''}`;

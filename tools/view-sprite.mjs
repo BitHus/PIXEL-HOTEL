@@ -169,47 +169,39 @@ try {
     await writeCropDirect(r.at, info);
     void keep;
   } else {
-    // Dungeon: pick the seed (rng override), enter, teleport the player next to the first matching prop, wait for the view.
-    const tryOne = async (s, shoot) => {
-      await page.evaluate((n) => { // rngInt(1, 2^31-1) = n
-        const r = (n - 1 + 0.5) / (2 ** 31 - 1);
-        const api = window.__ph.api;
-        window.__realRng = api.rng;
-        api.rng = () => r;
-      }, s);
-      await page.locator('button[title^="Dungeon"]').first().dispatchEvent('click');
-      await page.getByRole('button', { name: /^Enter$/ }).click();
-      await page.waitForTimeout(600);
-      const found = await page.evaluate(({ k }) => {
-        const api = window.__ph.api;
-        api.rng = window.__realRng;
-        const run = api.state.run;
-        const dec = (run.map.decor ?? []).filter((d) => d.kind === k);
-        const kinds = [...new Set((run.map.decor ?? []).map((d) => d.kind))];
-        return { seed: run.seed, n: dec.length, kinds, first: dec[0] ?? null };
-      }, { k: id });
-      return found;
-    };
+    // Dungeon: a seed is forced through the api rng (no UI), the floor's decor is read, then the run is entered by the real button.
+    const gen = (s) => page.evaluate(async ({ n, k }) => {
+      const api = window.__ph.api;
+      const real = api.rng;
+      api.rng = () => (n - 1 + 0.5) / (2 ** 31 - 1); // rngInt(1, 2^31-1) = n
+      const run = await api.dungeonStart([]);
+      api.rng = real;
+      const decor = run?.map.decor ?? [];
+      return { seed: run?.seed, n: decor.filter((d) => d.kind === k).length, kinds: [...new Set(decor.map((d) => d.kind))] };
+    }, { n: s, k: id });
+    const drop = () => page.evaluate(() => { window.__ph.api.state.run = null; });
     let found = null;
-    if (seed !== null) {
-      found = await tryOne(seed);
-      if (!found.n) { console.error(`seed ${seed} has no "${id}". Kinds on that floor: ${found.kinds.join(', ')}`); code = 2; }
+    const list = seed !== null ? [seed] : Array.from({ length: Number(opt.scan) }, (_, i) => i + 1);
+    for (const s of list) {
+      found = await gen(s);
+      await drop();
+      if (found.n) break;
+    }
+    if (!found?.n) {
+      console.error(seed !== null ? `seed ${seed} has no "${id}". Kinds on that floor: ${found.kinds.join(', ')}` : `no "${id}" in seeds 1..${opt.scan}. Last floor kinds: ${found?.kinds.join(', ')}`);
+      code = 2;
     } else {
-      const max = Number(opt.scan);
-      for (let s = 1; s <= max; s++) {
-        found = await tryOne(s);
-        if (found.n) break;
-        // leave the floor so the next seed can start: reload keeps the save, drop the run
-        await page.evaluate(() => { const a = window.__ph.api; a.state.run = null; });
-        await page.reload();
-        await page.getByText('Continue').first().click({ timeout: 20000 }).catch(() => undefined);
-        await page.waitForFunction(() => window.__ph, null, { timeout: 20000 });
-        await page.waitForTimeout(2500);
-        await page.mouse.click(5, 300);
-        await page.waitForTimeout(400);
-      }
-      if (!found?.n) { console.error(`no "${id}" in seeds 1..${max}. Last floor kinds: ${found?.kinds.join(', ')}`); code = 2; }
-      else console.log(`found "${id}" on --dungeon-seed ${found.seed}`);
+      if (seed === null) console.log(`found "${id}" on --dungeon-seed ${found.seed}`);
+      await page.evaluate((n) => { const api = window.__ph.api; const real = api.rng; window.__real = real; api.rng = () => (n - 1 + 0.5) / (2 ** 31 - 1); }, found.seed);
+      await page.locator('button[title^="Dungeon"]').first().dispatchEvent('click');
+      await page.locator('button.confirm-yes').first().click();
+      await page.waitForTimeout(600);
+      found = await page.evaluate(({ k }) => {
+        const api = window.__ph.api;
+        api.rng = window.__real;
+        const dec = (api.state.run.map.decor ?? []).filter((d) => d.kind === k);
+        return { first: dec[0] };
+      }, { k: id });
     }
     if (!code) {
       // Teleport to the nearest floor block beside the prop (kept in sync because step() reads state.run each tick).
@@ -218,7 +210,8 @@ try {
         const run = api.state.run;
         const m = run.map;
         const at = (c, r) => (c >= 0 && r >= 0 && c < m.cols && r < m.rows ? m.blocks[r * m.cols + c] : 'wall');
-        const cand = [[0, 1], [0, 2], [1, 1], [-1, 1], [0, -1], [1, 0], [-1, 0], [0, 3]].find(([dc, dr]) => at(d.c + dc, d.r + dr) === 'floor') ?? [0, 1];
+        // stand a few blocks away so the avatar does not hide the prop
+        const cand = [[0, 3], [3, 2], [-3, 2], [0, 2], [2, 2], [-2, 2], [0, -3], [3, 0], [-3, 0], [0, 1], [1, 1], [-1, 1], [0, -1]].find(([dc, dr]) => at(d.c + dc, d.r + dr) === 'floor') ?? [0, 1];
         run.player.x = (d.c + cand[0]) * 32 + 16;
         run.player.y = (d.r + cand[1]) * 32 + 16;
         run.player.hp = run.player.maxHp = 999;
@@ -230,7 +223,8 @@ try {
         const run = window.__ph.api.state.run;
         return { dx: d.c * 32 + 16 - run.player.x, dy: d.r * 32 + 32 - run.player.y };
       }, { d: found.first });
-      await writeCrop(480 + rel.dx * 2, 320 + rel.dy * 2 - 8, 2);
+      if (opt.debug) console.log(JSON.stringify(await page.evaluate(() => { const r = window.__ph.api.state.run; return { p: r.player, dec: r.map.decor.filter((d) => Math.abs(d.c * 32 - r.player.x) < 120 && Math.abs(d.r * 32 - r.player.y) < 120) }; })));
+      await writeCrop(480 + rel.dx * 2, 320 + rel.dy * 2 - 24, 2);
     }
   }
 } catch (e) {

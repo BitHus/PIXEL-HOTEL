@@ -53,6 +53,8 @@ export interface CameraControlHooks {
   getOverviewZoom(): number;
   /** Real screen px per CSS px (the renderer resolution). */
   getDevicePixelRatio(): number;
+  /** CAM-LOCK: true while the camera is locked on the moving avatar (a drag then never pans). */
+  isCameraLocked?(): boolean;
   /**
    * Mouse/pen moved (hover), a press ended as a tap, or a press was held still (longpress). Screen px. `target` is what Pixi's
    * hit testing found under the pointer (the event target), if anything.
@@ -105,6 +107,8 @@ interface Press {
   holdChecked: boolean;
   /** OA-1: the walk already started on press (before the hold time); a quick drag cancels it, a tap still taps. */
   early: boolean;
+  /** CAM-LOCK: the camera was locked (avatar moving) when the press began: a drag steers or does nothing, it never pans. */
+  lockedAtDown: boolean;
 }
 
 export interface CameraControl {
@@ -175,7 +179,7 @@ export function attachCameraControl(
       if (Math.hypot(p.x - press.start.x, p.y - press.start.y) < TAP_MAX_MOVE_PX) return;
       if (press.early) {
         // Held long enough already: the hold walk steers. A quick drag pans (rooms) and the walk is cancelled.
-        if (earlyWalkNext(performance.now() - press.downAt, Math.hypot(p.x - press.start.x, p.y - press.start.y)) === 'steer') {
+        if (press.lockedAtDown || earlyWalkNext(performance.now() - press.downAt, Math.hypot(p.x - press.start.x, p.y - press.start.y)) === 'steer') {
           press.hold = 'walk';
           hooks.onHoldMove?.(p);
           press.last = p;
@@ -187,8 +191,9 @@ export function attachCameraControl(
       press.drag = hooks.getDragMode?.(press.target, press.start) ?? 'pan';
       if (press.drag === 'draw') hooks.onDraw?.('start', press.start);
     }
-    if (press.drag === 'pan') hooks.setCamera(panBy(hooks.getCamera(), p.x - press.last.x, p.y - press.last.y));
-    else hooks.onDraw?.('move', p);
+    if (press.drag === 'pan') {
+      if (!press.lockedAtDown) hooks.setCamera(panBy(hooks.getCamera(), p.x - press.last.x, p.y - press.last.y));
+    } else hooks.onDraw?.('move', p);
     press.last = p;
   };
 
@@ -216,6 +221,7 @@ export function attachCameraControl(
       hold: null,
       holdChecked: false,
       early: false,
+      lockedAtDown: hooks.isCameraLocked?.() ?? false,
     });
     /** OA-1: hold to walk starts at once on a press on free floor (no wait). */
     const startEarly = (): void => {
@@ -259,7 +265,7 @@ export function attachCameraControl(
     }
     if (press?.id === e.pointerId) movePress(p);
     if (rightDrag) {
-      hooks.setCamera(panBy(hooks.getCamera(), p.x - rightDrag.x, p.y - rightDrag.y));
+      if (!hooks.isCameraLocked?.()) hooks.setCamera(panBy(hooks.getCamera(), p.x - rightDrag.x, p.y - rightDrag.y));
       rightDrag = p;
     }
     hooks.onPoint(p, 'hover', null);

@@ -1,4 +1,5 @@
-// Inn doors (step MB-2, INN-PLAN M-B): one connected Inn. Walking order suite (hotel) - tavern (shop) - garden (farm); the lakeside, the mine
+// Inn doors (step MB-2, INN-PLAN M-B): one connected Inn. Walking order suite (hotel) - tavern (shop) - garden (farm), and (CEL-2) the tavern's
+// back wall also leads to the attached kitchen and, once built, the cellar; the lakeside, the mine
 // and the dungeon stay on the Map. Pure rules on plain data.
 //
 // A door is a 2-cell wide doorway in the BACK WALL BAND; its SPOT is the 2 x 1 floor cells right in front of it (shared/data/innDoors.json:
@@ -12,7 +13,15 @@ import type { GameState } from './gameState.ts';
 import type { Room } from './room.ts';
 import type { Facing, Point, Rect } from './types.ts';
 
-export type InnDoorId = 'suite_to_tavern' | 'tavern_to_suite' | 'tavern_to_garden' | 'garden_to_tavern';
+export type InnDoorId =
+  | 'suite_to_tavern'
+  | 'tavern_to_suite'
+  | 'tavern_to_garden'
+  | 'garden_to_tavern'
+  | 'tavern_to_kitchen'
+  | 'kitchen_to_tavern'
+  | 'tavern_to_cellar'
+  | 'cellar_to_tavern';
 
 /** One door as stored: the spot's top-left cell and its width in cells. */
 export interface InnDoorData {
@@ -32,7 +41,7 @@ export interface InnDoorSpot extends InnDoorData {
 
 interface InnDoorFile {
   /** Where each door leads: the room kind and the id of the matching door there. */
-  links: Record<InnDoorId, { room: 'hotel' | 'shop' | 'farm'; arrive: InnDoorId }>;
+  links: Record<InnDoorId, { room: 'hotel' | 'shop' | 'farm' | 'kitchen' | 'cellar'; arrive: InnDoorId }>;
   /** kind -> shape -> doors per level (index 0 = level 1). */
   rooms: Record<string, Record<string, InnDoorData[][]>>;
 }

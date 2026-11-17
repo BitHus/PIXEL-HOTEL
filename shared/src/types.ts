@@ -223,7 +223,7 @@ export type TreeDropId = 'resin' | 'amber' | 'golden_acorn';
 export type BaseDrinkId = 'root_ale' | 'carrot_cider' | 'pumpkin_stout' | 'glowcap_tonic'
   | 'sweetmead' | 'nettle_wine' | 'briar_beer' | 'frost_cider' | 'ember_stout' | 'moonmilk_porter';
 /** How far a drink has ripened in a cask (step K2): fresh is the plain drink. */
-export type DrinkTier = 'aged' | 'vintage';
+export type DrinkTier = 'aged' | 'vintage' | 'reserve';
 /** A drink item: the plain drink, or its aged / vintage tier (`root_ale_aged`, built from drinks.json by materials.ts). */
 export type DrinkId = BaseDrinkId | `${BaseDrinkId}_${DrinkTier}`;
 export type MaterialId = BaseMaterialId | BlockId | SeedId | CropId | FoodId | FishId | ThingId | TreeDropId | DrinkId;
@@ -296,6 +296,8 @@ export type LedgerReason =
   | 'cask_collect'
   | 'tavern'
   | 'tavern_gift'
+  // CEL-4: gold paid for a new room (the cellar).
+  | 'build'
   // Taps (step T1): mugs moved from the bag onto a tap and back (nothing is found or lost).
   | 'tap'
   // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.

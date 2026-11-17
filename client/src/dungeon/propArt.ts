@@ -509,6 +509,7 @@ const PROP_SPRITE: Record<string, string> = {
   sarcophagus_small: 'sarcophagus_small', candle_stand: 'candle_stand', gate_arch: 'dungeon_gate', vault_arch: 'dungeon_gate',
   campfire: 'campfire', brazier: 'brazier', torch_stand: 'torch_stand', bones: 'bones', skull_pile: 'skull_pile', rubble: 'rubble', root: 'root', glowcap: 'glowcap', gem_pile: 'gem_pile',
   brazier_big: 'brazier_big', library_shelf: 'library_shelf', fountain: 'fountain', banner: 'banner', vault_door: 'vault_door', guard_post: 'guard_post', candles: 'candles',
+  stairs_up: 'stairs_up', stairs_down: 'stairs_down', crypt_garden: 'crypt_garden',
 };
 /** The PNGs have no shadow: these get the code shadow oval under them. */
 const SPRITE_SHADOW: Record<string, number> = { barrel: 22, crate: 24, statue: 26, sarcophagus: 34, sarcophagus_small: 26, shelf: 26, library_shelf: 54, fountain: 60, guard_post: 50 };
@@ -516,7 +517,7 @@ const SPRITE_SHADOW: Record<string, number> = { barrel: 22, crate: 24, statue: 2
 const PROP_FLAMES: Record<string, [number, number, number][]> = {
   candle_stand: [[10, 9, 1], [16, 6, 1], [21, 9, 1]],
   campfire: [[16, 24, 1], [12, 25, 1], [20, 25, 1]],
-  brazier: [[12, 12, 1], [16, 11, 1], [20, 12, 1]],
+  brazier: [[12, 17, 1], [16, 16, 1], [20, 17, 1]],
   torch_stand: [[16, 5, 1]],
   brazier_big: [[10, 11, 2], [16, 10, 2], [22, 11, 2]],
   guard_post: [[34, 17, 1]],
@@ -527,7 +528,10 @@ export function drawProp(kind: PropKind | string, variant = 0, clockMs = 0): Con
   const root = new Container();
   root.label = `prop:${kind}`;
   const g = new Graphics();
-  const tex = PROP_SPRITE[kind] ? spriteTexture('dungeon', PROP_SPRITE[kind]!) : null;
+  const vi = Math.max(0, Math.floor(variant)) % 3; // banner_1.png / banner_2.png: extra variants of a PNG kind (optional files)
+  const tex = PROP_SPRITE[kind]
+    ? ((kind === 'banner' && vi > 0 ? spriteTexture('dungeon', `banner_${vi}`) : null) ?? spriteTexture('dungeon', PROP_SPRITE[kind]!))
+    : null;
   if (tex) {
     if (SPRITE_SHADOW[kind]) shadowOval(g, SPRITE_SHADOW[kind]!);
     root.addChild(g);

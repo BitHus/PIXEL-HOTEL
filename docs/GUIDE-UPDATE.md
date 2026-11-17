@@ -9,6 +9,11 @@ The first-steps guide is data. When a feature in the first ten minutes changes, 
 - `client/src/ui/firstTenGuide.ts` (card), `client/src/ui/guidePointer.ts` + `guide.css` (pointer).
 - Events from game code: `guide.event('<id>')` in `client/src/game/tavernLife.ts` (menu, pour, serve, coins, barrel, collect, load).
 
+## CEL-3 (kitchen and cellar steps)
+- New steps `kitchen` (target `door` tavern_to_kitchen; ticks when the kitchen room opens, guideAutoEvents `inKitchen`) before `barrel`, and `cellar` after `load` (target `door` tavern_to_cellar; waits until the cellar is built, `GuideContext.cellarBuilt`; ticks on filling a cask, never on waiting). `barrel`, `collect` and `stove` texts say "in the kitchen"; `load` says "Back in the tavern".
+- Target kind `door` = an Inn door of the room on screen by id. A `furniture` or `stand` target that stands in another room of the tavern area makes guideWorld.ts point at the door that leads there (routeDoor), in the tavern and back again from the kitchen or cellar.
+- The stove step's supplies top-up (api.ensureTutorialCookSupplies) is room independent and unchanged.
+
 ## Target kinds (guide.json `target`)
 `furniture` (typeId: the first one in the tavern), `guest` (a seated guest with an open order; the one the tray can serve first), `stand` (the tap stand while the avatar waits to pour, else a waiting guest), `coins` (coins on a table), `ui` (a button whose aria-label starts with `label`), `floor` (a spot beside the avatar), `none`.
 

@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import { CAMERA_FOLLOW_EASE_MS, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
-import { followPaused } from './followCam.ts';
+import { avatarMoving } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
 import { createCatLife } from './catLife.ts';
@@ -31,6 +31,7 @@ export async function setupGameLoop(g: G16) {
   const feet: Point[] = [];
   let lastStepBeat = 0;
   let wasPaused = false;
+  let wasMoving = false;
   let easeOff: Point | null = null;
   let easeMs = 0;
   // Frame times for the Debug line (real elapsed ms per frame, not the capped delta).
@@ -66,12 +67,13 @@ export async function setupGameLoop(g: G16) {
     // Arrived at the seat's approach point: take the pose and slide onto the seat.
     if (st.path.length === 0 && seating.goal !== null) st.avatar = seating.arrive(st.avatar, roomItem(seating.goal.uid));
     st.avatar = seating.update(st.avatar, ticker.deltaMS);
-    // OA-13 / OWN-4 (e): in EVERY room (not only the tavern) the camera keeps the avatar centred, no lag (after the avatar moved this frame; Settings: Follow camera); the intro and the player's own drag win.
-    // OWN-4: when the player's own pan pause ends the camera EASES back (CAMERA_FOLLOW_EASE_MS) instead of jumping to the avatar.
-    const paused = followPaused();
-    if (!step && prefs.followCamera && !intro.active && !build.on && !paused) {
+    // CAM-LOCK (hybrid): while the avatar MOVES (tap-walk, hold-walk, steer) the camera is locked: the avatar sits exactly in the middle, every frame, in every room
+    // (Settings: Camera locked while walking, default). Standing still the player may pan to look around; when walking starts again the camera eases back (CAMERA_FOLLOW_EASE_MS) and locks.
+    const moving = avatarMoving(st.avatar, st.path.length);
+    const paused = !moving && !wasMoving; // the frame the avatar arrives is still locked (the last step is followed)
+    if (!step && prefs.followCamera && !intro.active && !build.on && (moving || wasMoving || easeOff)) {
       const lock = followLock(st.camera, { x: st.avatar.x, y: st.avatar.y - 24 }, app.screen.width, app.screen.height, st.bounds);
-      if (wasPaused && (lock.x !== st.camera.x || lock.y !== st.camera.y)) {
+      if (wasPaused && !easeOff && (lock.x !== st.camera.x || lock.y !== st.camera.y)) {
         easeOff = { x: st.camera.x - lock.x, y: st.camera.y - lock.y };
         easeMs = 0;
       }
@@ -85,6 +87,7 @@ export async function setupGameLoop(g: G16) {
       if (next !== st.camera && (next.x !== st.camera.x || next.y !== st.camera.y)) setCamera(next);
     } else easeOff = null;
     wasPaused = paused;
+    wasMoving = moving;
     itemViews.props.setMealSpots(g.tableMess.steamSpots());
     itemViews.update(ticker.deltaMS);
     g.tableMess.update(ticker.deltaMS);

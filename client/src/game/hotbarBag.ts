@@ -200,7 +200,7 @@ late.hotbar = hotbar;
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares, owned: bagCounts() });
-    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null, st.room.kind === 'hotel' ? roomScore(st.room, st.items) : null);
+    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null, st.room.kind === 'hotel' ? roomScore(st.room, st.items) : null, { tavernId: p.shopRoomId, kitchenId: p.kitchenRoomId, cellarId: p.cellarRoomId, playerLevel: p.level });
     const materials = st.inventory.materials;
     const usable = (typeId: string): boolean =>
       countInInventory(st.inventory.furniture, typeId) > 0 && fitsRoomKind(getFurnitureType(typeId), st.room);

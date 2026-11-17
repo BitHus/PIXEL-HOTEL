@@ -30,7 +30,7 @@ describe('createNewPlayer (brief section 9)', () => {
     const shop = s.rooms.find((r) => r.id === s.player.shopRoomId);
     expect(hotel).toMatchObject({ kind: 'hotel', level: 1, w: 576, h: 384, ownerId: s.player.id });
     expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 320, ownerId: s.player.id });
-    expect(s.rooms).toHaveLength(4);
+    expect(s.rooms).toHaveLength(5); // hotel, tavern, farm, lakeside and the attached kitchen (CEL-2)
     // Step 9f: a level 1 lakeside (576x384) with 8 whole trees.
     expect(s.rooms.find((r) => r.id === s.player.lakesideRoomId)).toMatchObject({ kind: 'lakeside', level: 1, w: 576, h: 384 });
     expect(s.lakeside.trees).toEqual(Array.from({ length: 8 }, () => ({ hits: 0, felledAt: null })));
@@ -47,9 +47,9 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.hotbar).toEqual(Array(HOTBAR_SLOTS).fill(null));
   });
 
-  it('puts the bar, a bar stool in front of it, a round table with 2 stools, a brewing barrel and a stove in the shop, at their fixed spots; no stall table (S3)', () => {
+  it('puts the bar, a bar stool in front of it, a round table with 2 stools in the tavern (the brewing barrel and the stove stand in the kitchen, CEL-2), at their fixed spots; no stall table (S3)', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
-    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'round_table', 'stove', 'tap_stand']);
+    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'counter', 'register', 'round_table', 'tap_stand']);
     for (const start of SHOP_START_ITEMS.filter((x) => x.typeId === 'counter')) {
       expect(shop.find((i) => i.typeId === start.typeId)).toMatchObject({ x: start.x, y: start.y, facing: start.facing });
     }
@@ -128,7 +128,7 @@ describe('a new player from character creation (step 7b)', () => {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const shop = s.items.filter((i) => i.roomId === room.id);
-      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'round_table', 'stove', 'tap_stand']);
+      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'counter', 'register', 'round_table', 'tap_stand']);
       // Three seats (S3, G2): all three stools stand at the round table (uid 2).
       expect(tavernSeats(s.items, room.id).map((x) => x.tableUid), shape.id).toEqual([2, 2, 2]);
       for (const i of shop) {

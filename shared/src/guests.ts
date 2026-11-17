@@ -88,6 +88,8 @@ export interface TavernWorld {
   playerHere: boolean;
   /** Seats the player's avatar uses (guests do not sit there). */
   seatsTaken?: readonly { uid: number; index: number }[];
+  /** CEL-2: the attached kitchen and cellar room ids (their pieces count for the appeal). */
+  attached?: readonly number[];
 }
 
 export type TavernEvent =
@@ -240,7 +242,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
   // The guest timer.
   let left = s.tavern.nextGuestInMs - dtMs;
   if (left <= 0) {
-    left += guestIntervalMs(tavernAppeal(w.room, w.items));
+    left += guestIntervalMs(tavernAppeal(w.room, w.items, w.attached));
     const here = s.tavern.guests;
     // OA-14: the CLOSED sign: the timer runs, nobody comes.
     let n = s.tavern.closed === true ? 0 : Math.min(rollGroupSize(rng), Math.min(GUEST_MAX, seats.length) - here.length);
@@ -262,7 +264,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
   }
   s = withTavern(s, { nextGuestInMs: Math.max(0, left) });
 
-  const roomAppeal = tavernAppeal(w.room, w.items);
+  const roomAppeal = tavernAppeal(w.room, w.items, w.attached);
   const all = s.tavern.guests;
   const out: Guest[] = [];
   /** Maybe a line at the table: a toast or a word about the drink while eating with someone, else small talk. */
@@ -424,7 +426,7 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
   s = withTavern(s, { guests: kept });
   const gap = Math.max(0, at - state.tavern.updatedAt);
   const span = state.tavern.closed === true ? 0 : Math.min(gap, OFFLINE_MAX_MS); // OA-14: closed = nobody came while away
-  const interval = guestIntervalMs(tavernAppeal(w.room, w.items));
+  const interval = guestIntervalMs(tavernAppeal(w.room, w.items, w.attached));
   const cap = Math.min(GUEST_MAX, seats.length);
   const g = npcGrid(w.grid, guestZones(w.items, w.room));
   const usable = reachable(g, doorPoint(w.room), seats);

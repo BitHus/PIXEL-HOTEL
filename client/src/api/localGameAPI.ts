@@ -11,12 +11,12 @@ import {
   gainsSince, smelt, buySeeds, openPack, sellSpare, buyBlocks, placeBlock, hitBlock, claimBookReward, fishStep,
   hitPlant, plantSeed, spliceSeed, buyGear, SHOP_CATCH_UP_GAP_MS, SHOP_TICK_MS, applyStyle, paintFloor, buyCatalog,
   catchUpTavern, stepTavern, collectBrew, upgradeRoom,
-  configForChoice, TAVERN_BAR_NOTICE, innDoorNotice, SAVE_BACKUP_KEY, START_CROPS, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
+  configForChoice, TAVERN_BAR_NOTICE, innDoorNotice, KITCHEN_MOVED_NOTICE, SAVE_BACKUP_KEY, START_CROPS, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
   saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type QuestBoard, type GainList, type BarId, type GearId,
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
-  type TavernEvent, type TavernView, type TavernWorld, type CaskView, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
+  type TavernEvent, type TavernView, type DrinkTier, type TavernWorld, type CaskView, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
   type StyleKind, type Rng, type NewPlayerChoice, type ServeResult, type SplicePreview,
   type Avatar, type AvatarLook, type BagTab, type SlotLayout, type SlotRef, type ChatLine, type FurnitureItem,
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
@@ -136,7 +136,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
           ? ` ${TAVERN_BAR_NOTICE}${r.state.items.some((i) => (i.typeId === 'register' || i.typeId === 'tap_stand') && i.roomId === null) ? ' The bar had no free cell for everything: the rest is in your bag.' : ''}`
           : '';
         const doors = r.doorsChanged > 0 ? ` ${innDoorNotice(r.doorsChanged)}` : '';
-        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}${kitchen}${closed}${bar}${doors}`);
+        // CEL-2: an old save (before save 36) got an attached kitchen: stove, barrel and prep tables moved in; keg racks moved into a cellar.
+        const rooms = r.version < 36 ? ` ${KITCHEN_MOVED_NOTICE}${r.state.player.cellarRoomId !== undefined ? ' Your keg racks are in a new cellar.' : ''}` : '';
+        return start(r.state, `Your save was updated to the new version of the game.${extra}${farm}${kitchen}${closed}${bar}${doors}${rooms}`);
       }
       return start(
         createNewPlayer(undefined, now()),
@@ -221,6 +223,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async hitBlock(c: number, r: number): Promise<BlockResult> { return blocksFarmApi.hitBlock(this, c, r); }
   async buyBlocks(blockId: string, qty: number): Promise<GainList | null> { return blocksFarmApi.buyBlocks(this, blockId, qty); }
   async upgradeRoom(roomId: number): Promise<Room | null> { return roomsApi.upgradeRoom(this, roomId); }
+  async buildCellar(): Promise<Room | null> { return roomsApi.buildCellar(this); }
   async getRoom(roomId: number): Promise<Room | null> { return roomsApi.getRoom(this, roomId); }
   async currentHint(): Promise<string | null> { return progressApi.currentHint(this); }
   async ensureTutorialCookSupplies(): Promise<boolean> { return progressApi.ensureTutorialCookSupplies(this); }
@@ -272,7 +275,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean> { return tavernApi.tidyTable(this, messId, what); }
   async getCasks(): Promise<CaskView[]> { return tavernApi.getCasks(this); }
   async fillCask(rackUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean> { return tavernApi.fillCask(this, rackUid, slot, drink, qty); }
-  async collectCask(rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | 'aged' | 'vintage'; gains: GainList } | null> { return tavernApi.collectCask(this, rackUid, slot); }
+  async collectCask(rackUid: number, slot: number): Promise<{ item: MaterialId; mugs: number; tier: 'fresh' | DrinkTier; gains: GainList } | null> { return tavernApi.collectCask(this, rackUid, slot); }
   async collectBrew(barrelUid: number): Promise<{ drink: MaterialId; mugs: number; gains: GainList } | null> { return tavernApi.collectBrew(this, barrelUid); }
   async startBrew(barrelUid: number, drink: DrinkId): Promise<boolean> { return tavernApi.startBrew(this, barrelUid, drink); }
   async getMenu(): Promise<MenuRowView[]> { return tavernApi.getMenu(this); }
@@ -284,6 +287,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async startCook(stoveUid: number, food: FoodId, qty: number): Promise<boolean> { return tavernApi.startCook(this, stoveUid, food, qty); }
   async collectCook(stoveUid: number): Promise<{ food: FoodId; qty: number; gains: GainList } | null> { return tavernApi.collectCook(this, stoveUid); }
   inTavern(): boolean { return tavernApi.inTavern(this); }
+  inWork(): boolean { return tavernApi.inWork(this); }
 
   startErrand(to: Point, task: TavernTask): boolean { return tavernApi.startErrand(this, to, task); }
 

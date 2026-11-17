@@ -3713,6 +3713,12 @@
     linear-gradient(#e43b44 0 60%, #a22633 60% 100%);
   border-right-color: #f6757a;
 }
+.cask-card.tier-reserve .cask-fill {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(100% / 12 - 1px), var(--outline) calc(100% / 12 - 1px) calc(100% / 12)),
+    linear-gradient(#b55088 0 60%, #68386c 60% 100%);
+  border-right-color: #f6757a;
+}
 .cask-tier {
   display: inline-block;
   padding: 0 6px;
@@ -3729,6 +3735,12 @@
 .cask-tier.tier-vintage,
 .cask-card.tier-vintage .cask-tier {
   background: #a22633;
+  color: #ead4aa;
+}
+/* CEL-5 reserve (stub look for the artist: plum chip) */
+.cask-tier.tier-reserve,
+.cask-card.tier-reserve .cask-tier {
+  background: #68386c;
   color: #ead4aa;
 }
 @media (prefers-reduced-motion: reduce) {

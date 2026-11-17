@@ -60,7 +60,8 @@ export async function setupTavernLife(g: G9) {
   /** Steam from ready machines, a "ding" when one becomes ready, the guide's waiting steps and the ambient bed. */
   let stoveSupplyAsked = false;
   const syncMachines = (): void => {
-    const on = st.room.id === st.tavern.roomId && !fx.paused;
+    // CEL-2: the machines also work (and glow) in the attached kitchen and cellar rooms.
+    const on = st.tavern.workRooms.includes(st.room.id) && !fx.paused;
     const now = Date.now();
     const ready = new Set<string>();
     const steam: P2[] = [];
@@ -178,6 +179,8 @@ export async function setupTavernLife(g: G9) {
   const walkers = (list: readonly Guest[]): Walker[] =>
     list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing, eating: g.phase === 'eat' }));
   const inTavern = (): boolean => st.room.id === st.tavern.roomId;
+  /** CEL-2: the tavern or its attached kitchen or cellar (machines, ready dots, the guide's door routing). */
+  const inWork = (): boolean => st.tavern.workRooms.includes(st.room.id);
   // OA-14: the OPEN / CLOSED sign under the info panel (tavern only). Closed = no new guests (the ones inside finish).
   const signWord = el('span', 'open-sign-word', 'OPEN');
   const sign = iconButton('house', 'Tavern is open: tap to close', () => {
@@ -207,7 +210,7 @@ export async function setupTavernLife(g: G9) {
       toast('Nothing to serve. Load the taps or cook something, or tap the sign to close the tavern.');
     });
   }, 5000);
-  guideWorld = startGuideWorld(g, { guide, pouring: () => pourFor !== null, inTavern, ready: () => readyNow });
+  guideWorld = startGuideWorld(g, { guide, pouring: () => pourFor !== null, inTavern, inWork, ready: () => readyNow });
   const orders = createOrderBubbles(ui, (id) => void serveTap(id));
   // COD-1 (d): the orders strip at the top: one chip per open order (data from the pure shared/src/tray.ts ordersStrip).
   const strip = createOrdersStrip(uiRoot, {
@@ -395,6 +398,7 @@ export async function setupTavernLife(g: G9) {
     fill: (rackUid, slot, drink, qty) => {
       void api.fillCask(rackUid, slot, drink, qty).then(async (ok) => {
         sound.play(ok ? 'pop' : 'click');
+        if (ok) guide.event('cellar'); // CEL-3: the cellar step ticks on filling a cask, never on waiting
         toast(ok ? `${qty} x ${getDrinkType(drink).name} are ripening in the cask.` : 'That did not fit in the cask.');
         await refreshTavern();
         await late.refreshInventory();
@@ -415,7 +419,7 @@ export async function setupTavernLife(g: G9) {
     },
   });
   panels.add('casks', casks.el);
-  const refreshCasks = (): void => casks.update(st.tavern.casks, st.inventory.materials);
+  const refreshCasks = (): void => casks.update(st.tavern.casks, st.inventory.materials, st.tavern.caskCaps);
   /** The avatar is next to the keg rack: the Cask panel opens. */
   async function caskArrived(uid: number): Promise<void> {
     await refreshTavern();
@@ -553,9 +557,9 @@ export async function setupTavernLife(g: G9) {
   }
   /** A tap on something of the tavern: a guest with an order, coins or a dish on a table, a brewing barrel. True when handled. */
   const tavernTap = (world: Point, hit: FurnitureItem | undefined): boolean => {
-    if (!inTavern()) return false;
+    if (!inWork()) return false;
     // Mugs wait on the tray: a tap on a guest who wants one, their seat or their table carries ONE mug over.
-    if (st.tavern.tray.length > 0 && !pourControl.pressing) {
+    if (inTavern() && st.tavern.tray.length > 0 && !pourControl.pressing) {
       const seats = tavernSeats(st.items, st.tavern.roomId, kitchenZone(st.room));
       const gAt = guests.at(world);
       const target = guestsTrayCanServe(st.tavern).find((id) => {
@@ -582,6 +586,8 @@ export async function setupTavernLife(g: G9) {
       caskTap(hit);
       return true;
     }
+    // The rest (taps, guests, tables) is the tavern's own.
+    if (!inTavern()) return false;
     if (hit && getFurnitureType(hit.typeId).taps) {
       standTap();
       return true;

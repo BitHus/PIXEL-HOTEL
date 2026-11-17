@@ -6,6 +6,7 @@
 import { getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { inRooms, kitchenRoomIds } from './workRooms.ts';
 import { DRINK_TYPES, getDrinkType, isBaseDrinkId } from './materials.ts';
 import type { DrinkId, FurnitureItem, MaterialId } from './types.ts';
 
@@ -35,12 +36,12 @@ export function brewReadyInMs(brew: Brew, now: number): number {
 }
 
 /** The barrels placed in the tavern, in uid order. */
-export function barrels(items: readonly FurnitureItem[], roomId: number): FurnitureItem[] {
-  return items.filter((i) => i.roomId === roomId && getFurnitureType(i.typeId).brews === true).sort((a, b) => a.uid - b.uid);
+export function barrels(items: readonly FurnitureItem[], roomId: number | readonly number[]): FurnitureItem[] {
+  return items.filter((i) => inRooms(i.roomId, roomId) && getFurnitureType(i.typeId).brews === true).sort((a, b) => a.uid - b.uid);
 }
 
 function placedBarrel(state: GameState, uid: number): FurnitureItem | undefined {
-  return barrels(state.items, state.tavern.roomId).find((i) => i.uid === uid);
+  return barrels(state.items, kitchenRoomIds(state)).find((i) => i.uid === uid);
 }
 
 function withBrews(state: GameState, brews: Brew[]): GameState {
