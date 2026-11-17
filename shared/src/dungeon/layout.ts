@@ -43,14 +43,14 @@ import {
 } from '../config.ts';
 import { rngInt, rngPick } from '../rng.ts';
 import type { Rng } from '../types.ts';
-import { blockCenter } from './grid.ts';
+import { blockCenter, floorStaysConnected } from './grid.ts';
 import { floorFn, propSpotOk } from './placement.ts';
 import { generateLegacyCrypt } from './legacyLayout.ts';
 import { blockDistances, chestSpotOk, floorRng, makeEnemy, type FloorPlan } from './layoutCommon.ts';
 import { cheb, longestStretchWithout, nearest, routeBetween, type Cell } from './pacing.ts';
 import { ROOM_TEMPLATES, getRoomTemplate, roomMask, type RoomTemplate } from './rooms.ts';
 import type { BlockRect, Chest, ChestKind, DecorProp, DungeonBlock, DungeonMap, DungeonRoundId, Enemy, MapLink } from './run.ts';
-import { LANDMARK_KINDS, getTheme, pickTheme, rollProps, type RoomTheme } from './themes.ts';
+import { GATES, LANDMARK_KINDS, getTheme, isSolidProp, pickTheme, rollProps, type RoomTheme } from './themes.ts';
 
 const COLS = DUNGEON_BLOCKS_W;
 const ROWS = DUNGEON_BLOCKS_H;
@@ -398,8 +398,24 @@ export function generateCryptLayout(seed: number, n: number, round: DungeonRound
   const extras: BlockRect[] = [];
   const decor: DecorProp[] = [];
   const used = new Set<number>([key(spawn), key(exit)]);
+  // DG-P: solid props. One block (the anchor); never on the main route, never beside a door, the floor must stay one piece.
+  const routeKeys = new Set(route.map((p) => key(p)));
+  const solids = new Set<number>();
+  const canBeSolid = (p: Cell): boolean => {
+    const k = p.r * COLS + p.c;
+    if (solids.has(k) || routeKeys.has(key(p))) return false;
+    if (rooms.some((room) => room.doors.some((d) => cheb(p, d) <= 1))) return false;
+    solids.add(k);
+    const ok = floorStaysConnected(map, solids, spawn);
+    solids.delete(k);
+    return ok;
+  };
+  /** A prop kind that may stand on p: solid kinds only where they can be solid. */
+  const kindOk = (kind: string, p: Cell): boolean => !isSolidProp(kind) || canBeSolid(p);
   const addDecor = (kind: string, p: Cell): void => {
-    decor.push({ id: decor.length + 1, kind, c: p.c, r: p.r, solid: false });
+    const solid = isSolidProp(kind) && canBeSolid(p);
+    if (solid) solids.add(p.r * COLS + p.c);
+    decor.push({ id: decor.length + 1, kind, c: p.c, r: p.r, solid });
     used.add(key(p));
   };
   const isDoor = (p: Cell): boolean => rooms.some((room) => room.doors.some((d) => d.c === p.c && d.r === p.r));
@@ -442,7 +458,7 @@ export function generateCryptLayout(seed: number, n: number, round: DungeonRound
         const nook = bigNook(a, side);
         if (!nook) continue;
         carveExtra(nook.cells, [{ x: nook.mouth.c, y: nook.mouth.r, w: 1, h: 1 }, rectOf(nook.pocket)]);
-        if (rng() < 0.6) addDecor(rngPick(rng, NOOK_PROPS), nook.pocket[0]!);
+        if (rng() < 0.6) addDecor(rngPick(rng, NOOK_PROPS.filter((k) => kindOk(k, nook.pocket[0]!))), nook.pocket[0]!);
         break;
       }
       const cells = stubFits(a, 2);
@@ -533,7 +549,8 @@ export function generateCryptLayout(seed: number, n: number, round: DungeonRound
     const cx = room.rect.x + (room.rect.w - 1) / 2;
     const cy = room.rect.y + (room.rect.h - 1) / 2;
     const free = freeCells(lmRoom).sort((a, b) => Math.hypot(a.c - cx, a.r - cy) - Math.hypot(b.c - cx, b.r - cy));
-    if (free[0]) addDecor(lmKind, free[0]);
+    const spot = free.find((p) => kindOk(lmKind, p)) ?? free[0];
+    if (spot) addDecor(lmKind, spot);
   }
 
   interface PlacedEnemy {
@@ -616,7 +633,7 @@ export function generateCryptLayout(seed: number, n: number, round: DungeonRound
   // Props of the themes, one per free block, never on a door block.
   propKinds.forEach((kinds, ri) => {
     for (const kind of kinds) {
-      const free = freeCells(ri, (p) => propSpotOk(kind, floorFn(map), p));
+      const free = freeCells(ri, (p) => propSpotOk(kind, floorFn(map), p) && kindOk(kind, p));
       if (free.length === 0) continue;
       addDecor(kind, rngPick(rng, free));
     }
@@ -678,8 +695,28 @@ export function generateCryptLayout(seed: number, n: number, round: DungeonRound
     }
     if (!spot) continue;
     const here: Cell = spot;
-    addDecor(rngPick(rng, CORRIDOR_PROPS.filter((k) => propSpotOk(k, floorFn(map), here))), spot);
+    addDecor(rngPick(rng, CORRIDOR_PROPS.filter((k) => propSpotOk(k, floorFn(map), here) && kindOk(k, here))), spot);
     beats.push(spot);
+  }
+
+  // 10. Gates (DG-P): a passable arch object on a door block that is a north-south passage (wall west and east, floor north and
+  // south) and holds nothing else. A seeded hash per door decides (no rng draw, so nothing above moves); at most GATES.max per floor.
+  // The block stays floor and the nav grid does not block it: the route is never cut.
+  const gateHash = (p: Cell): number => {
+    let h = Math.imul((seed ^ Math.imul(n, 0x9e3779b1)) >>> 0, 0x85ebca6b) ^ Math.imul(p.c * 64 + p.r + 1, 0xc2b2ae35);
+    h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
+    return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
+  };
+  let gatesPlaced = 0;
+  for (const room of rooms) {
+    for (const d of room.doors) {
+      if (gatesPlaced >= GATES.max || used.has(key(d)) || decor.some((x) => x.c === d.c && x.r === d.r)) continue;
+      const fl = floorFn(map);
+      if (!fl(d.c, d.r) || fl(d.c - 1, d.r) || fl(d.c + 1, d.r) || !fl(d.c, d.r - 1) || !fl(d.c, d.r + 1)) continue;
+      if (gateHash(d) >= GATES.chance) continue;
+      addDecor(GATES.kind, d);
+      gatesPlaced++;
+    }
   }
 
   const enemyList: Enemy[] = enemies.map((e, i) => {

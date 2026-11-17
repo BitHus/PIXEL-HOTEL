@@ -11,5 +11,7 @@
     { "id": "crypt_garden", "role": "any", "templates": ["ring", "ell", "rect"], "rounds": [1, 2], "weight": 4, "props": [["root", 2, 3], ["glowcap", 2, 3]], "enemies": "none" },
     { "id": "storeroom", "role": "any", "templates": ["*"], "rounds": [1, 2], "weight": 3, "props": [["barrel", 1, 3], ["crate", 1, 3], ["cobweb", 0, 2]], "enemies": "normal" }
   ],
-  "landmarks": ["fountain", "statue", "brazier_big", "pillar_ring", "sarcophagus"]
+  "landmarks": ["fountain", "statue", "brazier_big", "pillar_ring", "sarcophagus"],
+  "solidProps": ["barrel", "crate", "shelf", "library_shelf", "candle_stand", "statue", "brazier", "brazier_big", "pillar_ring", "sarcophagus", "sarcophagus_small", "fountain", "campfire", "guard_post", "torch_stand", "pillar", "pillar_variant", "vault_door"],
+  "gates": { "kind": "gate_arch", "chance": 0.6, "max": 3 }
 }

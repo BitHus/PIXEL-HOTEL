@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isSolidProp } from '@pixel-hotel/shared';
 import { drawDecor, drawProp, propLight, PROP_INFO, PROP_KINDS } from './propArt.ts';
 
 describe('propArt', () => {
@@ -17,5 +18,8 @@ describe('propArt', () => {
   it('glow kinds expose a light', () => {
     expect(propLight('brazier_big')?.flicker).toBe(true);
     expect(propLight('barrel')).toBeUndefined();
+  });
+  it('PROP_INFO.solid matches the rules data (dungeonThemes.json solidProps) for every kind', () => {
+    for (const k of PROP_KINDS) expect(PROP_INFO[k].solid, k).toBe(isSolidProp(k));
   });
 });

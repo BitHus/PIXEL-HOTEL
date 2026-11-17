@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DUNGEON_BLOCKS_H, DUNGEON_BLOCKS_W, DUNGEON_CORRIDOR_MAX, ENEMIES_PER_ROOM_MAX, PACE_ENEMY_GAP_BLOCKS, PACE_GAP_BLOCKS, PACE_NEAR_BLOCKS, ROUTE_LEN_MAX, ROUTE_LEN_MIN } from '../config.ts';
 import { blockDistances, generateFloor } from './generate.ts';
-import { blockAt, isFloorBlock } from './grid.ts';
+import { blockAt, dungeonNavGrid, floorStaysConnected, isFloorBlock } from './grid.ts';
+import { isCellFree, cellAt, reachableCells } from '../nav.ts';
+import { GATES, isSolidProp } from './themes.ts';
 import { generateLegacyCrypt } from './legacyLayout.ts';
 import { longestStretchWithout, routeBetween, worstBeatDistance } from './pacing.ts';
 import { ROOM_TEMPLATES, maskConnected, roomMask } from './rooms.ts';
@@ -44,7 +46,7 @@ describe('crypt layout (DG1, section 10 LAYOUT)', () => {
     }
     let h = 0x811c9dc5;
     for (let i = 0; i < all.length; i++) h = Math.imul(h ^ all.charCodeAt(i), 0x01000193) >>> 0;
-    expect(h.toString(16)).toBe('abf4146e');
+    expect(h.toString(16)).toBe('66e0aa6e');
   });
 
   it('is 40 x 40, rooms disjoint, 3 to 4 rooms in round 1 and 5 to 8 in round 2, outer ring wall', () => {
@@ -272,5 +274,71 @@ describe('crypt layout (DG1, section 10 LAYOUT)', () => {
     const legacy = generateLegacyCrypt(42, 1, 2);
     expect(legacy.map.links).toBeUndefined();
     expect(legacy.map.rooms.length).toBeGreaterThanOrEqual(5);
+  });
+});
+
+describe('solid props and gates (DG-P)', () => {
+  it('solid props block the nav grid, stand off the route, off doors, and the floor stays one piece', () => {
+    let solidCount = 0;
+    for (const round of [1, 2] as const) {
+      for (const plan of floors(round, 60)) {
+        const { map } = plan;
+        const solids = new Set<number>();
+        for (const d of map.decor ?? []) {
+          expect(d.solid, d.kind).toBe(isSolidProp(d.kind) && d.solid);
+          if (!d.solid) continue;
+          solidCount++;
+          solids.add(d.r * map.cols + d.c);
+          const g = dungeonNavGrid(map);
+          const cell = cellAt(g, { x: (d.c + 0.5) * 32, y: (d.r + 0.5) * 32 });
+          expect(isCellFree(g, cell.c, cell.r)).toBe(false);
+          for (const room of map.rooms) void room;
+        }
+        const sp = blockAt(map.spawn);
+        expect(floorStaysConnected(map, solids, sp)).toBe(true);
+        for (const e of plan.enemies) expect(solids.has(blockAt(e).r * map.cols + blockAt(e).c)).toBe(false);
+        for (const c of plan.chests) expect(solids.has(blockAt(c).r * map.cols + blockAt(c).c)).toBe(false);
+        expect(solids.has(map.exit.r * map.cols + map.exit.c)).toBe(false);
+        // the exit is still reachable on the nav grid from the spawn
+        const g = dungeonNavGrid(map);
+        const seen = reachableCells(g, cellAt(g, map.spawn).r * g.cols + cellAt(g, map.spawn).c);
+        const ex = cellAt(g, { x: (map.exit.c + 0.5) * 32, y: (map.exit.r + 0.5) * 32 });
+        expect(seen[ex.r * g.cols + ex.c]).toBe(true);
+        for (const c of plan.chests) {
+          const cc = cellAt(g, c);
+          expect(seen[cc.r * g.cols + cc.c]).toBe(true);
+        }
+      }
+    }
+    expect(solidCount).toBeGreaterThan(50);
+  });
+  it('crates and barrels are solid, bones and rubble are not', () => {
+    expect(isSolidProp('barrel')).toBe(true);
+    expect(isSolidProp('crate')).toBe(true);
+    expect(isSolidProp('bones')).toBe(false);
+    expect(isSolidProp('gate_arch')).toBe(false);
+  });
+  it('gates stand on floor door blocks with a wall each side, never solid, never blocking, at most GATES.max, deterministic', () => {
+    let gates = 0;
+    for (const round of [1, 2] as const) {
+      for (const plan of floors(round, 80)) {
+        const { map } = plan;
+        const list = (map.decor ?? []).filter((d) => d.kind === GATES.kind);
+        expect(list.length).toBeLessThanOrEqual(GATES.max);
+        for (const d of list) {
+          gates++;
+          expect(d.solid).toBe(false);
+          expect(isFloorBlock(map, d.c, d.r)).toBe(true);
+          expect(isFloorBlock(map, d.c - 1, d.r) || isFloorBlock(map, d.c + 1, d.r)).toBe(false);
+          expect(isFloorBlock(map, d.c, d.r - 1) && isFloorBlock(map, d.c, d.r + 1)).toBe(true);
+          const g = dungeonNavGrid(map);
+          const c = cellAt(g, { x: (d.c + 0.5) * 32, y: (d.r + 0.5) * 32 });
+          expect(isCellFree(g, c.c, c.r)).toBe(true);
+          expect(plan.enemies.some((e) => blockAt(e).c === d.c && blockAt(e).r === d.r)).toBe(false);
+          expect(plan.chests.some((ch) => blockAt(ch).c === d.c && blockAt(ch).r === d.r)).toBe(false);
+        }
+      }
+    }
+    expect(gates).toBeGreaterThan(20);
   });
 });

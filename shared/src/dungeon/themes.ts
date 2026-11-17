@@ -51,3 +51,12 @@ export function rollProps(rng: Rng, theme: RoomTheme): string[] {
 export function isLandmarkKind(kind: string): boolean {
   return LANDMARK_KINDS.includes(kind);
 }
+
+/** Props that block walking and enemies (one block, the anchor). Data: dungeonThemes.json solidProps. */
+export const SOLID_PROPS: ReadonlySet<string> = new Set(themeData.solidProps);
+export function isSolidProp(kind: string): boolean {
+  return SOLID_PROPS.has(kind);
+}
+
+/** Gates: passable arch objects on corridor door blocks. */
+export const GATES: { kind: string; chance: number; max: number } = themeData.gates;

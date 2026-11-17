@@ -19,8 +19,8 @@ export function decorVariant(c: number, r: number): number {
 
 /** True when the prop hangs over the floor like a decal or is walked over (drawn under avatars and enemies). */
 export function decorIsFlat(kind: string): boolean {
-  const info = (PROP_INFO as Record<string, { solid: boolean } | undefined>)[decorKind(kind)];
-  return !info || !info.solid;
+  const info = (PROP_INFO as Record<string, { solid: boolean; upright?: boolean } | undefined>)[decorKind(kind)];
+  return !info || (!info.solid && !info.upright);
 }
 
 /** True when a prop moves with the clock (flames): the view redraws it per flame frame. */

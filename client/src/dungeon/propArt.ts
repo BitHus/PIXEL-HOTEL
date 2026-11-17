@@ -9,9 +9,10 @@
 // No game rule here: kinds are plain strings the generator may choose; unknown kinds draw a small crate-like
 // box so an old or new run never breaks.
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import { PALETTE } from '@pixel-hotel/shared';
 import { shade } from '../render/colors.ts';
+import { spriteTexture } from '../render/spriteStore.ts';
 
 const P = {
   rust: PALETTE[0]!, clay: PALETTE[1]!, cream: PALETTE[2]!, sand: PALETTE[3]!, oak: PALETTE[4]!, walnut: PALETTE[5]!,
@@ -27,7 +28,7 @@ export const PROP_KINDS = [
   'barrel', 'crate', 'bones', 'skull_pile', 'candle_stand', 'candles', 'banner', 'cobweb', 'shelf', 'library_shelf',
   'root', 'glowcap', 'fountain', 'statue', 'brazier_big', 'pillar', 'pillar_ring', 'pillar_variant', 'sarcophagus',
   'crack', 'vault_arch', 'vault_door', 'rubble', 'campfire', 'guard_post', 'arena_mark', 'crypt_garden', 'torch_stand',
-  'stairs_up', 'stairs_down', 'gem_pile', 'brazier', 'sarcophagus_small',
+  'stairs_up', 'stairs_down', 'gem_pile', 'brazier', 'sarcophagus_small', 'gate_arch',
 ] as const;
 export type PropKind = (typeof PROP_KINDS)[number];
 
@@ -37,6 +38,8 @@ export interface PropInfo {
   d: number;
   /** Hint: reads as an obstacle. Decals and wall-hung things are false. */
   solid: boolean;
+  /** DG-P: an upright thing you walk through (gate): not solid, but drawn in the depth-sorted list, not under the avatars. */
+  upright?: boolean;
   /** Number of distinct variants (variant wraps). */
   variants: number;
   /** Glow-ready: where the dungeon light layer may add a source (offset from the anchor, y up negative). */
@@ -64,7 +67,8 @@ export const PROP_INFO: Record<PropKind, PropInfo> = {
   pillar_variant: { w: 1, d: 1, solid: true, variants: 4 },
   sarcophagus: { w: 1, d: 2, solid: true, variants: 3 },
   crack: { w: 1, d: 1, solid: false, variants: 3 },
-  vault_arch: { w: 2, d: 1, solid: false, variants: 2 },
+  vault_arch: { w: 2, d: 1, solid: false, upright: true, variants: 2 },
+  gate_arch: { w: 2, d: 1, solid: false, upright: true, variants: 2 },
   vault_door: { w: 2, d: 1, solid: true, variants: 2, light: { color: P.gold, radius: 40, dy: -20, flicker: false } },
   rubble: { w: 1, d: 1, solid: false, variants: 3 },
   campfire: { w: 1, d: 1, solid: true, variants: 1, light: { color: P.orange, radius: 96, dy: -12, flicker: true } },
@@ -378,20 +382,29 @@ const MAKERS: Record<PropKind, Maker> = {
     }
   },
   vault_arch(g, v) {
+    // DG-P: a frame you walk through. Posts and lintel only: the opening (x -17..17, y -40..0) stays transparent so the floor and
+    // the avatar show; the view sorts it with the avatars, so the lintel passes over the avatar going through.
     const c = P.steel;
-    r(g, -30, -52, 60, 52, OUT);
-    r(g, -29, -51, 58, 51, shade(c, 0.9));
-    // stone voussoirs along the curve
-    for (let i = 0; i < 9; i++) {
-      const a = (Math.PI * i) / 8;
-      const x = Math.round(-23 * Math.cos(a)); const y = Math.round(-30 - 18 * Math.sin(a));
-      r(g, x - 2, y - 2, 5, 5, i % 2 ? shade(c, 1.1) : shade(c, 0.8));
-    }
-    r(g, -17, -40, 34, 40, OUT); r(g, -16, -39, 32, 39, P.ink); // opening
-    blob(g, 0, -40, 16, 8, P.ink);
-    r(g, -16, -39, 32, 3, P.night);
+    const piece = (x: number, y: number, w: number, h: number, col: string): void => {
+      r(g, x - 1, y - 1, w + 2, h + 2, OUT);
+      r(g, x, y, w, h, col);
+    };
+    piece(-30, -52, 13, 52, shade(c, 0.9));
+    piece(17, -52, 13, 52, shade(c, 0.9));
+    piece(-30, -52, 60, 12, shade(c, 0.9));
+    // wipe the outline lines that cross the opening and the post tops, then redo the fills
+    r(g, -17, -41, 34, 1, OUT); r(g, -17, -40, 34, 1, OUT);
+    r(g, -29, -51, 58, 10, shade(c, 0.9));
+    r(g, -29, -51, 58, 1, shade(c, 1.3)); r(g, -29, -51, 1, 50, shade(c, 1.2)); r(g, 17, -40, 12, 1, shade(c, 1.2));
+    for (let x = -26; x < 26; x += 8) r(g, x, -49, 5, 7, (x / 8) & 1 ? shade(c, 1.1) : shade(c, 0.8)); // stone blocks along the lintel
+    for (const y of [-34, -22, -10]) { r(g, -28, y, 10, 1, shade(c, 0.7)); r(g, 18, y, 10, 1, shade(c, 0.7)); } // course lines on the posts
+    r(g, -17, -40, 34, 2, P.night); // shadow under the lintel
     r(g, -4, -52, 8, 4, P.gold); r(g, -3, -51, 6, 2, P.butter); // keystone
+    r(g, -17, -1, 1, 1, OUT);
     if (v === 1) { r(g, -26, -20, 2, 12, P.forest); r(g, -24, -14, 2, 8, P.pine); }
+  },
+  gate_arch(g, v, t) {
+    MAKERS.vault_arch(g, v, t);
   },
   vault_door(g, v, t) {
     const c = P.slate;
@@ -490,10 +503,34 @@ function stairs(g: Graphics, v: number, up: boolean): void {
  * Draws one prop at the anchor (0, 0) = bottom centre of its footprint. `variant` wraps, `clockMs` only moves
  * flames and glows. Unknown kinds draw a small grey box. Never throws.
  */
+/** DG-P: kinds that have one PNG in sprites/dungeon (id = file name); the gate kinds share dungeon_gate.png. A missing file falls back to the code art. */
+const PROP_SPRITE: Record<string, string> = {
+  barrel: 'barrel', crate: 'crate', shelf: 'shelf', statue: 'statue', sarcophagus: 'sarcophagus',
+  sarcophagus_small: 'sarcophagus_small', candle_stand: 'candle_stand', gate_arch: 'dungeon_gate', vault_arch: 'dungeon_gate',
+};
+/** The PNGs have no shadow: these get the code shadow oval under them. */
+const SPRITE_SHADOW: Record<string, number> = { barrel: 22, crate: 24, statue: 26, sarcophagus: 34, sarcophagus_small: 26, shelf: 26 };
+/** candle_stand.png: where the code flames stand (PNG px from the top-left of the 32 x 32 picture). */
+const CANDLE_FLAMES: [number, number][] = [[10, 3], [16, 0], [21, 3]];
+
 export function drawProp(kind: PropKind | string, variant = 0, clockMs = 0): Container {
   const root = new Container();
   root.label = `prop:${kind}`;
   const g = new Graphics();
+  const tex = PROP_SPRITE[kind] ? spriteTexture('dungeon', PROP_SPRITE[kind]!) : null;
+  if (tex) {
+    if (SPRITE_SHADOW[kind]) shadowOval(g, SPRITE_SHADOW[kind]!);
+    root.addChild(g);
+    const sp = new Sprite(tex);
+    sp.position.set(-Math.round(tex.width / 2), -tex.height);
+    root.addChild(sp);
+    if (kind === 'candle_stand') {
+      const fg = new Graphics();
+      CANDLE_FLAMES.forEach(([x, y], i) => flame(fg, x - tex.width / 2, y - tex.height + 6, clockMs + i * 40, 1));
+      root.addChild(fg);
+    }
+    return root;
+  }
   const info = (PROP_INFO as Record<string, PropInfo | undefined>)[kind];
   const v = info ? ((Math.floor(variant) % info.variants) + info.variants) % info.variants : 0;
   const maker = (MAKERS as Record<string, Maker | undefined>)[kind];

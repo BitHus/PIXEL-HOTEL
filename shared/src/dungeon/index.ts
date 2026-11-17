@@ -6,3 +6,4 @@ export * from './runBag.ts';
 export * from './step.ts';
 export * from './bank.ts';
 export * from './placement.ts';
+export { isSolidProp, SOLID_PROPS } from './themes.ts';
