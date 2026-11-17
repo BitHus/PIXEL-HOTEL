@@ -9,7 +9,7 @@ A browser game. Parts:
   wall items stay free along the back wall).
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
 - Tavern (the shop room, step 9t; S1: nobody buys loot at a stall any more; T1: a real bar and kitchen): guests sit, order drinks and dishes from your menu, you
-  serve them and tap their coins. The bar carries a REGISTER and TAP STANDS (drinks are poured from taps); a staff-only KITCHEN corner has the stove and prep tables. Brewing barrel (crops -> mugs, loaded on taps) and stove (crops -> dishes). Gold comes from guests and dungeon run
+  serve them (their coins come in by themselves). The bar carries a REGISTER and TAP STANDS (drinks are poured from taps); a staff-only KITCHEN corner has the stove and prep tables. Brewing barrel (crops -> mugs, loaded on taps) and stove (crops -> dishes). Gold comes from guests and dungeon run
   gold and the trader (S2: tap-to-sell Sell tab on the bar) and buys furniture in the catalog. Items are for USE: cook, brew, craft, build, plant.
 - Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
@@ -107,8 +107,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - TAVERN (9t, done; S1 retired the loot shop): the shop room is the tavern (kind 'shop', same room id; the counter is the bar). GUESTS (alone,
   pairs, groups of 3, every 45 s * 100 / (100 + appeal), never more than seats) sit at a table, order from the MENU (tap the bar: Serve and
   Menu tabs; each drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest:
-  the avatar carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that you tap (nothing
-  automatic; unserved after 90 s = unhappy). Drinks: BREWING BARREL (tap it: Brewing panel, one brew at a time, real time, tap to
+  the avatar carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that are COLLECTED
+  AUTOMATICALLY (owner 17 Nov: same ledger reason, coin fx and popups still play; old piles in saves stay tappable; pouring, serving, selling, buying stay manual; unserved after 90 s = unhappy). Drinks: BREWING BARREL (tap it: Brewing panel, one brew at a time, real time, tap to
   collect) and TAPS (T1, below). Dishes: the stove (K1). Away: at most 3 seated orders; offline catch-up only fills seats (looks back at most 8 h).
 - THE BAR AND THE TAPS (T1, owner 15 Nov): the REGISTER (furniture 'register', onSurface, till) and TAP STANDS ('tap_stand', onSurface, TAP_SLOTS = 2 taps each; more stands
   in the catalog) stand ON the bar. Tap the register = the bar's panel (Serve / Menu / Sell); collected coins fly into it. Tap a stand = the Taps panel (ui/panelShell.ts): each tap

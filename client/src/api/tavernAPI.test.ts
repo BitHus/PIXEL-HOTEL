@@ -58,18 +58,12 @@ describe('the tavern through the GameAPI', () => {
     expect(await until(async () => events.some((e) => e.t === 'served' && e.guestId === guest.id))).toBe(true);
     expect(events.filter((e) => e.t === 'tray').map((e) => (e.t === 'tray' ? e.mugs.length : -1))).toEqual([1, 0]);
     expect((await api.getTavern()).guests.find((g) => g.id === guest.id)?.phase).toBe('eat');
-    // Nothing is collected by itself: the coins wait on the table until the player taps them.
-    expect(await until(async () => (await api.getTavern()).mess.length > 0)).toBe(true);
-    expect((await api.getPlayer()).wallet.gold).toBe(gold0);
-    const mess = (await api.getTavern()).mess[0]!;
-    expect(await api.tidyTable(mess.id, 'coins')).toBe(true);
+    // Auto-collect (owner 17 Nov): the coins, the tip and the empty mug are taken when the guest leaves.
     expect(await until(async () => events.some((e) => e.t === 'collected'))).toBe(true);
     const c = events.find((e) => e.t === 'collected');
-    expect(c).toMatchObject({ messId: mess.id, coins: mess.coins, gains: [{ itemId: 'gold', count: mess.coins }] });
-    expect((await api.getPlayer()).wallet.gold).toBe(gold0 + mess.coins);
-    // The empty mug is still there: its own tap clears it.
-    expect(await api.tidyTable(mess.id, 'dish')).toBe(true);
-    expect(await until(async () => events.some((e) => e.t === 'cleared'))).toBe(true);
+    expect(c).toMatchObject({ coins: expect.any(Number), gains: [{ itemId: 'gold' }] });
+    if (c?.t === 'collected') expect((await api.getPlayer()).wallet.gold).toBeGreaterThanOrEqual(gold0 + c.coins);
+    expect(events.some((e) => e.t === 'cleared')).toBe(true);
     expect((await api.getTavern()).mess).toEqual([]);
   });
 

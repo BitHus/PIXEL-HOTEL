@@ -298,7 +298,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   is at most baseValue * tolerance. Bought at price <= 0.7 * baseValue * tolerance: big smile (too cheap). Bought at a higher
   price: smile (fair). Refused at price <= 1.15 * baseValue * tolerance: shrug (a bit high). Refused above that: frown (too
   high). The Menu panel shows the last prices guests paid.
-- NOTHING AUTOMATIC: gold only comes in when the player serves a guest and taps their coins. The Map button and the Map's Tavern
+- ONLY THE SMALL THINGS ARE AUTOMATIC (owner 17 Nov): gold comes in when the player serves a guest; the guest's coins, gem tip and empty mug are then collected by themselves when the guest leaves (same ledger reason, fx and popups still play, old piles in saves stay tappable). Pouring, serving, selling and buying stay manual. The Map button and the Map's Tavern
   card show the orders waiting and the coin piles. Offline catch-up only fills seats (at most 8 hours, at most 3 open orders).
 - Gold sinks: catalog (baseValue * 3), room upgrades (level 2: 300 gold, level 3: 800 gold,
   for each room), dungeon gear and potions (section 10), dungeon key 10 gold, seeds and farm
@@ -321,7 +321,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   and the room id stay; the counter is the bar). GUESTS come alone, as a pair or as three, sit on
   free seats at a table, order one drink or dish from the menu, and wait for the player to bring
   it from the bar (taps queue up, at most 3). They eat 20 to 40 s, leave coins and an empty mug or
-  plate on the table and walk out; the player taps to collect the coins and to clear the dish
+  plate on the table and walk out; the coins, tip and dish are collected automatically (17 Nov; old piles stay tappable) 
   (nothing is collected automatically; a table spot with coins or a dish takes no new guest). A
   guest who waits about 90 s leaves unhappy without paying. The menu price rule is the shop's
   (tolerance, the four faces); too high = something cheaper or nothing. Drinks are brewed in a

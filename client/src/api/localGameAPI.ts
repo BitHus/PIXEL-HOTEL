@@ -354,10 +354,14 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       tavernEvents.push(...r.events);
     }
     if (s === this.state) return;
+    // Auto-collect (owner 17 Nov): a guest's coins, gem tip and empty mug go straight to the wallet; the usual events still play.
+    const swept = tavernApi.autoCollect(s, tavernEvents, now);
+    s = swept.events.length > 0 ? this.hintDone(swept.state, 2) : swept.state;
     // Only events change what is worth saving; walking positions are not saved every step.
     if (tavernEvents.length > 0) this.commit(s);
     else this.state = s;
     for (const e of tavernEvents) this.emitTavern(e);
+    for (const e of swept.events) this.emitTavern(e);
   }
 
   /** Debug (Blockers mode): rectangles that block walking in the current room (not saved). */

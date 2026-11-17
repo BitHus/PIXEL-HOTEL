@@ -57,6 +57,32 @@ import type { TavernTask } from './apiShared.ts';
 import type { LocalGameAPI } from './localGameAPI.ts';
 
 export const tavernApi = {
+  /**
+   * Auto-collect (owner 17 Nov): the table spots that a guest left in these tavern events (event 'coins') are paid out
+   * and cleared at once, same ledger reason as the tap; the 'collected' and 'cleared' events still play. Old piles stay tappable.
+   */
+  autoCollect(state: GameState, events: readonly { t: string; mess?: { id: number } }[], now: number): { state: GameState; events: TavernClientEvent[] } {
+    let s = state;
+    const out: TavernClientEvent[] = [];
+    for (const e of events) {
+      if (e.t !== 'coins' || !e.mess) continue;
+      const mess = s.tavern.mess.find((m) => m.id === e.mess!.id);
+      if (!mess) continue;
+      const spot = { x: mess.x, y: mess.y };
+      const r = collectCoins(s, mess.id, now);
+      if (r) {
+        s = r.state;
+        out.push({ t: 'collected', messId: mess.id, coins: r.coins, spot, gains: [gain(GOLD_GAIN_ID, r.coins), ...(r.gems > 0 ? [{ itemId: GEMS_GAIN_ID, count: r.gems, rank: 'common' as const }] : [])] });
+      }
+      const cleared = clearDish(s, mess.id);
+      if (cleared) {
+        s = cleared;
+        out.push({ t: 'cleared', messId: mess.id, spot });
+      }
+    }
+    return { state: s, events: out };
+  },
+
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
     const room = h.roomById(t.roomId);

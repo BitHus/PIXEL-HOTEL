@@ -5,7 +5,7 @@
     { "id": "menu", "target": { "kind": "furniture", "typeId": "register" }, "text": "{Tap} the register on the bar to open the menu: serve, set prices, sell.", "short": "{Tap} the register" },
     { "id": "pour", "target": { "kind": "stand" }, "text": "A guest wants a drink. {Tap} the guest, then {hold} the tap stand until the mug is full.", "short": "Serve a drink: {tap} the guest" },
     { "id": "serve", "target": { "kind": "guest" }, "text": "{Tap} the guest who waits to bring them the mug.", "short": "Bring the guest the mug" },
-    { "id": "coins", "target": { "kind": "coins" }, "text": "{Tap} the coins on the table to collect your gold.", "short": "{Tap} the coins" },
+    { "id": "coins", "target": { "kind": "none" }, "text": "The guest eats, then pays: the coins fly into your register by themselves.", "short": "Wait for the guest to pay" },
     { "id": "barrel", "target": { "kind": "furniture", "typeId": "brewing_barrel" }, "text": "{Tap} the brewing barrel and start a brew for more drinks.", "short": "Start a brew at the barrel" },
     { "id": "collect", "target": { "kind": "furniture", "typeId": "brewing_barrel" }, "text": "The brew is ready: {tap} the barrel to collect the mugs.", "short": "Collect the brew" },
     { "id": "load", "target": { "kind": "furniture", "typeId": "tap_stand" }, "text": "{Tap} a tap stand and load the mugs on it.", "short": "Load mugs on a tap" },

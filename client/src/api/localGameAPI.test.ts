@@ -220,11 +220,8 @@ describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
     // G2: hold the pour at the taps, then tap the guest to carry the mug.
     for (let k = 0; k < 300 && !(await api.pourHeld(800)); k++, now += 100) api.update();
     expect(await api.carryHeld(guest!.id)).toBe(true);
-    for (let k = 0; k < 600 && (await api.getTavern()).mess.every((m) => m.coins === 0); k++, now += 100) api.update();
-    const mess = (await api.getTavern()).mess.find((m) => m.coins > 0)!;
-    expect(mess).toBeDefined();
-    expect(await api.tidyTable(mess.id, 'coins')).toBe(true);
-    for (let k = 0; k < 300; k++, now += 100) api.update();
+    // Auto-collect: the guest pays by itself when done eating.
+    for (let k = 0; k < 900 && (await api.getPlayer()).wallet.gold <= 100; k++, now += 100) api.update();
     expect((await api.getPlayer()).wallet.gold).toBeGreaterThan(100);
   });
 
