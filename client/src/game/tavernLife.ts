@@ -6,9 +6,10 @@ import {
   tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, CASK_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen, pourTip,
-  guestsTrayCanServe, ordersStrip as ordersStripData,
+  guestsTrayCanServe, ordersStrip as ordersStripData, nothingOrderable,
 } from '@pixel-hotel/shared';
 import { createPourControl } from './pourControl.ts';
+import { el, iconButton } from '../ui/dom.ts';
 import { createBrewingPanel } from '../ui/brewingPanel.ts';
 import { createMenuPanel } from '../ui/menuPanel.ts';
 import { createCaskPanel } from '../ui/caskPanel.ts';
@@ -43,6 +44,10 @@ export async function setupTavernLife(g: G9) {
   const guide = createFirstTenGuide(uiRoot, storage, toast);
   if (st.introPending) guide.begin();
   late.replayGuide = () => guide.replay();
+  // OA-4: one guide at a time: the quest card and its glow wait until the first steps are done or skipped.
+  const holdQuest = (): void => g.hint.setHeld(guide.state.active);
+  window.addEventListener('first-ten-layout', holdQuest);
+  holdQuest();
   let guideWorld: GuideWorldApi | null = null;
   const fx = new TavernFx(view, () => prefs.reduceEffects);
   let readyNow = new Set<string>();
@@ -156,6 +161,35 @@ export async function setupTavernLife(g: G9) {
   const walkers = (list: readonly Guest[]): Walker[] =>
     list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing, eating: g.phase === 'eat' }));
   const inTavern = (): boolean => st.room.id === st.tavern.roomId;
+  // OA-14: the OPEN / CLOSED sign under the info panel (tavern only). Closed = no new guests (the ones inside finish).
+  const signWord = el('span', 'open-sign-word', 'OPEN');
+  const sign = iconButton('house', 'Tavern is open: tap to close', () => {
+    void api.setTavernOpen(!st.tavern.open).then((open) => {
+      st.tavern = { ...st.tavern, open };
+      drawSign();
+      toast(open ? 'Tavern open: guests will come.' : 'Tavern closed: no new guests.');
+    });
+  }, 'open-sign room-only');
+  sign.append(signWord);
+  sign.hidden = true;
+  g.info.column.appendChild(sign);
+  const drawSign = (): void => {
+    sign.hidden = !inTavern();
+    sign.classList.toggle('closed', !st.tavern.open);
+    signWord.textContent = st.tavern.open ? 'OPEN' : 'CLOSED';
+    sign.title = st.tavern.open ? 'Tavern is open: tap to close' : 'Tavern is closed: tap to open';
+    sign.setAttribute('aria-label', sign.title);
+  };
+  // Nothing orderable (every drink or dish off or out of stock) while open: point at the sign once per session.
+  let signHinted = false;
+  window.setInterval(() => {
+    if (signHinted || !inTavern() || !st.tavern.open || st.tavern.guests.length > 0) return;
+    void api.getMenu().then((rows) => {
+      if (signHinted || !inTavern() || !st.tavern.open || !nothingOrderable(rows)) return;
+      signHinted = true;
+      toast('Nothing to serve. Load the taps or cook something, or tap the sign to close the tavern.');
+    });
+  }, 5000);
   guideWorld = startGuideWorld(g, { guide, pouring: () => pourFor !== null, inTavern, ready: () => readyNow });
   const orders = createOrderBubbles(ui, (id) => void serveTap(id));
   // COD-1 (d): the orders strip at the top: one chip per open order (data from the pure shared/src/tray.ts ordersStrip).
@@ -189,6 +223,7 @@ export async function setupTavernLife(g: G9) {
   /** Draws the tavern as it is now (guests, coins and dishes, order bubbles, the Map badge). */
   const syncTavern = (): void => {
     const on = inTavern();
+    drawSign();
     if (!on && pourFor) endWait(true);
     guests.sync(on ? walkers(st.tavern.guests) : [], st.room.id, st.items);
     tableMess.sync(on ? st.tavern.mess : [], on ? meals() : [], st.items);
@@ -199,6 +234,7 @@ export async function setupTavernLife(g: G9) {
     guests.setPulse(on ? new Set(guestsTrayCanServe(st.tavern)) : new Set());
     updateBadge();
     syncMachines();
+    pour.syncRest(tapStands(st.items, st.tavern.roomId).flatMap((s) => { const i = standInfo(s.uid); return i ? [{ stand: i.stand, bar: i.bar }] : []; }));
   };
   st.onItemsSynced = syncTavern;
   /** What the avatar's hands show now (the tray), so a save that loads with mugs on the tray shows them too. */

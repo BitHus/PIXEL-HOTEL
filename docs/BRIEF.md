@@ -27,8 +27,7 @@ The loop: dungeon (loot) -> tavern (gold) -> furniture; farm (food) -> stronger 
 mine (ore) -> better gear -> deeper dungeon runs.
 Every player starts with two small, basic rooms: a hotel room and a tavern. They serve guests in the tavern for gold, and use the gold to buy furniture for the hotel room or the tavern, and to
 upgrade the rooms.
-Working title: Pixel Hotel (placeholder). Before any public release we pick a real, original
-name.
+Name: PocketBarrel (renamed from the working title Pixel Hotel, 17 Nov 2026; ids, save keys and the repo name keep the old name).
 Original names, art and assets only. Never copy Habbo, Travellers Rest or any other game.
 
 2. STACK (do not change)

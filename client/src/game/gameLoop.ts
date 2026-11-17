@@ -1,7 +1,7 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followStep, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
 import { followPaused } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
@@ -57,17 +57,17 @@ export async function setupGameLoop(g: G16) {
     hold.tick();
     const step = intro.update(ticker.deltaMS, app.screen.width, app.screen.height);
     if (step) setCamera(step.camera, step.done);
-    // COD-1 (a): in the tavern the camera glides after the avatar (Settings: Follow camera); the intro and the player's own drag win.
-    else if (prefs.followCamera && st.room.id === st.tavern.roomId && !intro.active && !followPaused()) {
-      const next = followStep(st.camera, { x: st.avatar.x, y: st.avatar.y - 24 }, ticker.deltaMS, app.screen.width, app.screen.height, st.bounds);
-      if (next !== st.camera) setCamera(next);
-    }
     control.update(ticker.deltaMS);
     clockMs += ticker.deltaMS;
     if (!seating.busy) ({ avatar: st.avatar, path: st.path } = walkAvatar(st.avatar, st.path, ticker.deltaMS));
     // Arrived at the seat's approach point: take the pose and slide onto the seat.
     if (st.path.length === 0 && seating.goal !== null) st.avatar = seating.arrive(st.avatar, roomItem(seating.goal.uid));
     st.avatar = seating.update(st.avatar, ticker.deltaMS);
+    // OA-13: in the tavern the camera keeps the avatar centred, no lag (after the avatar moved this frame; Settings: Follow camera); the intro and the player's own drag win.
+    if (!step && prefs.followCamera && st.room.id === st.tavern.roomId && !intro.active && !followPaused()) {
+      const next = followLock(st.camera, { x: st.avatar.x, y: st.avatar.y - 24 }, app.screen.width, app.screen.height, st.bounds);
+      if (next !== st.camera) setCamera(next);
+    }
     itemViews.props.setMealSpots(g.tableMess.steamSpots());
     itemViews.update(ticker.deltaMS);
     guests.update(ticker.deltaMS, clockMs);

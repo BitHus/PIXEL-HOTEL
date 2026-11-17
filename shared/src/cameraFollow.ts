@@ -12,6 +12,15 @@ export function followTarget(cam: Camera, target: Point, screenW: number, screen
 }
 
 /**
+ * OA-13: the camera keeps the avatar centred at all times, no lag: it is exactly the follow target (kept inside the room). Returns the same camera
+ * object when it is already there, so the caller can skip a redraw. (followStep, the old glide, stays for tests and tuning.)
+ */
+export function followLock(cam: Camera, target: Point, screenW: number, screenH: number, rect: Rect): Camera {
+  const to = followTarget(cam, target, screenW, screenH, rect);
+  return to.x === cam.x && to.y === cam.y ? cam : to;
+}
+
+/**
  * One frame of the glide: the camera moves a share 1 - exp(-dt / tau) of the way to its target (frame-rate independent). Returns
  * the same camera object when it is already there (within CAMERA_FOLLOW_EPS_PX), so the caller can skip a redraw.
  */

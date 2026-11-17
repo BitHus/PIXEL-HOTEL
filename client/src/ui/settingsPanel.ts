@@ -167,7 +167,7 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   // The logo, small, at the top (x0.5: 128 px, every art px = 2 device px on a phone with ratio 2+).
   const logo = el('img', 'settings-logo');
   logo.src = LOGO_URL;
-  logo.alt = 'Pixel Hotel';
+  logo.alt = 'PocketBarrel';
   logo.width = 128;
   logo.height = 128;
   shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, followBtn, followNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);

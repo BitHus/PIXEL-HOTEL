@@ -17,7 +17,7 @@ export function problemMessage(problem: SaveProblem): string {
   switch (problem) {
     case 'bad_json':
     case 'not_a_save':
-      return 'That is not a Pixel Hotel save file.';
+      return 'That is not a PocketBarrel save file.';
     case 'too_new':
       return 'That save is from a newer version of the game.';
     case 'too_old':

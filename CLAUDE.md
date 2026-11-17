@@ -16,7 +16,7 @@ A browser game. Parts:
 - Lakeside (10d): chop trees for wood, fish in the lake.
 The loop: dungeon (loot) -> tavern (gold) -> furniture; farm (food) -> stronger runs; mine (ore) ->
 better gear -> deeper runs. Every player starts with two small basic rooms (hotel room, shop).
-Working title: Pixel Hotel (placeholder; a real, original name before any public release).
+Name: PocketBarrel (renamed from the working title Pixel Hotel, 17 Nov; ids, save keys and repo name keep the old name).
 Original names, art and assets only. Never copy Habbo, Travellers Rest or any other game.
 
 2. STACK (do not change)
@@ -41,7 +41,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   0.5 to 4 (pinch, wheel), smooth during the gesture; after it, it eases (0.15 s) to the nearest
   zoom where zoom * devicePixelRatio is whole (or the overview zoom if closer) and the camera
   snaps to whole device px. The canvas renders at full devicePixelRatio. Overview zoom = the
-  largest where the whole room fits (at least 0.5; else the camera follows the avatar). COD-1: in the TAVERN the camera glides after the avatar (Settings: Follow camera, default on; shared/src/cameraFollow.ts, tau CAMERA_FOLLOW_TAU_MS; a drag, pinch or wheel pauses it CAMERA_FOLLOW_PAUSE_MS; the shown camera still snaps to whole device px).
+  largest where the whole room fits (at least 0.5; else the camera follows the avatar). OA-13 (was the COD-1 glide): in the TAVERN the camera keeps the avatar centred at all times, no lag (Settings: Follow camera, default on; shared/src/cameraFollow.ts followLock; a drag, pinch or wheel pauses it CAMERA_FOLLOW_PAUSE_MS; the shown camera still snaps to whole device px).
 - Camera intro when a room opens: overview, wait 0.6 s, zoom in over 0.8 s to the settled zoom
   nearest 3 device px per art px, centered on the avatar. Any tap, drag, pinch or wheel skips it.
 - BUILD GRID (BG1): rooms are cell maps of BUILD_CELL = 32 px (config); the nav grid is the build
@@ -304,7 +304,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   thing's cooldown (blocks 250 ms, rock and tree 400 ms) until it breaks, the press ends or the avatar is out of
   reach (it walks closer, then goes on); sliding the finger while holding never pans: it moves on to the next block, plant, rock or tree under it (also after one broke) without lifting; two fingers never hit. With a block
   selected, holding still 300 ms on free floor places blocks, dragging then makes a line (one per cell, in reach,
-  the usual rules). NOT for fishing. Dungeon fight: hits stay ONE per tap (no hold-to-hit, no auto-attack); only mine rocks repeat. HOLD TO WALK: holding still 300 ms on free floor (no block selected, no panel, not build/paint) walks to the pointer and follows it while the press lasts (re-paths when the pointer changes cell; moving never pans then; a quick drag still pans in rooms). DUNGEON: the camera follows the avatar, so a hold OR a drag steers the walk toward the pointer (re-path per 16 px cell, shared/src/hold.ts steerCellChange; on an enemy it only walks, never hits; two fingers do nothing). Pure helper
+  the usual rules). NOT for fishing. Dungeon fight: hits stay ONE per tap (no hold-to-hit, no auto-attack); only mine rocks repeat. HOLD TO WALK (OA-1): a press on free floor (no item under it, no block selected, no panel, not build/paint) starts walking to the pointer AT ONCE, no wait, and follows it while the press lasts (re-paths when the pointer changes cell); a quick drag (moved 8 px within 300 ms) still pans in rooms and cancels that walk (shared/src/hold.ts earlyWalkNext); after 300 ms moving steers and never pans; a tap works as before. DUNGEON: the camera follows the avatar, so a hold OR a drag steers the walk toward the pointer (re-path per 16 px cell, shared/src/hold.ts steerCellChange; on an enemy it only walks, never hits; two fingers do nothing). Pure helper
   shared/src/hold.ts holdTick; the client only feeds pointer events. BUILD MODE (Build
   button or B; furniture only): taps never walk; a drag on an item moves it, a tap selects it (menu: Rotate, Pick
   up), a tap on a free spot moves the selected item there. PAINT MODE (Room > Paint cells): tap =

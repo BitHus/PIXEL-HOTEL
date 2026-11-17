@@ -35,7 +35,7 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
     logo.src = LOGO_URL;
     logo.alt = '';
     logo.draggable = false;
-    board.append(logo, el('h1', 'title-name', 'Pixel Hotel'), el('p', 'title-tag', 'A tavern of your own'));
+    board.append(logo, el('h1', 'title-name', 'PocketBarrel'), el('p', 'title-tag', 'A tavern of your own'));
     sign.append(board);
     const candleL = el('div', 'title-candle left');
     const candleR = el('div', 'title-candle right');

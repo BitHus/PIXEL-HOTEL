@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AXE_COOLDOWN_MS, BLOCK_HIT_COOLDOWN_MS, PICKAXE_COOLDOWN_MS, TAP_MAX_MOVE_PX } from './config.ts';
-import { HOLD_IDLE, cellsBetween, holdMoved, holdStart, holdStop, holdTick } from './hold.ts';
+import { HOLD_IDLE, cellsBetween, earlyWalkNext, holdMoved, holdStart, holdStop, holdTick } from './hold.ts';
 
 /** Runs a hold with 16 ms frames from `from` to `to` and returns the times of the hits. */
 function run(cooldown: number, from: number, to: number, frame = 16): number[] {
@@ -92,5 +92,17 @@ describe('steerCellChange', () => {
     expect(steerCellChange(k, { x: 15, y: 1 }, 16)).toBeNull();
     expect(steerCellChange(k, { x: 16, y: 1 }, 16)).toBe('1,0');
     expect(steerCellChange(k, { x: -1, y: 1 }, 16)).toBe('-1,0');
+  });
+});
+
+describe('earlyWalkNext (OA-1)', () => {
+  it('keeps walking while the press stays still, at any time', () => {
+    expect(earlyWalkNext(0, 0)).toBe('walk');
+    expect(earlyWalkNext(500, TAP_MAX_MOVE_PX - 1)).toBe('walk');
+  });
+  it('a quick drag pans (cancels the walk), a moved hold steers', () => {
+    expect(earlyWalkNext(100, TAP_MAX_MOVE_PX)).toBe('pan');
+    expect(earlyWalkNext(299, 40)).toBe('pan');
+    expect(earlyWalkNext(300, 40)).toBe('steer');
   });
 });

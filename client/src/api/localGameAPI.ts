@@ -275,6 +275,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async startBrew(barrelUid: number, drink: DrinkId): Promise<boolean> { return tavernApi.startBrew(this, barrelUid, drink); }
   async getMenu(): Promise<MenuRowView[]> { return tavernApi.getMenu(this); }
   async setMenuEntry(id: string, change: { on?: boolean; price?: number }): Promise<MenuRowView[] | null> { return tavernApi.setMenuEntry(this, id, change); }
+  async setTavernOpen(open: boolean): Promise<boolean> { return tavernApi.setTavernOpen(this, open); }
   async markTavernIntroSeen(): Promise<void> { return tavernApi.markTavernIntroSeen(this); }
   async loadTap(standUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean> { return tavernApi.loadTap(this, standUid, slot, drink, qty); }
   async unloadTap(standUid: number, slot: number, qty: number | 'all'): Promise<boolean> { return tavernApi.unloadTap(this, standUid, slot, qty); }

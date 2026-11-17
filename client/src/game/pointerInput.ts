@@ -61,7 +61,7 @@ export async function setupPointerInput(g: G15) {
       hold.start({ kind: 'line', c, r });
       return true;
     },
-    onWalkHold: (screen) => {
+    onWalkHold: (screen, target, early) => {
       // Dungeon: holding still walks toward the pointer and follows it (moves steer, never hit; the fight stays one hit per tap).
       if (dungeon.isActive) {
         if (panels.open !== null) return false;
@@ -72,12 +72,20 @@ export async function setupPointerInput(g: G15) {
       }
       if (st.selectedBlock !== null || holdBusyElsewhere() || lakeside.fishing || menu.uid !== null) return false;
       if (hold.active) return false;
+      // OA-1: on press only free floor starts a walk at once (a press on an item or a build/placing state waits for its tap).
+      if (early && (roomItem(itemViews.uidOf(target ?? null)) || placer.active)) return false;
       st.walkHold = true;
       st.walkHoldCell = "";
       st.pendingBlock = null;
       lakeside.cancel();
       steerWalk(screen);
       return true;
+    },
+    onWalkCancel: () => {
+      // The early walk became a drag: in rooms it pans, so the walk stops (the dungeon drag steers instead).
+      if (dungeon.isActive) return;
+      st.walkHold = false;
+      g.stop();
     },
     onHoldMove: (screen) => {
       if (pourClaim) return;

@@ -128,6 +128,25 @@ export interface TavernState {
   updatedAt: number;
   /** False in an old save until the toast that explains the tavern was shown. */
   introSeen: boolean;
+  /** OA-14: the CLOSED sign: no new guests arrive (the ones inside finish). Missing = open (old saves, no SAVE bump). */
+  closed?: boolean;
+}
+
+/** OA-14: the tavern is open for new guests (default). */
+export function tavernOpen(t: Pick<TavernState, 'closed'>): boolean {
+  return t.closed !== true;
+}
+
+/** OA-14: flips the OPEN / CLOSED sign; open = the default and is stored as no field. */
+export function setTavernOpen(state: GameState, open: boolean): GameState {
+  if (tavernOpen(state.tavern) === open) return state;
+  const { closed: _drop, ...rest } = state.tavern;
+  return { ...state, tavern: open ? rest : { ...rest, closed: true } };
+}
+
+/** OA-14: true when nothing can be ordered now (every menu row off or out of stock): the game hints at the sign. */
+export function nothingOrderable(rows: readonly { on: boolean; stock: number }[]): boolean {
+  return rows.every((r) => !r.on || r.stock <= 0);
 }
 
 export function emptyTavern(roomId: number, at: number): TavernState {

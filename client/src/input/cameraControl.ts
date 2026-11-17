@@ -25,6 +25,7 @@
 import type { Container, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
 import {
   HOLD_PLACE_START_MS,
+  earlyWalkNext,
   LONG_PRESS_MS,
   TAP_MAX_MOVE_PX,
   TAP_MAX_MS,
@@ -72,7 +73,9 @@ export interface CameraControlHooks {
    * Nothing else claimed a press that is held still (no repeat, no block line): return true to WALK while
    * it stays down. The pointer then steers the walk (onHoldMove) and moving never pans.
    */
-  onWalkHold?(screen: Point, target: Container | null): boolean;
+  onWalkHold?(screen: Point, target: Container | null, early?: boolean): boolean;
+  /** OA-1: an early walk (started on press) became a quick drag in a room: it pans now, so stop the walk. */
+  onWalkCancel?(): void;
   /** The pointer moved during a 'line' or 'walk' hold. */
   onHoldMove?(screen: Point): void;
   /** A hold ended: released, panned away, or cancelled. */
@@ -100,6 +103,8 @@ interface Press {
   hold: 'repeat' | 'line' | 'walk' | null;
   /** True once the hold-still check ran. */
   holdChecked: boolean;
+  /** OA-1: the walk already started on press (before the hold time); a quick drag cancels it, a tap still taps. */
+  early: boolean;
 }
 
 export interface CameraControl {
@@ -153,7 +158,7 @@ export function attachCameraControl(
   /** Ends the current press without a tap (a second finger came down, or it was cancelled). */
   const cancelPress = (): void => {
     if (press?.drag === 'draw') hooks.onDraw?.('end', press.last);
-    if (press?.hold) hooks.onHoldEnd?.();
+    if (press?.hold || press?.early) hooks.onHoldEnd?.();
     press = null;
   };
 
@@ -168,6 +173,17 @@ export function attachCameraControl(
     }
     if (!press.drag) {
       if (Math.hypot(p.x - press.start.x, p.y - press.start.y) < TAP_MAX_MOVE_PX) return;
+      if (press.early) {
+        // Held long enough already: the hold walk steers. A quick drag pans (rooms) and the walk is cancelled.
+        if (earlyWalkNext(performance.now() - press.downAt, Math.hypot(p.x - press.start.x, p.y - press.start.y)) === 'steer') {
+          press.hold = 'walk';
+          hooks.onHoldMove?.(p);
+          press.last = p;
+          return;
+        }
+        press.early = false;
+        hooks.onWalkCancel?.();
+      }
       press.drag = hooks.getDragMode?.(press.target, press.start) ?? 'pan';
       if (press.drag === 'draw') hooks.onDraw?.('start', press.start);
     }
@@ -180,7 +196,7 @@ export function attachCameraControl(
     if (!press || press.id !== e.pointerId) return;
     const p = pt(e);
     movePress(p);
-    if (press.hold) hooks.onHoldEnd?.();
+    if (press.hold || (press.early && !press.drag)) hooks.onHoldEnd?.();
     if (press.drag === 'draw') hooks.onDraw?.('end', p);
     else if (!press.drag && !press.long && !press.hold && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap', targetOf(e));
     press = null;
@@ -199,12 +215,18 @@ export function attachCameraControl(
       long: false,
       hold: null,
       holdChecked: false,
+      early: false,
     });
+    /** OA-1: hold to walk starts at once on a press on free floor (no wait). */
+    const startEarly = (): void => {
+      if (press && !press.hold && hooks.onWalkHold?.(p, press.target, true)) press.early = true;
+    };
     if (e.pointerType === 'touch') {
       touches.set(e.pointerId, p);
       if (touches.size === 1) {
         press = newPress();
         press.hold = hooks.onPress?.(p, press.target) ?? null;
+        startEarly();
       } else cancelPress();
       wheel = null;
       wheelIdleMs = null;
@@ -214,6 +236,7 @@ export function attachCameraControl(
     } else if (e.button === 0) {
       press = newPress();
       press.hold = hooks.onPress?.(p, press.target) ?? null;
+      startEarly();
     } else if (e.button === 2) {
       rightDrag = p;
     }
@@ -276,7 +299,13 @@ export function attachCameraControl(
     update(dtMs) {
       if (press && !press.drag && !press.hold && !press.holdChecked && performance.now() - press.downAt >= HOLD_PLACE_START_MS) {
         press.holdChecked = true;
-        if (hooks.onHoldStill?.(press.last, press.target)) press.hold = 'line';
+        if (hooks.onHoldStill?.(press.last, press.target)) {
+          press.hold = 'line';
+          if (press.early) {
+            press.early = false;
+            hooks.onWalkCancel?.();
+          }
+        } else if (press.early) press.hold = 'walk';
         else if (hooks.onWalkHold?.(press.last, press.target)) press.hold = 'walk';
       }
       if (press && !press.drag && !press.long && !press.hold && performance.now() - press.downAt >= LONG_PRESS_MS) {

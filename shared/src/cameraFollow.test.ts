@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { followStep, followTarget } from './cameraFollow.ts';
+import { followLock, followStep, followTarget } from './cameraFollow.ts';
 import { cameraAt, cameraCenter } from './view.ts';
 
 const ROOM = { x: 0, y: 0, w: 800, h: 600 };
@@ -50,5 +50,15 @@ describe('the follow camera (COD-1 a)', () => {
     const a = followTarget({ x: 0, y: 0, zoom: 2 }, { x: 10, y: 10 }, W, H, small);
     const b = followTarget({ x: 0, y: 0, zoom: 2 }, { x: 90, y: 70 }, W, H, small);
     expect(a).toEqual(b);
+  });
+});
+
+describe('followLock (OA-13)', () => {
+  it('is exactly the target in one frame, and the same object when already there', () => {
+    const start = { x: 0, y: 0, zoom: 3 };
+    const target = { x: 500, y: 350 };
+    const one = followLock(start, target, W, H, ROOM);
+    expect(one).toEqual(followTarget(start, target, W, H, ROOM));
+    expect(followLock(one, target, W, H, ROOM)).toBe(one);
   });
 });

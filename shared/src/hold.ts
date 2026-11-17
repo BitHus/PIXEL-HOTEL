@@ -3,7 +3,7 @@
 // Time is passed in (no Date.now here). Used for blocks, plants, rocks and trees; NOT for the
 // dungeon fight (one hit per tap) and NOT for fishing.
 
-import { TAP_MAX_MOVE_PX } from './config.ts';
+import { TAP_MAX_MOVE_PX, TAP_MAX_MS } from './config.ts';
 
 export interface HoldState {
   active: boolean;
@@ -38,6 +38,16 @@ export function holdTick(state: HoldState, nowMs: number, cooldownMs: number): {
   if (!state.active) return { state, hit: false };
   if (state.lastHitAt !== null && nowMs - state.lastHitAt < cooldownMs) return { state, hit: false };
   return { state: { active: true, lastHitAt: nowMs }, hit: true };
+}
+
+/**
+ * OA-1: hold to walk starts AT ONCE on a press on free floor (no wait). What a press that is already walking does next:
+ * 'walk' = still (under the tap move limit): keep walking; 'steer' = moved after the tap time (a hold): the walk follows the pointer, nothing pans;
+ * 'pan' = moved within the tap time (a quick drag): in a room it pans, so the early walk is cancelled.
+ */
+export function earlyWalkNext(heldMs: number, movedPx: number): 'walk' | 'steer' | 'pan' {
+  if (movedPx < TAP_MAX_MOVE_PX) return 'walk';
+  return heldMs >= TAP_MAX_MS ? 'steer' : 'pan';
 }
 
 /**

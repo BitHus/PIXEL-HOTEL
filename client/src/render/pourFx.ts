@@ -32,6 +32,8 @@ const SHAKE_MS = 260;
 // tap_stand_mug.png and tap_stand_mugfill.png (4 frames 16 x 21: empty, 1/3, 2/3, full; the fill one is tinted with the drink colour).
 const LEVER_FRAME = { w: 14, pivotX: 3, pivotY: 9 };
 const MUG_FRAME = { w: 16, x: -6, y: -17 };
+/** Where the rest lever sprite's top-left sits from the stand's foot on the bar (= PIVOT minus the frame pivot). */
+const REST_LEVER = { x: 2, y: -39 };
 
 /** Lever frame for the pull amount (0 rest .. 1 pulled): rest below 0.34, half below 0.8, else pulled (pure). */
 export const leverFrame = (t: number): number => (t < 0.34 ? 0 : t < 0.8 ? 1 : 2);
@@ -78,7 +80,43 @@ export class PourFx {
   } | null = null;
   private seed = 1;
 
+  /** PB-2 hook: the lever at rest (frame 0) on every tap stand, so the static tap_stand.png needs no lever. Key = stand uid. */
+  private rest = new Map<number, Sprite>();
+  /** The stand the active pour runs at (the art layer draws its own lever, so the rest one hides). */
+  private activeUid: number | null = null;
+
   constructor(private readonly view: RoomView, private readonly reduce: () => boolean = () => false) {}
+
+  /** Draw the lever at rest on each given stand (REST_LEVER from the stand's foot on the bar), drop the ones that left. Call after items sync. */
+  syncRest(stands: { stand: FurnitureItem; bar: FurnitureItem | undefined }[]): void {
+    const tex = spriteFrames('furniture', 'tap_stand', 'lever', LEVER_FRAME.w)?.[0];
+    const seen = new Set<number>();
+    for (const { stand, bar } of stands) {
+      if (!tex) break;
+      seen.add(stand.uid);
+      const top = bar ? surfaceHeight(getFurnitureType(bar.typeId)) : 0;
+      let sprite = this.rest.get(stand.uid);
+      if (!sprite) {
+        sprite = new Sprite(tex);
+        sprite.eventMode = 'none';
+        this.rest.set(stand.uid, sprite);
+        this.view.objects.add(sprite, bar ? itemDepthKey(stand, bar) : { y: stand.y, x: stand.x, uid: stand.uid });
+      }
+      sprite.position.set(Math.round(stand.x) + REST_LEVER.x, Math.round(stand.y - top) + REST_LEVER.y);
+      sprite.visible = this.activeUid !== stand.uid;
+    }
+    for (const [uid, sprite] of this.rest) {
+      if (seen.has(uid)) continue;
+      this.view.objects.remove(sprite);
+      sprite.destroy();
+      this.rest.delete(uid);
+    }
+  }
+
+  private setActive(uid: number | null): void {
+    this.activeUid = uid;
+    for (const [id, s] of this.rest) s.visible = id !== uid;
+  }
 
   get active(): boolean {
     return this.a !== null;
@@ -98,6 +136,7 @@ export class PourFx {
     this.view.objects.add(g, bar ? itemDepthKey(stand, bar) : { y: stand.y, x: stand.x, uid: stand.uid });
     const color = PALETTE[getDrinkType(drink as DrinkId).color] ?? PALETTE[9];
     const art = this.makeArt(g, PALETTE[getDrinkType(drink as DrinkId).color] ?? PALETTE[9]);
+    this.setActive(stand.uid);
     this.a = { g, art, phase, color, fill: 0, shownFill: 0, pullT: 0, springMs: -1, ageMs: 0, doneMs: 0, perfect: false, auto: null };
     this.draw();
   }
@@ -170,6 +209,7 @@ export class PourFx {
     this.view.objects.remove(this.a.g);
     this.a.g.destroy();
     this.a = null;
+    this.setActive(null);
   }
 
   /** Call every frame with the frame time. */

@@ -3981,3 +3981,23 @@
     animation: none;
   }
 }
+
+/* OA-14: the OPEN / CLOSED sign under the info panel (tavern only): a small icon button with the word beside it. */
+.open-sign {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  padding: 0 10px 0 6px;
+  pointer-events: auto;
+}
+.open-sign .open-sign-word {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.open-sign.closed {
+  color: var(--bad, #e43b44);
+  border-color: var(--bad, #e43b44);
+}

@@ -14,6 +14,8 @@ export interface HintBox {
   setCovered(covered: boolean): void;
   /** True = only the quest seal shows (the card shrinks so it never covers the room: the coder calls it when the player walks, or outside the tavern); false = the full card. It also shrinks by itself after the text was read. */
   setCompact(compact: boolean): void;
+  /** OA-4: true while the first-steps guide runs: the quest card, button glow and nudges stay hidden (one guide at a time); false brings the pending quest back. */
+  setHeld(held: boolean): void;
   /** Called when the quest or whether its card shows changes. */
   onChange(listener: (quest: string | null, showing: boolean) => void): void;
 }
@@ -118,18 +120,18 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
     }
     if (showing) hide();
   });
-  return {
+  /** The quest the game wants shown; while held nothing shows. */
+  let pending: string | null = null;
+  let held = false;
+  const api: HintBox = {
     set(next) {
-      if (next === quest && (showing || dismissed.has(next ?? ''))) return;
-      quest = next;
-      if (next !== null && !dismissed.has(next)) {
-        show();
-        return;
-      }
-      showing = false;
-      box.classList.remove('closing', 'opening');
-      box.hidden = true;
-      changed();
+      pending = next;
+      apply(held ? null : next);
+    },
+    setHeld(h) {
+      if (h === held) return;
+      held = h;
+      apply(held ? null : pending);
     },
     toggle() {
       if (quest === null) return;
@@ -150,4 +152,17 @@ export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox 
       listener(quest, showing);
     },
   };
+  function apply(next: string | null): void {
+    if (next === quest && (showing || dismissed.has(next ?? ''))) return;
+    quest = next;
+    if (next !== null && !dismissed.has(next)) {
+      show();
+      return;
+    }
+    showing = false;
+    box.classList.remove('closing', 'opening');
+    box.hidden = true;
+    changed();
+  }
+  return api;
 }

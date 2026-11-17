@@ -93,6 +93,8 @@ export interface TavernView {
   at: number;
   /** False in an old save until markTavernIntroSeen (the one-time toast that explains the tavern). */
   introSeen: boolean;
+  /** OA-14: the OPEN sign (false = closed: no new guests). */
+  open: boolean;
 }
 
 /** One row of the Menu panel: a drink or dish the player owns or has set, with its menu choice and the last prices paid. */
@@ -404,6 +406,8 @@ export interface GameAPI {
   /** The Menu panel's rows: every drink and dish the player owns or has set (on or off, price, stock, last prices). */
   getMenu(): Promise<MenuRowView[]>;
   /** Puts a drink or dish on or off the menu and / or sets its price (whole gold). The new rows, or null = refused. */
+  /** OA-14: flips the OPEN / CLOSED sign of the tavern (closed = no new guests, the ones inside finish). Returns the new state (true = open). */
+  setTavernOpen(open: boolean): Promise<boolean>;
   setMenuEntry(id: string, change: { on?: boolean; price?: number }): Promise<MenuRowView[] | null>;
   /** Step T1: moves qty mugs of one drink from the bag onto a tap (a whole number from 1; the tap holds at most TAP_CAP of ONE drink). False = refused. */
   loadTap(standUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean>;

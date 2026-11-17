@@ -1,4 +1,4 @@
-// Pixel Hotel: the entry point. start() only wires the game: each part in client/src/game/ runs once, in
+// PocketBarrel: the entry point. start() only wires the game: each part in client/src/game/ runs once, in
 // order, and hands what the later parts need on (the order and the shared types are in game/ctx.ts).
 import { TextureSource } from 'pixi.js';
 import './ui/ui.css';

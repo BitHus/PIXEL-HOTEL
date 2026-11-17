@@ -18,6 +18,8 @@ import {
   startBrew,
   menuRows,
   setMenu,
+  setTavernOpen,
+  tavernOpen,
   collectCook,
   startCook,
   openOrders,
@@ -58,7 +60,7 @@ export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
     const room = h.roomById(t.roomId);
-    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, appeal: room ? tavernAppeal(room, h.state.items) : 0, at: h.now(), introSeen: t.introSeen });
+    return structuredClone({ roomId: t.roomId, guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, appeal: room ? tavernAppeal(room, h.state.items) : 0, at: h.now(), introSeen: t.introSeen, open: tavernOpen(t) });
   },
 
   /** What a guest step needs: the room, its items, the nav grid (rebuilt when the furniture changes) and the seats the player holds. */
@@ -158,6 +160,11 @@ export const tavernApi = {
     if (!next) return null;
     h.commit(next);
     return tavernApi.menuRowViews(h);
+  },
+
+  async setTavernOpen(h: LocalGameAPI, open: boolean): Promise<boolean> {
+    h.commit(setTavernOpen(h.state, open));
+    return tavernOpen(h.state.tavern);
   },
 
   async markTavernIntroSeen(h: LocalGameAPI): Promise<void> {
