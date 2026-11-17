@@ -9,6 +9,7 @@ import { RUN_BAG_SLOTS, getFoodType, getFurnitureType, getMaterialType, type Dun
 import { el, iconButton, textButton, typing } from './dom.ts';
 import { furnitureIconUrl, gemIconUrl, materialIconUrl } from './itemIcon.ts';
 import { pixelIcon } from './pixelIcons.ts';
+import { confirmBuy } from './confirmBuy.ts';
 
 export interface RunBar {
   readonly el: HTMLElement;
@@ -16,7 +17,7 @@ export interface RunBar {
   setHidden(hidden: boolean): void;
 }
 
-export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: () => void, onLeave: () => void): RunBar {
+export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: () => void, onLeave: () => void, onAbandon?: () => void): RunBar {
   const bar = el('div', 'frame run-bar');
   bar.hidden = true;
   const grid = el('div', 'run-slots');
@@ -53,7 +54,24 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   food.appendChild(foodCount);
   const leave = textButton('Leave', onLeave, 'run-leave');
   leave.title = 'Walk out of the mine now, with everything';
-  side.append(gold, gems, potion, food, leave);
+  // Crypt: a clear Abandon button (only shown when the coder wires onAbandon). It always asks first.
+  const abandon = textButton('Abandon', () => {
+    void confirmBuy(parent, {
+      name: 'Leave without the stairs',
+      title: 'Abandon run?',
+      detail: 'You leave the crypt now. Like a defeat, you lose half the gold you found on this run (and the bag). Your wallet and xp are safe. To keep everything, walk to the stairs and choose Leave.',
+      price: null,
+      noPrice: true,
+      yes: 'Abandon',
+    }).then((ok) => ok && onAbandon?.());
+  }, 'run-leave run-abandon');
+  abandon.title = 'Give up this run: half the run gold is lost';
+  abandon.hidden = true;
+  // The lunch box hint: how food gets into the run.
+  const lunchHint = el('div', 'run-hint');
+  const buttons = el('div', 'run-buttons');
+  buttons.append(potion, food, leave, abandon);
+  side.append(gold, gems, buttons, lunchHint);
   bar.append(grid, side);
   parent.appendChild(bar);
 
@@ -97,11 +115,16 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
       const mine = run.place === 'mine';
       food.hidden = mine;
       leave.hidden = !mine;
+      abandon.hidden = mine || !onAbandon;
+      abandon.disabled = run.status !== 'active';
       leave.disabled = run.status !== 'active';
       gold.hidden = mine;
       foodCount.textContent = String(p.food.length);
       food.disabled = p.food.length === 0 || run.status !== 'active';
-      food.title = p.food.length === 0 ? 'The lunch box is empty' : `Eat (E): ${p.food.map((id) => getFoodType(id).name).join(', ')}`;
+      lunchHint.hidden = mine || p.food.length > 0;
+      lunchHint.textContent = 'No lunch packed';
+      food.classList.toggle('empty', p.food.length === 0);
+      food.title = p.food.length === 0 ? 'The lunch box is empty: pack cooked food at the door next time' : `Eat (E): ${p.food.map((id) => getFoodType(id).name).join(', ')}`;
     },
     setHidden(hidden) {
       bar.hidden = hidden;

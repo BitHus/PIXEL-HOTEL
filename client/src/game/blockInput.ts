@@ -3,16 +3,17 @@
 
 import {
   getBlockType, blockInCell, blockProblem, plantProblem, plantInCell, BUILD_CELL, cellOf, type BlockResult,
-  getClothing, isSeedId, screenToWorld, type Avatar, type Point, type Room,
+  blockTapAction, getClothing, isSeedId, screenToWorld, spliceNeedsAsk, type Avatar, type Point, type Room,
 } from '@pixel-hotel/shared';
 import { HoldControl, type HoldResult, type HoldTarget } from '../input/holdControl.ts';
 import type { G14 } from './ctx.ts';
 import { walkDoorGoal } from './doorGoal.ts';
+import { askSplice } from './spliceDialog.ts';
 
 export async function setupBlockInput(g: G14) {
   const {
     api, plantViews, toast, follow, sound, refreshHint, avatarPanel, blockViews, popups, flyGems, roomChanged,
-    refreshInventory, build, placer, paint, lakeside, blockers, panels, dungeon, walkTo, selectBlock, st,
+    refreshInventory, build, placer, paint, lakeside, blockers, panels, dungeon, walkTo, selectBlock, st, uiRoot,
   } = g;
 
   // ---------- Blocks: place and punch (step BG5) ----------
@@ -45,14 +46,47 @@ export async function setupBlockInput(g: G14) {
     const problem = selectedProblem(c, r, []);
     return problem === null || problem === 'needs_soil' || problem === 'too_many_plants';
   };
+  /** ST2: true when a tap on this block cell stacks the selected block on top (shared blockTapAction); a hold punches instead. */
+  const stackTapAt = (c: number, r: number, standing: Point[] = []): boolean =>
+    st.selectedBlock !== null &&
+    blockTapAction({
+      selectedId: st.selectedBlock,
+      selectedIsSeed: isSeedId(st.selectedBlock),
+      hasPlant: plantInCell(st.room, c, r) !== undefined,
+      placeProblem: blockInCell(st.room, c, r) ? selectedProblem(c, r, standing) : 'taken',
+    }) === 'stack';
   /**
    * Sends a place or punch to the GameAPI and draws what came back. `line` = a place hold along cells: out of
    * reach or refused cells are skipped quietly (no walking, no toasts). Returns what a hold should do next.
    */
+  let spliceAsked: string | null = null;
+  let spliceBusy: string | null = null;
+  let spliceDeclined: string | null = null;
+  // A new press on the room forgets a cancel.
+  g.app.canvas.addEventListener('pointerdown', () => { spliceDeclined = null; });
   /** A punch at a plant: with a seed selected, a young plant gets the seed spliced in (step BG7); else it is harvested. */
   const hitOrSplice = async (c: number, r: number): Promise<BlockResult> => {
     if (st.selectedBlock !== null && isSeedId(st.selectedBlock)) {
+      // SG5: a new mix or a rare+ seed asks first (the preview changes nothing); a retry after walking closer does not ask again.
+      const key = `${c},${r},${st.selectedBlock}`;
+      // Ask ONCE per press: a press hits at once and its release is a tap that hits again, a hold repeats; while the dialog is open or after a
+      // cancel (until the next press on the room) the same plant + seed answers silently.
+      if (spliceAsked !== key) {
+        if (spliceBusy === key || spliceDeclined === key) return { kind: 'refused', problem: 'taken' };
+        spliceBusy = key;
+        const preview = await api.previewSplice(c, r, st.selectedBlock);
+        if (spliceNeedsAsk(preview)) {
+          const yes = await askSplice(uiRoot, preview);
+          spliceBusy = null;
+          if (!yes) {
+            spliceDeclined = key;
+            return { kind: 'refused', problem: 'taken' };
+          }
+          spliceAsked = key;
+        } else spliceBusy = null;
+      }
       const res = await api.spliceSeed(c, r, st.selectedBlock);
+      if (res.kind !== 'walk') spliceAsked = null;
       // A ripe or already spliced plant is just punched (harvest, or "not grown yet"); anything else answers as it is.
       if (!(res.kind === 'refused' && (res.problem === 'ripe' || res.problem === 'already_spliced'))) return res;
     }
@@ -130,12 +164,13 @@ export async function setupBlockInput(g: G14) {
       else toast(BLOCK_REFUSALS[why] ?? '');
       return true;
     }
+    const standing = st.path.length === 0 && st.avatar.state !== 'walk' ? [{ x: st.avatar.x, y: st.avatar.y }] : [];
     if (blockInCell(st.room, c, r) || plantInCell(st.room, c, r)) {
-      void doBlock('hit', c, r, null);
+      // ST2: a block selected and room on top = the tap stacks; else (and always for a plant) it punches.
+      void doBlock(stackTapAt(c, r, standing) ? 'place' : 'hit', c, r, stackTapAt(c, r, standing) ? st.selectedBlock : null);
       return true;
     }
     if (st.selectedBlock === null) return false;
-    const standing = st.path.length === 0 && st.avatar.state !== 'walk' ? [{ x: st.avatar.x, y: st.avatar.y }] : [];
     const problem = selectedProblem(c, r, standing);
     if (problem === 'no_soil') {
       toast(BLOCK_REFUSALS.no_soil!);
@@ -211,7 +246,7 @@ export async function setupBlockInput(g: G14) {
     if (holdBusyElsewhere()) return null;
     const world = screenToWorld(screen, st.shown);
     const { c, r } = cellOf(world);
-    if (st.room.kind !== 'lakeside' && blockInCell(st.room, c, r) && !seedOnBlock(c, r)) return { kind: 'block', c, r };
+    if (st.room.kind !== 'lakeside' && blockInCell(st.room, c, r) && !seedOnBlock(c, r) && !stackTapAt(c, r)) return { kind: 'block', c, r };
     if (st.room.kind === 'farm' && plantInCell(st.room, c, r)) return { kind: 'plant', c, r };
     const tree = lakeside.treeUnder(world);
     return tree === null ? null : { kind: 'tree', index: tree };
@@ -232,5 +267,5 @@ export async function setupBlockInput(g: G14) {
   window.addEventListener('keyup', onShift);
   window.addEventListener('blur', () => placer.setShift(false));
 
-  return { doBlock, blockTap, updateBlockGhost, holdBusyElsewhere, hold, steerWalk, holdTargetAt };
+  return { doBlock, blockTap, updateBlockGhost, holdBusyElsewhere, hold, steerWalk, holdTargetAt, stackTapAt };
 }

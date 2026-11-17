@@ -89,6 +89,8 @@ export interface Late {
   replayGuide: () => void;
   /** VG-1: shows a one-time hint chip (once per key, per device); false when seen already (set by guideWorld). */
   showHint: (key: string, text: string, at?: () => Point | null) => boolean;
+  /** CAT HOOK: a tap at a world point; true when it hit the cat (set by gameLoop). */
+  catTap: (p: Point) => boolean;
 }
 
 /** What main.ts starts with. */

@@ -5,7 +5,7 @@
 import { TAP_CAP, getMaterialType, tapCards, type MaterialId, type Tap, type TapCard } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
-import { iconBox, panelShell } from './panelShell.ts';
+import { helpFold, iconBox, panelShell } from './panelShell.ts';
 import { rankName } from './rank.ts';
 
 /** A row of TAP_CAP little mugs, the first `mugs` of them full (UI round 5). Low = the last few mugs, shown red. */
@@ -80,7 +80,7 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
       plus.disabled = qty >= opt.fits;
       const step = el('div', 'menu-price');
       step.append(minus, el('span', 'menu-price-num', `${qty} mug${qty === 1 ? '' : 's'}`), plus);
-      const load = textButton('Load', () => { picked.delete(key); hooks.load(c.standUid, c.slot, opt.drink, qty); });
+      const load = textButton(`Load ${qty}`, () => { picked.delete(key); hooks.load(c.standUid, c.slot, opt.drink, qty); }, 'primary tap-load');
       const fillBtn = textButton('Fill', () => { picked.delete(key); hooks.load(c.standUid, c.slot, opt.drink, opt.fits); });
       controls.append(step, load, fillBtn);
     } else if (c.mugs < TAP_CAP) {
@@ -101,7 +101,7 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
     }
     const perStand = new Map<number, number>();
     list.replaceChildren(
-      el('div', 'panel-info', TAPS_HINT),
+      helpFold(TAPS_HINT),
       ...cards.map((c) => {
         perStand.set(c.standUid, (perStand.get(c.standUid) ?? 0) + 1);
         const n = stands.indexOf(c.standUid) * (cards.length / stands.length) + perStand.get(c.standUid)!;

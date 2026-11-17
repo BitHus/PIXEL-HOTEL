@@ -16,6 +16,8 @@ export interface BuyQuestion {
   detail: string;
   /** null = free (no price shown). */
   price: number | null;
+  /** Hide the "Free" tag when price is null (a warning, not a purchase). */
+  noPrice?: boolean;
   /** A picture (data URL), or none. */
   image?: string;
   /** The panel's title (default: the yes text + " this?"). */
@@ -70,7 +72,8 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
     const info = el('div', 'confirm-info');
     const price = q.price === null ? el('div', 'catalog-price', 'Free') : priceTag(q.price, q.gold, q.currency);
     price.classList.add('hang-tag');
-    info.append(el('div', 'catalog-name', q.name), el('div', 'catalog-sub', q.detail), price);
+    info.append(el('div', 'catalog-name', q.name), el('div', 'catalog-sub', q.detail));
+    if (!q.noPrice) info.append(price);
     if (short(q.price)) info.append(el('div', 'confirm-short price-short', `Not enough ${q.currency ?? 'gold'}.`));
     what.appendChild(info);
 

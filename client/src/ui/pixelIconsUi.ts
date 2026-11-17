@@ -87,6 +87,28 @@ export const UI_ICONS = {
     rows: BRICKS_ROWS,
     colors: { o: P[6], k: P[0], K: P[1], m: P[2], D: P[7] },
   },
+  // help = a round tan badge with a dark question mark (the folded help in the Stove, Brewing and Taps panels)
+  help: {
+    rows: [
+      '.....oooooo.....',
+      '...oooHHHHHooo..',
+      '..oHHHWWWWWWWDo.',
+      '.oHWWWWWWWWWWWDo',
+      '.oHWWWooooWWWDo.',
+      '.oHWWooWWooWWDo.',
+      '.oHWWWWWWooWWDo.',
+      '.oHWWWWWooWWWDo.',
+      '.oHWWWWooWWWWDo.',
+      '.oHWWWWWWWWWWDo.',
+      '.oHWWWWWWWWWWDo.',
+      '.oHWWWWooWWWWDo.',
+      '.oHWWWWooWWWWDo.',
+      '.oDWWWWWWWWWDDo.',
+      '..oDDDDDDDDDDo..',
+      '....oooooooo....',
+    ],
+    colors: { o: P[6], W: P[4], H: P[3], D: P[5] },
+  },
   more: {
     rows: [
       '................',

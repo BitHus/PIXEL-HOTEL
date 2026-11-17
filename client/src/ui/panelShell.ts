@@ -65,6 +65,22 @@ export function iconBox(content: string | SVGSVGElement | HTMLElement, cls = '')
   return box;
 }
 
+/** Long help folded behind a small pixel "?" icon: tap it to read. Each text becomes one paragraph. */
+export function helpFold(...texts: string[]): HTMLElement {
+  const d = el('details', 'help-fold');
+  const sum = el('summary', 'help-q');
+  sum.setAttribute('aria-label', 'Help');
+  sum.title = 'Help';
+  sum.append(pixelIcon('help'));
+  d.append(sum, ...texts.map((t) => el('div', 'panel-info help-text', t)));
+  return d;
+}
+
+/** Why a button is greyed out, in one short line under it. */
+export function reasonLine(text: string): HTMLElement {
+  return el('div', 'recipe-reason', text);
+}
+
 /** A price with the coin icon; red when `gold` (what the player has) is too little. */
 export function priceTag(price: number, gold?: number, currency: 'gold' | 'gems' = 'gold'): HTMLElement {
   const p = el('span', `catalog-price${gold !== undefined && gold < price ? ' price-short' : ''}`);

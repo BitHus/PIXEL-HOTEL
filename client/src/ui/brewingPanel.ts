@@ -6,9 +6,9 @@
 import { brewCards, brewMs, brewReadyInMs, getDrinkType, getMaterialType, type Brew, type BrewCard, type MaterialId } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
-import { iconBox, panelShell } from './panelShell.ts';
+import { helpFold, iconBox, panelShell, reasonLine } from './panelShell.ts';
 import { rankName } from './rank.ts';
-import { cookTimeText, needChip, vesselBar } from './cookingPanel.ts';
+import { cookTimeText, needChip, shortText, vesselBar } from './cookingPanel.ts';
 
 export interface BrewingHooks {
   /** Start a brew of `drink` in the open barrel. */
@@ -54,6 +54,7 @@ export function createBrewingPanel(parent: HTMLElement, hooks: BrewingHooks, now
     const b = textButton('Brew', () => uid !== null && hooks.start(uid, c.id), c.can ? 'primary' : '');
     b.disabled = !c.can;
     row.append(iconBox(materialIconUrl(c.id)), info, b);
+    if (!c.can) row.append(reasonLine(shortText(c.inputs)));
     return row;
   };
 
@@ -73,7 +74,7 @@ export function createBrewingPanel(parent: HTMLElement, hooks: BrewingHooks, now
       list.replaceChildren();
       return;
     }
-    top.replaceChildren(el('div', 'panel-info', 'A barrel brews one drink at a time. Nothing is collected for you: tap the barrel when it is ready. More barrels brew more at once. Put the mugs on the menu (tap the bar) so guests can order them.'));
+    top.replaceChildren(helpFold('A barrel brews one drink at a time. Nothing is collected for you: tap the barrel when it is ready. More barrels brew more at once. Put the mugs on the menu (tap the bar) so guests can order them.'));
     list.replaceChildren(...brewCards(materials).map(card));
   };
 

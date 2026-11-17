@@ -17,7 +17,7 @@ import {
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
   type TavernEvent, type TavernView, type TavernWorld, type CaskView, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
-  type StyleKind, type Rng, type NewPlayerChoice, type ServeResult,
+  type StyleKind, type Rng, type NewPlayerChoice, type ServeResult, type SplicePreview,
   type Avatar, type AvatarLook, type BagTab, type SlotLayout, type SlotRef, type ChatLine, type FurnitureItem,
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
   type Player, type Point, type Rect, type Room, type RoomState, type SitResult,
@@ -246,6 +246,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async plantSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> { return blocksFarmApi.plantSeed(this, c, r, seed); }
   async hitPlant(c: number, r: number): Promise<BlockResult> { return blocksFarmApi.hitPlant(this, c, r); }
   async spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> { return blocksFarmApi.spliceSeed(this, c, r, seed); }
+  async previewSplice(c: number, r: number, seed: SeedId): Promise<SplicePreview> { return blocksFarmApi.previewSplice(this, c, r, seed); }
   async openPack(packId: string): Promise<PackOpenResult | null> { return packsApi.openPack(this, packId); }
   async sellSpare(clothingId: string, qty: number): Promise<number | null> { return packsApi.sellSpare(this, clothingId, qty); }
   async buyHat(hatId: string): Promise<boolean> { return packsApi.buyHat(this, hatId); }

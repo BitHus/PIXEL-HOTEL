@@ -5,6 +5,7 @@ import { AVATAR_H, FrameStats, WALK_BOB_MS, followStep, walkAvatar, worldToScree
 import { followPaused } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
+import { createCatLife } from './catLife.ts';
 import type { G16 } from './ctx.ts';
 
 export async function setupGameLoop(g: G16) {
@@ -23,6 +24,8 @@ export async function setupGameLoop(g: G16) {
     if (next !== app.renderer.resolution) app.renderer.resize(window.innerWidth, window.innerHeight, next);
   });
   let clockMs = 0;
+  const catLife = createCatLife(g);
+  late.catTap = (p) => catLife.tap(p, clockMs);
   const heads = new Map<number, Point>();
   /** The avatars that stand or walk on the floor (their shadows). */
   const feet: Point[] = [];
@@ -68,6 +71,7 @@ export async function setupGameLoop(g: G16) {
     itemViews.props.setMealSpots(g.tableMess.steamSpots());
     itemViews.update(ticker.deltaMS);
     guests.update(ticker.deltaMS, clockMs);
+    catLife.update(ticker.deltaMS, clockMs);
     pour.update(ticker.deltaMS);
     fx.update(ticker.deltaMS);
     lakeside.update(ticker.deltaMS, clockMs);

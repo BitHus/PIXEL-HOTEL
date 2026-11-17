@@ -11,7 +11,7 @@ import {
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
-import { iconBox, panelShell } from './panelShell.ts';
+import { helpFold, iconBox, panelShell, reasonLine } from './panelShell.ts';
 
 export interface CookingHooks {
   /** Start a batch of `qty` dishes on the open stove. */
@@ -56,6 +56,12 @@ export function foodEffectText(e: FoodEffect): string {
   }
 }
 
+/** "Need 2 more turnip, 1 more carrot": the first words under a greyed Cook or Brew button. */
+export function shortText(inputs: readonly { id: MaterialId; have: number; need: number }[]): string {
+  const miss = inputs.filter((i) => i.have < i.need).map((i) => `${i.need - i.have} more ${getMaterialType(i.id).name.toLowerCase()}`);
+  return miss.length ? `Need ${miss.join(', ')}` : '';
+}
+
 /** An ingredient chip: its picture and have/need; red when short (UI round 5). */
 export function needChip(id: MaterialId, have: number, need: number): HTMLElement {
   const chip = el('span', have < need ? 'need short' : 'need');
@@ -94,8 +100,10 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     const r = el('div', `catalog-row recipe-card${can0 ? ' ready' : ' cant'}`);
     const slot = iconBox(materialIconUrl(f.id));
     const needs = el('div', 'recipe-needs');
+    const inputs: { id: MaterialId; have: number; need: number }[] = [];
     for (const [id, n] of Object.entries(f.inputs) as [MaterialId, number][]) {
       const have = p.materials[id] ?? 0;
+      inputs.push({ id, have, need: n });
       needs.append(needChip(id, have, n));
     }
     const owned = p.materials[f.id] ?? 0;
@@ -110,6 +118,7 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     const b = textButton(n > 1 ? `Cook x${n}` : 'Cook', () => uid !== null && hooks.start(uid, f, n), can0 ? 'primary' : '');
     b.disabled = can < 1;
     r.append(slot, info, b);
+    if (can < 1) r.append(reasonLine(shortText(inputs)));
     return r;
   };
 
@@ -138,8 +147,7 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     plus.disabled = qty >= STOVE_BATCH_MAX;
     step.append(el('span', 'cook-qty-label', 'Dishes per batch'), minus, el('span', 'cook-qty', bonus > 0 ? `${qty} + ${bonus}` : String(qty)), plus);
     // The long help is folded behind a small "?" so the recipes show first (TESTER RUN 2: 5 lines before the first recipe).
-    const help = el('details', 'help-fold');
-    help.append(el('summary', '', '?'), el('div', 'panel-info', bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).'), el('div', 'panel-info', `A stove cooks one batch at a time, up to ${STOVE_BATCH_MAX} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`));
+    const help = helpFold(bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).', `A stove cooks one batch at a time, up to ${STOVE_BATCH_MAX} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`);
     top.replaceChildren(step, help);
     list.replaceChildren(...(player ? FOOD_TYPES.map((f) => row(f, player!)) : []));
   };

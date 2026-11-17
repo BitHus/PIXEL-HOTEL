@@ -14,10 +14,13 @@ import {
   plantSeed,
   SPLICE_HINT,
   spliceSeed,
+  splicePreview,
+  plantInCell,
   farmCounts,
   repathGuests,
   findPath,
   type GainList,
+  type SplicePreview,
   type BlockResult,
   type FarmView,
   type FoodId,
@@ -98,6 +101,11 @@ export const blocksFarmApi = {
     if (!inReach(me, c, r)) return h.walkCloser(me, c, r);
     h.commitBlocks(h.hintDone(res.state, SPLICE_HINT));
     return { kind: 'spliced', room: h.roomById(room.id)!, c, r, gains: [] };
+  },
+
+  /** SG5: the splice preview (nothing changes). */
+  async previewSplice(h: LocalGameAPI, c: number, r: number, seed: SeedId): Promise<SplicePreview> {
+    return splicePreview(plantInCell(h.room(), c, r) ?? null, seed, h.state.player.splicesFound, h.now());
   },
 
   async buySeeds(h: LocalGameAPI, seed: SeedId, qty: number): Promise<GainList | null> {

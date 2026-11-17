@@ -2825,7 +2825,7 @@
 }
 
 @media (max-width: 700px) {
-  .orders-strip {
+  #ui .orders-strip {
     top: calc(var(--edge) + env(safe-area-inset-top));
     left: calc(var(--edge) + var(--info-w, 150px) + 6px + env(safe-area-inset-left));
     right: calc(var(--side-col) + 4px + env(safe-area-inset-right));
@@ -2834,7 +2834,7 @@
     padding: 3px 4px;
   }
 
-  .orders-chip {
+  #ui .orders-chip {
     width: 40px;
     height: 40px;
   }
@@ -2924,4 +2924,146 @@
   background: var(--parch-dk);
   color: var(--text);
   box-shadow: inset 0 0 0 1px var(--wood-light);
+}
+
+/* ---------- Dungeon HUD (TESTER RUN 2 finding 9): the run bag is a compact wooden plate like the hotbar ---------- */
+.run-bar {
+  padding: 6px;
+  gap: 8px;
+  align-items: flex-start;
+  background: var(--wood-mid);
+}
+
+.run-slots {
+  grid-template-columns: repeat(6, var(--run-slot, 34px));
+  --run-slot: 34px;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bar-bg);
+  box-shadow: inset 0 0 0 1px var(--outline), 0 0 0 1px var(--wood-light);
+}
+
+.run-slot.empty {
+  opacity: 0.6;
+}
+
+.run-side {
+  grid-template-columns: 1fr;
+  justify-items: stretch;
+  gap: 4px;
+  min-width: 104px;
+}
+
+.run-side .run-gold {
+  grid-column: auto;
+  display: inline-flex;
+  margin-right: 8px;
+}
+
+.run-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.run-buttons .btn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+
+.run-buttons .run-leave {
+  flex: 1 1 100%;
+  min-height: 36px;
+  background: var(--crimson, #a23b3b);
+  color: var(--butter);
+}
+
+.run-buttons .food-btn.empty {
+  opacity: 0.55;
+}
+
+.run-hint {
+  max-width: 110px;
+  font-size: var(--fs-sm);
+  line-height: 1.2;
+  color: var(--butter);
+}
+
+.run-hint[hidden] {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .run-slots {
+    --run-slot: 32px;
+  }
+  .run-hint {
+    max-width: 96px;
+  }
+}
+
+/* ---------- Stove, Brewing, Taps: folded help with a pixel "?" icon, big buttons, reason lines ---------- */
+.help-fold > summary.help-q {
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.help-fold > summary.help-q .pixel-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.help-fold[open] > summary.help-q {
+  background: transparent;
+  filter: brightness(1.15) saturate(1.2);
+}
+
+.help-fold .help-text {
+  margin-top: 4px;
+}
+
+.recipe-card {
+  flex-wrap: wrap;
+}
+
+.recipe-card .catalog-info {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.recipe-card > .btn {
+  flex: 1 1 100%;
+  width: 100%;
+  min-height: 48px;
+  font-size: var(--fs-md);
+}
+
+.recipe-reason {
+  flex: 1 1 100%;
+  margin-top: -2px;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--no);
+  font-weight: 700;
+}
+
+.tap-actions .btn.tap-load {
+  flex: 1 1 120px;
+  min-height: 48px;
+  font-size: var(--fs-md);
+}
+
+/* The pour bar is bigger on a phone: a thumb covers the stand, so the bar and the green window must read at a glance. */
+@media (max-width: 680px), (pointer: coarse) {
+  .pour-bar.pour-bar-over {
+    width: 200px;
+    height: 22px !important;
+  }
+  .pour-bar-over .pour-bar-mark {
+    top: -6px !important;
+    bottom: -6px !important;
+  }
 }

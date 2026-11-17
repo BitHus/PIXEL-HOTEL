@@ -107,6 +107,7 @@ export async function setupRoomFlow(g: G13) {
     paint.end();
     menu.close();
     bubbles.clear();
+    toast.clear?.(); // stale tutorial and hint toasts belong to the room we leave
     chat.clear();
     // A walk that was heading for a door, stove, barrel, cask or block belongs to the old room.
     st.pendingDoor = null;

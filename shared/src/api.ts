@@ -28,6 +28,7 @@ import type { Tap } from './taps.ts';
 import type { TavernEvent } from './guests.ts';
 import type { SellKind, SellResult, SellRow } from './trader.ts';
 import type { TrayMug } from './tray.ts';
+import type { SplicePreview } from './splice.ts';
 
 export interface RoomState {
   room: Room;
@@ -423,6 +424,8 @@ export interface GameAPI {
    * 'ripe' (harvest it first) or 'no_plant'. Out of reach: the avatar walks closer first.
    */
   spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult>;
+  /** SG5: what splicing `seed` into the plant in this cell would do; changes nothing. A new mix hides its result (status 'new'), a found pair shows it ('known'). */
+  previewSplice(c: number, r: number, seed: SeedId): Promise<SplicePreview>;
   // ---------- Step BG8: packs bought with gems ----------
   /** Opens a pack for gems. Null = unknown pack or not enough gems (nothing changes). */
   openPack(packId: string): Promise<PackOpenResult | null>;

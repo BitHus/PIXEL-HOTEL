@@ -59,8 +59,8 @@ export function showExitChoice(parent: HTMLElement, o: { floor: number; maxFloor
     );
     const row = el('div', 'confirm-buttons');
     row.append(textButton('Not yet', () => finish('stay')));
-    if (deeper) row.append(textButton('Go deeper', () => finish('deeper')));
-    const leave = textButton('Leave', () => finish('leave'), 'confirm-yes');
+    if (deeper) row.append(textButton('Go deeper (risk it)', () => finish('deeper'), 'run-deeper'));
+    const leave = textButton(deeper ? 'Leave (keep bag)' : 'Leave', () => finish('leave'), 'confirm-yes');
     row.append(leave);
     box.append(row);
     leave.focus();

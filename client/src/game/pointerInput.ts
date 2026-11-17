@@ -13,7 +13,7 @@ export async function setupPointerInput(g: G15) {
     app, dungeon, setCamera, overviewZoom, dpr, intro, holdTargetAt, lakeside, hold, holdBusyElsewhere, menu,
     steerWalk, panels, cross, label, redraw, updateBlockGhost, placer, paint, roomItem, itemViews, build,
     openMenu, api, applyItems, sound, blockTap, tavernTap, barTap, serveAt, toast, sitOn, walkTo,
-    blockers, st, pourControl,
+    blockers, st, pourControl, late, stackTapAt,
   } = g;
   /** True while a press belongs to the pour (the hold on the tap stand): it never walks, pans or hits. */
   let pourClaim = false;
@@ -50,8 +50,14 @@ export async function setupPointerInput(g: G15) {
     onHoldStill: (screen) => {
       if (dungeon.isActive || st.selectedBlock === null || holdBusyElsewhere() || st.room.kind === 'lakeside') return false;
       const { c, r } = cellOf(screenToWorld(screen, st.shown));
-      if (blockInCell(st.room, c, r) || plantInCell(st.room, c, r)) return false;
       st.pendingBlock = null;
+      // ST2: a tap on a block stacks the selected one; holding still on it punches it (the hold hits from now on).
+      if (blockInCell(st.room, c, r) && !plantInCell(st.room, c, r)) {
+        if (!stackTapAt(c, r)) return false;
+        hold.start({ kind: 'block', c, r });
+        return true;
+      }
+      if (plantInCell(st.room, c, r)) return false;
       hold.start({ kind: 'line', c, r });
       return true;
     },
@@ -178,6 +184,7 @@ export async function setupPointerInput(g: G15) {
       st.pendingDoor = null;
       st.pendingCask = null;
       lakeside.cancel();
+      if (late.catTap(st.marked)) return;
       if (blockTap(st.marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).
       if (lakeside.tap(st.marked)) return;

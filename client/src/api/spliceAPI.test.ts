@@ -56,3 +56,23 @@ describe('splicing through the GameAPI', () => {
     expect(after.materials.clay_seed).toBe(1);
   });
 });
+
+describe('previewSplice (SG5)', () => {
+  it('shows a new mix without its result, takes nothing, and matches what splicing then does', async () => {
+    t = 1000;
+    const api: GameAPI = open();
+    const p = await api.getPlayer();
+    await api.enterRoom(p.farmRoomId);
+    expect((await api.previewSplice(3, 2, 'turnip_seed')).status).toBe('no_plant');
+    await until(() => api.plantSeed(3, 2, 'dirt_seed'));
+    const before = (await api.getPlayer()).materials;
+    const pre = await api.previewSplice(3, 2, 'turnip_seed');
+    expect(pre.status).toBe('new');
+    expect(pre.result).toBeUndefined();
+    expect(pre.growMs).toBe(spliceGrowMs('dirt_seed', 'turnip_seed'));
+    expect((await api.getPlayer()).materials).toEqual(before); // cancel = nothing taken
+    expect((await api.previewSplice(3, 2, 'dirt_seed')).status).toBe('nothing');
+    expect(await until(() => api.spliceSeed(3, 2, 'turnip_seed'))).toMatchObject({ kind: 'spliced' });
+    expect((await api.previewSplice(3, 2, 'turnip_seed')).status).toBe('already_spliced');
+  });
+});
