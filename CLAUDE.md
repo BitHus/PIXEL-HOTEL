@@ -83,8 +83,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   cell (even widths: the left of the two centre cells); rotation swaps w and d, keeps the anchor
   cell. Valid if: on floor cells, no overlap with another blocking item (rugs and floor decor
   overlap anything), not on the door zone, the door still reaches the middle. onSurface items sit
-  on a cell of a surface item (one level): the bar and the prep table are surfaces; the register, tap stands, mugs and plates sit on them (T1). FS1 (owner 17 Nov): small decor with freeOnSurface (candles, small lamps, statuettes, pots) sits at ANY point on the top of a surface (4 px snap, Shift = none), not per cell; register and tap stands stay per cell. WALL items stay free: any x along a back wall band,
-  4 px snap (Shift = none), anchor y = the band's foot.
+  on a cell of a surface item (one level): the bar and the prep table are surfaces; the register, tap stands, mugs and plates sit on them (T1). FS1 (owner 17 Nov): small decor with freeOnSurface (candles, small lamps, statuettes, pots) sits at ANY point on the top of a surface (4 px snap, Shift = none), not per cell; register and tap stands stay per cell. WALL items stay free (OA-10, owner 17 Nov): anywhere on a back wall band, free x AND y (like Habbo), the whole item inside the 64 px band,
+  4 px snap (Shift = none), anchor y = the item bottom (stored in item.y; old items sit at the foot). Never over an Inn doorway or another wall item. Side walls: rooms have none (only a 16 px border), so none.
 - Draw order: floor, rugs, back wall, then ONE list of items and avatars sorted by y, x, uid; an
   item on a surface right after the item under it.
 - Rotation cycles the type's facings; left = right mirrored. Placeholder art = boxes.

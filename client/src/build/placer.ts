@@ -18,6 +18,7 @@ import {
   moveItem,
   nextInventoryUid,
   planGhost,
+  wallItemRect,
   ridersOf,
   rotateGhost,
   startMovePlacing,
@@ -241,6 +242,8 @@ export class Placer {
     this.sprite.container.tint = color;
     // A small free-standing piece (lamp, candle) shows its real sprite size, not the 32 x 32 cell.
     let box = { x: fp.x, y: fp.y, w: fp.w, h: fp.h };
+    // OA-10: a wall item's outline is the part of the wall it covers (free y inside the band).
+    if (type.wall) box = wallItemRect(plan, type);
     if (type.freeOnSurface) {
       const c = this.sprite.container;
       const lb = c.getLocalBounds();

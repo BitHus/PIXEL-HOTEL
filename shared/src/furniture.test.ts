@@ -19,9 +19,11 @@ import {
   snapToCells,
   snapToSurface,
   standPointFor,
+  wallItemRect,
   type FurnitureLookup,
 } from './furniture.ts';
 import { createRoom, rectInsideFloor } from './room.ts';
+import { moveGhost, planGhost, startNewPlacing } from './placing.ts';
 import { buildNavGrid, findPath, isCellFree } from './nav.ts';
 import type { Facing, FurnitureItem, FurnitureType } from './types.ts';
 
@@ -399,5 +401,52 @@ describe('non-rectangular rooms (step 7b)', () => {
     expect(canPlace(l, [], T('banner'), 480, 0, 'down')).toBe(false); // no wall up there
     const p = planPlacement(l, [], T('banner'), 470, 230, 'down');
     expect(p).toMatchObject({ x: 470, y: 192, ok: true });
+  });
+});
+
+describe('OA-10 wall items hang anywhere on the band (free x and y)', () => {
+  const torch = T('wall_torch'); // 24 x 48 on a 64 px band: anchor y -16 (top) .. 0 (foot)
+  const at = (x: number, y: number): FurnitureItem => ({ ...item('wall_torch', x, y), roomId: room.id });
+
+  it('wallItemRect covers the sprite above the anchor', () => {
+    expect(wallItemRect({ x: 100, y: -10, facing: 'down' }, torch)).toEqual({ x: 88, y: -58, w: 24, h: 48 });
+  });
+
+  it('accepts any y from the band top to the foot, refuses above and below', () => {
+    expect(canPlace(room, [], torch, 100, 0, 'down')).toBe(true); // the old foot line
+    expect(canPlace(room, [], torch, 100, -8, 'down')).toBe(true);
+    expect(canPlace(room, [], torch, 100, -16, 'down')).toBe(true);
+    expect(canPlace(room, [], torch, 100, -17, 'down')).toBe(false); // sticks out above the wall
+    expect(canPlace(room, [], torch, 100, 4, 'down')).toBe(false); // hangs onto the floor
+  });
+
+  it('planPlacement keeps a free y (clamped into the band), the nearest band', () => {
+    expect(planPlacement(room, [], torch, 100, -8, 'down')).toMatchObject({ x: 100, y: -8, ok: true });
+    expect(planPlacement(room, [], torch, 100, -60, 'down')).toMatchObject({ y: -16, ok: true });
+    expect(planPlacement(room, [], torch, 100, 40, 'down')).toMatchObject({ y: 0, ok: true });
+  });
+
+  it('two wall items overlap only when their rectangles overlap (height matters)', () => {
+    const small = T('wall_torch');
+    const a = at(100, -10);
+    expect(canPlace(room, [a], small, 100, -10, 'down')).toBe(false);
+    expect(canPlace(room, [a], small, 120, -10, 'down')).toBe(false); // 24 wide: x overlaps
+    expect(canPlace(room, [a], small, 124, -10, 'down')).toBe(true);
+    // same x, but a shorter item that sits fully below is still stacked in y: 48 px tall each never fit twice in 64
+    expect(canPlace(room, [a], small, 100, 0, 'down')).toBe(false);
+  });
+
+  it('old items at the foot line stay valid and a move keeps the stored y', () => {
+    const old = at(100, 0);
+    expect(canPlace(room, [], torch, old.x, old.y, old.facing)).toBe(true);
+    const moved = moveItem([old], old.uid, { x: 140, y: -12, facing: 'down', onItemUid: null, roomId: room.id });
+    expect(moved[0]).toMatchObject({ x: 140, y: -12 });
+  });
+
+  it('the ghost centre follows the pointer: anchor y = pointer y + half the height, 4 px snap', () => {
+    const s = startNewPlacing('wall_torch', { x: 100, y: -32 }, null);
+    expect(planGhost(room, [], s)).toMatchObject({ x: 100, y: -8, ok: true });
+    expect(planGhost(room, [], moveGhost(s, { x: 101, y: -29 }), false)).toMatchObject({ x: 101, y: -5, ok: true });
+    expect(planGhost(room, [], moveGhost(s, { x: 100, y: -80 }))).toMatchObject({ y: -16, ok: true });
   });
 });

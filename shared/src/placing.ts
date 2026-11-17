@@ -23,6 +23,7 @@ import {
   type MoveTo,
   type Placement,
 } from './furniture.ts';
+import { WALL_BAND } from './config.ts';
 import type { Room } from './room.ts';
 import type { Facing, FurnitureItem, Point } from './types.ts';
 
@@ -39,7 +40,9 @@ export interface PlacingSession {
 
 /** The middle of an item's footprint. */
 export function footprintCenter(pose: { x: number; y: number; facing: Facing }, typeId: string, types: FurnitureLookup = getFurnitureType): Point {
-  return { x: pose.x, y: pose.y - footprintSize(types(typeId), pose.facing).d / 2 };
+  const t = types(typeId);
+  // OA-10: a wall item's ghost centre is the middle of its sprite on the wall.
+  return { x: pose.x, y: pose.y - (t.wall ? Math.min(t.height, WALL_BAND) : footprintSize(t, pose.facing).d) / 2 };
 }
 
 /** A ghost for an item from the list, shown at `center` with the type's first facing. */
@@ -72,7 +75,8 @@ export function planGhost(room: Room, items: readonly FurnitureItem[], s: Placin
   const fd = footprintSize(type, s.facing).d;
   const cell = type.wall ? null : snapToCells(type, s.facing, s.center);
   const x = cell ? cell.x : snapCoord(s.center.x, snap);
-  const y = cell ? cell.y : snapCoord(s.center.y + fd / 2, snap);
+  // OA-10: a wall item's centre follows the pointer, so its anchor (bottom) is half its height lower.
+  const y = cell ? cell.y : snapCoord(s.center.y + (type.wall ? Math.min(type.height, WALL_BAND) : fd) / 2, snap);
   const others = items.filter((i) => i.uid !== s.uid);
   const carrying = s.origin !== null && s.uid !== null && ridersOf(items, s.uid).length > 0;
   if (type.freeOnSurface && !carrying) {
@@ -80,7 +84,7 @@ export function planGhost(room: Room, items: readonly FurnitureItem[], s: Placin
     const free = snapToSurface(room, others, type, snapCoord(s.center.x, snap), snapCoord(s.center.y + fd / 2, snap), s.facing, types, snap);
     if (free) return { ...free, facing: s.facing, ok: true };
   }
-  return planPlacement(room, others, type, x, y, s.facing, carrying, types);
+  return planPlacement(room, others, type, x, y, s.facing, carrying, types, snap);
 }
 
 /**

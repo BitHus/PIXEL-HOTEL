@@ -5,10 +5,10 @@
 // - BUILD GRID (step BG1): floor items are whole BUILD_CELL cells (type.w and type.d are multiples
 //   of it) and stand on cell boundaries: the footprint's top-left corner is a cell corner. The
 //   anchor CELL is the bottom-centre cell (even widths: the left of the two centre cells);
-//   rotating keeps it. Wall items stay free (4 px snap along the back wall band).
+//   rotating keeps it. Wall items stay free (4 px snap in x and y inside the back wall band, OA-10).
 // - Placement: footprint on floor cells, no overlap with another blocking item (non-blocking
 //   items such as rugs overlap anything), not on the 2 x 2 cell door zone, and the door can still
-//   reach the middle of the room. Wall items stay on the back wall band (anchor y = band bottom).
+//   reach the middle of the room. Wall items hang anywhere on a back wall band (anchor y between band top + height and the band foot; the stored y is the height).
 // - onSurface items sit on the cells of a surface item (one level only) and move and return
 //   together with the item under it ("riders").
 // - Functions that need other items' types take a lookup (default: shared/data/furniture.json).
@@ -23,7 +23,7 @@ import medievalData from '../data/furniture/medieval.json';
 import spliceFurnitureData from '../data/furniture/splice.json';
 import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_DEPTH_PX,
-  STAFF_ZONE_SIDE_PX, SNAP } from './config.ts';
+  STAFF_ZONE_SIDE_PX, SNAP, WALL_BAND } from './config.ts';
 import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
 import { innDoorSpotRects, innDoorwayRects } from './innDoors.ts';
@@ -69,6 +69,15 @@ export function footprintRect(item: Pose & { typeId?: string }, type?: Furniture
   const t = type ?? getFurnitureType(item.typeId ?? '');
   const { w, d } = footprintSize(t, item.facing);
   return { x: item.x - w / 2, y: item.y - d, w, h: d };
+}
+
+/**
+ * OA-10: what a wall item covers on the wall, in world px: its sprite width and height (at most the band
+ * height), bottom centre at the anchor (x, y). y is free inside the band (foot line up to the band top).
+ */
+export function wallItemRect(pose: Pose, type: FurnitureType): Rect {
+  const h = Math.min(type.height, WALL_BAND);
+  return { x: pose.x - type.w / 2, y: pose.y - h, w: type.w, h };
 }
 
 /** Snaps a coordinate to SNAP px, or to a whole px when snapping is off (Shift). Wall items only (floor items snap to cells). */
@@ -179,6 +188,27 @@ export function snapToWallBand(room: Room, x: number, y: number): Point {
   return best;
 }
 
+/**
+ * OA-10: a wall item dropped with anchor (x, y) hangs on the nearest back wall band; y is kept free
+ * (clamped so the whole item stays inside the band: band top + item height ... band foot), x kept
+ * (canPlace checks that it fits along the band).
+ */
+export function snapToWallSpot(room: Room, type: FurnitureType, x: number, y: number): Point {
+  const h = Math.min(type.height, WALL_BAND);
+  let best: Point = { x, y };
+  let bestD = Infinity;
+  for (const b of wallBands(room)) {
+    const cy = Math.min(Math.max(y, b.y + h), b.y + b.h);
+    const cx = Math.min(Math.max(x, b.x), b.x + b.w);
+    const d = (cx - x) ** 2 + (cy - y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = { x, y: cy };
+    }
+  }
+  return best;
+}
+
 /** Where avatars come in: the middle of the door zone's bottom row of cells. */
 export function doorPoint(room: Room): Point {
   return { x: doorX(room), y: doorY(room) - BUILD_CELL / 2 };
@@ -211,16 +241,17 @@ export function canPlace(
   types: FurnitureLookup = getFurnitureType,
 ): boolean {
   if (!fitsRoomKind(type, room) || !type.facings.includes(facing)) return false;
-  const fp = footprintRect({ x, y, facing }, type);
   if (type.wall) {
-    // On a back wall band: the anchor is on the band's bottom edge, the item fully on that band.
-    if (!wallBands(room).some((b) => y === b.y + b.h && fp.x >= b.x && fp.x + fp.w <= b.x + b.w)) return false;
+    // OA-10: anywhere on a back wall band (free x and y, the whole item inside one band).
+    const wr = wallItemRect({ x, y, facing }, type);
+    if (!wallBands(room).some((b) => wr.x >= b.x && wr.x + wr.w <= b.x + b.w && wr.y >= b.y && wr.y + wr.h <= b.y + b.h)) return false;
     // An Inn door (step MB-2): no wall item over the doorway.
-    if (innDoorwayRects(room).some((d) => rectsOverlap(fp, d))) return false;
+    if (innDoorwayRects(room).some((d) => rectsOverlap(wr, d))) return false;
     return !items.some(
-      (o) => o.roomId === room.id && types(o.typeId).wall && rectsOverlap(fp, footprintRect(o, types(o.typeId))),
+      (o) => o.roomId === room.id && types(o.typeId).wall && rectsOverlap(wr, wallItemRect(o, types(o.typeId))),
     );
   }
+  const fp = footprintRect({ x, y, facing }, type);
   if (!isOnGrid({ x, y, facing }, type) || !rectInsideFloor(room, fp)) return false;
   if (rectsOverlap(fp, doorZoneRect(room))) return false;
   // The spots of the Inn doors stay free like the door zone (step MB-2).
@@ -357,7 +388,7 @@ export function planPlacement(
   types: FurnitureLookup = getFurnitureType,
   snap = true,
 ): Placement {
-  if (type.wall) ({ x, y } = snapToWallBand(room, x, y));
+  if (type.wall) ({ x, y } = snapToWallSpot(room, type, x, y));
   if (!carrying) {
     const spot = snapToSurface(room, items, type, x, y, facing, types, snap);
     if (spot) return { ...spot, facing, ok: true };
