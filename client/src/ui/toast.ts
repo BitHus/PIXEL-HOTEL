@@ -29,7 +29,10 @@ export type Toast = ((text: string, action?: ToastAction) => void) & {
   clear?: () => void;
 };
 
-export function createToast(parent: HTMLElement): Toast {
+/** The avatar's screen column and its head and feet y (CSS px), so the toast can stay clear of it; null = unknown. */
+export type ToastAvoid = () => { x: number; top: number; bottom: number } | null;
+
+export function createToast(parent: HTMLElement, avoid?: ToastAvoid): Toast {
   const box = el('div', 'frame toast');
   box.hidden = true;
   box.setAttribute('role', 'status');
@@ -69,6 +72,13 @@ export function createToast(parent: HTMLElement): Toast {
     }
     box.hidden = false;
     box.classList.remove('fading');
+    // Clear of the avatar when possible: if the toast would cover it, it moves to the top band (skin.css .toast-top).
+    box.classList.remove('toast-top');
+    const a = avoid?.() ?? null;
+    if (a) {
+      const r = box.getBoundingClientRect();
+      if (a.x > r.left - 16 && a.x < r.right + 16 && a.bottom > r.top - 8 && a.top < r.bottom + 8) box.classList.add('toast-top');
+    }
     window.clearTimeout(showTimer);
     window.clearTimeout(hideTimer);
     showTimer = window.setTimeout(hide, readingMs(text));

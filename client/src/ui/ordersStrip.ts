@@ -34,14 +34,25 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
     e.stopPropagation();
     h.onPutBack();
   });
-  trayEl.append(el('span', 'orders-tray-label', 'Tray'), trayIcons, putBack);
-  root.append(chipsEl, trayEl);
+  // OA-11: the tray is a small pill of icons (no title); 'Put back' is a small button inside it.
+  trayEl.append(trayIcons, putBack);
+  const moreEl = el('span', 'orders-more');
+  moreEl.hidden = true;
+  root.append(chipsEl, moreEl, trayEl);
+  const CHIP_CAP: Record<string, number> = { phone: 3, tablet: 5, desktop: 7 };
   const shown = new Map<number, { button: HTMLButtonElement; img: HTMLImageElement; bar: HTMLElement; item: MaterialId }>();
   let trayKey = '';
   return {
-    sync(chips, tray) {
-      root.hidden = chips.length === 0 && tray.length === 0;
+    sync(allChips, tray) {
+      root.hidden = allChips.length === 0 && tray.length === 0;
       setH();
+      // OA-11: the chips that fit (the least patient first); the rest is a +N badge.
+      const cap = CHIP_CAP[document.documentElement.dataset.size ?? 'desktop'] ?? 7;
+      const hidden = Math.max(0, allChips.length - cap);
+      moreEl.hidden = hidden === 0;
+      moreEl.textContent = `+${hidden}`;
+      moreEl.title = `${hidden} more open orders`;
+      const chips = allChips.slice(0, cap);
       const ids = new Set(chips.map((c) => c.guestId));
       for (const [id, s] of shown) {
         if (ids.has(id)) continue;

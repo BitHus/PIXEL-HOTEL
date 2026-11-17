@@ -52,6 +52,12 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   card.append(count, body, skip);
   body.appendChild(pips);
   card.hidden = true;
+  // Phone: the card is ONE line plus the step count; a tap on it opens the whole text and Skip (skin.css .first-ten:not(.expanded)).
+  card.addEventListener('click', (e) => {
+    if (e.target instanceof HTMLElement && e.target.closest('.first-ten-skip')) return;
+    card.classList.toggle('expanded');
+    announce();
+  });
   parent.appendChild(card);
 
   function draw(): void {

@@ -1,4 +1,5 @@
-/* The orders strip (COD-1). Minimal and functional: the UI worker restyles it (this file only uses the tokens of ui.css). */
+/* The orders strip (COD-1, restyled OA-11): a compact dark pill. One 44 px hit box per chip, the visible chip is smaller; state shows as the border colour
+   (waiting grey, queued yellow, ready green); the tray is a small pill of icons; extra orders are a "+N" badge (ordersStrip.ts caps the chips by size class). */
 .orders-strip {
   position: absolute;
   top: var(--edge);
@@ -6,15 +7,18 @@
   transform: translateX(-50%);
   z-index: 6;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 2px 4px;
   max-width: calc(100vw - 2 * var(--side-col));
-  padding: 4px 6px;
-  background: var(--parch);
-  border: var(--px) solid var(--outline);
+  padding: 0 4px;
+  background: rgba(24, 20, 37, 0.72);
+  border: 1px solid var(--outline);
+  border-radius: 2px;
   box-shadow: var(--shadow);
   font-family: var(--font);
-  color: var(--text);
+  color: var(--cream);
   pointer-events: none;
 }
 .orders-strip[hidden] { display: none; }
@@ -23,8 +27,7 @@
 }
 .orders-chips {
   display: flex;
-  gap: 6px;
-  overflow-x: auto;
+  gap: 0;
   min-width: 0;
 }
 .orders-chip {
@@ -32,25 +35,34 @@
   flex: 0 0 auto;
   width: var(--touch);
   height: var(--touch);
-  padding: 2px 2px 8px;
-  background: var(--slot-bg);
-  border: var(--px) solid var(--outline);
+  padding: 0;
+  background: none;
+  border: 0;
   cursor: pointer;
   pointer-events: auto;
 }
+.orders-chip::before {
+  content: '';
+  position: absolute;
+  inset: 6px 5px;
+  background: var(--slot-bg);
+  border: var(--px) solid #8b9bb4;
+  box-sizing: border-box;
+}
 .orders-chip img {
-  width: 100%;
-  height: 100%;
+  position: relative;
+  width: 24px;
+  height: 22px;
   object-fit: contain;
   image-rendering: pixelated;
   pointer-events: none;
 }
 .orders-patience {
   position: absolute;
-  left: 3px;
-  right: 3px;
-  bottom: 2px;
-  height: 4px;
+  left: 9px;
+  right: 9px;
+  bottom: 9px;
+  height: 3px;
   background: var(--outline);
 }
 .orders-patience-fill {
@@ -60,31 +72,44 @@
 }
 .orders-chip.urgent .orders-patience-fill { background: var(--no); }
 .orders-chip.urgent { animation: orders-shake 0.5s steps(2) infinite; }
-.orders-chip[data-state='queued'] { opacity: 0.6; }
-.orders-chip[data-state='ready'] {
-  background: var(--warm);
-  animation: orders-pulse 0.9s steps(2) infinite;
+.orders-chip[data-state='queued'] { opacity: 0.85; }
+.orders-chip[data-state='queued']::before { border-color: var(--warm); }
+.orders-chip[data-state='ready']::before { border-color: #63c74d; background: var(--warm); }
+.orders-chip[data-state='ready'] { animation: orders-pulse 0.9s steps(2) infinite; }
+.orders-more {
+  align-self: center;
+  padding: 0 4px;
+  font-size: var(--fs-xs);
+  line-height: 1;
+  color: var(--warm);
 }
+.orders-more[hidden] { display: none; }
 .orders-tray {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-left: 8px;
-  border-left: var(--px) solid var(--outline);
+  padding: 0 0 0 4px;
+  border-left: 1px solid var(--wood-light);
 }
 .orders-tray[hidden] { display: none; }
-.orders-tray-icons { display: flex; gap: 2px; }
+.orders-tray-icons { display: flex; gap: 1px; }
 .orders-tray-icons img { width: 24px; height: 24px; image-rendering: pixelated; }
 .orders-putback {
-  min-width: var(--touch);
-  min-height: var(--touch);
+  position: relative;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 6px;
   font-family: var(--font);
-  color: var(--text);
-  background: var(--wood-mid);
-  border: var(--px) solid var(--outline);
+  font-size: var(--fs-xs);
+  color: var(--cream);
+  background: var(--wood);
+  border: 1px solid var(--outline);
   cursor: pointer;
   pointer-events: auto;
 }
+/* The visible button is small; the touch box is still 44 px. */
+.orders-putback::after { content: ''; position: absolute; inset: -8px -2px; }
 @keyframes orders-pulse { 0% { filter: brightness(1); } 100% { filter: brightness(1.25); } }
 @keyframes orders-shake { 0% { transform: translateX(-1px); } 100% { transform: translateX(1px); } }
 /* The order bubble over a guest whose drink is on the tray (the guest pulses too, see guestViews.setPulse). */

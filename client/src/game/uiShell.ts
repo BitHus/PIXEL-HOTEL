@@ -24,7 +24,10 @@ export async function setupUiShell(g: G3) {
   const { ui, prefs, blockers, app, uiRoot, api, sound, dpr, st, late } = g;
 
   // ---------- HTML UI (layout rule in CLAUDE.md) ----------
-  const toast = createToast(ui);
+  const toast = createToast(ui, () => {
+    const feet = worldToScreen({ x: st.avatar.x, y: st.avatar.y }, st.shown);
+    return { x: feet.x, top: feet.y - 64 * st.shown.zoom, bottom: feet.y };
+  });
   // Gain popups above the avatar's head (step BG3 B) and the blocks (step BG5).
   const popups = createGainPopups(ui, prefs.popups);
   // Gems flying from a punched block, a harvest or a felled tree to the avatar (step BG4; the wallet has them already).

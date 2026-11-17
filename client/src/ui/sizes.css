@@ -35,8 +35,14 @@
   --pad: 8px;
   --gap: 8px;
   --row-gap: 10px;
-  --side-btn: 56px;
+  --side-btn: max(44px, calc(52px * var(--ui-s))); /* OA-11: was 56; 48 on a phone, 44 on a short one */
 }
+
+/* OA-11 UI scale buckets by the short side: --ui-s scales the HUD pieces that read it (side column, orders chips). */
+:root { --ui-s: 1; }
+:root[data-size='phone'] { --ui-s: 0.92; }
+@media (max-height: 640px) { :root[data-size='phone'] { --ui-s: 0.84; } }
+@media (min-width: 1600px) and (min-height: 900px) { :root[data-size='desktop'] { --ui-s: 1.12; --side-btn: calc(44px * var(--ui-s)); } }
 
 /* ---------- Running text breathes ---------- */
 #ui {
@@ -110,12 +116,12 @@
 
 /* ---------- Phone: the side column gets short labels under its icons ---------- */
 :root[data-size='phone'] .side-buttons {
-  gap: 6px;
+  gap: 4px;
 }
 
 :root[data-size='phone'] .side-buttons > .icon-btn,
 :root[data-size='phone'] .side-buttons .more-btn {
-  height: calc(var(--side-btn) + 14px);
+  height: calc(var(--side-btn) + 12px);
   display: flex;
   flex-direction: column;
   align-items: center;

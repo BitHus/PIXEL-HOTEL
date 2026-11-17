@@ -7,6 +7,7 @@ import { LocalGameAPI, peekSavedGame } from '../api/localGameAPI.ts';
 import { browserStorage } from '../api/saveStorage.ts';
 import { RoomView } from '../render/roomView.ts';
 import { loadSprites } from '../render/spriteStore.ts';
+import { clearAvatarBakes } from '../render/avatarCompose.ts';
 import { runNewGameSetup } from '../ui/newGame.ts';
 import { applyRankColors } from '../ui/rank.ts';
 import { RoomAtmosphere } from '../render/roomAtmosphere.ts';
@@ -50,6 +51,9 @@ export async function setupCore(g: G0) {
   st.introPending = false;
   if (await api.needsNewPlayer()) {
     await splashGone;
+    // The character maker previews the layered avatar: its layer PNGs must be loaded before the first preview (else it falls back to boxes).
+    await loadSprites();
+    clearAvatarBakes();
     for (;;) {
       const choice = await runNewGameSetup(ui);
       if (await api.createPlayer(choice)) break;

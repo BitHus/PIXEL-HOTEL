@@ -3982,22 +3982,41 @@
   }
 }
 
-/* OA-14: the OPEN / CLOSED sign under the info panel (tavern only): a small icon button with the word beside it. */
-.open-sign {
+/* OA-14 / OA-11: the OPEN / CLOSED sign under the info panel (tavern only): a small hanging plaque in the frame palette. 30 px tall to the eye, a 44 px touch box. */
+.btn.open-sign {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   width: auto;
-  padding: 0 10px 0 6px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 8px 0 5px;
+  background: var(--wood);
+  border: 0;
+  border-image: none;
+  color: var(--cream);
+  box-shadow: inset 1px 1px 0 var(--wood-light), 0 0 0 var(--px) var(--outline), var(--shadow);
   pointer-events: auto;
+}
+.btn.open-sign::after {
+  content: '';
+  position: absolute;
+  inset: -7px -4px;
+}
+.open-sign > .pixel-icon,
+.open-sign > .pixel-icon.px16 {
+  width: 16px;
+  height: 16px;
 }
 .open-sign .open-sign-word {
   font-family: var(--font);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 1px;
+  line-height: 1;
 }
-.open-sign.closed {
-  color: var(--bad, #e43b44);
-  border-color: var(--bad, #e43b44);
+.btn.open-sign.closed {
+  background: var(--no);
+  box-shadow: inset 1px 1px 0 #e43b44, 0 0 0 var(--px) var(--outline), var(--shadow);
 }

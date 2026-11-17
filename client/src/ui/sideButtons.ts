@@ -65,6 +65,14 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
       menu.appendChild(b);
     }
   }
+  // OA-11: the Emote button is a rare action: it stands in the More grid (on a wide screen the grid dissolves into the column anyway).
+  for (const x of extra) {
+    if (!x.classList.contains('emote-btn')) continue;
+    x.classList.add('more-item');
+    x.appendChild(el('span', 'more-label', 'Emote'));
+    x.addEventListener('click', () => setMenu(false));
+    menu.appendChild(x);
+  }
   wrap.append(more, menu);
   col.appendChild(wrap);
   parent.appendChild(col);

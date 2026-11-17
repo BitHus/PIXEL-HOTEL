@@ -146,7 +146,8 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   // The world proves some steps (about 4 times a second, only while the guide runs).
   window.setInterval(() => {
     if (!h.guide.state.active) return;
-    if (st.avatar.state === 'walk') walked = true;
+    // The intro walks the avatar in through the door: that is not the player's first step.
+    if (st.avatar.state === 'walk' && !g.newIntro.running) walked = true;
     const w = {
       walked,
       cooking: st.tavern.cooks.length > 0,

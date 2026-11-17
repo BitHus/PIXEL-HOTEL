@@ -298,7 +298,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   Texts stay at reading pace (shared/src/text.ts readingMs).
 - INPUT: a press is a TAP only if it moved under 8 px and lasted under 300 ms; else a drag or
   long press, which never walks or punches. PLAY MODE: with a block selected in the hotbar a tap on
-  a free cell places it; a tap on a block punches it (also with a block selected); any other tap
+  a free cell places it; a tap on a block punches it (with a block selected and room on the stack, a tap STACKS it on top and a hold punches; seeds on a block plant); any other tap
   walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. HOLD TO
   REPEAT (BG5b): a press on a block, a plant, a mine rock or a tree hits at once and keeps hitting at that
   thing's cooldown (blocks 250 ms, rock and tree 400 ms) until it breaks, the press ends or the avatar is out of

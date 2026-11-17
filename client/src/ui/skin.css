@@ -1034,6 +1034,17 @@
     line-height: 15px;
   }
 
+  /* Compact by default: one line + the step seal; a tap on the card expands it (firstTenGuide.ts). */
+  .first-ten:not(.expanded) .first-ten-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .first-ten:not(.expanded) .first-ten-skip {
+    display: none;
+  }
+
   .first-ten-skip {
     grid-column: 2;
     justify-self: end;
@@ -1824,6 +1835,12 @@
 /* Toasts sit above the hotbar AND its name plate (20 px plate + 8 px gap + the candle line). */
 .toast {
   bottom: calc(var(--bar-h) + var(--edge) + 40px + env(safe-area-inset-bottom));
+}
+
+/* A toast that would cover the avatar moves up under the first-steps card (toast.ts sets .toast-top). */
+.toast.toast-top {
+  bottom: auto;
+  top: calc(var(--ft-bottom, 0px) + var(--edge) + 56px);
 }
 
 /* ---------- Hotbar: pressed, just chosen, empty ---------- */
@@ -2830,13 +2847,10 @@
     left: calc(var(--edge) + var(--info-w, 150px) + 6px + env(safe-area-inset-left));
     right: calc(var(--side-col) + 4px + env(safe-area-inset-right));
     transform: none;
-    max-width: none;
-    padding: 3px 4px;
-  }
-
-  #ui .orders-chip {
-    width: 40px;
-    height: 40px;
+    max-width: calc(100vw - 2 * var(--edge) - var(--info-w, 150px) - var(--side-col) - 10px);
+    width: fit-content;
+    padding: 0 2px;
+    justify-content: flex-start;
   }
 }
 

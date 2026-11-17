@@ -52,7 +52,7 @@ export async function setupBlockInput(g: G14) {
     blockTapAction({
       selectedId: st.selectedBlock,
       selectedIsSeed: isSeedId(st.selectedBlock),
-      hasPlant: plantInCell(st.room, c, r) !== undefined,
+      hasPlant: plantInCell(st.room, c, r) !== null,
       placeProblem: blockInCell(st.room, c, r) ? selectedProblem(c, r, standing) : 'taken',
     }) === 'stack';
   /**
@@ -190,7 +190,7 @@ export async function setupBlockInput(g: G14) {
   /** The ghost of the selected block follows the pointer (green = fits). */
   function updateBlockGhost(): void {
     const at = st.marked === null ? null : cellOf(st.marked);
-    const stack = at !== null && st.selectedBlock !== null && !isSeedId(st.selectedBlock) && blockInCell(st.room, at.c, at.r) !== undefined && plantInCell(st.room, at.c, at.r) === undefined;
+    const stack = at !== null && st.selectedBlock !== null && !isSeedId(st.selectedBlock) && blockInCell(st.room, at.c, at.r) !== null && plantInCell(st.room, at.c, at.r) === null;
     if (st.selectedBlock === null || at === null || build.on || placer.active || paint.active || st.room.kind === 'lakeside' || (!stack && (blockInCell(st.room, at.c, at.r) || plantInCell(st.room, at.c, at.r)))) {
       blockViews.showGhost(null);
       plantViews.showGhost(null);
