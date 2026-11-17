@@ -128,3 +128,11 @@ Build order: MG-1, MG-3, MG-4, MG-6, MG-8, MG-7, MG-5, MG-9, MG-10, MG-11, MG-12
 5. Stat caps and node numbers (dig +40%, box +25%, rank odds +6% total).
 6. New rare materials (diamond, crystal, gold nugget) and their sell rates.
 7. Depth unlimited or capped (PROPOSAL 10)?
+
+## OWNER DECISIONS (17 Nov, answers to section 8)
+1. Dig mine replaces the old mine, WITHOUT the lantern timer ("boring and annoying"): just enemies and loot, maybe a trap or something fun. Mine has an exit, random blocks, rare ores.
+2. One merged point pool: PLAN-UPGRADES is folded into MG-1 (skill tree).
+3. Level cap raised from 8 to 12 (MG-2).
+4. Minigame gear works only inside its own minigame, crafted only, never bought.
+5. "Yes on all": the proposed node numbers, rare materials and depth cap 10 are accepted as a first build; the manager shows the owner a short table after the first build; balance tests must hold.
+Also (owner 17 Nov): minor actions may be automatic (coins after serving: done).
