@@ -9,12 +9,12 @@ import { kitchenZone } from './kitchen.ts';
 import { rectsOverlap, type Room } from './room.ts';
 import type { FurnitureItem, Point, Rect } from './types.ts';
 
-/** The staff zones of a room: behind every item that is served from behind (the counter). */
+/** The staff zones of a room: behind every item that is served from behind (the counter) and every bar extension piece (OA-6). */
 export function staffZones(items: readonly FurnitureItem[], roomId: number): Rect[] {
   return items.flatMap((i) => {
     if (i.roomId !== roomId || i.onItemUid !== null) return [];
     const type = getFurnitureType(i.typeId);
-    return type.servedFromBehind ? [staffZone(i, type)] : [];
+    return type.servedFromBehind || type.barExtension ? [staffZone(i, type)] : [];
   });
 }
 

@@ -3,6 +3,7 @@
 // before the last import), New game, and the "Debug" toggle (off by default) that shows the x/y/zoom label and the
 // Blockers buttons.
 
+import { createAccountSection, type AccountHooks } from './accountSection.ts';
 import { el, textButton } from './dom.ts';
 import { panelShell } from './panelShell.ts';
 
@@ -29,6 +30,8 @@ export interface SettingsHooks {
   onFollowCamera(on: boolean): void;
   /** ONBOARD-1: start the first-steps guide again. */
   onReplayGuide(): void;
+  /** ON-1: the Account section (cloud save). Absent = the feature flag is off and the section is not built. */
+  account?: AccountHooks;
 }
 
 export interface SettingsPanel {
@@ -170,6 +173,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'PocketBarrel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, followBtn, followNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, followBtn, followNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), ...(hooks.account ? [createAccountSection(hooks.account), el('div', 'divider')] : []), section('Testing', debugBtn), file);
   return { el: panel };
 }

@@ -112,7 +112,7 @@ export const roomsApi = {
   async pickUpItem(h: LocalGameAPI, uid: number): Promise<ItemsResult> {
     const item = h.roomItem(uid);
     // The counter is never picked up (there is always exactly one).
-    if (!item || !canPickUp(item)) return null;
+    if (!item || !canPickUp(item, h.state.items)) return null;
     return h.setItems(pickUpItem(h.state.items, uid));
   },
 

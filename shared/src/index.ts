@@ -12,6 +12,7 @@ export * from './palette.ts';
 export * from './icons.ts';
 export * from './itemIcons.ts';
 export * from './furniture.ts';
+export * from './tableSpots.ts';
 export * from './placing.ts';
 export * from './seats.ts';
 export * from './materials.ts';

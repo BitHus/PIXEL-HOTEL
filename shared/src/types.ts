@@ -95,6 +95,8 @@ export interface FurnitureType {
   /** True for the counter: the shopkeeper stands behind it (behindPoint) to take payments, so that
    *  spot must stay reachable from the door (canPlace). */
   servedFromBehind?: boolean;
+  /** OA-6: a bar extension piece (one cell, surface): it must touch the counter or another piece in a straight line, same facing (barExtension.ts). Register, taps and mugs may stand on it; it is picked up freely. */
+  barExtension?: boolean;
   /** Where each slot's goods stand when the item faces down (bottom middle of the good, drawn px
    *  from the anchor: on a shelf board, inside a case). Other facings and types without it: spread
    *  along the top. */

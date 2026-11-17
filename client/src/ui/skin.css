@@ -1036,9 +1036,10 @@
 
   /* Compact by default: one line + the step seal; a tap on the card expands it (firstTenGuide.ts). */
   .first-ten:not(.expanded) .first-ten-text {
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .first-ten:not(.expanded) .first-ten-skip {
@@ -1247,9 +1248,9 @@
 .title-tag {
   margin: 0;
   font-family: var(--font);
-  font-size: var(--fs-md);
-  color: var(--cream);
-  text-shadow: 0 2px 0 var(--outline);
+  font-size: 16px;
+  color: var(--wood);
+  text-shadow: none;
 }
 
 .title-candle {
@@ -1313,12 +1314,15 @@
 
 .title-note {
   margin: -4px 0 2px;
+  padding: 4px 8px;
   font-family: var(--font);
-  font-size: var(--fs-md);
+  font-size: 16px;
   line-height: 1.25;
   text-align: center;
   color: var(--cream);
-  text-shadow: 0 2px 0 var(--outline);
+  background: rgba(24, 20, 37, 0.7);
+  border: 1px solid var(--outline);
+  text-shadow: none;
 }
 
 .title-note.off {
@@ -3081,3 +3085,19 @@
     bottom: -6px !important;
   }
 }
+
+/* The Worlds button badge (orders / coin piles waiting) is a small dot: the orders strip already says how many, and the long label covered the button. */
+.map-badge {
+  font-size: 0;
+  width: 12px;
+  min-width: 12px;
+  height: 12px;
+  overflow: hidden;
+  right: 3px;
+  padding: 0;
+  line-height: 12px;
+  background: var(--no);
+  top: -3px;
+  bottom: auto;
+}
+.map-badge[hidden] { display: none; }

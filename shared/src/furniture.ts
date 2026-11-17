@@ -24,6 +24,7 @@ import spliceFurnitureData from '../data/furniture/splice.json';
 import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX,
   STAFF_ZONE_DEPTH_PX,
   STAFF_ZONE_SIDE_PX, SNAP, WALL_BAND } from './config.ts';
+import { barExtensionsConnected, canRemoveBarPiece, isBarPiece } from './barExtension.ts';
 import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
 import { innDoorSpotRects, innDoorwayRects } from './innDoors.ts';
@@ -262,8 +263,16 @@ export function canPlace(
   const blockers = roomBlockers(room, items, types);
   if (blockers.some((b) => rectsOverlap(fp, b))) return false;
   if (!doorReachesMiddle(room, [...blockers, fp])) return false;
+  // OA-6: a bar piece (counter or extension) leaves every extension joined to the counter in a straight line.
+  if (isBarPiece(type) && !barExtensionsConnected([...items, { typeId: type.id, x, y, facing, roomId: room.id, onItemUid: null }], room.id, types)) return false;
   // The counter: the shopkeeper must be able to get behind it.
-  return !type.servedFromBehind || behindReachable(room, [...blockers, fp], behindPoint({ x, y, facing }, type));
+  if (type.servedFromBehind) return behindReachable(room, [...blockers, fp], behindPoint({ x, y, facing }, type));
+  // An extension is one more blocker: the staff spot behind the counter must stay reachable.
+  if (type.barExtension) {
+    const counter = items.find((o) => o.roomId === room.id && o.onItemUid === null && types(o.typeId).servedFromBehind === true);
+    if (counter) return behindReachable(room, [...blockers, fp], behindPoint(counter, types(counter.typeId)));
+  }
+  return true;
 }
 
 /**
@@ -467,8 +476,10 @@ export function moveItem(
 }
 
 /** False for the shop counter (noPickup): it is moved and rotated, never picked up or sold. */
-export function canPickUp(item: FurnitureItem): boolean {
-  return getFurnitureType(item.typeId).noPickup !== true;
+export function canPickUp(item: FurnitureItem, items?: readonly FurnitureItem[]): boolean {
+  if (getFurnitureType(item.typeId).noPickup === true) return false;
+  // OA-6: a bar extension piece in the middle of the bar cannot go while pieces hang on it (pass `items` to check).
+  return items === undefined || canRemoveBarPiece(items, item.uid);
 }
 
 /** Picks an item up into the inventory; the items standing on it go back with it. */

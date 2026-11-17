@@ -6,6 +6,8 @@ import { createChatPanel } from '../ui/chatPanel.ts';
 import { createSettingsPanel } from '../ui/settingsPanel.ts';
 import { typing } from '../ui/dom.ts';
 import { savePrefs } from '../api/prefs.ts';
+import { cloudConfig, createCloudSave } from '../api/cloudSave.ts';
+import { saveKey } from '@pixel-hotel/shared';
 import type { G11 } from './ctx.ts';
 
 export async function setupSettingsPanels(g: G11) {
@@ -40,13 +42,17 @@ late.avatarPanel = avatarPanel;
     else panels.show('chat');
   });
 
+  // ON-1: the cloud save Account section exists only when the build flag is on (VITE_CLOUD_SAVE=1 and VITE_SERVER_URL); default off = the game does not change.
+  const cloudCfg = cloudConfig(import.meta.env as { VITE_CLOUD_SAVE?: string; VITE_SERVER_URL?: string });
+  const importSaveText = (text: string): void => {
+    const r = api.importSave(text);
+    if (r.ok) window.location.reload();
+    else toast(r.message);
+  };
   const settings = createSettingsPanel(ui, {
     exportSave: () => api.exportSave(),
-    importSave: (text) => {
-      const r = api.importSave(text);
-      if (r.ok) window.location.reload();
-      else toast(r.message);
-    },
+    importSave: importSaveText,
+    account: cloudCfg ? { cloud: createCloudSave(cloudCfg, storage), localSaveText: () => storage.get(saveKey()), importCloudSave: importSaveText } : undefined,
     restoreBackup: () => {
       const r = api.restoreBackup();
       if (r.ok) window.location.reload();

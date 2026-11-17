@@ -3,9 +3,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@pixel-hotel/shared": "*"
+    "@pixel-hotel/shared": "*",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.2.0",
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^24.19.2",
+    "@types/ws": "^8.18.2"
   }
 }

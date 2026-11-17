@@ -34,6 +34,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   (shared rules in the browser, saves to localStorage). Step 10 adds RemoteGameAPI; the server is
   authoritative, the client only sends requests.
 - Rendering code (client/src/render) never contains game rules.
+- ONLINE STAGING (owner OK 17 Nov, docs/PLAN-ONLINE.md): solo play stays client-side (LocalGameAPI) until P5; until then the server (server/) only holds accounts and cloud saves (and later read-only visits), and the cloud client is behind a flag that defaults to off.
 
 4. WORLD AND SCREEN MATH
 - World coordinates are pixels, x right, y down, 1 world px = 1 art px. No isometric math.

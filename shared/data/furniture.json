@@ -964,6 +964,51 @@
     }
   },
   {
+    "id": "counter_ext",
+    "name": "Bar extension",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 1,
+    "w": 32,
+    "d": 32,
+    "height": 72,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 15,
+    "rank": "common",
+    "inCatalog": true,
+    "barExtension": true,
+    "art": {
+      "boxes": [
+        { "dx": -16, "dy": 0, "w": 32, "d": 32, "z": 0, "h": 36, "color": 5 },
+        { "dx": -16, "dy": 0, "w": 32, "d": 32, "z": 36, "h": 4, "color": 4 },
+        { "dx": -11, "dy": 0, "w": 22, "d": 0, "z": 6, "h": 16, "color": 4 }
+      ]
+    },
+    "icon": {
+      "shape": "counter",
+      "colors": [
+        "oak",
+        "walnut"
+      ]
+    }
+  },
+  {
     "id": "stall_table",
     "name": "Stall table",
     "category": "shop_furniture",
@@ -2893,7 +2938,7 @@
       "dy": 24
     },
     "seats": [],
-    "topFace": { "dx": -22, "dy": -28, "w": 44, "d": 20 },
+    "topFace": { "dx": -22, "dy": -59, "w": 44, "d": 18 },
     "baseValue": 12,
     "rank": "common",
     "inCatalog": true,

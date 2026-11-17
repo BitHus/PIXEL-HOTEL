@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getFurnitureType } from './furniture.ts';
 import { tavernSeats } from './tavern.ts';
-import { plateSlot, plateSlots, tableTopArea } from './tableSpots.ts';
+import { plateSlot, plateSlots, spotLiftPx, tableTopArea } from './tableSpots.ts';
 import { legacyStart, withItem } from './tavernTest.ts';
 import type { FurnitureItem } from './types.ts';
 
@@ -23,11 +23,13 @@ describe('plate slots (OA-2, OA-12)', () => {
     const type = getFurnitureType('round_table');
     // Seats north, east, south, west and a far corner: all four directions of a stool around the 2x2 table.
     const seats = [{ x: 480, y: 120 }, { x: 560, y: 192 }, { x: 480, y: 260 }, { x: 400, y: 192 }, { x: 100, y: 900 }];
-    const topY = 29; // surfaceHeight of the code art box: the slot is drawn this much higher
+    // topFace is in DRAWN coordinates (no lift, spotLiftPx = 0): the art top is x 2..61, y 0..27 of the 64x64 sprite, centre 13.5 px from its top.
+    expect(spotLiftPx(type, 29)).toBe(0);
+    expect(spotLiftPx(getFurnitureType('long_table'), 26)).toBe(26);
     for (const s of plateSlots(seats, t, type)) {
-      const sx = s.x - t.x; // the ellipse centre on screen is image y 17.5 of 64 = 46 px above the anchor
-      const sy = s.y - topY - (t.y - 46);
-      expect((sx / 30) ** 2 + (sy / 17.5) ** 2, `slot ${s.x},${s.y}`).toBeLessThanOrEqual(1);
+      const sx = s.x - t.x;
+      const sy = s.y - (t.y - 64 + 13.5);
+      expect((sx / 30) ** 2 + (sy / 13.5) ** 2, `slot ${s.x},${s.y}`).toBeLessThanOrEqual(1.05); // the box corners touch the rim (rim is drawn, so within 5%)
     }
   });
 

@@ -16,7 +16,8 @@
     "e2e": "playwright test",
     "lint": "biome lint",
     "check": "npm test && npm run typecheck && npm run build",
-    "simulate:dungeon": "tsx tools/simulate-dungeon.ts"
+    "simulate:dungeon": "tsx tools/simulate-dungeon.ts",
+    "server": "npm run start -w server"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",

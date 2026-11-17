@@ -4,7 +4,7 @@
 // what lies under a tap. Rendering only; the rules (and what lies where) are shared/src/tavern.ts.
 
 import { Container, Sprite } from 'pixi.js';
-import { COIN_ICON, GEM_ICON, footprintRect, getFurnitureType, getMaterialType, isTable, materialGroup, type FurnitureItem, type Icon, type MaterialId, type Mess, type Point } from '@pixel-hotel/shared';
+import { COIN_ICON, GEM_ICON, footprintRect, getFurnitureType, spotLiftPx, getMaterialType, isTable, materialGroup, type FurnitureItem, type Icon, type MaterialId, type Mess, type Point } from '@pixel-hotel/shared';
 import { itemDepthKey } from './depthOrder.ts';
 import { iconSpriteFor, iconTexture } from './drawIcon.ts';
 import { surfaceHeight } from './furnitureArt.ts';
@@ -97,7 +97,7 @@ export class TableMess {
         const r = footprintRect(i, getFurnitureType(i.typeId));
         return mx >= r.x - 1 && mx <= r.x + r.w + 1 && my >= r.y - 1 && my <= r.y + r.h + 1;
       });
-      const top = table ? surfaceHeight(getFurnitureType(table.typeId)) : 0;
+      const top = table ? spotLiftPx(getFurnitureType(table.typeId), surfaceHeight(getFurnitureType(table.typeId))) : 0;
       const key = `${mx},${my},${top},${m.coins > 0 ? coinPile(m.coins) : 0},${m.gems},${m.dish ?? ''},${table?.uid ?? 0},${m.full}`;
       let s = this.shown.get(m.key);
       if (s?.key === key) continue;

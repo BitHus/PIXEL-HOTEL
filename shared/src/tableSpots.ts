@@ -22,6 +22,11 @@ function clampInto(v: number, lo: number, size: number, inset: number): number {
   return Math.min(lo + size - inset, Math.max(lo + inset, v));
 }
 
+/** How far things on a table spot are drawn up. A type with `topFace` gives the DRAWN top (the spot is where it is drawn), so no lift; else the surface height. */
+export function spotLiftPx(type: FurnitureType, surfaceHeightPx: number): number {
+  return type.topFace ? 0 : surfaceHeightPx;
+}
+
 /** The spot on a table for a seat at `seat`: the nearest point of the top area. */
 export function plateSlot(seat: Point, item: Pick<FurnitureItem, 'x' | 'y' | 'facing'>, type: FurnitureType): Point {
   const { rect, inset } = tableTopArea(item, type);
