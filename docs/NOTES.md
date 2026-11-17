@@ -1759,3 +1759,6 @@ simulate:dungeon (1000 runs per row, before -> after): round 1 value/run 97/96/9
 
 ## OA-10: wall items free in x and y (coder, 17 Nov; no save change)
 Item.y of a wall item is the sprite bottom inside the band (band top + min(height,64) .. foot); old items sit at the foot and stay valid, so no SAVE bump. shared/src/furniture.ts: wallItemRect, snapToWallSpot, canPlace (rect inside one band, no overlap with other wall items or an Inn doorway). planGhost: the ghost centre is the sprite middle (footprintCenter knows it). Ghost outline = wallItemRect. Rooms have no side walls (16 px border only): not built.
+
+## OA-11 r2 run HUD (ui, 17 Nov)
+client/src/ui/runBar.ts + runHud.css: bottom pill = bag pill (used/12, drawer with 12 slots + lunch hint on tap), run gold, gems, potion (Q), food (E), Leave (mine) / Abandon (crypt, needs onAbandon). Buttons 44 px; key hints hidden on touch (hover: none). Info panel in a run hides tavern name and wallet via :has(.hp-bar:not([hidden])). Checked 420x760 and 1000x700 screenshots; the open drawer was not captured.

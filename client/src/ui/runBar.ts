@@ -4,6 +4,7 @@
 // button (also the E key) next to it eats from the lunch box, with how many are left. In the mine
 // (step 9c) the food button is a Leave button (walk out now with everything); ore stacks in the bag.
 
+import './runHud.css';
 import { setRank } from './rank.ts';
 import { RUN_BAG_SLOTS, getFoodType, getFurnitureType, getMaterialType, type DungeonRun } from '@pixel-hotel/shared';
 import { el, iconButton, textButton, typing } from './dom.ts';
@@ -32,6 +33,22 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
     grid.appendChild(root);
     slots.push({ root, img, count });
   }
+  // The bag is a small pill (bag icon + used/12); a tap opens the 12 slots above it (a drawer), a second tap closes it.
+  const bagBtn = el('button', 'run-bag-pill') as HTMLButtonElement;
+  bagBtn.type = 'button';
+  bagBtn.title = 'Run bag: tap to see what you carry';
+  bagBtn.setAttribute('aria-expanded', 'false');
+  const bagCount = el('span', 'run-bag-count', '0/12');
+  bagBtn.append(pixelIcon('bag'), bagCount);
+  const drawer = el('div', 'frame run-drawer');
+  drawer.hidden = true;
+  const lunchHint = el('div', 'run-hint');
+  drawer.append(grid, lunchHint);
+  bagBtn.addEventListener('click', () => {
+    drawer.hidden = !drawer.hidden;
+    bagBtn.classList.toggle('open', !drawer.hidden);
+    bagBtn.setAttribute('aria-expanded', String(!drawer.hidden));
+  });
   const side = el('div', 'run-side');
   const gold = el('div', 'run-gold');
   const goldText = el('span', '', '0');
@@ -48,10 +65,10 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   gems.title = 'Gems found on this run (the crypt: half is lost if you die)';
   const potion = iconButton('potion', 'Drink a potion (Q)', onPotion, 'potion-btn');
   const potionCount = el('span', 'btn-badge', '0');
-  potion.appendChild(potionCount);
+  potion.append(potionCount, el('span', 'key-hint', 'Q'));
   const food = iconButton('food', 'Eat from the lunch box (E)', onEat, 'potion-btn food-btn');
   const foodCount = el('span', 'btn-badge', '0');
-  food.appendChild(foodCount);
+  food.append(foodCount, el('span', 'key-hint', 'E'));
   const leave = textButton('Leave', onLeave, 'run-leave');
   leave.title = 'Walk out of the mine now, with everything';
   // Crypt: a clear Abandon button (only shown when the coder wires onAbandon). It always asks first.
@@ -67,12 +84,10 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   }, 'run-leave run-abandon');
   abandon.title = 'Give up this run: half the run gold is lost';
   abandon.hidden = true;
-  // The lunch box hint: how food gets into the run.
-  const lunchHint = el('div', 'run-hint');
   const buttons = el('div', 'run-buttons');
   buttons.append(potion, food, leave, abandon);
-  side.append(gold, gems, buttons, lunchHint);
-  bar.append(grid, side);
+  side.append(gold, gems);
+  bar.append(bagBtn, side, buttons, drawer);
   parent.appendChild(bar);
 
   window.addEventListener('keydown', (e) => {
@@ -107,6 +122,9 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
           s.root.title = getFurnitureType(item.typeId).name;
         }
       });
+      const used = run.bag.slots.filter(Boolean).length;
+      bagCount.textContent = `${used}/${RUN_BAG_SLOTS}`;
+      bagBtn.classList.toggle('full', used >= RUN_BAG_SLOTS);
       goldText.textContent = String(run.bag.gold);
       gemText.textContent = String(run.bag.gems);
       const p = run.player;
@@ -122,12 +140,16 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
       foodCount.textContent = String(p.food.length);
       food.disabled = p.food.length === 0 || run.status !== 'active';
       lunchHint.hidden = mine || p.food.length > 0;
-      lunchHint.textContent = 'No lunch packed';
+      lunchHint.textContent = 'Lunch box empty: pack cooked food at the tavern door before a run.';
       food.classList.toggle('empty', p.food.length === 0);
       food.title = p.food.length === 0 ? 'The lunch box is empty: pack cooked food at the door next time' : `Eat (E): ${p.food.map((id) => getFoodType(id).name).join(', ')}`;
     },
     setHidden(hidden) {
       bar.hidden = hidden;
+      if (hidden) {
+        drawer.hidden = true;
+        bagBtn.classList.remove('open');
+      }
     },
   };
 }

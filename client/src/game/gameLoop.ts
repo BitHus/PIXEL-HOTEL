@@ -157,7 +157,17 @@ export async function setupGameLoop(g: G16) {
   });
 
   await splashGone;
+  // After Continue the first frames are empty while the room builds: the canvas starts clear and fades in (no black frame).
+  app.canvas.style.opacity = '0';
   await openRoom(st.room.id, !st.introPending);
+  app.canvas.style.transition = 'opacity 280ms linear';
+  requestAnimationFrame(() => {
+    app.canvas.style.opacity = '1';
+    window.setTimeout(() => {
+      app.canvas.style.transition = '';
+      app.canvas.style.opacity = '';
+    }, 340);
+  });
   if (st.introPending) await playNewGameIntro();
   // A run in the save (step 9): back into the dungeon, paused until Resume.
   const saved = await api.getRun();

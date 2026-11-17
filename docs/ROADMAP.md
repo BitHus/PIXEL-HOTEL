@@ -1,5 +1,7 @@
 # ROADMAP
 
+17 NOV: [x] TUT-2 tutorial (18 steps, always starts in a new game, Continue resumes) and small fixes (bubble vs buttons, Continue fade). [ ] TUT-2 part 3: Daily / Events / Achievements quest panel (ledger-counted, SAVE 33 quests.claimed).
+
 The one roadmap for the game (owner + AI, 14 Nov). It replaces the loose idea list. Work top to
 bottom. A phase is finished before the next one starts, unless the owner says otherwise.
 How it works:
@@ -11,6 +13,12 @@ How it works:
 The identity: hotel management + dungeon loot + workshop + pets + collectibles. Every part feeds
 another part (gather -> craft -> decorate / upgrade -> earn -> go further), the player always has
 something to look forward to, and the hotel and shop show what the player has achieved.
+
+## 17 NOV OWNER SESSION (manager; this block comes first; details in docs/STATUS.md and docs/OWNER-AGENDA-17NOV.md)
+Live: https://pocketbarrel.com (PB-2/PB-3 done: domain, VPS, HTTPS, tools/deploy.sh). Done today: ST2, ST3 (walkable heights), SG5/SG6, PB-1 rename, OA-1 hold-walk, OA-4/13/14 (quest hold, centered camera, open sign), OA-5 stove/barrel states, OA-2/12 table plates, OA-6 bar extension, OA-9 dungeon placement, OA-10 free wall items, HUD round 1, ON-0/ON-1 server skeleton + cloud save (flag off).
+Next in order: TUT-2 (one big tutorial + daily quests, event quests, achievements, OA-15) -> TF-1..TF-10 tavern flow (docs/PLAN-TAVERN-FLOW.md) -> FUN top 5 (docs/PLAN-FUN.md, events and things to do) -> OA-3 fishing redo (docs/RESEARCH-OA.md) -> OA-7 cellar + kitchen room (owner checks numbers) -> OA-8 upgrade points -> ON-2.. online P1/P2 (docs/PLAN-ONLINE.md) -> ST4 conveyors, SG3d, RN-1 renown, VG tasks. Art pending: tap_stand_dry redo, wet tweak, bar-guest poses, ripe sparkle hook (needs Aseprite window responsive).
+17 NOV: [x] OA-11 r2 run HUD (ui): dungeon/mine bottom pill with bag used/12 (tap = drawer), gold, gems, potion Q, food E, Leave/Abandon; slim info panel during a run. [ ] crypt Abandon needs the coder to pass onAbandon in game/uiShell.ts.
+DOC RULE (owner 17 Nov): every worker updates the docs and the roadmap: tick or add the roadmap item, NEWS entry, NOTES section, CLAUDE.md/BRIEF line when a rule changes; the manager rewrites docs/STATUS.md after every batch.
 
 ## PRIORITY ORDER (manager decision 16 Nov; the owner said: look at the whole roadmap and decide; this order wins over the phase order below)
 THE GAME IN ONE PAGE: docs/GAME-VISION.md (owner 16 Nov: combine Growtopia + Travellers Rest + Habbo into one logical game). Three pillars: the TAVERN is the heart (Travellers Rest), the BLOCK WORLD is the engine (Growtopia/Pixel Worlds: blocks, seeds, open splicing, gems), IDENTITY AND HOME (Habbo: avatar, suite, stars). One loop: GATHER -> MAKE -> SERVE -> EARN -> BUILD -> SHOW -> deeper GATHER. Where the list below disagrees, this order wins:

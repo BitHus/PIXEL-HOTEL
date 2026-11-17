@@ -49,6 +49,7 @@ export async function setupPlacing(g: G5) {
         const at = { center: s.center, facing: s.facing, snap };
         const ok = applyItems(s.origin ? await api.moveItem(s.uid, at) : await api.placeItem(s.uid, at));
         if (ok) sound.play('pop');
+        if (ok && !s.origin && getFurnitureType(s.typeId).wall) late.guideEvent('wall');
         return ok;
       },
       onChange: () => {

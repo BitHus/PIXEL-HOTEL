@@ -4,7 +4,7 @@
 
 import {
   FIRST_TEN_ALL_DONE_TEXT, FIRST_TEN_DONE_TEXT, FIRST_TEN_KEY, FIRST_TEN_NEW, FIRST_TEN_STEPS, MACHINE_TIP_TEXT, firstTenEvent,
-  firstTenFinished, firstTenGoal, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, parseFirstTen, type FirstTenState, type FirstTenStep, type MachineTip,
+  firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, type FirstTenState, type FirstTenStep, type MachineTip,
 } from '@pixel-hotel/shared';
 import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
@@ -29,8 +29,8 @@ export interface FirstTenGuide {
 /** True on a touch screen: the texts say Tap/hold your finger, else Click/hold the mouse button. */
 const isTouch = (): boolean => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
-export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, toast: Toast): FirstTenGuide {
-  let state = parseFirstTen(storage.get(FIRST_TEN_KEY));
+export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, toast: Toast, newGame = false): FirstTenGuide {
+  let state = firstTenOpen(storage.get(FIRST_TEN_KEY), newGame);
   let waiting: readonly FirstTenStep[] = [];
   let visible = true;
   const save = (): void => void storage.set(FIRST_TEN_KEY, JSON.stringify(state));

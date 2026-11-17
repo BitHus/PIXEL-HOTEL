@@ -63,6 +63,7 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       bubbles = bubbles.filter((b) => now - b.born < b.life);
       // Per avatar: the newest bubble sits right above the head, older ones above it.
       const bottom = new Map<number, number>();
+      const col = document.querySelector('.side-buttons')?.getBoundingClientRect();
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i]!;
         const head = heads.get(b.avatarId);
@@ -71,7 +72,9 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
         const y = bottom.get(b.avatarId) ?? head.y;
         const h = b.el.offsetHeight;
         const w = b.el.offsetWidth;
-        const x = Math.min(Math.max(head.x - w / 2, 4), window.innerWidth - w - 4);
+        let x = Math.min(Math.max(head.x - w / 2, 4), window.innerWidth - w - 4);
+        // A bubble never covers the right button column: it slides left of it when it would overlap.
+        if (col && y - h < col.bottom && y > col.top && x + w > col.left - 4) x = Math.max(4, col.left - w - 4);
         b.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y - h)}px)`;
         b.el.classList.toggle('tail', !bottom.has(b.avatarId));
         b.el.style.opacity = String(Math.min(1, (b.life - (now - b.born)) / CHAT_BUBBLE_FADE_MS));

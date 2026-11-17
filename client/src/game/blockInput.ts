@@ -13,7 +13,7 @@ import { askSplice } from './spliceDialog.ts';
 export async function setupBlockInput(g: G14) {
   const {
     api, plantViews, toast, follow, sound, refreshHint, avatarPanel, blockViews, popups, flyGems, roomChanged,
-    refreshInventory, build, placer, paint, lakeside, blockers, panels, dungeon, walkTo, selectBlock, st, uiRoot,
+    refreshInventory, build, placer, paint, lakeside, blockers, panels, dungeon, walkTo, selectBlock, st, uiRoot, late,
   } = g;
 
   // ---------- Blocks: place and punch (step BG5) ----------
@@ -128,9 +128,11 @@ export async function setupBlockInput(g: G14) {
     st.room = res.room;
     if (res.kind === 'planted' || res.kind === 'spliced') {
       sound.play('pop');
+      late.guideEvent('plant');
       if (res.kind === 'spliced') toast('Two seeds in one cell. Wait for it to grow, then punch it.');
       void refreshHint();
     } else if (res.kind === 'harvested') {
+      late.guideEvent('harvest');
       if (wasSeed) plantViews.harvestFx(c, r, wasSeed);
       sound.play('pop');
       if (res.clothing) {

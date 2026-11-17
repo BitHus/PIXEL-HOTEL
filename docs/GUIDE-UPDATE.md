@@ -27,3 +27,6 @@ The first-steps guide is data. When a feature in the first ten minutes changes, 
 
 ## Check
 `npx vitest run shared/src/firstTen.test.ts`, then `npx playwright test e2e/guide.spec.ts` (card text, pointer on the register, no console errors). Settings > "Replay the first steps" starts the guide again.
+
+## TUT-2
+Steps now: walk, menu, pour, serve, coins, barrel, collect, load, stove, farm, plant, harvest, build, wall, dungeon, mine, lakeside, fish. Events plant/harvest/wall/fish come from late.guideEvent (blockInput, placing, lakesideScreen onCaught); farm, mine, lakeside, dungeon are proven by the world poll. A new game always starts (firstTenOpen); nothing stored = starts.

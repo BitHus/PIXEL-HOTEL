@@ -70,6 +70,8 @@ export interface LakesideHooks {
   api: Pick<GameAPI, 'getLakeside' | 'chopTree' | 'castAt' | 'fishStart' | 'fishStep' | 'fishStop'>;
   bar: FishBar;
   toast(text: string): void;
+  /** TUT-2: a fish was caught (the tutorial's last step). */
+  onCaught?(): void;
   /** Walks to a world point; false if there is no way. */
   walkTo(p: Point): Promise<boolean>;
   /** Follows a path from the API (castAt). */
@@ -509,6 +511,7 @@ export class LakesideScreen {
       const type = getCatchType(caught.id);
       const size = caught.cm !== null ? ` ${caught.cm} cm` : '';
       this.hooks.float({ x: this.target.x, y: this.target.y - 14 }, `${type.name}${size}`, caught.rank === 'common' ? null : caught.rank);
+      this.hooks.onCaught?.();
       this.hooks.toast(`Caught: ${type.name}${size}${caught.record && caught.cm !== null ? ' (a new record!)' : ''}`);
       this.catchLook(caught.rank, this.target);
       void this.hooks.afterChange();

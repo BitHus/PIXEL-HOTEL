@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenReplay, firstTenSkip, firstTenToastDue, guideAutoEvents, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type GuideContext } from './firstTen.ts';
+import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, firstTenToastDue, guideAutoEvents, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type GuideContext } from './firstTen.ts';
 import { getFurnitureType } from './furniture.ts';
 import { FIRST_GUEST_DELAY_MS } from './config.ts';
 
-const quiet: GuideContext = { brewReady: false, guestWaiting: false, pouring: false, trayServes: false, coinsOnTable: false };
+const quiet: GuideContext = { brewReady: false, guestWaiting: false, pouring: false, trayServes: false, coinsOnTable: false, mineOpen: true };
 
 describe('first ten minutes', () => {
   it('shows one goal at a time, in order', () => {
@@ -47,14 +47,62 @@ describe('first ten minutes', () => {
     expect(machineTipOnce(a.state, 'tap').show).toBe(true);
   });
   it('parses stored text defensively', () => {
-    expect(parseFirstTen(null)).toEqual(FIRST_TEN_OFF);
-    expect(parseFirstTen('nonsense')).toEqual(FIRST_TEN_OFF);
+    // TUT-2: nothing stored or unreadable = the tutorial never ran here, so it starts.
+    expect(parseFirstTen(null)).toEqual(FIRST_TEN_NEW);
+    expect(parseFirstTen('nonsense')).toEqual(FIRST_TEN_NEW);
     expect(parseFirstTen('{"active":true,"done":["menu","bogus"],"tips":["tap"]}')).toEqual({ active: true, skipped: false, done: ['menu'], tips: ['tap'] });
   });
   it('replay starts again from step 1 and keeps the machine tips', () => {
     const done = firstTenEvent(FIRST_TEN_NEW, 'walk');
     const r = firstTenReplay({ ...firstTenSkip(done), tips: ['tap'] });
     expect(r).toEqual({ active: true, skipped: false, done: [], tips: ['tap'] });
+  });
+});
+
+describe('tutorial state machine (TUT-2: new game, Continue, finished, skipped)', () => {
+  const stored = (st: object): string => JSON.stringify(st);
+  it('a new game always starts the tutorial, whatever was stored before', () => {
+    const finished = stored({ ...FIRST_TEN_OFF, done: [...FIRST_TEN_STEPS], tips: ['tap'] });
+    for (const old of [null, 'junk', finished, stored(firstTenSkip(FIRST_TEN_NEW))]) {
+      const s = firstTenOpen(old, true);
+      expect(s).toMatchObject({ active: true, skipped: false, done: [] });
+      expect(firstTenGoal(s)).toBe('walk');
+    }
+    expect(firstTenOpen(finished, true).tips).toEqual(['tap']);
+  });
+  it('Continue resumes at the saved step and never restarts at step 1', () => {
+    let s = FIRST_TEN_NEW;
+    for (const k of ['walk', 'menu', 'pour', 'serve'] as const) s = firstTenEvent(s, k);
+    const back = firstTenOpen(stored(s), false);
+    expect(back.done).toEqual(['walk', 'menu', 'pour', 'serve']);
+    expect(firstTenGoal(back)).toBe('coins');
+  });
+  it('Continue with nothing stored (an old save) starts the tutorial', () => {
+    expect(firstTenGoal(firstTenOpen(null, false))).toBe('walk');
+  });
+  it('a finished or skipped tutorial stays done after Continue', () => {
+    let s = FIRST_TEN_NEW;
+    for (const k of FIRST_TEN_STEPS) s = firstTenEvent(s, k);
+    expect(firstTenOpen(stored(s), false).active).toBe(false);
+    expect(firstTenGoal(firstTenOpen(stored(s), false))).toBeNull();
+    const skipped = firstTenOpen(stored(firstTenSkip(FIRST_TEN_NEW)), false);
+    expect(skipped).toMatchObject({ active: false, skipped: true });
+    expect(firstTenGoal(skipped)).toBeNull();
+  });
+  it('the mine step waits until the mine is open and then shows again', () => {
+    let s = FIRST_TEN_NEW;
+    for (const k of FIRST_TEN_STEPS.filter((x) => x !== 'mine' && x !== 'lakeside' && x !== 'fish')) s = firstTenEvent(s, k);
+    const waiting = guideWaiting(s, { ...quiet, mineOpen: false });
+    expect(waiting).toContain('mine');
+    expect(firstTenGoal(s, waiting)).toBe('lakeside');
+    expect(firstTenGoal(firstTenEvent(firstTenEvent(s, 'lakeside'), 'fish'), waiting)).toBeNull();
+    expect(firstTenGoal(firstTenEvent(firstTenEvent(s, 'lakeside'), 'fish'), guideWaiting(s, quiet))).toBe('mine');
+  });
+  it('the world proves farm, mine and lakeside steps', () => {
+    const w = { walked: false, cooking: false, inFarm: false, buildOn: false, inDungeon: false, inMine: false, inLakeside: false };
+    expect(guideAutoEvents({ ...w, inDungeon: true })).toEqual(['dungeon']);
+    expect(guideAutoEvents({ ...w, inDungeon: true, inMine: true })).toEqual(['mine']);
+    expect(guideAutoEvents({ ...w, inLakeside: true })).toEqual(['lakeside']);
   });
 });
 
@@ -68,7 +116,7 @@ describe('guide data (shared/data/guide.json, ONBOARD-1)', () => {
     }
   });
   it('covers walk, bar, taps, serve, coins, stove, farm, build and dungeon', () => {
-    for (const id of ['walk', 'menu', 'pour', 'serve', 'coins', 'barrel', 'load', 'stove', 'farm', 'build', 'dungeon']) expect(FIRST_TEN_STEPS).toContain(id);
+    for (const id of ['walk', 'menu', 'pour', 'serve', 'coins', 'barrel', 'load', 'stove', 'farm', 'plant', 'harvest', 'build', 'wall', 'dungeon', 'mine', 'lakeside', 'fish']) expect(FIRST_TEN_STEPS).toContain(id);
   });
   it('words touch and mouse differently and says tavern, never inn', () => {
     for (const st of GUIDE_STEPS) {
@@ -103,9 +151,9 @@ describe('guide waiting and pointer targets', () => {
     expect(guideTargetOf('menu')).toEqual({ kind: 'furniture', typeId: 'register' });
   });
   it('the world proves walk, stove, farm, build and dungeon', () => {
-    const none = { walked: false, cooking: false, inFarm: false, buildOn: false, inDungeon: false };
+    const none = { walked: false, cooking: false, inFarm: false, buildOn: false, inDungeon: false, inMine: false, inLakeside: false };
     expect(guideAutoEvents(none)).toEqual([]);
-    expect(guideAutoEvents({ walked: true, cooking: true, inFarm: true, buildOn: true, inDungeon: true })).toEqual(['walk', 'stove', 'farm', 'build', 'dungeon']);
+    expect(guideAutoEvents({ ...none, walked: true, cooking: true, inFarm: true, buildOn: true, inDungeon: true })).toEqual(['walk', 'stove', 'farm', 'build', 'dungeon']);
     expect(guideAutoEvents({ ...none, inFarm: true })).toEqual(['farm']);
   });
 });

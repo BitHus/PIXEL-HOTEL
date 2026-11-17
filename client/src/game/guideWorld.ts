@@ -3,7 +3,7 @@
 // targets are shared/data/guide.json. Lives next to tavernLife (which owns the guide) and is started from there.
 
 import {
-  AVATAR_H, BUILD_CELL, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
+  AVATAR_H, BUILD_CELL, MINE_UNLOCK_LEVEL, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
   type GuideContext, type GuideTarget, type Point,
 } from '@pixel-hotel/shared';
 import { surfaceHeight } from '../render/furnitureArt.ts';
@@ -34,6 +34,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   g.late.showHint = startHintChip(g, () => h.guide.goal() !== null).show;
   let walked = false;
   let brewReady = false;
+  let mineOpen = false;
 
   const context = (ready: boolean): GuideContext => {
     brewReady = ready;
@@ -44,6 +45,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
       pouring: h.pouring(),
       trayServes: guestsTrayCanServe(t).length > 0,
       coinsOnTable: t.mess.some((m) => m.coins > 0),
+      mineOpen,
     };
   };
 
@@ -146,6 +148,9 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   // The world proves some steps (about 4 times a second, only while the guide runs).
   window.setInterval(() => {
     if (!h.guide.state.active) return;
+    void g.api.getPlayer().then((p) => {
+      mineOpen = p.level >= MINE_UNLOCK_LEVEL;
+    });
     // The intro walks the avatar in through the door: that is not the player's first step.
     if (st.avatar.state === 'walk' && !g.newIntro.running) walked = true;
     const w = {
@@ -154,6 +159,8 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
       inFarm: st.room.kind === 'farm',
       buildOn: g.build.on,
       inDungeon: dungeon.isActive,
+      inMine: dungeon.isActive && dungeon.place === 'mine',
+      inLakeside: st.room.kind === 'lakeside',
     };
     for (const step of guideAutoEvents(w)) h.guide.event(step);
   }, 250);

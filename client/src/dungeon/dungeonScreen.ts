@@ -133,6 +133,11 @@ export class DungeonScreen {
     return this.active;
   }
 
+  /** Which place the run on screen is (the tutorial tells a mine visit from a dungeon run). */
+  get place(): string | null {
+    return this.run?.place ?? null;
+  }
+
   /** The camera the gestures work on (only its zoom is kept: the camera follows the player). */
   get camera(): Camera {
     return this.shown;

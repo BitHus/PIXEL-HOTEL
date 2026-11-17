@@ -83,6 +83,7 @@ export async function setupCraftPanels(g: G7) {
     api,
     bar: fishBar,
     toast,
+    onCaught: () => late.guideEvent('fish'),
     walkTo: (p) => walkTo(p),
     follow: (p) => {
       follow(p);

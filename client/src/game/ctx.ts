@@ -87,6 +87,8 @@ export interface Late {
   openRoomKind: (kind: RoomKind) => Promise<void>;
   /** ONBOARD-1: Settings > Replay the first steps (set by tavernLife). */
   replayGuide: () => void;
+  /** TUT-2: a tutorial step happened that the world cannot prove by itself (plant, harvest, wall piece, fish); set by tavernLife. */
+  guideEvent: (step: 'plant' | 'harvest' | 'wall' | 'fish') => void;
   /** VG-1: shows a one-time hint chip (once per key, per device); false when seen already (set by guideWorld). */
   showHint: (key: string, text: string, at?: () => Point | null) => boolean;
   /** CAT HOOK: a tap at a world point; true when it hit the cat (set by gameLoop). */

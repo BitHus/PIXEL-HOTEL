@@ -1,7 +1,8 @@
 // ONBOARD-1: the steps, their texts and pointer targets are DATA (shared/data/guide.json). Update that file, then docs/GUIDE-UPDATE.md, when a first-ten-minutes flow changes.
 import guideData from '../data/guide.json';
 
-export type FirstTenStep = 'walk' | 'menu' | 'pour' | 'serve' | 'coins' | 'barrel' | 'collect' | 'load' | 'stove' | 'farm' | 'build' | 'dungeon';
+export type FirstTenStep =
+  | 'walk' | 'menu' | 'pour' | 'serve' | 'coins' | 'barrel' | 'collect' | 'load' | 'stove' | 'farm' | 'plant' | 'harvest' | 'build' | 'wall' | 'dungeon' | 'mine' | 'lakeside' | 'fish';
 
 /** What the animated pointer sits on (see guide.json _help). */
 export type GuideTarget =
@@ -47,6 +48,8 @@ export interface GuideContext {
   trayServes: boolean;
   /** Coins lie on a table. */
   coinsOnTable: boolean;
+  /** The mine is open (player level high enough); the mine step waits until then. */
+  mineOpen: boolean;
 }
 
 /** What the world shows about the steps that have no event of their own (the client fills it; polled). */
@@ -61,6 +64,10 @@ export interface GuideWorld {
   buildOn: boolean;
   /** A dungeon run is on. */
   inDungeon: boolean;
+  /** The run on screen is a mine visit. */
+  inMine: boolean;
+  /** The player stands at the lakeside. */
+  inLakeside: boolean;
 }
 
 /** Steps the world state proves are done (walk, stove, farm, build, dungeon); the client sends each as an event. */
@@ -70,7 +77,9 @@ export function guideAutoEvents(w: GuideWorld): FirstTenStep[] {
   if (w.cooking) out.push('stove');
   if (w.inFarm) out.push('farm');
   if (w.buildOn) out.push('build');
-  if (w.inDungeon) out.push('dungeon');
+  if (w.inDungeon && !w.inMine) out.push('dungeon');
+  if (w.inMine) out.push('mine');
+  if (w.inLakeside) out.push('lakeside');
   return out;
 }
 
@@ -81,6 +90,8 @@ export function guideWaiting(s: FirstTenState, c: GuideContext): FirstTenStep[] 
   if (!c.guestWaiting && !c.trayServes) w.push('serve');
   if (!c.coinsOnTable) w.push('coins');
   if (!(s.done.includes('collect') || c.brewReady)) w.push('collect', 'load');
+  // The mine opens at a player level: until then its step waits and the tutorial shows nothing for it (other helpers stay hidden only while a goal shows).
+  if (!c.mineOpen) w.push('mine');
   return w;
 }
 
@@ -116,13 +127,18 @@ export interface FirstTenState {
 export const FIRST_TEN_NEW: FirstTenState = { active: true, skipped: false, done: [], tips: [] };
 export const FIRST_TEN_OFF: FirstTenState = { active: false, skipped: false, done: [], tips: [] };
 
+/**
+ * The stored tutorial state. TUT-2: nothing stored (an old save, a new device, cleared site data) or unreadable text = the tutorial has never run here, so it STARTS
+ * (FIRST_TEN_NEW). A stored state is kept as it is: Continue resumes at the saved step, and a finished or skipped tutorial stays done.
+ */
 export function parseFirstTen(text: string | null): FirstTenState {
-  let o: Record<string, unknown> = {};
+  let o: Record<string, unknown>;
   try {
     const raw: unknown = text === null ? null : JSON.parse(text);
-    if (typeof raw === 'object' && raw !== null) o = raw as Record<string, unknown>;
+    if (typeof raw !== 'object' || raw === null) return { ...FIRST_TEN_NEW };
+    o = raw as Record<string, unknown>;
   } catch {
-    o = {};
+    return { ...FIRST_TEN_NEW };
   }
   const list = <T extends string>(v: unknown, all: readonly T[]): T[] => (Array.isArray(v) ? all.filter((k) => v.includes(k)) : []);
   return {
@@ -171,4 +187,9 @@ export function firstTenToastDue(before: FirstTenState, step: FirstTenStep, wait
 export function machineTipOnce(s: FirstTenState, tip: MachineTip): { state: FirstTenState; show: boolean } {
   if (s.tips.includes(tip)) return { state: s, show: false };
   return { state: { ...s, tips: [...s.tips, tip] }, show: true };
+}
+
+/** TUT-2: the state a game starts with. A NEW GAME always starts the tutorial fresh (machine tips seen before stay seen); Continue reads what was stored. */
+export function firstTenOpen(stored: string | null, newGame: boolean): FirstTenState {
+  return newGame ? { ...FIRST_TEN_NEW, tips: parseFirstTen(stored).tips } : parseFirstTen(stored);
 }

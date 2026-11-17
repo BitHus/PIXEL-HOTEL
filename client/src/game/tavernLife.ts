@@ -41,11 +41,13 @@ export async function setupTavernLife(g: G9) {
   // ---------- The tavern (step 9t): guests, orders, coins on the tables ----------
   st.tavern = await api.getTavern();
   // FP-1: the first ten minutes (a skippable guide in a new game) and JU-1 juice; AU-1 sounds are played from the events below.
-  const guide = createFirstTenGuide(uiRoot, storage, toast);
+  // TUT-2: a new game ALWAYS starts the tutorial; Continue resumes the stored step; a finished or skipped one stays done (firstTenOpen).
+  const guide = createFirstTenGuide(uiRoot, storage, toast, st.introPending);
   if (st.introPending) guide.begin();
   late.replayGuide = () => guide.replay();
-  // OA-4: one guide at a time: the quest card and its glow wait until the first steps are done or skipped.
-  const holdQuest = (): void => g.hint.setHeld(guide.state.active);
+  late.guideEvent = (step) => guide.event(step);
+  // TUT-2: ONE guide at a time: the quest card and its glow wait while the tutorial shows a goal; hint chips too (guideWorld).
+  const holdQuest = (): void => g.hint.setHeld(guide.goal() !== null);
   window.addEventListener('first-ten-layout', holdQuest);
   holdQuest();
   let guideWorld: GuideWorldApi | null = null;
@@ -74,7 +76,8 @@ export async function setupTavernLife(g: G9) {
     g.atmosphere.setUnlit(new Set(st.items.filter((i) => getFurnitureType(i.typeId).cooks && states.get(i.uid) !== 'cooking').map((i) => i.uid)));
     const brewReady = [...ready].some((k) => k[0] === 'b');
     const waiting: FirstTenStep[] = guideWorld ? guideWaiting(guide.state, guideWorld.context(brewReady)) : [];
-    guide.refresh(waiting, on);
+    // The tutorial card shows in every room (farm, mine, lakeside steps) except inside a dungeon run.
+    guide.refresh(waiting, !g.dungeon.isActive);
     sound.setAmbience(on ? 'tavern' : null, Math.min(1, st.seatedGuests / 6));
   };
   // G2: the hands-on pour. The avatar waits at the taps; the player presses and HOLDS THE TAP STAND itself (pointerInput asks pourControl.claims first).

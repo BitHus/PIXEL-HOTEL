@@ -22,3 +22,15 @@ test('guide card and pointer in a new game', async ({ page }) => {
   await expect(page.locator('.first-ten-text')).not.toContainText(/register/i);
   expect(errs.list.filter((e) => !/favicon/.test(e))).toEqual([]);
 });
+
+// TUT-2: a new game always starts the tutorial (first card visible) and Continue resumes the stored step instead of restarting.
+test('new game shows the first card; Continue keeps the step', async ({ page }) => {
+  await newGame(page);
+  await expect(page.locator('.first-ten')).toBeVisible();
+  const before = await page.locator('.first-ten-count').innerText();
+  await page.reload();
+  await page.getByText('Continue').first().click();
+  await page.waitForTimeout(3000);
+  await expect(page.locator('.first-ten')).toBeVisible();
+  expect(await page.locator('.first-ten-count').innerText()).toBe(before);
+});
