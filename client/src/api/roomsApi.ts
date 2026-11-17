@@ -2,7 +2,6 @@
 // class method of the same name did (R1 split: no change in behaviour; the class delegates here).
 
 import {
-  roomBlockers,
   emoteAllowed,
   emoteAfterState,
   emoteAt,
@@ -22,7 +21,7 @@ import {
   upgradeRoom,
   lookAllowed,
   drawnLook,
-  buildNavGrid,
+  buildWalkGrid,
   confirmPlacing,
   getFurnitureType,
   pickUpItem,
@@ -261,7 +260,7 @@ export const roomsApi = {
   },
 
   buildGrid(h: LocalGameAPI): NavGrid {
-    // The furniture plus fixed blockers (the lakeside's water and trees).
-    return buildNavGrid(h.room(), [...h.debugRects, ...roomBlockers(h.room(), h.state.items)]);
+    // The furniture plus fixed blockers (the lakeside's water and trees), plants; ST3: blocks are walkable cells with a level.
+    return buildWalkGrid(h.room(), h.state.items, h.debugRects);
   },
 };

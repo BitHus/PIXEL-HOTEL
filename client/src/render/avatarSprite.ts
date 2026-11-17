@@ -188,13 +188,16 @@ export class AvatarSprite {
     return views;
   }
 
+  /** ST3: px the avatar is drawn higher because it stands on a block stack (eased by the caller; 0 = floor). */
+  liftPx = 0;
+
   /** Shows the avatar's position, facing, pose and walk bob. timeMs drives the bob. */
   update(avatar: Avatar, timeMs: number): void {
     this.lastTimeMs = timeMs;
     if (this.lastPos && avatar.state === 'walk') this.distance += Math.min(Math.hypot(avatar.x - this.lastPos.x, avatar.y - this.lastPos.y), 64);
     this.lastPos = { x: avatar.x, y: avatar.y };
     // Whole DEVICE pixels, not whole world pixels: at zoom 3 a walk of 2.1 world px per frame no longer rounds to 2,2,2,3 (judder).
-    this.container.position.set(snapToStep(avatar.x, pixelStep.v), snapToStep(avatar.y, pixelStep.v));
+    this.container.position.set(snapToStep(avatar.x, pixelStep.v), snapToStep(avatar.y - this.liftPx, pixelStep.v));
     this.show(avatar);
     const up = !this.bakedNow && avatar.state === 'walk' && Math.floor(timeMs / WALK_BOB_MS) % 2 === 1;
     this.bobPx = up ? -WALK_BOB_PX : 0;

@@ -6,6 +6,8 @@ RESEARCH-VG done (17 Nov): docs/RESEARCH-VISUAL-GAMEPLAY.md; its top 10 tasks (V
 
 ## Vision check (rewrite each batch): the loop is GATHER -> MAKE -> SERVE -> EARN -> BUILD -> SHOW. Works in code: all steps. Weakest link now: nobody has played it in a browser yet (tester running), the tavern needs life (animation done v1), long-term goals (renown, questline) missing. Bugs and small events may jump the queue; return to this line afterwards.
 
+## OWNER AGENDA 17 Nov (HIGHEST, after ST3 finishes): docs/OWNER-AGENDA-17NOV.md. Game is renamed PocketBarrel (domain pocketbarrel.com + VPS server.pocketbarrel.com at mijn.host; needs SSH + DNS access from the owner), then OA-1..OA-14 (hold-walk delay, mugs on tables, fishing redo, quest vs tutorial, stove states, cellar + kitchen room, upgrade points, dungeon fixes, free wall items, compact UI, table plates, centered camera, open/closed sign), then the roadmap.
+
 ## Roadmap position
 - A CORE FEEL: in progress. Done: hands-on pour, tray, orders strip, first-ten-minutes, UI rounds 1-5, outdoors rework, art R1-R5 (furniture), avatar layers incl. outer pieces, idle/eat/wave/blink strips v1. Open: CH1 DONE (needs a look in the real game: head offsets of idle/eat/wave are guesses), smoothness pass (FIXLIST), first real browser playtest (tester RUNNING), remaining icons, furniture R6 kitchen set, cat drawn + tap lever wiring.
 - B BLOCK WORLD DEEP: DG1 layout done, DG2 view done, SG1/SG2/SG4 done, SG3a done (12 blocks). Next: SG3b-d content (crops, drinks, furniture, clothes, styles, specials), SG4b plant tap wiring, SG5 splice preview dialog + Book tab, DG3/DG4 polish and tuning (700 ms bot +15% to look at), DG5 traps only after owner OK.
@@ -14,7 +16,7 @@ RESEARCH-VG done (17 Nov): docs/RESEARCH-VISUAL-GAMEPLAY.md; its top 10 tasks (V
 - E WORLD, F ONLINE: later (step 10 server is a placeholder; online only with owner go).
 
 ## Right now (workers)
-tester (TESTER RUN 2 -> docs/FIXLIST.md). Animator and artist idle (one Aseprite worker at a time).
+(session 2, 17 Nov; main d993f8b = ST2, SG6, cat strips, check green) coder ST3 walkable heights; tester RUN 3 (-> docs/FIXLIST.md); artist DONE (clean base art-src/export/tap_stand_nolever.png; CODER HOOK PENDING after ST3: pourFx.ts always draws tap_stand_lever frame 0 at offset (2,-39) at rest, then copy the nolever PNG over furniture/tap_stand.png, both together). Animator idle. After: SG3d, ST4, RN-1 renown (VG-3), VG-1/2/9, wire cat strips.
 
 ## Next up, in this order
 1. Tester findings -> coder fix list (severity order).  2. Artist: R6 kitchen set, missing icons, props art (gem_pile, brazier, sarcophagus_small), better eat/wave hands (animator).  3. Coder: SG3b-d, SG4b, SG5.  4. UI worker: UI round 6 from tester findings, hat tab.  5. Coder: GT-1/NC-1/RN-1 tavern depth, 9i questline.  6. Mine/dungeon round 2 only after simulate shows no source over 50%.

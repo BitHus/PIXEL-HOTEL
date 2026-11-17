@@ -8,7 +8,7 @@
 // - Smoothing: a waypoint is removed when the straight line between its neighbours does not
 //   touch a blocked cell. The result is a list of world points.
 
-import { NAV_CELL } from './config.ts';
+import { NAV_CELL, NAV_STEP_MAX } from './config.ts';
 import { MinHeap } from './minHeap.ts';
 import { rectInsideFloor, rectsOverlap, type Room } from './room.ts';
 import type { Point, Rect } from './types.ts';
@@ -20,6 +20,21 @@ export interface NavGrid {
   cell: number;
   /** Row-major, cols * rows. true = blocked. */
   blocked: boolean[];
+  /**
+   * ST3: the height level of every cell (row-major, 0 = floor; the size of its block stack). Missing = flat. A step between two
+   * neighbour cells needs a level difference of at most NAV_STEP_MAX, so a stack of 1, 2, 3 blocks is a stair.
+   */
+  level?: number[];
+}
+
+/** ST3: the level of cell index i (0 when the grid is flat). */
+export function levelOf(grid: NavGrid, i: number): number {
+  return grid.level?.[i] ?? 0;
+}
+
+/** ST3: true if an avatar can step from cell index a to its neighbour b (at most NAV_STEP_MAX levels up or down). */
+export function canStep(grid: NavGrid, a: number, b: number): boolean {
+  return Math.abs(levelOf(grid, a) - levelOf(grid, b)) <= NAV_STEP_MAX;
 }
 
 /** Grows a rectangle by r on every side. */
@@ -93,9 +108,14 @@ export function lineOfSight(grid: NavGrid, a: Point, b: Point): boolean {
   const c1 = Math.floor(Math.max(a.x, b.x) / grid.cell) + 1;
   const r0 = Math.floor(Math.min(a.y, b.y) / grid.cell) - 1;
   const r1 = Math.floor(Math.max(a.y, b.y) / grid.cell) + 1;
+  // ST3: a straight line stays on one level (a stair is walked cell by cell, never cut across).
+  const here = grid.level ? cellAt(grid, a) : null;
+  const level = here && isCellFree(grid, here.c, here.r) ? levelOf(grid, here.r * grid.cols + here.c) : 0;
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
-      if (!isCellFree(grid, c, r) && segmentTouchesRect(a, b, cellRect(grid, c, r))) return false;
+      if (!segmentTouchesRect(a, b, cellRect(grid, c, r))) continue;
+      if (!isCellFree(grid, c, r)) return false;
+      if (grid.level && levelOf(grid, r * grid.cols + c) !== level) return false;
     }
   }
   return true;
@@ -106,15 +126,26 @@ const DIRS: ReadonlyArray<readonly [number, number]> = [
   [1, 1], [1, -1], [-1, 1], [-1, -1],
 ];
 
-/** Free neighbour cells (8 directions, no corner cutting) of cell index i. */
-function neighbours(grid: NavGrid, i: number): number[] {
+/**
+ * Free neighbour cells (8 directions, no corner cutting) of cell index i. ST3: each step is at most NAV_STEP_MAX levels up or
+ * down (a diagonal needs both side cells passable by step too). `dropFrom` = the start cell: it may step DOWN any height, so an
+ * avatar left on a stack whose neighbours were broken is never stuck.
+ */
+function neighbours(grid: NavGrid, i: number, dropFrom = -1): number[] {
   const c = i % grid.cols;
   const r = (i - c) / grid.cols;
   const out: number[] = [];
+  const ok = (a: number, b: number): boolean => canStep(grid, a, b) || (a === dropFrom && levelOf(grid, b) < levelOf(grid, a));
   for (const [dc, dr] of DIRS) {
     if (!isCellFree(grid, c + dc, r + dr)) continue;
-    if (dc !== 0 && dr !== 0 && (!isCellFree(grid, c + dc, r) || !isCellFree(grid, c, r + dr))) continue;
-    out.push((r + dr) * grid.cols + c + dc);
+    const n = (r + dr) * grid.cols + c + dc;
+    if (dc !== 0 && dr !== 0) {
+      if (!isCellFree(grid, c + dc, r) || !isCellFree(grid, c, r + dr)) continue;
+      const sa = r * grid.cols + c + dc;
+      const sb = (r + dr) * grid.cols + c;
+      if (!(ok(i, sa) && canStep(grid, sa, n) && ok(i, sb) && canStep(grid, sb, n))) continue;
+    } else if (!ok(i, n)) continue;
+    out.push(n);
   }
   return out;
 }
@@ -125,12 +156,12 @@ function centerOf(grid: NavGrid, i: number): Point {
 }
 
 /** Every cell reachable from cell index start (true = reachable). */
-export function reachableCells(grid: NavGrid, start: number): boolean[] {
+export function reachableCells(grid: NavGrid, start: number, dropFrom = -1): boolean[] {
   const seen = new Array<boolean>(grid.blocked.length).fill(false);
   seen[start] = true;
   const queue = [start];
   for (let k = 0; k < queue.length; k++) {
-    for (const n of neighbours(grid, queue[k]!)) {
+    for (const n of neighbours(grid, queue[k]!, dropFrom)) {
       if (!seen[n]) {
         seen[n] = true;
         queue.push(n);
@@ -141,7 +172,7 @@ export function reachableCells(grid: NavGrid, start: number): boolean[] {
 }
 
 /** A* over cell indices. Returns the cells from start to goal, or null. */
-function aStar(grid: NavGrid, start: number, goal: number): number[] | null {
+function aStar(grid: NavGrid, start: number, goal: number, dropFrom = -1): number[] | null {
   const n = grid.blocked.length;
   const g = new Array<number>(n).fill(Infinity);
   const parent = new Array<number>(n).fill(-1);
@@ -167,7 +198,7 @@ function aStar(grid: NavGrid, start: number, goal: number): number[] | null {
     if (closed[cur]) continue;
     closed[cur] = true;
     const cc = cur % grid.cols;
-    for (const nb of neighbours(grid, cur)) {
+    for (const nb of neighbours(grid, cur, dropFrom)) {
       const diagonal = nb % grid.cols !== cc && Math.abs(nb - cur) !== 1;
       const cost = g[cur]! + (diagonal ? Math.SQRT2 : 1);
       if (cost < g[nb]!) {
@@ -220,7 +251,7 @@ export function findPath(grid: NavGrid, from: Point, to: Point): Point[] | null 
   if (startMoved) start = nearestFreeCell(grid, from, () => true);
   if (start === null) return null;
 
-  const reach = reachableCells(grid, start);
+  const reach = reachableCells(grid, start, start);
   const tc = cellAt(grid, to);
   let goal: number | null;
   let end: Point;
@@ -234,7 +265,7 @@ export function findPath(grid: NavGrid, from: Point, to: Point): Point[] | null 
     end = centerOf(grid, goal);
   }
 
-  const cells = aStar(grid, start, goal);
+  const cells = aStar(grid, start, goal, start);
   if (!cells) return null;
   const middle = cells.slice(startMoved ? 0 : 1, -1).map((i) => centerOf(grid, i));
   return smoothPath(grid, [{ x: from.x, y: from.y }, ...middle, end]);

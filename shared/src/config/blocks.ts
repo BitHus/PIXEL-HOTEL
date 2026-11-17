@@ -7,6 +7,10 @@ export const BLOCK_REACH = 3;
 export const BLOCK_STACK_MAX = 3;
 /** ST1: how many px each stacked block is drawn higher than the one under it (rendering only). */
 export const BLOCK_STACK_RISE_PX = 14;
+/** ST3: an avatar steps up or down at most this many block levels between two neighbour cells (a stack of 1, 2, 3 is a stair; a taller step is a wall). */
+export const NAV_STEP_MAX = 1;
+/** ST3: the drawn lift of an avatar eases to the level it stands on with this time constant (ms; rendering only). */
+export const LEVEL_LIFT_TAU_MS = 70;
 /** One punch per tap, at most every this many ms. */
 export const BLOCK_HIT_COOLDOWN_MS = 250;
 /** A half-broken block heals (its hits reset) when it was not hit for this long. */

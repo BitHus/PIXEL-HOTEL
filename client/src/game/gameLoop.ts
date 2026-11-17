@@ -1,7 +1,7 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { AVATAR_H, FrameStats, WALK_BOB_MS, followStep, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followStep, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
 import { followPaused } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
@@ -78,6 +78,9 @@ export async function setupGameLoop(g: G16) {
     if (st.path.length === 0 && st.avatar.state !== 'walk') lakeside.arrived();
     roomFloats.update(ticker.deltaMS, (p) => worldToScreen(p, st.shown));
     placer.tick(ticker.deltaMS);
+    // ST3: standing on a block stack lifts the avatar (eased, so a step up or down glides).
+    const level = seating.seated ? 0 : levelAtPoint(st.room, st.avatar);
+    sprite.liftPx = easeLift(sprite.liftPx, liftPxOfLevel(level), ticker.deltaMS);
     sprite.update(st.avatar, clockMs);
     // An emote plays while the avatar stands still and ends by itself or when it moves (step 9g-1).
     if (st.emote && (st.avatar.state !== 'idle' || performance.now() >= st.emote.endsAt)) {
@@ -97,7 +100,10 @@ export async function setupGameLoop(g: G16) {
     if (sprite.container.visible && (st.avatar.state === 'walk' || st.avatar.state === 'idle')) feet.push(st.avatar);
     guests.feet(feet);
     atmosphere.update(ticker.deltaMS, clockMs, feet);
-    view.objects.setKey(sprite.container, avatarDepthKey(st.avatar, roomItem(seating.seated?.uid ?? null)));
+    const depth = avatarDepthKey(st.avatar, roomItem(seating.seated?.uid ?? null));
+    // ST3: on a stack the avatar is drawn in front of the blocks of its own cell (their key is the cell's bottom edge).
+    if (level > 0 && !depth.sub) depth.y = (Math.floor(st.avatar.y / BUILD_CELL) + 1) * BUILD_CELL + 1;
+    view.objects.setKey(sprite.container, depth);
     blockViews.sync(st.room, Date.now());
     blockViews.update(ticker.deltaMS);
     plantViews.sync(st.room, Date.now());
