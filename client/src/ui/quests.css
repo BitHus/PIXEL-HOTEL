@@ -1,0 +1,11 @@
+/* The Quest panel (TUT-2 part 3): rows with a progress bar and a Take button. Only what the panel needs; the look follows the frame style in ui.css. */
+.quest-list { display: flex; flex-direction: column; gap: 8px; }
+.quest-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; padding: 6px 8px; border: 2px solid #3e2731; background: rgba(0, 0, 0, 0.18); }
+.quest-row.done { opacity: 0.6; }
+.quest-row.ready { border-color: #fee761; }
+.quest-row-text { grid-column: 1; font-family: var(--font); }
+.quest-row-side { grid-column: 2; grid-row: 1 / span 2; min-width: 64px; text-align: right; font-family: var(--font); }
+.quest-bar { grid-column: 1; height: 6px; background: #181425; }
+.quest-bar-fill { height: 100%; background: #63c74d; }
+.quest-take { min-height: 44px; }
+.quest-event-name { margin: 0; font-family: var(--font); }

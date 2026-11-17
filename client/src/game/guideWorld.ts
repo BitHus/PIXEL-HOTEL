@@ -3,7 +3,7 @@
 // targets are shared/data/guide.json. Lives next to tavernLife (which owns the guide) and is started from there.
 
 import {
-  AVATAR_H, BUILD_CELL, MINE_UNLOCK_LEVEL, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
+  AVATAR_H, BUILD_CELL, LAKE_WATER, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
   type GuideContext, type GuideTarget, type Point,
 } from '@pixel-hotel/shared';
 import { surfaceHeight } from '../render/furnitureArt.ts';
@@ -74,6 +74,15 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     }
     return spotWorld && worldToScreen(spotWorld, st.shown);
   };
+  const ripePlantScreen = (): Point | null => {
+    const now = Date.now();
+    const ripe = plantList(st.room).find((p) => growthStage(p.plant, now) === 'full');
+    return ripe ? worldToScreen({ x: ripe.c * BUILD_CELL + BUILD_CELL / 2, y: ripe.r * BUILD_CELL + BUILD_CELL / 2 }, st.shown) : null;
+  };
+  const waterScreen = (): Point | null => {
+    const w = LAKE_WATER[0];
+    return w ? worldToScreen({ x: w.x + w.w / 2, y: w.y + w.h / 2 }, st.shown) : null;
+  };
   const button = (label: string): HTMLElement | null => document.querySelector<HTMLElement>(`button[aria-label^="${label}"]`);
 
   const resolve = (t: GuideTarget): void => {
@@ -139,8 +148,11 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     if (goal === null || panels.open !== null || dungeon.isActive) return pointer.place(null);
     const base = guideTargetOf(goal);
     const t = guidePointerKind(goal, context(brewReady));
-    // World things show only in the tavern; the buttons show in any room that has them.
-    if (tavernTarget(base.kind) && (!h.inTavern() || st.room.id !== st.tavern.roomId)) return pointer.place(null);
+    // World things show only in the tavern; elsewhere the pointer shows the way back (the Worlds button) instead of nothing.
+    if (tavernTarget(base.kind) && (!h.inTavern() || st.room.id !== st.tavern.roomId)) return pointer.placeOn(button('Worlds'));
+    // Steps with no tap target of their own: harvest points at a ripe plant on the farm, fish at the water of the lakeside.
+    if (goal === 'harvest' && st.room.kind === 'farm') return pointer.place(ripePlantScreen());
+    if (goal === 'fish' && st.room.kind === 'lakeside') return pointer.place(waterScreen());
     resolve(t);
   };
   raf = requestAnimationFrame(frame);

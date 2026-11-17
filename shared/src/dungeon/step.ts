@@ -133,6 +133,8 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
   const grid = dungeonNavGrid(r.map);
   if (input.t === 'leave') {
     if (r.place === 'mine') leave(r);
+  } else if (input.t === 'abandon') {
+    if (r.place === 'crypt') die(r);
   } else if (input.t === 'click_point') {
     const path = findPath(grid, p, { x: input.x, y: input.y });
     if (!path) return;

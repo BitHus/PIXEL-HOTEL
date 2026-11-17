@@ -11,6 +11,10 @@ import {
   MINE_HINT,
   MINE_UNLOCK_LEVEL,
   claimBookReward,
+  claimQuest,
+  dayInfo,
+  questBoard,
+  type QuestBoard,
   openBook,
   type BookClaim,
   type GainList,
@@ -31,6 +35,18 @@ export const progressApi = {
     const gems = next.player.wallet.gems - h.state.player.wallet.gems;
     h.commit(next);
     return { gold, gems, gains: gems > 0 ? [{ itemId: GEMS_GAIN_ID, count: gems, rank: 'common' }] : [] };
+  },
+
+  async getQuestBoard(h: LocalGameAPI, tzOffsetMin: number): Promise<QuestBoard> {
+    return questBoard(h.state, dayInfo(h.now(), tzOffsetMin));
+  },
+
+  async claimQuest(h: LocalGameAPI, claimId: string, tzOffsetMin: number): Promise<{ gold: number } | null> {
+    const next = claimQuest(h.state, claimId, dayInfo(h.now(), tzOffsetMin), h.now());
+    if (!next) return null;
+    const gold = next.player.wallet.gold - h.state.player.wallet.gold;
+    h.commit(next);
+    return { gold };
   },
 
   async currentHint(h: LocalGameAPI): Promise<string | null> {

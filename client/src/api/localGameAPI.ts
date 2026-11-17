@@ -12,7 +12,7 @@ import {
   hitPlant, plantSeed, spliceSeed, buyGear, SHOP_CATCH_UP_GAP_MS, SHOP_TICK_MS, applyStyle, paintFloor, buyCatalog,
   catchUpTavern, stepTavern, collectBrew, upgradeRoom,
   configForChoice, TAVERN_BAR_NOTICE, innDoorNotice, SAVE_BACKUP_KEY, START_CROPS, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
-  saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type GainList, type BarId, type GearId,
+  saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type QuestBoard, type GainList, type BarId, type GearId,
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
@@ -299,6 +299,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async fishStop(): Promise<void> { return lakesideApi.fishStop(this); }
   async bookOpened(): Promise<void> { return progressApi.bookOpened(this); }
   async claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null> { return progressApi.claimBookReward(this, tab, percent); }
+  async getQuestBoard(tzOffsetMin: number): Promise<QuestBoard> { return progressApi.getQuestBoard(this, tzOffsetMin); }
+  async claimQuest(claimId: string, tzOffsetMin: number): Promise<{ gold: number } | null> { return progressApi.claimQuest(this, claimId, tzOffsetMin); }
 
   /** Saves a new state and returns what it gave (the items the ledger wrote since the old state). */
   commitGains(next: GameState): GainList {

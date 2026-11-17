@@ -79,17 +79,16 @@ export async function setupUiShell(g: G3) {
   const sideButtons = side.col;
   // The quest button, at the top of the column: shows the current quest again. Hidden without a
   // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
-  const questButton = iconButton('quest', 'Quest', () => hint.toggle(), 'quest-btn room-only');
+  const questButton = iconButton('quest', 'Quests: daily, events, achievements', () => panels.toggle('quests'), 'quest-btn room-only');
   sideButtons.prepend(questButton);
   // The Map button (step 9b), under the quest button: the travel panel with every place.
   const mapButton = iconButton('worlds', 'Worlds: travel', () => panels.toggle('travel'), 'room-only');
   questButton.after(mapButton);
   panels.onChange(() => mapButton.classList.toggle('on', panels.open === 'travel'));
+  panels.onChange(() => questButton.classList.toggle('on', panels.open === 'quests'));
   panels.onChange(() => hint.setCovered(panels.open !== null));
   hint.onChange((quest, showing) => {
-    questButton.hidden = quest === null;
-    questButton.classList.toggle('on', showing);
-    questButton.classList.toggle('glow', quest !== null && !showing);
+    // TUT-2 part 3: the button opens the Quest panel; it glows while a quest is ready (craftPanels).
     // The dungeon hint points at the Dungeon button.
     dungeonButton.classList.toggle('glow', quest === HINTS[DUNGEON_HINT]);
     // The mine hint (step 9c) points at the Map button.
@@ -102,6 +101,7 @@ export async function setupUiShell(g: G3) {
     () => dungeon.potion(),
     () => dungeon.eat(),
     () => dungeon.leave(),
+    () => dungeon.abandon(),
   );
   const dungeon: DungeonScreen = new DungeonScreen(
     {
@@ -127,5 +127,5 @@ export async function setupUiShell(g: G3) {
     st.avatar.look,
   );
 
-  return { toast, popups, gemFly, flyGems, bubbles, emote, nameTag, label, blockerButtons, panels, info, hint, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
+  return { toast, popups, gemFly, flyGems, bubbles, emote, nameTag, label, blockerButtons, panels, info, hint, questButton, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
 }

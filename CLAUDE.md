@@ -270,7 +270,7 @@ CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the 
 - In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, tester run 2 fixes
   (docs/FIXLIST.md), SG3d/SG5/SG6, ST2 stack look. Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
 - Not done: step 10 (server, a placeholder), cat art, renown/regulars (tavern deep). The game has been run in a browser (Playwright e2e and tester runs); the avatar style lock is still the owner's.
-- DUNGEON_ROUND is 1. SAVE_VERSION is 32 (24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
+- DUNGEON_ROUND is 1. SAVE_VERSION is 33 (33 quests.claimed for daily quests and achievements, 24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, e2e (Playwright smoke, e2e/), simulate, simulate:dungeon. Vite base stays './'.
@@ -317,7 +317,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 32) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 33) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

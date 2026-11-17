@@ -166,3 +166,12 @@ describe('ending a visit', () => {
     expect(ledgerMaterials(home)).toEqual(home.player.materials);
   });
 });
+
+describe('abandon (the crypt Abandon button)', () => {
+  it('counts like a defeat in the crypt (status dead, bag lost) and does nothing in the mine', () => {
+    const crypt = step(testRun(), [{ t: 'abandon' }], 0, seededRng(1));
+    expect(crypt.status).toBe('dead');
+    expect(crypt.player.hp).toBe(0);
+    expect(step(mineRun([]), [{ t: 'abandon' }], 0, seededRng(1)).status).toBe('active');
+  });
+});

@@ -47,7 +47,11 @@ export async function setupTavernLife(g: G9) {
   late.replayGuide = () => guide.replay();
   late.guideEvent = (step) => guide.event(step);
   // TUT-2: ONE guide at a time: the quest card and its glow wait while the tutorial shows a goal; hint chips too (guideWorld).
-  const holdQuest = (): void => g.hint.setHeld(guide.goal() !== null);
+  const holdQuest = (): void => {
+    const held = guide.goal() !== null;
+    g.hint.setHeld(held);
+    g.questButton.hidden = held; // TUT-2 part 3: the Quest button waits too while the tutorial runs
+  };
   window.addEventListener('first-ten-layout', holdQuest);
   holdQuest();
   let guideWorld: GuideWorldApi | null = null;
@@ -241,7 +245,9 @@ export async function setupTavernLife(g: G9) {
     guests.setPulse(on ? new Set(guestsTrayCanServe(st.tavern)) : new Set());
     updateBadge();
     syncMachines();
-    pour.syncRest(tapStands(st.items, st.tavern.roomId).flatMap((s) => { const i = standInfo(s.uid); return i ? [{ stand: i.stand, bar: i.bar }] : []; }));
+    const standList = tapStands(st.items, st.tavern.roomId).flatMap((s) => { const i = standInfo(s.uid); return i ? [{ stand: i.stand, bar: i.bar }] : []; });
+    pour.syncRest(standList);
+    pour.syncTapStates(standList, st.tavern.taps); // OA-5b: dry / wet per tap slot
   };
   st.onItemsSynced = syncTavern;
   /** What the avatar's hands show now (the tray), so a save that loads with mugs on the tray shows them too. */

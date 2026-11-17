@@ -4,7 +4,7 @@
 // harvested, and the ghost of the seed about to be planted. RENDERING ONLY: what grows where and when it is
 // ripe comes from the room (rules: shared/src/farm.ts). Art is placeholder boxes drawn in code (farmArt.ts).
 
-import { Container, Graphics, type Sprite } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import {
   BUILD_CELL,
   RIPE_MARKER_BOB_MS,
@@ -21,10 +21,13 @@ import {
 } from '@pixel-hotel/shared';
 import type { DepthKey } from '../render/depthOrder.ts';
 import type { RoomView } from '../render/roomView.ts';
+import { spriteFrames } from '../render/spriteStore.ts';
 import { drawPlantArt, drawRipeMarker } from './farmArt.ts';
 import { plantSprite } from './plantSprite.ts';
 
 const SHAKE_MS = 160;
+/** One sparkle frame lasts this long (animator OA-5b: 450 ms). */
+const RIPE_SPARKLE_MS = 450;
 const PUFF_MS = 420;
 
 interface PlantView {
@@ -38,6 +41,8 @@ interface PlantView {
   /** H4: the PNG of this stage when sprites/plants has the set; the code art above is then empty. */
   sprite: Sprite | null;
   marker: Graphics | null;
+  /** OA-5b: the ripe sparkle strip (plants/ripe_sparkle.png, 2 frames 32 x 32) over a full plant, when the file exists. */
+  sparkle: Sprite | null;
   stage: PlantStage;
   shakeMs: number;
 }
@@ -88,7 +93,7 @@ export class PlantViews {
         node.addChild(art);
         node.position.set(c * BUILD_CELL, r * BUILD_CELL);
         node.eventMode = 'none';
-        v = { seed: plant.seed, withSeed: plant.with ?? null, c, r, node, art, sprite: null, marker: null, stage, shakeMs: 0 };
+        v = { seed: plant.seed, withSeed: plant.with ?? null, c, r, node, art, sprite: null, marker: null, sparkle: null, stage, shakeMs: 0 };
         this.paint(v);
         this.views.set(key, v);
         this.view.objects.add(node, this.keyOf(c, r));
@@ -163,6 +168,11 @@ export class PlantViews {
     const bob = Math.floor(clockMs / RIPE_MARKER_BOB_MS) % 2 === 0 ? 0 : -RIPE_MARKER_BOB_PX;
     for (const v of this.views.values()) {
       if (v.marker) v.marker.y = -10 + bob;
+      if (v.sparkle) {
+        const frames = spriteFrames('plants', 'ripe', 'sparkle', BUILD_CELL);
+        const f = frames?.[Math.floor(clockMs / RIPE_SPARKLE_MS) % (frames?.length ?? 1)];
+        if (f) v.sparkle.texture = f;
+      }
       if (v.shakeMs > 0) {
         v.shakeMs = Math.max(0, v.shakeMs - dtMs);
         v.node.x = v.c * BUILD_CELL + (v.shakeMs > 0 ? (Math.floor(v.shakeMs / 40) % 2 === 0 ? 1 : -1) : 0);

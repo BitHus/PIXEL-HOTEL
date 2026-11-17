@@ -1,0 +1,91 @@
+{
+  "dailyCount": 3,
+  "dailyGoldMax": 25,
+  "daily": [
+    { "id": "d_serve6", "text": "Collect the coins of 6 tables.", "area": "tavern", "reasons": ["tavern"], "target": 6, "gold": 15 },
+    { "id": "d_serve12", "text": "Collect the coins of 12 tables.", "area": "tavern", "reasons": ["tavern"], "target": 12, "gold": 25 },
+    { "id": "d_brew", "text": "Brew a batch of drinks at the barrel.", "area": "brew", "reasons": ["brew"], "measure": "made", "target": 1, "gold": 10 },
+    { "id": "d_cook", "text": "Cook a batch of food at the stove.", "area": "cook", "reasons": ["cook"], "measure": "made", "target": 1, "gold": 10 },
+    { "id": "d_cook3", "text": "Cook 3 batches of food.", "area": "cook", "reasons": ["cook"], "measure": "made", "target": 3, "gold": 20 },
+    { "id": "d_plant4", "text": "Plant 4 seeds.", "area": "farm", "reasons": ["plant"], "target": 4, "gold": 10 },
+    { "id": "d_harvest3", "text": "Harvest 3 plants.", "area": "farm", "reasons": ["harvest"], "target": 3, "gold": 15 },
+    { "id": "d_chop3", "text": "Fell 3 trees at the lakeside.", "area": "lakeside", "reasons": ["chop"], "target": 3, "gold": 12 },
+    { "id": "d_fish2", "text": "Catch 2 fish.", "area": "lakeside", "reasons": ["fish"], "target": 2, "gold": 15 },
+    { "id": "d_run", "text": "Finish one dungeon run and bring your bag home.", "area": "dungeon", "reasons": ["dungeon_bank"], "target": 1, "gold": 20 },
+    { "id": "d_mine", "text": "Finish one visit to the mine.", "area": "mine", "reasons": ["mine_bank"], "target": 1, "gold": 20, "minLevel": 3 },
+    { "id": "d_craft", "text": "Craft something at the Workshop.", "area": "craft", "reasons": ["craft"], "target": 1, "gold": 15 },
+    { "id": "d_sell", "text": "Sell a surplus thing at the bar's Sell tab.", "area": "trade", "reasons": ["sell"], "target": 1, "gold": 10 }
+  ],
+  "events": [
+    {
+      "id": "harvest_feast",
+      "name": "Harvest Feast",
+      "from": "11-10",
+      "to": "11-24",
+      "blurb": "The village celebrates the last crops of the year. Cook, brew and share.",
+      "twist": "Guests talk about the feast (decor and guest twist: planned, T-FUN-4).",
+      "quests": [
+        { "id": "hf_cook", "text": "Cook 5 batches of food.", "reasons": ["cook"], "measure": "made", "target": 5, "gold": 25 },
+        { "id": "hf_harvest", "text": "Harvest 10 plants.", "reasons": ["harvest"], "target": 10, "gold": 25 },
+        { "id": "hf_serve", "text": "Collect the coins of 15 tables.", "reasons": ["tavern"], "target": 15, "gold": 25 }
+      ]
+    },
+    {
+      "id": "midwinter_lights",
+      "name": "Midwinter Lights",
+      "from": "12-15",
+      "to": "01-05",
+      "blurb": "Long nights and warm lanterns. A cosy time for the tavern.",
+      "twist": "Lantern decor on the walls (planned, T-FUN-4).",
+      "quests": [
+        { "id": "ml_brew", "text": "Brew 3 batches of drinks.", "reasons": ["brew"], "measure": "made", "target": 3, "gold": 25 },
+        { "id": "ml_serve", "text": "Collect the coins of 20 tables.", "reasons": ["tavern"], "target": 20, "gold": 25 },
+        { "id": "ml_run", "text": "Finish 2 dungeon runs.", "reasons": ["dungeon_bank"], "target": 2, "gold": 25 }
+      ]
+    },
+    {
+      "id": "spring_blossom",
+      "name": "Spring Blossom",
+      "from": "03-20",
+      "to": "04-03",
+      "blurb": "The first seeds of the year. Plant something and watch it grow.",
+      "twist": "Blossom decor (planned, T-FUN-4).",
+      "quests": [
+        { "id": "sb_plant", "text": "Plant 10 seeds.", "reasons": ["plant"], "target": 10, "gold": 25 },
+        { "id": "sb_harvest", "text": "Harvest 8 plants.", "reasons": ["harvest"], "target": 8, "gold": 25 },
+        { "id": "sb_fish", "text": "Catch 4 fish.", "reasons": ["fish"], "target": 4, "gold": 25 }
+      ]
+    },
+    {
+      "id": "summer_fair",
+      "name": "Summer Fair",
+      "from": "07-01",
+      "to": "07-14",
+      "blurb": "Bunting, music and a busy lakeside.",
+      "twist": "Bunting decor (planned, T-FUN-4).",
+      "quests": [
+        { "id": "sf_fish", "text": "Catch 6 fish.", "reasons": ["fish"], "target": 6, "gold": 25 },
+        { "id": "sf_chop", "text": "Fell 8 trees.", "reasons": ["chop"], "target": 8, "gold": 25 },
+        { "id": "sf_serve", "text": "Collect the coins of 15 tables.", "reasons": ["tavern"], "target": 15, "gold": 25 }
+      ]
+    }
+  ],
+  "achievements": [
+    { "id": "serve_10", "text": "Collect the coins of 10 tables.", "reasons": ["tavern"], "target": 10, "gold": 20 },
+    { "id": "serve_50", "text": "Collect the coins of 50 tables.", "reasons": ["tavern"], "target": 50, "gold": 50 },
+    { "id": "serve_200", "text": "Collect the coins of 200 tables.", "reasons": ["tavern"], "target": 200, "gold": 100 },
+    { "id": "brew_10", "text": "Brew 10 batches of drinks.", "reasons": ["brew"], "measure": "made", "target": 10, "gold": 30 },
+    { "id": "cook_10", "text": "Cook 10 batches of food.", "reasons": ["cook"], "measure": "made", "target": 10, "gold": 30 },
+    { "id": "cook_50", "text": "Cook 50 batches of food.", "reasons": ["cook"], "measure": "made", "target": 50, "gold": 80 },
+    { "id": "harvest_25", "text": "Harvest 25 plants.", "reasons": ["harvest"], "target": 25, "gold": 30 },
+    { "id": "harvest_100", "text": "Harvest 100 plants.", "reasons": ["harvest"], "target": 100, "gold": 80 },
+    { "id": "chop_25", "text": "Fell 25 trees.", "reasons": ["chop"], "target": 25, "gold": 30 },
+    { "id": "fish_10", "text": "Catch 10 fish.", "reasons": ["fish"], "target": 10, "gold": 30 },
+    { "id": "fish_50", "text": "Catch 50 fish.", "reasons": ["fish"], "target": 50, "gold": 80 },
+    { "id": "run_5", "text": "Bring 5 dungeon runs home.", "reasons": ["dungeon_bank"], "target": 5, "gold": 30 },
+    { "id": "run_25", "text": "Bring 25 dungeon runs home.", "reasons": ["dungeon_bank"], "target": 25, "gold": 80 },
+    { "id": "mine_5", "text": "Finish 5 visits to the mine.", "reasons": ["mine_bank"], "target": 5, "gold": 30 },
+    { "id": "craft_5", "text": "Craft 5 things.", "reasons": ["craft"], "target": 5, "gold": 30 },
+    { "id": "splice_3", "text": "Splice 3 pairs of seeds.", "reasons": ["splice"], "target": 3, "gold": 40 }
+  ]
+}

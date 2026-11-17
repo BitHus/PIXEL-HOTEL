@@ -11,11 +11,13 @@ import { createFishBar } from '../ui/fishBar.ts';
 import { flashScreen } from '../ui/runScreens.ts';
 import { FloatTexts } from '../dungeon/floatTexts.ts';
 import { createBookPanel } from '../ui/bookPanel.ts';
+import { createQuestPanel } from '../ui/questPanel.ts';
+import '../ui/quests.css';
 import { createTravelPanel, type PlaceCard } from '../ui/travelPanel.ts';
 import type { G7 } from './ctx.ts';
 
 export async function setupCraftPanels(g: G7) {
-  const { ui, prefs, api, popups, toast, panels, sound, side, view, walkTo, follow, sprite, flyGems, st, late } = g;
+  const { ui, prefs, api, questButton, popups, toast, panels, sound, side, view, walkTo, follow, sprite, flyGems, st, late } = g;
 
   // ---------- Workshop: crafting and the Blacksmith (step 9) ----------
   const workshop = createWorkshopPanel(ui, {
@@ -75,6 +77,27 @@ export async function setupCraftPanels(g: G7) {
       side.setBookDot(false);
     });
   });
+  // ---------- Quests: daily, events, achievements (TUT-2 part 3) ----------
+  const tz = (): number => new Date().getTimezoneOffset();
+  const quests = createQuestPanel(ui, (claimId) => {
+    void api.claimQuest(claimId, tz()).then(async (r) => {
+      if (r) {
+        sound.play('coin');
+        toast(r.gold > 0 ? `Quest done: +${r.gold} gold.` : 'Quest done.');
+        await late.refreshInventory();
+      }
+      await refreshQuests();
+    });
+  });
+  async function refreshQuests(): Promise<void> {
+    const board = await api.getQuestBoard(tz());
+    quests.refresh(board, panels.open === 'quests' ? await api.currentHint() : null);
+    questButton.dataset.ready = board.ready > 0 ? '1' : '0';
+    questButton.classList.toggle('glow', board.ready > 0);
+  }
+  panels.add('quests', quests.el, () => void refreshQuests());
+  void refreshQuests();
+  window.setInterval(() => void refreshQuests(), 5000);
   // ---------- The lakeside: woodcutting and fishing (step 9f) ----------
   /** Floating texts in the rooms (what a tree or a fish gave): the dungeon's FloatTexts, at world points. */
   const roomFloats = new FloatTexts(ui);

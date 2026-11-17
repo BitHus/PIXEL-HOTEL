@@ -265,6 +265,8 @@ export type DungeonInput =
   | { t: 'click_rock'; id: number }
   /** The mine: walk out now with everything (always allowed). */
   | { t: 'leave' }
+  /** The crypt (hook b): give up the run now. It counts like a defeat (the bag and half the run gold are lost; the wallet and xp are safe). */
+  | { t: 'abandon' }
   | { t: 'drink_potion' }
   | { t: 'eat' }
   | { t: 'choose_exit'; choice: ExitChoice };

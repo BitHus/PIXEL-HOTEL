@@ -2,6 +2,7 @@
 // LocalGameAPI (steps 2-9) runs the shared rules in the browser; RemoteGameAPI (step 10) talks to the server.
 // Methods are added in later steps as they are needed.
 
+import type { QuestBoard } from './questBoard.ts';
 import type { BookTab } from './book.ts';
 import type { BarId, CropId, DrinkId, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SeedId, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
@@ -482,6 +483,11 @@ export interface GameAPI {
   bookOpened(): Promise<void>;
   /** Takes a Book reward that is ready: the gold and the gems (step BG4), or null if it is not ready. */
   claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null>;
+  // ---------- TUT-2 part 3: daily quests, event quests, achievements (shared/src/questBoard.ts) ----------
+  /** The quest board for the local day (tzOffsetMin = Date.getTimezoneOffset()). */
+  getQuestBoard(tzOffsetMin: number): Promise<QuestBoard>;
+  /** Takes the gold of one ready quest row (QuestRow.claimId). Null = not ready or taken already. */
+  claimQuest(claimId: string, tzOffsetMin: number): Promise<{ gold: number } | null>;
   // ---------- Step 9c: the mine and the forge ----------
   /** Starts a mine visit (free; from player level 3). Null if locked or a run is already going.
    *  The visit runs through getRun / dungeonInput / dungeonAdvance like a dungeon run. */

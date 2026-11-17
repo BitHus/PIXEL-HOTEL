@@ -172,6 +172,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     nextUid: startItems.length + 1,
     ledger: [],
     hintsDone: 0,
+    quests: { claimed: [] },
     run: null,
     lakeside: emptyLakeside(config.lakesideRoomId),
     // The start barrel holds a brew that is ready to collect.

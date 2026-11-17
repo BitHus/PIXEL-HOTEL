@@ -48,7 +48,7 @@ export async function loadSprites(): Promise<void> {
     const [kind, ...rest] = key.split('/') as [SpriteKind, ...string[]];
     const id = rest.join('/');
     // Furniture needs every facing its type allows, a plant its three stages; everything else is one file.
-    const ok = kind === 'furniture' ? (types.has(id) ? neededFacings(types.get(id)!).every((f) => per.has(f)) : per.has('down')) : kind === 'plants' ? plantComplete(per.keys()) : per.has('');
+    const ok = kind === 'furniture' ? (types.has(id) ? neededFacings(types.get(id)!).every((f) => per.has(f)) : per.has('down')) : kind === 'plants' ? plantComplete(per.keys()) || per.has('') : per.has('');
     if (ok) store.set(key, per);
   }
 }

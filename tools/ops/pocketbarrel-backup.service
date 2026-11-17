@@ -1,0 +1,9 @@
+# /etc/systemd/system/pocketbarrel-backup.service
+[Unit]
+Description=PocketBarrel daily sqlite backup
+
+[Service]
+Type=oneshot
+User=pocketbarrel
+EnvironmentFile=/etc/pocketbarrel.env
+ExecStart=/opt/pocketbarrel/current/tools/ops/backup-db.sh

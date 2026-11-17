@@ -79,7 +79,7 @@ describe('icon, block, floor, wall and plant sprite files', () => {
   const idOk = (kind: SpriteKind, id: string): boolean => {
     if (kind === 'icons') return known(() => getFurnitureType(id)) || isMaterialId(id) || !!getClothing(id) || known(() => getPiece(id as never)) || known(() => getGear(id as never)) || ['key', 'gems', 'gold'].includes(id);
     if (kind === 'blocks') return BLOCK_TYPES.some((b) => b.id === id);
-    if (kind === 'plants') return CROP_TYPES.some((c) => c.id === id || c.seed === id) || BLOCK_TYPES.some((b) => b.id === id || b.seedId === id);
+    if (kind === 'plants') return id === 'ripe_sparkle' || CROP_TYPES.some((c) => c.id === id || c.seed === id) || BLOCK_TYPES.some((b) => b.id === id || b.seedId === id);
     return STYLE_TYPES.some((s) => s.id === id);
   };
   for (const kind of ['icons', 'blocks', 'floors', 'walls', 'plants'] as const) {
@@ -90,7 +90,9 @@ describe('icon, block, floor, wall and plant sprite files', () => {
         expect(idOk(kind, ref!.id), `unknown id ${ref!.id}`).toBe(true);
         const { w, h, header } = sizeOf(kind, file);
         expect(header).toEqual(PNG_SIGNATURE);
-        if (kind === 'plants') {
+        if (kind === 'plants' && ref!.id === 'ripe_sparkle') {
+          expect([w, h]).toEqual([64, 32]); // the ripe cue strip: 2 frames of 32 x 32
+        } else if (kind === 'plants') {
           expect(w).toBe(32);
           expect([32, 48]).toContain(h);
         } else {

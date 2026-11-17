@@ -64,15 +64,18 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       // Per avatar: the newest bubble sits right above the head, older ones above it.
       const bottom = new Map<number, number>();
       const col = document.querySelector('.side-buttons')?.getBoundingClientRect();
+      const orders = [...document.querySelectorAll('.order-bubble')].filter((o) => !(o as HTMLElement).hidden).map((o) => o.getBoundingClientRect());
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i]!;
         const head = heads.get(b.avatarId);
         b.el.hidden = !head;
         if (!head) continue;
-        const y = bottom.get(b.avatarId) ?? head.y;
+        let y = bottom.get(b.avatarId) ?? head.y;
         const h = b.el.offsetHeight;
         const w = b.el.offsetWidth;
         let x = Math.min(Math.max(head.x - w / 2, 4), window.innerWidth - w - 4);
+        // An order icon (tap target) is never covered: the line moves up above it.
+        for (const o of orders) if (x < o.right && x + w > o.left && y > o.top && y - h < o.bottom) y = Math.min(y, o.top - 2);
         // A bubble never covers the right button column: it slides left of it when it would overlap.
         if (col && y - h < col.bottom && y > col.top && x + w > col.left - 4) x = Math.max(4, col.left - w - 4);
         b.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y - h)}px)`;

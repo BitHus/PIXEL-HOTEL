@@ -2,7 +2,7 @@
 // right-edge button column and always end above the hotbar (ui.css). Panels are built with
 // panelShell.ts; the ✗ goes on the corner of the panel's frame.
 
-export type PanelName = 'bag' | 'catalog' | 'room' | 'avatar' | 'chat' | 'settings' | 'workshop' | 'travel' | 'cooking' | 'brewing' | 'menu' | 'taps' | 'casks' | 'book';
+export type PanelName = 'bag' | 'catalog' | 'room' | 'avatar' | 'chat' | 'settings' | 'workshop' | 'travel' | 'cooking' | 'brewing' | 'menu' | 'taps' | 'casks' | 'book' | 'quests';
 
 export interface Panels {
   readonly open: PanelName | null;

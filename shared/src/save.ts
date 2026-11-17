@@ -349,6 +349,8 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     });
     return { ...state, rooms };
   },
+  // 32 -> 33 (TUT-2 part 3, daily quests and achievements): GameState.quests = { claimed: [] }. The first-run hint quests become the first_* achievements, derived from hintsDone (nothing is lost or paid twice).
+  32: (state) => (isObject(state) ? { ...state, quests: isObject(state.quests) && Array.isArray(state.quests.claimed) ? state.quests : { claimed: [] } } : state),
   // 31 -> 32 (step ST1, stacked blocks): Room.blocks per cell was ONE block, now a stack (array, bottom first): every block becomes a stack of one.
   31: (state) => {
     if (!isObject(state) || !Array.isArray(state.rooms)) return state;
@@ -514,7 +516,7 @@ export function isGameState(x: unknown): x is GameState {
   const bag = x.bag;
   if (!isObject(bag) || !isSlotList(bag.furniture) || !isSlotList(bag.materials)) return false;
   if (!isInt(x.currentRoomId) || !x.rooms.some((r) => isObject(r) && r.id === x.currentRoomId)) return false;
-  if (!isInt(x.hintsDone)) return false;
+  if (!isInt(x.hintsDone) || !isObject(x.quests) || !Array.isArray(x.quests.claimed)) return false;
   if (!isInt(p.farmRoomId) || !x.rooms.every((r) => isObject(r) && isObject(r.plants) && isObject(r.blocks))) return false;
   if (!isObject(x.lakeside) || !isInt(x.lakeside.roomId) || !Array.isArray(x.lakeside.trees) || !isInt(p.lakesideRoomId) || !isObject(p.biggest)) return false;
   const t = x.tavern;

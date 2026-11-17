@@ -113,6 +113,44 @@ export class PourFx {
     }
   }
 
+  /** OA-5b hook: per tap slot the state overlay of tap_stand_dry / tap_stand_wet (strips of 2 frames 32 x 48: left tap, right tap), wet tinted with the drink colour. Key = 'uid:slot'. */
+  private tapState = new Map<string, Sprite>();
+
+  /** Draws dry (no mug on the tap) or wet (mugs on it) on every slot of each stand; drops the ones that left. Call after items sync with TavernState.taps. */
+  syncTapStates(stands: { stand: FurnitureItem; bar: FurnitureItem | undefined }[], taps: readonly { standUid: number; slot: number; drink: string; mugs: number }[]): void {
+    const dry = spriteFrames('furniture', 'tap_stand', 'dry', 32);
+    const wet = spriteFrames('furniture', 'tap_stand', 'wet', 32);
+    const seen = new Set<string>();
+    for (const { stand, bar } of stands) {
+      if (!dry || !wet) break;
+      const top = bar ? surfaceHeight(getFurnitureType(bar.typeId)) : 0;
+      for (let slot = 0; slot < 2; slot++) {
+        const key = `${stand.uid}:${slot}`;
+        seen.add(key);
+        const tap = taps.find((t) => t.standUid === stand.uid && t.slot === slot);
+        const has = tap !== undefined && tap.mugs > 0;
+        const tex = (has ? wet : dry)[slot] ?? (has ? wet : dry)[0];
+        if (!tex) continue;
+        let sprite = this.tapState.get(key);
+        if (!sprite) {
+          sprite = new Sprite(tex);
+          sprite.eventMode = 'none';
+          this.tapState.set(key, sprite);
+          this.view.objects.add(sprite, bar ? itemDepthKey(stand, bar) : { y: stand.y, x: stand.x, uid: stand.uid });
+        }
+        sprite.texture = tex;
+        sprite.tint = has ? (PALETTE[getDrinkType(tap.drink as DrinkId).color] ?? '#ffffff') : 0xffffff;
+        sprite.position.set(Math.round(stand.x) - 16, Math.round(stand.y - top) - 48);
+      }
+    }
+    for (const [key, sprite] of this.tapState) {
+      if (seen.has(key)) continue;
+      this.view.objects.remove(sprite);
+      sprite.destroy();
+      this.tapState.delete(key);
+    }
+  }
+
   private setActive(uid: number | null): void {
     this.activeUid = uid;
     for (const [id, s] of this.rest) s.visible = id !== uid;

@@ -56,7 +56,10 @@ export function parseSpritePath(path: string): SpriteRef | null {
   }
   if (kind === 'plants') {
     const m = /^([a-z0-9]+(?:_[a-z0-9]+)*)_([123])\.png$/.exec(file);
-    return m ? { kind, id: m[1]!, variant: m[2]! } : null;
+    if (m) return { kind, id: m[1]!, variant: m[2]! };
+    // A strip (ripe_sparkle.png: the farm ripe cue, 2 frames of 32 x 32) is one file, variant ''.
+    const strip = /^([a-z0-9]+(?:_[a-z0-9]+)*_[a-z][a-z0-9]*)\.png$/.exec(file);
+    return strip ? { kind, id: strip[1]!, variant: '' } : null;
   }
   const m = /^([a-z0-9]+(?:_[a-z0-9]+)*)\.png$/.exec(file);
   return m ? { kind, id: m[1]!, variant: '' } : null;

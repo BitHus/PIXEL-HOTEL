@@ -1,0 +1,31 @@
+# /etc/systemd/system/pocketbarrel-server.service
+[Unit]
+Description=PocketBarrel game server (accounts and cloud saves)
+After=network.target
+
+[Service]
+Type=simple
+User=pocketbarrel
+Group=pocketbarrel
+WorkingDirectory=/opt/pocketbarrel/current
+# Secrets and PB_* settings live only here, never in the repo: chmod 600, owner root.
+EnvironmentFile=/etc/pocketbarrel.env
+ExecStart=/usr/bin/node --import tsx server/src/index.ts
+Restart=on-failure
+RestartSec=3
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/var/lib/pocketbarrel
+
+[Install]
+WantedBy=multi-user.target

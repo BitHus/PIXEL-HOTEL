@@ -245,6 +245,12 @@ export class DungeonScreen {
     this.input({ t: 'leave' });
   }
 
+  /** The crypt's Abandon button (after its own question): give up the run, like a defeat. */
+  abandon(): void {
+    if (!this.run || this.halted || this.run.place === 'mine') return;
+    this.input({ t: 'abandon' });
+  }
+
   /** The food button or E (step 9b): eats the first lunch box food that does something now. */
   eat(): void {
     const run = this.run;
