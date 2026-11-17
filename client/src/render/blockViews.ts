@@ -116,6 +116,13 @@ function drawCracks(g: Graphics, stage: number): void {
   }
 }
 
+/** ST2: a layer under the top one is a little darker (its side sits in shade); the top block stays full colour. */
+export function shadeOfLevel(level: number, stackSize: number): number {
+  const below = Math.max(0, stackSize - 1 - level);
+  const v = Math.max(0x99, 0xff - below * 0x22);
+  return (v << 16) | (v << 8) | v;
+}
+
 interface BlockView {
   id: string;
   c: number;
@@ -159,7 +166,10 @@ export class BlockViews {
       this.roomId = room.id;
     }
     const live = new Set<string>();
-    for (const { c, r, block, level } of blockList(room)) {
+    const list = blockList(room);
+    const heights = new Map<string, number>(); // stack size per cell, for the shading
+    for (const { c, r } of list) heights.set(`${c},${r}`, (heights.get(`${c},${r}`) ?? 0) + 1);
+    for (const { c, r, block, level } of list) {
       const key = `${c},${r},${level}`; // ST1: one view per block of a stack
       live.add(key);
       let v = this.views.get(key);
@@ -182,6 +192,7 @@ export class BlockViews {
         this.views.set(key, v);
         this.view.objects.add(node, this.keyOf(c, r, level));
       }
+      v.node.tint = shadeOfLevel(level, heights.get(`${c},${r}`) ?? 1);
       const stage = crackStage(block, type.hardness, now);
       if (stage !== v.stage) {
         v.stage = stage;
@@ -255,7 +266,7 @@ export class BlockViews {
   }
 
   /** The ghost of the block that would be placed in a cell (green = fits, red = not); null hides it. */
-  showGhost(at: { c: number; r: number; id: string; valid: boolean } | null): void {
+  showGhost(at: { c: number; r: number; id: string; valid: boolean; level?: number } | null): void {
     if (!at) {
       this.ghost.visible = false;
       return;
@@ -274,7 +285,7 @@ export class BlockViews {
     this.ghostFrame.rect(0, 0, BUILD_CELL, BUILD_CELL).stroke({ width: 2, color, alignment: 1 });
     this.ghostArt.alpha = at.valid ? 0.55 : 0.3;
     if (this.ghostSprite) this.ghostSprite.alpha = at.valid ? 0.55 : 0.3;
-    this.ghost.position.set(at.c * BUILD_CELL, at.r * BUILD_CELL);
+    this.ghost.position.set(at.c * BUILD_CELL, at.r * BUILD_CELL - (at.level ?? 0) * BLOCK_STACK_RISE_PX); // ST2: on a stack the ghost floats on its top
     this.ghost.visible = true;
   }
 }

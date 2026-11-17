@@ -13,6 +13,7 @@ import type { GameState } from './gameState.ts';
 import { CROP_TYPES, MATERIAL_TYPES } from './materials.ts';
 import { enemyKey } from './seen.ts';
 import { SPLICE_RECIPES, SPLICE_SEEDS, isSpliceResult, pairKey } from './splice.ts';
+import { poolResultSeeds } from './spliceRule.ts';
 import { BOOK_GEM_RANK } from './config.ts';
 import { gemDrop } from './gems.ts';
 import type { Rank, Rng, SeenMap } from './types.ts';
@@ -30,7 +31,7 @@ export interface BookEntry {
   key: string;
   /** The material id, furniture type id or enemy type (for the icon). */
   id: string;
-  kind: 'material' | 'furniture' | 'enemy' | 'recipe';
+  kind: 'material' | 'furniture' | 'enemy' | 'recipe' | 'spliceSeed';
   name: string;
   rank: Rank;
   /** Where it comes from: "Drops from: Slime", "Catalog", "Crafted", "Farm", ... */
@@ -88,10 +89,19 @@ export function sourceOf(id: string): string {
 /** The entries of a tab, in data order. */
 export function bookEntries(tab: BookTab): BookEntry[] {
   if (tab === 'splice') {
-    return SPLICE_RECIPES.map((r) => {
+    // SG6: the special recipes (found by their pair), then one card per seed the general rule can make (found when the seed was ever owned).
+    const special = SPLICE_RECIPES.map((r) => {
       const m = MATERIAL_TYPES.find((x) => x.id === r.result)!;
       return { key: pairKey(r.a, r.b), id: r.result, kind: 'recipe' as const, name: m.name, rank: m.rank, source: 'Splicing', recipe: { a: r.a, b: r.b } };
     });
+    const results = new Set<string>(SPLICE_RECIPES.map((r) => r.result));
+    const pool = poolResultSeeds()
+      .filter((id) => !results.has(id))
+      .map((id) => {
+        const m = MATERIAL_TYPES.find((x) => x.id === id);
+        return { key: `splice:${id}`, id, kind: 'spliceSeed' as const, name: m?.name ?? id, rank: m?.rank ?? 'common', source: 'Splicing' };
+      });
+    return [...special, ...pool];
   }
   if (tab === 'enemies') {
     return ENEMY_TABLES.map((t) => ({ key: enemyKey(t), id: t, kind: 'enemy' as const, name: ENEMY_NAMES[t], rank: ENEMY_RANKS[t], source: t === 'mimic' ? 'Dungeon chests' : 'Dungeon', drops: getLootTable(t).drops.map((d) => d.item) }));
@@ -111,7 +121,7 @@ export interface BookProgress {
 /** `splices` = Player.splicesFound: the Splice tab counts those (its entries are recipes, not finds). */
 export function bookProgress(seen: SeenMap, tab: BookTab, splices: readonly string[] = []): BookProgress {
   const entries = bookEntries(tab);
-  return { found: entries.filter((e) => (tab === 'splice' ? splices.includes(e.key) : seen[e.key] !== undefined)).length, total: entries.length };
+  return { found: entries.filter((e) => (tab === 'splice' ? (e.kind === 'spliceSeed' ? seen[e.id] !== undefined : splices.includes(e.key)) : seen[e.key] !== undefined)).length, total: entries.length };
 }
 
 /** All tabs together, and the whole book in percent (rounded down, 100 only when complete). */

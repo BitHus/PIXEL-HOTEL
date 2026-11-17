@@ -73,7 +73,7 @@ function enemyIconUrl(type: string): string {
 }
 
 function iconUrl(e: Pick<BookEntry, 'kind' | 'id'>): string {
-  return e.kind === 'enemy' ? enemyIconUrl(e.id) : e.kind === 'material' ? materialIconUrl(e.id as MaterialId) : furnitureIconUrl(e.id);
+  return e.kind === 'enemy' ? enemyIconUrl(e.id) : e.kind === 'material' || e.kind === 'spliceSeed' ? materialIconUrl(e.id as MaterialId) : furnitureIconUrl(e.id);
 }
 
 function nameOfItem(id: string): string {
@@ -101,7 +101,7 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
   };
 
   const card = (e: BookEntry, p: Player): HTMLElement => {
-    const seen = p.seen[e.key];
+    const seen = p.seen[e.kind === 'spliceSeed' ? e.id : e.key]; // SG6: a pool seed card is found when the seed was ever owned
     const c = el('div', `book-card${seen ? '' : ' unseen'}`);
     c.appendChild(icon(iconUrl(e), seen !== undefined));
     if (!seen) {
@@ -113,6 +113,7 @@ export function createBookPanel(parent: HTMLElement, claim: (tab: BookTab, perce
     setRank(name, e.id, e.rank);
     c.append(name, el('div', 'book-sub', RANK_NAMES[e.rank]));
     c.append(el('div', 'book-count', e.kind === 'enemy' ? `Kills: ${seen.count}` : `Found: ${seen.count}`));
+    if (e.kind === 'spliceSeed') c.classList.add('book-recipe');
     // A fish: the biggest one caught so far, and the size range it comes in.
     if (e.cm) c.append(el('div', 'book-count', `Biggest: ${p.biggest[e.id] ?? '?'} cm`), el('div', 'book-sub', `${e.cm.min} to ${e.cm.max} cm`));
     c.append(el('div', 'book-sub', e.source));

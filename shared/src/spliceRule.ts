@@ -53,6 +53,13 @@ function poolOf(category: SeedCategory, rank: number): SeedId[] {
   return POOL.get(`${category}:${rank}`) ?? [];
 }
 
+/** SG6: every seed the general rule can hand out (the pool: not a starter, splice-able, rank at most SPLICE_RANK_CAP), sorted by id. */
+export function poolResultSeeds(): SeedId[] {
+  return allSeedIds()
+    .filter((id) => !isStarterSeed(id) && isSpliceable(id) && RANK_INDEX[seedRank(id)] <= CAP_INDEX)
+    .sort();
+}
+
 /** The category a hash picks from the weights (heaviest first, ties by category order, so the table order never matters). */
 function pickCategory(w: Weights, h: number): SeedCategory[] {
   const list = SEED_CATEGORIES.filter((c) => (w[c] ?? 0) > 0).sort((p, q) => (w[q] ?? 0) - (w[p] ?? 0) || SEED_CATEGORIES.indexOf(p) - SEED_CATEGORIES.indexOf(q));

@@ -310,7 +310,7 @@ describe('the Book: Splice tab', () => {
   it('lists every recipe once; sources and rewards exist', () => {
     expect(BOOK_TABS).toContain('splice');
     const e = bookEntries('splice');
-    expect(e).toHaveLength(SPLICE_RECIPES.length);
+    expect(e.filter((x) => x.kind === 'recipe')).toHaveLength(SPLICE_RECIPES.length); // SG6: plus one card per pool seed
     expect(new Set(e.map((x) => x.key)).size).toBe(e.length);
     expect(sourceOf('vine_bench')).toBe('Splicing');
     expect(sourceOf('clay_seed')).toBe('Punching blocks, Splicing');
@@ -320,12 +320,12 @@ describe('the Book: Splice tab', () => {
 
   it('counts found recipes, shows a hint only for a seed the player has seen, and pays 25 / 50 / 75 / 100 %', () => {
     let s = createNewPlayer(undefined, 0);
-    expect(bookProgress(s.player.seen, 'splice', [])).toEqual({ found: 0, total: SPLICE_RECIPES.length });
+    expect(bookProgress(s.player.seen, 'splice', [])).toEqual({ found: 0, total: bookEntries('splice').length });
     const r = SPLICE_RECIPES[0]!;
     expect(recipeHint(r, {})).toBeNull();
     expect(recipeHint(r, { [r.b]: { count: 1, firstSeenAt: 0 } })).toBe(r.b);
     expect(recipeHint(r, { [r.a]: { count: 1, firstSeenAt: 0 }, [r.b]: { count: 1, firstSeenAt: 0 } })).toBe(r.a);
-    const quarter = Math.ceil(SPLICE_RECIPES.length / 4);
+    const quarter = Math.ceil(bookEntries('splice').length / 4); // the recipes come first and are more than a quarter of the tab
     const keys = SPLICE_RECIPES.slice(0, quarter).map((x) => pairKey(x.a, x.b));
     s = { ...s, player: { ...s.player, splicesFound: keys } };
     expect(bookProgress(s.player.seen, 'splice', keys).found).toBe(quarter);

@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  getBlockType, blockInCell, blockProblem, plantProblem, plantInCell, BUILD_CELL, cellOf, type BlockResult,
+  getBlockType, blockInCell, blockStack, blockProblem, plantProblem, plantInCell, BUILD_CELL, cellOf, type BlockResult,
   blockTapAction, getClothing, isSeedId, screenToWorld, spliceNeedsAsk, type Avatar, type Point, type Room,
 } from '@pixel-hotel/shared';
 import { HoldControl, type HoldResult, type HoldTarget } from '../input/holdControl.ts';
@@ -190,7 +190,8 @@ export async function setupBlockInput(g: G14) {
   /** The ghost of the selected block follows the pointer (green = fits). */
   function updateBlockGhost(): void {
     const at = st.marked === null ? null : cellOf(st.marked);
-    if (st.selectedBlock === null || at === null || build.on || placer.active || paint.active || st.room.kind === 'lakeside' || blockInCell(st.room, at.c, at.r) || plantInCell(st.room, at.c, at.r)) {
+    const stack = at !== null && st.selectedBlock !== null && !isSeedId(st.selectedBlock) && blockInCell(st.room, at.c, at.r) !== undefined && plantInCell(st.room, at.c, at.r) === undefined;
+    if (st.selectedBlock === null || at === null || build.on || placer.active || paint.active || st.room.kind === 'lakeside' || (!stack && (blockInCell(st.room, at.c, at.r) || plantInCell(st.room, at.c, at.r)))) {
       blockViews.showGhost(null);
       plantViews.showGhost(null);
       return;
@@ -201,7 +202,8 @@ export async function setupBlockInput(g: G14) {
       plantViews.showGhost({ ...at, seed: st.selectedBlock, valid });
     } else {
       plantViews.showGhost(null);
-      blockViews.showGhost({ ...at, id: st.selectedBlock, valid });
+      // ST2: over a stack the ghost shows the layer that would be added, one rise above the top.
+      blockViews.showGhost({ ...at, id: st.selectedBlock, valid, level: stack ? blockStack(st.room, at.c, at.r).length : 0 });
     }
   }
   // ---------- Hold to repeat (step BG5b) ----------

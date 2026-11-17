@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { SeedId } from './types.ts';
+import { SPLICE_RECIPES } from './splice.ts';
+import { poolResultSeeds } from './spliceRule.ts';
 import { BOOK_REWARD_STEPS, RARE_DROP_CHANCE } from './config.ts';
 import { BOOK_REWARDS, BOOK_TABS, bookEntries, bookProgress, bookRewards, bookTotal, claimBookReward, newEntries, openBook, sourceOf } from './book.ts';
 import { getClothing } from './clothing.ts';
@@ -141,7 +144,7 @@ describe('the Book (step 9e)', () => {
     expect(total.found).toBe(9);
     expect(total.percent).toBe(Math.floor(900 / total.total));
     let seen = s.player.seen;
-    for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) seen = addSeen(seen, e.key, 1, 5);
+    for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) seen = addSeen(seen, e.kind === 'spliceSeed' ? e.id : e.key, 1, 5);
     expect(bookTotal(seen, bookEntries('splice').map((e) => e.key)).percent).toBe(100);
   });
 
@@ -220,5 +223,38 @@ describe('gems from a Book reward (step BG4)', () => {
     const paid = claimBookReward(s, 'enemies', 25, 5000, () => 0)!;
     expect(paid.player.wallet.gems).toBe(2);
     expect(paid.ledger[paid.ledger.length - 1]).toMatchObject({ reason: 'book_reward', gemsDelta: 2 });
+  });
+});
+
+describe('the Splice tab (SG6)', () => {
+  it('has every special recipe and one card per pool result seed, with unique keys', () => {
+    const e = bookEntries('splice');
+    const recipes = e.filter((x) => x.kind === 'recipe');
+    const seeds = e.filter((x) => x.kind === 'spliceSeed');
+    expect(recipes).toHaveLength(SPLICE_RECIPES.length);
+    expect(seeds.length).toBeGreaterThan(0);
+    expect(new Set(e.map((x) => x.key)).size).toBe(e.length);
+    const poolIds = new Set(poolResultSeeds());
+    for (const s of seeds) expect(poolIds.has(s.id as SeedId), s.id).toBe(true);
+    for (const r of SPLICE_RECIPES) expect(seeds.some((s) => s.id === r.result)).toBe(false);
+  });
+
+  it('counts a recipe by its pair and a pool seed by owning it; rewards work on this tab', () => {
+    let s = fresh();
+    expect(bookProgress(s.player.seen, 'splice', []).found).toBe(0);
+    const first = bookEntries('splice').find((x) => x.kind === 'spliceSeed')!;
+    s = { ...s, player: { ...s.player, seen: addSeen(s.player.seen, first.id, 1, 5), splicesFound: [bookEntries('splice')[0]!.key] } };
+    expect(bookProgress(s.player.seen, 'splice', s.player.splicesFound).found).toBe(2);
+  });
+
+  it('a claimed splice reward stays claimed when the tab grows or progress is lost', () => {
+    let s = fresh();
+    const all = bookEntries('splice');
+    s = { ...s, player: { ...s.player, splicesFound: all.filter((x) => x.kind === 'recipe').map((x) => x.key), seen: all.filter((x) => x.kind === 'spliceSeed').reduce((m, x) => addSeen(m, x.id, 1, 5), s.player.seen) } };
+    expect(bookRewards(s.player, 'splice').map((r) => r.state)).toEqual(['ready', 'ready', 'ready', 'ready']);
+    const paid = claimBookReward(s, 'splice', 25, 5000, () => 0.9999)!;
+    const later = { ...paid.player, seen: {}, splicesFound: [] };
+    expect(bookRewards(later, 'splice')[0]!.state).toBe('taken');
+    expect(claimBookReward({ ...paid, player: later }, 'splice', 25, 6000, () => 0.9999)).toBeNull();
   });
 });
