@@ -78,6 +78,13 @@ export async function setupCore(g: G0) {
   /** Real screen px per CSS px. Zoom settles where zoom * dpr is whole. */
   const dpr = (): number => app.renderer.resolution;
   host.appendChild(app.canvas);
+  // OWN-4: the canvas stays hidden (and a small loading line shows) until the first room is built and drawn: an empty canvas is only the dark clear colour, which looked like a purple screen. gameLoop reveals it (always, also when opening fails).
+  app.canvas.style.opacity = '0';
+  const veil = document.createElement('div');
+  veil.id = 'boot-veil';
+  veil.textContent = 'Opening your tavern...';
+  veil.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ead4aa;font-family:var(--font);pointer-events:none;z-index:1';
+  uiRoot.appendChild(veil);
 
   // Open the room the player was in last (saved); the intro starts in the shop.
   const first = await api.enterRoom(st.introPending ? (await api.getPlayer()).shopRoomId : await api.currentRoomId());

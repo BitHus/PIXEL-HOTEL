@@ -289,6 +289,8 @@ export interface GameAPI {
   useDoor(doorId: string): Promise<RoomState | null>;
   /** Ask to walk to a world point. Returns the path (world points, starting at the avatar) or null. */
   walk(to: Point): Promise<Point[] | null>;
+  /** OWN-4: the client stopped the avatar where it stands (a pan cancelled the walk): the API forgets the old goal and stands there too, so the next walk starts from the same spot. */
+  stopWalk(at: Point): Promise<void>;
   /**
    * Walk to an item with seats and sit or lie on it: the free seat nearest to `tap` (world px),
    * reached from its nearest reachable side. Null if no free seat can be reached.

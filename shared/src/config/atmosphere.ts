@@ -10,6 +10,8 @@ export const AMBIENT_LIGHT = {
   shop: { color: 5, strength: 0.14 },
   farm: { color: 23, strength: 0 },
   lakeside: { color: 23, strength: 0 },
+  kitchen: { color: 5, strength: 0.1 },
+  cellar: { color: 24, strength: 0.3 },
 } as const;
 export const OUTDOOR_KINDS: readonly string[] = ['farm', 'lakeside'];
 /** The light map is drawn in blocks of this many art px (cheap, and the halos stay a bit chunky). */

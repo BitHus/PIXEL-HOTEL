@@ -61,6 +61,7 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       bubbles = [];
     },
     update(_dtMs, heads) {
+      if (bubbles.length === 0) return; // OWN-4 (a): no layout reads (querySelector, getBoundingClientRect) on frames without a chat bubble
       const now = performance.now();
       for (const b of bubbles.filter((x) => now - x.born >= x.life)) b.el.remove();
       bubbles = bubbles.filter((b) => now - b.born < b.life);

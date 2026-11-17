@@ -24,6 +24,7 @@ import {
   GUEST_EAT_MAX_MS,
   GUEST_EAT_MIN_MS,
   GUEST_GROUP_GAP_PX,
+  GUEST_GROUP_STAGGER_MS,
   GUEST_GROUP_WEIGHTS,
   GUEST_MAX,
   GUEST_NO_MENU_MAX_MS,
@@ -253,7 +254,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
       const group: Guest[] = [];
       for (let k = 0; k < n; k++) {
         const c = newGuest(id--, first, rng, { x: out.x, y: out.y + k * GUEST_GROUP_GAP_PX }, picks?.[k] ?? null);
-        group.push({ ...c, path: [door], waitMs: CUSTOMER_ENTER_PAUSE_MS + k * 250 });
+        group.push({ ...c, path: [door], waitMs: CUSTOMER_ENTER_PAUSE_MS + k * GUEST_GROUP_STAGGER_MS });
       }
       s = withTavern(s, { guests: [...here, ...group], nextGuestId: id });
       changed = true;

@@ -3284,40 +3284,43 @@
 /* ---------- Step 9t: the tavern ---------- */
 /* The order bubble above a seated guest: the item's icon; tap to serve (44 px touch size). */
 .order-bubble {
+  /* OWN-4 (d): a really tiny marker over the guest who wants something: a dot in the drink's colour, or the tiny dish icon. The orders strip holds the details. */
   position: absolute;
   left: 0;
   top: 0;
   box-sizing: border-box;
-  width: 44px;
-  height: 44px;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--cream);
-  border: var(--px) solid var(--outline);
-  pointer-events: auto;
-  cursor: pointer;
-  animation: order-bob 0.8s steps(2) infinite;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  margin: 0;
+  display: block;
+  background: var(--dot, var(--cream));
+  border: 1px solid var(--outline);
+  border-radius: 50%;
+  pointer-events: none;
 }
-
+.order-bubble.dish {
+  width: 14px;
+  height: 14px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
 .order-bubble[hidden] {
   display: none;
 }
-
 .order-bubble img {
-  width: 32px;
-  height: 32px;
+  width: 14px;
+  height: 14px;
   image-rendering: pixelated;
   pointer-events: none;
+  display: block;
 }
-
 .order-bubble.urgent {
   border-color: var(--no);
 }
-
 .order-bubble.taken {
-  opacity: 0.6;
+  opacity: 0.55;
   animation: none;
 }
 

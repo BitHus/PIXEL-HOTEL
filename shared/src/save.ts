@@ -350,6 +350,8 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     return { ...state, rooms };
   },
   // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  // 34 -> 35 (CEL-1): Player.kitchenRoomId and cellarRoomId are optional (missing = no such room yet) and Room.kind may be 'kitchen' or 'cellar'; nothing to change in an old save (the kitchen and the cellar are created and filled when the doors exist, CEL-2/4).
+  34: (state) => state,
   33: (state) => (isObject(state) ? { ...state, quests: isObject(state.quests) && Array.isArray(state.quests.claimed) ? state.quests : { claimed: [] } } : state),
   // 32 -> 33 (TUT-2 part 3, daily quests and achievements): GameState.quests = { claimed: [] }. The first-run hint quests become the first_* achievements, derived from hintsDone (nothing is lost or paid twice).
   32: (state) => (isObject(state) ? { ...state, quests: isObject(state.quests) && Array.isArray(state.quests.claimed) ? state.quests : { claimed: [] } } : state),

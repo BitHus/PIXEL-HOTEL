@@ -66,6 +66,8 @@ export async function setupAvatarWalk(g: G1) {
     st.path = [];
     seating.goal = null;
     if (st.avatar.state === 'walk') st.avatar = { ...st.avatar, state: 'idle' };
+    // OWN-4: the API stops where the client stopped, else its old walk goes on and the next tap snaps the avatar.
+    void api.stopWalk({ x: st.avatar.x, y: st.avatar.y });
   };
 
   return { sprite, seating, follow, walkTo, sitOn, serveAt, stop };

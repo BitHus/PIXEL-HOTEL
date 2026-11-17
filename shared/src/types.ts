@@ -345,6 +345,9 @@ export interface Player {
   unlockedClothing: string[];
   hotelRoomId: number;
   shopRoomId: number;
+  /** CEL-1: the attached kitchen room and the cellar room (missing = not built yet; see docs/PLAN-CELLAR.md). */
+  kitchenRoomId?: number;
+  cellarRoomId?: number;
   /** The farm (step 9b). */
   farmRoomId: number;
   /** The lakeside (step 9f). */

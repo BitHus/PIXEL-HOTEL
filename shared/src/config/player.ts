@@ -31,7 +31,15 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 34;
+export const SAVE_VERSION = 35;
+/**
+ * CEL-1 (docs/PLAN-CELLAR.md; all PROPOSALS, the owner said use them): the cellar is built with gold at player level CELLAR_UNLOCK_LEVEL,
+ * includes one free keg rack, upgrades cost CELLAR_UPGRADE_COST (level 2, 3), racks allowed per cellar level CELLAR_RACK_MAX_BY_LEVEL. Used from CEL-4.
+ */
+export const CELLAR_BUILD_COST = 300;
+export const CELLAR_UNLOCK_LEVEL = 2;
+export const CELLAR_UPGRADE_COST: readonly [number, number] = [400, 900];
+export const CELLAR_RACK_MAX_BY_LEVEL: readonly [number, number, number] = [2, 4, 6];
 /** The ledger is folded into per-reason counters (GameState.quests.folded) when it passes LEDGER_TRIM_AT entries: the newest LEDGER_KEEP stay. */
 export const LEDGER_KEEP = 2000;
 export const LEDGER_TRIM_AT = 2500;

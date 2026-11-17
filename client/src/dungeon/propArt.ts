@@ -507,11 +507,21 @@ function stairs(g: Graphics, v: number, up: boolean): void {
 const PROP_SPRITE: Record<string, string> = {
   barrel: 'barrel', crate: 'crate', shelf: 'shelf', statue: 'statue', sarcophagus: 'sarcophagus',
   sarcophagus_small: 'sarcophagus_small', candle_stand: 'candle_stand', gate_arch: 'dungeon_gate', vault_arch: 'dungeon_gate',
+  campfire: 'campfire', brazier: 'brazier', torch_stand: 'torch_stand', bones: 'bones', skull_pile: 'skull_pile', rubble: 'rubble', root: 'root', glowcap: 'glowcap', gem_pile: 'gem_pile',
+  brazier_big: 'brazier_big', library_shelf: 'library_shelf', fountain: 'fountain', banner: 'banner', vault_door: 'vault_door', guard_post: 'guard_post', candles: 'candles',
 };
 /** The PNGs have no shadow: these get the code shadow oval under them. */
-const SPRITE_SHADOW: Record<string, number> = { barrel: 22, crate: 24, statue: 26, sarcophagus: 34, sarcophagus_small: 26, shelf: 26 };
-/** candle_stand.png: where the code flames stand (PNG px from the top-left of the 32 x 32 picture). */
-const CANDLE_FLAMES: [number, number][] = [[10, 3], [16, 0], [21, 3]];
+const SPRITE_SHADOW: Record<string, number> = { barrel: 22, crate: 24, statue: 26, sarcophagus: 34, sarcophagus_small: 26, shelf: 26, library_shelf: 54, fountain: 60, guard_post: 50 };
+/** Code flames on a PNG: [x, base y, size] in PNG px from the top-left of the 32 x 32 picture (the flame grows up from the base). */
+const PROP_FLAMES: Record<string, [number, number, number][]> = {
+  candle_stand: [[10, 9, 1], [16, 6, 1], [21, 9, 1]],
+  campfire: [[16, 24, 1], [12, 25, 1], [20, 25, 1]],
+  brazier: [[12, 12, 1], [16, 11, 1], [20, 12, 1]],
+  torch_stand: [[16, 5, 1]],
+  brazier_big: [[10, 11, 2], [16, 10, 2], [22, 11, 2]],
+  guard_post: [[34, 17, 1]],
+  candles: [[9, 14, 1], [17, 18, 1], [23, 21, 1]],
+};
 
 export function drawProp(kind: PropKind | string, variant = 0, clockMs = 0): Container {
   const root = new Container();
@@ -524,9 +534,10 @@ export function drawProp(kind: PropKind | string, variant = 0, clockMs = 0): Con
     const sp = new Sprite(tex);
     sp.position.set(-Math.round(tex.width / 2), -tex.height);
     root.addChild(sp);
-    if (kind === 'candle_stand') {
+    const flames = PROP_FLAMES[kind];
+    if (flames) {
       const fg = new Graphics();
-      CANDLE_FLAMES.forEach(([x, y], i) => flame(fg, x - tex.width / 2, y - tex.height + 6, clockMs + i * 40, 1));
+      flames.forEach(([x, y, size], i) => flame(fg, x - tex.width / 2, y - tex.height, clockMs + i * 40, size));
       root.addChild(fg);
     }
     return root;

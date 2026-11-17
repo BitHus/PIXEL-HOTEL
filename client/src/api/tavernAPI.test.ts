@@ -67,6 +67,21 @@ describe('the tavern through the GameAPI', () => {
     expect((await api.getTavern()).mess).toEqual([]);
   });
 
+  it('OWN-4 (c): a pile that already lies on a table (old save, missed event) is swept on the next tick, and after an offline gap', async () => {
+    const { api, events, now } = await openTavern();
+    const gold0 = (await api.getPlayer()).wallet.gold;
+    const pile = (id: number) => ({ id, seatUid: 1, seatIndex: 0, x: 100, y: 100, coins: 7, gems: 1, dish: 'root_ale' as const });
+    api.state = { ...api.state, tavern: { ...api.state.tavern, mess: [pile(901), pile(902)], nextMessId: 903 } };
+    api.update();
+    expect((await api.getTavern()).mess).toEqual([]);
+    expect(events.filter((e) => e.t === 'collected').length).toBe(2);
+    expect((await api.getPlayer()).wallet.gold).toBe(gold0 + 14);
+    // An offline gap: piles that catch-up leaves are paid out too.
+    api.state = { ...api.state, tavern: { ...api.state.tavern, mess: [pile(904)], nextMessId: 905, updatedAt: now() - 3_600_000 } };
+    api.update();
+    expect((await api.getTavern()).mess).toEqual([]);
+  });
+
   it('refuses a serve tap for a guest without an order, or from another room', async () => {
     const { api, until, player } = await openTavern();
     expect(await api.serveGuest(-999)).toBe(false);

@@ -690,5 +690,25 @@
         }
       }
     ]
+  },
+  {
+    "id": "kitchen_room",
+    "name": "Kitchen",
+    "kind": "kitchen",
+    "levels": [
+      { "rects": [{ "x": 0, "y": 0, "w": 6, "h": 5 }], "door": { "x": 3 } },
+      { "rects": [{ "x": 0, "y": 0, "w": 8, "h": 5 }], "door": { "x": 4 } },
+      { "rects": [{ "x": 0, "y": 0, "w": 8, "h": 7 }], "door": { "x": 4 } }
+    ]
+  },
+  {
+    "id": "cellar_room",
+    "name": "Cellar",
+    "kind": "cellar",
+    "levels": [
+      { "rects": [{ "x": 0, "y": 0, "w": 8, "h": 5 }], "door": { "x": 4 } },
+      { "rects": [{ "x": 0, "y": 0, "w": 10, "h": 5 }], "door": { "x": 5 } },
+      { "rects": [{ "x": 0, "y": 0, "w": 10, "h": 7 }], "door": { "x": 5 } }
+    ]
   }
 ]

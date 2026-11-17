@@ -1,7 +1,7 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
+import { CAMERA_FOLLOW_EASE_MS, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, type Point } from '@pixel-hotel/shared';
 import { followPaused } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
@@ -30,6 +30,9 @@ export async function setupGameLoop(g: G16) {
   /** The avatars that stand or walk on the floor (their shadows). */
   const feet: Point[] = [];
   let lastStepBeat = 0;
+  let wasPaused = false;
+  let easeOff: Point | null = null;
+  let easeMs = 0;
   // Frame times for the Debug line (real elapsed ms per frame, not the capped delta).
   const frames = new FrameStats(120);
   let frameLineAt = 0;
@@ -63,11 +66,25 @@ export async function setupGameLoop(g: G16) {
     // Arrived at the seat's approach point: take the pose and slide onto the seat.
     if (st.path.length === 0 && seating.goal !== null) st.avatar = seating.arrive(st.avatar, roomItem(seating.goal.uid));
     st.avatar = seating.update(st.avatar, ticker.deltaMS);
-    // OA-13: in the tavern the camera keeps the avatar centred, no lag (after the avatar moved this frame; Settings: Follow camera); the intro and the player's own drag win.
-    if (!step && prefs.followCamera && st.room.id === st.tavern.roomId && !intro.active && !followPaused()) {
-      const next = followLock(st.camera, { x: st.avatar.x, y: st.avatar.y - 24 }, app.screen.width, app.screen.height, st.bounds);
-      if (next !== st.camera) setCamera(next);
-    }
+    // OA-13 / OWN-4 (e): in EVERY room (not only the tavern) the camera keeps the avatar centred, no lag (after the avatar moved this frame; Settings: Follow camera); the intro and the player's own drag win.
+    // OWN-4: when the player's own pan pause ends the camera EASES back (CAMERA_FOLLOW_EASE_MS) instead of jumping to the avatar.
+    const paused = followPaused();
+    if (!step && prefs.followCamera && !intro.active && !build.on && !paused) {
+      const lock = followLock(st.camera, { x: st.avatar.x, y: st.avatar.y - 24 }, app.screen.width, app.screen.height, st.bounds);
+      if (wasPaused && (lock.x !== st.camera.x || lock.y !== st.camera.y)) {
+        easeOff = { x: st.camera.x - lock.x, y: st.camera.y - lock.y };
+        easeMs = 0;
+      }
+      let next = lock;
+      if (easeOff) {
+        easeMs += ticker.elapsedMS;
+        const k = Math.max(0, 1 - easeMs / CAMERA_FOLLOW_EASE_MS);
+        next = k > 0 ? { ...lock, x: lock.x + easeOff.x * k * k, y: lock.y + easeOff.y * k * k } : lock;
+        if (k <= 0) easeOff = null;
+      }
+      if (next !== st.camera && (next.x !== st.camera.x || next.y !== st.camera.y)) setCamera(next);
+    } else easeOff = null;
+    wasPaused = paused;
     itemViews.props.setMealSpots(g.tableMess.steamSpots());
     itemViews.update(ticker.deltaMS);
     g.tableMess.update(ticker.deltaMS);
@@ -160,15 +177,21 @@ export async function setupGameLoop(g: G16) {
   await splashGone;
   // After Continue the first frames are empty while the room builds: the canvas starts clear and fades in (no black frame).
   app.canvas.style.opacity = '0';
-  await openRoom(st.room.id, !st.introPending);
-  app.canvas.style.transition = 'opacity 280ms linear';
-  requestAnimationFrame(() => {
-    app.canvas.style.opacity = '1';
-    window.setTimeout(() => {
-      app.canvas.style.transition = '';
-      app.canvas.style.opacity = '';
-    }, 340);
-  });
+  // OWN-4: reveal in a finally (a room that fails to open must never leave a hidden or empty canvas), after the first frame of the room was really drawn.
+  try {
+    await openRoom(st.room.id, !st.introPending);
+    await new Promise<void>((r) => app.ticker.addOnce(() => r()));
+  } finally {
+    document.getElementById('boot-veil')?.remove();
+    app.canvas.style.transition = 'opacity 280ms linear';
+    requestAnimationFrame(() => {
+      app.canvas.style.opacity = '1';
+      window.setTimeout(() => {
+        app.canvas.style.transition = '';
+        app.canvas.style.opacity = '';
+      }, 340);
+    });
+  }
   if (st.introPending) await playNewGameIntro();
   // A run in the save (step 9): back into the dungeon, paused until Resume.
   const saved = await api.getRun();

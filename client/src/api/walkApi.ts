@@ -31,6 +31,13 @@ export const walkApi = {
     return path;
   },
 
+  async stopWalk(h: LocalGameAPI, at: Point): Promise<void> {
+    if (!finitePoint(at)) return;
+    const a = h.walkState.avatar;
+    if (a.state === 'sit' || a.state === 'lie') return;
+    h.walkState = { avatar: { ...a, x: at.x, y: at.y, state: 'idle' }, path: [], at: h.now(), sitOn: null, seated: null };
+  },
+
   async sit(h: LocalGameAPI, uid: number, tap?: Point): Promise<SitResult | null> {
     const item = h.roomItem(uid);
     if (!item || (tap !== undefined && !finitePoint(tap))) return null;

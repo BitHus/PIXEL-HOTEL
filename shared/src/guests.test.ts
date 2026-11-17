@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AWAY_ORDERS_MAX, GUEST_EAT_MAX_MS, GUEST_EAT_MIN_MS, GUEST_MAX, GUEST_PATIENCE_MS, SHOP_TICK_MS } from './config.ts';
+import { AWAY_ORDERS_MAX, GUEST_EAT_MAX_MS, GUEST_GROUP_STAGGER_MS, GUEST_EAT_MIN_MS, GUEST_MAX, GUEST_PATIENCE_MS, SHOP_TICK_MS } from './config.ts';
 import { inStaffZone, staffZones } from './npcNav.ts';
 import type { GameState } from './gameState.ts';
 import { catchUpTavern, deliverOrder, rollGroupSize, stepTavern, type TavernEvent } from './guests.ts';
@@ -43,6 +43,22 @@ describe('guests: seating and groups (step 9t)', () => {
     expect(s.player.materials).toEqual(ledgerMaterials(s));
     expect(events.find((e) => e.t === 'order')).toMatchObject({ guestId: g!.id, item: 'root_ale', price: 9, reaction: 'smile' });
     expect(events.some((e) => e.t === 'guests')).toBe(true);
+  });
+
+  it('OWN-4: the members of a group walk in one by one, never as a batch', () => {
+    let s = withLongTable(applyChange(withAle(), { reason: 'debug', materials: { root_ale: 50 } }, 0)!);
+    let groups = 0;
+    for (let t = SHOP_TICK_MS, rng = seededRng(21); t < 20 * MIN; t += SHOP_TICK_MS) {
+      const before = new Set(s.tavern.guests.map((g) => g.id));
+      s = stepTavern(s, tavernWorld(s, true), SHOP_TICK_MS, rng, t).state;
+      const fresh = s.tavern.guests.filter((g) => !before.has(g.id) && g.phase === 'enter');
+      if (fresh.length < 2) continue;
+      groups++;
+      const waits = fresh.map((g) => g.waitMs).sort((a, b) => a - b);
+      for (let k = 1; k < waits.length; k++) expect(waits[k]! - waits[k - 1]!).toBeGreaterThanOrEqual(GUEST_GROUP_STAGGER_MS - 1);
+      s = tidy(serveAll(s, seededRng(2)), t);
+    }
+    expect(groups).toBeGreaterThan(0);
   });
 
   it('comes alone, as a pair or as three', () => {

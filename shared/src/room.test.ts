@@ -35,7 +35,7 @@ const area = (rects: { w: number; h: number }[]): number => rects.reduce((a, r) 
 
 describe('room shapes (step 7b)', () => {
   it('has square (hotel and shop), long, L-shape, plus and wide hall, each with 3 levels', () => {
-    expect(ROOM_SHAPES.map((s) => s.id)).toEqual(['square', 'square_shop', 'long', 'l_shape', 'plus', 'wide_hall', 'farm', 'lakeside']);
+    expect(ROOM_SHAPES.map((s) => s.id)).toEqual(['square', 'square_shop', 'long', 'l_shape', 'plus', 'wide_hall', 'farm', 'lakeside', 'kitchen_room', 'cellar_room']);
     for (const s of ROOM_SHAPES) expect(s.levels).toHaveLength(3);
     expect(shapesFor('hotel').map((s) => s.id)).not.toContain('square_shop');
     expect(shapesFor('shop').map((s) => s.id)).not.toContain('square');
@@ -48,7 +48,7 @@ describe('room shapes (step 7b)', () => {
   });
 
   it('level 1 floors have about the same area, whole cells, rectangles never overlap (BG1: the data is in cells)', () => {
-    for (const s of ROOM_SHAPES) {
+    for (const s of ROOM_SHAPES.filter((x) => x.kind !== 'kitchen' && x.kind !== 'cellar')) {
       const a = area(s.levels[0]!.rects) * BUILD_CELL * BUILD_CELL;
       expect(a, s.id).toBeGreaterThan(170_000);
       expect(a, s.id).toBeLessThan(240_000);

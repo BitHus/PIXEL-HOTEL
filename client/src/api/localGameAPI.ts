@@ -182,6 +182,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async enterRoom(roomId: number): Promise<RoomState> { return roomsApi.enterRoom(this, roomId); }
   async useDoor(doorId: string): Promise<RoomState | null> { return roomsApi.useDoor(this, doorId); }
   async walk(to: Point): Promise<Point[] | null> { return walkApi.walk(this, to); }
+  async stopWalk(at: Point): Promise<void> { return walkApi.stopWalk(this, at); }
   async sit(uid: number, tap?: Point): Promise<SitResult | null> { return walkApi.sit(this, uid, tap); }
   async serve(uid: number): Promise<ServeResult | null> { return walkApi.serve(this, uid); }
 
@@ -340,7 +341,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
     this.runErrand();
     if (now - this.state.tavern.updatedAt > SHOP_CATCH_UP_GAP_MS) {
       this.catchUp();
+      const caught = tavernApi.autoCollect(this.state, now);
+      this.state = caught.state;
       this.save();
+      for (const e of caught.events) this.emitTavern(e);
       this.emitTavern({ t: 'guests', guests: this.state.tavern.guests });
       return;
     }
@@ -353,12 +357,13 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
       s = r.state;
       tavernEvents.push(...r.events);
     }
-    if (s === this.state) return;
+    // Also piles that were already lying there (an old save, a missed event): sweep when nothing else changed.
+    if (s === this.state && s.tavern.mess.length === 0) return;
     // Auto-collect (owner 17 Nov): a guest's coins, gem tip and empty mug go straight to the wallet; the usual events still play.
-    const swept = tavernApi.autoCollect(s, tavernEvents, now);
+    const swept = tavernApi.autoCollect(s, now);
     s = swept.events.length > 0 ? this.hintDone(swept.state, 2) : swept.state;
     // Only events change what is worth saving; walking positions are not saved every step.
-    if (tavernEvents.length > 0) this.commit(s);
+    if (tavernEvents.length > 0 || swept.events.length > 0) this.commit(s);
     else this.state = s;
     for (const e of tavernEvents) this.emitTavern(e);
     for (const e of swept.events) this.emitTavern(e);

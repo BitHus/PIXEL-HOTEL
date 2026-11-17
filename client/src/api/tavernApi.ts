@@ -58,16 +58,14 @@ import type { LocalGameAPI } from './localGameAPI.ts';
 
 export const tavernApi = {
   /**
-   * Auto-collect (owner 17 Nov): the table spots that a guest left in these tavern events (event 'coins') are paid out
-   * and cleared at once, same ledger reason as the tap; the 'collected' and 'cleared' events still play. Old piles stay tappable.
+   * Auto-collect (owner 17 Nov, OWN-4 c): EVERY table spot with coins, a gem tip or an empty mug is paid out and cleared at once
+   * (same ledger reason as the tap; the 'collected' and 'cleared' events still play). It sweeps the whole mess list, so a pile left by an
+   * old save, an offline catch-up or a missed event never lies on the table. Money must never lie on the table.
    */
-  autoCollect(state: GameState, events: readonly { t: string; mess?: { id: number } }[], now: number): { state: GameState; events: TavernClientEvent[] } {
+  autoCollect(state: GameState, now: number): { state: GameState; events: TavernClientEvent[] } {
     let s = state;
     const out: TavernClientEvent[] = [];
-    for (const e of events) {
-      if (e.t !== 'coins' || !e.mess) continue;
-      const mess = s.tavern.mess.find((m) => m.id === e.mess!.id);
-      if (!mess) continue;
+    for (const mess of state.tavern.mess) {
       const spot = { x: mess.x, y: mess.y };
       const r = collectCoins(s, mess.id, now);
       if (r) {

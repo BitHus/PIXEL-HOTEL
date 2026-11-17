@@ -50,6 +50,8 @@ export const GUEST_MAX = 8;
 export const GUEST_GROUP_WEIGHTS = [5, 4, 2] as const;
 /** The members of a group walk in this far behind each other, px. */
 export const GUEST_GROUP_GAP_PX = 16;
+/** OWN-4 (b): the members of a pair or group come in ONE BY ONE, this far apart (ms), so the door never shows a batch. The average guest rate is unchanged. */
+export const GUEST_GROUP_STAGGER_MS = 4000;
 /**
  * A seat is a tavern seat when a table (a surface item, or the bar) is at most this far from the
  * seat's centre, px. On the 32 px cell grid (BG1) that is a stool on a cell right next to a table
@@ -132,5 +134,9 @@ export const POUR_TIP_RATE = 0.1;
 export const CAMERA_FOLLOW_TAU_MS = 220;
 /** A drag, pinch or wheel by the player pauses the follow camera for this long, ms (it comes back when the avatar walks on). */
 export const CAMERA_FOLLOW_PAUSE_MS = 2500;
+/** OWN-4: the camera eases back to the avatar over this long when the pan pause ends (no jump). */
+export const CAMERA_FOLLOW_EASE_MS = 350;
+/** OWN-4: a shown guest is only snapped to the model when it is farther than this (a slow frame must not teleport it). */
+export const GUEST_RESYNC_PX = 48;
 /** The follow camera stops gliding when it is this close to its target, px (the final snap to whole device px follows in the redraw). */
 export const CAMERA_FOLLOW_EPS_PX = 0.25;
