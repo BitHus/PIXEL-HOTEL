@@ -40,3 +40,4 @@ TESTER: running a playtest (TESTER RUN 2 in docs/FIXLIST.md incl. the hat bug); 
 ## Helpers (free workers; test results)
 Ollama local (qwen2.5-coder:7b, qwen3:8b): FAILED file-edit test (bad tool calls) 17 Nov, use only for plain text drafting. Gemini CLI: key set, scratch test running. Groq, OpenRouter: waiting for owner keys.
 ## Stopped by the owner 17 Nov (unfinished, files partly in the tree, NOT committed): ui catalog redesign, coder ONBOARD-1 (name only, guide.json started), artist hood_coif/hats. Resume when the owner says.
+## TODO next session (owner 17 Nov): test Aseprite HEADLESS mode (preflight mode='headless') on one small sprite so two artists can draw in parallel (one in the open window, one headless; save/export explicitly). If it works, update docs/TEAM.md (one Aseprite worker rule) and run two artists at once: more items/furniture = more fun. Also: cat strips (animator), Groq/OpenRouter keys, Gemini scratch test result.
