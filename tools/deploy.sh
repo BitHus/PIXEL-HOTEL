@@ -9,7 +9,7 @@ REF="${1:-HEAD}"
 D="$(mktemp -d)/pb-deploy"
 git worktree add --detach "$D" "$REF" >/dev/null
 trap 'git worktree remove --force "$D" >/dev/null 2>&1 || true' EXIT
-(cd "$D" && npm ci --silent && npm run build)
+(cd "$D" && npm ci --ignore-scripts --no-audit --no-fund && npm run build)
 tar czf - -C "$D/client/dist" . | ssh -o BatchMode=yes -i "$KEY" "root@$POCKETBARREL_HOST" \
   'find /var/www/html -mindepth 1 -delete && tar xzf - -C /var/www/html && chmod -R a+rX /var/www/html'
 echo "deployed $REF to $POCKETBARREL_HOST"
