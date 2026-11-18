@@ -10,6 +10,7 @@
 18 NOV (coder MG-7): [x] skill stats hooked into the rules (skillRules.ts, tests) and the Skills panel (More > Skills, tabs, tier locks, Learn/Respec ask first). Open: unhooked stats (see NEWS), dot on the button, art for skill icons (MG-15).
 18 NOV (coder): [x] kitchen is a walled tavern area (SAVE 37), CEL 3 racks 2/3/3, trader removed (guests + dungeon only), MG-1 skill rules + API (SAVE 38) and MG-2 level cap 12 (UI and rule hooks MG-7/8/9 still open), tap forgiveness, tutorial from 0 with zoom/tap/hold steps. [x] RUN 6 UI fixes (keg rack text, first-steps card off doors, fi ligature, bubbles vs button column); open: kitchen barrel under the phone button column (camera/layout hook).
 19 NOV (artist): [x] PixelLab UI proof set (panels, buttons, tab, sign, bar, 10 icons) in art-src/pixellab/ui, not wired; wiring = ui worker after owner OK.
+19 NOV (ui): [x] Panel close button wired to PixelLab close X art (ui/close.css, assets/ui/close_x.png).
 
 The one roadmap for the game (owner + AI, 14 Nov). It replaces the loose idea list. Work top to
 bottom. A phase is finished before the next one starts, unless the owner says otherwise.

@@ -1,0 +1,65 @@
+/* PANEL CLOSE (19 Nov, owner: "the close button is not good looking"): the PixelLab round dark-disc X
+   (client/src/assets/ui/close_x.png = art-src/pixellab/ui/icon_close_s.png, 31 x 31 art px) at 1x, whole art pixels
+   (image-rendering: pixelated), centred in a 45 x 45 hit box (odd box so the odd art stays on whole pixels).
+   One rule for every .panel-close (panelShell via panels.ts, confirm dialog). Loaded last in ui/layout.ts. */
+.panel-close,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .panel-close {
+  position: absolute;
+  z-index: 3;
+  top: -4px;
+  right: -4px;
+  width: 45px;
+  height: 45px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  text-shadow: none;
+  background: url('../assets/ui/close_x.png') center / 31px 31px no-repeat;
+  image-rendering: pixelated;
+  box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.panel-close::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .panel-close:hover:not(:disabled) {
+    background: url('../assets/ui/close_x.png') center / 31px 31px no-repeat;
+    filter: brightness(1.25);
+    color: transparent;
+  }
+}
+
+/* Pressed: the disc sinks 2 px and darkens. */
+.panel-close:active {
+  transform: translateY(2px);
+  filter: brightness(0.8);
+}
+
+/* Keyboard / mouse focus ring: a 2 px butter ring round the 31 px disc (outline would follow the 45 px box). */
+.panel-close:focus-visible {
+  outline: 0;
+}
+
+.panel-close:focus-visible::after {
+  inset: 6px;
+  box-shadow: 0 0 0 2px var(--butter, #f6c453);
+}
+
+/* Titles next to a close button stay clear of the disc. */
+.run-panel .panel-title,
+.confirm-panel .panel-title {
+  margin-right: 38px;
+}

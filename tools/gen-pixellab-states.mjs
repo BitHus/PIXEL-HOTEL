@@ -18,8 +18,9 @@ const C = { dark: hex('181425'), brown: hex('3e2731'), steel: hex('3a4466'), red
 // STOVE
 const stove = rd('stove');
 const isFire = (c) => c && ['a22633', 'f77622', 'be4a2f'].includes(hx(c));
+const isHot = (c) => c && ['a22633', 'f77622', 'be4a2f', 'feae34', 'fee761'].includes(hx(c));
 const cold = copy(stove);
-for (let y = 24; y <= 31; y++) for (let x = 10; x <= 22; x++) if (isFire(get(cold, x, y))) put(cold, x, y, (x + y) % 4 === 0 ? C.brown : C.dark);
+for (let y = 24; y <= 31; y++) for (let x = 10; x <= 22; x++) if (isHot(get(cold, x, y))) put(cold, x, y, (x + y) % 4 === 0 ? C.brown : C.dark);
 save('stove_cold', cold);
 const PAD = 6; // top padding for steam
 const ready = mk(64, stove.height + PAD);

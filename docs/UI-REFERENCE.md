@@ -336,3 +336,6 @@ From the Travellers Rest reference screenshots the owner liked:
 
 ## Declutter rule (18 Nov)
 Side column on every size: Catalog, Build, Dungeon, More; all else in the More grid (extras with data-more-label). Info panel: gold, gems, 3 px xp bar. The hotbar is never hidden or faded. See docs/PLAN-UI-DECLUTTER.md.
+
+## Close button (19 Nov)
+One close style for every panel: the round dark-disc X art (ui/close.css), 45 px hit box, no text glyph. Keep titles clear of the top-right 40 px.

@@ -1,0 +1,387 @@
+/* The title screen (UI round 5, 19 Nov): a warm tavern wall, candle glow, drifting dust, the big animated logo, one big
+   Continue pill (PixelLab btn_pill art, 9-sliced at 2x), a quiet New game, a small Settings link, the build line.
+   Code-made background; the still-life along the floor uses existing furniture sprites. Markup: ui/titleScreen.ts. */
+
+.title-screen {
+  --s: 3; /* integer scale of the still-life sprites */
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: calc(var(--edge) + env(safe-area-inset-top)) var(--edge) calc(56px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: auto;
+  font-family: var(--font);
+  background:
+    linear-gradient(180deg, rgba(24, 20, 37, 0.55) 0%, transparent 22%, transparent 70%, rgba(24, 20, 37, 0.6) 100%),
+    repeating-linear-gradient(90deg, transparent 0 62px, rgba(24, 20, 37, 0.45) 62px 64px),
+    repeating-linear-gradient(0deg, transparent 0 94px, rgba(24, 20, 37, 0.25) 94px 96px),
+    #3e2731;
+  animation: title-in 0.3s steps(5, end) both;
+}
+
+.title-screen.leaving {
+  opacity: 0;
+  transition: opacity 0.16s steps(3, end);
+}
+
+/* The wooden floor: a darker band along the bottom edge with a bright lip. */
+.title-screen::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 94px, rgba(24, 20, 37, 0.55) 94px 96px),
+    linear-gradient(180deg, #8b5a47 0 3px, #5a3a35 3px 100%);
+  box-shadow: 0 -3px 0 #181425;
+}
+
+/* Candle glow behind the logo: stepped warm rings, a slow flicker. */
+.title-glow {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: min(900px, 190vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(254, 174, 52, 0.3) 0%, rgba(247, 118, 34, 0.16) 24%, rgba(190, 74, 47, 0.08) 40%, transparent 56%);
+  animation: title-flicker 2.4s steps(3, end) infinite;
+}
+
+/* Dust motes in the light: tiny squares rising slowly. */
+.title-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.title-motes .mote {
+  position: absolute;
+  bottom: -8px;
+  left: calc(var(--x, 50) * 1%);
+  width: 3px;
+  height: 3px;
+  background: #fee761;
+  opacity: 0;
+  animation: mote-rise var(--d, 14s) linear var(--t, 0s) infinite;
+}
+
+.title-motes .mote:nth-child(3n) {
+  width: 2px;
+  height: 2px;
+}
+
+.title-motes .mote:nth-child(1) { --x: 8; --d: 15s; --t: -2s; }
+.title-motes .mote:nth-child(2) { --x: 17; --d: 19s; --t: -9s; }
+.title-motes .mote:nth-child(3) { --x: 24; --d: 13s; --t: -5s; }
+.title-motes .mote:nth-child(4) { --x: 31; --d: 17s; --t: -12s; }
+.title-motes .mote:nth-child(5) { --x: 38; --d: 21s; --t: -1s; }
+.title-motes .mote:nth-child(6) { --x: 44; --d: 14s; --t: -7s; }
+.title-motes .mote:nth-child(7) { --x: 51; --d: 18s; --t: -14s; }
+.title-motes .mote:nth-child(8) { --x: 57; --d: 16s; --t: -3s; }
+.title-motes .mote:nth-child(9) { --x: 63; --d: 20s; --t: -10s; }
+.title-motes .mote:nth-child(10) { --x: 69; --d: 13s; --t: -6s; }
+.title-motes .mote:nth-child(11) { --x: 75; --d: 22s; --t: -16s; }
+.title-motes .mote:nth-child(12) { --x: 81; --d: 15s; --t: -4s; }
+.title-motes .mote:nth-child(13) { --x: 87; --d: 18s; --t: -11s; }
+.title-motes .mote:nth-child(14) { --x: 92; --d: 17s; --t: -8s; }
+.title-motes .mote:nth-child(15) { --x: 48; --d: 24s; --t: -13s; }
+.title-motes .mote:nth-child(16) { --x: 13; --d: 23s; --t: -18s; }
+
+/* The still-life: furniture sprites standing on the floor line, scaled by whole numbers. */
+.title-life {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  height: 0;
+  pointer-events: none;
+}
+
+.title-life img {
+  position: absolute;
+  bottom: 0;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 0 rgba(24, 20, 37, 0.55));
+}
+
+.life-a { left: calc(var(--edge) + 4px); width: calc(32px * var(--s)); }
+.life-b { left: calc(var(--edge) + 32px * var(--s) + 12px); width: calc(32px * var(--s)); }
+.life-c { left: calc(var(--edge) + 64px * var(--s) + 24px); width: calc(96px * var(--s)); }
+.life-d { right: calc(var(--edge) + 32px * var(--s) + 20px); width: calc(32px * var(--s)); }
+.life-e { right: calc(var(--edge) + 4px); width: calc(32px * var(--s)); }
+
+.title-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.title-logo {
+  width: 256px;
+  height: 256px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 0 rgba(24, 20, 37, 0.5));
+}
+
+.title-tag {
+  margin: -8px 0 0;
+  font-family: var(--font);
+  font-size: 18px;
+  color: var(--cream, #ead4aa);
+  text-shadow: 0 2px 0 #181425, 1px 2px 0 #181425, -1px 2px 0 #181425;
+}
+
+.title-menu {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(320px, calc(100vw - 2 * var(--edge)));
+  min-height: 252px; /* every view (main, ask, settings) keeps the same height: nothing shifts */
+}
+
+/* Buttons. Primary = the PixelLab pill (101 x 33 art, 16 px corners) at 2x; the rest are quiet dark pills. */
+.title-screen .title-btn,
+.title-screen .title-link {
+  font-family: var(--font);
+  cursor: pointer;
+  text-shadow: 0 2px 0 #181425;
+  color: #ead4aa;
+}
+
+.title-screen .title-btn {
+  box-sizing: border-box;
+  width: 220px;
+  max-width: 100%;
+  min-height: 48px;
+  padding: 0 18px;
+  font-size: 20px;
+  border: 0;
+  border-radius: 24px;
+  background: rgba(24, 20, 37, 0.72);
+  box-shadow: inset 0 0 0 2px #733e39, 0 0 0 2px #181425, 0 3px 0 2px rgba(24, 20, 37, 0.6);
+}
+
+.title-screen .title-btn.on {
+  box-shadow: inset 0 0 0 2px #feae34, 0 0 0 2px #181425, 0 3px 0 2px rgba(24, 20, 37, 0.6);
+}
+
+.title-screen .title-btn.primary {
+  width: 100%;
+  height: 66px;
+  min-height: 66px;
+  padding: 0;
+  font-size: 28px;
+  color: #fee761;
+  text-shadow: 0 3px 0 #181425, 2px 3px 0 #181425, -2px 3px 0 #181425, 0 -1px 0 #181425;
+  border: 16px solid transparent;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  border-image: url('../assets/ui/title/btn_pill.png') 16 fill / 32px / 0 stretch;
+  image-rendering: pixelated;
+}
+
+.title-screen .title-btn.primary:active:not(:disabled) {
+  border-image-source: url('../assets/ui/title/btn_pill_pressed.png');
+  padding-top: 2px;
+}
+
+.title-screen .title-btn.primary:disabled {
+  border-image-source: url('../assets/ui/title/btn_pill_disabled.png');
+  color: #8b9bb4;
+  cursor: default;
+}
+
+.title-screen .title-link {
+  min-width: 120px;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0 12px;
+  font-size: 18px;
+  color: #c0cbdc;
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(192, 203, 220, 0.4);
+}
+
+@media (hover: hover) {
+  .title-screen .title-btn:not(.primary):hover,
+  .title-screen .title-link:hover {
+    color: #fee761;
+  }
+  .title-screen .title-btn.primary:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
+}
+
+.title-screen .title-btn:focus-visible,
+.title-screen .title-link:focus-visible {
+  outline: 3px solid #fee761;
+  outline-offset: 4px;
+}
+
+.title-note {
+  margin: 0;
+  max-width: 100%;
+  font-family: var(--font);
+  font-size: 18px;
+  line-height: 1.2;
+  text-align: center;
+  color: #ead4aa;
+  text-shadow: 0 2px 0 #181425, 1px 2px 0 #181425, -1px 2px 0 #181425;
+  overflow-wrap: anywhere;
+}
+
+.title-note.when {
+  min-height: 1.2em;
+  margin-bottom: 6px;
+  font-size: 16px;
+  color: #8b9bb4;
+}
+
+.title-note.off {
+  color: #c28569;
+}
+
+.title-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: #ead4aa;
+  font-family: var(--font);
+  text-shadow: 0 2px 0 #181425;
+}
+
+.title-version {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  margin: 0;
+  text-align: center;
+  font-family: var(--font);
+  font-size: 14px;
+  color: #c0cbdc;
+  opacity: 0.8;
+  text-shadow: 0 2px 0 #181425;
+}
+
+/* Phone: the logo stays 256 (1x), the still-life steps down to 2x and drops the sofa. */
+@media (max-width: 560px) {
+  .title-screen {
+    --s: 2;
+    gap: 8px;
+  }
+  .title-menu {
+    min-height: 236px;
+  }
+  .life-a,
+  .life-c {
+    display: none;
+  }
+  .life-b {
+    left: calc(var(--edge) + 4px);
+  }
+  .life-d {
+    right: calc(var(--edge) + 32px * var(--s) + 8px);
+  }
+}
+
+/* Short screens (a phone turned sideways): logo left, menu right, no still-life. */
+@media (max-height: 560px) {
+  .title-screen {
+    flex-direction: row;
+    gap: 28px;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  }
+  .title-logo {
+    width: 160px;
+    height: 160px;
+  }
+  .title-tag {
+    margin-top: -4px;
+    font-size: 16px;
+  }
+  .title-life {
+    display: none;
+  }
+  .title-menu {
+    min-height: 0;
+  }
+  .title-screen .title-link {
+    margin-top: 0;
+  }
+  .title-glow {
+    top: 50%;
+  }
+}
+
+@keyframes title-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes title-flicker {
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes mote-rise {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(14px, -52vh);
+  }
+  88% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-10px, -108vh);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-screen,
+  .title-glow,
+  .title-motes .mote {
+    animation: none !important;
+  }
+  .title-motes .mote:nth-child(-n + 6) {
+    opacity: 0.5;
+    bottom: calc(10% + var(--x) * 0.6%);
+  }
+  .title-screen.leaving {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,9 @@
+rate 1 try 0: nocanvas | nocanvas | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0
+rate 1 try 1: nocanvas | nocanvas | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0
+rate 1 try 2: nocanvas | nocanvas | nocanvas | nocanvas | nocanvas | nocanvas | nocanvas | nocanvas
+rate 4 try 0: nocanvas | nocanvas | nocanvas | nocanvas | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0
+rate 4 try 1: nocanvas | nocanvas | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0
+rate 4 try 2: nocanvas | nocanvas | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0
+rate 6 try 0: nocanvas | nocanvas | nocanvas | nocanvas | nocanvas | nocanvas | nocanvas | 0,0,0
+rate 6 try 1: nocanvas | nocanvas | nocanvas | nocanvas | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0
+rate 6 try 2: nocanvas | nocanvas | nocanvas | nocanvas | 0,0,0 | 0,0,0 | 0,0,0 | 0,0,0

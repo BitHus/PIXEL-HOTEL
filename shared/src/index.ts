@@ -94,3 +94,4 @@ export * from './blockTap.ts';
 export * from './workRooms.ts';
 export * from './cellarRooms.ts';
 export * from './hudIdle.ts';
+export * from './net/protocol.ts';

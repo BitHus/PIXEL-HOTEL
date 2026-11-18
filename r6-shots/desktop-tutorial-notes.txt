@@ -1,0 +1,21 @@
+card0 Welcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk. | 1/21
+after register Welcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk. | 1/21
+guest with order {"id":-1,"order":{"item":"root_ale","price":9,"coins":9},"x":144,"y":272}
+card Welcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk. | 1/21
+stands null
+standPoint {"x":580,"y":612.5}
+after pour Welcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk. | 1/21
+t0 {"ph":"order","mess":0,"tray":0} gold 100
+t5 {"ph":"order","mess":0,"tray":0} gold 100
+t10 {"ph":"order","mess":0,"tray":0} gold 100
+t15 {"ph":"order","mess":0,"tray":0} gold 100
+t20 {"ph":"order","mess":0,"tray":0} gold 100
+t25 {"ph":"order","mess":0,"tray":0} gold 100
+t30 {"ph":"order","mess":0,"tray":0} gold 100
+t35 {"ph":"order","mess":0,"tray":0} gold 100
+t40 {"ph":"order","mess":0,"tray":0} gold 100
+t45 {"ph":"order","mess":0,"tray":0} gold 100
+t50 {"ph":"order","mess":0,"tray":0} gold 100
+t55 {"ph":"order","mess":0,"tray":0} gold 100
+after coins Welcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk. | 1/21
+gold 100 mat {"wood":4,"cloth":2,"turnip":2,"potato":1} mess []

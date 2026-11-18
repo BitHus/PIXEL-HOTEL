@@ -21,3 +21,6 @@ Updated 19 Nov 2026.
 
 ## PixelLab credits (owner 19 Nov)
 The artist (and any art worker) MAY spend PixelLab generations within the cap in docs/PLAN-PIXELLAB-ART.md for furniture, UI, logo, icons, props, tiles. No permission needed inside the cap; check get_balance, update the LEDGER. The manager raises the cap only when the owner says so.
+
+## Fonts (owner 19 Nov): better fonts allowed
+The owner OKs downloading better fonts. Rules (CLAUDE.md section 12): local open-license (OFL) pixel fonts only, shipped inside the repo (client/src/fonts or @fontsource npm packages, no CDN at runtime), never set font-family without var(--font). Now: Pixelify Sans + Jersey 15. Candidates to try: Silkscreen, Press Start 2P (too wide), m6x11, Pixel Operator, Tiny5, VT323, Bitcount, Jacquard/Pixelify variants; judge readability at 12-16 px on phone 420x760 and the medieval mood (headings may use a more characterful font, body stays very readable). Check ligatures stay off (Pixelify 'fi' bug). PixelLab has create_font (costs generations: ask first).
