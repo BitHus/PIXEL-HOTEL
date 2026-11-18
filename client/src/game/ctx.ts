@@ -3,7 +3,7 @@
 
 import {
   type Avatar, type Camera, type FurnitureItem, type Inventory, type Point, type Rect, type Room, type RoomKind, type RoomState,
-  type TavernView, type EmoteKind,
+  type TavernView, type EmoteKind, type Bonuses,
 } from '@pixel-hotel/shared';
 import type { Placer } from '../build/placer.ts';
 import type { createItemMenu } from '../ui/itemMenu.ts';
@@ -41,6 +41,8 @@ export interface State {
   items: FurnitureItem[];
   inventory: Inventory;
   walletGold: number;
+  /** MG-7: the stat bonuses of the bought skills (shared/src/skillRules.ts), refreshed with the player (hotbarBag refresh). Undefined = none. */
+  skills?: Bonuses;
   unlockedStyles: readonly string[];
   camera: Camera;
   shown: Camera;

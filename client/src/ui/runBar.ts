@@ -23,7 +23,7 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   bar.hidden = true;
   const grid = el('div', 'run-slots');
   const slots: { root: HTMLElement; img: HTMLImageElement; count: HTMLElement }[] = [];
-  for (let i = 0; i < RUN_BAG_SLOTS; i++) {
+  for (let i = 0; i < RUN_BAG_SLOTS + 4; i++) { // MG-7: up to 4 more slots with the Satchel / Pack mule skills (hidden past the run's limit)
     const root = el('div', 'slot run-slot');
     const img = el('img', 'slot-icon');
     img.alt = '';
@@ -102,7 +102,9 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   return {
     el: bar,
     refresh(run) {
+      const limit = run.player.bagSlots ?? RUN_BAG_SLOTS;
       slots.forEach((s, i) => {
+        s.root.hidden = i >= limit;
         const item = run.bag.slots[i];
         s.root.classList.toggle('empty', !item);
         setRank(s.root, !item ? null : item.kind === 'material' ? item.id : item.typeId);
@@ -123,8 +125,8 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
         }
       });
       const used = run.bag.slots.filter(Boolean).length;
-      bagCount.textContent = `${used}/${RUN_BAG_SLOTS}`;
-      bagBtn.classList.toggle('full', used >= RUN_BAG_SLOTS);
+      bagCount.textContent = `${used}/${limit}`;
+      bagBtn.classList.toggle('full', used >= limit);
       goldText.textContent = String(run.bag.gold);
       gemText.textContent = String(run.bag.gems);
       const p = run.player;

@@ -18,6 +18,7 @@ import { applyChange } from './ledger.ts';
 import { BLOCK_TYPES, getBlockType } from './blockTypes.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
 import { blocksOverlapping } from './blocks.ts';
+import { shiftAnnexContents } from './cellarRooms.ts';
 import { doorZoneRect, paintFloorCells, paintWholeFloor, rectsOverlap, roomAtLevel, type Room } from './room.ts';
 import { findStyle, stylePrice } from './styles.ts';
 import { GEAR_TYPES, type ShopGearId } from './gear.ts';
@@ -111,16 +112,18 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   const level = (room.level + 1) as RoomLevel;
   // The next level of the room's shape: its floor contains the old one, so every item still fits.
   const grown: Room = roomAtLevel(room, level);
+  // The kitchen annex (owner 18 Nov) hangs under the main floor: what stands in it moves down with it.
+  const moved = shiftAnnexContents(paid, room, grown);
   // The new door zone must be free: what stands there goes back.
   const zone = doorZoneRect(grown);
-  let items = paid.items;
-  for (const i of paid.items) {
+  let items = moved.items;
+  for (const i of moved.items) {
     const t = getFurnitureType(i.typeId);
     if (i.roomId !== roomId || i.onItemUid !== null || t.wall || t.noPickup) continue;
     const fp = footprintRect(i, t);
     if (rectsOverlap(fp, zone)) items = pickUpItem(items, i.uid);
   }
-  let next: GameState = { ...paid, rooms: paid.rooms.map((r) => (r.id === roomId ? grown : r)), items };
+  let next: GameState = { ...moved, rooms: moved.rooms.map((r) => (r.id === roomId ? { ...grown, blocks: r.blocks, plants: r.plants } : r)), items };
   // Blocks (step BG5) on the new door zone go back to the bag, and so do the seeds of plants there (BG6); if the
   // door still cannot reach the middle of the grown room, all of its blocks do.
   const room2 = next.rooms.find((r) => r.id === roomId) ?? grown;

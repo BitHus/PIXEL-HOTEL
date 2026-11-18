@@ -43,7 +43,7 @@ export function withTavernMachines(s: GameState): GameState {
 
 export function legacyStart(): GameState {
   const s = withTavernMachines(createNewPlayer(undefined, 0));
-  const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'round_table' && c.y + 32 === i.y))!; // the third (front) stool of the round table
+  const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'table' && c.y + 32 === i.y))!; // the third (front) stool of the table
   // The start barrel holds a ready brew again and the taps are empty (as before step T1: the ale is collected from the barrel).
   const barrel = s.items.find((i) => i.typeId === 'brewing_barrel')!;
   return { ...s, items: s.items.filter((i) => i.uid !== barStool.uid), tavern: { ...s.tavern, menu: {}, taps: [], brews: [{ barrelUid: barrel.uid, drink: 'root_ale', readyAt: 0 }] } };

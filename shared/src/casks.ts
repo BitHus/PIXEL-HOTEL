@@ -4,7 +4,8 @@
 // plain drink ids (`root_ale_aged`, materials.ts), so taps, the menu, the ledger and the Book work with them unchanged. Mugs move through applyChange
 // (ledger 'cask_fill' and 'cask_collect').
 
-import { CASK_SLOTS, RESERVE_MIN_CELLAR_LEVEL, RIPEN_AFTER_MIN } from './config.ts';
+import { RESERVE_MIN_CELLAR_LEVEL, RIPEN_AFTER_MIN } from './config.ts';
+import { bonusesOf, caskSlotsOf } from './skillRules.ts';
 import { getFurnitureType } from './furniture.ts';
 import { cellarRoomIds, inRooms } from './workRooms.ts';
 import type { GameState } from './gameState.ts';
@@ -84,7 +85,7 @@ export function caskItem(cask: Cask, at: number, cap: CaskCap = 'reserve'): Drin
  * or the bag has fewer.
  */
 export function fillCask(state: GameState, rackUid: number, slot: number, drink: string, qty: number, at: number): GameState | null {
-  if (!isBaseDrinkId(drink) || !Number.isInteger(slot) || slot < 0 || slot >= CASK_SLOTS || !rackPlaced(state, rackUid)) return null;
+  if (!isBaseDrinkId(drink) || !Number.isInteger(slot) || slot < 0 || slot >= caskSlotsOf(bonusesOf(state.player)) || !rackPlaced(state, rackUid)) return null;
   if (!Number.isInteger(qty) || qty < 1 || qty > getDrinkType(drink).mugs || caskOf(state.tavern.casks, rackUid, slot)) return null;
   const paid = applyChange(state, { reason: 'cask_fill', materials: { [drink]: -qty }, note: `cask: ${qty} x ${drink}` }, at);
   return paid && withCasks(paid, [...paid.tavern.casks, { rackUid, slot, drink, mugs: qty, startedAt: at }]);
@@ -120,7 +121,8 @@ export interface CaskView {
 export function caskViews(state: GameState, at: number): CaskView[] {
   const out: CaskView[] = [];
   for (const rack of kegRacks(state.items, cellarRoomIds(state))) {
-    for (let slot = 0; slot < CASK_SLOTS; slot++) {
+    const slots = Math.max(caskSlotsOf(bonusesOf(state.player)), ...state.tavern.casks.filter((c) => c.rackUid === rack.uid).map((c) => c.slot + 1)); // a cask above the slots (after a respec) stays visible
+    for (let slot = 0; slot < slots; slot++) {
       const cask = caskOf(state.tavern.casks, rack.uid, slot);
       const cap = rackTierCap(state, rack.uid);
       if (!cask) {

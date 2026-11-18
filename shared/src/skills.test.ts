@@ -172,8 +172,8 @@ describe('the view for the panel', () => {
 
 describe('migration 37 -> 38 (Player.skills)', () => {
   const save = (version: number, mutate: (s: GameState) => unknown = (s) => s): string => JSON.stringify({ version, savedAt: 1, state: mutate(at(5)) });
-  it('SAVE_VERSION is 38; an old save has no skills field (nothing bought) and keeps its derived points; nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(38);
+  it('SAVE_VERSION is 39 (38 -> 39 the kitchen annex); an old save has no skills field (nothing bought) and keeps its derived points; nothing is lost', () => {
+    expect(SAVE_VERSION).toBe(39);
     const r = readSave(save(37, (s) => ({ ...s, player: { ...s.player, skills: undefined } })));
     if (!r.ok) throw new Error(r.problem);
     expect(r.state.player.skills).toBeUndefined();

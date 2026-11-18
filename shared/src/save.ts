@@ -13,7 +13,8 @@ import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
 import { isSeedId } from './materials.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
-import { addCellarForRacks, dissolveKitchenRoom } from './cellarRooms.ts';
+import { addCellarForRacks, dissolveKitchenRoom, moveKitchenToAnnex } from './cellarRooms.ts';
+import { retireRoundTables } from './retireRoundTable.ts';
 import { applyChange, type Change } from './ledger.ts';
 import type { LootRef, Player } from './types.ts';
 import type { GameState } from './gameState.ts';
@@ -351,6 +352,11 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     return { ...state, rooms };
   },
   // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  // 38 -> 39 (owner 18 Nov, the kitchen is an ATTACHED ANNEX of the tavern, not a ring): the round table becomes the square table (retireRoundTable.ts); the tavern grows by the annex (room.w and h), floor pieces that stood in the old kitchen zone move into the annex's inside (rest to the bag).
+  38: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms) || !Array.isArray(state.items) || !isObject(state.tavern)) return state;
+    return retireRoundTables(moveKitchenToAnnex(state as unknown as GameState));
+  },
   // 37 -> 38 (MG-1, skill points + level cap 12): Player.skills = { ranks, respecs } is OPTIONAL (missing = nothing bought); the unspent points are derived from the level and the
   // Book rewards (a level 5 save has 4 free points), so there is nothing to change in an old save.
   37: (state) => state,

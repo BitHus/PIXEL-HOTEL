@@ -19,7 +19,7 @@ export interface PaintBar {
 }
 
 export function createPaintBar(parent: HTMLElement, hooks: PaintBarHooks): PaintBar {
-  const root = el('div', 'frame paint-bar');
+  const root = el('div', 'frame ui-panel paint-bar');
   root.hidden = true;
   const swatches = el('div', 'paint-swatches');
   const hint = el('div', 'paint-hint', 'Tap a cell or drag a rectangle');

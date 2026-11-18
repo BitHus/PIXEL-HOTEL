@@ -1,6 +1,9 @@
 # ROADMAP
 
 17 NOV: [x] TUT-2 tutorial (18 steps, always starts in a new game, Continue resumes) and small fixes (bubble vs buttons, Continue fade). [x] TUT-2 part 3 (built 17 Nov, coder; owner check in a browser pending): Daily / Events / Achievements quest panel (ledger-counted, SAVE 33 quests.claimed).
+18 NOV (coder, late): [x] KITCHEN ANNEX replaces the walled ring (SAVE 39), fixed tavern shape (no shop-shape pick), round table retired for the square table, cellar door offers the build, farm art (scarecrow, straw bale, farm barrel, grass_b/c, kitchen_tiles) wired. [ ] seen in a browser.
+
+18 NOV (coder MG-7): [x] skill stats hooked into the rules (skillRules.ts, tests) and the Skills panel (More > Skills, tabs, tier locks, Learn/Respec ask first). Open: unhooked stats (see NEWS), dot on the button, art for skill icons (MG-15).
 18 NOV (coder): [x] kitchen is a walled tavern area (SAVE 37), CEL 3 racks 2/3/3, trader removed (guests + dungeon only), MG-1 skill rules + API (SAVE 38) and MG-2 level cap 12 (UI and rule hooks MG-7/8/9 still open), tap forgiveness, tutorial from 0 with zoom/tap/hold steps. [x] RUN 6 UI fixes (keg rack text, first-steps card off doors, fi ligature, bubbles vs button column); open: kitchen barrel under the phone button column (camera/layout hook).
 
 The one roadmap for the game (owner + AI, 14 Nov). It replaces the loose idea list. Work top to
@@ -151,7 +154,7 @@ Never copy another game; no screenshots of other games in the repo.
 5.2 Potions with timed effects (speed, luck, mining, fishing, xp, night vision) and accessories:
     equipment slots, lucky ring, mining helmet, boots, a backpack for more bag slots; gear that
     changes how the avatar looks.
-5.3 Farm 2: more crops, crop quality (normal, good, excellent, golden), scarecrow, greenhouse,
+5.3 Farm 2: more crops, crop quality (normal, good, excellent, golden), scarecrow, greenhouse, (18 Nov artist: scarecrow, hay_bale, farm_barrel, grass_b/c, kitchen_tiles PNGs drawn, not wired)
     fruit trees, beehive; then animals (chickens, cows, sheep).
 5.4 Mine 2: floors that go deeper with rarer ore (silver, gold, crystal, obsidian, starstone),
     hidden rooms and treasure rooms.
@@ -235,3 +238,5 @@ candles that burn down, a rare rainbow, shooting stars, footprints in snow, hidd
 hidden NPC, mine carts, mining companions, fishing tournaments, a radio with music.
 
 - [ ] TUT-3 (owner 17 Nov, NOT priority now): splicing becomes part of the ONE tutorial. The new game gives or places a few different seeds/blocks (varied, visible somewhere in the world or bag), and a tutorial step has the player splice two of them, so people understand splicing at once (guide.json step + event/world proof, firstTen tests, GUIDE-UPDATE checklist). Later splicing grows into a bigger feature.
+
+- [x] UIR-1..5 (ui, 18 Nov, Lantern Dark): tokens, frameless HUD, round buttons + dark hotbar, toasts + chips, panel shell dark (client/src/ui/lantern.css). [~] UIR-6..9 done through the shell tokens (bar/catalog/room/bag/book/settings/confirm/paint bar/emote menu look dark, rows not yet flattened). [ ] UIR-10 pickers + title, UIR-11 cleanup (.frame iron CSS, docs).

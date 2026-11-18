@@ -140,7 +140,7 @@ export function fitsRoomKind(type: FurnitureType, room: Room): boolean {
   // The lakeside (step 9f) is not buildable in v1.
   if (room.kind === 'lakeside') return false;
   // The farm (step 9b) takes home decorations: everything that may go in the hotel room.
-  if (room.kind === 'farm') return type.placeIn === 'both' || type.placeIn === 'hotel';
+  if (room.kind === 'farm') return type.placeIn === 'both' || type.placeIn === 'hotel' || type.placeIn === 'farm';
   // CEL-2: the cellar takes keg racks and any piece that may go in the hotel room AND the tavern ('both': decor), never the tavern's own pieces (bar, tables, taps, register).
   if (room.kind === 'cellar') return type.placeIn === 'both' || type.casks === true;
   return type.placeIn === 'both' || type.placeIn === room.kind;
@@ -257,7 +257,7 @@ export function canPlace(
     const wr = wallItemRect({ x, y, facing }, type);
     if (!wallBands(room).some((b) => wr.x >= b.x && wr.x + wr.w <= b.x + b.w && wr.y >= b.y && wr.y + wr.h <= b.y + b.h)) return false;
     // An Inn door (step MB-2): no wall item over the doorway.
-    if (innDoorwayRects(room).some((d) => rectsOverlap(wr, d))) return false;
+    if (innDoorwayRects(room, true).some((d) => rectsOverlap(wr, d))) return false;
     return !items.some(
       (o) => o.roomId === room.id && types(o.typeId).wall && rectsOverlap(wr, wallItemRect(o, types(o.typeId))),
     );

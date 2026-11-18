@@ -3,10 +3,11 @@
 
 import {
   INTRO_COINS, doorY, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, barCoinPoint,
-  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, innDoorHint, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
+  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, CELLAR_BUILD_COST, CELLAR_RACK_MAX_BY_LEVEL, CELLAR_UNLOCK_LEVEL, innDoorHint, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { savePrefs } from '../api/prefs.ts';
+import { confirmBuy } from '../ui/confirmBuy.ts';
 import type { G13 } from './ctx.ts';
 
 export async function setupRoomFlow(g: G13) {
@@ -155,6 +156,22 @@ export async function setupRoomFlow(g: G13) {
     if (intro) startIntro();
     else fit();
   }
+  /** The cellar door while no cellar is built: explain, and (from the unlock level) offer to build it. Owner 18 Nov: the door used to do nothing. */
+  async function offerCellar(level: number): Promise<void> {
+    if (level < CELLAR_UNLOCK_LEVEL) {
+      toast(`There is no cellar yet. Reach level ${CELLAR_UNLOCK_LEVEL}, then build it for ${CELLAR_BUILD_COST} gold.`);
+      return;
+    }
+    const detail = `There is no cellar behind this door yet. Build one: a cool room under the tavern with a keg rack, where mugs you leave ripen and sell for more. Up to ${CELLAR_RACK_MAX_BY_LEVEL[0]} racks at first.`;
+    if (!(await confirmBuy(uiRoot, { name: 'The cellar', detail, price: CELLAR_BUILD_COST, yes: 'Build', gold: st.walletGold }))) return;
+    const room = await api.buildCellar();
+    if (!room) {
+      toast('The cellar cannot be built yet.');
+      return;
+    }
+    toast('Your cellar is built. Step through the door again.');
+    await refreshInventory();
+  }
   let doorBusy = false;
   const fade = document.createElement('div');
   fade.className = 'room-fade';
@@ -162,6 +179,13 @@ export async function setupRoomFlow(g: G13) {
   /** Steps through an Inn door: fade out, the room opens on the matching door (no camera intro), fade in. False = refused. */
   async function useDoor(doorId: string): Promise<boolean> {
     if (doorBusy) return false;
+    if (doorId === 'tavern_to_cellar') {
+      const pl = await api.getPlayer();
+      if (pl.cellarRoomId === undefined) {
+        await offerCellar(pl.level);
+        return false;
+      }
+    }
     doorBusy = true;
     g.sound.play('door');
     try {

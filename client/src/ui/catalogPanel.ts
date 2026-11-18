@@ -70,7 +70,7 @@ const TABS = [
 ] as const;
 
 /** Where a furniture type goes, in words (for the confirm panel). */
-export const WHERE: Record<FurnitureType['placeIn'], string> = { hotel: 'the hotel room', shop: 'the tavern', both: 'the hotel room or the tavern' };
+export const WHERE: Record<FurnitureType['placeIn'], string> = { hotel: 'the hotel room', shop: 'the tavern', both: 'the hotel room or the tavern', farm: 'the farm' };
 
 /** How long a seed takes to be fully grown, in words (step BG6: by rank, config SEED_GROW_MS). */
 export function growText(c: CropType): string {
@@ -166,7 +166,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
 
   const furnitureCard = (t: FurnitureType): HTMLElement => {
     const fits = room === null || fitsRoomKind(t, room);
-    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Tavern only' : 'Not here', false, () => hooks.buyItem(t.id), t.id, ownedCounts[t.id] ?? 0);
+    return card(furnitureIconUrl(t.id), t.name, catalogPrice(t.id), fits ? null : t.placeIn === 'shop' ? 'Tavern only' : t.placeIn === 'farm' ? 'Farm only' : 'Not here', false, () => hooks.buyItem(t.id), t.id, ownedCounts[t.id] ?? 0);
   };
 
   const styleCard = (s: StyleType): HTMLElement =>
@@ -215,7 +215,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     else if (t === 'clothes') for (const h of HATS.filter((x) => hatCatalogPrice(x.id) !== null)) list.appendChild(hatCard(h.id));
     else if (t === 'decor') for (const s of STYLE_TYPES.filter((x) => x.inCatalog)) list.appendChild(styleCard(s));
     else {
-      const categories = t === 'home' ? ['home_furniture', 'suite_furniture'] : ['shop_furniture'];
+      const categories = t === 'home' ? ['home_furniture', 'suite_furniture', 'farm_furniture'] : ['shop_furniture'];
       for (const f of catalogTypes().filter((x) => categories.includes(x.category))) list.appendChild(furnitureCard(f));
     }
   };

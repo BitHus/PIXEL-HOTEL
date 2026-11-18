@@ -18,6 +18,7 @@ const BUTTONS: [PanelName, IconName, string, string | null][] = [
   ['catalog', 'catalog', 'Catalog (C)', null],
   ['workshop', 'workshop', 'Workshop: crafting and the Blacksmith', 'Workshop'],
   ['book', 'journal', 'Book: everything you found (J)', 'Book'],
+  ['skills', 'level', 'Skills: spend your skill points', 'Skills'],
   ['room', 'house', 'Room', 'Room'],
   ['avatar', 'avatar', 'Avatar', 'Avatar'],
   ['chat', 'chat', 'Chat (Enter)', 'Chat'],
@@ -32,7 +33,7 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
   const col = el('div', 'side-buttons');
   const buttons = new Map<PanelName, HTMLButtonElement>();
   const wrap = el('div', 'more-wrap');
-  const menu = el('div', 'frame more-menu');
+  const menu = el('div', 'ui-panel more-menu');
   const setMenu = (open: boolean): void => {
     menu.classList.toggle('open', open);
     mark();

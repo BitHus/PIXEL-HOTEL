@@ -1,6 +1,8 @@
 // Hands-on pouring (step G2): hold the tap to fill the mug, release near full for a perfect pour. Pure rules; the drink is never lost.
 
-import { POUR_FULL_MS, POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_PERFECT_RANGE, POUR_TIP_RATE } from './config.ts';
+import { POUR_FULL_MS, POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_TIP_RATE } from './config.ts';
+import { pourRangeOf } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
 
 /** The fill of the mug after `heldMs` of holding: 0..POUR_MAX_FILL, 1 = full. */
 export function pourFill(heldMs: number): number {
@@ -10,9 +12,10 @@ export function pourFill(heldMs: number): number {
 
 export type PourGrade = 'under' | 'perfect' | 'over';
 
-export function pourGrade(heldMs: number): PourGrade {
+export function pourGrade(heldMs: number, bonuses?: Bonuses): PourGrade {
   const f = pourFill(heldMs);
-  return f < POUR_PERFECT_RANGE[0] ? 'under' : f > POUR_PERFECT_RANGE[1] ? 'over' : 'perfect';
+  const [lo, hi] = pourRangeOf(bonuses);
+  return f < lo ? 'under' : f > hi ? 'over' : 'perfect';
 }
 
 /** The extra coins for a perfect pour of an order priced `price` (0 otherwise). */

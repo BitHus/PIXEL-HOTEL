@@ -1,0 +1,41 @@
+/* The Skills panel (MG-7): four branch tabs, tiers top to bottom, one card per node. Colours are the skin's tokens; hard edges, no blur.
+   Touch targets are at least 44 px. Own file: skin.css and lantern.css belong to the UI restyle. */
+
+.skills-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+  font-family: var(--font);
+  color: var(--text);
+}
+.skills-points { font-weight: bold; }
+.skills-spent { font-size: 0.8em; opacity: 0.8; }
+.skills-tier { margin: 8px 0 4px; font-family: var(--font); font-size: 0.85em; color: var(--text); opacity: 0.85; }
+.skills-tier.locked { opacity: 0.6; }
+.skill-list { display: flex; flex-direction: column; gap: 6px; }
+.skill-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 52px;
+  padding: 5px 6px;
+  box-sizing: border-box;
+  border: 2px solid var(--outline);
+  background: var(--wood-hi);
+  box-shadow: inset 0 2px 0 var(--cream), inset 0 -2px 0 var(--wood-mid);
+  font-family: var(--font);
+  color: var(--text);
+}
+.skill-card.locked { opacity: 0.65; }
+.skill-card.maxed { background: var(--wood-mid); }
+.skill-name { font-weight: bold; }
+.skill-pips { letter-spacing: 2px; margin-left: 6px; }
+.skill-text, .skill-lock, .skill-note { font-size: 0.8em; margin-top: 2px; }
+.skill-lock { color: var(--danger, #be4a2f); }
+.skill-note { opacity: 0.75; font-style: italic; }
+.skill-card .btn { min-width: 44px; min-height: 44px; }
+.skills-strip { display: flex; align-items: center; gap: 8px; padding: 4px 6px; font-family: var(--font); color: var(--text); }
+.skills-strip .btn { min-height: 44px; }

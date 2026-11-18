@@ -188,7 +188,7 @@ describe('blocks through the GameAPI', () => {
     const { api } = open(s);
     await api.enterRoom(s.player.shopRoomId);
     // A few blocks near the door; the shop keeps working and the player can still serve.
-    for (const [c, r] of [[6, 6], [7, 6], [11, 6], [12, 6]] as const) {
+    for (const [c, r] of [[6, 6], [7, 6], [10, 6], [11, 6]] as const) {
       const res = await api.placeBlock(c, r, 'stone');
       expect(['placed', 'walk']).toContain(res.kind);
     }

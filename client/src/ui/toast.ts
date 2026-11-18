@@ -33,7 +33,7 @@ export type Toast = ((text: string, action?: ToastAction) => void) & {
 export type ToastAvoid = () => { x: number; top: number; bottom: number } | null;
 
 export function createToast(parent: HTMLElement, avoid?: ToastAvoid): Toast {
-  const box = el('div', 'frame toast');
+  const box = el('div', 'ui-hud toast');
   box.hidden = true;
   box.setAttribute('role', 'status');
   box.style.setProperty('--fade-ms', `${TEXT_FADE_MS}ms`);
@@ -55,7 +55,7 @@ export function createToast(parent: HTMLElement, avoid?: ToastAvoid): Toast {
   });
   const show: Toast = (text, action) => {
     const kind = toastKind(text);
-    box.className = `frame toast toast-${kind.tone}`;
+    box.className = `ui-hud toast toast-${kind.tone}`;
     const icon = kind.icon === 'gem' ? gemImg() : pixelIcon(kind.icon);
     icon.classList.add('toast-icon');
     box.replaceChildren(icon, el('span', 'toast-text', text));

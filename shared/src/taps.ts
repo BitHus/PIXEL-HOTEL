@@ -9,6 +9,7 @@
 // - A tap whose stand left the tavern (picked up, sold) gives its mugs back to the bag (returnOrphanTaps).
 
 import { TAP_CAP, TAP_SLOTS } from './config.ts';
+import { bonusesOf, tapCapOf } from './skillRules.ts';
 import { getFurnitureType, behindPoint } from './furniture.ts';
 import { footprintCenter } from './placing.ts';
 import type { GameState } from './gameState.ts';
@@ -68,7 +69,7 @@ export function loadRoom(state: GameState, standUid: number, slot: number, drink
   if (!isDrinkId(drink) || !standOn(state, standUid) || !Number.isInteger(slot) || slot < 0 || slot >= TAP_SLOTS) return 0;
   const tap = tapOf(state.tavern.taps, standUid, slot);
   if (tap && tap.drink !== drink) return 0;
-  return Math.max(0, Math.min(state.player.materials[drink as MaterialId] ?? 0, TAP_CAP - (tap?.mugs ?? 0)));
+  return Math.max(0, Math.min(state.player.materials[drink as MaterialId] ?? 0, tapCapOf(bonusesOf(state.player)) - (tap?.mugs ?? 0)));
 }
 
 /**
@@ -143,7 +144,7 @@ export interface TapCard {
 }
 
 /** The cards of the Taps panel: every tap of every stand on the bar, from the taps and the bag (pure, tested). */
-export function tapCards(standUids: readonly number[], taps: readonly Tap[], materials: Partial<Record<MaterialId, number>>): TapCard[] {
+export function tapCards(standUids: readonly number[], taps: readonly Tap[], materials: Partial<Record<MaterialId, number>>, capMax = TAP_CAP): TapCard[] {
   const drinksInBag = DRINK_TYPES.filter((d) => (materials[d.id] ?? 0) > 0);
   return standUids.flatMap((standUid) =>
     Array.from({ length: TAP_SLOTS }, (_, slot): TapCard => {
@@ -151,9 +152,9 @@ export function tapCards(standUids: readonly number[], taps: readonly Tap[], mat
       const mugs = tap?.mugs ?? 0;
       const options = drinksInBag
         .filter((d) => !tap || tap.drink === d.id)
-        .map((d) => ({ drink: d.id as MaterialId, inBag: materials[d.id] ?? 0, fits: Math.max(0, Math.min(materials[d.id] ?? 0, TAP_CAP - mugs)) }))
+        .map((d) => ({ drink: d.id as MaterialId, inBag: materials[d.id] ?? 0, fits: Math.max(0, Math.min(materials[d.id] ?? 0, capMax - mugs)) }))
         .filter((o) => o.fits > 0);
-      return { standUid, slot, drink: tap?.drink ?? null, mugs, cap: TAP_CAP, options };
+      return { standUid, slot, drink: tap?.drink ?? null, mugs, cap: capMax, options };
     }),
   );
 }

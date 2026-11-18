@@ -33,7 +33,7 @@ export interface StyleType {
 }
 
 // ---------- Furniture (section 7) ----------
-export type PlaceIn = 'hotel' | 'shop' | 'both';
+export type PlaceIn = 'hotel' | 'shop' | 'both' | 'farm';
 /** The four ranks of every item, material, crop, food, ore, gem and furniture type (step 9e). */
 export type Rank = 'common' | 'rare' | 'ultra_rare' | 'legendary';
 

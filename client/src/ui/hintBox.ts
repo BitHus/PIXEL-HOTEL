@@ -31,7 +31,7 @@ export interface HintBox {
  * for it next to `avoid` (the top-left info column), it goes under that column instead (no tail).
  */
 export function createHintBox(parent: HTMLElement, avoid: HTMLElement): HintBox {
-  const box = el('div', 'frame quest-card');
+  const box = el('div', 'ui-panel quest-card');
   box.setAttribute('role', 'status');
   box.style.setProperty('--pop-ms', `${QUEST_CARD_POP_MS}ms`);
   const head = el('div', 'quest-head');

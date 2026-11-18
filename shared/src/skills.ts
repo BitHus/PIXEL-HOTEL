@@ -159,6 +159,9 @@ export interface SkillsView {
   respecs: number;
   respecFree: number;
   respecCost: number;
+  /** Points spent per branch and the points each tier step needs (tier N needs (N-1) * tierStep spent in its branch). */
+  branchSpent: Record<SkillBranch, number>;
+  tierStep: number;
   nodes: SkillNodeView[];
 }
 
@@ -173,6 +176,8 @@ export function skillsView(p: SkillsOwner): SkillsView {
     respecs,
     respecFree: Math.max(0, SKILL_RESPEC_FREE - respecs),
     respecCost: respecCost(p),
+    branchSpent: { tavern: branchSpent(p, 'tavern'), dungeon: branchSpent(p, 'dungeon'), fishing: branchSpent(p, 'fishing'), mining: branchSpent(p, 'mining') },
+    tierStep: SKILL_TIER_STEP,
     nodes: SKILL_NODES.map((n) => ({
       id: n.id,
       branch: n.branch,

@@ -33,7 +33,7 @@ export interface TapsHooks {
 export interface TapsPanel {
   readonly el: HTMLElement;
   /** The stands on the bar, the taps and the bag (call when any of them changed). */
-  update(standUids: readonly number[], taps: readonly Tap[], materials: Partial<Record<MaterialId, number>>): void;
+  update(standUids: readonly number[], taps: readonly Tap[], materials: Partial<Record<MaterialId, number>>, capMax?: number): void;
 }
 
 export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPanel {
@@ -43,6 +43,7 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
   let stands: readonly number[] = [];
   let taps: readonly Tap[] = [];
   let materials: Partial<Record<MaterialId, number>> = {};
+  let tapCap: number = TAP_CAP;
   /** What the player picked per tap: the drink and the number to load. */
   const picked = new Map<string, { drink: MaterialId; qty: number }>();
 
@@ -52,12 +53,12 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
     const row = el('div', `tap-row tap-card${c.mugs === 0 ? ' empty' : ''}`);
     const head = el('div', 'tap-head');
     const name = c.drink ? rankName('span', 'tap-name', `Tap ${n}: ${getMaterialType(c.drink).name}`, c.drink) : el('span', 'tap-name', `Tap ${n}: empty`);
-    head.append(name, el('span', 'tap-count', `${c.mugs}/${TAP_CAP}`));
-    const level = mugGauge(c.mugs);
+    head.append(name, el('span', 'tap-count', `${c.mugs}/${tapCap}`));
+    const level = mugGauge(c.mugs, tapCap);
     level.classList.add('tap-level-gauge');
 
     const controls = el('div', 'tap-controls tap-actions');
-    controls.append(el('p', 'tap-hint', c.mugs > 0 ? `${c.mugs} of ${TAP_CAP} mugs left.` : `${TAP_EMPTY_TEXT}. A guest who wants this drink waits until you load it.`));
+    controls.append(el('p', 'tap-hint', c.mugs > 0 ? `${c.mugs} of ${tapCap} mugs left.` : `${TAP_EMPTY_TEXT}. A guest who wants this drink waits until you load it.`));
     // Load: the drink (an empty tap lets you choose), a number and the buttons.
     const opt = c.options.find((o) => o.drink === picked.get(key)?.drink) ?? c.options[0];
     if (opt) {
@@ -83,7 +84,7 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
       const load = textButton(`Load ${qty}`, () => { picked.delete(key); hooks.load(c.standUid, c.slot, opt.drink, qty); }, 'primary tap-load');
       const fillBtn = textButton('Fill', () => { picked.delete(key); hooks.load(c.standUid, c.slot, opt.drink, opt.fits); });
       controls.append(step, load, fillBtn);
-    } else if (c.mugs < TAP_CAP) {
+    } else if (c.mugs < tapCap) {
       controls.append(el('div', 'catalog-sub', c.mugs === 0 ? 'No brewed drink in your bag. Brew one at a barrel and collect it.' : 'No more of this drink in your bag.'));
     }
     if (c.mugs > 0) {
@@ -94,7 +95,7 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
   };
 
   const draw = (): void => {
-    const cards = tapCards(stands, taps, materials);
+    const cards = tapCards(stands, taps, materials, tapCap);
     if (cards.length === 0) {
       list.replaceChildren(el('div', 'panel-info', 'There is no tap stand on your bar. Buy one in the catalog (Tavern) and put it on the bar.'));
       return;
@@ -113,6 +114,6 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
   draw();
   return {
     el: shell.el,
-    update(s, t, m) { stands = s; taps = t; materials = m; draw(); },
+    update(s, t, m, capMax = TAP_CAP) { stands = s; taps = t; materials = m; tapCap = capMax; draw(); },
   };
 }

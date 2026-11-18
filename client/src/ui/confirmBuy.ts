@@ -41,7 +41,7 @@ export function confirmBuy(parent: HTMLElement, q: BuyQuestion): Promise<boolean
   open?.(false);
   return new Promise((resolve) => {
     const shade = el('div', 'confirm-shade');
-    const box = el('div', 'frame confirm-panel');
+    const box = el('div', 'frame ui-panel confirm-panel');
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-modal', 'true');
 

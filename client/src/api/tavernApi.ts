@@ -36,6 +36,7 @@ import {
   tapFor,
   isDrinkId,
   pourGrade,
+  bonusesOf,
   pourHeldClamp,
   GEMS_GAIN_ID,
   GOLD_GAIN_ID,
@@ -271,7 +272,7 @@ export const tavernApi = {
       if (!h.nextServe()) h.dropServe();
       return false;
     }
-    const grade = pourGrade(pourHeldClamp(heldMs));
+    const grade = pourGrade(pourHeldClamp(heldMs), bonusesOf(h.state.player));
     // One pour = ONE mug: the one just put on the tray carries the grade.
     const tray = r.state.tavern.tray.map((m, i, all) => (i === all.length - 1 ? { ...m, perfect: grade === 'perfect' } : m));
     h.commit({ ...r.state, tavern: { ...r.state.tavern, tray } });

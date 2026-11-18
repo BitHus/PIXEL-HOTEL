@@ -5,6 +5,7 @@ import { collectCook, cookYield, startCook } from './cooking.ts';
 import { canPlace, footprintRect, getFurnitureType, planPlacement } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { guestZones } from './npcNav.ts';
+import { doorPoint } from './furniture.ts';
 import { applyChange } from './ledger.ts';
 import { edgeAdjacent, kitchenZone, prepBonus, prepTablesFor, rectInZone } from './kitchen.ts';
 import { buildNavGrid } from './nav.ts';
@@ -22,13 +23,13 @@ const stoveOf = (s: GameState) => s.items.find((i) => i.typeId === 'stove')!;
 const crops = (s: GameState): GameState => applyChange(s, { reason: 'debug', materials: { turnip: 20 } }, 0)!;
 
 describe('the kitchen zone (step T1, data)', () => {
-  it('every tavern shape has a zone for each of its 3 levels; each level contains the one before', () => {
+  it('every tavern shape has a kitchen annex for each of its 3 levels; it never shrinks (it moves down with the main floor)', () => {
     for (const shape of shapesFor('shop')) {
       expect(shape.kitchen, shape.id).toHaveLength(3);
       for (let l = 1; l < 3; l++) {
         const a = shape.kitchen![l - 1]!;
         const b = shape.kitchen![l]!;
-        expect(b.x <= a.x && b.y <= a.y && b.x + b.w >= a.x + a.w && b.y + b.h >= a.y + a.h, `${shape.id} level ${l + 1}`).toBe(true);
+        expect(b.w >= a.w && b.h >= a.h && b.y >= a.y, `${shape.id} level ${l + 1}`).toBe(true);
       }
     }
   });
@@ -81,7 +82,7 @@ describe('guests never enter the kitchen (nav)', () => {
     const room = roomOf(s);
     const zone = kitchenZone(room)!;
     const grid = npcGrid(buildNavGrid(room, itemBlockers(s.items, room.id)), guestZones(s.items, room));
-    const door = { x: room.w / 2, y: room.h - 16 };
+    const door = doorPoint(room);
     const path = npcPath(grid, door, { x: zone.x + 48, y: zone.y + 48 });
     for (const p of path) expect(p.x >= zone.x && p.x <= zone.x + zone.w && p.y >= zone.y && p.y <= zone.y + zone.h, `${p.x},${p.y}`).toBe(false);
   });
@@ -90,8 +91,8 @@ describe('guests never enter the kitchen (nav)', () => {
     let s = fresh();
     const zone = kitchenZone(roomOf(s))!;
     // A prep table (a surface, so a table) with a stool north of it, both inside the zone.
-    s = withItem(s, 69, 'prep_table', 288, 96);
-    s = withItem(s, 70, 'bar_stool', 272, 64, 'down');
+    s = withItem(s, 69, 'prep_table', 96, 384);
+    s = withItem(s, 70, 'bar_stool', 80, 416, 'up');
     const stool = s.items.find((i) => i.uid === 70)!;
     expect(rectInZone(zone, footprintRect(stool, getFurnitureType('bar_stool')))).toBe(true);
     expect(tavernSeats(s.items, s.tavern.roomId, null).filter((k) => k.uid === 70)).toHaveLength(1); // a seat without the zone rule
@@ -139,7 +140,7 @@ describe('prep tables add dishes to a batch (step T1)', () => {
 
   it('a prep table next to the stove inside the zone: +1 dish; the inputs stay those of the batch you chose', () => {
     let s = crops(fresh());
-    s = addTable(s, 80, 288, 96); // right of the stove (cells 8-9, row 2)
+    s = addTable(s, 80, 96, 384); // left of the stove (cells 2-3, row 11; the stove stands at cell 4)
     const room = roomOf(s);
     expect(prepTablesFor(s.items, room, stoveOf(s).uid).map((i) => i.uid)).toEqual([80]);
     expect(prepBonus(s.items, room, stoveOf(s).uid)).toBe(PREP_BONUS.perTable);
@@ -154,20 +155,15 @@ describe('prep tables add dishes to a batch (step T1)', () => {
 
   it('not next to the stove: no bonus (a gap, or only a corner touching)', () => {
     let s = crops(fresh());
-    s = addTable(s, 80, 320, 96); // x 288..352: a one-cell gap after the stove, and partly out of the zone
-    s = addTable(s, 81, 288, 64); // x 256..320, y 32..64: touches the stove at a corner only
+    s = addTable(s, 80, 96, 448); // x 64..128, y 416..448: a one-cell gap (row 12) below the stove
+    s = addTable(s, 81, 96, 416); // x 64..128, y 384..416: touches the stove (x 128..160, y 352..384) at a corner only
     expect(prepBonus(s.items, roomOf(s), stoveOf(s).uid)).toBe(0);
     expect(edgeAdjacent({ x: 224, y: 64, w: 32, h: 32 }, { x: 256, y: 32, w: 64, h: 32 })).toBe(false);
     expect(edgeAdjacent({ x: 224, y: 64, w: 32, h: 32 }, { x: 256, y: 64, w: 64, h: 32 })).toBe(true);
   });
 
-  it('next to the stove but outside the zone: no bonus; a stove outside the zone works without one', () => {
+  it('a stove outside the kitchen works without a bonus, also with a table touching it', () => {
     let s = crops(fresh());
-    // South of the stove is outside the level 1 zone (rows 0..2).
-    s = addTable(s, 80, 256, 128);
-    expect(prepBonus(s.items, roomOf(s), stoveOf(s).uid)).toBe(0);
-    // Level 2 grows the zone (rows 0..3): the same table counts now.
-    expect(prepBonus(s.items, roomAtLevel(roomOf(s), 2), stoveOf(s).uid)).toBe(1);
     // A second stove in the middle of the room, with a table touching it: it still cooks, with no bonus.
     s = withItem(s, 90, 'stove', 400, 224);
     s = addTable(s, 91, 464, 224);
@@ -178,19 +174,21 @@ describe('prep tables add dishes to a batch (step T1)', () => {
 
   it('at most PREP_BONUS.max extra dishes however many tables stand there', () => {
     let s = crops(fresh());
-    s = addTable(s, 80, 288, 96); // east
-    s = addTable(s, 81, 240, 64, 'right'); // north (32 wide, 64 deep)
-    s = addTable(s, 82, 256, 128); // south (inside the level 2 zone)
-    const room2 = roomAtLevel(roomOf(s), 2);
-    expect(prepTablesFor(s.items, room2, stoveOf(s).uid)).toHaveLength(3);
-    expect(prepBonus(s.items, room2, stoveOf(s).uid)).toBe(PREP_BONUS.max);
+    // A second stove deep in the level 3 annex (inside rows 15..18, x 0..224) with tables on all four sides.
+    s = withItem(s, 90, 'stove', 112, 544);
+    s = addTable(s, 80, 64, 544); // west
+    s = addTable(s, 81, 160, 544); // east
+    s = addTable(s, 82, 128, 512); // north
+    s = addTable(s, 83, 128, 576); // south
+    const room3 = roomAtLevel(roomOf(s), 3);
+    expect(prepTablesFor(s.items, room3, 90)).toHaveLength(4);
+    expect(prepBonus(s.items, room3, 90)).toBe(PREP_BONUS.max);
     expect(PREP_BONUS.max).toBe(2);
-    expect(prepBonus(s.items, roomOf(s), stoveOf(s).uid)).toBe(2); // east and north at level 1
   });
 
   it('the bonus is fixed when the batch starts: moving the table afterwards does not change it', () => {
     let s = crops(fresh());
-    s = addTable(s, 80, 288, 96);
+    s = addTable(s, 80, 96, 384);
     const started = startCook(s, stoveOf(s).uid, 'roasted_turnip', 1, 0)!;
     const moved: GameState = { ...started, items: started.items.filter((i) => i.uid !== 80) };
     expect(collectCook(moved, stoveOf(s).uid, 1e9)!.qty).toBe(2);
@@ -198,7 +196,7 @@ describe('prep tables add dishes to a batch (step T1)', () => {
 
   it('a prep table in a hotel room or the bag counts for nothing', () => {
     let s = crops(fresh());
-    s = addTable(s, 80, 288, 96);
+    s = addTable(s, 80, 96, 384);
     const bag: GameState = { ...s, items: s.items.map((i) => (i.uid === 80 ? { ...i, roomId: null } : i)) };
     expect(prepBonus(bag.items, roomOf(bag), stoveOf(bag).uid)).toBe(0);
     expect(floorRects(roomOf(s)).length).toBeGreaterThan(0);

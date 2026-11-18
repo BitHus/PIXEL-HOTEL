@@ -33,11 +33,11 @@ describe('plate slots (OA-2, OA-12)', () => {
     }
   });
 
-  it('the starter tavern: the dish spots of its seats are inside the round table top', () => {
+  it('the starter tavern: the dish spots of its seats are inside the table top', () => {
     let s = legacyStart();
-    s = withItem(s, 70, 'bar_stool', 432, 160, 'up'); // north of the round table
-    const table = s.items.find((i) => i.typeId === 'round_table')!;
-    const type = getFurnitureType('round_table');
+    s = withItem(s, 70, 'bar_stool', 432, 192, 'up'); // north of the table
+    const table = s.items.find((i) => i.typeId === 'table')!;
+    const type = getFurnitureType('table');
     const { rect } = tableTopArea(table, type);
     const seats = tavernSeats(s.items, s.tavern.roomId).filter((k) => k.tableUid === table.uid);
     expect(seats.length).toBeGreaterThanOrEqual(3);

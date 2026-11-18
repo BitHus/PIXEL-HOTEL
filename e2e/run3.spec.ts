@@ -29,8 +29,6 @@ test('run3', async ({ page }) => {
     await page.getByLabel('Display name').fill('Tester');
     await page.getByText('Begin your story').click();
     await shot(page, 'r3-02-hotelshape');
-    await page.getByRole('button', { name: 'Next' }).click();
-    await shot(page, 'r3-03-shopshape');
     await page.getByRole('button', { name: 'Open my tavern' }).click();
     await page.waitForTimeout(800);
     await shot(page, 'r3-04-intro');

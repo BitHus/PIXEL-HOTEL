@@ -90,7 +90,7 @@ async function newGame() {
   await page.getByText('New game').first().click();
   await page.getByLabel('Display name').fill('Viewer');
   await page.getByText('Begin your story').click();
-  await page.getByRole('button', { name: 'Next' }).click();
+  const nx = page.getByRole('button', { name: 'Next' }); if (await nx.count()) await nx.click();
   await page.getByRole('button', { name: 'Open my tavern' }).click();
   await page.waitForTimeout(800);
   await page.mouse.click(5, 300);

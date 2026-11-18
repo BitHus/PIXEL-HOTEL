@@ -42,7 +42,7 @@ function bar(cls: string, icon: HTMLElement | SVGSVGElement | null): { root: HTM
 
 export function createInfoPanel(parent: HTMLElement): InfoPanel {
   const box = el('div', 'top-left');
-  const info = el('div', 'frame info-panel');
+  const info = el('div', 'ui-hud info-panel');
   // The purse (currency pass): two plates in the same dark trough, the gold coin with butter numbers and the cut gem with cyan numbers.
   const gold = el('div', 'info-gold');
   const goldText = el('span', 'cur-num', '0');

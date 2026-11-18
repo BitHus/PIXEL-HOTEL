@@ -25,11 +25,11 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.rooms.find((r) => r.kind === 'lakeside')).toMatchObject({ floorStyle: 'grass', wallStyle: 'hedge' });
   });
 
-  it('has an empty level 1 hotel room (576x384) and a level 1 shop room (576x320)', () => {
+  it('has an empty level 1 hotel room (576x384) and a level 1 shop room (576x448, with the kitchen annex)', () => {
     const hotel = s.rooms.find((r) => r.id === s.player.hotelRoomId);
     const shop = s.rooms.find((r) => r.id === s.player.shopRoomId);
     expect(hotel).toMatchObject({ kind: 'hotel', level: 1, w: 576, h: 384, ownerId: s.player.id });
-    expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 320, ownerId: s.player.id });
+    expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 448, ownerId: s.player.id });
     expect(s.rooms).toHaveLength(4); // hotel, tavern, farm, lakeside (the kitchen is a walled area of the tavern)
     // Step 9f: a level 1 lakeside (576x384) with 8 whole trees.
     expect(s.rooms.find((r) => r.id === s.player.lakesideRoomId)).toMatchObject({ kind: 'lakeside', level: 1, w: 576, h: 384 });
@@ -47,9 +47,9 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.hotbar).toEqual(Array(HOTBAR_SLOTS).fill(null));
   });
 
-  it('puts the bar, a bar stool in front of it, a round table with 2 stools in the tavern (the brewing barrel and the stove stand in the walled kitchen area), at their fixed spots; no stall table (S3)', () => {
+  it('puts the bar, a bar stool in front of it, a table with 2 stools in the tavern (the brewing barrel and the stove stand in the walled kitchen area), at their fixed spots; no stall table (S3)', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
-    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'round_table', 'stove', 'tap_stand']);
+    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'stove', 'table', 'tap_stand']);
     for (const start of SHOP_START_ITEMS.filter((x) => x.typeId === 'counter')) {
       expect(shop.find((i) => i.typeId === start.typeId)).toMatchObject({ x: start.x, y: start.y, facing: start.facing });
     }
@@ -81,15 +81,15 @@ describe('createNewPlayer (brief section 9)', () => {
 
 describe('a new player from character creation (step 7b)', () => {
   const look = { skin: 4, hair: 10, hairStyle: 'ponytail', top: 'vest', shirt: 13, bottoms: 'skirt', legs: 5, shoes: 25 };
-  const choice = { name: '  Ada  Lovely 7 ', look, hotelShape: 'l_shape', shopShape: 'plus' };
+  const choice = { name: '  Ada  Lovely 7 ', look, hotelShape: 'l_shape', shopShape: 'plus' }; // the shopShape is ignored since 18 Nov
 
-  it('uses the chosen shapes, look and name', () => {
+  it('uses the chosen hotel shape, look and name (the tavern shape is fixed)', () => {
     const config = configForChoice(choice)!;
     const s = createNewPlayer(config, 5);
     expect(s.player.name).toBe('Ada Lovely 7');
     expect(s.look).toEqual({ ...look, hairStyle: 'long', top: 'tunic', bottoms: 'trousers' }); // CH1: only drawn pieces
     expect(s.rooms.find((r) => r.id === s.player.hotelRoomId)).toMatchObject({ shape: 'l_shape', level: 1, kind: 'hotel' });
-    expect(s.rooms.find((r) => r.id === s.player.shopRoomId)).toMatchObject({ shape: 'plus', level: 1, kind: 'shop' });
+    expect(s.rooms.find((r) => r.id === s.player.shopRoomId)).toMatchObject({ shape: 'square_shop', level: 1, kind: 'shop' }); // the tavern is always the one fixed shape
     expect(s.player.unlockedClothing).toEqual([]);
     expect(s.playerCreated).toBe(false); // the API sets it once the player is made
   });
@@ -109,7 +109,7 @@ describe('a new player from character creation (step 7b)', () => {
     expect(configForChoice({ ...choice, look: { ...look, hairStyle: 'mohawk' } })).toBeNull();
     expect(configForChoice({ ...choice, look: { ...look, shirt: 999 } })).toBeNull();
     expect(configForChoice({ ...choice, hotelShape: 'square_shop' })).toBeNull();
-    expect(configForChoice({ ...choice, shopShape: 'square' })).toBeNull();
+    expect(configForChoice({ ...choice, shopShape: 'square' })?.shopShape).toBe('square_shop'); // ignored, never an error
     expect(cleanDisplayName('Émile 2')).toBe('Émile 2');
   });
 
@@ -123,13 +123,13 @@ describe('a new player from character creation (step 7b)', () => {
     expect(lookAllowed(START_LOOK)).toBe(true);
   });
 
-  it('every shop shape has a counter (with room behind it) and a round table with three stools that fit (no stool at the bar)', () => {
+  it('every shop shape has a counter (with room behind it) and a table with three stools that fit (no stool at the bar)', () => {
     for (const shape of shapesFor('shop')) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const shop = s.items.filter((i) => i.roomId === room.id);
-      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'round_table', 'stove', 'tap_stand']);
-      // Three seats (S3, G2): all three stools stand at the round table (uid 2).
+      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'stove', 'table', 'tap_stand']);
+      // Three seats (S3, G2): all three stools stand at the table (uid 2).
       expect(tavernSeats(s.items, room.id).map((x) => x.tableUid), shape.id).toEqual([2, 2, 2]);
       for (const i of shop) {
         const others = s.items.filter((o) => o.uid !== i.uid);

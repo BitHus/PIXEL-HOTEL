@@ -17,7 +17,6 @@
 
 import { walkAvatar, type Avatar } from './avatar.ts';
 import {
-  AWAY_ORDERS_MAX,
   CUSTOMER_ENTER_PAUSE_MS,
   CUSTOMER_SPEED_VARIATION,
   CUSTOMER_WALK_SPEED,
@@ -26,7 +25,6 @@ import {
   GUEST_GROUP_GAP_PX,
   GUEST_GROUP_STAGGER_MS,
   GUEST_GROUP_WEIGHTS,
-  GUEST_MAX,
   GUEST_NO_MENU_MAX_MS,
   GUEST_NO_MENU_MIN_MS,
   GUEST_NO_SEAT_MS,
@@ -46,6 +44,7 @@ import {
   REMARK_APPEAL_MIN,
 } from './config.ts';
 import { pourTip } from './pour.ts';
+import { awayOrdersMaxOf, bonusesOf, guestMaxOf } from './skillRules.ts';
 import { returnTray, takeMug } from './tray.ts';
 import { guestLook, outsidePoint, rollGuestKind, rollTolerance } from './guestLook.ts';
 import { kitchenZone } from './kitchen.ts';
@@ -245,9 +244,9 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
     left += guestIntervalMs(tavernAppeal(w.room, w.items, w.attached));
     const here = s.tavern.guests;
     // OA-14: the CLOSED sign: the timer runs, nobody comes.
-    let n = s.tavern.closed === true ? 0 : Math.min(rollGroupSize(rng), Math.min(GUEST_MAX, seats.length) - here.length);
+    let n = s.tavern.closed === true ? 0 : Math.min(rollGroupSize(rng), Math.min(guestMaxOf(bonusesOf(s.player)), seats.length) - here.length);
     // Away: only while fewer than AWAY_ORDERS_MAX sit (or will sit) with an open order.
-    if (!w.playerHere) n = Math.min(n, AWAY_ORDERS_MAX - here.filter((c) => c.phase !== 'eat' && c.phase !== 'leave').length);
+    if (!w.playerHere) n = Math.min(n, awayOrdersMaxOf(bonusesOf(s.player)) - here.filter((c) => c.phase !== 'eat' && c.phase !== 'leave').length);
     const picks = n > 0 ? pickSeats(reachable(g, door, freeTavernSeats(s.tavern, seats, w.seatsTaken)), n, rng) : null;
     if (n > 0 && (picks || w.playerHere)) {
       const out = outsidePoint(w.room);
@@ -427,7 +426,7 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
   const gap = Math.max(0, at - state.tavern.updatedAt);
   const span = state.tavern.closed === true ? 0 : Math.min(gap, OFFLINE_MAX_MS); // OA-14: closed = nobody came while away
   const interval = guestIntervalMs(tavernAppeal(w.room, w.items, w.attached));
-  const cap = Math.min(GUEST_MAX, seats.length);
+  const cap = Math.min(guestMaxOf(bonusesOf(state.player)), seats.length);
   const g = npcGrid(w.grid, guestZones(w.items, w.room));
   const usable = reachable(g, doorPoint(w.room), seats);
   let wait = s.tavern.nextGuestInMs;
@@ -437,7 +436,7 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
   while (t + wait <= span) {
     t += wait;
     wait = interval;
-    const room = Math.min(cap - s.tavern.guests.length, AWAY_ORDERS_MAX - openOrders(s.tavern).length);
+    const room = Math.min(cap - s.tavern.guests.length, awayOrdersMaxOf(bonusesOf(state.player)) - openOrders(s.tavern).length);
     if (room <= 0) continue;
     const n = Math.min(rollGroupSize(rng), room);
     const picks = pickSeats(freeTavernSeats(s.tavern, usable, w.seatsTaken), n, rng);

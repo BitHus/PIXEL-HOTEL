@@ -36,7 +36,7 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   let waiting: readonly FirstTenStep[] = [];
   let visible = true;
   const save = (): void => void storage.set(FIRST_TEN_KEY, JSON.stringify(state));
-  const card = el('div', 'frame first-ten');
+  const card = el('div', 'ui-panel first-ten');
   card.setAttribute('role', 'status');
   // Placement and look are in skin.css (.first-ten): top centre on a wide screen, between the info panel and the button column on a phone.
   const count = el('span', 'first-ten-count');

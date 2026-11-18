@@ -5,6 +5,7 @@
 // game is closed and survives a save and reload. Nothing is collected by itself: the player taps the stove.
 // Inputs out and dishes in go through applyChange (ledger reason 'cook'), exactly once each.
 
+import { bonusesOf, stoveBatchMaxOf } from './skillRules.ts';
 import { COOK_MS, STOVE_BATCH_MAX } from './config.ts';
 import { getFurnitureType } from './furniture.ts';
 import { inRooms, kitchenRoomIds } from './workRooms.ts';
@@ -75,9 +76,9 @@ export function canCook(food: FoodType, state: GameState, qty = 1): boolean {
 }
 
 /** How many dishes of a recipe these materials allow, 0 to STOVE_BATCH_MAX. */
-export function maxBatchWith(materials: Partial<Record<MaterialId, number>>, food: FoodType): number {
+export function maxBatchWith(materials: Partial<Record<MaterialId, number>>, food: FoodType, max = STOVE_BATCH_MAX): number {
   let n = 0;
-  while (n < STOVE_BATCH_MAX && canCookWith(materials, food, n + 1)) n++;
+  while (n < max && canCookWith(materials, food, n + 1)) n++;
   return n;
 }
 
@@ -87,7 +88,7 @@ export function maxBatchWith(materials: Partial<Record<MaterialId, number>>, foo
  * are short.
  */
 export function startCook(state: GameState, stoveUid: number, food: string, qty: number, at: number): GameState | null {
-  if (!isFoodId(food) || !Number.isInteger(qty) || qty < 1 || qty > STOVE_BATCH_MAX) return null;
+  if (!isFoodId(food) || !Number.isInteger(qty) || qty < 1 || qty > stoveBatchMaxOf(bonusesOf(state.player))) return null;
   if (!placedStove(state, stoveUid) || cookOf(state.tavern.cooks, stoveUid)) return null;
   const type = getFoodType(food);
   const used: Partial<Record<MaterialId, number>> = {};

@@ -81,7 +81,8 @@ export interface NewPlayerChoice {
   innName?: string;
   look: AvatarLook;
   hotelShape: string;
-  shopShape: string;
+  /** Ignored since 18 Nov: every tavern is the one fixed shape (with its kitchen annex), nobody picks it any more. */
+  shopShape?: string;
 }
 
 /**
@@ -97,8 +98,7 @@ export function configForChoice(choice: NewPlayerChoice): NewPlayerConfig | null
   if (given && !typed) return null;
   const innName = typed ?? defaultTavernName(name);
   if (!shapesFor('hotel').some((s) => s.id === choice.hotelShape)) return null;
-  if (!shapesFor('shop').some((s) => s.id === choice.shopShape && s.shopStart)) return null;
-  return { ...DEFAULT_NEW_PLAYER, name, innName, look: { ...choice.look }, hotelShape: choice.hotelShape, shopShape: choice.shopShape };
+  return { ...DEFAULT_NEW_PLAYER, name, innName, look: { ...choice.look }, hotelShape: choice.hotelShape, shopShape: defaultShape('shop') };
 }
 
 /** How an unlocked style is stored in Player.unlockedStyles (floor and wall ids may match). */

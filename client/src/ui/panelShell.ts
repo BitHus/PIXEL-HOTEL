@@ -21,7 +21,7 @@ export interface PanelShell {
 export function panelShell(parent: HTMLElement, cls: string, title = ''): PanelShell {
   const root = el('div', `panel ${cls}`.trim());
   const tabs = el('div', 'panel-tabs');
-  const frame = el('div', 'frame panel-frame');
+  const frame = el('div', 'frame ui-panel panel-frame');
   const head = el('h2', 'panel-title plate', title);
   const body = el('div', 'panel-body');
   const strip = el('div', 'panel-strip');

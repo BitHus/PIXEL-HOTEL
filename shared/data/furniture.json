@@ -2941,7 +2941,7 @@
     "topFace": { "dx": -22, "dy": -59, "w": 44, "d": 18 },
     "baseValue": 12,
     "rank": "common",
-    "inCatalog": true,
+    "inCatalog": false,
     "art": {
       "boxes": [
         {
@@ -4507,5 +4507,89 @@
         "butter"
       ]
     }
+  },
+  {
+    "id": "scarecrow",
+    "name": "Scarecrow",
+    "category": "farm_furniture",
+    "theme": "tavern",
+    "placeIn": "farm",
+    "appeal": 0,
+    "w": 32,
+    "d": 32,
+    "height": 66,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": ["down"],
+    "standPoint": {"dx": 0, "dy": 24},
+    "seats": [],
+    "baseValue": 12,
+    "rank": "rare",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {"dx": -3, "dy": -13, "w": 6, "d": 6, "z": 0, "h": 36, "color": 5}, {"dx": -14, "dy": -14, "w": 28, "d": 4, "z": 24, "h": 4, "color": 5}, {"dx": -7, "dy": -12, "w": 14, "d": 10, "z": 34, "h": 10, "color": 10}
+      ]
+    },
+    "icon": {"shape": "post", "colors": ["oak", "butter"]}
+  },
+  {
+    "id": "straw_bale",
+    "name": "Hay bale",
+    "category": "farm_furniture",
+    "theme": "tavern",
+    "placeIn": "farm",
+    "appeal": 0,
+    "w": 32,
+    "d": 32,
+    "height": 53,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": ["down"],
+    "standPoint": {"dx": 0, "dy": 24},
+    "seats": [],
+    "baseValue": 4,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {"dx": -14, "dy": -2, "w": 29, "d": 29, "z": 0, "h": 22, "color": 10}
+      ]
+    },
+    "icon": {"shape": "box", "colors": ["butter", "oak"]}
+  },
+  {
+    "id": "farm_barrel",
+    "name": "Farm barrel",
+    "category": "farm_furniture",
+    "theme": "tavern",
+    "placeIn": "farm",
+    "appeal": 0,
+    "w": 32,
+    "d": 32,
+    "height": 53,
+    "blocks": true,
+    "sittable": false,
+    "surface": false,
+    "onSurface": false,
+    "wall": false,
+    "facings": ["down"],
+    "standPoint": {"dx": 0, "dy": 24},
+    "seats": [],
+    "baseValue": 6,
+    "rank": "common",
+    "inCatalog": true,
+    "art": {
+      "boxes": [
+        {"dx": -13, "dy": -3, "w": 26, "d": 26, "z": 0, "h": 24, "color": 4}
+      ]
+    },
+    "icon": {"shape": "barrel", "colors": ["walnut", "steel"]}
   }
 ]

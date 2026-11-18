@@ -6,7 +6,7 @@
 
 import { rankName } from './rank.ts';
 import {
-  FOOD_TYPES, STOVE_BATCH_MAX, cookMs, cookReadyInMs, getFoodType, getMaterialType, maxBatchWith,
+  FOOD_TYPES, bonusesOf, stoveBatchMaxOf, cookMs, cookReadyInMs, getFoodType, getMaterialType, maxBatchWith,
   cookYield, type Cook, type FoodEffect, type FoodType, type MaterialId, type Player,
 } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
@@ -94,9 +94,10 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
   let cooks: readonly Cook[] = [];
   let qty = 1;
   let bonus = 0;
+  const batchMax = (): number => stoveBatchMaxOf(bonusesOf(player ?? { skills: undefined }));
 
   const row = (f: FoodType, p: Player): HTMLElement => {
-    const can0 = maxBatchWith(p.materials, f) >= 1;
+    const can0 = maxBatchWith(p.materials, f, stoveBatchMaxOf(bonusesOf(p))) >= 1;
     const r = el('div', `catalog-row recipe-card${can0 ? ' ready' : ' cant'}`);
     const slot = iconBox(materialIconUrl(f.id));
     const needs = el('div', 'recipe-needs');
@@ -113,7 +114,7 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
       el('div', 'catalog-sub', `${foodEffectText(f.effect)} Ready in ${cookTimeText(cookMs(f))}.`),
       needs,
     );
-    const can = maxBatchWith(p.materials, f);
+    const can = maxBatchWith(p.materials, f, stoveBatchMaxOf(bonusesOf(p)));
     const n = Math.min(qty, can);
     const b = textButton(n > 1 ? `Cook x${n}` : 'Cook', () => uid !== null && hooks.start(uid, f, n), can0 ? 'primary' : '');
     b.disabled = can < 1;
@@ -142,12 +143,12 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     }
     const step = el('div', 'panel-info cook-batch');
     const minus = textButton('-', () => { qty = Math.max(1, qty - 1); render(); }, 'cook-step');
-    const plus = textButton('+', () => { qty = Math.min(STOVE_BATCH_MAX, qty + 1); render(); }, 'cook-step');
+    const plus = textButton('+', () => { qty = Math.min(batchMax(), qty + 1); render(); }, 'cook-step');
     minus.disabled = qty <= 1;
-    plus.disabled = qty >= STOVE_BATCH_MAX;
+    plus.disabled = qty >= batchMax();
     step.append(el('span', 'cook-qty-label', 'Dishes per batch'), minus, el('span', 'cook-qty', bonus > 0 ? `${qty} + ${bonus}` : String(qty)), plus);
     // The long help is folded behind a small "?" so the recipes show first (TESTER RUN 2: 5 lines before the first recipe).
-    const help = helpFold(bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).', `A stove cooks one batch at a time, up to ${STOVE_BATCH_MAX} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`);
+    const help = helpFold(bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).', `A stove cooks one batch at a time, up to ${batchMax()} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`);
     top.replaceChildren(step, help);
     list.replaceChildren(...(player ? FOOD_TYPES.map((f) => row(f, player!)) : []));
   };

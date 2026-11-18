@@ -19,11 +19,11 @@ export * from './config/home.ts';
 
 // ---------- The tavern (step 9t) ----------
 /** What a new tavern starts with besides the bar (the old stall table is not in a new game any more; step S3 gave it a bar stool in front of the bar,
- *  the owner took that stool away again (G2): the round table has a third stool in front, so a new tavern still has 3 seats): `key` is the spot in the shop shape's shopStart (roomShapes.json); x and y here are the square shop's. */
+ *  the owner took that stool away again (G2): the table has a third stool in front, so a new tavern still has 3 seats): `key` is the spot in the shop shape's shopStart (roomShapes.json); x and y here are the square shop's. */
 export const TAVERN_START_ITEMS = [
-  { key: 'round_table', typeId: 'round_table', x: 448, y: 224, facing: 'down' },
-  { key: 'stool_left', typeId: 'bar_stool', x: 400, y: 192, facing: 'right' },
-  { key: 'stool_right', typeId: 'bar_stool', x: 496, y: 192, facing: 'left' },
+  { key: 'table', typeId: 'table', x: 448, y: 224, facing: 'down' },
+  { key: 'stool_left', typeId: 'bar_stool', x: 400, y: 224, facing: 'right' },
+  { key: 'stool_right', typeId: 'bar_stool', x: 496, y: 224, facing: 'left' },
   { key: 'stool_front', typeId: 'bar_stool', x: 464, y: 256, facing: 'up' },
   { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 304, y: 64, facing: 'down' },
   { key: 'stove', typeId: 'stove', x: 240, y: 96, facing: 'down' },

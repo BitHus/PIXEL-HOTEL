@@ -45,6 +45,7 @@ import { ownedRod } from './gear.ts';
 import { applyChange } from './ledger.ts';
 import { gemDrop } from './gems.ts';
 import { RANKS, rollRank } from './ranks.ts';
+import { effective, type Bonuses } from './stats.ts';
 import { rngInt } from './rng.ts';
 import type { MaterialId, Rank, Rng } from './types.ts';
 
@@ -95,6 +96,9 @@ export interface FishSession {
   boxVel: number;
   boxSize: number;
   gravityScale: number;
+  /** MG-7: Sharp eye (ms added to the strike window) and Reel master (the fill drains by this factor; absent = 1). */
+  strikeBonusMs?: number;
+  drainScale?: number;
   held: boolean;
   /** ms in the reel (a reel over FISH_REEL_MAX_MS is lost). */
   reelMs: number;
@@ -130,18 +134,21 @@ export function rollCatch(rng: Rng, multiplier: Partial<Record<Rank, number>> = 
 }
 
 /** A new session: the line is cast. The rod comes from the player's gear (`gear`). */
-export function newFishSession(rng: Rng, gear: readonly string[] = []): FishSession {
+export function newFishSession(rng: Rng, gear: readonly string[] = [], skill?: Bonuses): FishSession {
   const rod = ownedRod(gear as never);
-  const { type, rank } = rollCatch(rng, rod?.rankMultiplier ?? {});
+  const odds = 1 + (skill?.rankOddsPct ?? 0) / 100; // Trophy hunter: the rarer ranks come a little more often
+  const mult: Partial<Record<Rank, number>> = { ...(rod?.rankMultiplier ?? {}) };
+  if (odds !== 1) for (const r of RANKS) if (r !== 'common') mult[r] = (mult[r] ?? 1) * odds;
+  const { type, rank } = rollCatch(rng, mult);
   const cm = type.kind === 'fish' ? rngInt(rng, type.minCm ?? 10, type.maxCm ?? 30) : null;
-  const boxSize = FISH_BOX_BASE + (rod?.boxBonus ?? 0);
+  const boxSize = effective(FISH_BOX_BASE + (rod?.boxBonus ?? 0), 'boxSizePct', skill); // Wide box
   return {
     phase: 'wait',
     outcome: null,
     catchId: type.id,
     rank,
     cm,
-    waitMs: rngInt(rng, FISH_WAIT_MIN_MS, FISH_WAIT_MAX_MS),
+    waitMs: Math.round(effective(rngInt(rng, FISH_WAIT_MIN_MS, FISH_WAIT_MAX_MS), 'biteWaitPct', skill)), // Patient
     biteMs: 0,
     fill: 0,
     fishPos: FISH_BAR / 2,
@@ -157,6 +164,7 @@ export function newFishSession(rng: Rng, gear: readonly string[] = []): FishSess
     boxVel: 0,
     boxSize,
     gravityScale: rod?.gravityScale ?? 1,
+    ...(skill ? { strikeBonusMs: effective(0, 'strikeWindowMs', skill), drainScale: effective(1, 'tensionRisePct', skill) } : {}),
     held: false,
     reelMs: 0,
     timeMs: 0,
@@ -293,7 +301,7 @@ function tick(s: FishSession, rng: Rng): void {
     }
     if (s.waitMs <= 0) {
       s.phase = 'bite';
-      s.biteMs = FISH_BITE_MS[s.rank];
+      s.biteMs = FISH_BITE_MS[s.rank] + (s.strikeBonusMs ?? 0);
       s.events.push({ t: 'bite' });
     }
   } else if (s.phase === 'bite') {
@@ -304,7 +312,7 @@ function tick(s: FishSession, rng: Rng): void {
     swim(s, rng);
     moveBox(s, dtS);
     const r = FISH_REEL[s.rank];
-    s.fill += (fishInBox(s) ? r.gain : -r.drain) * dtS;
+    s.fill += (fishInBox(s) ? r.gain : -r.drain * (s.drainScale ?? 1)) * dtS;
     if (s.fill >= FISH_REEL_FULL) {
       s.fill = FISH_REEL_FULL;
       finish(s, 'caught', { t: 'caught', id: s.catchId, rank: s.rank, cm: s.cm });

@@ -399,8 +399,8 @@ describe('non-rectangular rooms (step 7b)', () => {
     expect(canPlace(l, [], T('banner'), 160, 0, 'down')).toBe(true); // the top band
     expect(canPlace(l, [], T('banner'), 320, 192, 'down')).toBe(false); // half off the inner band
     expect(canPlace(l, [], T('banner'), 480, 0, 'down')).toBe(false); // no wall up there
-    const p = planPlacement(l, [], T('banner'), 470, 230, 'down');
-    expect(p).toMatchObject({ x: 470, y: 192, ok: true });
+    const p = planPlacement(l, [], T('banner'), 500, 230, 'down'); // clear of the cellar door's 16 px sprite clearance
+    expect(p).toMatchObject({ x: 500, y: 192, ok: true });
   });
 });
 

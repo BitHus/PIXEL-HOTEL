@@ -18,8 +18,8 @@ export interface TrayMug {
 }
 
 /** True while the tray has no room for another mug. */
-export function trayFull(t: Pick<TavernState, 'tray'>): boolean {
-  return t.tray.length >= TRAY_MAX;
+export function trayFull(t: Pick<TavernState, 'tray'>, max = TRAY_MAX): boolean {
+  return t.tray.length >= max;
 }
 
 /** The guests with an OPEN order for exactly this item (they pulse while a matching mug is on the tray), in guest order. */

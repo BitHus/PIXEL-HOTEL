@@ -15,6 +15,7 @@ import {
   DOOR_ZONE_W,
   FARM_FLOOR_STYLE,
   FARM_WALL_STYLE,
+  KITCHEN_FLOOR_STYLE,
   ROOM_GRID,
   SIDE_BORDER,
   START_FLOOR_STYLE,
@@ -75,8 +76,10 @@ export interface RoomShape {
   /** Levels 1, 2 and 3; each floor contains the one before. */
   levels: ShapeLevel[];
   /** Where a new shop's counter and stall_table stand (level 1), for shapes a shop can use. */
-  shopStart?: Record<'counter' | 'stall_table' | 'round_table' | 'stool_left' | 'stool_right' | 'stool_front' | 'brewing_barrel' | 'stove', Point>;
-  /** The KITCHEN ZONE (step T1) per level 1..3, in CELLS: staff only, like the strip behind the bar. Shapes a tavern can use only. */
+  shopStart?: Record<'counter' | 'stall_table' | 'table' | 'stool_left' | 'stool_right' | 'stool_front' | 'brewing_barrel' | 'stove', Point>;
+  /** The KITCHEN ANNEX per level 1..3, in CELLS (owner 18 Nov, replaces the T1 zone and the wall ring): a rectangle OUTSIDE the main floor that is added to a tavern's floor
+   * (below its bottom edge, touching other floor only along its top edge). Its top row is the partition wall (with a 2-cell doorway), the rest is the staff-only kitchen inside.
+   * Shapes a tavern can use only; a hotel with the same shape gets no annex. */
   kitchen?: Rect[];
 }
 
@@ -105,8 +108,21 @@ function shapeLevel(shape: string, level: RoomLevel): ShapeLevel {
 }
 
 /** The floor rectangles of a shape level in px (the data is in cells). */
-function levelRects(shape: string, level: RoomLevel): Rect[] {
-  return shapeLevel(shape, level).rects.map((r) => ({ x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL }));
+function levelRects(shape: string, level: RoomLevel, kind?: RoomKind): Rect[] {
+  const main = shapeLevel(shape, level).rects.map((r) => ({ x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL }));
+  const annex = kind === 'shop' ? annexRectOf(shape, level) : null;
+  return annex ? [...main, annex] : main;
+}
+
+/** The kitchen annex of a tavern shape at a level in px (owner 18 Nov), or null for a shape without one. */
+export function annexRectOf(shape: string, level: RoomLevel): Rect | null {
+  const r = getRoomShape(shape).kitchen?.[level - 1];
+  return r ? { x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL } : null;
+}
+
+/** The annex of a room (a tavern only), or null. */
+export function roomAnnex(room: Room | undefined): Rect | null {
+  return room && room.kind === 'shop' ? annexRectOf(room.shape ?? defaultShape(room.kind), room.level) : null;
 }
 
 /** The bounding box of rectangles. */
@@ -120,7 +136,7 @@ export function boundsOf(rects: readonly Rect[]): Rect {
 
 /** A new room of the given kind, level and shape, with the bare styles (the farm: grass and hedge). */
 export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId: number, shape = defaultShape(kind)): Room {
-  const b = boundsOf(levelRects(shape, level));
+  const b = boundsOf(levelRects(shape, level, kind));
   return {
     id,
     kind,
@@ -139,13 +155,13 @@ export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId
 
 /** The same room at another level of its shape (the size follows). */
 export function roomAtLevel(room: Room, level: RoomLevel): Room {
-  const b = boundsOf(levelRects(room.shape, level));
+  const b = boundsOf(levelRects(room.shape, level, room.kind));
   return { ...room, level, w: b.x + b.w, h: b.y + b.h };
 }
 
 /** The floor's rectangles. */
 export function floorRects(room: Room): Rect[] {
-  return levelRects(room.shape ?? defaultShape(room.kind), room.level);
+  return levelRects(room.shape ?? defaultShape(room.kind), room.level, room.kind);
 }
 
 /** The floor's bounding box. */
@@ -334,8 +350,15 @@ export function floorCellList(room: Room): { c: number; r: number }[] {
   return out;
 }
 
-/** The floor style id of one cell (a painted one, else the room's floor style). */
+/** True if the cell lies in the tavern's kitchen annex. */
+export function cellInAnnex(room: Room, c: number, r: number): boolean {
+  const a = roomAnnex(room);
+  return a !== null && c * BUILD_CELL >= a.x && c * BUILD_CELL < a.x + a.w && r * BUILD_CELL >= a.y && r * BUILD_CELL < a.y + a.h;
+}
+
+/** The floor style id of one cell (a painted one, else the room's floor style). The tavern's kitchen annex always has stone tiles (owner 18 Nov). */
 export function floorStyleAt(room: Room, c: number, r: number): string {
+  if (cellInAnnex(room, c, r)) return KITCHEN_FLOOR_STYLE;
   return room.floorCells?.[`${c},${r}`] ?? room.floorStyle;
 }
 
@@ -344,6 +367,7 @@ export function dominantFloorStyle(room: Room): string {
   if (!room.floorCells) return room.floorStyle;
   const count = new Map<string, number>();
   for (const { c, r } of floorCellList(room)) {
+    if (cellInAnnex(room, c, r)) continue; // the annex always has its own stone floor
     const id = floorStyleAt(room, c, r);
     count.set(id, (count.get(id) ?? 0) + 1);
   }
@@ -368,7 +392,7 @@ export function paintFloorCells(room: Room, a: { c: number; r: number }, b: { c:
   let any = false;
   for (let r = Math.min(a.r, b.r); r <= Math.max(a.r, b.r); r++) {
     for (let c = Math.min(a.c, b.c); c <= Math.max(a.c, b.c); c++) {
-      if (!cellOnFloor(room, c, r)) continue;
+      if (!cellOnFloor(room, c, r) || cellInAnnex(room, c, r)) continue; // the kitchen annex keeps its stone floor
       any = true;
       if (styleId === room.floorStyle) delete painted[`${c},${r}`];
       else painted[`${c},${r}`] = styleId;

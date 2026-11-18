@@ -1,0 +1,2 @@
+buttons ["Square","Long","L-shape","Plus","Wide hall","Open my tavern"]
+no Next

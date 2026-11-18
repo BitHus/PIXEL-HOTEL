@@ -4,7 +4,7 @@ import { buildNavGrid, cellAt, isCellFree } from './nav.ts';
 import { createRoom } from './room.ts';
 
 describe('the guests\' nav grid (staff only)', () => {
-  const room = createRoom(2, 'shop', 1, 1);
+  const room = createRoom(2, 'hotel', 1, 1); // a plain room: the tavern's kitchen partition would block cells too
   const grid = buildNavGrid(room, []);
   const zone = { x: 100, y: 40, w: 96, h: 40 };
 

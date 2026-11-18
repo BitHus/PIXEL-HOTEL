@@ -5,16 +5,15 @@
 import type { Rect } from './types.ts';
 import { lakeFixedBlockers } from './lakeLayout.ts';
 import type { Room } from './room.ts';
-import { kitchenWall } from './kitchenWall.ts';
+import { kitchenNoPlace, kitchenWall } from './kitchenWall.ts';
 
 /** Fixed things in a room that block walking (the lakeside's water and trees), besides the furniture. */
 export function fixedBlockers(room: Room): Rect[] {
-  // The tavern's kitchen wall (owner 18 Nov) blocks walking like a fixed thing.
+  // The partition wall of the tavern's kitchen annex (owner 18 Nov) blocks walking like a fixed thing (the doorway stays open).
   return room.kind === 'lakeside' ? lakeFixedBlockers(room) : (kitchenWall(room)?.walls ?? []);
 }
 
 /** Where no furniture may stand (any part of it). Nothing is fixed any more: the farm's pot is gone (step K1). */
 export function noPlaceRects(room: Room): Rect[] {
-  const k = kitchenWall(room);
-  return k ? [...k.walls, ...(k.door ? [k.door] : [])] : [];
+  return kitchenNoPlace(room);
 }

@@ -2,6 +2,7 @@
 // tab is filled and the rewards for that (shared/data/bookRewards.json). What the player has seen
 // is Player.seen (seen.ts).
 
+import { RETIRED_TABLE } from './retireRoundTable.ts';
 import rewardData from '../data/bookRewards.json';
 import { applyChange } from './ledger.ts';
 import { RECIPES } from './crafting.ts';
@@ -83,6 +84,7 @@ export function sourceOf(id: string): string {
   if (furniture?.inCatalog) parts.push('Catalog');
   if (RECIPES.some((r) => r.makesKind === 'furniture' && r.makes === id)) parts.push('Crafted');
   if (START_FURNITURE.includes(id)) parts.push('Your tavern');
+  if (id === RETIRED_TABLE) parts.push('Retired (old saves)');
   return parts.length > 0 ? parts.join(', ') : 'Unknown';
 }
 
@@ -106,7 +108,7 @@ export function bookEntries(tab: BookTab): BookEntry[] {
   if (tab === 'enemies') {
     return ENEMY_TABLES.map((t) => ({ key: enemyKey(t), id: t, kind: 'enemy' as const, name: ENEMY_NAMES[t], rank: ENEMY_RANKS[t], source: t === 'mimic' ? 'Dungeon chests' : 'Dungeon', drops: getLootTable(t).drops.map((d) => d.item) }));
   }
-  if (tab === 'furniture') return FURNITURE_TYPES.map((f) => ({ key: f.id, id: f.id, kind: 'furniture' as const, name: f.name, rank: f.rank, source: sourceOf(f.id) }));
+  if (tab === 'furniture') return FURNITURE_TYPES.filter((f) => f.id !== RETIRED_TABLE).map((f) => ({ key: f.id, id: f.id, kind: 'furniture' as const, name: f.name, rank: f.rank, source: sourceOf(f.id) }));
   if (tab === 'fish') {
     return CATCH_TYPES.map((c) => ({ key: c.id, id: c.id, kind: 'material' as const, name: c.name, rank: c.rank, source: sourceOf(c.id), ...(c.kind === 'fish' ? { cm: { min: c.minCm ?? 0, max: c.maxCm ?? 0 } } : {}) }));
   }

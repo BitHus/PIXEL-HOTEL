@@ -3,6 +3,7 @@ import { OFFLINE_MAX_MS } from './config.ts';
 import { applyStyle, buyCatalog, catalogPrice, isStyleUnlocked, paintFloor, unlockStyle, upgradeCost, upgradeRoom } from './economy.ts';
 import { canPickUp, canPlace, footprintRect, getFurnitureType, poseAtCell } from './furniture.ts';
 import { applyChange } from './ledger.ts';
+import { kitchenZone, rectInZone } from './kitchen.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { dominantFloorStyle, doorRect, doorZoneRect, floorStyleAt, rectsOverlap } from './room.ts';
 import { seededRng } from './rng.ts';
@@ -102,14 +103,17 @@ describe('room upgrades (section 5)', () => {
     expect(upgradeCost(room1)).toBe(300);
     s = upgradeRoom(s, shopId, 1)!;
     const room2 = s.rooms.find((r) => r.id === shopId)!;
-    expect(room2).toMatchObject({ level: 2, w: 704, h: 384 });
+    expect(room2).toMatchObject({ level: 2, w: 704, h: 544 }); // 22 x 12 cells of main floor + the kitchen annex (6 x 5 cells) under it
     expect(s.player.wallet.gold).toBe(1800);
     expect(doorRect(room2).x).toBe(704 / 2 - 32);
     expect(doorRect(room2).y).toBe(384);
-    expect(s.items.filter((i) => i.roomId === shopId)).toEqual(before);
+    // Everything keeps its place, except what stood in the kitchen annex: it moves down with the annex (64 px at both upgrades).
+    const kitchen = new Set(['stove', 'brewing_barrel']);
+    expect(s.items.filter((i) => i.roomId === shopId && !kitchen.has(i.typeId))).toEqual(before.filter((i) => !kitchen.has(i.typeId)));
+    expect(s.items.filter((i) => i.roomId === shopId && kitchen.has(i.typeId))).toEqual(before.filter((i) => kitchen.has(i.typeId)).map((i) => ({ ...i, y: i.y + 64 })));
     expect(upgradeCost(room2)).toBe(800);
     s = upgradeRoom(s, shopId, 2)!;
-    expect(s.rooms.find((r) => r.id === shopId)).toMatchObject({ level: 3, w: 832, h: 448 });
+    expect(s.rooms.find((r) => r.id === shopId)).toMatchObject({ level: 3, w: 832, h: 608 });
     expect(s.player.wallet.gold).toBe(1000);
     expect(upgradeRoom(s, shopId, 3)).toBeNull();
     expect(ledgerGold(s)).toBe(s.player.wallet.gold);
@@ -172,11 +176,14 @@ describe('room upgrades in shaped rooms (step 7b)', () => {
       s = upgradeRoom(s, hotel, 1)!;
       s = upgradeRoom(s, hotel, 2)!;
       expect(s.rooms.find((r) => r.id === hotel)).toMatchObject({ shape, level: 3 });
-      expect(s.items).toEqual(before);
+      expect(s.items.filter((i) => i.roomId === hotel)).toEqual(before.filter((i) => i.roomId === hotel));
       const shopId = s.player.shopRoomId;
-      const shopBefore = s.items.filter((i) => i.roomId === shopId);
+      const kitchen = new Set(['stove', 'brewing_barrel']); // the kitchen annex's contents move down with it
+      const shopBefore = s.items.filter((i) => i.roomId === shopId && !kitchen.has(i.typeId));
       s = upgradeRoom(s, shopId, 3)!;
-      expect(s.items.filter((i) => i.roomId === shopId)).toEqual(shopBefore);
+      expect(s.items.filter((i) => i.roomId === shopId && !kitchen.has(i.typeId))).toEqual(shopBefore);
+      const kz = kitchenZone(s.rooms.find((r) => r.id === shopId));
+      for (const i of s.items.filter((x) => x.roomId === shopId && kitchen.has(x.typeId))) expect(rectInZone(kz, footprintRect(i, getFurnitureType(i.typeId))), `${shape} ${i.typeId} in the annex`).toBe(true);
     }
   });
 });

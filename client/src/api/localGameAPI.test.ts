@@ -114,7 +114,7 @@ describe('LocalGameAPI', () => {
     await api.enterRoom(1);
     const rug = (await api.getInventory()).furniture.find((i) => i.typeId === 'rug')!;
     await api.placeItem(rug.uid, { center: { x: 120, y: 120 }, facing: 'down', snap: true });
-    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'round_table', 'stove', 'tap_stand']); // the kitchen is a walled area of the tavern
+    expect((await api.enterRoom(2)).items.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'stove', 'table', 'tap_stand']); // the kitchen is a walled area of the tavern
     expect((await api.enterRoom(1)).items.map((i) => i.uid)).toEqual([rug.uid]);
   });
 
@@ -212,7 +212,7 @@ describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
   it('nobody sells loot to customers any more: no goods calls, no customer events, and the stall is plain decor', async () => {
     const { api } = LocalGameAPI.open(memoryStorage(), clock, seq());
     for (const gone of ['getShop', 'putOnShelf', 'takeFromShelf', 'setPrice', 'onShop', 'isServing']) expect(gone in api, gone).toBe(false);
-    const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'round_table')!; // a new game has no stall table any more (S3)
+    const table = (await api.enterRoom(2)).items.find((i) => i.typeId === 'table')!; // a new game has no stall table any more (S3)
     expect(getFurnitureType('stall_table')).not.toHaveProperty('slots');
     expect(await api.serve(table.uid)).toBeNull(); // only the bar is served from behind
     expect((await api.getTavern()).appeal).toBeGreaterThan(0);
@@ -255,11 +255,11 @@ describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {
     const { api } = LocalGameAPI.open(memoryStorage(), clock);
     const items = (await api.enterRoom(2)).items;
     const counter = items.find((i) => i.typeId === 'counter')!;
-    const table = items.find((i) => i.typeId === 'round_table')!;
+    const table = items.find((i) => i.typeId === 'table')!;
     expect(await api.pickUpItem(counter.uid)).toBeNull();
     expect(await api.pickUpItem(table.uid)).not.toBeNull();
     expect((await api.getInventory()).materials.wood).toBe(4); // nothing was on it
-    expect((await api.getInventory()).furniture.some((f) => f.typeId === 'round_table')).toBe(true);
+    expect((await api.getInventory()).furniture.some((f) => f.typeId === 'table')).toBe(true);
   });
 
   it('an old save (version 21) with goods on the stall: they are back in the bag, with a notice, and nothing is lost', async () => {

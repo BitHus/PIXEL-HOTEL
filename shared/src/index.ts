@@ -62,6 +62,7 @@ export * from './cooking.ts';
 export * from './kitchen.ts';
 export * from './kitchenWall.ts';
 export * from './skills.ts';
+export * from './skillRules.ts';
 export * from './tapPick.ts';
 export * from './stats.ts';
 export * from './innDoors.ts';

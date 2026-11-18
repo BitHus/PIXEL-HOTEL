@@ -3349,3 +3349,48 @@ body,
 @media (prefers-reduced-motion: reduce) {
   .orders-strip .orders-chip img, .orders-strip .orders-chip.urgent { animation: none !important; }
 }
+
+/* ======================================================================
+   UIR-1 (docs/PLAN-UI-REWORK.md, direction A "Lantern Dark", owner OK 18 Nov): the tokens and two new classes NEXT TO .frame.
+   .ui-panel = a dark translucent panel (night 92%, 1 px ink line, lit top edge, soft drop); .ui-hud = frameless text on the world
+   (outline text, no box). The plan calls them .panel / .hud, but .panel already is the panelShell placement class, so they are .ui-panel / .ui-hud.
+   .frame is NOT edited: later rounds (UIR-5..) move panels over by swapping the class. The look of the first users is in lantern.css.
+   Palette is Endesga 32 (hex list in shared/palette.ts).
+   ====================================================================== */
+:root {
+  --ui-bg: rgba(38, 43, 68, 0.92); /* night #262b44 */
+  --ui-bg-solid: #262b44;
+  --ui-cell: #181425; /* recessed cells, ink */
+  --ui-line: #181425; /* the 1 px outline */
+  --ui-lit: #3a4466; /* lit top edge, dividers, ghost outlines (slate) */
+  --ui-muted: #8b9bb4;
+  --ui-text: #ead4aa;
+  --ui-accent: #feae34; /* candle: the ONE accent (selected, act here) */
+  --ui-ok: #63c74d; /* ready */
+  --ui-danger: #a22633;
+  --ui-disc: rgba(24, 20, 37, 0.62); /* round buttons on the world */
+  --ui-hud-text-shadow: -1px -1px 0 #181425, 1px -1px 0 #181425, -1px 1px 0 #181425, 1px 1px 0 #181425, 0 -1px 0 #181425, 0 1px 0 #181425, 1px 0 0 #181425, -1px 0 0 #181425, 0 2px 0 rgba(24, 20, 37, 0.6);
+}
+
+.ui-panel.ui-panel {
+  background: var(--ui-bg);
+  border: 0;
+  border-image: none;
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line), 0 3px 0 rgba(24, 20, 37, 0.55);
+  color: var(--ui-text);
+  font-family: var(--font);
+  pointer-events: auto;
+}
+
+.ui-hud.ui-hud {
+  background: none;
+  border: 0;
+  border-image: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ui-text);
+  font-family: var(--font);
+  text-shadow: var(--ui-hud-text-shadow);
+  pointer-events: auto;
+}

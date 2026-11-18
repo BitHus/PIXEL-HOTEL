@@ -18,7 +18,6 @@ test('r6 first minutes and tavern', async ({ page }) => {
   await page.getByLabel('Display name').fill('Tester');
   await sh('a1-char');
   await page.getByText('Begin your story').click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Open my tavern' }).click();
   await page.waitForTimeout(800); await sh('a2-intro');
   await page.mouse.click(5, 300); await page.waitForTimeout(500); await page.mouse.click(5, 300);
@@ -47,7 +46,6 @@ test('r6 dungeon runs and worlds', async ({ page }) => {
   await page.getByText('New game').first().click();
   await page.getByLabel('Display name').fill('Tester');
   await page.getByText('Begin your story').click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Open my tavern' }).click();
   await page.waitForTimeout(800);
   await page.mouse.click(5, 300); await page.waitForTimeout(500); await page.mouse.click(5, 300);
@@ -130,7 +128,6 @@ test('r6 tutorial play', async ({ page }) => {
   await page.getByText('New game').first().click();
   await page.getByLabel('Display name').fill('Tester');
   await page.getByText('Begin your story').click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Open my tavern' }).click();
   await page.waitForTimeout(800);
   await page.mouse.click(5, 300); await page.waitForTimeout(500); await page.mouse.click(5, 300);
@@ -187,7 +184,6 @@ test('r6 continue reloads throttled and farm overview', async ({ page }) => {
   await page.getByText('New game').first().click();
   await page.getByLabel('Display name').fill('Tester');
   await page.getByText('Begin your story').click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Open my tavern' }).click();
   await page.waitForTimeout(800);
   await page.mouse.click(5, 300); await page.waitForTimeout(500); await page.mouse.click(5, 300);

@@ -178,7 +178,7 @@ describe('save files', () => {
       cloth: { count: 1, firstSeenAt: 0 },
       skull_lamp: { count: 1, firstSeenAt: 0 },
       // The tavern's gift (migration 12, step 9t).
-      round_table: { count: 1, firstSeenAt: 0 },
+      table: { count: 1, firstSeenAt: 0 },
       bar_stool: { count: 3, firstSeenAt: 0 }, // the new game now has a third stool at the bar (S3)
       brewing_barrel: { count: 1, firstSeenAt: 0 },
       register: { count: 1, firstSeenAt: 0 }, // the bar's gift (step T1)
@@ -208,7 +208,7 @@ describe('save files', () => {
     expect(r.state.player.seen).toEqual(v11.player.seen);
   });
   it('migrates a version 12 save (step 9t): the tavern, with a table, 2 stools and a barrel of root ale in the bag', () => {
-    const START = ['round_table', 'bar_stool', 'brewing_barrel'];
+    const START = ['table', 'bar_stool', 'brewing_barrel'];
     const { tavern: _t, ...rest } = state;
     const v12 = {
       ...rest,
@@ -222,7 +222,7 @@ describe('save files', () => {
     const s = r.state;
     // The gift is in the bag (not placed), through the ledger, with fresh uids.
     const gift = s.items.filter((i) => START.includes(i.typeId));
-    expect(gift.map((i) => [i.typeId, i.roomId]).sort()).toEqual([['bar_stool', null], ['bar_stool', null], ['brewing_barrel', null], ['round_table', null]]);
+    expect(gift.map((i) => [i.typeId, i.roomId]).sort()).toEqual([['bar_stool', null], ['bar_stool', null], ['brewing_barrel', null], ['table', null]]);
     expect(gift.map((i) => i.uid)).toEqual([state.nextUid, state.nextUid + 1, state.nextUid + 2, state.nextUid + 3]);
     expect(s.nextUid).toBe(state.nextUid + 4);
     expect(s.ledger.at(-1)).toMatchObject({ reason: 'tavern_gift', goldDelta: 0, furnitureUids: gift.map((i) => i.uid) });
@@ -487,7 +487,7 @@ describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
     if (!r.ok) return;
     const stoves = r.state.items.filter((i) => i.typeId === 'stove');
     expect(stoves).toHaveLength(1);
-    expect(stoves[0]).toMatchObject({ roomId: r.state.tavern.roomId, x: 240, y: 96, facing: 'down' });
+    expect(stoves[0]).toMatchObject({ roomId: r.state.tavern.roomId, x: 144, y: 384, facing: 'down' }); // the start spot is inside the kitchen annex since save 39
     expect(r.state.tavern.cooks).toEqual([]);
     expect(r.state.ledger.at(-1)).toMatchObject({ reason: 'tavern_gift', note: 'cooking moved to the tavern' });
     expect(r.state.player.seen.stove?.count).toBe(1);
@@ -498,7 +498,7 @@ describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
   it('puts the stove in the bag when its spot is taken', () => {
     const s = v20() as unknown as ReturnType<typeof createNewPlayer>;
     // Move the brewing barrel onto the stove's spot.
-    const items = s.items.map((i) => (i.typeId === 'brewing_barrel' ? { ...i, x: 240, y: 96 } : i));
+    const items = s.items.map((i) => (i.typeId === 'brewing_barrel' ? { ...i, x: 144, y: 384 } : i));
     const r = load({ ...s, items });
     expect(r).toMatchObject({ ok: true, kitchenChanged: true });
     if (!r.ok) return;
@@ -528,7 +528,7 @@ describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
 
   it('an old save from version 12 gets exactly one stove too', () => {
     const r12 = oldNew();
-    const { tavern: _t, ...old } = { ...r12, items: r12.items.filter((i) => !['stove', 'round_table', 'bar_stool', 'brewing_barrel'].includes(i.typeId)) };
+    const { tavern: _t, ...old } = { ...r12, items: r12.items.filter((i) => !['stove', 'table', 'bar_stool', 'brewing_barrel'].includes(i.typeId)) };
     const r = readSave(JSON.stringify({ version: 12, savedAt: 9, state: old }));
     expect(r).toMatchObject({ ok: true, kitchenChanged: true });
     if (r.ok) expect(r.state.items.filter((i) => i.typeId === 'stove')).toHaveLength(1);
@@ -675,8 +675,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 38 (37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(38);
+  it('SAVE_VERSION is 39 (38 -> 39 the kitchen is an attached annex, 37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(39);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');

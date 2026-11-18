@@ -1,8 +1,8 @@
-// A new game (step 7b): character creation, then the room shapes, full screen in the UI style.
+// A new game (step 7b): character creation, then the hotel shape, full screen in the UI style.
 // 1) The character: the avatar large in the middle, turning slowly (down, right, up, left), the
 //    look pickers and a display name (DISPLAY_NAME_MAX letters, digits and spaces; no real names
 //    asked).
-// 2) The hotel room shape, then the shop shape: cards with a small top-down preview of each.
+// 2) The hotel room shape (the tavern is one fixed shape, 18 Nov): cards with a small top-down preview of each.
 // Resolves with the choice; the GameAPI checks it again (createPlayer).
 
 import {
@@ -203,10 +203,9 @@ function pickShape(parent: HTMLElement, kind: RoomKind, title: string, button: s
   });
 }
 
-/** The whole new-game setup: character, then the hotel shape, then the shop shape. */
+/** The whole new-game setup: character, then the hotel shape. The tavern is one fixed shape with its kitchen annex (18 Nov), nobody picks it. */
 export async function runNewGameSetup(parent: HTMLElement): Promise<NewPlayerChoice> {
   const { name, innName, look } = await makeCharacter(parent);
-  const hotelShape = await pickShape(parent, 'hotel', 'Pick your hotel room', 'Next');
-  const shopShape = await pickShape(parent, 'shop', 'Pick your tavern', 'Open my tavern');
-  return { name, innName, look, hotelShape, shopShape };
+  const hotelShape = await pickShape(parent, 'hotel', 'Pick your hotel room', 'Open my tavern');
+  return { name, innName, look, hotelShape };
 }

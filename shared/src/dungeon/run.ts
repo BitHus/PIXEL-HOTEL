@@ -16,6 +16,8 @@ import {
 } from '../config.ts';
 import { ownedArmor, ownedPickaxe, ownedWeapon } from '../gear.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
+import { runBagSlotsOf } from '../skillRules.ts';
+import { effective, type Bonuses } from '../stats.ts';
 import type { Rank, FoodId, GearId, MaterialId, Point } from '../types.ts';
 import { generateFloor, generateMine, type FloorPlan } from './generate.ts';
 
@@ -183,6 +185,10 @@ export interface RunPlayer {
   /** The pickaxe: hits per swing (basic 1, steel 2) and whether it breaks mithril. */
   hitsPerSwing: number;
   minesMithril: boolean;
+  /** MG-7: the skill bonuses of this run (a snapshot from the start; absent = none), the bag's slots, and whether Last stand was spent. */
+  skill?: Bonuses;
+  bagSlots?: number;
+  lastStandUsed?: boolean;
   /** False while still standing on the exit after choosing 'stay'. */
   exitArmed: boolean;
 }
@@ -272,14 +278,14 @@ export type DungeonInput =
   | { t: 'choose_exit'; choice: ExitChoice };
 
 /** Combat numbers from the level and the gear (section 10). */
-export function combatStats(level: number, gear: readonly GearId[]) {
+export function combatStats(level: number, gear: readonly GearId[], skill?: Bonuses) {
   const weapon = ownedWeapon(gear);
   const armor = ownedArmor(gear);
   const bonus = attackBonusAt(level);
   return {
-    maxHp: maxHpAt(level),
-    attackMin: (weapon?.attackMin ?? PLAYER_BASE_ATTACK_MIN) + bonus,
-    attackMax: (weapon?.attackMax ?? PLAYER_BASE_ATTACK_MAX) + bonus,
+    maxHp: effective(maxHpAt(level), 'maxHpPlus', skill),
+    attackMin: (weapon?.attackMin ?? PLAYER_BASE_ATTACK_MIN) + bonus + (skill?.attackPlus ?? 0),
+    attackMax: (weapon?.attackMax ?? PLAYER_BASE_ATTACK_MAX) + bonus + (skill?.attackPlus ?? 0),
     damageReduction: armor?.damageReduction ?? 0,
     minDamage: armor?.minDamage ?? 1,
   };
@@ -293,6 +299,8 @@ export interface NewRunOptions {
   potions: number;
   /** The lunch box (at most LUNCH_BOX_MAX food items). */
   food?: readonly FoodId[];
+  /** MG-7: the bonuses of the bought skills (skillStats), a snapshot for the whole run. */
+  skills?: Bonuses;
 }
 
 /** A food buff (step 9b): +attack, +max hp, or a shorter attack cooldown, once per run each. */
@@ -315,7 +323,7 @@ export function newMineRun(o: NewRunOptions & { visit: number }): DungeonRun {
 
 function runFrom(o: NewRunOptions, plan: FloorPlan, round: DungeonRoundId, place: RunPlace): DungeonRun {
   const level = levelForXp(o.xp);
-  const s = combatStats(level, o.gear);
+  const s = combatStats(level, o.gear, o.skills);
   const pick = ownedPickaxe(o.gear);
   return {
     place,
@@ -346,6 +354,7 @@ function runFrom(o: NewRunOptions, plan: FloorPlan, round: DungeonRoundId, place
       hitsPerSwing: pick?.hitsPerSwing ?? 1,
       minesMithril: pick?.minesMithril ?? false,
       exitArmed: true,
+      ...(o.skills ? { skill: o.skills, bagSlots: runBagSlotsOf(place, o.skills) } : {}),
     },
     enemies: plan.enemies,
     chests: plan.chests,

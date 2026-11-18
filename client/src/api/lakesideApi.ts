@@ -13,6 +13,7 @@ import {
   nearestCastSpot,
   bobberPoint,
   newFishSession,
+  bonusesOf,
   regrowInMs,
   treeAnchor,
   findPath,
@@ -68,7 +69,7 @@ export const lakesideApi = {
   async fishStart(h: LocalGameAPI): Promise<FishSession | null> {
     if (h.room().kind !== 'lakeside') return null;
     if (h.fish && !fishDone(h.fish)) return structuredClone(h.fish);
-    h.fish = newFishSession(h.rng, h.state.player.gear);
+    h.fish = newFishSession(h.rng, h.state.player.gear, bonusesOf(h.state.player));
     return structuredClone(h.fish);
   },
 

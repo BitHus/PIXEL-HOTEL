@@ -80,6 +80,7 @@ describe('icon, block, floor, wall and plant sprite files', () => {
     if (kind === 'icons') return known(() => getFurnitureType(id)) || isMaterialId(id) || !!getClothing(id) || known(() => getPiece(id as never)) || known(() => getGear(id as never)) || ['key', 'gems', 'gold'].includes(id);
     if (kind === 'blocks') return BLOCK_TYPES.some((b) => b.id === id);
     if (kind === 'plants') return id === 'ripe_sparkle' || CROP_TYPES.some((c) => c.id === id || c.seed === id) || BLOCK_TYPES.some((b) => b.id === id || b.seedId === id);
+    if (kind === 'floors' && (id === 'grass_b' || id === 'grass_c')) return true; // farm grass variants (FarmAmbienceView), no style id
     return STYLE_TYPES.some((s) => s.id === id);
   };
   for (const kind of ['icons', 'blocks', 'floors', 'walls', 'plants'] as const) {

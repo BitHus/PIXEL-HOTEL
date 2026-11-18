@@ -1,23 +1,21 @@
-// The tavern kitchen zone (step T1). Pure.
+// The tavern kitchen zone (step T1, moved into an attached ANNEX 18 Nov, see kitchenWall.ts). Pure.
 //
-// - THE ZONE: a cell rectangle per tavern shape and level (shared/data/roomShapes.json "kitchen"), staff only like the strip
+// - THE ZONE: the INSIDE of the kitchen annex (shared/data/roomShapes.json "kitchen" is the annex rectangle per level), staff only like the strip
 //   behind the bar: guests never walk or sit there (npcNav.guestZones feeds npcGrid and the seats). The owner may put blocks and
 //   furniture in it. Only a room of kind 'shop' has one.
 // - PREP BONUS: a prep table (FurnitureType.preps) standing inside the zone and cell-adjacent (a shared edge) to a stove that
 //   also stands inside the zone adds PREP_BONUS.perTable dishes to that stove's batch, at most PREP_BONUS.max. A stove outside the
 //   zone works as before, without the bonus.
 
-import { BUILD_CELL, PREP_BONUS } from './config.ts';
+import { PREP_BONUS } from './config.ts';
 import { footprintRect, getFurnitureType } from './furniture.ts';
-import { getRoomShape, type Room } from './room.ts';
+import { kitchenWall } from './kitchenWall.ts';
+import type { Room } from './room.ts';
 import type { FurnitureItem, Rect } from './types.ts';
 
 /** The kitchen zone of a tavern room in world px, or null (no tavern, or a shape without one). */
 export function kitchenZone(room: Room | undefined): Rect | null {
-  if (!room) return null;
-  if (room.kind !== 'shop') return null;
-  const r = getRoomShape(room.shape).kitchen?.[room.level - 1];
-  return r ? { x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL } : null;
+  return kitchenWall(room)?.inside ?? null;
 }
 
 /** True if a rect lies completely inside the zone. */

@@ -43,7 +43,7 @@ describe('room shapes (step 7b)', () => {
 
   it('the squares are the old rectangles', () => {
     expect(createRoom(7, 'hotel', 1, 3)).toMatchObject({ id: 7, shape: 'square', w: 576, h: 384, floorStyle: 'bare', wallStyle: 'bare' });
-    expect(createRoom(8, 'shop', 3, 3)).toMatchObject({ shape: 'square_shop', w: 832, h: 448 });
+    expect(createRoom(8, 'shop', 3, 3)).toMatchObject({ shape: 'square_shop', w: 832, h: 608 }); // with the kitchen annex
     expect(doorX(createRoom(1, 'hotel', 2, 1))).toBe(352);
   });
 

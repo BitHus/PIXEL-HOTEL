@@ -1,0 +1,546 @@
+/* LANTERN DARK (UIR-2..4, docs/PLAN-UI-REWORK.md): the first users of .ui-hud / .ui-panel (skin.css UIR-1 tokens).
+   Loaded last (imported by layout.ts). Only skins; positions, touch sizes and ids are unchanged.
+   One accent (candle), outline text on the world, dark round buttons, dark recessed slots, no iron, no cream block.
+   Motion: stepped and short; prefers-reduced-motion switches the slide off. */
+
+/* ---------- UIR-2 the info panel: gold + gems, room line, thin xp bar; no box ---------- */
+.info-panel.ui-hud {
+  padding: 0;
+  min-width: 0;
+}
+
+.info-panel .info-inn {
+  margin: 0 0 2px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  justify-content: flex-start;
+  color: var(--ui-text);
+  font-size: var(--fs-sm);
+  letter-spacing: 0;
+  text-shadow: var(--ui-hud-text-shadow);
+  max-width: 190px;
+}
+
+.info-panel .info-inn::before,
+.info-panel .info-inn::after {
+  display: none;
+}
+
+.info-panel .info-gold {
+  gap: 10px;
+  line-height: 1;
+}
+
+/* Gold is the biggest thing; gems are the smaller second number. Both are icon + number, no plate. */
+.info-panel .cur,
+.info-panel .cur.bump-up,
+.info-panel .cur.bump-down {
+  min-height: 28px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  text-shadow: var(--ui-hud-text-shadow);
+}
+
+.info-panel .cur-gold {
+  font-size: 24px;
+}
+
+.info-panel .cur-gems {
+  font-size: 17px;
+}
+
+.info-panel .cur.bump-up {
+  filter: brightness(1.35);
+}
+
+.info-panel .info-line {
+  gap: 6px;
+  color: var(--ui-text);
+  text-shadow: var(--ui-hud-text-shadow);
+}
+
+.info-panel .level-badge {
+  color: var(--ui-accent);
+}
+
+/* The xp and run bars: thin, an ink ring, a candle fill. */
+.info-panel .bar-track {
+  height: 3px;
+  min-width: 56px;
+  border: 0;
+  background: rgba(24, 20, 37, 0.7);
+  box-shadow: 0 0 0 1px var(--ui-line);
+}
+
+.info-panel .bar-fill {
+  background: var(--ui-accent);
+}
+
+.info-panel .hp-bar .bar-fill {
+  background: #e43b44;
+}
+
+.info-panel .bar-text,
+.info-panel .info-bar {
+  color: var(--ui-text);
+  text-shadow: var(--ui-hud-text-shadow);
+}
+
+.info-panel .info-bar .bar-track {
+  height: 6px;
+}
+
+/* ---------- UIR-3 the right column: dark round discs, candle ring when open ---------- */
+.side-buttons .icon-btn:not(.open-sign) {
+  --disc: var(--side-btn);
+  border: 0;
+  border-image: none;
+  box-shadow: none;
+  background-color: transparent;
+  background-image: radial-gradient(circle closest-side, var(--ui-disc) 0 calc(var(--disc) / 2 - 1.5px), var(--ui-line) calc(var(--disc) / 2 - 1.5px) calc(var(--disc) / 2 - 0.5px), transparent calc(var(--disc) / 2));
+  background-size: var(--disc) var(--disc);
+  background-position: center 0;
+  background-repeat: no-repeat;
+  color: var(--ui-text);
+}
+
+.side-buttons .icon-btn:not(.open-sign):hover:not(:disabled):not(.on) {
+  background-color: transparent;
+  filter: brightness(1.2);
+}
+
+.side-buttons .icon-btn:not(.open-sign).on {
+  background-color: transparent;
+  background-image: radial-gradient(circle closest-side, rgba(58, 68, 102, 0.85) 0 calc(var(--disc) / 2 - 3px), var(--ui-accent) calc(var(--disc) / 2 - 3px) calc(var(--disc) / 2 - 0.5px), transparent calc(var(--disc) / 2));
+  transform: none;
+}
+
+.side-buttons .icon-btn:not(.open-sign):active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+:root[data-size='phone'] .side-buttons > .icon-btn:not(.open-sign)::after,
+:root[data-size='phone'] .side-buttons .more-btn::after {
+  color: var(--ui-text);
+  text-shadow: var(--ui-hud-text-shadow);
+}
+
+:root[data-size='phone'] .side-buttons .icon-btn.on::after {
+  color: var(--ui-accent);
+}
+
+.side-buttons .icon-btn .btn-badge {
+  color: var(--ui-text);
+  background: var(--ui-line);
+  border-color: var(--ui-accent);
+}
+
+/* The More grid (under 900 px): a small dark panel; its cells are plain, the open one gets a candle ring. */
+@media (max-width: 899.98px) {
+  .more-menu .more-item:not(.open-sign) {
+    background-image: none;
+    border-radius: 3px;
+  }
+  .more-menu .more-item.on {
+    background-image: none;
+    box-shadow: inset 0 0 0 2px var(--ui-accent);
+  }
+  .more-menu .more-label {
+    color: var(--ui-text);
+  }
+}
+
+/* ---------- UIR-3 the hotbar: no tray, dark recessed cells, candle outline = chosen ---------- */
+.hotbar.ui-hud {
+  padding: 0;
+  gap: 4px;
+  background: none;
+}
+
+.hotbar .slot,
+.hotbar .hotbar-bag {
+  background: rgba(24, 20, 37, 0.72);
+  border: 0;
+  border-image: none;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line), 0 2px 0 1px rgba(24, 20, 37, 0.35);
+}
+
+/* Rank keeps its border (a 2 px ring in the rank colour). */
+.hotbar .slot.rank-rare,
+.hotbar .slot.rank-ultra_rare,
+.hotbar .slot.rank-legendary {
+  box-shadow: inset 0 0 0 2px var(--rank), inset 0 0 8px 0 var(--rank), 0 0 0 1px var(--ui-line), 0 2px 0 1px rgba(24, 20, 37, 0.35);
+}
+
+.hotbar .slot.selected,
+.hotbar .hotbar-slot.selected,
+.hotbar .hotbar-bag.on {
+  background: rgba(58, 68, 102, 0.85);
+  box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line), 0 2px 0 1px rgba(24, 20, 37, 0.35);
+}
+
+.hotbar .slot.is-empty:not(.selected) {
+  background: rgba(24, 20, 37, 0.45);
+  outline: 1px dashed var(--ui-lit);
+  outline-offset: -5px;
+}
+
+.hotbar .slot-key {
+  color: var(--ui-muted);
+  text-shadow: var(--ui-hud-text-shadow);
+}
+
+.hotbar .slot-count {
+  color: var(--ui-text);
+}
+
+.hotbar .hotbar-bag {
+  margin-left: 6px;
+}
+
+/* The chosen item's name: a dark pill with a candle line under it. */
+.hotbar .hotbar-name {
+  background: rgba(24, 20, 37, 0.82);
+  color: var(--ui-accent);
+  text-shadow: none;
+  box-shadow: 0 0 0 1px var(--ui-line), inset 0 -1px 0 var(--ui-accent);
+}
+
+/* ---------- UIR-4 toasts: an icon and one line of outline text; the tone is on the icon, no frame ---------- */
+.toast.ui-hud {
+  padding: 4px 8px;
+  font-size: var(--fs-md);
+}
+
+.toast.ui-hud .toast-icon {
+  filter: drop-shadow(0 1px 0 #181425) drop-shadow(0 0 1px #181425);
+}
+
+.toast.ui-hud.toast-warn .toast-text {
+  color: #f6757a;
+}
+
+.toast.ui-hud .toast-action {
+  min-height: var(--touch);
+  background: rgba(24, 20, 37, 0.7);
+  border: 0;
+  border-image: none;
+  box-shadow: 0 0 0 1px var(--ui-lit);
+  color: var(--ui-accent);
+  text-shadow: none;
+  padding: 0 10px;
+}
+
+/* In from the left (the centring transform stays): stepped, 4 steps. */
+@keyframes toast-in-left {
+  from {
+    opacity: 0;
+    translate: -16px 0;
+  }
+}
+
+.toast.ui-hud:not([hidden]) {
+  animation: toast-in-left 0.18s steps(4, end);
+}
+
+/* ---------- UIR-4 the first-steps chip and the quest card: small dark chips, one task line, pips ---------- */
+.first-ten.ui-panel {
+  padding: 5px 6px;
+}
+
+.first-ten.ui-panel .first-ten-count {
+  background: var(--ui-lit);
+  color: var(--ui-accent);
+  text-shadow: none;
+}
+
+.first-ten.ui-panel .first-ten-head {
+  color: var(--ui-accent);
+}
+
+.first-ten.ui-panel .first-ten-text {
+  color: var(--ui-text);
+}
+
+.first-ten.ui-panel .first-ten-pips i {
+  background: var(--ui-lit);
+  box-shadow: none;
+}
+
+.first-ten.ui-panel .first-ten-pips i.done {
+  background: var(--ui-accent);
+}
+
+.first-ten.ui-panel .first-ten-skip {
+  background: none;
+  border: 0;
+  border-image: none;
+  box-shadow: 0 0 0 1px var(--ui-lit);
+  color: var(--ui-muted);
+}
+
+.quest-card.ui-panel .quest-head {
+  color: var(--ui-accent);
+  border-bottom-color: var(--ui-lit);
+}
+
+.quest-card.ui-panel .quest-text {
+  color: var(--ui-text);
+}
+
+.quest-card.ui-panel .quest-hide {
+  color: var(--ui-muted);
+}
+
+.quest-card.ui-panel::before {
+  border-left-color: var(--ui-line);
+}
+
+.quest-card.ui-panel::after {
+  border-left-color: var(--ui-bg-solid);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast.ui-hud:not([hidden]) {
+    animation: none !important;
+  }
+  .side-buttons .icon-btn:not(.open-sign):active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ---------- UIR-5 the panel shell: every panelShell frame is a dark night panel (no cream, no iron, no ribbon) ----------
+   The inner pieces (.btn, .inset, .slot, .plate, cards) all read the ui.css tokens, so the tokens are re-pointed INSIDE the panel:
+   text cream, parchment = night, the recessed cell = ink. Rank colours stay on borders and names. */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel {
+  --text: #ead4aa;
+  --parch: #262b44;
+  --slot-bg: #181425;
+  --wood: #4a5578;
+  --wood-mid: #5a6988;
+  --wood-light: #5a6988;
+  --wood-hi: #5a6988;
+  --no: #f6757a;
+  --ok: #63c74d;
+  --shadow: none;
+  --rank-common: #c0cbdc; /* the common rank is brown on cream; on night it is a light slate */
+  background-image: none;
+  padding: 8px;
+}
+
+/* Title: plain candle-lit text with a 1 px candle line, no ribbon. */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .panel-title.plate {
+  background: none;
+  box-shadow: 0 1px 0 var(--ui-accent);
+  color: var(--ui-accent);
+  font-size: 1.15em;
+  letter-spacing: 1px;
+  text-shadow: none;
+  padding: 2px 4px 5px;
+  margin-bottom: 6px;
+}
+
+/* Buttons: ghost (slate outline) on the dark panel; the primary stays candle gold with ink text; danger = no-red. */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn {
+  background: none;
+  border: 0;
+  border-image: none;
+  box-shadow: 0 0 0 1px var(--ui-lit);
+  color: var(--ui-text);
+  text-shadow: none;
+}
+
+@media (hover: hover) {
+  :is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn:hover:not(:disabled):not(.primary) {
+    background: rgba(58, 68, 102, 0.6);
+  }
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.on:not(.tab-btn) {
+  background: rgba(58, 68, 102, 0.85);
+  box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
+  transform: none;
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.primary {
+  background: var(--ui-accent);
+  box-shadow: inset 0 1px 0 #fee761, 0 0 0 1px var(--ui-line);
+  color: var(--ui-line);
+  text-shadow: none;
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.primary:disabled {
+  background: var(--ui-lit);
+  color: var(--ui-muted);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.danger {
+  background: var(--ui-danger);
+  color: #ead4aa;
+  box-shadow: 0 0 0 1px var(--ui-line);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn:disabled {
+  opacity: 0.5;
+}
+
+/* The close button: a round dark disc, still 44 px, hanging a little over the corner. */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .panel-close {
+  border-radius: 50%;
+  background: var(--ui-bg-solid);
+  box-shadow: 0 0 0 1px var(--ui-lit), 0 0 0 2px var(--ui-line);
+  color: var(--ui-text);
+}
+
+/* Insets and cards: a recessed ink band, a 1 px slate divider instead of a per-row card. */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .inset {
+  background: rgba(24, 20, 37, 0.55);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--ui-lit);
+  color: var(--ui-text);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .divider {
+  background: var(--ui-lit);
+  height: 1px;
+  padding: 0;
+  margin: 3px 0;
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .plate:not(.panel-title) {
+  background: rgba(24, 20, 37, 0.7);
+  color: var(--ui-text);
+  box-shadow: 0 0 0 1px var(--ui-lit);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .plate.light {
+  background: var(--ui-lit);
+  color: var(--ui-text);
+  box-shadow: none;
+}
+
+/* Cells: recessed ink, a slate top edge; the rank colour is the border (set by the .rank-* classes below). */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot {
+  background: var(--ui-cell);
+  border: 0;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.rank-rare,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.rank-ultra_rare,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.rank-legendary {
+  box-shadow: inset 0 0 0 2px var(--rank), 0 0 0 1px var(--ui-line);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.selected {
+  background: rgba(58, 68, 102, 0.85);
+  box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
+}
+
+/* Tabs: an icon row with a candle cap on the open one, no frame per tab. */
+.panel-tabs .tab-btn {
+  background: var(--ui-bg);
+  border: 0;
+  border-image: none;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+  color: var(--ui-text);
+}
+
+.panel-tabs .tab-btn.on {
+  background: var(--ui-bg-solid);
+  box-shadow: inset 0 3px 0 var(--ui-accent), 0 0 0 1px var(--ui-line);
+  transform: none;
+}
+
+.panel-strip .btn {
+  background: var(--ui-bg);
+  border: 0;
+  border-image: none;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+  color: var(--ui-text);
+}
+
+/* Text that was brown on parchment (the token trick above makes brown a slate for backgrounds): light slate on night. */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel h3,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .chat-empty,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .volume-row,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .panel-note,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .look-kind,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .inn-field-label,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .run-list-title,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .name-label,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .lock-tag,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .catalog-empty,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .catalog-count,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-count,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-tally-label,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-note,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-empty-title,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-empty .panel-info,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .worlds-hint,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .splice-eq,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .title-tag,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot-key {
+  color: #b4bfd0;
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .catalog-search-input,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input[type='text'],
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input[type='search'],
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input:not([type]),
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel select,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel textarea {
+  background: var(--ui-cell);
+  color: var(--ui-text);
+  border: 0;
+  border-image: none;
+  box-shadow: inset 0 0 0 1px var(--ui-lit);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input::placeholder {
+  color: var(--ui-muted);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn:disabled {
+  opacity: 0.7;
+}
+
+/* Phone: the icon sits in the middle of the 60 px button (label under it), so the disc sits there too. */
+:root[data-size='phone'] .side-buttons .icon-btn:not(.open-sign) {
+  background-position: center 2px;
+}
+
+/* A toast over an open panel (it moves to a corner or the top band) needs a quiet dark pill so the text does not fight the panel. */
+#ui:has(.panel:not([hidden]):not(.panel-leaving)) .toast.ui-hud {
+  background: rgba(24, 20, 37, 0.88);
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+}
+
+/* The Book: found entries are dark cells with a rank border; parchment stays only for the entry page (later). */
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .book-card {
+  background: var(--ui-cell);
+  box-shadow: inset 0 1px 0 var(--ui-lit);
+  color: var(--ui-text);
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .book-card.unseen {
+  background: rgba(24, 20, 37, 0.6);
+  border-color: var(--ui-lit);
+}
+
+/* The receipt slip stays a small paper inset (ink text on cream); the price chips on the dark panel get light text. */
+:is(.panel-frame, .confirm-panel).ui-panel .slip {
+  --text: #3e2731;
+  --ok: #265c42;
+  --wood: #733e39;
+  color: #3e2731;
+}
+
+:is(.panel-frame, .confirm-panel).ui-panel .catalog-price,
+:is(.panel-frame, .confirm-panel).ui-panel .catalog-price * {
+  color: var(--ui-text);
+}

@@ -1,6 +1,6 @@
 // CEL-2/CEL-4 (docs/PLAN-CELLAR.md): the attached KITCHEN and CELLAR rooms. Pure.
 //
-// - The kitchen is NOT a room any more (owner 18 Nov): a walled area of the tavern (kitchenWall.ts); dissolveKitchenRoom is migration 36 -> 37.
+// - The kitchen is NOT a room any more (owner 18 Nov): an attached annex of the tavern (kitchenWall.ts); dissolveKitchenRoom is migration 36 -> 37, moveKitchenToAnnex 38 -> 39.
 // - The cellar is built with gold from player level CELLAR_UNLOCK_LEVEL (buildCellar, ledger 'build', 1 free keg rack); an old save that owns a
 //   keg rack gets it free (migration), racks moved in. Racks allowed per level: CELLAR_RACK_MAX_BY_LEVEL (furniture.ts canPlace).
 // - Brews, cooks and casks are keyed by furniture uid, so moving a machine between rooms changes nothing about a batch in progress.
@@ -10,7 +10,7 @@ import { footprintRect, getFurnitureType, nearestValidPlacement, pickUpItem, rid
 import { isBarPiece } from './barExtension.ts';
 import { kitchenZone } from './kitchen.ts';
 import { noPlaceRects } from './farmLayout.ts';
-import { rectsOverlap } from './room.ts';
+import { blockKey, cellRectOf, rectsOverlap, roomAnnex, roomAtLevel } from './room.ts';
 import type { BlockCell } from './blockTypes.ts';
 import type { GameState } from './gameState.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
@@ -19,7 +19,7 @@ import { returnOrphanBrews } from './brewing.ts';
 import { returnOrphanCasks } from './casks.ts';
 import { returnOrphanCooks } from './cooking.ts';
 import { createRoom, type Room } from './room.ts';
-import type { FurnitureItem, MaterialId, Player } from './types.ts';
+import type { FurnitureItem, MaterialId, Player, Rect } from './types.ts';
 
 /** The next free room id. */
 export function nextRoomId(rooms: readonly Room[]): number {
@@ -180,4 +180,80 @@ export function buildCellar(state: GameState, at: number): GameState | null {
   const next: GameState = { ...paid, rooms: [...paid.rooms, room], player: { ...paid.player, cellarRoomId: room.id } };
   const placed = moveInto(next, room, [{ ...rack, roomId: room.id }]);
   return clearDoorSpots(placed, state.tavern.roomId, at).state;
+}
+
+/** The old kitchen zones (cells, per tavern shape and level) from before the annex (save 37 and 38): only the migration 38 -> 39 reads them. */
+const LEGACY_KITCHEN_ZONES: Record<string, { x: number; y: number; w: number; h: number }[]> = {
+  square_shop: [{ x: 7, y: 0, w: 3, h: 3 }, { x: 7, y: 0, w: 4, h: 4 }, { x: 7, y: 0, w: 5, h: 4 }],
+  long: [{ x: 8, y: 0, w: 3, h: 3 }, { x: 8, y: 0, w: 4, h: 4 }, { x: 8, y: 0, w: 5, h: 4 }],
+  l_shape: [{ x: 7, y: 2, w: 3, h: 3 }, { x: 7, y: 2, w: 4, h: 4 }, { x: 7, y: 2, w: 5, h: 4 }],
+  plus: [{ x: 12, y: 0, w: 2, h: 3 }, { x: 12, y: 0, w: 4, h: 3 }, { x: 12, y: 0, w: 6, h: 4 }],
+  wide_hall: [{ x: 9, y: 0, w: 3, h: 3 }, { x: 9, y: 0, w: 4, h: 3 }, { x: 9, y: 0, w: 5, h: 4 }],
+};
+
+/**
+ * Migration 38 -> 39 (owner 18 Nov): the kitchen is an ATTACHED ANNEX of the tavern (kitchenWall.ts), not a walled ring inside it. The tavern's size grows by the
+ * annex (room.w and h follow); every floor piece that stood inside the old kitchen zone moves into the annex's inside (nearest free cell; riders come along; what
+ * does not fit goes to the bag). Brews, cooks and casks are keyed by furniture uid, so batches in progress stay exact. The old ring simply no longer exists.
+ */
+export function moveKitchenToAnnex(state: GameState): GameState {
+  const old = state.rooms.find((r) => r.id === state.tavern.roomId);
+  if (!old || old.kind !== 'shop') return state;
+  const tavern = roomAtLevel(old, old.level);
+  let next: GameState = { ...state, rooms: state.rooms.map((r) => (r.id === tavern.id ? tavern : r)) };
+  const zone = kitchenZone(tavern);
+  const legacy = LEGACY_KITCHEN_ZONES[tavern.shape]?.[tavern.level - 1];
+  if (!zone || !legacy) return next;
+  const was: Rect = { x: legacy.x * BUILD_CELL, y: legacy.y * BUILD_CELL, w: legacy.w * BUILD_CELL, h: legacy.h * BUILD_CELL };
+  let items = next.items;
+  const stood = (i: FurnitureItem): boolean => {
+    const t = getFurnitureType(i.typeId);
+    if (i.roomId !== tavern.id || i.onItemUid !== null || t.wall || isBarPiece(t)) return false;
+    const fp = footprintRect(i, t);
+    return fp.x >= was.x && fp.y >= was.y && fp.x + fp.w <= was.x + was.w && fp.y + fp.h <= was.y + was.h;
+  };
+  const want = { x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 };
+  for (const it of next.items.filter(stood).sort((a, b) => a.uid - b.uid)) {
+    const type = getFurnitureType(it.typeId);
+    const riders = ridersOf(items, it.uid);
+    const rest = items.filter((i) => i.uid !== it.uid && !riders.some((r) => r.uid === i.uid));
+    const pose = nearestValidPlacement(tavern, rest, type, it.facing, want);
+    if (!pose) {
+      items = pickUpItem(items, it.uid);
+      continue;
+    }
+    const dx = pose.x - it.x;
+    const dy = pose.y - it.y;
+    items = items.map((i) => (i.uid === it.uid ? { ...i, x: pose.x, y: pose.y, facing: pose.facing } : riders.some((r) => r.uid === i.uid) ? { ...i, x: i.x + dx, y: i.y + dy } : i));
+  }
+  return settleOrphans({ ...next, items });
+}
+
+/**
+ * A room that grew from `from` to `to` (upgradeRoom): whatever stood in the old kitchen annex (floor pieces with their riders, blocks, plants) moves with the annex, which
+ * hangs under the main floor and so moves down when the room grows. Items on the new annex partition or doorway cells cannot occur (the annex is new floor).
+ */
+export function shiftAnnexContents(state: GameState, from: Room, to: Room): GameState {
+  const a = roomAnnex(from);
+  const b = roomAnnex(to);
+  if (!a || !b || (a.x === b.x && a.y === b.y)) return state;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const inA = (r: Rect): boolean => r.x >= a.x && r.y >= a.y && r.x + r.w <= a.x + a.w && r.y + r.h <= a.y + a.h;
+  const moved = new Set<number>();
+  for (const i of state.items) {
+    const t = getFurnitureType(i.typeId);
+    if (i.roomId === from.id && i.onItemUid === null && !t.wall && inA(footprintRect(i, t))) moved.add(i.uid);
+  }
+  const items = state.items.map((i) => (moved.has(i.uid) || (i.onItemUid !== null && moved.has(i.onItemUid)) ? { ...i, x: i.x + dx, y: i.y + dy } : i));
+  const shiftKey = (key: string): string => {
+    const [c, r] = key.split(',').map(Number) as [number, number];
+    return inA(cellRectOf(c, r)) ? blockKey(c + dx / BUILD_CELL, r + dy / BUILD_CELL) : key;
+  };
+  const remap = <T>(m: Record<string, T> | undefined): Record<string, T> => {
+    const out: Record<string, T> = {};
+    for (const [k, v] of Object.entries(m ?? {})) out[shiftKey(k)] = v;
+    return out;
+  };
+  return { ...state, items, rooms: state.rooms.map((r) => (r.id === to.id ? { ...r, blocks: remap(r.blocks), plants: remap(r.plants) } : r)) };
 }

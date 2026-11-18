@@ -13,6 +13,7 @@ import { addXp } from '../levels.ts';
 import { applyChange } from '../ledger.ts';
 import { grantEarnedHats } from '../hats.ts';
 import type { FoodId, MaterialId } from '../types.ts';
+import { bonusesOf } from '../skillRules.ts';
 import { newMineRun, newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
 
 /** True if the next run is free (the player has less gold than the key costs). */
@@ -51,7 +52,7 @@ export function startRun(
     s = applyChange(s, { reason: 'lunch_box', materials: used, note: 'lunch box' }, at) ?? s;
   }
   const p = s.player;
-  const run = newRun({ seed, ...(round ? { round } : {}), xp: p.xp, gear: p.gear, potions: p.potions, food });
+  const run = newRun({ seed, ...(round ? { round } : {}), xp: p.xp, gear: p.gear, potions: p.potions, food, skills: bonusesOf(p) });
   return { state: { ...s, player: { ...p, potions: 0 } }, run };
 }
 
@@ -63,7 +64,7 @@ export function startMine(state: GameState, seed: number): { state: GameState; r
   const p = state.player;
   if (p.level < MINE_UNLOCK_LEVEL) return null;
   const visit = p.mineVisits + 1;
-  const run = newMineRun({ seed, xp: p.xp, gear: p.gear, potions: p.potions, visit });
+  const run = newMineRun({ seed, xp: p.xp, gear: p.gear, potions: p.potions, visit, skills: bonusesOf(p) });
   return { state: grantEarnedHats({ ...state, player: { ...p, potions: 0, mineVisits: visit } }), run };
 }
 

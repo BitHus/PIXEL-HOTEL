@@ -35,6 +35,8 @@ export const ROOM_UPGRADE_COST = {
 
 /** Starting style for every room. */
 export const START_FLOOR_STYLE = 'bare';
+/** The floor of the tavern's kitchen annex (owner 18 Nov): always this style, whatever the room's floor. */
+export const KITCHEN_FLOOR_STYLE = 'kitchen_tiles';
 export const START_WALL_STYLE = 'bare';
 
 /**

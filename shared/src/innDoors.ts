@@ -65,9 +65,24 @@ export function innDoorSpotRects(room: Pick<Room, 'kind' | 'shape' | 'level'>): 
   return innDoorSpots(room).map((d) => d.spot);
 }
 
-/** The doorways in the wall band: where no wall item may hang. */
-export function innDoorwayRects(room: Pick<Room, 'kind' | 'shape' | 'level'>): Rect[] {
-  return innDoorSpots(room).map((d) => d.doorway);
+/** Doors that are drawn with a sprite (arch frame and lantern wider than the doorway): cellar doors and any kitchen door. Same rule as the client's doorSpriteId. */
+export function innDoorHasSprite(id: string): boolean {
+  return id === 'tavern_to_cellar' || id === 'cellar_to_tavern' || id.includes('kitchen');
+}
+
+/** Extra wall clearance per side (px) beside a doorway that has a sprite, so no wall item overlaps the arch frame or lantern. */
+export const DOOR_SPRITE_CLEARANCE_PX = 16;
+
+/**
+ * The doorways in the wall band: where no wall item may hang. With `clearance` (new placements only) a door that has a sprite
+ * gets DOOR_SPRITE_CLEARANCE_PX more on each side; items already placed there stay valid (innDoorClear uses the plain rects).
+ */
+export function innDoorwayRects(room: Pick<Room, 'kind' | 'shape' | 'level'>, clearance = false): Rect[] {
+  return innDoorSpots(room).map((d) =>
+    clearance && innDoorHasSprite(d.id)
+      ? { ...d.doorway, x: d.doorway.x - DOOR_SPRITE_CLEARANCE_PX, w: d.doorway.w + 2 * DOOR_SPRITE_CLEARANCE_PX }
+      : d.doorway,
+  );
 }
 
 /** The door whose spot contains this cell, or null. */

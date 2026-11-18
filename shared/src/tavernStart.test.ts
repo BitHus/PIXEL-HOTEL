@@ -1,4 +1,4 @@
-// Step S3: what a new tavern starts with: three seats (a third stool at the round table replaces the stall table), the early dish on the menu, 7 mugs of root ale,
+// Step S3: what a new tavern starts with: three seats (a third stool at the table replaces the stall table), the early dish on the menu, 7 mugs of root ale,
 // and the first hour of the model matches what a hand-run of the game gives.
 
 import { describe, expect, it } from 'vitest';
@@ -14,7 +14,7 @@ import { startCook } from './cooking.ts';
 import { firstHourGold } from './balance.ts';
 
 describe('a new tavern (step S3)', () => {
-  it('has three seats on every shop shape: three at the round table, all reachable from the door', () => {
+  it('has three seats on every shop shape: three at the table, all reachable from the door', () => {
     for (const shape of shapesFor('shop')) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
@@ -33,10 +33,10 @@ describe('a new tavern (step S3)', () => {
     expect(createNewPlayer(undefined, 0).items.some((i) => i.typeId === 'stall_table')).toBe(false);
   });
 
-  it('no stool stands at the bar (G2): all three seats belong to the round table', () => {
+  it('no stool stands at the bar (G2): all three seats belong to the table', () => {
     const s = createNewPlayer(undefined, 0);
     const counter = s.items.find((i) => i.typeId === 'counter')!;
-    const round = s.items.find((i) => i.typeId === 'round_table')!;
+    const round = s.items.find((i) => i.typeId === 'table')!;
     const seats = tavernSeats(s.items, s.tavern.roomId);
     expect(seats.filter((k) => k.tableUid === counter.uid)).toHaveLength(0);
     expect(seats.filter((k) => k.tableUid === round.uid)).toHaveLength(3);

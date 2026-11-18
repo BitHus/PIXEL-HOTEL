@@ -14,7 +14,8 @@
 //   plate on the spot (a Mess) and goes. Coins are only ever collected by the player (ledger
 //   'tavern'); a spot with coins or a dish on it takes no new guest.
 
-import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TRAY_MAX, TASTE_AGED_CHANCE, TASTE_RESERVE_CHANCE } from './config.ts';
+import { bonusesOf, trayMaxOf } from './skillRules.ts';
+import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TASTE_AGED_CHANCE, TASTE_RESERVE_CHANCE } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
 import type { Cask } from './casks.ts';
@@ -427,7 +428,7 @@ export function pickUpOrder(state: GameState): { state: GameState; guestId: numb
 /** The order the player carries next (orders of guests who left are skipped), with the cleaned queue. Null with full hands or an empty queue. */
 export function nextOrder(state: GameState): { guestId: number; item: MaterialId; queue: number[] } | null {
   const t = state.tavern;
-  if (t.tray.length >= TRAY_MAX) return null;
+  if (t.tray.length >= trayMaxOf(bonusesOf(state.player))) return null;
   const open = openOrders(t);
   const queue = t.serveQueue.filter((id) => open.some((g) => g.id === id));
   const guest = open.find((g) => g.id === queue[0]);

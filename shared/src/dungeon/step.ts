@@ -28,19 +28,17 @@ import {
   ENEMY_MISS_RANGE,
   ENEMY_REPATH_MS,
   ENEMY_STOP_PX,
-  ENEMY_WINDUP_MS,
   MIMIC_WAKE_MS,
   MIMIC_XP,
   PLAYER_ATTACK_REACH,
   PLAYER_DUNGEON_SPEED,
-  GEM_CHANCE,
+
   GEM_PICKUP_REACH,
   ENEMY_GEM_RANK,
   ROCK_GEM_RANK,
   GLOWCAP_SPORE_CHANCE,
   MINE_DEATH_ORE_LOSS,
   MINE_REACH,
-  PICKAXE_COOLDOWN_MS,
   ROCK_ORE_MAX,
   ROCK_ORE_MIN,
   RARE_DROP_CHANCE,
@@ -58,6 +56,7 @@ import { blockAt, dungeonNavGrid, onFloor } from './grid.ts';
 import { getLootTable, rollLoot, type EnemyTableId, type Loot } from './loot.ts';
 import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type FoodBuff, type Rock, type RunBag, type RunPlayer } from './run.ts';
 import { addToBag, bagLoot } from './runBag.ts';
+import { enemyWindupOf, oreQtyOf, pickCooldownOf, potionHealOf, rockGemChanceOf, runSpeedOf } from '../skillRules.ts';
 
 const TICK = DUNGEON_TICK_MS;
 /** A mimic's enemy id: this plus the chest id. */
@@ -171,7 +170,7 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
     else p.pendingHit = true;
   } else if (input.t === 'drink_potion') {
     if (p.potions <= 0 || now < p.potionReadyAt || p.hp >= p.maxHp) return;
-    const healed = Math.min(POTION.heal, p.maxHp - p.hp);
+    const healed = Math.min(potionHealOf(POTION.heal, p.skill), p.maxHp - p.hp);
     p.hp += healed;
     p.potions -= 1;
     p.potionReadyAt = now + POTION.cooldownMs;
@@ -234,21 +233,22 @@ function hit(r: DungeonRun, e: Enemy, now: number, rng: Rng): void {
 /** One pickaxe swing at a rock (step 9c). Mithril needs the steel pickaxe. */
 function swing(r: DungeonRun, rock: Rock, now: number, rng: Rng): void {
   const p = r.player;
-  p.pickReadyAt = now + PICKAXE_COOLDOWN_MS;
+  p.pickReadyAt = now + pickCooldownOf(p.skill);
   p.pendingSwing = false;
   if (rock.kind === 'mithril' && !p.minesMithril) {
     r.events.push({ t: 'too_hard', rockId: rock.id });
     return;
   }
-  const hits = Math.min(rock.hitsLeft, p.hitsPerSwing);
+  const strong = (p.skill?.doubleStrikePct ?? 0) > 0 && rng() < (p.skill?.doubleStrikePct ?? 0) / 100; // Double strike: a swing sometimes counts double
+  const hits = Math.min(rock.hitsLeft, p.hitsPerSwing * (strong ? 2 : 1));
   rock.hitsLeft -= hits;
   r.events.push({ t: 'swing', rockId: rock.id, hits });
   if (rock.hitsLeft > 0) return;
   r.rocks = r.rocks.filter((x) => x.id !== rock.id);
   p.targetRockId = null;
   r.events.push({ t: 'rock_broken', rockId: rock.id });
-  const loot: Loot[] = [{ item: `${rock.kind}_ore`, qty: rngInt(rng, ROCK_ORE_MIN, ROCK_ORE_MAX) }];
-  if (rng() < GEM_CHANCE) loot.push({ item: 'gem', qty: 1 });
+  const loot: Loot[] = [{ item: `${rock.kind}_ore`, qty: oreQtyOf(rngInt(rng, ROCK_ORE_MIN, ROCK_ORE_MAX), p.skill, rng) }];
+  if (rng() < rockGemChanceOf(p.skill)) loot.push({ item: 'gem', qty: 1 });
   addLoot(r, loot);
   dropGems(r, 'rock', ROCK_GEM_RANK[rock.kind], rock, rng);
 }
@@ -284,7 +284,7 @@ function collectGems(r: DungeonRun): void {
 }
 
 function addLoot(r: DungeonRun, loot: readonly (Loot & { rank?: Rank })[]): void {
-  const added = addToBag(r.bag, loot);
+  const added = addToBag(r.bag, loot, r.player.bagSlots);
   r.bag = added.bag;
   for (const l of loot) r.events.push({ t: 'loot', item: l.item, qty: l.qty, ...(l.rank && l.rank !== 'common' ? { rank: l.rank } : {}) });
   if (added.leftBehind.length > 0) {
@@ -457,7 +457,7 @@ function tick(r: DungeonRun, rng: Rng): void {
     const end = p.path[p.path.length - 1];
     if (!end || distance(end, target) > ENEMY_STOP_PX) p.path = findPath(grid, p, target)?.slice(1) ?? [];
   }
-  p.path = walk(p, p.path, (PLAYER_DUNGEON_SPEED * TICK) / 1000);
+  p.path = walk(p, p.path, (runSpeedOf(PLAYER_DUNGEON_SPEED, p.skill) * TICK) / 1000);
   if (target && distance(p, target) <= PLAYER_ATTACK_REACH) {
     p.path = [];
     if (p.pendingHit && now >= p.attackReadyAt) hit(r, target, now, rng);
@@ -522,6 +522,11 @@ function enemyTick(r: DungeonRun, e: Enemy, grid: NavGrid, rng: Rng): void {
     if (d <= ENEMY_MISS_RANGE) {
       const damage = Math.max(p.minDamage, rngInt(rng, stats.hitMin, stats.hitMax) - p.damageReduction);
       p.hp -= damage;
+      // Last stand: the first lethal hit of a run leaves 1 hp instead.
+      if (p.hp <= 0 && (p.skill?.lastStand ?? 0) > 0 && !p.lastStandUsed) {
+        p.hp = 1;
+        p.lastStandUsed = true;
+      }
       r.lastHitBy = e.mimic ? 'mimic' : e.kind;
       r.events.push({ t: 'enemy_hit', enemyId: e.id, damage });
     } else {
@@ -533,7 +538,7 @@ function enemyTick(r: DungeonRun, e: Enemy, grid: NavGrid, rng: Rng): void {
   }
   e.cooldownMs = Math.max(0, e.cooldownMs - TICK);
   if (d <= ATTACK_REACH && e.cooldownMs === 0) {
-    e.windupMs = ENEMY_WINDUP_MS;
+    e.windupMs = enemyWindupOf(p.skill);
     e.path = [];
     r.events.push({ t: 'windup', enemyId: e.id });
     return;

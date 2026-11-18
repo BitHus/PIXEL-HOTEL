@@ -35,9 +35,9 @@ export function caskStatusText(v: CaskSlotView): string {
 }
 
 /** The three (CASK_SLOTS) slots of one rack at time `at`, free ones too. */
-export function caskSlotViews(casks: readonly Cask[], rackUid: number, at: number, cap: CaskCap = 'vintage'): CaskSlotView[] {
+export function caskSlotViews(casks: readonly Cask[], rackUid: number, at: number, cap: CaskCap = 'vintage', slots = CASK_SLOTS): CaskSlotView[] {
   const out: CaskSlotView[] = [];
-  for (let slot = 0; slot < CASK_SLOTS; slot++) {
+  for (let slot = 0; slot < slots; slot++) {
     const cask = casks.find((c) => c.rackUid === rackUid && c.slot === slot) ?? null;
     if (!cask) {
       out.push({ slot, cask: null, tier: 'fresh', progress: 0, nextInMs: 0, cap });

@@ -11,6 +11,7 @@ import { createFishBar } from '../ui/fishBar.ts';
 import { flashScreen } from '../ui/runScreens.ts';
 import { FloatTexts } from '../dungeon/floatTexts.ts';
 import { createBookPanel } from '../ui/bookPanel.ts';
+import { createSkillsPanel } from '../ui/skillsPanel.ts';
 import { createQuestPanel } from '../ui/questPanel.ts';
 import '../ui/quests.css';
 import { createTravelPanel, type PlaceCard } from '../ui/travelPanel.ts';
@@ -96,6 +97,14 @@ export async function setupCraftPanels(g: G7) {
     questButton.classList.toggle('glow', board.ready > 0);
   }
   panels.add('quests', quests.el, () => void refreshQuests());
+  // MG-7: the skill tree (shared/src/skills.ts through GameAPI); a buy or respec refreshes the stat bonuses the client reads (st.skills).
+  const skills = createSkillsPanel(ui, {
+    buy: (id) => api.buySkill(id),
+    respec: () => api.respecSkills(),
+    gold: () => st.walletGold,
+    changed: () => void late.refreshInventory(),
+  });
+  panels.add('skills', skills.el, () => void api.getSkills().then((v) => skills.refresh(v)));
   void refreshQuests();
   window.setInterval(() => void refreshQuests(), 5000);
   // ---------- The lakeside: woodcutting and fishing (step 9f) ----------

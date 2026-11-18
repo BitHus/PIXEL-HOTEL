@@ -26,7 +26,7 @@ const fresh = (): GameState => createNewPlayer(undefined, 1000);
 describe('the seen list (Player.seen, step 9e)', () => {
   it('a new player has seen what they start with', () => {
     const s = fresh();
-    expect(Object.keys(s.player.seen).sort()).toEqual(['bar_stool', 'brewing_barrel', 'cloth', 'counter', 'register', 'round_table', 'stove', 'tap_stand', 'wood']);
+    expect(Object.keys(s.player.seen).sort()).toEqual(['bar_stool', 'brewing_barrel', 'cloth', 'counter', 'register', 'stove', 'table', 'tap_stand', 'wood']);
     expect(s.player.seen.wood).toEqual({ count: 4, firstSeenAt: 1000 });
     expect(s.player.seen.counter).toEqual({ count: 1, firstSeenAt: 1000 });
     expect(s.player.bookRewards).toEqual([]);
@@ -96,7 +96,7 @@ describe('the seen list (Player.seen, step 9e)', () => {
 
   it('ownedFinds counts materials and furniture', () => {
     const s = fresh();
-    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, counter: 1, round_table: 1, bar_stool: 3, brewing_barrel: 1, stove: 1, register: 1, tap_stand: 1 });
+    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, counter: 1, table: 1, bar_stool: 3, brewing_barrel: 1, stove: 1, register: 1, tap_stand: 1 });
   });
 
   it('addSeen keeps the first time', () => {
@@ -112,7 +112,7 @@ describe('the Book (step 9e)', () => {
     const keys = BOOK_TABS.flatMap((t) => bookEntries(t).map((e) => e.key));
     expect(new Set(keys).size).toBe(keys.length);
     for (const m of MATERIAL_TYPES) expect(keys).toContain(m.id);
-    for (const f of FURNITURE_TYPES) expect(keys).toContain(f.id);
+    for (const f of FURNITURE_TYPES.filter((x) => x.id !== 'round_table')) expect(keys).toContain(f.id); // the retired round table is not in the Book
     expect(bookEntries('food').every((e) => ['seed', 'crop', 'food', 'drink'].includes(MATERIAL_TYPES.find((m) => m.id === e.id)!.group))).toBe(true);
     expect(bookEntries('enemies').map((e) => e.id)).toEqual(['slime', 'bat', 'skeleton', 'mimic', 'bone_king']);
     for (const e of bookEntries('enemies')) expect(e.drops).toHaveLength(4);

@@ -17,6 +17,9 @@ import {
   type Avatar,
   type Point,
   type SitResult,
+  HOTEL_WALK_SPEED,
+  bonusesOf,
+  roomSpeedOf,
 } from '@pixel-hotel/shared';
 import { finitePoint, type WalkState } from './apiShared.ts';
 import type { LocalGameAPI } from './localGameAPI.ts';
@@ -90,7 +93,7 @@ export const walkApi = {
     const w = h.walkState;
     const now = h.now();
     if (w.avatar.state === 'sit' || w.avatar.state === 'lie') return w.avatar;
-    const r = walkAvatar(w.avatar, w.path, Math.max(0, now - w.at));
+    const r = walkAvatar(w.avatar, w.path, Math.max(0, now - w.at), roomSpeedOf(HOTEL_WALK_SPEED, bonusesOf(h.state.player)));
     let next: WalkState = { ...w, avatar: r.avatar, path: r.path, at: now };
     if (r.path.length === 0 && w.sitOn) {
       const { x, y, facing, pose, index } = w.sitOn.seat;

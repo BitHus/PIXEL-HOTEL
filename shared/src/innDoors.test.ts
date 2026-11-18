@@ -6,7 +6,7 @@ import { blockProblem, placeBlock } from './blocks.ts';
 import { getBlockType } from './blockTypes.ts';
 import { canPlace, doorPoint, doorReachesMiddle, footprintRect, getFurnitureType, roomBlockers, staffZone } from './furniture.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
-import { doorAt, innDoorFile, innDoorHint, innDoorSpotRects, innDoorSpots, innDoorwayRects, innTravel, innTravelProblem } from './innDoors.ts';
+import { doorAt, innDoorFile, innDoorHint, innDoorSpotRects, innDoorHasSprite, innDoorSpots, innDoorwayRects, innTravel, innTravelProblem } from './innDoors.ts';
 import { buildNavGrid, cellAt, isCellFree, reachableCells } from './nav.ts';
 import { configForChoice, createNewPlayer, DEFAULT_NEW_PLAYER } from './newPlayer.ts';
 import { guestZones, npcGrid } from './npcNav.ts';
@@ -24,7 +24,7 @@ const ctx = { standing: [], from: null };
 
 /** A new game whose tavern has this shape (the start items stand where the shape says). */
 function tavernOf(shape: string): GameState {
-  return createNewPlayer(configForChoice({ name: 'A', look: DEFAULT_NEW_PLAYER.look, hotelShape: 'square', shopShape: shape })!, 0);
+  return createNewPlayer({ ...configForChoice({ name: 'A', look: DEFAULT_NEW_PLAYER.look, hotelShape: 'square' })!, shopShape: shape }, 0); // tests only: the game itself always uses the one fixed tavern shape
 }
 const roomOfKind = (s: GameState, kind: RoomKind): Room => s.rooms.find((r) => r.kind === kind)!;
 const shopShapes = shapesFor('shop').filter((s) => s.shopStart);
@@ -268,5 +268,36 @@ describe('the door hint names this room only (RUN 6 bug 2)', () => {
     expect(innDoorHint(createRoom(1, 'cellar', 1, 1))).toBe('Doors lead to the tavern. Walk onto the doorway to step through.');
     expect(innDoorHint(createRoom(1, 'cellar', 1, 1))).not.toMatch(/garden/);
     expect(innDoorHint(createRoom(1, 'lakeside', 1, 1, 'lakeside'))).toBe('');
+  });
+});
+
+describe('door sprite clearance', () => {
+  const tavern = createRoom(1, 'shop', 1, 1, 'square_shop');
+  const cellar = innDoorSpots(tavern).find((d) => d.id === 'tavern_to_cellar')!;
+  const suite = innDoorSpots(tavern).find((d) => d.id === 'tavern_to_suite')!;
+  it('knows which doors have a sprite', () => {
+    expect(innDoorHasSprite('tavern_to_cellar')).toBe(true);
+    expect(innDoorHasSprite('cellar_to_tavern')).toBe(true);
+    expect(innDoorHasSprite('tavern_to_kitchen')).toBe(true);
+    expect(innDoorHasSprite('tavern_to_suite')).toBe(false);
+  });
+  it('widens a sprite door by 16 px per side for new placements only', () => {
+    const plain = innDoorwayRects(tavern);
+    const wide = innDoorwayRects(tavern, true);
+    const i = innDoorSpots(tavern).findIndex((d) => d.id === cellar.id);
+    expect(plain[i]).toEqual(cellar.doorway);
+    expect(wide[i]).toEqual({ ...cellar.doorway, x: cellar.doorway.x - 16, w: cellar.doorway.w + 32 });
+    const j = innDoorSpots(tavern).findIndex((d) => d.id === suite.id);
+    expect(wide[j]).toEqual(suite.doorway);
+  });
+  it('refuses a wall item beside the arch frame (inside the 16 px) but takes one clear of it', () => {
+    const torch = getFurnitureType('wall_torch');
+    const w = torch.w;
+    const foot = cellar.doorway.y + WALL_BAND;
+    const left = cellar.doorway.x;
+    // a torch whose right edge ends 8 px short of the doorway: refused now, was allowed before
+    const x = left - 8 - w / 2;
+    expect(canPlace(tavern, [], torch, x, foot, 'down')).toBe(false);
+    expect(canPlace(tavern, [], torch, left - 16 - w / 2 - 4, foot, 'down')).toBe(true);
   });
 });

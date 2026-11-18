@@ -6,7 +6,7 @@ import {
   tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, CASK_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen, pourTip,
-  guestsTrayCanServe, ordersStrip as ordersStripData, nothingOrderable,
+  guestsTrayCanServe, ordersStrip as ordersStripData, nothingOrderable, caskSlotsOf, tapCapOf,
 } from '@pixel-hotel/shared';
 import { createPourControl } from './pourControl.ts';
 import { el, iconButton } from '../ui/dom.ts';
@@ -419,7 +419,7 @@ export async function setupTavernLife(g: G9) {
     },
   });
   panels.add('casks', casks.el);
-  const refreshCasks = (): void => casks.update(st.tavern.casks, st.inventory.materials, st.tavern.caskCaps);
+  const refreshCasks = (): void => casks.update(st.tavern.casks, st.inventory.materials, st.tavern.caskCaps, caskSlotsOf(st.skills));
   /** The avatar is next to the keg rack: the Cask panel opens. */
   async function caskArrived(uid: number): Promise<void> {
     await refreshTavern();
@@ -465,7 +465,7 @@ export async function setupTavernLife(g: G9) {
   });
   panels.add('taps', tapsPanel.el);
   const refreshTaps = (): void => {
-    tapsPanel.update(tapStands(st.items, st.tavern.roomId).map((i) => i.uid), st.tavern.taps, st.inventory.materials);
+    tapsPanel.update(tapStands(st.items, st.tavern.roomId).map((i) => i.uid), st.tavern.taps, st.inventory.materials, tapCapOf(st.skills));
     if (panels.open === 'menu') void refreshMenu();
   };
   /** A tap on a tap stand: the Taps panel opens. */

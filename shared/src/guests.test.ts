@@ -253,7 +253,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
     const rng = seededRng(15);
     let { s, t } = until(withAle(), 5 * MIN, rng, (x) => openOrders(x.tavern).length > 0);
     const n = openOrders(s.tavern).length;
-    s = { ...s, items: s.items.map((i) => (i.typeId === 'round_table' ? { ...i, roomId: null } : i)) };
+    s = { ...s, items: s.items.map((i) => (i.typeId === 'table' ? { ...i, roomId: null } : i)) };
     s = stepTavern(s, tavernWorld(s), SHOP_TICK_MS, rng, t + SHOP_TICK_MS).state;
     expect(openOrders(s.tavern)).toEqual([]);
     expect(ale(s)).toBe(6);

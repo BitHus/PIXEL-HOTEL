@@ -118,9 +118,9 @@ describe('the menu (step 9t)', () => {
 });
 
 describe('seats at tables (step 9t)', () => {
-  it('a seat counts when a table is next to it: the two start stools at the round table', () => {
+  it('a seat counts when a table is next to it: the two start stools at the table', () => {
     const s = legacyStart();
-    const table = s.items.find((i) => i.typeId === 'round_table')!;
+    const table = s.items.find((i) => i.typeId === 'table')!;
     const seats = tavernSeats(s.items, s.tavern.roomId);
     expect(seats.map((k) => k.tableUid)).toEqual([table.uid, table.uid]);
     // Each seat has its own spot on the table, on its own side.
@@ -131,12 +131,12 @@ describe('seats at tables (step 9t)', () => {
   });
 
   it('on the cell grid: a stool on a cell side by side with a table cell is a seat, a diagonal or a gap away is not', () => {
-    // The round table fills the cells x 416..480, y 160..224 (columns 13-14, rows 5-6).
+    // The table fills the cells x 416..480, y 192..224 (columns 13-14, row 6).
     let s = legacyStart();
-    const table = s.items.find((i) => i.typeId === 'round_table')!;
-    s = withItem(s, 70, 'bar_stool', 432, 160, 'up'); // the cell above the table, turned away from it
-    s = withItem(s, 71, 'bar_stool', 400, 160); // the cell above the table's left corner: diagonal
-    s = withItem(s, 72, 'bar_stool', 368, 192); // one cell away from the left stool: a gap
+    const table = s.items.find((i) => i.typeId === 'table')!;
+    s = withItem(s, 70, 'bar_stool', 432, 192, 'up'); // the cell above the table, turned away from it
+    s = withItem(s, 71, 'bar_stool', 400, 192); // the cell above the table's left corner: diagonal
+    s = withItem(s, 72, 'bar_stool', 368, 224); // one cell away from the left stool: a gap
     const seats = tavernSeats(s.items, s.tavern.roomId);
     expect(seats.map((k) => k.uid).sort((a, b) => a - b)).toEqual([3, 4, 70]);
     const above = seats.find((k) => k.uid === 70)!;
@@ -254,8 +254,8 @@ describe('the serve queue (step 9t)', () => {
 });
 
 describe('the Tavern catalog tab (step 9t C)', () => {
-  const ids = ['bar_stool', 'round_table', 'long_table', 'mug_shelf', 'menu_board', 'keg_rack', 'brewing_barrel', 'stove'];
-  it('lists the eight tavern pieces, in the shop category, for the tavern, at baseValue * 3', () => {
+  const ids = ['bar_stool', 'long_table', 'mug_shelf', 'menu_board', 'keg_rack', 'brewing_barrel', 'stove'];
+  it('lists the seven tavern pieces, in the shop category, for the tavern, at baseValue * 3', () => {
     for (const id of ids) {
       const t = getFurnitureType(id);
       expect(t.category, id).toBe('shop_furniture');

@@ -27,7 +27,6 @@ export async function newGame(page: Page): Promise<void> {
   await shot(page, '01-charmaker');
   await page.getByText('Begin your story').click();
   await shot(page, '02-hotelshape');
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Open my tavern' }).click();
   await page.waitForTimeout(800);
   await shot(page, '03-intro');

@@ -33,11 +33,12 @@ export interface TestRunOptions {
   at?: { x: number; y: number };
   floor?: number;
   maxFloors?: number;
+  skills?: import('../stats.ts').Bonuses;
   map?: DungeonMap;
 }
 
 export function testRun(o: TestRunOptions = {}): DungeonRun {
-  const run = newRun({ seed: 7, round: 2, xp: o.xp ?? 0, gear: o.gear ?? [], potions: o.potions ?? 0 });
+  const run = newRun({ seed: 7, round: 2, xp: o.xp ?? 0, gear: o.gear ?? [], potions: o.potions ?? 0, ...(o.skills ? { skills: o.skills } : {}) });
   const map = o.map ?? openMap();
   const at = o.at ?? map.spawn;
   return {

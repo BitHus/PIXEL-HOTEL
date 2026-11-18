@@ -33,7 +33,7 @@ export interface Hotbar {
 }
 
 export function createHotbar(parent: HTMLElement, hooks: HotbarHooks): Hotbar {
-  const bar = el('div', 'frame hotbar');
+  const bar = el('div', 'ui-hud hotbar');
   // The name plate above the selected slot (a pure view of the slot names the client already passes).
   const plate = el('div', 'plate hotbar-name');
   plate.hidden = true;

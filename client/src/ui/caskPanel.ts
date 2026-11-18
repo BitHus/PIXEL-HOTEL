@@ -2,7 +2,7 @@
 // brewed drink from the bag and a number of mugs (Fill), a ripening slot shows the drink, the mugs, a bar along the way to the top tier the rack allows (CEL-5: vintage, reserve in a level 2 cellar), the tier chip
 // and Collect. Collecting early gives fresh mugs. Words and numbers: ui/caskText.ts (tested). Classes are the artist's (ui.css, ART-K2).
 
-import { DRINK_TYPES, getDrinkType, getMaterialType, isBaseDrinkId, type BaseDrinkId, type Cask, type MaterialId } from '@pixel-hotel/shared';
+import { CASK_SLOTS, DRINK_TYPES, getDrinkType, getMaterialType, isBaseDrinkId, type BaseDrinkId, type Cask, type MaterialId } from '@pixel-hotel/shared';
 import { CASK_EARLY_TEXT, CASK_HINT, caskSlotViews, caskStatusText, tierLabel, type CaskSlotView } from './caskText.ts';
 import { el, textButton } from './dom.ts';
 import { caskIconUrl } from './itemIcon.ts';
@@ -22,7 +22,7 @@ export interface CaskPanel {
   open(rackUid: number): void;
   readonly rackUid: number | null;
   /** The casks of the tavern and the bag (call when either changed). */
-  update(casks: readonly Cask[], materials: Partial<Record<MaterialId, number>>, caps?: Readonly<Record<number, 'vintage' | 'reserve'>>): void;
+  update(casks: readonly Cask[], materials: Partial<Record<MaterialId, number>>, caps?: Readonly<Record<number, 'vintage' | 'reserve'>>, slots?: number): void;
   /** Moves the bars on (about once a second while the panel is open). */
   tick(): void;
 }
@@ -34,6 +34,7 @@ export function createCaskPanel(parent: HTMLElement, hooks: CaskHooks, now: () =
   let uid: number | null = null;
   let casks: readonly Cask[] = [];
   let caps: Readonly<Record<number, 'vintage' | 'reserve'>> = {};
+  let slotCount: number = CASK_SLOTS;
   let materials: Partial<Record<MaterialId, number>> = {};
   /** What the player picked per free slot: the drink and the number of mugs. */
   const picked = new Map<number, { drink: BaseDrinkId; qty: number }>();
@@ -88,7 +89,7 @@ export function createCaskPanel(parent: HTMLElement, hooks: CaskHooks, now: () =
       return;
     }
     const rack = uid;
-    list.replaceChildren(...caskSlotViews(casks, rack, now(), caps[rack] ?? 'vintage').map((v) => card(v, rack)));
+    list.replaceChildren(...caskSlotViews(casks, rack, now(), caps[rack] ?? 'vintage', slotCount).map((v) => card(v, rack)));
   };
 
   draw();
@@ -96,7 +97,7 @@ export function createCaskPanel(parent: HTMLElement, hooks: CaskHooks, now: () =
     el: shell.el,
     open(u) { uid = u; picked.clear(); draw(); },
     get rackUid() { return uid; },
-    update(c, m, k = {}) { casks = c; materials = m; caps = k; draw(); },
+    update(c, m, k = {}, n = CASK_SLOTS) { casks = c; materials = m; caps = k; slotCount = n; draw(); },
     tick() {
       // Only occupied cards change with time; free slots keep the player's picked number (a redraw keeps it in `picked`).
       if (casks.some((c) => c.rackUid === uid)) draw();

@@ -27,7 +27,6 @@ export function kit(page: Page, name: string) {
     await page.getByText('New game').first().click();
     await page.getByLabel('Display name').fill('Tester');
     await page.getByText('Begin your story').click();
-    await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('button', { name: 'Open my tavern' }).click();
     await page.waitForTimeout(800);
     await page.mouse.click(5, 300); await page.waitForTimeout(500); await page.mouse.click(5, 300);
