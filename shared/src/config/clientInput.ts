@@ -63,3 +63,13 @@ export const INTRO_WAIT_MS = 600;
 export const INTRO_ZOOM_MS = 800;
 /** ...to the settled zoom nearest to this many real screen px per art px. */
 export const INTRO_DEVICE_PX_PER_ART_PX = 3;
+
+// ---------- HUD declutter (docs/PLAN-UI-DECLUTTER.md) ----------
+/** The info panel, side buttons and hotbar fade after this many ms without a tap or a change (gold, toast). */
+export const HUD_FADE_AFTER_MS = 3000;
+/** Opacity of the faded HUD (a tap or a change brings it back to 1). */
+export const HUD_FADE_ALPHA = 0.25;
+/** The first-steps card shows only after this many ms standing idle (no tap, no walk, no panel). */
+export const GUIDE_IDLE_MS = 4000;
+/** How often the client re-checks the idle rules (ms). */
+export const HUD_IDLE_TICK_MS = 250;

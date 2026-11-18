@@ -1,0 +1,110 @@
+/* DECLUTTER (owner 18 Nov, docs/PLAN-UI-DECLUTTER.md): fewer permanent things on screen. Loaded after lantern.css (layout.ts).
+   Column = Catalog, Build, Dungeon, More; info = gold + gems + a 3 px xp bar; the HUD fades when idle; the guide card is one line.
+   Touch targets stay at least 44 px; motion is a plain opacity change and is off under prefers-reduced-motion. */
+
+/* ---------- 1. side column: the More grid on every screen size ---------- */
+.side-buttons .more-menu .more-item { flex: none; }
+.more-btn .new-dot { display: none; }
+
+/* ---------- 9. ONE badge: a red dot on More when anything inside it is new (Book, Skills, Quests glow, tavern orders on Worlds) ---------- */
+.side-buttons:has(.more-menu .new-dot:not([hidden]), .more-menu .map-badge:not([hidden])) .more-btn::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 2px solid var(--outline);
+  border-radius: 50%;
+  background: var(--no);
+  pointer-events: none;
+  z-index: 1;
+}
+.side-buttons:has(.more-menu .glow) .more-btn { animation: quest-glow 1s steps(2) infinite; }
+/* The Dungeon key cost is in the Dungeon confirm now. */
+.dungeon-btn .btn-badge { display: none !important; }
+
+/* ---------- 4. info panel: the purse and a 3 px xp bar; room name and level flash for 2.5 s on entering a room (and stay in a run) ---------- */
+.info-panel .info-inn { display: none !important; }
+.info-panel .info-line { display: none; }
+.info-panel.flash .info-line,
+.info-panel.in-run .info-line { display: flex; }
+.info-panel .info-xp {
+  width: 64px;
+  height: 3px;
+  margin-top: 3px;
+  background: rgba(24, 20, 37, 0.7);
+  box-shadow: 0 0 0 1px var(--ui-line);
+}
+.info-panel .info-xp-fill {
+  height: 100%;
+  width: 0;
+  background: var(--ui-accent);
+}
+.info-panel.in-run .info-xp { display: none; }
+
+/* ---------- 6. OPEN sign: smaller; on a phone 60 x 28 at the font's own pixel size (no scaling, so the pixel text stays sharp), hidden under panels ---------- */
+.btn.open-sign.room-only { width: 70px; }
+:root[data-size='phone'] .btn.open-sign.room-only {
+  top: calc(var(--edge) + env(safe-area-inset-top) + 4 * (var(--side-btn) + 4px) + 12px);
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  font-size: 15px !important;
+  letter-spacing: 0;
+  line-height: 28px;
+  justify-content: center;
+}
+:root[data-size='phone'] #ui:has(.panel:not([hidden]):not(.panel-leaving)) .btn.open-sign.room-only { display: none; }
+
+/* ---------- 5. first-steps card: one line plus the dots, a small x to skip ---------- */
+.first-ten .first-ten-head,
+.first-ten .first-ten-count { display: none; }
+.first-ten .first-ten-pips { display: flex; }
+.first-ten {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.first-ten .first-ten-text { display: block; overflow: visible; }
+.first-ten .btn.small.first-ten-skip {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- 7. bar panel: the focused row shows its detail ---------- */
+.menu-row { cursor: pointer; flex-wrap: wrap; align-items: center; }
+.menu-row .catalog-info { flex: 1 1 96px; }
+.menu-row.focused { box-shadow: inset 3px 0 0 var(--ui-accent); }
+.menu-row .menu-price { flex: none; }
+.menu-row .menu-price-num { min-width: 52px; }
+.menu-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 8px 8px 52px;
+  border-bottom: 1px solid var(--ui-lit);
+  color: var(--ui-muted);
+}
+
+/* ---------- 2. fade: after 3 s without a tap or a change the info panel and side column drop to 25% (the hotbar is never touched, owner); a tap or a change brings it back (hudIdle.ts) ---------- */
+.top-left,
+.side-buttons { transition: opacity 0.35s linear; }
+.hud-faded .top-left,
+.hud-faded .side-buttons { opacity: 0.25; }
+@media (prefers-reduced-motion: reduce) {
+  .top-left,
+  .side-buttons { transition: none; }
+}

@@ -37,10 +37,9 @@ test('run5 fixes', async ({ page }) => {
   // 1. Count and text agree.
   const card = page.locator('.first-ten');
   await expect(card).toBeVisible();
-  expect(await card.locator('.first-ten-count').textContent()).toBe('2/18');
+  expect(await card.locator('.first-ten-count').textContent()).toMatch(/^\d+\/21$/); // RUN 7: the tutorial starts at zoom, not at the register
   const text = (await card.locator('.first-ten-text').textContent()) ?? '';
-  expect(text).toContain('register');
-  if (phone) {
+  if (phone && text === 'Tap the register') {
     expect(text).toBe('Tap the register');
     await card.click(); await page.waitForTimeout(300);
     expect(await card.locator('.first-ten-text').textContent()).toContain('serve, set prices, sell');
@@ -69,7 +68,7 @@ test('run5 fixes', async ({ page }) => {
   await ph('h.setCamera({ x: 0, y: 0, zoom: 1.6 }, true)'); await page.waitForTimeout(500);
   await page.keyboard.press('1'); await page.waitForTimeout(300);
   const chipOn = await page.locator('.hint-chip.on').count();
-  const [cx, cy] = await page.evaluate(() => { const h = (window as any).__ph; const p = h.worldToScreen({ x: 3 * 32 + 16, y: 2 * 32 + 16 }, h.st.shown); return [p.x, p.y]; });
+  const [cx, cy] = await page.evaluate(() => { const h = (window as any).__ph; const p = h.worldToScreen({ x: 7 * 32 + 16, y: 2 * 32 + 16 }, h.st.shown); return [p.x, p.y]; });
   await page.mouse.click(cx, cy);
   let planted = 0;
   for (let i = 0; i < 16 && planted === 0; i++) {

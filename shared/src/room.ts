@@ -78,7 +78,7 @@ export interface RoomShape {
   /** Where a new shop's counter and stall_table stand (level 1), for shapes a shop can use. */
   shopStart?: Record<'counter' | 'stall_table' | 'table' | 'stool_left' | 'stool_right' | 'stool_front' | 'brewing_barrel' | 'stove', Point>;
   /** The KITCHEN ANNEX per level 1..3, in CELLS (owner 18 Nov, replaces the T1 zone and the wall ring): a rectangle OUTSIDE the main floor that is added to a tavern's floor
-   * (below its bottom edge, touching other floor only along its top edge). Its top row is the partition wall (with a 2-cell doorway), the rest is the staff-only kitchen inside.
+   * (below its bottom edge, touching other floor only along its top edge). It is OPEN to the tavern along its whole top edge (no wall, no door) and staff only for guests.
    * Shapes a tavern can use only; a hotel with the same shape gets no annex. */
   kitchen?: Rect[];
 }

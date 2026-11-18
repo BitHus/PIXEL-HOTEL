@@ -13,7 +13,7 @@ import { kitchenZone } from './kitchen.ts';
 import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BLOCK_STACK_MAX, BUILD_CELL } from './config.ts';
 import { getBlockType, isBlockId, type BlockCell, type BlockLookup, type BlockType } from './blockTypes.ts';
 import { footprintRect, getFurnitureType, behindPoint, behindReachable, doorPoint, doorReachesMiddle, roomBlockers, type FurnitureLookup } from './furniture.ts';
-import { noPlaceRects, fixedBlockers } from './farmLayout.ts';
+import { fixedBlockers } from './farmLayout.ts';
 import { buildNavGrid, cellAt, cellCenter, isCellFree, nearestFreeCell, reachableCells, type NavGrid } from './nav.ts';
 import { seatKey, tavernSeats } from './tavern.ts';
 import type { GameState } from './gameState.ts';
@@ -109,7 +109,7 @@ export function cellProblem(
   const height = blockStack(room, c, r).length;
   if (allowBlock ? height > 1 : height >= BLOCK_STACK_MAX) return allowBlock ? 'stacked' : 'stack_full';
   if (floorFurniture(room, items, types).some((i) => rectsOverlap(cell, footprintRect(i, types(i.typeId))))) return 'furniture';
-  if ([...noPlaceRects(room), ...fixedBlockers(room)].some((x) => rectsOverlap(cell, x))) return 'fixed';
+  if (fixedBlockers(room).some((x) => rectsOverlap(cell, x))) return 'fixed';
   if (ctx.standing.some((p) => cellOf(p).c === c && cellOf(p).r === r)) return 'avatar';
   // Blocks block walking: the door must still reach the middle, and the counter's staff spot the door.
   const blockers = [...roomBlockers(room, items, types), cell];

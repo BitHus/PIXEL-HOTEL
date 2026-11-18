@@ -7,7 +7,7 @@ import { spriteFrames } from '../render/spriteStore.ts';
 
 export const ENEMY_STRIP_FRAME = 32;
 /** Idle frame time per kind, ms (slime breathes slowly, the bat flaps fast, the mimic's mouth gapes slowly). */
-export const ENEMY_IDLE_MS: Record<string, number> = { slime: 420, bat: 160, mimic: 500 };
+export const ENEMY_IDLE_MS: Record<string, number> = { slime: 420, bat: 160, mimic: 500, rock_beetle: 380 };
 
 export function enemyIdleFrames(kind: string, mimic: boolean): Texture[] | null {
   const id = mimic ? 'mimic' : kind;

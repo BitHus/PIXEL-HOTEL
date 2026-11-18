@@ -31,7 +31,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 39;
+export const SAVE_VERSION = 40;
 /**
  * CEL-1 (docs/PLAN-CELLAR.md; all PROPOSALS, the owner said use them): the cellar is built with gold at player level CELLAR_UNLOCK_LEVEL,
  * includes one free keg rack, upgrades cost CELLAR_UPGRADE_COST (level 2, 3), racks allowed per cellar level CELLAR_RACK_MAX_BY_LEVEL. Used from CEL-4.

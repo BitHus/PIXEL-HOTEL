@@ -25,7 +25,7 @@ import { APPROACH_REACH_PX, BUILD_CELL, CASHIER_BEHIND_PX, CELLAR_RACK_MAX_BY_LE
   STAFF_ZONE_DEPTH_PX,
   STAFF_ZONE_SIDE_PX, SNAP, WALL_BAND } from './config.ts';
 import { barExtensionsConnected, canRemoveBarPiece, isBarPiece } from './barExtension.ts';
-import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
+import { fixedBlockers } from './farmLayout.ts';
 import { buildNavGrid, cellAt, isCellFree, nearestFreeCell, reachableCells } from './nav.ts';
 import { innDoorSpotRects, innDoorwayRects } from './innDoors.ts';
 import { blockRects, doorX, doorY, doorZoneRect, rectInsideFloor, rectsOverlap, wallBands, type Room } from './room.ts';
@@ -267,8 +267,6 @@ export function canPlace(
   if (rectsOverlap(fp, doorZoneRect(room))) return false;
   // The spots of the Inn doors stay free like the door zone (step MB-2).
   if (innDoorSpotRects(room).some((r) => rectsOverlap(fp, r))) return false;
-  // The farm's plots and cooking pot (step 9b): nothing on them, not even a rug.
-  if (noPlaceRects(room).some((r) => rectsOverlap(fp, r))) return false;
   if (!type.blocks) return true;
   const blockers = roomBlockers(room, items, types);
   if (blockers.some((b) => rectsOverlap(fp, b))) return false;

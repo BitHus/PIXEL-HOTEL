@@ -47,3 +47,21 @@ export function placeBubbles(list: readonly BubbleIn[], screenW: number, gap: nu
     return { x, y: y - b.h, tail };
   });
 }
+
+export interface NearCand {
+  key: number;
+  x: number;
+  y: number;
+}
+
+/** The `max` candidates nearest to (cx, cy), with hysteresis: one that was shown before stays unless a newcomer is clearly nearer (distance x `keep`), so two
+ * heads of equal distance never swap places frame after frame while the camera moves. */
+export function pickNearest(cands: readonly NearCand[], cx: number, cy: number, max: number, prev: ReadonlySet<number>, keep = 0.8): Set<number> {
+  const d = (c: NearCand): number => Math.hypot(c.x - cx, c.y - cy) * (prev.has(c.key) ? keep : 1);
+  return new Set([...cands].sort((a, b) => d(a) - d(b) || a.key - b.key).slice(0, max).map((c) => c.key));
+}
+
+/** Rounds a screen coordinate to whole DEVICE pixels (the canvas camera snaps to them; whole CSS px made the text step against the sprite at dpr 2). */
+export function snapToDevice(v: number, dpr: number): number {
+  return Math.round(v * dpr) / dpr;
+}

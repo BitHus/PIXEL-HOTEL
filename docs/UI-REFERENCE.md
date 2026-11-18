@@ -1,5 +1,7 @@
 # UI and feel reference
 
+> UIR-11 (18 Nov): frame style section 3 is superseded. Panels are dark night panels (.ui-panel, via panelShell), the HUD is frameless outline text (.ui-hud), tabs are lantern tabs (stepped rounded top, candle cap on the open one), rows are flat 44 px lines with a divider, buttons are soft pills, parchment only for Book pages, the confirm slip and chat bubbles. The old .frame (oak + iron plates) no longer exists. See docs/NOTES.md UIR Lantern Dark.
+
 Read this before any step that adds or changes UI, menus, buttons, panels or the HUD.
 It describes the look and feel we want. It is a description, not a template: never copy
 another game's art, icons, frames, fonts or layout pixel for pixel. Our UI is original and
@@ -331,3 +333,6 @@ From the Travellers Rest reference screenshots the owner liked:
 - Panels that stay open and cover the room.
 - Mixing styles (a modern rounded button next to a pixel frame).
 - Copying another game's sprites, frames, icons or exact layout.
+
+## Declutter rule (18 Nov)
+Side column on every size: Catalog, Build, Dungeon, More; all else in the More grid (extras with data-more-label). Info panel: gold, gems, 3 px xp bar. The hotbar is never hidden or faded. See docs/PLAN-UI-DECLUTTER.md.

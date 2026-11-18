@@ -33,20 +33,23 @@ export class FogMemory {
   lit = new Set<number>();
   readonly seen = new Set<number>();
   private lastBlock = -2;
+  private lastRadius = -1;
 
   /** A new floor: nothing seen yet. */
   reset(): void {
     this.lit = new Set();
     this.seen.clear();
     this.lastBlock = -2;
+    this.lastRadius = -1;
   }
 
   /** Updates from the player's position; true when the lit set changed (redraw). */
-  update(map: DungeonMap, p: Point): boolean {
+  update(map: DungeonMap, p: Point, radius = DUNGEON_LIGHT_PX): boolean {
     const b = blockIndex(map, p);
-    if (b === this.lastBlock) return false;
+    if (b === this.lastBlock && radius === this.lastRadius) return false;
     this.lastBlock = b;
-    this.lit = litBlocks(map, p);
+    this.lastRadius = radius;
+    this.lit = litBlocks(map, p, radius);
     for (const i of this.lit) this.seen.add(i);
     return true;
   }

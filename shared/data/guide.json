@@ -1,7 +1,7 @@
 {
   "_help":"The ONE big tutorial (ONBOARD-1, TUT-2). One entry per step, in the order they are offered; the player may do them in any order. id = the step and the event that ticks it off (client calls guide.event(id)). target = what the animated pointer sits on: furniture (typeId, first one in the room; when it stands in the kitchen or cellar the pointer shows the door), door (an Inn door of the room you stand in, by id), guest (a waiting guest), stand (the tap stand when the avatar waits to pour, else a waiting guest), coins (coins on a table), ui (a button by its aria-label start), floor (a spot of floor beside the avatar), none. text uses {Tap} (Tap or Click), {tap}, {hold} (Hold your finger on / Hold the mouse button on) so one line serves touch and mouse. short = the one line of the folded card on a phone (RUN 5; a tap on the card shows the full text). Update this file and docs/GUIDE-UPDATE.md when a first-ten-minutes flow changes.",
   "steps": [
-    { "id": "zoom", "target": { "kind": "none" }, "text": "{Zoom} to zoom in and out and look around.", "short": "{Zoom} to zoom" },
+    { "id": "zoom", "target": { "kind": "none" }, "text": "Welcome! {Zoom} to zoom in and out and look around. Then tap the floor to walk.", "short": "{Zoom} to zoom" },
     { "id": "walk", "target": { "kind": "floor" }, "text": "{Tap} the floor to walk there.", "short": "{Tap} the floor to walk" },
     { "id": "holdwalk", "target": { "kind": "floor" }, "text": "Now press and {hold} the floor and move: your avatar keeps following.", "short": "Press and hold the floor" },
     { "id": "menu", "target": { "kind": "furniture", "typeId": "register" }, "text": "{Tap} the register on the bar to open the menu: serve and set prices.", "short": "{Tap} the register" },

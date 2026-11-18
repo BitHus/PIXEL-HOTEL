@@ -147,7 +147,12 @@ function pineCrown(img, ramp, v) {
       const y = AY + by - h + 1 + i, half = rows[i];
       for (let x = -half; x <= half; x++) {
         const u = x / half;
-        let c = u < -0.45 ? ramp.lit : u < 0.2 ? ramp.base : ramp.dark;
+        // band edges wobble per row and a few needle ticks break the flat planes (pine read as two hard vertical bands)
+        const j = (hash(500 + v, k * 31 + i, 3) - 0.5) * 0.5;
+        let c = u < -0.4 + j ? ramp.lit : u < 0.25 + j ? ramp.base : ramp.dark;
+        if (c === ramp.base && hash(600 + v, k * 17 + i, x) > 0.86) c = ramp.lit;
+        if (c === ramp.dark && hash(700 + v, k * 17 + i, x) > 0.88) c = ramp.base;
+        if (c === ramp.lit && ((x + i * 2) % 6 === 0) && hash(800 + v, k, i) > 0.4) c = ramp.base;
         if (u < -0.7 && i > 3 && hash(400 + v, k * 9 + i, x) > 0.8) c = ramp.hi;
         img.set(AX + x, y, c);
       }
@@ -215,10 +220,10 @@ for (let v = 0; v < 6; v++) makeTree(v);
 // ---------- sapling (growing back): fresh and deep ----------
 for (const [name, ramp] of [['0', LEAF.fresh], ['1', LEAF.deep]]) {
   const g = new Img(64, 88);
-  // a thin stem with a stake and a tie
-  for (let y = 0; y < 22; y++) { g.set(AX, AY - y - 1, BARK.lit); g.set(AX + 1, AY - y - 1, BARK.base); g.set(AX + 2, AY - y - 1, BARK.dark); }
-  g.rect(AX + 5, AY - 15, 2, 15, C.sand); g.rect(AX + 6, AY - 15, 1, 15, C.oak); g.rect(AX + 3, AY - 8, 4, 1, C.red);
-  g.rect(AX - 3, AY - 2, 3, 2, BARK.base); g.rect(AX + 3, AY - 2, 2, 1, BARK.dark);
+  // a young trunk: 2 px wide, a dirt mound at the foot, two small side twigs (no stake: it read as a second trunk)
+  for (let y = 0; y < 20; y++) { g.set(AX, AY - y - 1, BARK.lit); g.set(AX + 1, AY - y - 1, y > 12 ? BARK.base : BARK.dark); }
+  g.rect(AX - 4, AY - 2, 10, 2, BARK.dark); g.rect(AX - 3, AY - 3, 8, 1, BARK.base); g.rect(AX - 3, AY - 2, 3, 1, BARK.lit);
+  g.set(AX - 1, AY - 13, BARK.lit); g.set(AX - 2, AY - 14, BARK.lit); g.set(AX + 2, AY - 10, BARK.base); g.set(AX + 3, AY - 11, BARK.base);
   const crown = { x: 0, y: -26, rx: 12, ry: 12 };
   cluster(g, AX + 1, AY - 27, 8, 7, ramp, crown, 500);
   cluster(g, AX - 6, AY - 20, 5, 4, ramp, crown, 501);

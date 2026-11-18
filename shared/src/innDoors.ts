@@ -65,9 +65,9 @@ export function innDoorSpotRects(room: Pick<Room, 'kind' | 'shape' | 'level'>): 
   return innDoorSpots(room).map((d) => d.spot);
 }
 
-/** Doors that are drawn with a sprite (arch frame and lantern wider than the doorway): cellar doors and any kitchen door. Same rule as the client's doorSpriteId. */
+/** Doors that are drawn with a sprite (arch frame and lantern wider than the doorway): the cellar doors. Same rule as the client's doorSpriteId. */
 export function innDoorHasSprite(id: string): boolean {
-  return id === 'tavern_to_cellar' || id === 'cellar_to_tavern' || id.includes('kitchen');
+  return id === 'tavern_to_cellar' || id === 'cellar_to_tavern';
 }
 
 /** Extra wall clearance per side (px) beside a doorway that has a sprite, so no wall item overlaps the arch frame or lantern. */

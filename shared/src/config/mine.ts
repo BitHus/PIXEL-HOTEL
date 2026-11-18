@@ -36,3 +36,38 @@ export const MINE_DEATH_ORE_LOSS = 0.5;
 export const HP_PER_LEVEL = 3;
 /** Every even level adds this to both ends of the attack range. */
 export const ATTACK_PER_EVEN_LEVEL = 1;
+
+// ---------- The dig mine (MG-3, docs/PLAN-MINIGAMES.md section 1; owner 17 Nov: no lantern timer) ----------
+// A cave of blocks you pickaxe your way through to the exit. Block kinds are data (shared/data/mineBlocks.json).
+/** The cave's size in blocks (DUNGEON_BLOCK px each). */
+export const DIG_COLS = 48;
+export const DIG_ROWS = 64;
+/** The top rows are a dirt / clay band. */
+export const DIG_DIRT_BAND = 3;
+/** Open pockets (the spawn pocket and the exit pocket included). */
+export const DIG_POCKETS_MIN = 4;
+export const DIG_POCKETS_MAX = 7;
+/** The exit lies at least this many blocks (steps through open or breakable blocks) from the spawn. */
+export const DIG_EXIT_MIN_DIST = 40;
+/** The cheapest way to the exit costs at most this many hits (pickaxe hits of one: a steel pickaxe halves it). */
+export const DIG_ROUTE_HITS_MAX = 160;
+/** Nothing (enemy, hazard, rare block) lies within this many blocks of the spawn. */
+export const DIG_SPAWN_CLEAR = 5;
+/** Rare blocks (crystal, gold vein, diamond): 0 to this many per floor, from depth 2, at least DIG_RARE_ROUTE_GAP blocks off the main route. */
+export const DIG_RARE_MAX = 2;
+export const DIG_RARE_ROUTE_GAP = 6;
+/** The deepest floor (owner 17 Nov: depth cap 10). */
+export const DIG_DEPTH_MAX = 10;
+/** Enemies (slime, bat) per pocket, not in the spawn pocket; their hp grows per depth like a crypt floor. */
+export const DIG_ENEMIES_PER_POCKET_MAX = 2;
+/** Cave-in tiles per pocket (floor tiles that crumble: a crack for DIG_CAVEIN_TELL_MS, then DIG_CAVEIN_DAMAGE if you still stand there). */
+export const DIG_CAVEINS_PER_POCKET_MAX = 2;
+export const DIG_CAVEIN_TELL_MS = 700;
+export const DIG_CAVEIN_DAMAGE = 4;
+/** Filler blocks (stone, dirt, clay) drop their block item only with this chance, and never when the bag is full (they must not push ore out). */
+export const DIG_FILLER_DROP_CHANCE = 0.15;
+/** The player digs a block whose middle is this close (px; one block + a bit, so a block next to the standing block counts). */
+export const DIG_REACH_PX = 52;
+/** How far the lantern shows the cave around the player (blocks) before light skills, and how far a rare block glints before ore-sense skills. */
+export const DIG_LIGHT_BLOCKS = 7;
+export const DIG_GLINT_BLOCKS = 3;

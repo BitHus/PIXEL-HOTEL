@@ -14,6 +14,9 @@ import {
   TRAY_MAX,
   GEM_CHANCE,
   ENEMY_WINDUP_MS,
+  DIG_GLINT_BLOCKS,
+  DIG_LIGHT_BLOCKS,
+  DUNGEON_BLOCK,
 } from './config.ts';
 import { effective, type Bonuses } from './stats.ts';
 import { skillStats } from './skills.ts';
@@ -70,5 +73,14 @@ export const oreQtyOf = (base: number, b: Bonuses | undefined, rng: () => number
   return base + Math.floor(x) + (rng() < x - Math.floor(x) ? 1 : 0);
 };
 
-/** Stats of the tree no rule reads yet (the panel marks their nodes "not active yet"): they wait for the dig mine (MG-3+), bait and the bag rework. */
-export const UNHOOKED_STATS: readonly string[] = ['chestGlintBlocks', 'lightPlus', 'glintBlocks', 'hazardDmgPct', 'baitSavePct', 'deepCast', 'keepBaitOnLoss', 'bagSlotsPlus'];
+/** Lantern (dig mine, MG-3): how far the light shows the cave around the player, in px. */
+export const digLightPxOf = (b?: Bonuses): number => effective(DIG_LIGHT_BLOCKS, 'lightPlus', b) * DUNGEON_BLOCK;
+/** Ore sense (dig mine): how many blocks away a rare block glints. */
+export const glintBlocksOf = (b?: Bonuses): number => effective(DIG_GLINT_BLOCKS, 'glintBlocks', b);
+/** Careful step (dig mine): cave-in damage (never below 1). */
+export const hazardDamageOf = (base: number, b?: Bonuses): number => Math.max(1, Math.round(effective(base, 'hazardDmgPct', b)));
+/** Treasure sense (crypt): how many blocks away a closed chest shines through the dark (0 without the skill). */
+export const chestGlintBlocksOf = (b?: Bonuses): number => effective(0, 'chestGlintBlocks', b);
+
+/** Stats of the tree no rule reads yet (the panel marks their nodes "not active yet"): they wait for bait and the bag rework. */
+export const UNHOOKED_STATS: readonly string[] = ['baitSavePct', 'deepCast', 'keepBaitOnLoss', 'bagSlotsPlus'];

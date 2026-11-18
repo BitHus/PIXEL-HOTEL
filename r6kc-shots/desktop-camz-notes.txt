@@ -1,0 +1,7 @@
+zoom after wheel {"z":4,"dpr":1}
+ZOOMED walk: 0 moving frames, max offset 0.0 px, avg 0.0
+trace walk1 (offset px, m=moving s=still, every 4th frame): 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s 96s
+ZOOMED still drag: camera moved -32.0, -20.0
+ZOOMED ease back: worst camera step 0.0 world px/frame, centred after never ms; max avatar offset after centred: 0.0
+trace walk2: 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s 218s
+ZOOMED drag while walking: 3 moving frames, max offset 96.5 px

@@ -41,7 +41,7 @@ export async function setupTavernLife(g: G9) {
   st.tavern = await api.getTavern();
   // FP-1: the first ten minutes (a skippable guide in a new game) and JU-1 juice; AU-1 sounds are played from the events below.
   // TUT-2: a new game ALWAYS starts the tutorial; Continue resumes the stored step; a finished or skipped one stays done (firstTenOpen).
-  const guide = createFirstTenGuide(uiRoot, storage, toast, st.introPending);
+  const guide = createFirstTenGuide(uiRoot, storage, toast, st.introPending, g.idle);
   if (st.introPending) guide.begin();
   late.replayGuide = () => guide.replay();
   late.guideEvent = (step) => guide.event(step);

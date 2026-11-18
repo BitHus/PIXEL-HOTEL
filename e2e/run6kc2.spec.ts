@@ -194,14 +194,13 @@ test('r6kc G tutorial flow with kitchen door and old piles', async ({ page }) =>
   for (let i = 0; i < 70; i++) { await page.waitForTimeout(1000); if ((await k.state()).player.wallet.gold > g0) break; }
   await log('after coins (gold ' + g0 + ' -> ' + (await k.state()).player.wallet.gold + ')'); await k.sh('c-after-coins');
   await page.waitForTimeout(3000); await log('3s later'); await k.sh('c2-kitchen-step');
-  const w2 = await k.where(); const kd = doorSpot(w2, 'tavern_to_kitchen')!;
-  await k.clickWorld(kd.x, kd.y + 16); for (let j = 0; j < 40; j++) { await page.waitForTimeout(300); if ((await k.where()).kind === 'kitchen') break; } await page.waitForTimeout(800); await log('in kitchen'); await k.sh('d-kitchen');
-  const kw = await k.where(); const bar = kw.items.find((i: string) => i.startsWith('brewing_barrel@'))!; const [bx, by] = bar.split('@')[1].split(',').map(Number);
-  await k.clickWorld(bx, by - 16); await page.waitForTimeout(2500); await log('barrel tapped'); await k.sh('e-barrel-panel');
+  // RUN 7: the kitchen is an annex of the tavern now (no room switch): walk through the doorway at x 64 and tap the barrel inside.
+  await k.clickWorld(64, 290); await page.waitForTimeout(3000); await k.clickWorld(64, 340); await page.waitForTimeout(1500); await log('in doorway'); await k.sh('d-annex');
+  await k.clickWorld(16, 368); await page.waitForTimeout(2500); await log('barrel tapped'); await k.sh('e-barrel-panel');
   await page.keyboard.press('Escape'); await page.waitForTimeout(500);
   // old piles: inject a mess pile at the table seat and Continue
   await k.patchAndContinue((s) => {
-    const t = s.items.find((i: any) => i.typeId === 'round_table'); const seat = 0;
+    const t = s.items.find((i: any) => i.typeId === 'table'); const seat = 0;
     s.tavern.mess.push({ id: 9001, seatUid: t.uid, seatIndex: seat, x: t.x, y: t.y - 20, coins: 7, gems: 0, dish: 'root_ale' });
     s.tavern.nextMessId = Math.max(s.tavern.nextMessId ?? 0, 9002);
   });
@@ -218,33 +217,22 @@ test('r6kc G tutorial flow with kitchen door and old piles', async ({ page }) =>
 });
 
 // BUG SPECS: each of these FAILS while the bug exists (RUN 6 kitchen/cellar in docs/FIXLIST.md).
-test('r6kc H bug: first-steps card must not cover the kitchen door', async ({ page }) => {
+test('r6kc H bug: first-steps card must not cover the cellar door', async ({ page }) => {
   test.setTimeout(120000);
   const k = kit(page, 'bugH');
   await k.newGame();
   await page.waitForSelector('.orders-strip:not([hidden])', { timeout: 60000 }); await page.waitForTimeout(1000);
-  const w = await k.where(); const d = doorSpot(w, 'tavern_to_kitchen')!;
+  const w = await k.where(); const d = doorSpot(w, 'tavern_to_cellar')!;
   const tl = await k.toScreen(d.x - 32, -64); const br = await k.toScreen(d.x + 32, 0);
   const r: any = await page.evaluate('(() => { const c = document.querySelector(".first-ten"); if (!c) return null; const b = c.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; })()');
   k.note('door art rect ' + JSON.stringify([tl, br]) + ', card ' + JSON.stringify(r)); await k.sh('door-vs-card');
   expect(r, 'card present').not.toBeNull();
   const ox = Math.max(0, Math.min(br.x, r.x + r.w) - Math.max(tl.x, r.x)); const oy = Math.max(0, Math.min(br.y, r.y + r.h) - Math.max(tl.y, r.y));
   const share = (ox * oy) / ((br.x - tl.x) * (br.y - tl.y));
-  expect(share, 'share of the kitchen door art hidden under the first-steps card').toBeLessThan(0.3);
+  expect(share, 'share of the kitchen door art hidden under the first-steps card (cellar door)').toBeLessThan(0.3);
 });
 
-test('r6kc I bug: kitchen door hint must not mention the garden', async ({ page }) => {
-  test.setTimeout(120000);
-  const k = kit(page, 'bugI');
-  await k.newGame();
-  const w = await k.where(); const d = doorSpot(w, 'tavern_to_kitchen')!;
-  await k.clickWorld(d.x, d.y + 16);
-  for (let j = 0; j < 40; j++) { await page.waitForTimeout(300); if ((await k.where()).kind === 'kitchen') break; }
-  await page.waitForTimeout(1500); await k.sh('kitchen-hint');
-  const txt: string = await page.evaluate(`document.body.innerText`);
-  expect((await k.where()).kind).toBe('kitchen');
-  expect(txt.includes('and the garden'), 'kitchen has no garden door but the hint says so').toBe(false);
-});
+// r6kc I (kitchen door hint mentioned the garden) retired in RUN 7: there is no kitchen room or door any more.
 
 test('r6kc J bug: keg rack panel text must not wrap one word per line', async ({ page }) => {
   test.setTimeout(200000);

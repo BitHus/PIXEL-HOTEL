@@ -54,8 +54,19 @@ export interface Cam { zoom: number; cx: number; cy: number }
 /** Opens a side button by its tooltip (on a phone through the More menu). */
 export async function openSide(page: Page, title: string): Promise<void> {
   const b = page.locator(`button[title^="${title}"]`).first();
-  if (!(await b.isVisible())) await page.locator('button.more-btn').dispatchEvent('click');
+  if (!(await b.isVisible())) await openMoreMenu(page);
   await b.dispatchEvent('click');
+}
+
+/** DECLUTTER: opens the More grid (Quests, Worlds, Emote, Room, Book, Skills, Avatar, Chat, Settings live in it); no-op when open. */
+export async function openMoreMenu(page: Page): Promise<void> {
+  if (!(await page.locator('.more-menu.open').count())) await page.locator('button.more-btn').dispatchEvent('click');
+}
+
+/** Opens More, then taps the grid item whose tooltip starts with `label` (e.g. 'Room', 'Quests'). */
+export async function openMore(page: Page, label: string): Promise<void> {
+  await openMoreMenu(page);
+  await page.locator(`.more-menu button[title^="${label}"]`).first().dispatchEvent('click');
 }
 
 export async function debugOn(page: Page, followOff = true): Promise<void> {

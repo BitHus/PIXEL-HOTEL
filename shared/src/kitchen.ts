@@ -1,6 +1,6 @@
-// The tavern kitchen zone (step T1, moved into an attached ANNEX 18 Nov, see kitchenWall.ts). Pure.
+// The tavern kitchen zone (step T1; since 18 Nov an OPEN ANNEX of floor below the tavern, no wall, no door). Pure.
 //
-// - THE ZONE: the INSIDE of the kitchen annex (shared/data/roomShapes.json "kitchen" is the annex rectangle per level), staff only like the strip
+// - THE ZONE: the whole kitchen annex (shared/data/roomShapes.json "kitchen" is the annex rectangle per level, open to the tavern along its top edge), staff only like the strip
 //   behind the bar: guests never walk or sit there (npcNav.guestZones feeds npcGrid and the seats). The owner may put blocks and
 //   furniture in it. Only a room of kind 'shop' has one.
 // - PREP BONUS: a prep table (FurnitureType.preps) standing inside the zone and cell-adjacent (a shared edge) to a stove that
@@ -9,13 +9,12 @@
 
 import { PREP_BONUS } from './config.ts';
 import { footprintRect, getFurnitureType } from './furniture.ts';
-import { kitchenWall } from './kitchenWall.ts';
-import type { Room } from './room.ts';
+import { roomAnnex, type Room } from './room.ts';
 import type { FurnitureItem, Rect } from './types.ts';
 
 /** The kitchen zone of a tavern room in world px, or null (no tavern, or a shape without one). */
 export function kitchenZone(room: Room | undefined): Rect | null {
-  return kitchenWall(room)?.inside ?? null;
+  return roomAnnex(room);
 }
 
 /** True if a rect lies completely inside the zone. */

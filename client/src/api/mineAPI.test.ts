@@ -1,6 +1,6 @@
 // Step 9c: the mine and the forge through the GameAPI (LocalGameAPI).
 import { describe, expect, it } from 'vitest';
-import { MINE_HINT, MINE_LANTERN_MS, applyChange, createNewPlayer, mergeGains, saveKey, seededRng, toSaveText, type GainList, type GameState } from '@pixel-hotel/shared';
+import { DIG_COLS, DIG_DEPTH_MAX, MINE_HINT, PICKAXE_COOLDOWN_MS, applyChange, blockAt, createNewPlayer, mergeGains, saveKey, seededRng, toSaveText, type DungeonRun, type GainList, type GameState } from '@pixel-hotel/shared';
 import { ledgerGold, ledgerMaterials } from '../../../shared/src/testState.ts';
 import { LocalGameAPI } from './localGameAPI.ts';
 import { memoryStorage } from './saveStorage.ts';
@@ -31,31 +31,41 @@ describe('the mine through the GameAPI', () => {
     expect((await api.getPlayer()).wallet.gold).toBe(500); // free
   });
 
-  it('mine a rock, walk out when the lantern goes out, smelt, forge, and the dungeon feels it', async () => {
+  it('digs a block, leaves with the ore (no lantern timer), smelts, forges, and the dungeon feels it', async () => {
     const api = open(player(3));
     const run = (await api.mineStart())!;
-    // Swing at the nearest copper or iron rock until it breaks.
-    const rock = [...run.rocks].filter((r) => r.kind !== 'mithril').sort((a, b) => Math.hypot(a.x - run.player.x, a.y - run.player.y) - Math.hypot(b.x - run.player.x, b.y - run.player.y))[0]!;
+    expect(run.dig).toBeDefined();
+    expect(run.lanternEndsAt).toBeNull();
+    expect(run.maxFloors).toBe(DIG_DEPTH_MAX);
+    // Put a coal block right next to the player (a saved run resumes in the API: Resume first).
+    const at = blockAt(run.player);
+    const cell = at.r * DIG_COLS + at.c + 1;
+    const kinds = run.dig!.kinds.slice();
+    kinds[cell] = 'coal';
+    const blocks = run.map.blocks.slice();
+    blocks[cell] = 'wall';
+    const seeded: DungeonRun = { ...run, enemies: [], dig: { ...run.dig!, kinds, hazards: [], rare: [] }, map: { ...run.map, blocks } };
+    const api2 = open({ ...api.snapshot(), run: seeded });
+    await api2.dungeonResume();
     const gains: GainList = [];
-    for (let k = 0; k < 200; k++) {
-      const u = await api.dungeonInput({ t: 'click_rock', id: rock.id });
+    for (let k = 0; k < 30; k++) {
+      const u = await api2.dungeonInput({ t: 'click_dig', c: at.c + 1, r: at.r });
       gains.push(...(u?.gains ?? []));
-      if (!u?.run.rocks.some((r) => r.id === rock.id)) break;
-      gains.push(...((await api.dungeonAdvance(400))?.gains ?? []));
+      if (u?.run.dig?.kinds[cell] === '') break;
+      gains.push(...((await api2.dungeonAdvance(PICKAXE_COOLDOWN_MS))?.gains ?? []));
     }
-    // The broken rock gave its ore (and maybe a gem): the gains say how much went in the run bag.
-    const oreGain = mergeGains(gains).find((g) => g.itemId === `${rock.kind}_ore`);
-    expect(oreGain?.count).toBeGreaterThanOrEqual(1);
-    const now = (await api.getRun())!.run;
-    expect(now.rocks.some((r) => r.id === rock.id)).toBe(false);
-    const ore = `${rock.kind}_ore`;
-    // The lantern runs out: everything comes home.
-    const end = await api.dungeonAdvance(MINE_LANTERN_MS);
-    expect(end?.result).toMatchObject({ status: 'left', place: 'mine', lanternOut: true });
-    const got = (await api.getPlayer()).materials[ore as 'copper_ore'] ?? 0;
-    expect(got).toBeGreaterThanOrEqual(1);
+    expect(mergeGains(gains).find((g) => g.itemId === 'coal')?.count).toBeGreaterThanOrEqual(1);
+    expect((await api2.getRun())!.run.dig!.kinds[cell]).toBe('');
+    // A long time passes: no lantern, the run is still going. Leave banks everything.
+    expect((await api2.dungeonAdvance(10 * 60 * 1000))?.result).toBeNull();
+    const end = await api2.dungeonInput({ t: 'leave' });
+    expect(end?.result).toMatchObject({ status: 'left', place: 'mine', lanternOut: false });
+    expect((await api2.getPlayer()).materials.coal ?? 0).toBeGreaterThanOrEqual(1);
+    const s2 = api2.snapshot();
+    expect(ledgerGold(s2)).toBe(s2.player.wallet.gold);
+    expect(ledgerMaterials(s2)).toEqual(s2.player.materials);
     // Smelt and forge (with enough ore given for the test).
-    const s = api.snapshot();
+    const s = s2;
     const rich = applyChange(s, { reason: 'debug', materials: { copper_ore: 12 } }, t)!;
     const forge = open(rich);
     for (let i = 0; i < 4; i++) expect(await forge.smelt('copper_bar')).toEqual([{ itemId: 'copper_bar', count: 1, rank: expect.any(String) }]);

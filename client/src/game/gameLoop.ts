@@ -1,7 +1,8 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { CAMERA_FOLLOW_EASE_MS, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, HOTEL_WALK_SPEED, roomSpeedOf, type Point } from '@pixel-hotel/shared';
+import { CAMERA_FOLLOW_EASE_MS, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, snapToStep, HOTEL_WALK_SPEED, roomSpeedOf, type Point } from '@pixel-hotel/shared';
+import { pixelStep } from '../render/pixelStep.ts';
 import { avatarMoving } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
@@ -163,9 +164,11 @@ export async function setupGameLoop(g: G16) {
     placeBar.update(placer.moving ? null : placer.screenBounds(), placer.valid);
     menu.follow(menu.uid === null ? null : itemViews.screenBounds(menu.uid));
     heads.clear();
-    heads.set(st.avatar.id, worldToScreen({ x: st.avatar.x, y: st.avatar.y - AVATAR_H }, st.shown));
+    // Head points use the same art-pixel snap as the sprites (avatarSprite.ts snapToStep): a bubble sits on the SHOWN sprite, not on the unsnapped model.
+    const snapW = (p: Point): Point => ({ x: snapToStep(p.x, pixelStep.v), y: snapToStep(p.y, pixelStep.v) });
+    heads.set(st.avatar.id, worldToScreen(snapW({ x: st.avatar.x, y: st.avatar.y - AVATAR_H }), st.shown));
     guests.heads(heads, AVATAR_H);
-    for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(p, st.shown));
+    for (const [id, p] of heads) if (id < 0) heads.set(id, worldToScreen(snapW(p), st.shown));
     orders.update(heads);
     bubbles.update(ticker.deltaMS, heads);
     nameTag.update(st.avatar.name, sprite.container.visible ? worldToScreen({ x: st.avatar.x, y: st.avatar.y + 4 }, st.shown) : null);

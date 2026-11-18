@@ -1,0 +1,7 @@
+level 1: build button disabled = true
+confirm dialog button visible = true
+gold 800 -> 500, cellarRoomId 5
+after build room: cellar items ["keg_rack@128,96"]
+cellar_to_tavern {"x":64,"y":12}
+then in shop
+cellar door: room cellar {"kind":"cellar","id":5,"lvl":1,"shape":"cellar_room","w":256,"h":160,"av":{"x":48,"y":48},"items":["keg_rack@128,96"]}

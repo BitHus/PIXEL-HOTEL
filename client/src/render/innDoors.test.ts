@@ -23,9 +23,8 @@ describe('inn doors (B1 stub)', () => {
   it('doorSpriteId is id driven and matches the shared clearance rule', () => {
     expect(doorSpriteId('tavern_to_cellar')).toBe('door_cellar_down');
     expect(doorSpriteId('cellar_to_tavern')).toBe('door_cellar_up');
-    expect(doorSpriteId('tavern_to_kitchen')).toBe('door_kitchen');
     expect(doorSpriteId('tavern_to_suite')).toBeNull();
-    for (const id of ['tavern_to_cellar', 'cellar_to_tavern', 'tavern_to_kitchen', 'tavern_to_suite', 'garden_gate']) expect(doorSpriteId(id) !== null).toBe(innDoorHasSprite(id));
+    for (const id of ['tavern_to_cellar', 'cellar_to_tavern', 'tavern_to_suite', 'garden_gate']) expect(doorSpriteId(id) !== null).toBe(innDoorHasSprite(id));
   });
   it('doorOpenNear opens within 64 px in front of the door only', () => {
     expect(doorOpenNear(100, 64, null)).toBe(false);

@@ -308,8 +308,8 @@ export const PROP_ANIMS: Readonly<Record<string, PropSpec>> = {
   shell_lamp: { glints: [{ at: { code: [0, -26] }, periodMs: 3600 }] },
   // Hearth and kitchen.
   stove: {
-    flames: [{ kind: 'stove_window', at: { png: [16, 70], code: [0, -8] }, flicker: 1, strip: { tag: 'fire', frameW: 14 } }],
-    emits: [{ kind: 'smoke', at: { png: [26, 1], code: [0, -62] }, everyMs: 1100 }],
+    flames: [{ kind: 'stove_window', at: { png: [16, 31], code: [0, -8] }, flicker: 1, strip: { tag: 'fire', frameW: 14 } }],
+    emits: [{ kind: 'smoke', at: { png: [21, 1], code: [0, -62] }, everyMs: 1100 }],
   },
   stone_fireplace: {
     flames: [{ kind: 'fire_big', at: { code: [0, -9] }, flicker: 1 }],
@@ -324,7 +324,7 @@ export const PROP_ANIMS: Readonly<Record<string, PropSpec>> = {
   },
   // The bar: the brewing barrel bubbles, the tap stand drips, the register dings.
   brewing_barrel: { emits: [{ kind: 'bubble', at: { png: [16, 4], code: [0, -45] }, everyMs: 600 }] },
-  tap_stand: { drips: [{ png: [16, 30], code: [-6, -34] }] },
+  tap_stand: { drips: [{ png: [5, 23], code: [-11, -22] }, { png: [25, 23], code: [9, -22] }] },
   register: { register: true },
   // A window lets a shaft of dust motes fall onto the floor in front of it.
   window_curtains: { emits: [{ kind: 'mote', at: { code: [0, -4] }, everyMs: 900, area: [44, 34] }] },

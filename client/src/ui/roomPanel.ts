@@ -102,9 +102,9 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
         facts.append(row);
         facts.append(el('div', 'room-star-tip', `${stars.tip}${stars.toNext !== null ? ` (${stars.toNext} more points for the next star)` : ''}`));
       }
-      // The kitchen zone (step T1): a staff-only corner; its tint shows while you place things.
+      // The kitchen (the open annex below the tavern, staff only); its tint shows while you place things.
       const kitchen = kitchenZone(room);
-      if (kitchen) facts.append(el('div', '', `Kitchen ${kitchen.w / BUILD_CELL} x ${kitchen.h / BUILD_CELL} cells (staff only)`));
+      if (kitchen) facts.append(el('div', '', `Kitchen annex ${kitchen.w / BUILD_CELL} x ${kitchen.h / BUILD_CELL} cells (staff only)`));
       const cost = upgradeCost(room);
       // CEL-2/4: the tavern, its kitchen and its cellar: Open cards (the doors in the back wall do the same) and the cellar's Build card.
       const rooms = links && (room.kind === 'shop' || room.kind === 'cellar') ? roomCards(room, links, gold) : [];
@@ -142,7 +142,7 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
         el('h3', '', 'Wall'),
         picker(room, 'wall', unlocked),
         el('div', 'panel-info', 'Buy more floors and walls in the Catalog (Decor).'),
-        ...(kitchen ? [el('div', 'panel-info', `The kitchen is the warm tint while you place things: guests never walk or sit there. A prep table inside it, next to a stove, adds ${PREP_BONUS.perTable} dish to a batch (at most ${PREP_BONUS.max}). A bigger room level grows the kitchen.`)] : []),
+        ...(kitchen ? [el('div', 'panel-info', `The kitchen is the open annex below the tavern (a faint warm tint while you place things): guests never go in. A prep table inside it, next to a stove, adds ${PREP_BONUS.perTable} dish to a batch (at most ${PREP_BONUS.max}). A bigger room level grows the kitchen.`)] : []),
       );
     },
   };

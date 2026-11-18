@@ -1,0 +1,5 @@
+guest with an order after 14s {"id":-1,"kind":"browser","look":{"skin":31,"hair":0,"hairStyle":"short","top":"tunic","shirt":14,"bottoms":"trousers","legs":5,"shoes":5},"x":144,"y":272,"facing":"right","path":[],"speed":69.72711923855738,"phase":"order","groupId":-1,"seat":{"uid":3,"index":0},"seated":true,"tolerance":1.050662650968021,"waitMs":-37,"order":{"item":"root_ale","price":9,"coins":9},"patienceMs":90000,"warned":false,"talkInMs":7981,"sipInMs":0,"reaction":"smile"}
+stand point {"x":500,"y":372.5}
+tray [{"item":"root_ale","perfect":true}]
+delivered at 21s tray left 0
+gold now 100

@@ -114,40 +114,8 @@
   max-width: calc(100vw - 2 * var(--edge) - var(--side-col) * 0);
 }
 
-/* ---------- Phone: the side column gets short labels under its icons ---------- */
-:root[data-size='phone'] .side-buttons {
-  gap: 4px;
-}
-
-:root[data-size='phone'] .side-buttons > .icon-btn,
-:root[data-size='phone'] .side-buttons .more-btn {
-  height: calc(var(--side-btn) + 12px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  padding: 2px 0 1px;
-}
-
-:root[data-size='phone'] .side-buttons > .icon-btn::after,
-:root[data-size='phone'] .side-buttons .more-btn::after {
-  content: attr(data-label);
-  font-size: 11px;
-  letter-spacing: -0.3px;
-  line-height: 1;
-  color: var(--text);
-  text-shadow: none;
-  letter-spacing: 0;
-}
-
-:root[data-size='phone'] .side-buttons .icon-btn.on::after {
-  color: var(--outline);
-}
-
-:root[data-size='phone'] .side-buttons .more-item::after {
-  content: none;
-}
+/* DECLUTTER: the phone side column is icons only (44 px, no labels); long-press shows the tooltip. */
+:root[data-size='phone'] .side-buttons { gap: 4px; }
 
 /* ---------- Tabs: on a phone the row scrolls sideways (the open tab is kept in view by panelShell.tabBar) ---------- */
 :root[data-size='phone'] .panel-tabs {

@@ -20,6 +20,10 @@ import {
   GEM_ICON,
   GEM_PICKUP_REACH,
   HIT_FLASH_MS,
+  DIG_COLS,
+  digLightPxOf,
+  glintingCells,
+  glintingChests,
   PALETTE,
   PICKAXE_COOLDOWN_MS,
   facingFor,
@@ -37,6 +41,7 @@ import {
 import { AvatarSprite } from '../render/avatarSprite.ts';
 import { DepthLayer } from '../render/depthLayer.ts';
 import { iconTexture } from '../render/drawIcon.ts';
+import { DigLayer, drawGlint } from './digArt.ts';
 import { CRYPT_OUTLINE, ENEMY_HEIGHT, ROCK_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit, drawRock } from './dungeonArt.ts';
 import { FogMemory } from './fog.ts';
 import { decorAnimated, decorIsFlat, drawDecorProp, landmarkOf, landmarkToast } from './decor.ts';
@@ -127,6 +132,9 @@ export class DungeonView {
   private fogCanvas: HTMLCanvasElement | null = null;
   private fogTex: Texture | null = null;
   private readonly fogSprite = new Sprite(Texture.EMPTY);
+  /** MG-3: the dig mine's blocks (one Graphics per row) and the glints of rare blocks, drawn over the fog. */
+  private readonly dig = new DigLayer();
+  private readonly glints = new Graphics();
   private fogDirty = false;
   /** On the floor under the objects: the wind-up telegraph rings (outdoors rework C12). */
   private readonly floorFx = new Graphics();
@@ -161,7 +169,7 @@ export class DungeonView {
     this.player = new AvatarSprite(look);
     this.player.container.eventMode = 'none';
     this.world.eventMode = 'none';
-    this.world.addChild(this.base, this.flatDecor, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog, this.fogSprite, this.light.container);
+    this.world.addChild(this.base, this.flatDecor, this.floorFx, this.objects.container, this.fx, this.particles.container, this.fog, this.fogSprite, this.glints, this.light.container);
     this.objects.add(this.player.container, { y: 0, x: 0, uid: PLAYER_ID });
   }
 
@@ -172,8 +180,10 @@ export class DungeonView {
   /** A new floor: draw its blocks, forget the fog and every enemy, chest and rock view. */
   setMap(map: DungeonMap, place: RunPlace = 'crypt'): void {
     this.map = map;
-    this.base.removeChildren().forEach((c) => c !== this.exit && c.destroy());
-    this.base.addChild(drawBlocks(map, place));
+    this.base.removeChildren().forEach((c) => c !== this.exit && c !== this.dig.container && c.destroy());
+    this.dig.reset();
+    // The dig mine draws its cave from run.dig (DigLayer, synced each frame); every other place draws its blocks once.
+    this.base.addChild(map.dig ? this.dig.container : drawBlocks(map, place));
     for (const [id, v] of this.rocks) {
       this.objects.remove(v.root);
       v.root.destroy({ children: true });
@@ -294,6 +304,19 @@ export class DungeonView {
     return null;
   }
 
+  /** MG-3: the diggable block under a world point (row-major cell index), or null: open floor, bedrock, or a block not seen yet. */
+  digCellAt(run: DungeonRun, p: Point): number | null {
+    const d = run.dig;
+    if (!d) return null;
+    const c = Math.floor(p.x / DUNGEON_BLOCK);
+    const r = Math.floor(p.y / DUNGEON_BLOCK);
+    if (c < 0 || r < 0 || c >= run.map.cols || r >= run.map.rows) return null;
+    const cell = r * run.map.cols + c;
+    const kind = d.kinds[cell];
+    if (!kind || kind === 'bedrock' || !this.fogMemory.seen.has(cell)) return null;
+    return cell;
+  }
+
   /** The gem pile near a world point (generous for fingers; seen piles only), or null. A tap on it walks onto it. */
   pickupAt(run: DungeonRun, p: Point): Point | null {
     let best: Point | null = null;
@@ -378,9 +401,15 @@ export class DungeonView {
    */
   render(run: DungeonRun, prev: DungeonRun | null, dtMs: number, clockMs: number): void {
     const map = run.map;
-    if (map !== this.map) this.setMap(map, run.place);
+    // A dug block makes a new map object for the same floor: keep the fog, enemies and props (only a new floor resets them).
+    const sameFloor = map.dig === true && this.map?.dig === true && this.map.seed === map.seed && this.map.n === map.n;
+    if (map !== this.map) {
+      if (sameFloor) this.map = map;
+      else this.setMap(map, run.place);
+    }
+    if (run.dig) this.dig.sync(run.dig, map.cols, map.rows);
     const t = Math.min(1, run.carryMs / DUNGEON_TICK_MS);
-    const same = prev !== null && prev.map === map ? prev : null;
+    const same = prev !== null && (prev.map === map || (sameFloor && prev.floor === run.floor)) ? prev : null;
     const lerp = (a: Point | undefined, b: Point): Point => (a ? { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t } : { x: b.x, y: b.y });
 
     // The player.
@@ -405,13 +434,18 @@ export class DungeonView {
     this.light.reduce = this.reduce;
     this.light.perf.feed(dtMs);
     const cool = this.light.active;
-    if (this.fogMemory.update(map, at) || this.fogDirty || cool !== this.fogCool) {
+    const lightPx = run.dig ? digLightPxOf(run.player.skill) : undefined;
+    if (this.fogMemory.update(map, at, lightPx) || this.fogDirty || cool !== this.fogCool) {
       this.fogCool = cool;
       this.fogDirty = false;
       this.drawFog(map);
     }
     this.updateDecor(map, clockMs);
     this.light.update(at, clockMs, run.chests, run.enemies, (q) => this.fogMemory.isSeen(map, q));
+    // Rare blocks glint through the dark (Ore sense widens it); the dig mine's glints and Treasure sense's chest glints.
+    this.glints.clear();
+    if (!this.reduce) for (const cell of glintingCells(run)) drawGlint(this.glints, cell, DIG_COLS, clockMs);
+    const chestGlow = new Set(glintingChests(run));
     // The mine has no exit block (NO_EXIT is off the map).
     this.exit.visible = map.exit.c >= 0 && this.fogMemory.seen.has(map.exit.r * map.cols + map.exit.c);
 
@@ -468,7 +502,7 @@ export class DungeonView {
         // A little hop while it opens.
         v.art.y = -Math.round(Math.sin((v.openMs / CHEST_OPEN_MS) * Math.PI) * 4);
       }
-      v.root.visible = this.fogMemory.isSeen(map, c);
+      v.root.visible = this.fogMemory.isSeen(map, c) || chestGlow.has(c.id);
       for (const glow of v.glows) glow.alpha = 0.7 + 0.3 * Math.sin(clockMs / 300);
     }
     // A mimic leaves the chest list when it wakes.

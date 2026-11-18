@@ -1,0 +1,4 @@
+walk frames 66, max offset of avatar from screen centre 43.1 px, avg 30.7
+still drag pan: camera moved -96.0, -48.0 (expect nonzero)
+ease back: worst camera step per frame 17.9 world px, first frame centred at never ms
+drag while walking: 30 moving frames, max centre offset 30.5 px

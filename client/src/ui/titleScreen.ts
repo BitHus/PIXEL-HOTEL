@@ -30,7 +30,7 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
     // The sign: two chains, a wooden board with the logo and the name.
     const sign = el('div', 'title-sign');
     sign.append(el('i', 'title-chain left'), el('i', 'title-chain right'));
-    const board = el('div', 'frame title-board');
+    const board = el('div', 'ui-panel title-board');
     const logo = el('img', 'title-logo');
     logo.src = LOGO_URL;
     logo.alt = '';

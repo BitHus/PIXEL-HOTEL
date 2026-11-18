@@ -18,7 +18,7 @@ const BUTTONS: [PanelName, IconName, string, string | null][] = [
   ['catalog', 'catalog', 'Catalog (C)', null],
   ['workshop', 'workshop', 'Workshop: crafting and the Blacksmith', 'Workshop'],
   ['book', 'journal', 'Book: everything you found (J)', 'Book'],
-  ['skills', 'level', 'Skills: spend your skill points', 'Skills'],
+  ['skills', 'skills', 'Skills: spend your skill points', 'Skills'],
   ['room', 'house', 'Room', 'Room'],
   ['avatar', 'avatar', 'Avatar', 'Avatar'],
   ['chat', 'chat', 'Chat (Enter)', 'Chat'],
@@ -29,7 +29,7 @@ const BUTTONS: [PanelName, IconName, string, string | null][] = [
  * The right-edge column. Later steps add their buttons here (see CLAUDE.md, UI layout rule).
  * `extra` buttons (Build, Dungeon) go right after the Catalog button. `bag` is the Bag button for the hotbar.
  */
-export function createSideButtons(parent: HTMLElement, panels: Panels, extra: readonly HTMLElement[] = []): { col: HTMLElement; bag: HTMLButtonElement; setBookDot(on: boolean): void } {
+export function createSideButtons(parent: HTMLElement, panels: Panels, extra: readonly HTMLElement[] = []): { col: HTMLElement; bag: HTMLButtonElement; setBookDot(on: boolean): void; setSkillsDot(on: boolean): void } {
   const col = el('div', 'side-buttons');
   const buttons = new Map<PanelName, HTMLButtonElement>();
   const wrap = el('div', 'more-wrap');
@@ -41,13 +41,8 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
   const more = iconButton('more', 'More', () => setMenu(!menu.classList.contains('open')), 'more-btn');
   more.setAttribute('aria-haspopup', 'true');
   const mark = (): void => {
-    let inMenu = false;
-    for (const [name, b] of buttons) {
-      const on = panels.open === name;
-      b.classList.toggle('on', on);
-      if (on && menu.contains(b)) inMenu = true;
-    }
-    more.classList.toggle('on', inMenu || menu.classList.contains('open'));
+    for (const [name, b] of buttons) b.classList.toggle('on', panels.open === name);
+    more.classList.toggle('on', menu.querySelector('.on') !== null || menu.classList.contains('open'));
   };
   for (const [name, icon, title, label] of BUTTONS) {
     const b = iconButton(icon, title, () => {
@@ -59,18 +54,18 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
       b.classList.add('hotbar-bag');
     } else if (label === null) {
       col.appendChild(b);
-      col.append(...extra);
+      col.append(...extra.filter((x) => !x.dataset.moreLabel));
     } else {
       b.classList.add('more-item');
       b.appendChild(el('span', 'more-label', label));
       menu.appendChild(b);
     }
   }
-  // OA-11: the Emote button is a rare action: it stands in the More grid (on a wide screen the grid dissolves into the column anyway).
+  // DECLUTTER: extras with a data-more-label (Quests, Worlds, Emote) stand in the More grid; the column keeps Catalog, Build, Dungeon, More on every screen size.
   for (const x of extra) {
-    if (!x.classList.contains('emote-btn')) continue;
+    if (!x.dataset.moreLabel) continue;
     x.classList.add('more-item');
-    x.appendChild(el('span', 'more-label', 'Emote'));
+    x.appendChild(el('span', 'more-label', x.dataset.moreLabel));
     x.addEventListener('click', () => setMenu(false));
     menu.appendChild(x);
   }
@@ -102,11 +97,21 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
     b.appendChild(d);
     return d;
   });
+  // MG-7: unspent skill points (shared pointsFree > 0): a dot on the Skills button and on More; game/ calls setSkillsDot.
+  const sdots = [buttons.get('skills')!, more].map((b) => {
+    const d = el('span', 'new-dot');
+    d.hidden = true;
+    b.appendChild(d);
+    return d;
+  });
   return {
     col,
     bag: buttons.get('bag')!,
     setBookDot(on) {
       for (const d of dots) d.hidden = !on;
+    },
+    setSkillsDot(on) {
+      for (const d of sdots) d.hidden = !on;
     },
   };
 }

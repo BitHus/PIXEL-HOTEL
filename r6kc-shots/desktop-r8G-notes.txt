@@ -1,0 +1,1 @@
+toast: There is no cellar yet. Reach level 2, then build it for 300 gold. |  | There is no cellar yet. Reach level 2, then build it for 300 gold. | Q | E |  | Tap a cell or drag a rectangle | Where to? Tap a world to walk through its door. | Hold the tap |  | 7 of 12 mugs left. | Tap is empty. A guest who wants this drink waits until you load it.

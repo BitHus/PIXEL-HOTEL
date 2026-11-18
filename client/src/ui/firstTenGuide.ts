@@ -31,7 +31,13 @@ const isTouch = (): boolean => typeof matchMedia === 'function' && matchMedia('(
 /** The phone layout of the card (skin.css: one folded line under 680 px). */
 const isPhone = (): boolean => typeof matchMedia === 'function' && matchMedia('(max-width: 680px)').matches;
 
-export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, toast: Toast, newGame = false): FirstTenGuide {
+/** DECLUTTER: `idle.guideAllowed()` = the player stood idle for GUIDE_IDLE_MS (no walk, no panel); `onGuideChange` redraws. Without it the card always shows. */
+export interface GuideIdle {
+  guideAllowed(): boolean;
+  onGuideChange(listener: () => void): void;
+}
+
+export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, toast: Toast, newGame = false, idle?: GuideIdle): FirstTenGuide {
   let state = firstTenOpen(storage.get(FIRST_TEN_KEY), newGame);
   let waiting: readonly FirstTenStep[] = [];
   let visible = true;
@@ -46,11 +52,14 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   const body = el('span', 'first-ten-body');
   const head = el('span', 'first-ten-head', 'First steps');
   body.append(head, text);
-  const skip = textButton('Skip', () => {
+  // DECLUTTER: the card is one line plus dots; Skip is a small x (44 px touch box, declutter.css).
+  const skip = textButton('×', () => {
     state = firstTenSkip(state);
     save();
     draw();
   }, 'small first-ten-skip');
+  skip.title = 'Skip the first steps';
+  skip.setAttribute('aria-label', 'Skip the first steps');
   card.append(count, body, skip);
   body.appendChild(pips);
   card.hidden = true;
@@ -64,10 +73,10 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
 
   function draw(): void {
     const goal = firstTenGoal(state, waiting);
-    card.hidden = !visible || goal === null;
-    // Stack order: the orders strip is above the card; when it shows, the card sits right under it.
+    card.hidden = !visible || goal === null || (idle !== undefined && !idle.guideAllowed());
+    // Stack order on a wide screen: the orders strip is above the card; when it shows, the card sits right under it (on a phone the rail is at the bottom, the card stays in the top band).
     const strip = document.querySelector<HTMLElement>('.orders-strip:not([hidden])');
-    card.style.top = strip ? `${strip.offsetTop + strip.offsetHeight + 6}px` : '';
+    card.style.top = strip && !isPhone() ? `${strip.offsetTop + strip.offsetHeight + 6}px` : '';
     if (goal === null) {
       announce();
       return;
@@ -85,6 +94,7 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
     window.dispatchEvent(new Event('first-ten-layout'));
   }
   window.addEventListener('resize', draw);
+  idle?.onGuideChange(draw);
   draw();
   return {
     begin() {

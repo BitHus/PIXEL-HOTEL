@@ -658,8 +658,33 @@ const BASE_ICONS = {
   },
 } satisfies Record<string, PixelMap>;
 
+// UIR-11: the Skills button icon (a figure on a three-step podium), staged in art-src/staging/icons/skills-icon-map.txt.
+const SKILLS_ICON = {
+  skills: {
+    rows: [
+      '................',
+      '......oooo......',
+      '.....obbbao.....',
+      '.....obbaao.....',
+      '.....oaaaco.....',
+      '......oooo......',
+      '.......dd.......',
+      '..dddddddddddd..',
+      '..d....dd....d..',
+      '.oooo.oooo.oooo.',
+      '.offo.offo.offo.',
+      '.oeeo.oeeo.oeeo.',
+      '.oggo.oggo.oggo.',
+      '.oooo.oooo.oooo.',
+      '................',
+      '................',
+    ],
+    colors: { o: O, a: PALETTE[10], b: PALETTE[11], c: PALETTE[9], d: PALETTE[4], e: PALETTE[21], f: PALETTE[20], g: PALETTE[22] },
+  },
+} satisfies Record<string, PixelMap>;
+
 // UI round 4: the 16 x 16 medieval redraws win over the old 12 x 12 maps of the same name (and add level, refused).
-const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS, ...CURRENCY_ICONS, ...UI_ICONS };
+const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS, ...CURRENCY_ICONS, ...UI_ICONS, ...SKILLS_ICON };
 
 export type IconName = keyof typeof ICONS;
 

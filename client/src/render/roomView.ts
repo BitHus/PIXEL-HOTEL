@@ -2,15 +2,12 @@
 // (brief section 7). All children are in world px; the camera scales and moves `world`.
 
 import { Container, Graphics, TilingSprite } from 'pixi.js';
-import { BUILD_CELL, borderRects, doorRect, floorCellList, floorRects, floorStyleAt, innDoorSpots, kitchenWall, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
+import { BUILD_CELL, borderRects, doorRect, floorCellList, floorRects, floorStyleAt, innDoorSpots, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
 import { BORDER_COLOR } from './bareStyles.ts';
 import { doorOpenNear, doorSpill, drawInnDoor, setDoorOpen } from './innDoors.ts';
 import { floorTexture, wallTexture } from './styleArt.ts';
 import { DepthLayer } from './depthLayer.ts';
-import { drawKitchenWallPiece, wallCellLooks } from './kitchenWallArt.ts';
 
-/** Uids of the kitchen wall pieces in the depth list (far above any item or avatar id). */
-const KITCHEN_WALL_UID_BASE = 2_000_000_000;
 
 export class RoomView {
   /** Scaled and moved by the camera. */
@@ -60,7 +57,6 @@ export class RoomView {
     this.objects.update();
   }
 
-  private kitchenPieces: Container[] = [];
   private doors: { c: Container; x: number; y: number }[] = [];
 
   /** Shows the cellar door open while the avatar is near it (call per frame; null = nobody). */
@@ -70,11 +66,6 @@ export class RoomView {
 
   setRoom(room: Room): void {
     this.doors = [];
-    for (const p of this.kitchenPieces) {
-      this.objects.remove(p);
-      p.destroy({ children: true });
-    }
-    this.kitchenPieces = [];
     this.floorLayer.removeChildren().forEach((c) => c.destroy());
     this.wallLayer.removeChildren().forEach((c) => c.destroy());
 
@@ -107,16 +98,6 @@ export class RoomView {
     for (const r of borderRects(room)) fillRect(walls, r, BORDER_COLOR);
     this.wallLayer.addChild(walls);
     // Inn doors (step MB-3): the doorway in the back wall band above each door spot.
-    // The tavern's walled kitchen (owner 18 Nov): a plank partition one cell thick around the kitchen zone, one doorway.
-    const kw = kitchenWall(room);
-    if (kw) {
-      let n = 0;
-      for (const w of wallCellLooks(kw)) {
-        const piece = drawKitchenWallPiece(w.rect, w.look, w.door, KITCHEN_WALL_UID_BASE + n++);
-        this.kitchenPieces.push(piece.root);
-        this.objects.add(piece.root, piece.key);
-      }
-    }
     for (const d of innDoorSpots(room)) {
       const door = { id: d.id, x: d.spot.x + d.spot.w / 2, y: d.spot.y, w: d.spot.w };
       this.doors.push({ c: drawInnDoor(this.wallLayer, door), x: door.x, y: door.y });

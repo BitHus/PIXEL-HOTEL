@@ -3,7 +3,6 @@
 // Stone arch frame (cool grey, 2 px dark outline) so it never merges with warm wallpaper; the opening is much darker or much lighter than any wall.
 //   door_cellar_down.png / door_cellar_down_open.png  heavy plank door with iron bands and rings (closed) / swung open on dark steps going down (open, hover or arrival)
 //   door_cellar_up.png     the way back: a bright stair going UP (lit from the tavern)
-//   door_kitchen.png       timber frame with a red curtain, the warm kitchen behind
 //   door_spill.png         64 x 14 dithered warm light on the floor in front (draw on the floor, anchor top centre)
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { PNG } from 'pngjs';
@@ -172,54 +171,11 @@ function upStairs(g) {
   g.rect(CX - 9, 10, 18, 3, C.white);
 }
 
-/** The kitchen doorway: a timber frame, a red curtain tied back, the warm kitchen with a fire glow and a floor strip behind. */
-function kitchen(g) {
-  const half = 24, top = 10;
-  g.rect(CX - half - 10, top - 10, 2 * half + 20, H - top + 10, C.out); // outline block
-  g.rect(CX - half - 8, top - 8, 2 * half + 16, H - top + 8, C.walnut);
-  // timber posts and lintel, lit from the top-left
-  g.rect(CX - half - 8, top - 8, 2 * half + 16, 9, C.walnut); g.rect(CX - half - 8, top - 8, 2 * half + 16, 2, C.oak); g.rect(CX - half - 8, top, 2 * half + 16, 1, C.out);
-  for (const [x0, w] of [[CX - half - 8, 8], [CX + half, 8]]) { g.rect(x0, top - 8, w, H - top + 8, C.walnut); g.rect(x0, top - 8, 2, H - top + 8, C.oak); g.rect(x0 + w - 2, top - 8, 2, H - top + 8, C.out); }
-  for (const x of [CX - half - 6, CX + half + 2]) for (let y = top + 6; y < H - 4; y += 11) g.rect(x, y, 2, 2, C.steel); // nail heads
-  g.rect(CX - half - 8, top - 8, 2 * half + 16, 1, C.out);
-  // the opening: a dim warm room
-  g.rect(CX - half, top + 1, 2 * half, H - top - 1, C.night);
-  for (let y = top + 1; y < H; y++) for (let x = CX - half; x < CX + half; x++) {
-    const d = Math.hypot((x - (CX + 6)) / 26, (y - (H - 14)) / 30);
-    if (d < 0.35) g.set(x, y, C.orange); else if (d < 0.7) g.set(x, y, C.rust); else if (d < 1) g.set(x, y, C.walnut);
-  }
-  g.rect(CX + 2, H - 30, 14, 2, C.dusk); // a shelf with pots
-  g.rect(CX + 3, H - 36, 4, 6, C.slate); g.rect(CX + 3, H - 36, 4, 1, C.steel); g.rect(CX + 9, H - 34, 5, 4, C.clay); g.rect(CX + 9, H - 34, 5, 1, C.sand);
-  g.rect(CX - half + 2, H - 26, 5, 2, C.silver); g.set(CX - half + 3, H - 24, C.silver); // a hanging ladle
-  // fire glow on the floor strip
-  g.rect(CX - half, H - 8, 2 * half, 8, C.walnut);
-  for (let x = CX - half; x < CX + half; x += 8) g.rect(x, H - 8, 1, 8, C.out);
-  g.rect(CX - half, H - 8, 2 * half, 1, C.oak);
-  for (let x = CX - 8; x < CX + 18; x++) if (x % 2 === 0) g.set(x, H - 7, C.gold);
-  // the curtain: red valance with scalloped hem, drawn back to both sides
-  g.rect(CX - half, top + 1, 2 * half, 6, C.crimson);
-  for (let x = CX - half; x < CX + half; x++) { const s = (x - CX + half) % 6; g.set(x, top + 7, s < 3 ? C.crimson : C.red); if (s < 3) g.set(x, top + 8, C.crimson); g.set(x, top + 1, C.red); if (s === 0) g.rect(x, top + 2, 1, 5, C.red); }
-  for (const s of [-1, 1]) {
-    const x0 = s < 0 ? CX - half : CX + half - 8;
-    for (let y = top + 7; y < H - 6; y++) {
-      const sag = Math.round(Math.sin((y - top) / 8) * 1.2) * 0;
-      const w = y > H - 26 && y < H - 18 ? 4 : 7 - Math.floor((y - top) / 16);
-      for (let k = 0; k < w; k++) { const x = s < 0 ? x0 + k : x0 + 8 - 1 - k; g.set(x + sag, y, k === 0 ? C.crimson : (k + y) % 3 === 0 ? C.crimson : C.red); }
-    }
-    g.rect(s < 0 ? CX - half : CX + half - 8, H - 26, 8, 3, C.gold); // tie-back cord
-  }
-  g.rect(CX - half, top + 1, 2 * half, 1, C.pink);
-  g.rect(CX - half - 8, H - 3, 2 * half + 16, 3, C.steel); g.rect(CX - half - 8, H - 3, 2 * half + 16, 1, C.silver);
-  for (let y = top - 11; y < H; y++) for (const x of [CX - half - 11, CX - half - 12, CX + half + 10, CX + half + 11]) g.set(x, y, x < CX ? (x === CX - half - 12 ? C.out : C.silver) : (x === CX + half + 11 ? C.out : C.steel));
-  for (let x = CX - half - 12; x <= CX + half + 11; x++) { g.set(x, top - 11, C.out); g.set(x, top - 10, x < CX ? C.silver : C.steel); }
-}
-
 // ----- build the sheets -----
 {
   const g = new Img(W, H); stoneFrame(g); plankDoor(g); lantern(g, 88, 20); g.save(`${OUT}/door_cellar_down.png`);
   const o = new Img(W, H); stoneFrame(o); openDoor(o); lantern(o, 88, 20); o.save(`${OUT}/door_cellar_down_open.png`);
   const u = new Img(W, H); stoneFrame(u); upStairs(u); u.save(`${OUT}/door_cellar_up.png`);
-  const k = new Img(W, H); kitchen(k); k.save(`${OUT}/door_kitchen.png`);
   const s = new Img(64, 14);
   for (let y = 0; y < 14; y++) for (let x = 0; x < 64; x++) {
     const d = Math.hypot((x - 31.5) / 32, y / 13);

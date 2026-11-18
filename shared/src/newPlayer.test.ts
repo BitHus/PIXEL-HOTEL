@@ -2,8 +2,8 @@ import { tavernSeats } from './tavern.ts';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_NEW_PLAYER, configForChoice, createNewPlayer, styleKey } from './newPlayer.ts';
 import { CLOTHING, cleanDisplayName, lookAllowed, selectableClothing } from './clothing.ts';
-import { shapesFor } from './room.ts';
-import { HOTBAR_SLOTS, SHOP_START_ITEMS, START_LOOK } from './config.ts';
+import { getRoomShape, shapesFor } from './room.ts';
+import { HOTBAR_SLOTS, START_LOOK } from './config.ts';
 import { canPlace, getFurnitureType } from './furniture.ts';
 
 describe('createNewPlayer (brief section 9)', () => {
@@ -25,11 +25,11 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.rooms.find((r) => r.kind === 'lakeside')).toMatchObject({ floorStyle: 'grass', wallStyle: 'hedge' });
   });
 
-  it('has an empty level 1 hotel room (576x384) and a level 1 shop room (576x448, with the kitchen annex)', () => {
+  it('has an empty level 1 hotel room (576x384) and a level 1 shop room (576x480, with the kitchen annex)', () => {
     const hotel = s.rooms.find((r) => r.id === s.player.hotelRoomId);
     const shop = s.rooms.find((r) => r.id === s.player.shopRoomId);
     expect(hotel).toMatchObject({ kind: 'hotel', level: 1, w: 576, h: 384, ownerId: s.player.id });
-    expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 448, ownerId: s.player.id });
+    expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 480, ownerId: s.player.id });
     expect(s.rooms).toHaveLength(4); // hotel, tavern, farm, lakeside (the kitchen is a walled area of the tavern)
     // Step 9f: a level 1 lakeside (576x384) with 8 whole trees.
     expect(s.rooms.find((r) => r.id === s.player.lakesideRoomId)).toMatchObject({ kind: 'lakeside', level: 1, w: 576, h: 384 });
@@ -50,9 +50,8 @@ describe('createNewPlayer (brief section 9)', () => {
   it('puts the bar, a bar stool in front of it, a table with 2 stools in the tavern (the brewing barrel and the stove stand in the walled kitchen area), at their fixed spots; no stall table (S3)', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
     expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'stove', 'table', 'tap_stand']);
-    for (const start of SHOP_START_ITEMS.filter((x) => x.typeId === 'counter')) {
-      expect(shop.find((i) => i.typeId === start.typeId)).toMatchObject({ x: start.x, y: start.y, facing: start.facing });
-    }
+    const at = getRoomShape('square_shop').shopStart!.counter; // the compact start layout (18 Nov): the shape's own start spot
+    expect(shop.find((i) => i.typeId === 'counter')).toMatchObject({ x: at.x, y: at.y, facing: 'down' });
     const shopRoom = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
     for (const i of shop) {
       const others = s.items.filter((o) => o.uid !== i.uid);

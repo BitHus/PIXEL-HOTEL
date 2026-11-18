@@ -50,7 +50,7 @@ function droppedBy(id: string): EnemyTableId[] {
   return ENEMY_TABLES.filter((t) => getLootTable(t).drops.some((d) => d.item === id));
 }
 
-const ORES = ['copper_ore', 'iron_ore', 'mithril_ore', 'gem'];
+const ORES = ['copper_ore', 'iron_ore', 'mithril_ore', 'gem', 'coal', 'gold_nugget', 'diamond', 'crystal'];
 const TREE_DROPS = ['wood', 'resin', 'amber', 'golden_acorn'];
 const BARS = ['copper_bar', 'iron_bar', 'mithril_bar'];
 const START_FURNITURE = ['counter', 'stall_table'];

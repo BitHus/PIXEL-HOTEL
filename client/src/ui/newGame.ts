@@ -158,7 +158,7 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: st
     stage.append(el('h2', 'charmaker-title plate', 'Make your character'), el('div', 'stage-rug'), preview.el, controls);
     // The tabs sit on the panel's top edge, like in every panel.
     const side = el('div', 'charmaker-side');
-    const panel = el('div', 'frame charmaker-panel');
+    const panel = el('div', 'ui-panel charmaker-panel');
     const choices = el('div', 'charmaker-choices');
     choices.append(pickers.body);
     const names = el('div', 'name-card inset');
@@ -178,7 +178,7 @@ function makeCharacter(parent: HTMLElement): Promise<{ name: string; innName: st
 function pickShape(parent: HTMLElement, kind: RoomKind, title: string, button: string): Promise<string> {
   return new Promise((resolve) => {
     const s = screen(parent);
-    const frame = el('div', 'frame newgame-frame');
+    const frame = el('div', 'ui-panel newgame-frame');
     const grid = el('div', 'shape-grid');
     const shapes = shapesFor(kind).filter((x) => kind === 'hotel' || x.shopStart);
     let chosen = shapes[0]?.id ?? '';

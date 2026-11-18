@@ -1,0 +1,4 @@
+items [{"uid":1,"t":"counter","x":80,"y":256,"s":null},{"uid":2,"t":"table","x":192,"y":288,"s":null},{"uid":3,"t":"bar_stool","x":144,"y":288,"s":null},{"uid":4,"t":"bar_stool","x":240,"y":288,"s":null},{"uid":5,"t":"bar_stool","x":208,"y":320,"s":null},{"uid":6,"t":"brewing_barrel","x":48,"y":384,"s":null},{"uid":7,"t":"stove","x":144,"y":384,"s":null},{"uid":8,"t":"register","x":48,"y":256,"s":null},{"uid":9,"t":"tap_stand","x":80,"y":256,"s":null}]
+avatar {"x":16,"y":176}
+startCook true
+brew false

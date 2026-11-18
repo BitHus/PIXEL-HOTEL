@@ -1,5 +1,7 @@
 # PLAN-UI: the medieval UI pass
 
+> SUPERSEDED (18 Nov): the oak + parchment + iron look below is gone; the live skin is Lantern Dark (docs/PLAN-UI-REWORK.md, client/src/ui/lantern.css, docs/NOTES.md UIR Lantern Dark). Keep only the placement and touch rules.
+
 Owner (16 Nov): the UI is very poor and boring: the character maker, icons, panels. Target: a warm medieval inn (docs/ART-STYLE.md MEDIEVAL DIRECTION), clear hierarchy, big touch targets. Layout rules stay (CLAUDE.md UI LAYOUT, INPUT, docs/UI-REFERENCE.md); this plan changes SKIN and content design, not placement.
 
 ## Target look (one language for every screen)

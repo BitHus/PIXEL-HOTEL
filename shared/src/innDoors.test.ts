@@ -278,7 +278,7 @@ describe('door sprite clearance', () => {
   it('knows which doors have a sprite', () => {
     expect(innDoorHasSprite('tavern_to_cellar')).toBe(true);
     expect(innDoorHasSprite('cellar_to_tavern')).toBe(true);
-    expect(innDoorHasSprite('tavern_to_kitchen')).toBe(true);
+    expect(innDoorHasSprite('tavern_to_kitchen')).toBe(false); // the kitchen has no door (open annex)
     expect(innDoorHasSprite('tavern_to_suite')).toBe(false);
   });
   it('widens a sprite door by 16 px per side for new placements only', () => {

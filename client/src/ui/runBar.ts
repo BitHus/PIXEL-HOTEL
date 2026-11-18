@@ -19,7 +19,7 @@ export interface RunBar {
 }
 
 export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: () => void, onLeave: () => void, onAbandon?: () => void): RunBar {
-  const bar = el('div', 'frame run-bar');
+  const bar = el('div', 'ui-hud run-bar');
   bar.hidden = true;
   const grid = el('div', 'run-slots');
   const slots: { root: HTMLElement; img: HTMLImageElement; count: HTMLElement }[] = [];
@@ -40,7 +40,7 @@ export function createRunBar(parent: HTMLElement, onPotion: () => void, onEat: (
   bagBtn.setAttribute('aria-expanded', 'false');
   const bagCount = el('span', 'run-bag-count', '0/12');
   bagBtn.append(pixelIcon('bag'), bagCount);
-  const drawer = el('div', 'frame run-drawer');
+  const drawer = el('div', 'ui-panel run-drawer');
   drawer.hidden = true;
   const lunchHint = el('div', 'run-hint');
   drawer.append(grid, lunchHint);

@@ -69,11 +69,10 @@ function drawGarden(g: Graphics, w: number): void {
   g.rect(w / 2 - 14, -H / 2, 3, 3).fill(PALETTE[11]); // latch
 }
 
-/** The door PNG (sprites/doors, 96 x 64, anchor bottom centre) of a door id, or null for the code looks. Id-driven: any id with 'kitchen' gets the kitchen door. */
+/** The door PNG (sprites/doors, 96 x 64, anchor bottom centre) of a door id, or null for the code looks. Id-driven. */
 export function doorSpriteId(id: string): string | null {
   if (id === 'tavern_to_cellar') return 'door_cellar_down';
   if (id === 'cellar_to_tavern') return 'door_cellar_up';
-  if (id.includes('kitchen')) return 'door_kitchen';
   return null;
 }
 
@@ -93,10 +92,10 @@ export function setDoorOpen(door: Container, open: boolean): void {
   if (t && sp.texture !== t) sp.texture = t;
 }
 
-/** The soft floor spill of light in front of a cellar or kitchen door (64 x 14, anchor top centre), or null. */
+/** The soft floor spill of light in front of a cellar door (64 x 14, anchor top centre), or null. */
 export function doorSpill(door: InnDoor): Sprite | null {
   const id = doorSpriteId(door.id);
-  if (id !== 'door_cellar_down' && id !== 'door_kitchen') return null;
+  if (id !== 'door_cellar_down') return null;
   const t = spriteTexture('doors', 'door_spill');
   if (!t) return null;
   const s = new Sprite(t);

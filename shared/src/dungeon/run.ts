@@ -7,6 +7,7 @@
 import {
   DUNGEON_ROUND,
   DUNGEON_ROUNDS,
+  DIG_DEPTH_MAX,
   MINE_LANTERN_MS,
   PLAYER_ATTACK_COOLDOWN_MS,
   PLAYER_BASE_ATTACK_MAX,
@@ -20,6 +21,8 @@ import { runBagSlotsOf } from '../skillRules.ts';
 import { effective, type Bonuses } from '../stats.ts';
 import type { Rank, FoodId, GearId, MaterialId, Point } from '../types.ts';
 import { generateFloor, generateMine, type FloorPlan } from './generate.ts';
+import { generateDigMine, type DigPlan } from './mineGen.ts';
+import type { MineBlockId } from './mineBlocks.ts';
 
 export type DungeonBlock = 'floor' | 'wall';
 export type DungeonRoundId = 1 | 2;
@@ -82,6 +85,33 @@ export interface DungeonMap {
   chestBlocks?: { c: number; r: number }[];
   /** Template and theme of every main room, same order as rooms. */
   roomInfo?: RoomInfo[];
+  /** MG-3: the dig mine's cave (the blocks there are diggable: see DungeonRun.dig). */
+  dig?: boolean;
+}
+
+/** A cave-in tile of the dig mine: armed (looks cracked-free), cracking (the tell, DIG_CAVEIN_TELL_MS), fallen (done). */
+export interface DigHazard {
+  c: number;
+  r: number;
+  kind: 'cavein';
+  state: 'armed' | 'cracking' | 'fallen';
+  /** ms of the tell left while cracking. */
+  crackMs: number;
+}
+
+/** The dig mine's changing state (MG-3), plain JSON data (a saved run keeps it). The map's blocks say floor or wall; kinds say what a wall block is. */
+export interface DigState {
+  /** 1-based depth (the run's floor). */
+  depth: number;
+  /** Row-major, cols * rows: the kind of a solid block, '' where it is open floor. */
+  kinds: (MineBlockId | '')[];
+  /** Hits taken so far by blocks being dug (cell index -> hits). */
+  hits: Record<number, number>;
+  hazards: DigHazard[];
+  /** Cell indexes of the rare blocks of this floor (they glint). */
+  rare: number[];
+  /** Counts every change of kinds, hits or hazards (the view redraws when it moves). */
+  rev: number;
 }
 
 export interface Enemy {
@@ -182,6 +212,9 @@ export interface RunPlayer {
   targetRockId: number | null;
   pendingSwing: boolean;
   pickReadyAt: number;
+  /** MG-3 dig mine: the cell index (row * cols + col) the player walks to and digs, and one accepted tap waiting to land. */
+  targetDig?: number | null;
+  pendingDig?: boolean;
   /** The pickaxe: hits per swing (basic 1, steel 2) and whether it breaks mithril. */
   hitsPerSwing: number;
   minesMithril: boolean;
@@ -219,6 +252,11 @@ export type RunEvent =
   | { t: 'swing'; rockId: number; hits: number }
   | { t: 'too_hard'; rockId: number }
   | { t: 'rock_broken'; rockId: number }
+  | { t: 'dig'; cell: number; hits: number }
+  | { t: 'dig_broken'; cell: number; kind: MineBlockId }
+  | { t: 'dig_too_hard'; cell: number }
+  | { t: 'cave_crack'; cell: number }
+  | { t: 'cave_in'; cell: number; damage: number }
   | { t: 'lantern_out' }
   | { t: 'died' }
   | { t: 'left' };
@@ -235,8 +273,10 @@ export interface DungeonRun {
   player: RunPlayer;
   enemies: Enemy[];
   chests: Chest[];
-  /** The mine's rocks (empty in the crypt). */
+  /** The mine's rocks (empty in the crypt and in the dig mine). */
   rocks: Rock[];
+  /** MG-3: the dig mine's blocks and hazards (set only in a dig mine run; place is then 'mine', floor is the depth). */
+  dig?: DigState;
   /** Gems on the floor of this floor (step BG4); gone when the floor is left. */
   pickups: GemPickup[];
   /** The mine: the run time when the lantern goes out (the visit ends). null in the crypt. */
@@ -269,6 +309,8 @@ export type DungeonInput =
   | { t: 'click_point'; x: number; y: number }
   | { t: 'click_enemy'; id: number }
   | { t: 'click_rock'; id: number }
+  /** MG-3: dig the block at this cell (walks next to it first). */
+  | { t: 'click_dig'; c: number; r: number }
   /** The mine: walk out now with everything (always allowed). */
   | { t: 'leave' }
   /** The crypt (hook b): give up the run now. It counts like a defeat (the bag and half the run gold are lost; the wallet and xp are safe). */
@@ -314,6 +356,13 @@ export function emptyRunBag(): RunBag {
 export function newRun(o: NewRunOptions): DungeonRun {
   const round = o.round ?? DUNGEON_ROUND;
   return runFrom(o, generateFloor(o.seed, 1, round), round, 'crypt');
+}
+
+/** MG-3: a new dig mine visit at depth 1 (no lantern; the exit leads deeper up to DIG_DEPTH_MAX). The old rock mine (newMineRun) stays for its tests. */
+export function newDigRun(o: NewRunOptions): DungeonRun {
+  const plan = generateDigMine(o.seed, 1);
+  const run = runFrom(o, plan, 1, 'mine');
+  return { ...run, maxFloors: DIG_DEPTH_MAX, lanternEndsAt: null, dig: plan.dig };
 }
 
 /** A new mine visit (step 9c): a fresh small layout from the seed; `visit` is its number (1 = first). */

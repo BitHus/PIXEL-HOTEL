@@ -181,17 +181,17 @@ describe('blocks block walking', () => {
     expect(doorReachesMiddle(shop(s), roomBlockers(shop(s), s.items))).toBe(true);
   });
   it('the tavern: the last block that would cut a reachable seat off from the door is refused (seat_blocked)', () => {
-    // The left stool of the start tavern stands on cell (12, 6); the table is on columns 13-14, row 6.
-    // Its free neighbours are the seven cells around it (diagonals too); with all seven shut, no guest could get within reach of the seat.
+    // The left stool of the start tavern stands on cell (4, 8); the table is on columns 5-6, row 8; the bar's right end is on (3, 7).
+    // Its free neighbours are the six cells around it that the bar does not hold (diagonals too); with all six shut, no guest could get within reach of the seat.
     let st = rich();
     const id = st.player.shopRoomId;
-    const ring = [[11, 5], [12, 5], [13, 5], [11, 6], [11, 7], [12, 7], [13, 7]] as const;
-    for (const [c, r] of ring.slice(0, 6)) st = put(st, id, c, r, 'dirt');
-    const [c, r] = ring[6];
+    const ring = [[4, 7], [5, 7], [3, 8], [3, 9], [4, 9], [5, 9]] as const;
+    for (const [c, r] of ring.slice(0, 5)) st = put(st, id, c, r, 'dirt');
+    const [c, r] = ring[5];
     const res = placeBlock(st, id, c, r, 'dirt', 1, free);
     expect(res).toEqual({ ok: false, problem: 'seat_blocked' });
     // A block that cuts nothing off is still allowed somewhere else.
-    const others = Array.from({ length: 12 }, (_, k) => placeBlock(st, id, 3 + k, 9, 'dirt', 1, free));
+    const others = Array.from({ length: 12 }, (_, k) => placeBlock(st, id, 10 + k, 5, 'dirt', 1, free));
     expect(others.some((o) => o.ok)).toBe(true);
   });
   it('furniture cannot be put on a block (the blockers include the blocks)', () => {

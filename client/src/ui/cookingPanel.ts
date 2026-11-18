@@ -28,7 +28,7 @@ export interface CookingPanel {
   refresh(player: Player): void;
   /** What cooks now (all stoves); call after anything changed. */
   setCooks(cooks: readonly Cook[]): void;
-  /** The prep bonus of the open stove (step T1): extra dishes per batch from prep tables next to it in the kitchen zone. */
+  /** The prep bonus of the open stove (step T1): extra dishes per batch from prep tables next to it in the kitchen annex. */
   setBonus(bonus: number): void;
   /** Counts the time down (call about once a second while the panel is open). */
   tick(): void;
@@ -148,7 +148,7 @@ export function createCookingPanel(parent: HTMLElement, hooks: CookingHooks): Co
     plus.disabled = qty >= batchMax();
     step.append(el('span', 'cook-qty-label', 'Dishes per batch'), minus, el('span', 'cook-qty', bonus > 0 ? `${qty} + ${bonus}` : String(qty)), plus);
     // The long help is folded behind a small "?" so the recipes show first (TESTER RUN 2: 5 lines before the first recipe).
-    const help = helpFold(bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen corner adds a dish to every batch (the kitchen is the warm tint while you place things).', `A stove cooks one batch at a time, up to ${batchMax()} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`);
+    const help = helpFold(bonus > 0 ? `Prep tables next to this stove add ${bonus} dish${bonus === 1 ? '' : 'es'} to every batch, free.` : 'A prep table next to a stove in the kitchen annex adds a dish to every batch.', `A stove cooks one batch at a time, up to ${batchMax()} dishes of one recipe. Nothing is collected for you: tap the stove when it is ready. Use crops from your bag; take dishes into the dungeon in your lunch box (up to 3), or serve them to guests.`);
     top.replaceChildren(step, help);
     list.replaceChildren(...(player ? FOOD_TYPES.map((f) => row(f, player!)) : []));
   };

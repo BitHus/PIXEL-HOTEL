@@ -6,7 +6,6 @@ import { getFurnitureType, staffZone } from './furniture.ts';
 import { cellAt, cellCenter, cellRect, findPath, isCellFree, nearestFreeCell, reachableCells, type NavGrid } from './nav.ts';
 import { innDoorSpotRects } from './innDoors.ts';
 import { kitchenZone } from './kitchen.ts';
-import { kitchenWall } from './kitchenWall.ts';
 import { rectsOverlap, type Room } from './room.ts';
 import type { FurnitureItem, Point, Rect } from './types.ts';
 
@@ -22,8 +21,7 @@ export function staffZones(items: readonly FurnitureItem[], roomId: number): Rec
 /** Everything guests never enter: the staff zones behind the bar, the kitchen zone (step T1) and the Inn door spots (step MB-2). */
 export function guestZones(items: readonly FurnitureItem[], room: Room): Rect[] {
   const kitchen = kitchenZone(room);
-  const door = kitchenWall(room)?.door;
-  return [...staffZones(items, room.id), ...(kitchen ? [kitchen] : []), ...(door ? [door] : []), ...innDoorSpotRects(room)];
+  return [...staffZones(items, room.id), ...(kitchen ? [kitchen] : []), ...innDoorSpotRects(room)];
 }
 
 /** True if a point is in a staff zone (edges count). */

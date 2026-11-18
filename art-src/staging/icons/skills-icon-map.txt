@@ -1,0 +1,22 @@
+SKILLS BUTTON ICON (16 x 16 row map for client/src/ui/pixelIcons.ts UI_ICONS, name 'skills'; owner of that file = ui/coder).
+Then sideButtons.ts BUTTONS: ['skills', 'skills', ...] instead of 'level'.
+colors: { o: O(outline PALETTE[6]), a: PALETTE[10], b: PALETTE[11], c: PALETTE[9], d: PALETTE[4], e: PALETTE[21], f: PALETTE[20], g: PALETTE[22] }
+rows: [
+  '................',
+  '......oooo......',
+  '.....obbbao.....',
+  '.....obbaao.....',
+  '.....oaaaco.....',
+  '......oooo......',
+  '.......dd.......',
+  '..dddddddddddd..',
+  '..d....dd....d..',
+  '.oooo.oooo.oooo.',
+  '.offo.offo.offo.',
+  '.oeeo.oeeo.oeeo.',
+  '.oggo.oggo.oggo.',
+  '.oooo.oooo.oooo.',
+  '................',
+  '................',
+]
+PNG preview: art-src/staging/icons/skills.png (16 x 16)

@@ -1,8 +1,8 @@
 // The parts every side panel is built from (UI polish step, docs/UI-REFERENCE.md section 3):
 //   .panel            the place (left of the button column, ends above the hotbar)
 //     .panel-tabs     small icon tabs sitting on the frame's top edge (empty = hidden)
-//     .frame          the wooden frame: a title plate and the scrolling body
-//     .panel-strip    a slim strip just below the frame for secondary actions (empty = hidden)
+//     .ui-panel       the dark night panel: a title plate and the scrolling body
+//     .panel-strip    a slim strip at the foot INSIDE the frame for secondary actions (empty = hidden)
 // tabBar fills .panel-tabs: the open tab is raised, warm orange and shows its name.
 
 import { el } from './dom.ts';
@@ -21,12 +21,13 @@ export interface PanelShell {
 export function panelShell(parent: HTMLElement, cls: string, title = ''): PanelShell {
   const root = el('div', `panel ${cls}`.trim());
   const tabs = el('div', 'panel-tabs');
-  const frame = el('div', 'frame ui-panel panel-frame');
+  const frame = el('div', 'ui-panel panel-frame');
   const head = el('h2', 'panel-title plate', title);
   const body = el('div', 'panel-body');
   const strip = el('div', 'panel-strip');
   frame.append(head, body);
-  root.append(tabs, frame, strip);
+  frame.append(strip);
+  root.append(tabs, frame);
   parent.appendChild(root);
   return { el: root, tabs, frame, title: head, body, strip };
 }

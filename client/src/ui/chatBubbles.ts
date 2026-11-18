@@ -8,7 +8,7 @@
 // CHAT_BUBBLES_PER_AVATAR bubbles (the oldest goes).
 
 import { CHAT_BUBBLE_FADE_MS, CHAT_BUBBLE_GAP_PX, CHAT_BUBBLE_MS, CHAT_BUBBLES_MAX, CHAT_BUBBLES_PER_AVATAR, readingMs, type ChatLine, type Point } from '@pixel-hotel/shared';
-import { placeBubbles, type BubbleIn } from './bubbleLayout.ts';
+import { pickNearest, placeBubbles, snapToDevice, type BubbleIn } from './bubbleLayout.ts';
 import { el } from './dom.ts';
 
 // NPC chatter (guests, staff: negative avatar ids) is small and local: a compact pill, at most NPC_VISIBLE_MAX shown at once (nearest to the
@@ -41,6 +41,7 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
   const layer = el('div', 'bubble-layer');
   parent.appendChild(layer);
   let bubbles: Bubble[] = [];
+  let prevNear: ReadonlySet<number> = new Set();
   const push = (avatarId: number, b: HTMLElement, life: number, npc = false): void => {
     if (document.hidden) return; // Nobody sees it, and it would only pile up.
     layer.appendChild(b);
@@ -85,6 +86,7 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
     update(_dtMs, heads) {
       if (bubbles.length === 0) return; // OWN-4 (a): no layout reads (querySelector, getBoundingClientRect) on frames without a chat bubble
       const now = performance.now();
+      const dpr = window.devicePixelRatio || 1;
       for (const b of bubbles.filter((x) => now - x.born >= x.life)) b.el.remove();
       bubbles = bubbles.filter((b) => now - b.born < b.life);
       // Per avatar the newest bubble sits right above the head, older ones above it; bubbles of different avatars never overlap, an order icon is
@@ -96,15 +98,14 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       // NPC lines: only on screen, and only the NPC_VISIBLE_MAX nearest to the screen centre.
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
-      const near = new Set(
-        bubbles
-          .filter((b) => b.npc)
-          .map((b) => ({ b, h: heads.get(b.avatarId) }))
-          .filter((o): o is { b: Bubble; h: Point } => !!o.h && o.h.x > -NPC_MARGIN_PX && o.h.x < window.innerWidth + NPC_MARGIN_PX && o.h.y > 0 && o.h.y < window.innerHeight + NPC_MARGIN_PX)
-          .sort((a, c) => (a.h.x - cx) ** 2 + (a.h.y - cy) ** 2 - ((c.h.x - cx) ** 2 + (c.h.y - cy) ** 2))
-          .slice(0, NPC_VISIBLE_MAX)
-          .map((o) => o.b),
-      );
+      // Hysteresis (pickNearest): while the camera is locked on the walking avatar the distances change every frame; a bubble already shown stays unless a newcomer is clearly nearer (no flicker).
+      const cands = bubbles
+        .filter((b) => b.npc)
+        .map((b) => ({ b, h: heads.get(b.avatarId) }))
+        .filter((o): o is { b: Bubble; h: Point } => !!o.h && o.h.x > -NPC_MARGIN_PX && o.h.x < window.innerWidth + NPC_MARGIN_PX && o.h.y > 0 && o.h.y < window.innerHeight + NPC_MARGIN_PX);
+      const nearIds = pickNearest(cands.map((o) => ({ key: o.b.avatarId, x: o.h.x, y: o.h.y })), cx, cy, NPC_VISIBLE_MAX, prevNear);
+      prevNear = nearIds;
+      const near = new Set(cands.filter((o) => nearIds.has(o.b.avatarId)).map((o) => o.b));
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i]!;
         const head = heads.get(b.avatarId);
@@ -116,7 +117,7 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       const at = placeBubbles(input, window.innerWidth, CHAT_BUBBLE_GAP_PX, orders, col);
       shown.forEach((b, i) => {
         const p = at[i]!;
-        b.el.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
+        b.el.style.transform = `translate(${snapToDevice(p.x, dpr)}px, ${snapToDevice(p.y, dpr)}px)`;
         b.el.classList.toggle('tail', p.tail);
         b.el.style.opacity = String(Math.min(1, (b.life - (now - b.born)) / CHAT_BUBBLE_FADE_MS));
       });

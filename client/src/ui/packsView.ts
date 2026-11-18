@@ -80,7 +80,7 @@ function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement 
   const short = pack.gemPrice - d.gems;
   const btn = textButton(short > 0 ? `Need ${short} more gem${short === 1 ? '' : 's'}` : 'Open for', () => hooks.open(pack), 'pack-open primary');
   if (short <= 0) {
-    const cost = el('span', 'sell-gain');
+    const cost = el('span', 'pack-cost');
     cost.append(gemImg(), el('span', '', String(pack.gemPrice)));
     btn.append(cost);
   }

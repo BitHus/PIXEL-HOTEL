@@ -1,7 +1,7 @@
 /* RUN HUD (OA-11 r2, ui): dungeon and mine. A slim dark pill at the bottom centre: bag pill (used/12, tap opens the 12 slots
    in a drawer above), run gold and gems, potion (Q), food (E), Leave (mine) or Abandon (crypt). Everything is 44 px to touch,
    the art inside is smaller. The info panel shows only the floor line and slim xp and hp bars while a run is on. */
-.frame.run-bar {
+.run-bar {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
@@ -66,18 +66,18 @@
   display: none;
 }
 
-.frame.run-bar .run-slots {
+.run-bar .run-slots {
   --run-slot: 34px;
   grid-template-columns: repeat(6, var(--run-slot));
 }
 
-.frame.run-bar .run-hint {
+.run-bar .run-hint {
   max-width: calc(6 * 36px + 20px);
   font-size: var(--fs-sm);
   line-height: 1.25;
 }
 
-.frame.run-bar .run-side {
+.run-bar .run-side {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -85,37 +85,37 @@
   min-width: 0;
 }
 
-.frame.run-bar .run-side .run-gold {
+.run-bar .run-side .run-gold {
   margin-right: 0;
   font-size: var(--fs-md);
   color: var(--butter);
 }
 
-.frame.run-bar .run-buttons {
+.run-bar .run-buttons {
   flex-wrap: nowrap;
   gap: 4px;
 }
 
-.frame.run-bar .run-buttons .btn {
+.run-bar .run-buttons .btn {
   position: relative;
   flex: none;
   min-width: var(--touch, 44px);
   min-height: var(--touch, 44px);
 }
 
-.frame.run-bar .run-buttons .run-leave {
+.run-bar .run-buttons .run-leave {
   flex: none;
   padding: 0 10px;
   font-size: var(--fs-md);
 }
 
-.frame.run-bar .run-buttons .run-abandon {
+.run-bar .run-buttons .run-abandon {
   background: var(--wood);
   color: var(--cream);
   font-size: var(--fs-sm);
 }
 
-.frame.run-bar .btn-badge {
+.run-bar .btn-badge {
   right: 1px;
   bottom: 1px;
 }
@@ -156,11 +156,11 @@
 }
 
 @media (max-width: 480px) {
-  .frame.run-bar {
+  .run-bar {
     gap: 4px;
     padding: 4px;
   }
-  .frame.run-bar .run-side {
+  .run-bar .run-side {
     gap: 6px;
   }
 }

@@ -14,7 +14,7 @@ import { applyChange } from '../ledger.ts';
 import { grantEarnedHats } from '../hats.ts';
 import type { FoodId, MaterialId } from '../types.ts';
 import { bonusesOf } from '../skillRules.ts';
-import { newMineRun, newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
+import { newDigRun, newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
 
 /** True if the next run is free (the player has less gold than the key costs). */
 export function runIsFree(state: GameState): boolean {
@@ -57,14 +57,14 @@ export function startRun(
 }
 
 /**
- * Starts a mine visit (section 10c, step 9c): free, the potions go along, the visit counter goes up
- * (mithril rocks from visit MITHRIL_FROM_VISIT on). Null below MINE_UNLOCK_LEVEL.
+ * Starts a mine visit (section 10c, MG-3: the DIG mine, no lantern): free, the potions go along, the visit counter goes up.
+ * Null below MINE_UNLOCK_LEVEL.
  */
 export function startMine(state: GameState, seed: number): { state: GameState; run: DungeonRun } | null {
   const p = state.player;
   if (p.level < MINE_UNLOCK_LEVEL) return null;
   const visit = p.mineVisits + 1;
-  const run = newMineRun({ seed, xp: p.xp, gear: p.gear, potions: p.potions, visit, skills: bonusesOf(p) });
+  const run = newDigRun({ seed, xp: p.xp, gear: p.gear, potions: p.potions, skills: bonusesOf(p) });
   return { state: grantEarnedHats({ ...state, player: { ...p, potions: 0, mineVisits: visit } }), run };
 }
 

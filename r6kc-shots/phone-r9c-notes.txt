@@ -1,0 +1,5 @@
+table menu: 
+counter menu: 
+stove menu: 
+brewing_barrel menu: 
+bar_stool menu: 

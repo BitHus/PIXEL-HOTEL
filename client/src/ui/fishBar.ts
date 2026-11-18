@@ -44,7 +44,7 @@ const TEXT: Record<FishPhase, string> = {
 };
 
 export function createFishBar(parent: HTMLElement, hooks: FishBarHooks): FishBar {
-  const root = el('div', 'frame fish-bar');
+  const root = el('div', 'ui-panel fish-bar');
   root.hidden = true;
   const text = el('div', 'fish-text', TEXT.wait);
   const stop = textButton('✗', () => hooks.onStop(), 'small fish-stop');

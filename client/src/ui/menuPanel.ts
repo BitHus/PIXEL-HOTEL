@@ -44,10 +44,12 @@ function miniIcon(url: string): HTMLElement {
 }
 
 export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPanel {
-  const shell = panelShell(parent, 'workshop-panel menu-panel', 'Bar');
+  const shell = panelShell(parent, 'workshop-panel menu-panel tabs-named', 'Bar');
   const list = el('div', 'catalog-list');
   shell.body.append(list);
   let tab: MenuTab = 'serve';
+  /** The row whose detail (gauge, price mood, last prices) shows; null = all folded. */
+  let focus: MaterialId | null = null;
   let orders: readonly Guest[] = [];
   let rows: readonly MenuRowView[] = [];
   let queued: readonly number[] = [];
@@ -74,7 +76,7 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     return row;
   };
 
-  const menuRow = (r: MenuRowView): HTMLElement => {
+  const menuRow = (r: MenuRowView): HTMLElement[] => {
     const row = el('div', `catalog-row menu-row${r.on && r.stock > 0 ? '' : ' off'}`);
     const hint = priceHint(r.price, r.baseValue);
     const info = el('div', 'catalog-info');
@@ -87,23 +89,32 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     num.append(pixelIcon('coin'), el('b', '', String(r.price)));
     num.title = `${r.price} gold`;
     price.append(minus, num, plus);
-    const hintLine = el('div', 'catalog-sub menu-hint');
-    hintLine.append(pixelIcon(hint.face), el('span', '', ` ${hint.text}`));
-    const last = r.history.slice(-MENU_HISTORY_LENGTH);
-    info.append(
-      rankName('div', 'catalog-name', isDrinkId(r.id) ? `${getMaterialType(r.id).name} (${r.stock} on tap)` : `${getMaterialType(r.id).name} (${r.stock})`, r.id),
-      ...(isDrinkId(r.id) ? [mugGauge(Math.min(r.stock, TAP_CAP))] : []),
-      el('div', 'catalog-sub', r.stock === 0 ? (isDrinkId(r.id) ? 'Not on a tap: load it to serve it.' : 'Out of stock: it is off the menu until you have more.') : `Worth ${r.baseValue} gold.`),
-      price,
-      hintLine,
-      el('div', 'catalog-sub', last.length > 0 ? `Guests paid: ${last.join(', ')}` : 'Nobody paid for it yet.'),
-    );
+    // DECLUTTER: a row is icon, name (+ the stock as a number), price stepper, switch. The explanation, mood face, stock gauge and
+    // the last prices show only for the FOCUSED row (tap the row; a second tap folds it).
+    info.append(rankName('div', 'catalog-name', `${getMaterialType(r.id).name} ×${r.stock}`, r.id));
     const sw = textButton(r.on ? 'On' : 'Off', () => hooks.toggle(r.id, !r.on), `menu-switch${r.on ? ' on' : ''}`);
     sw.setAttribute('aria-pressed', String(r.on));
     sw.setAttribute('aria-label', `${getMaterialType(r.id).name}: ${r.on ? 'on the menu' : 'off the menu'}`);
     sw.title = r.on ? 'On the menu (tap to switch off)' : 'Off the menu (tap to switch on)';
-    row.append(iconBox(materialIconUrl(r.id)), info, sw);
-    return row;
+    row.append(iconBox(materialIconUrl(r.id)), info, price, sw);
+    row.classList.toggle('focused', focus === r.id);
+    row.addEventListener('click', (e) => {
+      if (e.target instanceof Element && e.target.closest('button')) return;
+      focus = focus === r.id ? null : r.id;
+      draw();
+    });
+    if (focus !== r.id) return [row];
+    const hintLine = el('div', 'catalog-sub menu-hint');
+    hintLine.append(pixelIcon(hint.face), el('span', '', ` ${hint.text}`));
+    const last = r.history.slice(-MENU_HISTORY_LENGTH);
+    const detail = el('div', 'menu-detail');
+    detail.append(
+      ...(isDrinkId(r.id) ? [mugGauge(Math.min(r.stock, TAP_CAP))] : []),
+      el('div', 'catalog-sub', r.stock === 0 ? (isDrinkId(r.id) ? 'Not on a tap: load it to serve it.' : 'Out of stock: it is off the menu until you have more.') : `Worth ${r.baseValue} gold.${isDrinkId(r.id) ? ` ${r.stock} on tap.` : ''}`),
+      hintLine,
+      el('div', 'catalog-sub', last.length > 0 ? `Guests paid: ${last.join(', ')}` : 'Nobody paid for it yet.'),
+    );
+    return [row, detail];
   };
 
   const draw = (): void => {
@@ -132,8 +143,8 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     levels.append(gauges, textButton('Taps', () => hooks.openTaps(), 'tap-levels-open'));
     list.replaceChildren(
       levels,
-      ...(empty ? [el('div', 'panel-info', EMPTY_MENU_HELP)] : [el('div', 'panel-info', 'Guests order what is on the menu and in stock. If a price is too high they take something cheaper, or nothing.')]),
-      ...rows.map(menuRow),
+      ...(empty ? [el('div', 'panel-info', EMPTY_MENU_HELP)] : []),
+      ...rows.flatMap(menuRow),
     );
   };
 

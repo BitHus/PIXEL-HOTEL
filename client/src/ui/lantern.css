@@ -138,7 +138,7 @@
 }
 
 /* The More grid (under 900 px): a small dark panel; its cells are plain, the open one gets a candle ring. */
-@media (max-width: 899.98px) {
+@media all {
   .more-menu .more-item:not(.open-sign) {
     background-image: none;
     border-radius: 3px;
@@ -315,7 +315,7 @@
 /* ---------- UIR-5 the panel shell: every panelShell frame is a dark night panel (no cream, no iron, no ribbon) ----------
    The inner pieces (.btn, .inset, .slot, .plate, cards) all read the ui.css tokens, so the tokens are re-pointed INSIDE the panel:
    text cream, parchment = night, the recessed cell = ink. Rank colours stay on borders and names. */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel {
   --text: #ead4aa;
   --parch: #262b44;
   --slot-bg: #181425;
@@ -332,7 +332,7 @@
 }
 
 /* Title: plain candle-lit text with a 1 px candle line, no ribbon. */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .panel-title.plate {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .panel-title.plate {
   background: none;
   box-shadow: 0 1px 0 var(--ui-accent);
   color: var(--ui-accent);
@@ -344,7 +344,7 @@
 }
 
 /* Buttons: ghost (slate outline) on the dark panel; the primary stays candle gold with ink text; danger = no-red. */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn {
   background: none;
   border: 0;
   border-image: none;
@@ -354,41 +354,41 @@
 }
 
 @media (hover: hover) {
-  :is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn:hover:not(:disabled):not(.primary) {
+  :is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn:hover:not(:disabled):not(.primary) {
     background: rgba(58, 68, 102, 0.6);
   }
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.on:not(.tab-btn) {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn.on:not(.tab-btn) {
   background: rgba(58, 68, 102, 0.85);
   box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
   transform: none;
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.primary {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn.primary {
   background: var(--ui-accent);
   box-shadow: inset 0 1px 0 #fee761, 0 0 0 1px var(--ui-line);
   color: var(--ui-line);
   text-shadow: none;
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.primary:disabled {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn.primary:disabled {
   background: var(--ui-lit);
   color: var(--ui-muted);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn.danger {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn.danger {
   background: var(--ui-danger);
   color: #ead4aa;
   box-shadow: 0 0 0 1px var(--ui-line);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn:disabled {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn:disabled {
   opacity: 0.5;
 }
 
 /* The close button: a round dark disc, still 44 px, hanging a little over the corner. */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .panel-close {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .panel-close {
   border-radius: 50%;
   background: var(--ui-bg-solid);
   box-shadow: 0 0 0 1px var(--ui-lit), 0 0 0 2px var(--ui-line);
@@ -396,47 +396,47 @@
 }
 
 /* Insets and cards: a recessed ink band, a 1 px slate divider instead of a per-row card. */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .inset {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .inset {
   background: rgba(24, 20, 37, 0.55);
   border: 0;
   box-shadow: inset 0 0 0 1px var(--ui-lit);
   color: var(--ui-text);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .divider {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .divider {
   background: var(--ui-lit);
   height: 1px;
   padding: 0;
   margin: 3px 0;
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .plate:not(.panel-title) {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .plate:not(.panel-title) {
   background: rgba(24, 20, 37, 0.7);
   color: var(--ui-text);
   box-shadow: 0 0 0 1px var(--ui-lit);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .plate.light {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .plate.light {
   background: var(--ui-lit);
   color: var(--ui-text);
   box-shadow: none;
 }
 
 /* Cells: recessed ink, a slate top edge; the rank colour is the border (set by the .rank-* classes below). */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .slot {
   background: var(--ui-cell);
   border: 0;
   border-radius: 2px;
   box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.rank-rare,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.rank-ultra_rare,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.rank-legendary {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .slot.rank-rare,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .slot.rank-ultra_rare,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .slot.rank-legendary {
   box-shadow: inset 0 0 0 2px var(--rank), 0 0 0 1px var(--ui-line);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot.selected {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .slot.selected {
   background: rgba(58, 68, 102, 0.85);
   box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
 }
@@ -465,35 +465,35 @@
 }
 
 /* Text that was brown on parchment (the token trick above makes brown a slate for backgrounds): light slate on night. */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel h3,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .chat-empty,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .volume-row,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .panel-note,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .look-kind,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .inn-field-label,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .run-list-title,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .name-label,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .lock-tag,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .catalog-empty,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .catalog-count,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-count,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-tally-label,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-note,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-empty-title,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .quest-empty .panel-info,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .worlds-hint,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .splice-eq,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .title-tag,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .slot-key {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel h3,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .chat-empty,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .volume-row,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .panel-note,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .look-kind,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .inn-field-label,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .run-list-title,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .name-label,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .lock-tag,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .catalog-empty,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .catalog-count,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .quest-count,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .quest-tally-label,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .quest-note,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .quest-empty-title,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .quest-empty .panel-info,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .worlds-hint,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .splice-eq,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .title-tag,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .slot-key {
   color: #b4bfd0;
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .catalog-search-input,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input[type='text'],
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input[type='search'],
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input:not([type]),
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel select,
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel textarea {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .catalog-search-input,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel input[type='text'],
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel input[type='search'],
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel input:not([type]),
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel select,
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel textarea {
   background: var(--ui-cell);
   color: var(--ui-text);
   border: 0;
@@ -501,11 +501,11 @@
   box-shadow: inset 0 0 0 1px var(--ui-lit);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel input::placeholder {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel input::placeholder {
   color: var(--ui-muted);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .btn:disabled {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn:disabled {
   opacity: 0.7;
 }
 
@@ -521,13 +521,13 @@
 }
 
 /* The Book: found entries are dark cells with a rank border; parchment stays only for the entry page (later). */
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .book-card {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .book-card {
   background: var(--ui-cell);
   box-shadow: inset 0 1px 0 var(--ui-lit);
   color: var(--ui-text);
 }
 
-:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu).ui-panel .book-card.unseen {
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .book-card.unseen {
   background: rgba(24, 20, 37, 0.6);
   border-color: var(--ui-lit);
 }
@@ -544,3 +544,664 @@
 :is(.panel-frame, .confirm-panel).ui-panel .catalog-price * {
   color: var(--ui-text);
 }
+
+/* ======================================================================
+   UIR-6..11 (ui, 18 Nov): flat rows, catalog tiles, place pill, Book page, Quests, Settings, pickers, title, run HUD.
+   ====================================================================== */
+.panel-frame.ui-panel,
+.charmaker-panel.ui-panel,
+.newgame-frame.ui-panel {
+  --parch-dk: #1d2036;
+}
+
+/* ---------- UIR-6 / 7: list rows are 44 px lines with a 1 px divider (no card per row, no box) ---------- */
+.panel-frame.ui-panel :is(.catalog-row, .menu-row, .recipe-card, .tap-row, .cask-card, .room-card, .quest-row) {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--ui-lit);
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 44px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.panel-frame.ui-panel :is(.catalog-row, .menu-row, .recipe-card, .tap-row, .cask-card, .room-card, .quest-row):last-child {
+  border-bottom: 0;
+}
+
+.panel-frame.ui-panel .catalog-list,
+.panel-frame.ui-panel .menu-list {
+  gap: 0;
+}
+
+/* The bar's Menu rows: the dish on the menu has a candle edge, an off one is dimmed. */
+.panel-frame.ui-panel .menu-row:not(.off) {
+  box-shadow: inset 3px 0 0 var(--ui-accent);
+}
+
+.panel-frame.ui-panel .menu-row.off {
+  opacity: 0.62;
+}
+
+.panel-frame.ui-panel .menu-price {
+  background: var(--ui-cell);
+  box-shadow: 0 0 0 1px var(--ui-lit);
+}
+
+.panel-frame.ui-panel .recipe-card.cant,
+.panel-frame.ui-panel .catalog-row.cant {
+  opacity: 0.65;
+}
+
+.panel-frame.ui-panel .tap-levels {
+  background: none;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* The Room panel: Open / Build cards are list rows with a chevron; facts are a flat block. */
+.panel-frame.ui-panel .room-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.panel-frame.ui-panel .room-card .btn {
+  position: relative;
+  justify-content: flex-start;
+  text-align: left;
+  background: none;
+  box-shadow: none;
+  padding: 0 28px 0 2px;
+  color: var(--ui-text);
+}
+
+.panel-frame.ui-panel .room-card .btn:not(:disabled)::after {
+  content: '\203A';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--ui-accent);
+  font-size: 1.4em;
+}
+
+.panel-frame.ui-panel .room-card .btn:disabled {
+  color: var(--ui-muted);
+}
+
+.panel-frame.ui-panel .room-card .panel-info {
+  padding: 0 2px 4px;
+}
+
+.panel-frame.ui-panel .room-facts.inset {
+  background: none;
+  box-shadow: none;
+  padding-left: 2px;
+  padding-right: 2px;
+  border-bottom: 1px solid var(--ui-lit);
+}
+
+/* ---------- UIR-6 Catalog: icon tiles, the price as gold text under the icon, no Buy chip (the whole tile is the button) ---------- */
+.panel-frame.ui-panel .card-grid {
+  gap: 2px;
+}
+
+.panel-frame.ui-panel .shop-card {
+  background: none;
+  border: 2px solid transparent;
+  box-shadow: none;
+  margin: 0;
+  padding: 4px 2px;
+  transform: none;
+}
+
+.panel-frame.ui-panel .shop-card.rank-rare {
+  border-color: var(--rank-rare);
+}
+
+.panel-frame.ui-panel .shop-card.rank-ultra_rare {
+  border-color: var(--rank-ultra_rare);
+}
+
+.panel-frame.ui-panel .shop-card.rank-legendary {
+  border-color: var(--rank-legendary);
+}
+
+.panel-frame.ui-panel .shop-card-icon {
+  background: var(--ui-cell);
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+}
+
+@media (hover: hover) {
+  .panel-frame.ui-panel .shop-card:hover:not(:disabled) {
+    background: rgba(58, 68, 102, 0.5);
+    box-shadow: none;
+  }
+}
+
+.panel-frame.ui-panel .shop-card:active:not(:disabled) {
+  background: rgba(58, 68, 102, 0.8);
+  transform: none;
+}
+
+.panel-frame.ui-panel .shop-card .catalog-price,
+.panel-frame.ui-panel .shop-card .catalog-price * {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ui-accent);
+  text-shadow: none;
+}
+
+.panel-frame.ui-panel .shop-card .catalog-price.price-short,
+.panel-frame.ui-panel .shop-card .catalog-price.price-short * {
+  color: #f6757a;
+}
+
+.panel-frame.ui-panel .shop-card-buy {
+  display: none;
+}
+
+.panel-frame.ui-panel .shop-card-tag.plate {
+  background: rgba(24, 20, 37, 0.85);
+  color: var(--ui-muted);
+  box-shadow: none;
+}
+
+/* ---------- UIR-7 the place bar and the item menu: one floating dark pill ---------- */
+.float-bar {
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--ui-bg);
+  border-radius: 28px;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line), 0 3px 0 rgba(24, 20, 37, 0.55);
+}
+
+.float-bar button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-image: none;
+  border-radius: 22px;
+  background: none;
+  box-shadow: none;
+  color: var(--ui-text);
+}
+
+@media (hover: hover) {
+  .float-bar button:hover:not(:disabled) {
+    background: rgba(58, 68, 102, 0.8);
+  }
+}
+
+.float-bar button:active:not(:disabled) {
+  background: rgba(58, 68, 102, 0.8);
+  transform: none;
+}
+
+.place-bar button {
+  padding: 0;
+  border-radius: 50%;
+}
+
+.place-bar button.ok,
+.place-bar button.ok:hover:not(:disabled) {
+  background: var(--ui-accent);
+  color: var(--ui-line);
+}
+
+.place-bar button.no {
+  background: none;
+  color: #f6757a;
+}
+
+.place-bar button:disabled {
+  background: none;
+  color: var(--ui-muted);
+  opacity: 0.45;
+}
+
+/* ---------- UIR-8 the Book: found entries are small cream pages (ink text), unfound ones stay dark ---------- */
+.panel-frame.ui-panel .book-card:not(.unseen) {
+  --text: #3e2731;
+  --wood: #733e39;
+  --rank-common: #733e39;
+  --ok: #265c42;
+  --no: #a22633;
+  background: #ead4aa var(--specks);
+  color: #3e2731;
+  box-shadow: inset 0 0 0 1px #c28569, 0 2px 0 var(--ui-line);
+}
+
+.panel-frame.ui-panel .book-card:not(.unseen) .book-sub,
+.panel-frame.ui-panel .book-card:not(.unseen) .book-count,
+.panel-frame.ui-panel .book-card:not(.unseen) .book-name {
+  color: #3e2731;
+}
+
+.panel-frame.ui-panel .book-card:not(.unseen) .rank-name {
+  color: var(--rank, #3e2731);
+}
+
+.panel-frame.ui-panel .book-reward.locked .book-reward-step {
+  color: #b4bfd0;
+}
+
+/* ---------- UIR-8 Quests: flat rows, a ready one gets a green edge, a done one is dimmed ---------- */
+.panel-frame.ui-panel .quest-row.ready {
+  box-shadow: inset 3px 0 0 var(--ui-ok);
+}
+
+.panel-frame.ui-panel .quest-row.done {
+  opacity: 0.6;
+}
+
+.panel-frame.ui-panel .quest-first,
+.panel-frame.ui-panel .quest-event {
+  background: rgba(24, 20, 37, 0.55);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--ui-lit);
+  color: var(--ui-text);
+}
+
+/* ---------- UIR-8 Settings: small-caps group headers, flat switch rows with dividers ---------- */
+.panel-frame.ui-panel .settings-group > h3.ribbon {
+  background: none;
+  box-shadow: none;
+  border: 0;
+  color: var(--ui-muted);
+  font-size: var(--fs-sm);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: none;
+  padding: 0 2px;
+  margin: 6px 0 2px;
+}
+
+.panel-frame.ui-panel .btn.switch,
+.panel-frame.ui-panel .btn.switch.on:not(.tab-btn) {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--ui-lit);
+  justify-content: flex-start;
+  padding-left: 2px;
+}
+
+/* ---------- UIR-10 the character maker and the shape picker: dark panels, tiles show the result ---------- */
+.charmaker-stage {
+  border: 0;
+  border-image: none;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line), 0 3px 0 rgba(24, 20, 37, 0.55);
+}
+
+.charmaker-title.plate {
+  background: rgba(24, 20, 37, 0.8);
+  box-shadow: 0 1px 0 var(--ui-accent);
+  color: var(--ui-accent);
+  text-shadow: none;
+  letter-spacing: 1px;
+}
+
+.charmaker-turn .btn {
+  background: var(--ui-bg);
+  border: 0;
+  border-image: none;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+  color: var(--ui-text);
+  text-shadow: none;
+}
+
+.newgame-frame.ui-panel .shape-card {
+  background: var(--ui-cell);
+  border: 0;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+  color: var(--ui-text);
+}
+
+.newgame-frame.ui-panel .shape-card.selected {
+  background: rgba(58, 68, 102, 0.85);
+  box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
+  transform: none;
+}
+
+.newgame-frame.ui-panel .newgame-next,
+.charmaker-panel.ui-panel .newgame-next {
+  background: var(--ui-accent);
+  color: var(--ui-line);
+  box-shadow: inset 0 1px 0 #fee761, 0 0 0 1px var(--ui-line);
+}
+
+.charmaker-panel.ui-panel .look-tile {
+  background: var(--ui-cell);
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+}
+
+.charmaker-panel.ui-panel .look-tile.selected {
+  background: rgba(58, 68, 102, 0.85);
+  box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
+}
+
+.charmaker-panel.ui-panel .look-swatch.selected {
+  box-shadow: 0 0 0 2px var(--ui-accent), 0 0 0 3px var(--ui-line);
+}
+
+/* ---------- UIR-10 the title: a dark sign, ghost buttons, one candle Continue ---------- */
+.title-tag {
+  color: var(--ui-muted);
+}
+
+.title-menu .title-btn {
+  background: var(--ui-bg);
+  border: 0;
+  border-image: none;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line), 0 3px 0 rgba(24, 20, 37, 0.55);
+  color: var(--ui-text);
+  text-shadow: none;
+}
+
+@media (hover: hover) {
+  .title-menu .title-btn:hover:not(:disabled) {
+    background: rgba(58, 68, 102, 0.95);
+  }
+}
+
+.title-menu .title-btn.primary {
+  background: var(--ui-accent);
+  box-shadow: inset 0 1px 0 #fee761, 0 0 0 1px var(--ui-line), 0 3px 0 rgba(24, 20, 37, 0.55);
+  color: var(--ui-line);
+}
+
+.title-menu .title-btn.on {
+  box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
+}
+
+/* ---------- UIR-11 the run HUD (dungeon, mine) and the fishing bar: the same dark pill, round icon buttons ---------- */
+.run-bar.ui-hud {
+  background: var(--ui-bg);
+  border-radius: 28px;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line), 0 3px 0 rgba(24, 20, 37, 0.55);
+  text-shadow: none;
+}
+
+.run-bar .run-bag-pill {
+  background: var(--ui-cell);
+  border-radius: 22px;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+  color: var(--ui-text);
+}
+
+.run-bar .run-bag-pill.open {
+  box-shadow: inset 0 0 0 2px var(--ui-accent), 0 0 0 1px var(--ui-line);
+}
+
+.run-bar .run-side .run-gold {
+  color: var(--ui-text);
+}
+
+.run-bar .run-buttons .btn {
+  background: var(--ui-cell);
+  border: 0;
+  border-image: none;
+  border-radius: 22px;
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+  color: var(--ui-text);
+}
+
+.run-bar .run-buttons .btn.potion-btn {
+  border-radius: 50%;
+}
+
+.run-bar .run-buttons .run-abandon {
+  color: #f6757a;
+  background: var(--ui-cell);
+}
+
+.run-bar .key-hint {
+  background: var(--ui-bg-solid);
+  color: var(--ui-muted);
+}
+
+.run-drawer.ui-panel {
+  border-radius: 8px;
+}
+
+/* ---------- UIR-12 tabs and segmented controls: lantern tabs (stepped rounded top), pills; not plain squares ---------- */
+.panel-tabs {
+  gap: 4px;
+  padding-left: 14px;
+  align-items: flex-end;
+}
+
+.panel-tabs .tab-btn {
+  height: 42px;
+  min-width: 46px;
+  padding: 0 10px 4px;
+  border: 0;
+  border-image: none;
+  border-radius: 0;
+  background: rgba(24, 20, 37, 0.88);
+  box-shadow: inset 0 2px 0 var(--ui-lit);
+  color: var(--ui-muted);
+  /* the top corners are cut in 2 px steps (a pixel-art round) */
+  clip-path: polygon(0 100%, 0 10px, 2px 10px, 2px 6px, 4px 6px, 4px 3px, 6px 3px, 6px 1px, 9px 1px, 9px 0, calc(100% - 9px) 0, calc(100% - 9px) 1px, calc(100% - 6px) 1px, calc(100% - 6px) 3px, calc(100% - 4px) 3px, calc(100% - 4px) 6px, calc(100% - 2px) 6px, calc(100% - 2px) 10px, 100% 10px, 100% 100%);
+}
+
+.panel-tabs .tab-btn .pixel-icon {
+  opacity: 0.8;
+}
+
+.panel-tabs .tab-btn.on {
+  height: 48px;
+  background: var(--ui-bg-solid);
+  box-shadow: inset 0 3px 0 var(--ui-accent);
+  color: var(--ui-accent);
+  padding: 0 12px 4px;
+}
+
+.panel-tabs .tab-btn.on .pixel-icon {
+  opacity: 1;
+}
+
+.panel-tabs .tab-btn .tab-name {
+  letter-spacing: 0.5px;
+}
+
+:root[data-size='phone'] .panel-tabs .tab-btn.on .tab-name {
+  display: inline; /* the open tab keeps its short label on a phone too (the row scrolls) */
+  font-size: var(--fs-sm);
+}
+
+/* Segmented controls and small buttons in panels are soft pills; primary actions are wider pills; lists stay flat lines. */
+.sort-btn,
+.panel-frame.ui-panel .btn.small:not(.tab-btn) {
+  border-radius: 22px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.panel-frame.ui-panel .sort-btn.on {
+  background: var(--ui-accent);
+  color: var(--ui-line);
+  box-shadow: inset 0 1px 0 #fee761, 0 0 0 1px var(--ui-line);
+}
+
+.panel-frame.ui-panel .btn:not(.tab-btn):not(.switch):not(.panel-close) {
+  border-radius: 10px;
+}
+
+.panel-frame.ui-panel .btn.primary:not(.small) {
+  border-radius: 22px;
+}
+
+.panel-frame.ui-panel .shop-card {
+  border-radius: 8px;
+}
+
+.panel-frame.ui-panel .inset {
+  border-radius: 8px;
+}
+
+.panel-frame.ui-panel .slot {
+  border-radius: 4px;
+}
+
+.panel-frame.ui-panel .btn.sort-btn.on:not(.tab-btn) {
+  background: var(--ui-accent);
+  color: var(--ui-line);
+  box-shadow: inset 0 1px 0 #fee761, 0 0 0 1px var(--ui-line);
+}
+
+/* Phone, a panel open: a toast keeps clear of the gold (it starts right of the info panel and may use two lines); the quest and first-steps cards step aside. */
+@media (max-width: 700px) {
+  #ui:has(.panel:not([hidden]):not(.panel-leaving)) .toast {
+    left: calc(var(--edge) + 150px);
+    line-height: 1.15;
+    white-space: normal;
+  }
+  #ui:has(.panel:not([hidden]):not(.panel-leaving)) :is(.quest-card, .first-ten) {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  #ui:has(.panel:not([hidden]):not(.panel-leaving)) .toast .toast-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+  }
+}
+
+/* ---------- RUN 7 UI fixes (ui worker, 18 Nov) ---------- */
+
+/* Panels are solid night: the world (name labels, the sign, the title) never shows through a panel or its tab row. */
+.panel-frame.ui-panel,
+.confirm-panel.ui-panel,
+.panel-tabs .tab-btn {
+  background: var(--ui-bg-solid);
+}
+
+/* Disabled and "off" things are muted ink-on-night text (contrast >= 4.5:1), not a faded copy of the normal text. */
+.panel-frame.ui-panel .menu-row.off,
+.panel-frame.ui-panel .recipe-card.cant,
+.panel-frame.ui-panel .catalog-row.cant {
+  opacity: 1;
+  --text: #b4c0d4;
+  color: #b4c0d4;
+}
+
+.panel-frame.ui-panel .menu-row.off .pixel-icon,
+.panel-frame.ui-panel .recipe-card.cant .pixel-icon,
+.panel-frame.ui-panel .catalog-row.cant .pixel-icon {
+  opacity: 0.6;
+}
+
+:is(.panel-frame, .confirm-panel, .paint-bar, .emote-menu, .charmaker-panel, .newgame-frame, .run-drawer, .fish-bar).ui-panel .btn:disabled {
+  opacity: 1;
+  background: var(--ui-cell);
+  color: #a9b7cc;
+  box-shadow: 0 0 0 1px var(--ui-lit);
+}
+
+/* The first-steps chip on a wide screen never eats a tap meant for the world under it (farm soil): only its Skip button is live. */
+@media (min-width: 681px) {
+  .first-ten {
+    max-width: 240px;
+    pointer-events: none;
+  }
+  .first-ten .first-ten-skip {
+    pointer-events: auto;
+  }
+}
+
+/* While walking the card folds to seal and pips on a wide screen only; on a phone the chip always keeps its line (it never reads as a blank 2/21). */
+/* RUN 8 #3: on a phone the card never eats a tap meant for the back wall, the doors or the cellar; only Skip is live (always shown). */
+@media (max-width: 680px) {
+  .first-ten {
+    pointer-events: none;
+  }
+  .first-ten:not(.expanded) .first-ten-skip,
+  .first-ten .first-ten-skip {
+    display: inline-flex;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .walk-compact .first-ten .first-ten-text {
+    display: -webkit-box;
+  }
+}
+
+/* Phone: a toast over an open panel stays two lines in the top band, so it never covers the panel's tab row or header. */
+@media (max-width: 700px) {
+  #ui:has(.panel:not([hidden]):not(.panel-leaving)) .toast {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    max-height: 2.9em;
+  }
+
+  /* Phone: the OPEN / CLOSED board hangs at the right edge right under the button column (the left was over the bar, the avatar's name and the door). Panels cover it. */
+  .btn.open-sign.room-only {
+    position: fixed;
+    left: auto;
+    right: calc(var(--edge) + env(safe-area-inset-right));
+    top: calc(var(--edge) + env(safe-area-inset-top) + 5 * 64px + 14px);
+    bottom: auto;
+    margin-top: 0;
+    z-index: 0;
+    /* RUN 8 #2: smaller on a phone so it no longer hides the tavern's right edge and the arch. */
+    min-height: 30px !important;
+    min-width: 0 !important;
+    height: 30px !important;
+    padding: 0 6px 0 4px !important;
+    font-size: 10px !important;
+    max-width: 64px;
+  }
+  .btn.open-sign.room-only > .pixel-icon { display: none; }
+}
+
+/* The tavern's order rail and the goal card never draw over the dungeon or the fish bar. */
+.in-dungeon .orders-strip,
+.in-dungeon .first-ten,
+.fishing .quest-card {
+  display: none !important;
+}
+
+/* RUN 8 #4/#5: the panel strip (Sort, Stack, Respec) sits INSIDE the Lantern Dark frame as its footer, not detached below it. */
+.panel-frame > .panel-strip {
+  align-self: stretch;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--ui-line);
+  box-shadow: none;
+}
+.skills-strip { padding: 0; }
+/* Skill lock reason: readable on the slate card. */
+.skill-card .skill-lock { color: #f6b8ba; }
+/* RUN 8 #5: the bag's first ribbon ("Hotbar keys 1 to 6") keeps clear of the close button in the corner. */
+.bag .panel-body > .ribbon:first-child { padding-right: 44px; box-sizing: border-box; }
+/* RUN 8 #6: a panel with only two tabs (Bar: Serve / Menu) names both, so a cold reader sees Serve exists. */
+.tabs-named .panel-tabs .tab-btn .tab-name { display: inline; font-size: var(--fs-sm); }
+/* RUN 8 #10: phone tab rows are tighter (6 catalog tabs fit) and fade at the right edge when they still scroll. */
+@media (max-width: 680px) {
+  :root[data-size='phone'] .panel-tabs { padding-left: 6px; gap: 2px; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent calc(100% - 40px)); mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent calc(100% - 40px)); }
+  :root[data-size='phone'] .panel-tabs .tab-btn { min-width: 38px; padding: 0 5px 4px; }
+}
+/* RUN 8 #9: a guest's chat pill grows to its text (no hard cut inside the box) and the layout clamps the measured width at the screen edge. */
+.bubble.bubble-npc { max-width: min(190px, calc(100vw - 16px)); overflow: visible; }
+.bubble-npc .npc-line { display: inline-flex; align-items: center; }
+.bubble.bubble-npc, .bubble-npc .npc-line { white-space: normal; }

@@ -28,6 +28,14 @@ export interface SkillsPanel {
 }
 
 const BRANCH_ICON: Record<SkillBranch, IconName> = { tavern: 'pot', dungeon: 'sword', fishing: 'fish', mining: 'hammer' };
+/** One picture per skill node (existing pixel icons; a node not listed uses its branch icon). */
+const NODE_ICON: Record<string, IconName> = {
+  quick_feet: 'shoe', steady_hands: 'hammer', roomy_tavern: 'house', keen_eye: 'book', big_batch: 'food', wide_kegs: 'pot', cellar_racks: 'bricks',
+  deep_pockets: 'purse', thick_skin: 'armor', satchel: 'bag', sharp_edge: 'sword', light_feet: 'trousers', second_wind: 'heart', parry: 'armor',
+  treasure_sense: 'gem', last_stand: 'potion', patient: 'sprout', wide_box: 'stack', reel_master: 'rod', bait_saver: 'fish', sharp_eye: 'book',
+  deep_cast: 'rod', trophy_hunter: 'gems', calm_hands: 'hammer', strong_arm: 'axe', lantern: 'lantern', ore_sense: 'gem', careful_step: 'shoe',
+  double_strike: 'sword', pack_mule: 'bag', prospector: 'coins', gem_eye: 'gems',
+};
 const pips = (n: SkillNodeView): string => '●'.repeat(n.rank) + '○'.repeat(n.maxRank - n.rank);
 
 export function createSkillsPanel(parent: HTMLElement, hooks: SkillsHooks): SkillsPanel {
@@ -104,7 +112,7 @@ export function createSkillsPanel(parent: HTMLElement, hooks: SkillsHooks): Skil
       buy.title = lock || `Costs ${n.nextCost} skill point${n.nextCost === 1 ? '' : 's'}`;
       action.append(buy);
     }
-    root.append(iconBox(pixelIcon(BRANCH_ICON[n.branch])), info, action);
+    root.append(iconBox(pixelIcon(NODE_ICON[n.id] ?? BRANCH_ICON[n.branch])), info, action);
     return root;
   };
 

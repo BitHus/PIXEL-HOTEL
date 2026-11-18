@@ -1,0 +1,1 @@
+body after intro: Welcome to your tavern! Guests sit and order: tap them to serve. Tap the register for the menu and the tap stand to load drinks; tap the barrel to brew. Tester's Tavern 100 0 Tavern Lv 1 OPEN Tester 10 0/21 Pinch with two fingers to zoom

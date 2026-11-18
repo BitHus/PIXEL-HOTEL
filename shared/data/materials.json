@@ -33,5 +33,8 @@
   {"id": "kings_heart", "name": "King's heart", "baseValue": 250, "color": 26, "rank": "legendary", "icon": {"shape": "heart", "colors": ["magenta", "plum"]}},
   {"id": "resin", "name": "Resin", "baseValue": 14, "color": 9, "rank": "rare", "icon": {"shape": "blob", "colors": ["orange", "gold"]}},
   {"id": "amber", "name": "Amber", "baseValue": 36, "color": 10, "rank": "ultra_rare", "icon": {"shape": "gem", "colors": ["orange", "butter"]}},
-  {"id": "golden_acorn", "name": "Golden acorn", "baseValue": 220, "color": 11, "rank": "legendary", "icon": {"shape": "acorn", "colors": ["gold", "butter"]}}
+  {"id": "golden_acorn", "name": "Golden acorn", "baseValue": 220, "color": 11, "rank": "legendary", "icon": {"shape": "acorn", "colors": ["gold", "butter"]}},
+  {"id": "coal", "name": "Coal", "baseValue": 4, "color": 22, "rank": "common", "icon": {"shape": "ore", "colors": ["ink", "slate"]}},
+  {"id": "gold_nugget", "name": "Gold nugget", "baseValue": 24, "color": 11, "rank": "rare", "icon": {"shape": "ore", "colors": ["gold", "butter"]}},
+  {"id": "diamond", "name": "Diamond", "baseValue": 60, "color": 18, "rank": "ultra_rare", "icon": {"shape": "gem", "colors": ["white", "cyan"]}}
 ]

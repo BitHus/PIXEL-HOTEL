@@ -1,4 +1,4 @@
-// CEL-2/3/4 (docs/PLAN-CELLAR.md) and the kitchen change of 18 Nov: the kitchen is a walled area of the tavern (kitchenWall.test.ts), the cellar stays a room.
+// CEL-2/3/4 (docs/PLAN-CELLAR.md) and the kitchen change of 18 Nov: the kitchen is an open annex of the tavern (kitchenAnnex.test.ts), the cellar stays a room.
 // New game, doors, the cellar's rack cap, building the cellar, migrations 35 -> 37 and 36 -> 37 (the kitchen room is dissolved), the tutorial steps and the appeal.
 
 import { describe, expect, it } from 'vitest';
@@ -13,10 +13,9 @@ import { canPlace, footprintRect, getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { innDoorSpots, innTravel, innTravelProblem } from './innDoors.ts';
 import { kitchenZone, prepBonus } from './kitchen.ts';
-import { kitchenWall } from './kitchenWall.ts';
 import { applyChange } from './ledger.ts';
 import { createNewPlayer } from './newPlayer.ts';
-import { createRoom, type Room } from './room.ts';
+import { createRoom, roomAnnex, type Room } from './room.ts';
 import { readSave, toSaveText } from './save.ts';
 import { upgradeCost, upgradeRoom } from './economy.ts';
 import { kitchenRoomIds, cellarRoomIds, tavernWorkRoomIds } from './workRooms.ts';
@@ -44,11 +43,11 @@ const roomOfItem = (s: GameState, typeId: string) => s.rooms.find((r) => r.id ==
 
 describe('a new game', () => {
   const s = createNewPlayer(undefined, 0);
-  it('has no kitchen room and no cellar; the start stove and barrel stand in the tavern inside the walled kitchen', () => {
+  it('has no kitchen room and no cellar; the start stove and barrel stand in the tavern inside the open kitchen', () => {
     expect(s.rooms.map((r) => r.kind).sort()).toEqual(['farm', 'hotel', 'lakeside', 'shop']);
     expect((s.player as { kitchenRoomId?: number }).kitchenRoomId).toBeUndefined();
     expect(s.player.cellarRoomId).toBeUndefined();
-    const inside = kitchenWall(tavernOf(s))!.inside;
+    const inside = kitchenZone(tavernOf(s))!;
     for (const id of ['stove', 'brewing_barrel']) {
       const i = s.items.find((x) => x.typeId === id)!;
       expect(i.roomId).toBe(s.tavern.roomId);
@@ -72,7 +71,7 @@ describe('a new game', () => {
   it('a prep table inside the annex next to the stove adds a dish', () => {
     const room = tavernOf(s);
     const stove = s.items.find((i) => i.typeId === 'stove')!;
-    expect(kitchenZone(room)).toEqual(kitchenWall(room)!.inside);
+    expect(kitchenZone(room)).toEqual(roomAnnex(room));
     const table: FurnitureItem = { uid: 90, typeId: 'prep_table', ownerId: 1, roomId: room.id, x: stove.x - 48, y: stove.y, facing: 'down', onItemUid: null };
     expect(canPlace(room, s.items, getFurnitureType('prep_table'), table.x, table.y, 'down')).toBe(true);
     expect(prepBonus([...s.items, table], room, stove.uid)).toBe(1);
@@ -153,8 +152,8 @@ describe('building the cellar (CEL-4)', () => {
 });
 
 describe('migration 36 -> 37 (the kitchen room is dissolved into the tavern)', () => {
-  it('SAVE_VERSION is 39; a version 36 save loses its kitchen room: stove and barrel stand in the tavern, nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(39);
+  it('SAVE_VERSION is 40; a version 36 save loses its kitchen room: stove and barrel stand in the tavern, nothing is lost', () => {
+    expect(SAVE_VERSION).toBe(40);
     const text = save36();
     const before = JSON.parse(text).state as GameState;
     const s = load(text);
@@ -200,23 +199,6 @@ describe('migration 36 -> 37 (the kitchen room is dissolved into the tavern)', (
       expect(i.roomId === s.tavern.roomId || i.roomId === null, `item ${uid}`).toBe(true);
     }
     expect(s.tavern.casks).toEqual([{ rackUid: 84, slot: 0, drink: 'root_ale', mugs: 7, startedAt: 1000 }]);
-  });
-  it('clears what stood on the new wall ring of the tavern; blocks there go back to the bag', () => {
-    const base = createNewPlayer(undefined, 1);
-    const kw = kitchenWall(tavernOf(base))!;
-    const w = kw.walls[0]!;
-    const text = save36((s) => {
-      const chair: FurnitureItem = { uid: 95, typeId: 'chair', ownerId: 1, roomId: s.tavern.roomId, x: w.x + 16, y: w.y + 32, facing: 'down', onItemUid: null };
-      const rooms = s.rooms.map((r) => (r.id === s.tavern.roomId ? { ...r, blocks: { [`${w.x / 32},${w.y / 32}`]: [{ id: 'dirt' as const, hits: 0, hitAt: 0 }] } } : r));
-      return { ...s, rooms, items: [...s.items, chair], nextUid: 96 };
-    });
-    const s = load(text);
-    const chair = s.items.find((i) => i.uid === 95)!;
-    const fp = footprintRect(chair, getFurnitureType('chair'));
-    const ring = [...kw.walls, kw.door!];
-    expect(chair.roomId === null || !ring.some((r) => r.x < fp.x + fp.w && fp.x < r.x + r.w && r.y < fp.y + fp.h && fp.y < r.y + r.h)).toBe(true);
-    expect(Object.keys(tavernOf(s).blocks ?? {})).toEqual([]);
-    expect(s.player.materials.dirt ?? 0).toBeGreaterThanOrEqual(1);
   });
   it('is idempotent and a saved result loads as itself', () => {
     const s = load(save36());

@@ -41,8 +41,19 @@ export function withTavernMachines(s: GameState): GameState {
   };
 }
 
+/** Where the bar cluster of the square tavern stood before the compact start layout (18 Nov): the rules tests below were written against these spots. */
+const OLD_CLUSTER: Record<string, { x: number; y: number }> = { counter: { x: 80, y: 96 }, table: { x: 448, y: 224 } };
+
 export function legacyStart(): GameState {
-  const s = withTavernMachines(createNewPlayer(undefined, 0));
+  const base = withTavernMachines(createNewPlayer(undefined, 0));
+  const bar = base.items.find((i) => i.typeId === 'counter')!;
+  const tab = base.items.find((i) => i.typeId === 'table')!;
+  const move = (i: GameState['items'][number]): { x: number; y: number } => {
+    if (i.uid === bar.uid || i.onItemUid === bar.uid) return { x: i.x - bar.x + OLD_CLUSTER.counter!.x, y: i.y - bar.y + OLD_CLUSTER.counter!.y };
+    if (i.typeId === 'table' || (i.typeId === 'bar_stool' && i.roomId === tab.roomId)) return { x: i.x - tab.x + OLD_CLUSTER.table!.x, y: i.y - tab.y + OLD_CLUSTER.table!.y };
+    return { x: i.x, y: i.y };
+  };
+  const s: GameState = { ...base, items: base.items.map((i) => ({ ...i, ...move(i) })) };
   const barStool = s.items.find((i) => i.typeId === 'bar_stool' && s.items.some((c) => c.typeId === 'table' && c.y + 32 === i.y))!; // the third (front) stool of the table
   // The start barrel holds a ready brew again and the taps are empty (as before step T1: the ale is collected from the barrel).
   const barrel = s.items.find((i) => i.typeId === 'brewing_barrel')!;

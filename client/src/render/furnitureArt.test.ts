@@ -64,6 +64,8 @@ describe('heights match the sprites (ART-REDO R1 and R2)', () => {
     expect(surfaceHeight(type('round_table'))).toBe(29);
     expect(surfaceHeight(type('table'))).toBe(26);
     expect(surfaceHeight(type('long_table'))).toBe(26);
+    expect(surfaceHeight(type('counter'))).toBe(28); // the flat PixelLab bar top, items stand on it
+    expect(surfaceHeight(type('counter_ext'))).toBe(23);
   });
   it('seat heights, and the avatar is raised past the standard pose', () => {
     expect(seatHeight(type('bar_stool'))).toBe(18);

@@ -5,7 +5,7 @@ import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { PALETTE, footprintSize, type Facing, type FurnitureType, type MachineState } from '@pixel-hotel/shared';
 import { drawFurniture } from './furnitureArt.ts';
 import { READY_FRAME_MS } from './propAnimSpecs.ts';
-import { spriteFor, spriteFrames } from './spriteStore.ts';
+import { spriteFor, spriteFrames, spriteTexture } from './spriteStore.ts';
 
 export class FurnitureSprite {
   /** Positioned at the anchor, in world px. */
@@ -26,7 +26,8 @@ export class FurnitureSprite {
     this.facing = facing;
     this.art?.destroy();
     // A PNG sprite (docs/PLAN-SPRITES.md) when the piece has all its facings, else the code art. Anchor = bottom centre.
-    const tex = spriteFor(this.type.id, facing);
+    // The tap stand is drawn knob-less in the world: its levers are separate overlay sprites (pourFx.ts syncRest).
+    const tex = (this.type.id === 'tap_stand' ? spriteTexture('furniture', 'tap_stand_nolever') : null) ?? spriteFor(this.type.id, facing);
     this.baseTex = tex;
     if (tex) {
       const s = new Sprite(tex);

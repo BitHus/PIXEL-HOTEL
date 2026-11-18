@@ -1,0 +1,14 @@
+start | 1/21
+after register tap | 2/21
+after panel closed | 2/21
+guest tapped | 2/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
+at taps (pourwait) | 2/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
+after pour | 3/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
+after carry | 3/21
+after coins (gold 100 -> 110) | 5/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
+3s later | 5/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
+in doorway | 5/21
+barrel tapped | 6/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
+OLD PILE after Continue: mess 0, gold 117
+OLD PILE 4 s later: mess 0, gold 117
+quests panel text: 

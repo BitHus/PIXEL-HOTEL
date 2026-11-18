@@ -19,6 +19,7 @@ import {
   DUNGEON_CSS_PX_PER_ART_PX,
   DUNGEON_DEVICE_PX_PER_ART_PX,
   DUNGEON_NAV_CELL,
+  DUNGEON_BLOCK,
   steerCellChange,
   LEVEL_FLASH_MS,
   LEVEL_TOTAL_XP,
@@ -177,6 +178,12 @@ export class DungeonScreen {
       this.input({ t: 'click_enemy', id: enemy.id });
       return;
     }
+    // The dig mine (MG-3): a tap on a block walks next to it and digs.
+    const cell = this.view.digCellAt(run, p);
+    if (cell !== null) {
+      this.input({ t: 'click_dig', c: cell % run.map.cols, r: Math.floor(cell / run.map.cols) });
+      return;
+    }
     // The mine (step 9c): a tap on a rock walks there and swings.
     const rock = this.view.rockAt(run, p, slack);
     if (rock) {
@@ -216,16 +223,27 @@ export class DungeonScreen {
     const run = this.run;
     if (!this.active || this.halted || !run || run.status !== 'active' || run.place !== 'mine') return null;
     if (this.view.enemyAt(run, p)) return null;
+    // The dig mine: the held target is the block's cell index (the hold control only passes the number around).
+    if (run.dig) return this.view.digCellAt(run, p);
     return this.view.rockAt(run, p)?.id ?? null;
   }
 
   /** One held swing: asks again for the same rock (the step function keeps the 400 ms cooldown). 'stop' = it is gone. */
   holdRock(id: number): 'go' | 'stop' | 'retry' {
     const run = this.run;
+    if (run?.dig) return this.holdDig(run, id);
     if (!this.active || this.halted || !run || run.status !== 'active' || !run.rocks.some((x) => x.id === id)) return 'stop';
     // Too early by the run's own clock: the click would be ignored, so wait (the hold keeps its place).
     if (run.timeMs + run.carryMs < run.player.pickReadyAt && run.player.targetRockId === id) return 'retry';
     this.input({ t: 'click_rock', id });
+    return 'go';
+  }
+
+  /** One held dig (MG-3): asks again for the same block (the step function keeps the pickaxe cooldown). 'stop' = it is gone. */
+  private holdDig(run: DungeonRun, cell: number): 'go' | 'stop' | 'retry' {
+    if (!this.active || this.halted || run.status !== 'active' || !run.dig?.kinds[cell]) return 'stop';
+    if (run.timeMs + run.carryMs < run.player.pickReadyAt && run.player.targetDig === cell) return 'retry';
+    this.input({ t: 'click_dig', c: cell % run.map.cols, r: Math.floor(cell / run.map.cols) });
     return 'go';
   }
 
@@ -300,7 +318,8 @@ export class DungeonScreen {
   private handle(u: RunUpdate): void {
     const before = this.run;
     if (!before) return;
-    if (u.run.map !== before.map) this.prev = null;
+    const sameFloor = u.run.map.dig === true && before.map.dig === true && u.run.map.seed === before.map.seed && u.run.map.n === before.map.n;
+    if (u.run.map !== before.map && !sameFloor) this.prev = null;
     else if (u.run.timeMs !== before.timeMs) this.prev = before;
     this.run = u.run;
     this.ctx.popups.show(u.gains);
@@ -343,7 +362,7 @@ export class DungeonScreen {
     if (!run) return;
     const p = run.player;
     const lantern = run.lanternEndsAt !== null ? { leftMs: run.lanternEndsAt - run.timeMs, totalMs: MINE_LANTERN_MS } : undefined;
-    this.ctx.info.setRun({ floor: run.floor, maxFloors: run.maxFloors, hp: p.hp, maxHp: p.maxHp, ...(lantern ? { lantern } : {}) });
+    this.ctx.info.setRun({ floor: run.floor, maxFloors: run.maxFloors, hp: p.hp, maxHp: p.maxHp, ...(run.dig ? { dig: true } : {}), ...(lantern ? { lantern } : {}) });
     this.ctx.info.setStats(p.level, p.xp, xpForNextLevel(p.level), LEVEL_TOTAL_XP[p.level - 1] ?? 0);
     this.ctx.runBar.refresh(run);
   }
@@ -499,6 +518,35 @@ export class DungeonScreen {
           stagger = 0;
           break;
         }
+        case 'dig':
+        case 'dig_broken': {
+          // The dig mine (MG-3): debris at the block; a broken block's drops pop up from it.
+          const at = this.cellAt(run, e.cell);
+          if (e.t === 'dig_broken') {
+            lootAt = { x: at.x, y: at.y - 8 };
+            stagger = 0;
+          }
+          if (!this.ctx.reduceEffects()) v.particles.burst(at, 'debris', e.t === 'dig_broken' ? 8 : 3);
+          this.ctx.sound(e.t === 'dig_broken' ? 'clink' : 'hit');
+          break;
+        }
+        case 'dig_too_hard':
+          this.floats.add(head(), 'too hard!', 'info');
+          this.ctx.toast('Mithril needs the steel pickaxe. Make it at the Forge (Workshop).');
+          break;
+        case 'cave_crack':
+          this.floats.add(head(), 'crack!', 'info');
+          this.ctx.sound('windup');
+          break;
+        case 'cave_in':
+          v.hurtPlayer();
+          this.floats.add(head(), `-${e.damage}`, 'hurt');
+          this.ctx.sound('hurt');
+          if (!this.ctx.reduceEffects()) {
+            this.edgeMs = 260;
+            this.edgeTotal = 260;
+          }
+          break;
         case 'lantern_out':
           this.ctx.toast('Your lantern went out. You walk out with everything.');
           break;
@@ -512,6 +560,12 @@ export class DungeonScreen {
       for (const s of fxSpec(e, fxCtx)) this.applySpec(s, lootAt, head(), run);
     }
     if (leftBehind.length > 0) this.ctx.toast(`Your bag is full: ${[...new Set(leftBehind)].join(', ')} left behind.`);
+  }
+
+  /** The middle of a dig mine block, world px. */
+  private cellAt(run: DungeonRun, cell: number): Point {
+    const cols = run.map.cols;
+    return { x: ((cell % cols) + 0.5) * DUNGEON_BLOCK, y: (Math.floor(cell / cols) + 0.5) * DUNGEON_BLOCK };
   }
 
   /** Draws one frame. `skip` = a hit-stop holds the picture (the caller worked out the times with frameTimes). */

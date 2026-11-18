@@ -74,7 +74,8 @@ export function mineLanternSpots(map: DungeonMap): { x: number; y: number }[] {
 export function staticLights(map: DungeonMap, place: RunPlace): LightSource[] {
   const out: LightSource[] = [];
   const B = DUNGEON_BLOCK;
-  const spots = place === 'mine' ? mineLanternSpots(map) : wallTorchSpots(map, place);
+  // The dig mine (MG-3) has no wall lanterns: every block is a wall, the light comes from the player.
+  const spots = map.dig ? [] : place === 'mine' ? mineLanternSpots(map) : wallTorchSpots(map, place);
   for (const s of spots) {
     out.push({ kind: place === 'mine' ? 'lantern' : 'torch', x: s.x, y: s.y, radius: LIGHT_TORCH_PX, alpha: LIGHT_TORCH_ALPHA, seed: (s.x * 31 + s.y) | 0 });
   }

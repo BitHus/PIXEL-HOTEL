@@ -16,6 +16,7 @@ import { createChatBubbles } from '../ui/chatBubbles.ts';
 import { createToast } from '../ui/toast.ts';
 import { iconButton } from '../ui/dom.ts';
 import { createHintBox } from '../ui/hintBox.ts';
+import { createHudIdle } from '../ui/hudIdle.ts';
 import { createRunBar } from '../ui/runBar.ts';
 import { DungeonScreen } from '../dungeon/dungeonScreen.ts';
 import type { G3 } from './ctx.ts';
@@ -76,15 +77,15 @@ export async function setupUiShell(g: G3) {
     });
   });
   const nameTag = createNameTag(ui, prefs.nameTags);
-  const side = createSideButtons(ui, panels, [build.button, dungeonButton, emote.button]);
-  const sideButtons = side.col;
-  // The quest button, at the top of the column: shows the current quest again. Hidden without a
-  // quest; selected while the quest shows; glowing while a quest is going but its box is closed.
+  // The quest button: shows the current quest again. Hidden without a quest; selected while the quest shows; glowing while a quest is going but its box is closed.
+  // DECLUTTER: Quests, Worlds and Emote stand in the More grid (data-more-label); the column keeps Catalog, Build, Dungeon, More.
   const questButton = iconButton('quest', 'Quests: daily, events, achievements', () => panels.toggle('quests'), 'quest-btn room-only');
-  sideButtons.prepend(questButton);
-  // The Map button (step 9b), under the quest button: the travel panel with every place.
+  questButton.dataset.moreLabel = 'Quests';
+  // The Map button (step 9b): the travel panel with every place.
   const mapButton = iconButton('worlds', 'Worlds: travel', () => panels.toggle('travel'), 'room-only');
-  questButton.after(mapButton);
+  mapButton.dataset.moreLabel = 'Worlds';
+  emote.button.dataset.moreLabel = 'Emote';
+  const side = createSideButtons(ui, panels, [build.button, dungeonButton, questButton, mapButton, emote.button]);
   panels.onChange(() => mapButton.classList.toggle('on', panels.open === 'travel'));
   panels.onChange(() => questButton.classList.toggle('on', panels.open === 'quests'));
   panels.onChange(() => hint.setCovered(panels.open !== null));
@@ -128,5 +129,13 @@ export async function setupUiShell(g: G3) {
     st.avatar.look,
   );
 
-  return { toast, popups, gemFly, flyGems, bubbles, emote, nameTag, label, blockerButtons, panels, info, hint, questButton, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
+  // DECLUTTER: the HUD fades after 3 s without a tap or change; the first-steps card waits for 4 s of standing idle (pure rules in shared/src/hudIdle.ts).
+  const idle = createHudIdle(ui, {
+    walking: () => st.path.length > 0 || st.avatar.state === 'walk',
+    panelOpen: () => panels.open !== null,
+    editing: () => dungeon.isActive || build.button.classList.contains('on') || late.placer.active || late.paint.active,
+    pouring: () => false,
+  });
+
+  return { toast, popups, idle, gemFly, flyGems, bubbles, emote, nameTag, label, blockerButtons, panels, info, hint, questButton, build, dungeonButton, dungeonBadge, side, mapButton, runBar, dungeon };
 }

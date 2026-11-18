@@ -24,8 +24,11 @@ export interface InfoPanel {
   /** Level and xp (next = total xp for the next level, null at the top level). */
   setStats(level: number, xp: number, next: number | null, prev: number): void;
   /** In the dungeon: the floor and hp. null = back in a room. */
-  setRun(run: { floor: number; maxFloors: number; hp: number; maxHp: number; lantern?: { leftMs: number; totalMs: number } } | null): void;
+  setRun(run: { floor: number; maxFloors: number; hp: number; maxHp: number; dig?: boolean; lantern?: { leftMs: number; totalMs: number } } | null): void;
 }
+
+/** How long the room name and level stay on screen after entering a room (ms). */
+const INFO_FLASH_MS = 2500;
 
 export const ROOM_NAMES: Record<RoomKind, string> = { hotel: 'Hotel room', shop: 'Tavern', farm: 'Farm', lakeside: 'Lakeside', cellar: 'Cellar' };
 
@@ -60,10 +63,18 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
   const line = el('div', 'info-line');
   const name = el('span', 'info-room');
   const level = el('span', 'level-badge', 'Lv 1');
-  const xpTrack = el('div', 'bar-track');
-  const xp = { root: line, fill: el('div', 'bar-fill'), text: el('span') };
-  xpTrack.append(xp.fill);
-  line.append(name, level, xpTrack);
+  // DECLUTTER: the HUD shows only the purse and a 3 px xp bar; the room name and level flash for 2.5 s when you enter a room (and stay in a run).
+  const xpThin = el('div', 'info-xp');
+  const xpFill = el('div', 'info-xp-fill');
+  xpThin.append(xpFill);
+  line.append(name, level);
+  let flashTimer = 0;
+  let lastKind: RoomKind | null = null;
+  const flash = (): void => {
+    info.classList.add('flash');
+    window.clearTimeout(flashTimer);
+    flashTimer = window.setTimeout(() => info.classList.remove('flash'), INFO_FLASH_MS);
+  };
   const hp = bar('hp-bar', pixelIcon('heart'));
   hp.root.hidden = true;
   hp.root.title = 'Health';
@@ -72,7 +83,7 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
   lantern.root.title = 'Lantern: when it goes out, you walk out with everything';
   const inn = el('div', 'info-inn');
   inn.title = 'Your tavern';
-  info.append(inn, gold, line, lantern.root, hp.root);
+  info.append(inn, gold, xpThin, line, lantern.root, hp.root);
   box.append(info);
   parent.appendChild(box);
   return {
@@ -96,18 +107,21 @@ export function createInfoPanel(parent: HTMLElement): InfoPanel {
     },
     setRoom(kind) {
       name.textContent = ROOM_NAMES[kind];
+      if (kind !== lastKind) flash();
+      lastKind = kind;
     },
     setStats(lv, total, next, prev) {
       level.textContent = `Lv ${lv}`;
       const part = next === null ? 1 : (total - prev) / Math.max(1, next - prev);
-      xp.fill.style.width = `${Math.round(Math.min(1, Math.max(0, part)) * 100)}%`;
-      xp.root.title = next === null ? `Level ${lv} (the top level)` : `Level ${lv}: ${total} of ${next} xp for level ${lv + 1}`;
+      xpFill.style.width = `${Math.round(Math.min(1, Math.max(0, part)) * 100)}%`;
+      xpThin.title =next === null ? `Level ${lv} (the top level)` : `Level ${lv}: ${total} of ${next} xp for level ${lv + 1}`;
     },
     setRun(run) {
+      info.classList.toggle('in-run', run !== null);
       hp.root.hidden = run === null;
       lantern.root.hidden = !run?.lantern;
       if (!run) return;
-      name.textContent = run.lantern ? 'Mine' : run.maxFloors > 1 ? `Crypt, floor ${run.floor} of ${run.maxFloors}` : 'Crypt';
+      name.textContent = run.dig ? `Mine, depth ${run.floor} of ${run.maxFloors}` : run.lantern ? 'Mine' : run.maxFloors > 1 ? `Crypt, floor ${run.floor} of ${run.maxFloors}` : 'Crypt';
       if (run.lantern) {
         const left = Math.max(0, run.lantern.leftMs);
         lantern.fill.style.width = `${Math.round((left / run.lantern.totalMs) * 100)}%`;

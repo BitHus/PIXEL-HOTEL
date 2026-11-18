@@ -52,6 +52,8 @@ import { findPath, lineOfSight, type NavGrid } from '../nav.ts';
 import { rngInt } from '../rng.ts';
 import type { Rank, FoodId, Point, Rng } from '../types.ts';
 import { generateFloor, makeEnemy } from './generate.ts';
+import { digAfterWalk, digHazardTick, digInput, digWalkTarget, type DigHooks } from './mineStep.ts';
+import { generateDigMine } from './mineGen.ts';
 import { blockAt, dungeonNavGrid, onFloor } from './grid.ts';
 import { getLootTable, rollLoot, type EnemyTableId, type Loot } from './loot.ts';
 import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type FoodBuff, type Rock, type RunBag, type RunPlayer } from './run.ts';
@@ -79,6 +81,7 @@ function cloneRun(run: DungeonRun): DungeonRun {
     enemies: run.enemies.map((e) => ({ ...e })),
     chests: run.chests.map((c) => ({ ...c })),
     rocks: run.rocks.map((x) => ({ ...x })),
+    ...(run.dig ? { dig: { ...run.dig, hits: { ...run.dig.hits }, hazards: run.dig.hazards.map((h) => ({ ...h })), rare: [...run.dig.rare] } } : {}),
     pickups: run.pickups.map((x) => ({ ...x })),
     bag: { ...run.bag },
     banked: { ...run.banked },
@@ -142,6 +145,10 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
     p.pendingHit = false;
     p.targetRockId = null;
     p.pendingSwing = false;
+    p.targetDig = null;
+    p.pendingDig = false;
+  } else if (input.t === 'click_dig') {
+    digInput(r, input.c, input.r, now, rng, digHooks(r, rng));
   } else if (input.t === 'click_rock') {
     const rock = r.rocks.find((x) => x.id === input.id);
     if (!rock) return;
@@ -161,6 +168,8 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
     p.targetEnemyId = e.id;
     p.targetRockId = null;
     p.pendingSwing = false;
+    p.targetDig = null;
+    p.pendingDig = false;
     p.path = [];
     if (now < p.attackReadyAt) {
       p.pendingHit = false; // a click during the cooldown is ignored (it only keeps walking there)
@@ -218,6 +227,20 @@ function eat(r: DungeonRun, now: number): void {
     }
   }
   r.events.push({ t: 'eat', food: id, healed: use.heal, buff: use.buff });
+}
+
+/** What the dig mine's code needs from this file (the loot bag and the gem piles). */
+function digHooks(r: DungeonRun, rng: Rng): DigHooks {
+  return {
+    addLoot: (loot) => addLoot(r, loot),
+    addFiller: (loot) => {
+      const added = addToBag(r.bag, [loot], r.player.bagSlots);
+      if (added.leftBehind.length > 0) return; // a full bag never loses ore to filler
+      r.bag = added.bag;
+      r.events.push({ t: 'loot', item: loot.item, qty: loot.qty });
+    },
+    dropGems: (rank, at) => dropGems(r, 'rock', rank, at, rng),
+  };
 }
 
 function hit(r: DungeonRun, e: Enemy, now: number, rng: Rng): void {
@@ -391,7 +414,9 @@ function carriedOut(r: DungeonRun): void {
 }
 
 function deeper(r: DungeonRun): void {
-  const plan = generateFloor(r.seed, r.floor + 1, r.round);
+  const digPlan = r.dig ? generateDigMine(r.seed, r.floor + 1) : null;
+  const plan = digPlan ?? generateFloor(r.seed, r.floor + 1, r.round);
+  if (digPlan) r.dig = digPlan.dig;
   const p = r.player;
   r.floor += 1;
   r.map = plan.map;
@@ -403,6 +428,8 @@ function deeper(r: DungeonRun): void {
   p.x = plan.map.spawn.x;
   p.y = plan.map.spawn.y;
   p.path = [];
+  p.targetDig = null;
+  p.pendingDig = false;
   p.targetEnemyId = null;
   p.pendingHit = false;
   p.exitArmed = true;
@@ -435,7 +462,7 @@ function tick(r: DungeonRun, rng: Rng): void {
   r.timeMs += TICK;
   const now = r.timeMs;
   const p = r.player;
-  const grid = dungeonNavGrid(r.map);
+  let grid = dungeonNavGrid(r.map);
 
   // The mine's lantern: when it goes out the player walks out with everything.
   if (r.lanternEndsAt !== null && now >= r.lanternEndsAt) {
@@ -451,6 +478,9 @@ function tick(r: DungeonRun, rng: Rng): void {
     if (!end || distance(end, rock) > MINE_REACH) p.path = findPath(grid, p, rock)?.slice(1) ?? [];
   }
 
+  // The dig mine: walk next to the block being dug.
+  digWalkTarget(r, grid);
+
   // The player: walk (towards the target enemy if there is one), then a pending hit.
   const target = r.enemies.find((e) => e.id === p.targetEnemyId) ?? null;
   if (target && distance(p, target) > PLAYER_ATTACK_REACH) {
@@ -465,6 +495,17 @@ function tick(r: DungeonRun, rng: Rng): void {
   if (rock && distance(p, rock) <= MINE_REACH) {
     p.path = [];
     if (p.pendingSwing && now >= p.pickReadyAt) swing(r, rock, now, rng);
+  }
+
+  // The dig mine: a waiting swing lands, cave-in tiles crack and fall (a broken block changes the map: the grid is rebuilt).
+  if (r.dig) {
+    digAfterWalk(r, now, rng, digHooks(r, rng));
+    digHazardTick(r);
+    grid = dungeonNavGrid(r.map);
+    if (p.hp <= 0) {
+      die(r);
+      return;
+    }
   }
 
   // Gem piles are picked up by walking close (step BG4).

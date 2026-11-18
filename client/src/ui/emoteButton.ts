@@ -16,7 +16,7 @@ export interface EmoteButton {
 }
 
 export function createEmoteButton(parent: HTMLElement, onPick: (kind: EmoteKind) => void): EmoteButton {
-  const menu = el('div', 'frame ui-panel emote-menu');
+  const menu = el('div', 'ui-panel emote-menu');
   menu.hidden = true;
   menu.setAttribute('role', 'menu');
   const items = new Map<EmoteKind, HTMLButtonElement>();

@@ -3,7 +3,7 @@ import { BLOCK_HIT_COOLDOWN_MS, BUILD_CELL, FARM_START_SOIL, SEED_BACK_CHANCE, S
 import { blockProblem, placeBlock, type BlockContext } from './blocks.ts';
 import { getBlockType } from './blockTypes.ts';
 import { buySeeds, farmCounts, growthStage, harvestPlant, hitPlant, isSoil, plantProblem, plantSeed, readyInMs, seedGrowMs, seedProduct, seedRank, soilCells } from './farm.ts';
-import { fixedBlockers, noPlaceRects } from './farmLayout.ts';
+import { fixedBlockers } from './farmLayout.ts';
 import { CROP_TYPES, getMaterialType, isSeedId } from './materials.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
@@ -149,7 +149,6 @@ describe('planting', () => {
     const s = rich();
     const room = farmRoom(s);
     expect(fixedBlockers(room)).toEqual([]);
-    expect(noPlaceRects(room)).toEqual([]);
     const oldPot = { c: 14, r: 3 }; // where the pot stood (x 448 to 480, y 96 to 128)
     const soiled = paintFloor(s, farmId(s), oldPot, oldPot, SOIL_STYLE)!;
     expect(plantProblem(farmRoom(soiled), soiled.items, oldPot.c, oldPot.r, free)).toBeNull();

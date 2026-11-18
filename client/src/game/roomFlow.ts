@@ -51,7 +51,26 @@ export async function setupRoomFlow(g: G13) {
         const t = window.setTimeout(resolve, ms);
         skip.addEventListener('pointerdown', () => (window.clearTimeout(t), resolve()), { once: true });
       });
-    skip.addEventListener('pointerdown', () => (skipped = true), { once: true });
+    skip.addEventListener(
+      'pointerdown',
+      () => {
+        skipped = true;
+        // Swallow the release of the skipping tap: it must not reach the world (tap forgiveness would walk to the bar and open its panel).
+        const cleanup = (): void => {
+          window.removeEventListener('pointerup', eat, true);
+          window.removeEventListener('pointercancel', eat, true);
+          window.clearTimeout(timer);
+        };
+        function eat(e: Event): void {
+          e.stopImmediatePropagation();
+          cleanup();
+        }
+        const timer = window.setTimeout(cleanup, 1500);
+        window.addEventListener('pointerup', eat, true);
+        window.addEventListener('pointercancel', eat, true);
+      },
+      { once: true },
+    );
 
     const counter = startItems.find((i) => i.typeId === 'counter');
     await wait(INTRO_FIRST_POP_MS);

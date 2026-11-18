@@ -55,6 +55,7 @@ describe('furniture sprite files', () => {
           return;
         }
         // Any other animation strip `<typeId>_<tag>.png` (stove_fire, tap_stand_lever): equal frames in a row, no footprint rule.
+        if (tag === 'nolever') return; // tap_stand_nolever: the whole stand body without its knobs (32 x 44), not a strip
         expect(strip.w % strip.h === 0 || strip.w > strip.h, 'a row of frames').toBe(true);
         return;
       }
@@ -105,7 +106,7 @@ describe('icon, block, floor, wall and plant sprite files', () => {
 });
 
 describe('door sprite files (sprites/doors)', () => {
-  const SIZES: Record<string, [number, number]> = { door_cellar_down: [96, 64], door_cellar_down_open: [96, 64], door_cellar_up: [96, 64], door_kitchen: [96, 64], door_spill: [64, 14] };
+  const SIZES: Record<string, [number, number]> = { door_cellar_down: [96, 64], door_cellar_down_open: [96, 64], door_cellar_up: [96, 64], door_spill: [64, 14] };
   for (const file of filesOf('doors')) {
     it(`doors/${file} has a PNG header and a known size`, () => {
       const ref = parseSpritePath(`doors/${file}`);

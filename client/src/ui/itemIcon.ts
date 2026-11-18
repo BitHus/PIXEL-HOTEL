@@ -5,7 +5,8 @@
 
 import { COIN_ICON, GEM_ICON, type Icon, KEY_ICON, getClothing, getFurnitureType, getMaterialType, isMaterialId, getPiece, getGear, type GearId, type MaterialId, type Rank, type ShopGearId } from '@pixel-hotel/shared';
 import { iconDataUrl } from '../render/drawIcon.ts';
-import { spriteUrl } from '../render/spriteStore.ts';
+import { spriteTexture, spriteUrl } from '../render/spriteStore.ts';
+import { fitInSlot, trimBounds } from '../render/iconTrim.ts';
 
 // docs/PLAN-ART-UPGRADE.md section 0: every function that knows the item's ID first asks the sprite store for assets/sprites/icons/<id>.png (a block
 // also for assets/sprites/blocks/<id>.png, one picture for the tile and the icon) and only then draws the code icon. Functions that only receive an
@@ -18,8 +19,45 @@ function spriteIcon(id: string, ...kinds: ('icons' | 'blocks')[]): string | null
   return null;
 }
 
+const thumbs = new Map<string, string | null>();
+
+/** The front (down) sprite of a furniture type, trimmed and fitted in a 32 px slot (nearest), as a data URL; null when it has no sprite or no canvas. */
+function furnitureSpriteThumb(typeId: string): string | null {
+  const tex = spriteTexture('furniture', typeId, 'down');
+  if (!tex) return null;
+  const hit = thumbs.get(typeId);
+  if (hit !== undefined) return hit;
+  let url: string | null = null;
+  try {
+    const src = tex.source.resource as CanvasImageSource;
+    const { x, y, width, height } = tex.frame;
+    const a = document.createElement('canvas');
+    a.width = width;
+    a.height = height;
+    const actx = a.getContext('2d', { willReadFrequently: true })!;
+    actx.imageSmoothingEnabled = false;
+    actx.drawImage(src, x, y, width, height, 0, 0, width, height);
+    const box = trimBounds(actx.getImageData(0, 0, width, height).data, width, height);
+    if (box) {
+      const to = fitInSlot(box.w, box.h, 32);
+      const c = document.createElement('canvas');
+      c.width = 32;
+      c.height = 32;
+      const ctx = c.getContext('2d')!;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(a, box.x, box.y, box.w, box.h, to.x, to.y, to.w, to.h);
+      url = c.toDataURL();
+    }
+  } catch {
+    url = null;
+  }
+  thumbs.set(typeId, url);
+  return url;
+}
+
+/** Furniture thumbnail: the sprite's front picture when it has one, else its icons/ PNG, else the code icon. */
 export function furnitureIconUrl(typeId: string, rank?: Rank): string {
-  return spriteIcon(typeId, 'icons') ?? iconDataUrl(getFurnitureType(typeId).icon, rank);
+  return furnitureSpriteThumb(typeId) ?? spriteIcon(typeId, 'icons') ?? iconDataUrl(getFurnitureType(typeId).icon, rank);
 }
 
 export function materialIconUrl(id: MaterialId, rank?: Rank): string {

@@ -103,7 +103,7 @@ describe('room upgrades (section 5)', () => {
     expect(upgradeCost(room1)).toBe(300);
     s = upgradeRoom(s, shopId, 1)!;
     const room2 = s.rooms.find((r) => r.id === shopId)!;
-    expect(room2).toMatchObject({ level: 2, w: 704, h: 544 }); // 22 x 12 cells of main floor + the kitchen annex (6 x 5 cells) under it
+    expect(room2).toMatchObject({ level: 2, w: 704, h: 576 }); // 22 x 12 cells of main floor + the kitchen annex (9 x 6 cells) under it
     expect(s.player.wallet.gold).toBe(1800);
     expect(doorRect(room2).x).toBe(704 / 2 - 32);
     expect(doorRect(room2).y).toBe(384);
@@ -113,7 +113,7 @@ describe('room upgrades (section 5)', () => {
     expect(s.items.filter((i) => i.roomId === shopId && kitchen.has(i.typeId))).toEqual(before.filter((i) => kitchen.has(i.typeId)).map((i) => ({ ...i, y: i.y + 64 })));
     expect(upgradeCost(room2)).toBe(800);
     s = upgradeRoom(s, shopId, 2)!;
-    expect(s.rooms.find((r) => r.id === shopId)).toMatchObject({ level: 3, w: 832, h: 608 });
+    expect(s.rooms.find((r) => r.id === shopId)).toMatchObject({ level: 3, w: 832, h: 640 });
     expect(s.player.wallet.gold).toBe(1000);
     expect(upgradeRoom(s, shopId, 3)).toBeNull();
     expect(ledgerGold(s)).toBe(s.player.wallet.gold);

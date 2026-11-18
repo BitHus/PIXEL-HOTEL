@@ -3,7 +3,7 @@
 
 import {
   countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId, PLANT_ROOMS, SEED_HINT,
-  type SeedId, bonusesOf, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries,
+  type SeedId, bonusesOf, pointsFree, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries,
 } from '@pixel-hotel/shared';
 import { createHotbar } from '../ui/hotbar.ts';
 import { createBagPanel } from '../ui/bagPanel.ts';
@@ -192,6 +192,7 @@ late.hotbar = hotbar;
     dungeonButton.title = free ? 'Dungeon: a free run (you have less than 10 gold)' : `Dungeon: the key costs ${DUNGEON_KEY_COST} gold`;
     st.walletGold = p.wallet.gold;
     st.skills = bonusesOf(p);
+    side.setSkillsDot(pointsFree(p) > 0);
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares, owned: bagCounts() });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { placeBubbles, type BubbleIn } from './bubbleLayout.ts';
+import { pickNearest, placeBubbles, snapToDevice, type BubbleIn } from './bubbleLayout.ts';
 
 const overlap = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -27,5 +27,35 @@ describe('placeBubbles (RUN 5 pile-up)', () => {
     const [a] = placeBubbles([{ avatarId: 1, headX: 5, headY: 300, w: 60, h: 20 }], 1000, 4, [{ left: 0, right: 100, top: 270, bottom: 310 }]);
     expect(a!.x).toBe(4);
     expect(a!.y + 20).toBeLessThanOrEqual(268);
+  });
+});
+
+describe('pickNearest (hysteresis)', () => {
+  const a = { key: 1, x: 100, y: 0 };
+  const b = { key: 2, x: 98, y: 0 };
+  it('keeps the shown one when a rival is only slightly nearer', () => {
+    expect([...pickNearest([a, b], 0, 0, 1, new Set([1]))]).toEqual([1]);
+    expect([...pickNearest([a, b], 0, 0, 1, new Set([2]))]).toEqual([2]);
+  });
+  it('switches when the newcomer is clearly nearer', () => {
+    expect([...pickNearest([a, { key: 2, x: 40, y: 0 }], 0, 0, 1, new Set([1]))]).toEqual([2]);
+  });
+  it('is stable over a sweep of tiny camera moves (no flipping)', () => {
+    let prev: ReadonlySet<number> = new Set();
+    let flips = 0;
+    for (let i = 0; i < 100; i++) {
+      const next = pickNearest([{ key: 1, x: 100 + Math.sin(i) , y: 0 }, { key: 2, x: 100 - Math.sin(i), y: 0 }], 0, 0, 1, prev);
+      if (prev.size && [...next][0] !== [...prev][0]) flips++;
+      prev = next;
+    }
+    expect(flips).toBe(0);
+  });
+});
+
+describe('snapToDevice', () => {
+  it('rounds to device pixels', () => {
+    expect(snapToDevice(10.3, 2)).toBe(10.5);
+    expect(snapToDevice(10.2, 2)).toBe(10);
+    expect(snapToDevice(10.4, 1)).toBe(10);
   });
 });

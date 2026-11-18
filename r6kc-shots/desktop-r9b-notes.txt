@@ -1,0 +1,15 @@
+rot1 table ok
+rot1 stove refused
+rot1 counter ok
+rot1 bar_stool ok
+rot1 brewing_barrel refused
+rot2 table ok
+rot2 stove refused
+rot2 counter ok
+rot2 bar_stool ok
+rot2 brewing_barrel refused
+rot3 table ok
+rot3 stove refused
+rot3 counter ok
+rot3 bar_stool ok
+rot3 brewing_barrel refused

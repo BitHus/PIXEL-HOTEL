@@ -90,37 +90,3 @@ test('r6kc A camera lock, drag pan, ease back (tavern)', async ({ page }) => {
   expect(errs.list).toEqual([]);
 });
 
-test('r6kc B kitchen, cellar, build cellar at level 2', async ({ page }) => {
-  test.setTimeout(300000);
-  const errs = watchErrors(page);
-  const k = kit(page, 'rooms');
-  await k.newGame();
-  const w0 = await k.where();
-  const kd = doorSpot(w0, 'tavern_to_kitchen')!;
-  const cd = doorSpot(w0, 'tavern_to_cellar')!;
-  k.note('tavern door spots kitchen ' + JSON.stringify(kd) + ' cellar ' + JSON.stringify(cd));
-  await k.clickWorld(cd.x, cd.y); await page.waitForTimeout(2500);
-  const w1 = await k.where(); k.note('tap cellar door at level 1 (no cellar): room ' + w1.kind); await k.sh('a-cellar-door-l1');
-  await k.clickWorld(kd.x, kd.y); await page.waitForTimeout(3500);
-  const w2 = await k.where(); k.note('tap kitchen door: room ' + w2.kind + ' ' + JSON.stringify(w2)); await k.sh('b-kitchen');
-  await page.waitForTimeout(2000); await k.sh('b2-kitchen-settled');
-  for (const t of ['stove', 'brewing_barrel']) {
-    const it = w2.items.find((i: string) => i.startsWith(t + '@'));
-    if (!it) { k.note(`kitchen has no ${t}`); continue; }
-    const [x, y] = it.split('@')[1].split(',').map(Number);
-    await k.clickWorld(x, y - 16); await page.waitForTimeout(2500); await k.sh(`c-${t}-panel`);
-    await page.keyboard.press('Escape'); await page.waitForTimeout(400);
-  }
-  const bd = doorSpot(w2, 'kitchen_to_tavern');
-  k.note('kitchen_to_tavern spot ' + JSON.stringify(bd));
-  if (bd) { await k.clickWorld(bd.x, bd.y); await page.waitForTimeout(3500); const w3 = await k.where(); k.note('back: room ' + w3.kind); await k.sh('d-back-tavern'); }
-  await k.patchAndContinue((s) => { s.player.level = 2; s.player.xp = Math.max(s.player.xp, 200); s.player.wallet.gold = 800; });
-  const w4 = await k.where(); k.note('after continue ' + w4.kind + ' lvl ' + (await k.state()).player.level);
-  await k.sh('e-before-room-panel');
-  const more = page.locator('button.more-btn');
-  if (await more.isVisible().catch(() => false)) await more.dispatchEvent('click');
-  await page.waitForTimeout(400); await k.sh('e2-side');
-  const titles = await page.locator('button[title]').evaluateAll((bs) => bs.map((b) => b.getAttribute('title')));
-  k.note('buttons: ' + JSON.stringify(titles));
-  expect(errs.list).toEqual([]);
-});

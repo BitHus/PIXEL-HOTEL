@@ -1,0 +1,13 @@
+[
+  {"id": "stone", "name": "Stone", "hits": 2, "drop": {"item": "stone", "min": 1, "max": 1}, "filler": true, "rank": "common", "minDepth": 1, "weight": 0, "weightPerDepth": 0, "colors": ["slate", "steel"]},
+  {"id": "dirt", "name": "Dirt", "hits": 1, "drop": {"item": "dirt", "min": 1, "max": 1}, "filler": true, "rank": "common", "minDepth": 1, "weight": 0, "weightPerDepth": 0, "colors": ["walnut", "oak"]},
+  {"id": "clay", "name": "Clay", "hits": 1, "drop": {"item": "clay", "min": 1, "max": 1}, "filler": true, "rank": "common", "minDepth": 1, "weight": 0, "weightPerDepth": 0, "colors": ["clay", "rust"]},
+  {"id": "coal", "name": "Coal", "hits": 3, "drop": {"item": "coal", "min": 1, "max": 2}, "rank": "common", "gemRank": "common", "minDepth": 1, "weight": 30, "weightPerDepth": 0, "colors": ["ink", "night"]},
+  {"id": "copper", "name": "Copper vein", "hits": 3, "drop": {"item": "copper_ore", "min": 1, "max": 2}, "rank": "common", "gemRank": "common", "minDepth": 1, "weight": 40, "weightPerDepth": -3, "colors": ["clay", "orange"]},
+  {"id": "iron", "name": "Iron vein", "hits": 5, "drop": {"item": "iron_ore", "min": 1, "max": 2}, "rank": "common", "gemRank": "rare", "minDepth": 1, "weight": 25, "weightPerDepth": 3, "colors": ["steel", "silver"]},
+  {"id": "mithril", "name": "Mithril vein", "hits": 8, "drop": {"item": "mithril_ore", "min": 1, "max": 2}, "hard": true, "rank": "rare", "gemRank": "ultra_rare", "minDepth": 2, "weight": 8, "weightPerDepth": 2, "colors": ["sky", "cyan"]},
+  {"id": "crystal", "name": "Crystal", "hits": 6, "drop": {"item": "crystal", "min": 1, "max": 1}, "rare": true, "rank": "rare", "gemRank": "rare", "minDepth": 2, "weight": 3, "weightPerDepth": 0, "colors": ["cyan", "white"]},
+  {"id": "gold_vein", "name": "Gold vein", "hits": 7, "drop": {"item": "gold_nugget", "min": 1, "max": 1}, "rare": true, "rank": "rare", "gemRank": "rare", "minDepth": 3, "weight": 2, "weightPerDepth": 0, "colors": ["gold", "butter"]},
+  {"id": "diamond", "name": "Diamond", "hits": 12, "drop": {"item": "diamond", "min": 1, "max": 1}, "rare": true, "rank": "ultra_rare", "gemRank": "ultra_rare", "minDepth": 3, "weight": 1, "weightPerDepth": 0, "colors": ["white", "cyan"]},
+  {"id": "bedrock", "name": "Bedrock", "hits": 0, "drop": null, "unbreakable": true, "rank": "common", "minDepth": 1, "weight": 0, "weightPerDepth": 0, "colors": ["night", "ink"]}
+]

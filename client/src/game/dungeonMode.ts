@@ -1,7 +1,7 @@
 // Entering the dungeon and the mine (R1 split of main.ts: part 13 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { MINE_UNLOCK_LEVEL, MINE_LANTERN_MS, type FoodId, DUNGEON_KEY_COST } from '@pixel-hotel/shared';
+import { MINE_UNLOCK_LEVEL, type FoodId, DUNGEON_KEY_COST } from '@pixel-hotel/shared';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createLunchPicker } from '../ui/lunchPicker.ts';
 import type { G12 } from './ctx.ts';
@@ -62,7 +62,7 @@ export async function setupDungeonMode(g: G12) {
       toast(`The mine opens at level ${MINE_UNLOCK_LEVEL}.`);
       return;
     }
-    const detail = `Free. Your lantern burns ${MINE_LANTERN_MS / 60_000} minutes. Tap rocks to mine ore; tap fast! Leave any time with everything.`;
+    const detail = 'Free. Dig through the rock with your pickaxe: tap a block, or hold to keep digging. Find the exit, mind the cracking floor, and leave any time with everything.';
     if (!(await confirmBuy(uiRoot, { name: 'The mine', detail, price: null, yes: 'Enter' }))) return;
     const run = await api.mineStart();
     if (!run) return;

@@ -1,7 +1,6 @@
 /* The UI overlay style (docs/UI-REFERENCE.md section 3; reworked in the UI polish step).
    ONE frame style for every panel, button and slot, in layers:
-   - .frame: a dark wooden frame (1 px darkest outline, wood with a light top-left edge, small
-     corner nails, a lighter inner bevel) around speckled parchment, with a 2 px hard shadow.
+   - .ui-panel: the dark night panel (lantern.css, UIR-11: the old .frame oak + iron frame is gone); .ui-hud = frameless text on the world.
    - .inset: a darker inset section inside a panel (the bag's hotbar row, its grid, list cards).
    - .slot: a dense square slot with a dark inset edge; the icon fills most of it.
    - .btn: a small raised wooden button; pressed = 2 px down, no shadow; .on stays pressed.
@@ -80,19 +79,6 @@
 #ui {
   font: 16px/1.2 var(--font);
   color: var(--text);
-}
-
-/* ---------- The frame style ---------- */
-.frame {
-  background: var(--parch) var(--specks);
-  border: 5px solid var(--wood);
-  border-image: var(--frame-img) 5 / 5px stretch;
-  border-radius: 0;
-  box-shadow: var(--shadow);
-  color: var(--text);
-  font: inherit;
-  font-family: var(--font);
-  pointer-events: auto;
 }
 
 /* Big panels get a small wedge in every corner. */
@@ -463,30 +449,6 @@
 .more-label {
   font-size: var(--fs-xs);
   line-height: 1;
-}
-
-@media (min-width: 900px) {
-  .more-wrap,
-  .more-menu,
-  .more-menu.open {
-    display: contents;
-  }
-
-  .more-btn,
-  .more-label {
-    display: none !important;
-  }
-
-  .side-buttons .more-item {
-    width: var(--side-btn);
-    height: var(--side-btn);
-    grid-template-rows: none;
-  }
-
-  .more-item > .pixel-icon {
-    width: 30px;
-    height: 30px;
-  }
 }
 
 /* ---------- Bottom center: the hotbar ---------- */
@@ -2619,11 +2581,6 @@
   display: none;
 }
 
-@media (min-width: 900px) {
-  .more-btn .new-dot {
-    display: none;
-  }
-}
 
 /* The Book panel: a header (found, rewards) and a grid of cards. */
 .book-head {
@@ -3185,8 +3142,7 @@
   image-rendering: pixelated;
 }
 
-.pack-open,
-.pack-sell {
+.pack-open {
   min-height: 44px;
 }
 
@@ -3388,18 +3344,6 @@
 }
 .menu-switch.on {
   color: var(--ok);
-}
-
-/* The bar's Sell tab (step S2): the two buttons stack on the right of a row. */
-.sell-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: stretch;
-}
-.sell-buttons .btn {
-  min-height: var(--touch);
-  white-space: nowrap;
 }
 
 /* The Taps panel and the tap levels in the Menu (step T1) */
@@ -3792,7 +3736,7 @@
 }
 
 /* ---------- Emotes and name tags (step 9g-1) ---------- */
-/* Use together with .btn / .frame: these only add size, layout and the pixel look. */
+/* Use together with .btn / .ui-panel: these only add size, layout and the pixel look. */
 .emote-btn {
   min-width: var(--touch);
   min-height: var(--touch);

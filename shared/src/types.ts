@@ -175,6 +175,10 @@ export type BaseMaterialId =
   | 'crystal'
   | 'wood'
   | 'throne_piece'
+  // The dig mine (MG-3).
+  | 'coal'
+  | 'gold_nugget'
+  | 'diamond'
   // Enemy drops (step 9e): one per rank for every enemy type.
   | EnemyDropId
   // The mine and the forge (section 10c, step 9c).

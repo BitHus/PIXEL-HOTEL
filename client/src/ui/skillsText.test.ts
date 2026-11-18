@@ -26,7 +26,8 @@ describe('skills panel text', () => {
     expect(lockText(view(2, { quick_feet: 1 }), node(view(2, { quick_feet: 1 }), 'steady_hands'))).toBe('Needs 1 point; you have 0.');
   });
   it('marks nodes no rule reads yet and prints the respec cost', () => {
-    expect(notActiveYet(node(view(2), 'lantern'))).toBe(true);
+    expect(notActiveYet(node(view(2), 'bait_saver'))).toBe(true); // (the mining nodes work since the dig mine, MG-3)
+    expect(notActiveYet(node(view(2), 'lantern'))).toBe(false);
     expect(notActiveYet(node(view(2), 'quick_feet'))).toBe(false);
     expect(respecText(view(2))).toBe('Respec: free (3 left)');
   });
