@@ -1,14 +1,14 @@
-start | 1/21
-after register tap | 2/21
-after panel closed | 2/21
-guest tapped | 2/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
-at taps (pourwait) | 2/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
-after pour | 3/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
-after carry | 3/21
-after coins (gold 100 -> 110) | 5/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
-3s later | 5/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
-in doorway | 5/21
-barrel tapped | 6/21 FIRST STEPS Scroll the mouse wheel to zoom in and out and look around. Skip
+start | 1/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+after register tap | 2/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+after panel closed | 2/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+guest tapped | 2/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+at taps (pourwait) | 2/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+after pour | 3/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+after carry | 4/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+after coins (gold 100 -> 110) | Welcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk. ×
+3s later | Welcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk. ×
+in doorway | 6/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
+barrel tapped | 6/21First stepsWelcome! Scroll the mouse wheel to zoom in and out and look around. Then tap the floor to walk.×
 OLD PILE after Continue: mess 0, gold 117
 OLD PILE 4 s later: mess 0, gold 117
 quests panel text: 

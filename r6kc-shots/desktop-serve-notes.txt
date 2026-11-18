@@ -1,0 +1,14 @@
+t=52.1s order markers {"bubbles":[[10,10],[10,10]],"chips":2,"strip":true}
+stage before pour pourwait after poll
+stand screen point {"x":500,"y":372.5}
+tray after pour [{"item":"root_ale","perfect":true}]
+t=58.7s order markers {"bubbles":[[10,10]],"chips":1,"strip":true}
+stage before pour pourwait after poll
+stand screen point {"x":500,"y":372.5}
+tray after pour [{"item":"root_ale","perfect":true}]
+ARRIVALS
+t=3.6s guest -1 grp -1 at 288,308
+t=41.8s guest -2 grp -2 at 288,309
+t=41.8s guest -3 grp -2 at 288,316
+t=79.8s guest -4 grp -4 at 288,316
+gold 100 -> 120; mess max 0; last mess seen t=0; final mess 0
