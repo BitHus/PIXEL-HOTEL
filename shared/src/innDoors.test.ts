@@ -6,7 +6,7 @@ import { blockProblem, placeBlock } from './blocks.ts';
 import { getBlockType } from './blockTypes.ts';
 import { canPlace, doorPoint, doorReachesMiddle, footprintRect, getFurnitureType, roomBlockers, staffZone } from './furniture.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
-import { doorAt, innDoorFile, innDoorSpotRects, innDoorSpots, innDoorwayRects, innTravel, innTravelProblem } from './innDoors.ts';
+import { doorAt, innDoorFile, innDoorHint, innDoorSpotRects, innDoorSpots, innDoorwayRects, innTravel, innTravelProblem } from './innDoors.ts';
 import { buildNavGrid, cellAt, isCellFree, reachableCells } from './nav.ts';
 import { configForChoice, createNewPlayer, DEFAULT_NEW_PLAYER } from './newPlayer.ts';
 import { guestZones, npcGrid } from './npcNav.ts';
@@ -30,12 +30,11 @@ const roomOfKind = (s: GameState, kind: RoomKind): Room => s.rooms.find((r) => r
 const shopShapes = shapesFor('shop').filter((s) => s.shopStart);
 
 describe('Inn door data', () => {
-  it('has one door in the suite, four in the tavern (suite, garden, kitchen, cellar), one in the garden, the kitchen and the cellar, on every shape and level', () => {
+  it('has one door in the suite, three in the tavern (suite, garden, cellar), one in the garden and the cellar, on every shape and level', () => {
     for (const sh of shapesFor('hotel')) for (const l of LEVELS) expect(innDoorSpots(createRoom(1, 'hotel', l, 1, sh.id)).map((d) => d.id)).toEqual(['suite_to_tavern']);
-    for (const sh of shopShapes) for (const l of LEVELS) expect(innDoorSpots(createRoom(1, 'shop', l, 1, sh.id)).map((d) => d.id).sort()).toEqual(['tavern_to_cellar', 'tavern_to_garden', 'tavern_to_kitchen', 'tavern_to_suite']);
+    for (const sh of shopShapes) for (const l of LEVELS) expect(innDoorSpots(createRoom(1, 'shop', l, 1, sh.id)).map((d) => d.id).sort()).toEqual(['tavern_to_cellar', 'tavern_to_garden', 'tavern_to_suite']);
     for (const l of LEVELS) expect(innDoorSpots(createRoom(1, 'farm', l, 1, 'farm')).map((d) => d.id)).toEqual(['garden_to_tavern']);
     for (const l of LEVELS) {
-      expect(innDoorSpots(createRoom(1, 'kitchen', l, 1)).map((d) => d.id)).toEqual(['kitchen_to_tavern']);
       expect(innDoorSpots(createRoom(1, 'cellar', l, 1)).map((d) => d.id)).toEqual(['cellar_to_tavern']);
     }
     expect(innDoorSpots(createRoom(1, 'lakeside', 1, 1, 'lakeside'))).toEqual([]);
@@ -51,7 +50,6 @@ describe('Inn door data', () => {
       ...shapesFor('hotel').flatMap((sh) => LEVELS.map((l) => createRoom(1, 'hotel', l, 1, sh.id))),
       ...shopShapes.flatMap((sh) => LEVELS.map((l) => createRoom(1, 'shop', l, 1, sh.id))),
       ...LEVELS.map((l) => createRoom(1, 'farm', l, 1, 'farm')),
-      ...LEVELS.map((l) => createRoom(1, 'kitchen', l, 1)),
       ...LEVELS.map((l) => createRoom(1, 'cellar', l, 1)),
     ];
     for (const room of all) {
@@ -86,9 +84,7 @@ describe('Inn door data', () => {
         const reach = reachableCells(grid, door.r * grid.cols + door.c);
         for (const spot of innDoorSpotRects(grown)) {
           expect(zones.some((z) => rectsOverlap(spot, z)), `${sh.id} L${l}`).toBe(false);
-          // CEL-2: only the door to the kitchen room may stand inside the tavern's old kitchen zone (staff only, the door is theirs).
-          const isKitchenDoor = innDoorSpots(grown).some((d) => d.spot.x === spot.x && d.spot.y === spot.y && d.id === 'tavern_to_kitchen');
-          expect(!isKitchenDoor && kitchen !== null && rectsOverlap(spot, kitchen), `${sh.id} L${l} kitchen`).toBe(false);
+          expect(kitchen !== null && rectsOverlap(spot, kitchen), `${sh.id} L${l} kitchen`).toBe(false);
           const r = spot.y / BUILD_CELL;
           for (let c = spot.x / BUILD_CELL; c < (spot.x + spot.w) / BUILD_CELL; c++) {
             expect(isCellFree(grid, c, r) && reach[r * grid.cols + c] === true, `${sh.id} L${l} reachable`).toBe(true);
@@ -262,5 +258,15 @@ describe('clearing door spots', () => {
     expect(up).not.toBeNull();
     expect(innDoorSpots(roomOfKind(up, 'hotel'))).toHaveLength(1);
     expect(roomOfKind(up, 'hotel').level).toBe(2);
+  });
+});
+
+describe('the door hint names this room only (RUN 6 bug 2)', () => {
+  it('a suite says tavern, the tavern says suite, garden and cellar, the cellar only the tavern', () => {
+    expect(innDoorHint(createRoom(1, 'hotel', 1, 1))).toBe('Doors lead to the tavern. Walk onto the doorway to step through.');
+    expect(innDoorHint(createRoom(1, 'shop', 1, 1, 'square_shop'))).toMatch(/suite.*garden.*cellar|cellar.*garden.*suite|garden.*suite.*cellar/);
+    expect(innDoorHint(createRoom(1, 'cellar', 1, 1))).toBe('Doors lead to the tavern. Walk onto the doorway to step through.');
+    expect(innDoorHint(createRoom(1, 'cellar', 1, 1))).not.toMatch(/garden/);
+    expect(innDoorHint(createRoom(1, 'lakeside', 1, 1, 'lakeside'))).toBe('');
   });
 });

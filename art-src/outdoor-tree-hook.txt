@@ -1,0 +1,26 @@
+  // PNG art (sprites/lake: tree_<v>_trunk / _crown, tree_stump, tree_sapling_<0|1>; canvas 64 x 88, anchor (32, 80)); the code art below is the fallback.
+  const png = (id: string): boolean => {
+    const t = spriteTexture('lake', id);
+    if (!t) return false;
+    const sp = new Sprite(t);
+    sp.position.set(-32, -80);
+    g.addChild(sp);
+    return true;
+  };
+  if (look === 'tree') {
+    const trunkId = `tree_${variant}_trunk`;
+    if (spriteTexture('lake', trunkId) && spriteTexture('lake', `tree_${variant}_crown`)) {
+      if (withTrunk) png(trunkId);
+      const hw = kind === 2 ? 5 : kind === 1 ? 4 : 7;
+      for (let i = 0; withTrunk && i < Math.min(hits, 4); i++) {
+        const y = -6 - i * 5;
+        const left = i % 2 === 0;
+        px(g, left ? -hw : 1, y, hw - 1, 2, shade(PALETTE[2]!, 0.95));
+        px(g, left ? -hw : 1, y + 1 + 1, hw - 1, 1, shade(WOOD, 0.45));
+      }
+      if (withCrown) png(`tree_${variant}_crown`);
+      return g;
+    }
+  } else if (part !== 'crown' && png(look === 'stump' ? 'tree_stump' : `tree_sapling_${variant >= 3 ? 1 : 0}`)) {
+    return g;
+  }

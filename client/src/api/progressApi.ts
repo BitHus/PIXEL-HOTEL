@@ -12,6 +12,10 @@ import {
   MINE_UNLOCK_LEVEL,
   claimBookReward,
   claimQuest,
+  buySkill,
+  respecSkills,
+  skillsView,
+  type SkillsView,
   dayInfo,
   questBoard,
   tutorialCookSupplies,
@@ -36,6 +40,24 @@ export const progressApi = {
     const gems = next.player.wallet.gems - h.state.player.wallet.gems;
     h.commit(next);
     return { gold, gems, gains: gems > 0 ? [{ itemId: GEMS_GAIN_ID, count: gems, rank: 'common' }] : [] };
+  },
+
+  async getSkills(h: LocalGameAPI): Promise<SkillsView> {
+    return skillsView(h.state.player);
+  },
+
+  async buySkill(h: LocalGameAPI, id: string): Promise<SkillsView | null> {
+    const next = buySkill(h.state, id);
+    if (!next) return null;
+    h.commit(next);
+    return skillsView(h.state.player);
+  },
+
+  async respecSkills(h: LocalGameAPI): Promise<SkillsView | null> {
+    const next = respecSkills(h.state, h.now());
+    if (!next) return null;
+    h.commit(next);
+    return skillsView(h.state.player);
   },
 
   async getQuestBoard(h: LocalGameAPI, tzOffsetMin: number): Promise<QuestBoard> {

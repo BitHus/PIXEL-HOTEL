@@ -16,14 +16,6 @@
    "room": "shop",
    "arrive": "tavern_to_garden"
   },
-  "tavern_to_kitchen": {
-   "room": "kitchen",
-   "arrive": "kitchen_to_tavern"
-  },
-  "kitchen_to_tavern": {
-   "room": "shop",
-   "arrive": "tavern_to_kitchen"
-  },
   "tavern_to_cellar": {
    "room": "cellar",
    "arrive": "cellar_to_tavern"
@@ -182,12 +174,6 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 8,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
       "col": 11,
       "row": 0,
@@ -208,14 +194,8 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 8,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
-      "col": 11,
+      "col": 13,
       "row": 0,
       "w": 2
      }
@@ -230,12 +210,6 @@
      {
       "id": "tavern_to_garden",
       "col": 15,
-      "row": 0,
-      "w": 2
-     },
-     {
-      "id": "tavern_to_kitchen",
-      "col": 8,
       "row": 0,
       "w": 2
      },
@@ -262,14 +236,8 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 7,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
-      "col": 9,
+      "col": 5,
       "row": 0,
       "w": 2
      }
@@ -288,14 +256,8 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 7,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
-      "col": 9,
+      "col": 5,
       "row": 0,
       "w": 2
      }
@@ -314,14 +276,8 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 7,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
-      "col": 13,
+      "col": 5,
       "row": 0,
       "w": 2
      }
@@ -342,12 +298,6 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 8,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
       "col": 12,
       "row": 6,
@@ -368,12 +318,6 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 8,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
       "col": 12,
       "row": 6,
@@ -391,12 +335,6 @@
       "id": "tavern_to_garden",
       "col": 17,
       "row": 6,
-      "w": 2
-     },
-     {
-      "id": "tavern_to_kitchen",
-      "col": 8,
-      "row": 0,
       "w": 2
      },
      {
@@ -422,12 +360,6 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 12,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
       "col": 9,
       "row": 0,
@@ -448,12 +380,6 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 12,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
       "col": 9,
       "row": 0,
@@ -471,12 +397,6 @@
       "id": "tavern_to_garden",
       "col": 4,
       "row": 4,
-      "w": 2
-     },
-     {
-      "id": "tavern_to_kitchen",
-      "col": 12,
-      "row": 0,
       "w": 2
      },
      {
@@ -502,12 +422,6 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 11,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
       "col": 17,
       "row": 0,
@@ -528,12 +442,6 @@
       "w": 2
      },
      {
-      "id": "tavern_to_kitchen",
-      "col": 11,
-      "row": 0,
-      "w": 2
-     },
-     {
       "id": "tavern_to_cellar",
       "col": 17,
       "row": 0,
@@ -550,12 +458,6 @@
      {
       "id": "tavern_to_garden",
       "col": 23,
-      "row": 0,
-      "w": 2
-     },
-     {
-      "id": "tavern_to_kitchen",
-      "col": 11,
       "row": 0,
       "w": 2
      },
@@ -590,34 +492,6 @@
      {
       "id": "garden_to_tavern",
       "col": 8,
-      "row": 0,
-      "w": 2
-     }
-    ]
-   ]
-  },
-  "kitchen": {
-   "kitchen_room": [
-    [
-     {
-      "id": "kitchen_to_tavern",
-      "col": 1,
-      "row": 0,
-      "w": 2
-     }
-    ],
-    [
-     {
-      "id": "kitchen_to_tavern",
-      "col": 1,
-      "row": 0,
-      "w": 2
-     }
-    ],
-    [
-     {
-      "id": "kitchen_to_tavern",
-      "col": 1,
       "row": 0,
       "w": 2
      }

@@ -42,12 +42,19 @@ export async function setupCameraSetup(g: G4) {
   };
 
   // Default view: the largest zoom where the whole room fits (ZOOM_MIN to ZOOM_MAX, any value), centered.
-  const overviewZoom = (): number => fitZoom(app.screen.width, app.screen.height, st.bounds);
+  // RUN 6 bug 6: on a narrow screen the room is fitted and centred in the area LEFT of the right button column (--side-col), so a small room is not under the buttons.
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:var(--side-col, 0px);height:0';
+  document.body.appendChild(probe);
+  const usableWidth = (): number => {
+    const w = app.screen.width;
+    return w < 700 ? Math.max(w / 2, w - probe.offsetWidth) : w;
+  };
+  const overviewZoom = (): number => fitZoom(usableWidth(), app.screen.height, st.bounds);
   const fit = (): void => {
     intro.cancel();
-    const w = app.screen.width;
     const h = app.screen.height;
-    setCamera(centerCamera(w, h, st.bounds, overviewZoom()));
+    setCamera(centerCamera(usableWidth(), h, st.bounds, overviewZoom()));
   };
   /** The room intro: overview first, then a zoom in on the avatar (section 4). */
   const startIntro = (): void => {

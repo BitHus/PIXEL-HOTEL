@@ -8,15 +8,15 @@
 // open orders wait, who was eating has paid). Step S1: nobody sells loot to customers any more.
 
 import {
-  gainsSince, smelt, buySeeds, openPack, sellSpare, buyBlocks, placeBlock, hitBlock, claimBookReward, fishStep,
+  gainsSince, smelt, buySeeds, openPack, buyBlocks, placeBlock, hitBlock, claimBookReward, fishStep,
   hitPlant, plantSeed, spliceSeed, buyGear, SHOP_CATCH_UP_GAP_MS, SHOP_TICK_MS, applyStyle, paintFloor, buyCatalog,
   catchUpTavern, stepTavern, collectBrew, upgradeRoom,
   configForChoice, TAVERN_BAR_NOTICE, innDoorNotice, KITCHEN_MOVED_NOTICE, SAVE_BACKUP_KEY, START_CROPS, SAVE_VERSION, applyChange, cleanChatText, createNewPlayer, pickUpItem, readSave,
-  saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type QuestBoard, type GainList, type BarId, type GearId,
+  saveKey, arrangeState, hotbarToBag, moveSlot, toSaveText, type BookClaim, type QuestBoard, type SkillsView, type GainList, type BarId, type GearId,
   type PackOpenResult, type BlockResult, type CastPlan, type ChopUpdate, type FishInput, type FishSession,
   type FishUpdate, type LakesideView, type BookTab, type FarmView, type FoodId, type SeedId, type DungeonInput,
   type DungeonRun, type RunUpdate, type RunView, type ShopGearId, type MaterialId, type TavernClientEvent,
-  type TavernEvent, type TavernView, type DrinkTier, type TavernWorld, type CaskView, type DrinkId, type MenuRowView, type SellKind, type SellResult, type SellRow, type BuyResult,
+  type TavernEvent, type TavernView, type DrinkTier, type TavernWorld, type CaskView, type DrinkId, type MenuRowView, type BuyResult,
   type StyleKind, type Rng, type NewPlayerChoice, type ServeResult, type SplicePreview,
   type Avatar, type AvatarLook, type BagTab, type SlotLayout, type SlotRef, type ChatLine, type FurnitureItem,
   type GameAPI, type GameState, type Inventory, type ItemsResult, type NavGrid, type PlaceAt, type PlacingSession,
@@ -33,7 +33,6 @@ import { blocksFarmApi } from './blocksFarmApi.ts';
 import { dungeonApi } from './dungeonApi.ts';
 import { lakesideApi } from './lakesideApi.ts';
 import { packsApi } from './packsApi.ts';
-import { traderApi } from './traderApi.ts';
 import { progressApi } from './progressApi.ts';
 import { savesApi } from './savesApi.ts';
 import { tavernApi } from './tavernApi.ts';
@@ -253,14 +252,11 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async spliceSeed(c: number, r: number, seed: SeedId): Promise<BlockResult> { return blocksFarmApi.spliceSeed(this, c, r, seed); }
   async previewSplice(c: number, r: number, seed: SeedId): Promise<SplicePreview> { return blocksFarmApi.previewSplice(this, c, r, seed); }
   async openPack(packId: string): Promise<PackOpenResult | null> { return packsApi.openPack(this, packId); }
-  async sellSpare(clothingId: string, qty: number): Promise<number | null> { return packsApi.sellSpare(this, clothingId, qty); }
   async buyHat(hatId: string): Promise<boolean> { return packsApi.buyHat(this, hatId); }
   async emote(kind: string): Promise<ActiveEmote | null> { return roomsApi.emote(this, kind); }
   async currentEmote(): Promise<ActiveEmote | null> { return roomsApi.currentEmote(this); }
   async useItem(uid: number): Promise<UseResult | null> { return usableApi.useItem(this, uid); }
   async renamePet(name: string): Promise<boolean> { return usableApi.renamePet(this, name); }
-  async getSellRows(): Promise<SellRow[]> { return traderApi.getSellRows(this); }
-  async sell(kind: SellKind, id: string, qty: number): Promise<SellResult | null> { return traderApi.sell(this, kind, id, qty); }
   async buySeeds(seed: SeedId, qty: number): Promise<GainList | null> { return blocksFarmApi.buySeeds(this, seed, qty); }
 
   // ---------- The tavern (step 9t) ----------
@@ -305,6 +301,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async fishStop(): Promise<void> { return lakesideApi.fishStop(this); }
   async bookOpened(): Promise<void> { return progressApi.bookOpened(this); }
   async claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null> { return progressApi.claimBookReward(this, tab, percent); }
+  async getSkills(): Promise<SkillsView> { return progressApi.getSkills(this); }
+  async buySkill(id: string): Promise<SkillsView | null> { return progressApi.buySkill(this, id); }
+  async respecSkills(): Promise<SkillsView | null> { return progressApi.respecSkills(this); }
   async getQuestBoard(tzOffsetMin: number): Promise<QuestBoard> { return progressApi.getQuestBoard(this, tzOffsetMin); }
   async claimQuest(claimId: string, tzOffsetMin: number): Promise<{ gold: number } | null> { return progressApi.claimQuest(this, claimId, tzOffsetMin); }
 

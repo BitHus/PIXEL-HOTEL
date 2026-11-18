@@ -2,7 +2,7 @@
 import guideData from '../data/guide.json';
 
 export type FirstTenStep =
-  | 'walk' | 'menu' | 'pour' | 'serve' | 'coins' | 'kitchen' | 'barrel' | 'collect' | 'load' | 'cellar' | 'stove' | 'farm' | 'plant' | 'harvest' | 'build' | 'wall' | 'dungeon' | 'mine' | 'lakeside' | 'fish';
+  | 'zoom' | 'walk' | 'holdwalk' | 'menu' | 'pour' | 'serve' | 'coins' | 'barrel' | 'collect' | 'load' | 'cellar' | 'stove' | 'farm' | 'plant' | 'harvest' | 'build' | 'wall' | 'dungeon' | 'mine' | 'lakeside' | 'fish';
 
 /** What the animated pointer sits on (see guide.json _help). */
 export type GuideTarget =
@@ -30,7 +30,9 @@ export function guideText(step: FirstTenStep, touch: boolean, short = false): st
   return raw
     .replaceAll('{Tap}', touch ? 'Tap' : 'Click')
     .replaceAll('{tap}', touch ? 'tap' : 'click')
-    .replaceAll('{hold}', touch ? 'hold your finger on' : 'hold the mouse button on');
+    .replaceAll('{hold}', touch ? 'hold your finger on' : 'hold the mouse button on')
+    .replaceAll('{Hold}', touch ? 'Hold your finger on' : 'Hold the mouse button on')
+    .replaceAll('{Zoom}', touch ? 'Pinch with two fingers' : 'Scroll the mouse wheel');
 }
 
 export function guideTargetOf(step: FirstTenStep): GuideTarget {
@@ -65,8 +67,6 @@ export interface GuideWorld {
   walked: boolean;
   /** A stove holds a batch. */
   cooking: boolean;
-  /** CEL-3: the player stands in the kitchen room (the kitchen step). */
-  inKitchen?: boolean;
   /** The player stands in the farm. */
   inFarm: boolean;
   /** Build mode is on. */
@@ -83,7 +83,6 @@ export interface GuideWorld {
 export function guideAutoEvents(w: GuideWorld): FirstTenStep[] {
   const out: FirstTenStep[] = [];
   if (w.walked) out.push('walk');
-  if (w.inKitchen) out.push('kitchen');
   if (w.cooking) out.push('stove');
   if (w.inFarm) out.push('farm');
   if (w.buildOn) out.push('build');
@@ -185,11 +184,11 @@ export function firstTenGoal(s: FirstTenState, waiting: readonly FirstTenStep[] 
 }
 
 /**
- * RUN 5: the number the card shows next to the goal text = that goal's place in the step list (1-based). Steps can be done out of order (a stove
- * started before the register was opened), so `done.length + 1` drifted ahead of the text ("3/18" over the step 2 text).
+ * The number the card shows: steps DONE out of all steps. It starts at 0 and only goes up (a step is counted once, in any order; owner 18 Nov, RUN 6 bug 4:
+ * the old 'place of the goal' number jumped when steps were done out of order or waited).
  */
-export function firstTenStepNumber(goal: FirstTenStep): number {
-  return FIRST_TEN_STEPS.indexOf(goal) + 1;
+export function firstTenProgress(s: FirstTenState): number {
+  return FIRST_TEN_STEPS.filter((k) => s.done.includes(k)).length;
 }
 
 /** True when every step is done (the guide ended by itself). */

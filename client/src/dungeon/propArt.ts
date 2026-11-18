@@ -206,8 +206,9 @@ const MAKERS: Record<PropKind, Maker> = {
       const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
       for (let i = 0; i <= n; i++) g.rect(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), 1, 1).fill({ color: col, alpha: a });
     };
-    const ox = v ? 0 : -15; const oy = -30; // the corner it hangs in
-    const s = v ? -1 : 1;
+    // v 0 = west corner (hangs at the block's west edge, fan opens east), v 1 = east corner (mirror); see cobwebSide.ts
+    const ox = v & 1 ? 15 : -15; const oy = -30;
+    const s = v & 1 ? -1 : 1;
     line(ox, oy, ox + s * 28, oy); line(ox, oy, ox, oy + 28); line(ox, oy, ox + s * 20, oy + 20);
     line(ox + s * 10, oy, ox, oy + 10); line(ox + s * 20, oy, ox, oy + 20); line(ox + s * 14, oy + 14, ox + s * 14, oy + 14);
     line(ox + s * 14, oy, ox + s * 8, oy + 8); line(ox, oy + 14, ox + s * 8, oy + 8);
@@ -515,11 +516,11 @@ const PROP_SPRITE: Record<string, string> = {
 const SPRITE_SHADOW: Record<string, number> = { barrel: 22, crate: 24, statue: 26, sarcophagus: 34, sarcophagus_small: 26, shelf: 26, library_shelf: 54, fountain: 60, guard_post: 50 };
 /** Code flames on a PNG: [x, base y, size] in PNG px from the top-left of the 32 x 32 picture (the flame grows up from the base). */
 const PROP_FLAMES: Record<string, [number, number, number][]> = {
-  candle_stand: [[10, 9, 1], [16, 6, 1], [21, 9, 1]],
+  candle_stand: [[10, 4, 1], [16, 1, 1], [21, 4, 1]],
   campfire: [[16, 24, 1], [12, 25, 1], [20, 25, 1]],
-  brazier: [[12, 17, 1], [16, 16, 1], [20, 17, 1]],
-  torch_stand: [[16, 5, 1]],
-  brazier_big: [[10, 11, 2], [16, 10, 2], [22, 11, 2]],
+  brazier: [[12, 18, 1], [16, 17, 1], [20, 18, 1]],
+  torch_stand: [[13, 7, 1], [16, 6, 1], [19, 7, 1]],
+  brazier_big: [[11, 14, 1], [16, 13, 1], [21, 14, 1], [14, 13, 1], [18, 13, 1]],
   guard_post: [[34, 17, 1]],
   candles: [[9, 14, 1], [17, 18, 1], [23, 21, 1]],
 };

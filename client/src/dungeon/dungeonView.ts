@@ -210,7 +210,7 @@ export class DungeonView {
     const B = DUNGEON_BLOCK;
     for (const d of map.decor ?? []) {
       const flat = decorIsFlat(d.kind);
-      const root = drawDecorProp(d.kind, d.c, d.r, 0);
+      const root = drawDecorProp(d.kind, d.c, d.r, 0, map);
       root.position.set((d.c + 0.5) * B, (d.r + 1) * B);
       root.visible = false;
       root.eventMode = 'none';
@@ -277,19 +277,19 @@ export class DungeonView {
   }
 
   /** The unopened chest drawn at a world point (seen ones only), or null. */
-  chestAt(run: DungeonRun, p: Point): Chest | null {
+  chestAt(run: DungeonRun, p: Point, slack = 0): Chest | null {
     for (const c of run.chests) {
       const v = this.chests.get(c.id);
-      if (!c.opened && v?.root.visible && Math.abs(p.x - c.x) <= 20 && p.y >= c.y - 34 && p.y <= c.y + 10) return c;
+      if (!c.opened && v?.root.visible && Math.abs(p.x - c.x) <= 20 + slack && p.y >= c.y - 34 - slack && p.y <= c.y + 10 + slack) return c;
     }
     return null;
   }
 
   /** The rock drawn at a world point (seen ones only), or null. */
-  rockAt(run: DungeonRun, p: Point): Rock | null {
+  rockAt(run: DungeonRun, p: Point, slack = 0): Rock | null {
     for (const r of run.rocks) {
       const v = this.rocks.get(r.id);
-      if (v?.root.visible && Math.abs(p.x - r.x) <= 20 && p.y >= r.y - ROCK_HEIGHT - 8 && p.y <= r.y + 10) return r;
+      if (v?.root.visible && Math.abs(p.x - r.x) <= 20 + slack && p.y >= r.y - ROCK_HEIGHT - 8 - slack && p.y <= r.y + 10 + slack) return r;
     }
     return null;
   }

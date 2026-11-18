@@ -39,7 +39,7 @@ export function packToast(pack: PackType, finds: readonly PackFind[]): { text: s
   return { text: parts.join(' '), wear: fresh[0]?.id ?? null };
 }
 
-export function createPackFlow(d: PackFlowDeps): { open(pack: PackType): Promise<void>; sell(clothingId: string): Promise<void> } {
+export function createPackFlow(d: PackFlowDeps): { open(pack: PackType): Promise<void> } {
   let busy = false;
   return {
     async open(pack) {
@@ -72,12 +72,6 @@ export function createPackFlow(d: PackFlowDeps): { open(pack: PackType): Promise
       } finally {
         busy = false;
       }
-    },
-    async sell(clothingId) {
-      const paid = await d.api.sellSpare(clothingId, 1);
-      const name = getClothing(clothingId)?.name ?? clothingId;
-      d.toast(paid === null ? 'You have no spare of that.' : `Sold a spare ${name} for ${paid} gold.`);
-      if (paid !== null) await d.refresh();
     },
   };
 }

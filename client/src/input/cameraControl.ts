@@ -78,6 +78,9 @@ export interface CameraControlHooks {
   onWalkHold?(screen: Point, target: Container | null, early?: boolean): boolean;
   /** OA-1: an early walk (started on press) became a quick drag in a room: it pans now, so stop the walk. */
   onWalkCancel?(): void;
+  /** The player zoomed (pinch or wheel) or a press became a confirmed hold-walk (first-steps guide events). */
+  onZoomGesture?(): void;
+  onHoldWalkConfirmed?(): void;
   /** The pointer moved during a 'line' or 'walk' hold. */
   onHoldMove?(screen: Point): void;
   /** A hold ended: released, panned away, or cancelled. */
@@ -259,6 +262,7 @@ export function attachCameraControl(
         const cam = panBy(hooks.getCamera(), now.mid.x - pinch.mid.x, now.mid.y - pinch.mid.y);
         const ratio = pinch.dist > 0 ? now.dist / pinch.dist : 1;
         hooks.setCamera(zoomAt(cam, now.mid, cam.zoom * ratio));
+        if (Math.abs(ratio - 1) > 0.002) hooks.onZoomGesture?.();
         pinch = now;
       }
       return;
@@ -295,6 +299,7 @@ export function attachCameraControl(
   stage.on('wheel', (e: FederatedWheelEvent) => {
     const unit = e.deltaMode === 1 ? WHEEL_LINE_PX : e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
     hooks.onGestureStart?.();
+    hooks.onZoomGesture?.();
     settle = null;
     wheelIdleMs = 0;
     const from = wheel?.target ?? hooks.getCamera().zoom;
@@ -311,8 +316,13 @@ export function attachCameraControl(
             press.early = false;
             hooks.onWalkCancel?.();
           }
-        } else if (press.early) press.hold = 'walk';
-        else if (hooks.onWalkHold?.(press.last, press.target)) press.hold = 'walk';
+        } else if (press.early) {
+          press.hold = 'walk';
+          hooks.onHoldWalkConfirmed?.();
+        } else if (hooks.onWalkHold?.(press.last, press.target)) {
+          press.hold = 'walk';
+          hooks.onHoldWalkConfirmed?.();
+        }
       }
       if (press && !press.drag && !press.long && !press.hold && performance.now() - press.downAt >= LONG_PRESS_MS) {
         press.long = true;

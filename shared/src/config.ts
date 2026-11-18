@@ -25,7 +25,7 @@ export const TAVERN_START_ITEMS = [
   { key: 'stool_left', typeId: 'bar_stool', x: 400, y: 192, facing: 'right' },
   { key: 'stool_right', typeId: 'bar_stool', x: 496, y: 192, facing: 'left' },
   { key: 'stool_front', typeId: 'bar_stool', x: 464, y: 256, facing: 'up' },
-  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 496, y: 64, facing: 'down' },
+  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 304, y: 64, facing: 'down' },
   { key: 'stove', typeId: 'stove', x: 240, y: 96, facing: 'down' },
 ] as const;
 /**

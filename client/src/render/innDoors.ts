@@ -4,7 +4,8 @@
 // (world px), door.w = 64. Unknown ids get the suite look. The returned Container is added to `layer`; its children
 // 'glow' (warm arrival light, hidden until arrivalLight() is called) can be driven every frame.
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
+import { spriteTexture } from './spriteStore.ts';
 import { PALETTE } from '@pixel-hotel/shared';
 
 export type InnDoor = { id: string; x: number; y: number; w: number };
@@ -68,6 +69,42 @@ function drawGarden(g: Graphics, w: number): void {
   g.rect(w / 2 - 14, -H / 2, 3, 3).fill(PALETTE[11]); // latch
 }
 
+/** The door PNG (sprites/doors, 96 x 64, anchor bottom centre) of a door id, or null for the code looks. Id-driven: any id with 'kitchen' gets the kitchen door. */
+export function doorSpriteId(id: string): string | null {
+  if (id === 'tavern_to_cellar') return 'door_cellar_down';
+  if (id === 'cellar_to_tavern') return 'door_cellar_up';
+  if (id.includes('kitchen')) return 'door_kitchen';
+  return null;
+}
+
+/** Within this distance (px) of the doorway the cellar door shows its open sprite. */
+export const DOOR_OPEN_REACH_PX = 64;
+
+/** True when an avatar at p is close enough to a door at (doorX, doorY: the foot of the wall band) to open it. */
+export function doorOpenNear(doorX: number, doorY: number, p: { x: number; y: number } | null): boolean {
+  return p !== null && Math.abs(p.x - doorX) <= DOOR_OPEN_REACH_PX && p.y >= doorY - 8 && p.y - doorY <= DOOR_OPEN_REACH_PX;
+}
+
+/** Swaps the door sprite to its open picture (only the cellar down door has one) or back. */
+export function setDoorOpen(door: Container, open: boolean): void {
+  const sp = door.getChildByLabel('sprite');
+  if (!(sp instanceof Sprite) || door.label !== 'inn-door:tavern_to_cellar') return;
+  const t = (open && spriteTexture('doors', 'door_cellar_down_open')) || spriteTexture('doors', 'door_cellar_down');
+  if (t && sp.texture !== t) sp.texture = t;
+}
+
+/** The soft floor spill of light in front of a cellar or kitchen door (64 x 14, anchor top centre), or null. */
+export function doorSpill(door: InnDoor): Sprite | null {
+  const id = doorSpriteId(door.id);
+  if (id !== 'door_cellar_down' && id !== 'door_kitchen') return null;
+  const t = spriteTexture('doors', 'door_spill');
+  if (!t) return null;
+  const s = new Sprite(t);
+  s.position.set(door.x - 32, door.y);
+  s.eventMode = 'none';
+  return s;
+}
+
 export function drawInnDoor(layer: Container, door: InnDoor): Container {
   const c = new Container();
   c.label = `inn-door:${door.id}`;
@@ -78,6 +115,16 @@ export function drawInnDoor(layer: Container, door: InnDoor): Container {
   glow.label = 'glow';
   glow.rect(-door.w / 2, 0, door.w, 12).fill(PALETTE[11]).rect(-door.w / 2 + 8, 12, door.w - 16, 6).fill(PALETTE[11]);
   glow.alpha = 0;
+  const spriteId = doorSpriteId(door.id);
+  const tex = spriteId ? spriteTexture('doors', spriteId) : null;
+  if (tex) {
+    const sp = new Sprite(tex);
+    sp.label = 'sprite';
+    sp.position.set(-48, -64);
+    c.addChild(sp, glow);
+    layer.addChild(c);
+    return c;
+  }
   const body = new Graphics();
   const look = innDoorLook(door.id);
   if (look === 'tavern') drawTavern(body, door.w);

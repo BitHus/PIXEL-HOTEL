@@ -141,14 +141,12 @@ export function fitsRoomKind(type: FurnitureType, room: Room): boolean {
   if (room.kind === 'lakeside') return false;
   // The farm (step 9b) takes home decorations: everything that may go in the hotel room.
   if (room.kind === 'farm') return type.placeIn === 'both' || type.placeIn === 'hotel';
-  // CEL-2: the kitchen room takes the kitchen pieces (barrel, stove, prep table, pantry, sink, hatch); the cellar takes keg racks; both take any piece that may
-  // go in the hotel room AND the tavern ('both': decor), never the tavern's own pieces (bar, tables, taps, register).
-  if (room.kind === 'kitchen') return type.placeIn === 'both' || KITCHEN_PIECES.has(type.id);
+  // CEL-2: the cellar takes keg racks and any piece that may go in the hotel room AND the tavern ('both': decor), never the tavern's own pieces (bar, tables, taps, register).
   if (room.kind === 'cellar') return type.placeIn === 'both' || type.casks === true;
   return type.placeIn === 'both' || type.placeIn === room.kind;
 }
 
-/** Tavern pieces that may also stand in the attached kitchen room (CEL-2); old layouts keep them in the tavern too. */
+/** The kitchen pieces of the tavern (they stand in the walled kitchen area; the prep bonus needs the zone, nothing forces them in). */
 const KITCHEN_PIECES: ReadonlySet<string> = new Set(['brewing_barrel', 'stove', 'prep_table', 'pantry', 'sink', 'serving_hatch']);
 export function isKitchenPiece(typeId: string): boolean {
   return KITCHEN_PIECES.has(typeId);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, firstTenStepNumber, firstTenToastDue, guideAutoEvents, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type GuideContext } from './firstTen.ts';
+import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, firstTenProgress, firstTenToastDue, guideAutoEvents, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type GuideContext } from './firstTen.ts';
 import { getFurnitureType } from './furniture.ts';
 import { FIRST_GUEST_DELAY_MS } from './config.ts';
 
@@ -7,14 +7,15 @@ const quiet: GuideContext = { brewReady: false, guestWaiting: false, pouring: fa
 
 describe('first ten minutes', () => {
   it('shows one goal at a time, in order', () => {
-    expect(firstTenGoal(FIRST_TEN_NEW)).toBe('walk');
-    expect(firstTenGoal(firstTenEvent(FIRST_TEN_NEW, 'walk'))).toBe('menu');
+    expect(firstTenGoal(FIRST_TEN_NEW)).toBe('zoom');
+    expect(firstTenGoal(firstTenEvent(FIRST_TEN_NEW, 'zoom'))).toBe('walk');
+    expect(firstTenGoal(firstTenEvent(firstTenEvent(firstTenEvent(FIRST_TEN_NEW, 'zoom'), 'walk'), 'holdwalk'))).toBe('menu');
   });
   it('lets steps be done in any order and skips waiting ones', () => {
     const s = firstTenEvent(FIRST_TEN_NEW, 'serve');
     expect(s.done).toEqual(['serve']);
-    expect(firstTenGoal(s, ['barrel', 'collect', 'load'])).toBe('walk');
-    expect(firstTenGoal(firstTenEvent(s, 'walk'), ['collect', 'load'])).toBe('menu');
+    expect(firstTenGoal(s, ['barrel', 'collect', 'load'])).toBe('zoom');
+    expect(firstTenGoal(firstTenEvent(firstTenEvent(firstTenEvent(s, 'zoom'), 'walk'), 'holdwalk'), ['collect', 'load'])).toBe('menu');
   });
   it('ends when everything is done, and ignores repeats', () => {
     let s = FIRST_TEN_NEW;
@@ -31,10 +32,10 @@ describe('first ten minutes', () => {
     expect(firstTenGoal(s)).toBeNull();
   });
   it('toasts only when the ticked step is the goal on the card', () => {
-    expect(firstTenToastDue(FIRST_TEN_NEW, 'walk')).toBe(true);
+    expect(firstTenToastDue(FIRST_TEN_NEW, 'zoom')).toBe(true);
     expect(firstTenToastDue(FIRST_TEN_NEW, 'menu')).toBe(false);
-    expect(firstTenToastDue(FIRST_TEN_NEW, 'menu', ['walk'])).toBe(true);
-    expect(firstTenToastDue(firstTenEvent(FIRST_TEN_NEW, 'walk'), 'walk')).toBe(false);
+    expect(firstTenToastDue(FIRST_TEN_NEW, 'menu', ['zoom', 'walk', 'holdwalk'])).toBe(true);
+    expect(firstTenToastDue(firstTenEvent(FIRST_TEN_NEW, 'zoom'), 'zoom')).toBe(false);
     expect(firstTenToastDue(FIRST_TEN_OFF, 'walk')).toBe(false);
     let s = FIRST_TEN_NEW;
     for (const k of FIRST_TEN_STEPS.slice(0, -1)) s = firstTenEvent(s, k);
@@ -66,19 +67,19 @@ describe('tutorial state machine (TUT-2: new game, Continue, finished, skipped)'
     for (const old of [null, 'junk', finished, stored(firstTenSkip(FIRST_TEN_NEW))]) {
       const s = firstTenOpen(old, true);
       expect(s).toMatchObject({ active: true, skipped: false, done: [] });
-      expect(firstTenGoal(s)).toBe('walk');
+      expect(firstTenGoal(s)).toBe('zoom');
     }
     expect(firstTenOpen(finished, true).tips).toEqual(['tap']);
   });
   it('Continue resumes at the saved step and never restarts at step 1', () => {
     let s = FIRST_TEN_NEW;
-    for (const k of ['walk', 'menu', 'pour', 'serve'] as const) s = firstTenEvent(s, k);
+    for (const k of ['zoom', 'walk', 'holdwalk', 'menu', 'pour', 'serve'] as const) s = firstTenEvent(s, k);
     const back = firstTenOpen(stored(s), false);
-    expect(back.done).toEqual(['walk', 'menu', 'pour', 'serve']);
+    expect(back.done).toEqual(['zoom', 'walk', 'holdwalk', 'menu', 'pour', 'serve']);
     expect(firstTenGoal(back)).toBe('coins');
   });
   it('Continue with nothing stored (an old save) starts the tutorial', () => {
-    expect(firstTenGoal(firstTenOpen(null, false))).toBe('walk');
+    expect(firstTenGoal(firstTenOpen(null, false))).toBe('zoom');
   });
   it('a finished or skipped tutorial stays done after Continue', () => {
     let s = FIRST_TEN_NEW;
@@ -158,14 +159,31 @@ describe('guide waiting and pointer targets', () => {
   });
 });
 
-describe('RUN 5: the step count follows the goal text', () => {
-  it('a step done out of order does not push the count past the goal shown', () => {
-    // walk and stove done, menu (step 2) is still the goal: the card must say 2/18, not 3/18.
-    const s = firstTenEvent(firstTenEvent(FIRST_TEN_NEW, 'walk'), 'stove');
-    const goal = firstTenGoal(s);
-    expect(goal).toBe('menu');
-    expect(firstTenStepNumber(goal!)).toBe(2);
-    for (const [i, k] of FIRST_TEN_STEPS.entries()) expect(firstTenStepNumber(k)).toBe(i + 1);
+describe('the step counter (owner 18 Nov, RUN 6 bug 4): steps done out of N, from 0, only up', () => {
+  it('starts at 0, counts each step once in any order and never goes down or jumps', () => {
+    let s = FIRST_TEN_NEW;
+    expect(firstTenProgress(s)).toBe(0);
+    let last = 0;
+    for (const k of ['stove', 'zoom', 'stove', 'menu', 'walk', 'barrel', 'zoom'] as const) {
+      s = firstTenEvent(s, k);
+      const n = firstTenProgress(s);
+      expect(n).toBeGreaterThanOrEqual(last);
+      expect(n - last).toBeLessThanOrEqual(1);
+      last = n;
+    }
+    expect(last).toBe(5);
+    for (const k of FIRST_TEN_STEPS) s = firstTenEvent(s, k);
+    expect(firstTenProgress(s)).toBe(FIRST_TEN_STEPS.length);
+    expect(firstTenProgress(firstTenReplay(s))).toBe(0);
+  });
+  it('the guide opens with the basic controls: zoom, tap to walk, hold to walk, then the tavern', () => {
+    expect(FIRST_TEN_STEPS.slice(0, 4)).toEqual(['zoom', 'walk', 'holdwalk', 'menu']);
+    expect(guideText('zoom', true)).toMatch(/Pinch/);
+    expect(guideText('zoom', false)).toMatch(/wheel/);
+    expect(guideText('walk', true)).toMatch(/Tap/);
+    expect(guideText('walk', false)).toMatch(/Click/);
+    expect(guideText('holdwalk', true)).toMatch(/finger/);
+    expect(guideText('holdwalk', false)).toMatch(/mouse button/);
   });
 });
 
@@ -177,6 +195,6 @@ describe('RUN 5: phone short lines', () => {
     }
     expect(guideText('menu', true, true)).toBe('Tap the register');
     expect(guideText('menu', false, true)).toBe('Click the register');
-    expect(guideText('menu', true)).toContain('serve, set prices, sell');
+    expect(guideText('menu', true)).toContain('serve and set prices');
   });
 });

@@ -1,3 +1,4 @@
+import { nearestValidPlacement } from './furniture.ts';
 import { describe, expect, it } from 'vitest';
 import { PREP_BONUS, BUILD_CELL } from './config.ts';
 import { collectCook, cookYield, startCook } from './cooking.ts';
@@ -45,7 +46,7 @@ describe('the kitchen zone (step T1, data)', () => {
       }
       const zone = kitchenZone(roomOf(s))!;
       const inside = s.items.filter((i) => i.roomId === s.tavern.roomId && i.onItemUid === null && rectInZone(zone, footprintRect(i, getFurnitureType(i.typeId)))).map((i) => i.typeId);
-      expect(inside, shape.id).toEqual(['stove']);
+      expect([...inside].sort(), shape.id).toEqual(['brewing_barrel', 'stove']);
     }
   });
 
@@ -113,8 +114,13 @@ describe('guests never enter the kitchen (nav)', () => {
     const s = fresh();
     const room = roomOf(s);
     const zone = kitchenZone(room)!;
-    expect(canPlace(room, s.items, getFurnitureType('prep_table'), zone.x + 96, zone.y + 96, 'down')).toBe(true);
-    expect(canPlace(room, s.items, getFurnitureType('pantry'), zone.x + 64, zone.y + 64, 'down')).toBe(true);
+    // The nearest free spot to the middle of the zone is inside the walls, for the prep table and the pantry.
+    for (const id of ['prep_table', 'pantry']) {
+      const type = getFurnitureType(id);
+      const pose = nearestValidPlacement(room, s.items, type, 'down', { x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 })!;
+      expect(pose, id).not.toBeNull();
+      expect(rectInZone(zone, footprintRect(pose, type)), id).toBe(true);
+    }
   });
 });
 

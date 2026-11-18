@@ -4,7 +4,7 @@
 
 import {
   FIRST_TEN_ALL_DONE_TEXT, FIRST_TEN_DONE_TEXT, FIRST_TEN_KEY, FIRST_TEN_NEW, FIRST_TEN_STEPS, MACHINE_TIP_TEXT, firstTenEvent,
-  firstTenFinished, firstTenGoal, firstTenOpen, firstTenStepNumber, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, type FirstTenState, type FirstTenStep, type MachineTip,
+  firstTenFinished, firstTenGoal, firstTenOpen, firstTenProgress, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, type FirstTenState, type FirstTenStep, type MachineTip,
 } from '@pixel-hotel/shared';
 import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
@@ -72,7 +72,7 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
       announce();
       return;
     }
-    count.textContent = `${firstTenStepNumber(goal)}/${FIRST_TEN_STEPS.length}`;
+    count.textContent = `${firstTenProgress(state)}/${FIRST_TEN_STEPS.length}`;
     // RUN 5: a folded card on a phone shows the step's short line (never cut off); a tap on the card shows the whole text.
     text.textContent = guideText(goal, isTouch(), isPhone() && !card.classList.contains('expanded'));
     pips.querySelectorAll('i').forEach((p, i) => p.classList.toggle('done', state.done.includes(FIRST_TEN_STEPS[i]!)));
@@ -81,7 +81,7 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   }
   /** Tells the layout where the card ends (--ft-bottom, px from the top of the UI): panels and the quest card start below it. */
   function announce(): void {
-    parent.style.setProperty('--ft-bottom', card.hidden ? '0px' : `${card.offsetTop + card.offsetHeight + 6}px`);
+    parent.style.setProperty('--ft-bottom', card.hidden || !isPhone() ? '0px' : `${card.offsetTop + card.offsetHeight + 6}px`);
     window.dispatchEvent(new Event('first-ten-layout'));
   }
   window.addEventListener('resize', draw);

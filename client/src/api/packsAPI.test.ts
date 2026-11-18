@@ -52,14 +52,8 @@ describe('GameAPI packs', () => {
     let p = await api.getPlayer();
     expect(p.unlockedClothing).toEqual(['braids']);
     expect(p.clothingSpares).toEqual({ braids: 2 });
-    const gold = p.wallet.gold;
-    const paid = await api.sellSpare('braids', 1);
-    expect(paid).toBeGreaterThan(0);
-    p = await api.getPlayer();
-    expect(p.wallet.gold).toBe(gold + paid!);
-    expect(p.clothingSpares).toEqual({ braids: 1 });
-    expect(await api.sellSpare('braids', 5)).toBeNull();
-    expect(await api.sellSpare('short', 1)).toBeNull();
+    // Spares stay in the bag (nothing is sold since 18 Nov).
+    expect(p.clothingSpares).toEqual({ braids: 2 });
   });
 
   it('is saved: a reload keeps the pack, the spares and the counter', async () => {

@@ -10,13 +10,6 @@ export const START_HOTEL_ROOM_ID = 1;
 export const START_SHOP_ROOM_ID = 2;
 export const START_FARM_ROOM_ID = 3;
 export const START_LAKESIDE_ROOM_ID = 4;
-/** CEL-2: a new game's attached kitchen room (the cellar gets the next free id when it is built). */
-export const START_KITCHEN_ROOM_ID = 5;
-/** CEL-2: where the start stove and barrel stand in a new kitchen (level 1, 6 x 5 cells; anchors in px; the door to the tavern is the 2 cells at the left of the back wall). */
-export const KITCHEN_START_ITEMS = [
-  { typeId: 'stove', x: 112, y: 64, facing: 'down' },
-  { typeId: 'brewing_barrel', x: 176, y: 64, facing: 'down' },
-] as const;
 /** The starting avatar look (palette indices; styles are clothing.json ids). */
 export const START_LOOK = { skin: 30, hair: 5, hairStyle: 'short', top: 'tunic', shirt: 7, bottoms: 'trousers', legs: 23, shoes: 6 } as const;
 /** Colour choices per look slot (palette indices), for character creation and the Avatar panel. */
@@ -38,7 +31,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 36;
+export const SAVE_VERSION = 38;
 /**
  * CEL-1 (docs/PLAN-CELLAR.md; all PROPOSALS, the owner said use them): the cellar is built with gold at player level CELLAR_UNLOCK_LEVEL,
  * includes one free keg rack, upgrades cost CELLAR_UPGRADE_COST (level 2, 3), racks allowed per cellar level CELLAR_RACK_MAX_BY_LEVEL. Used from CEL-4.
@@ -46,7 +39,17 @@ export const SAVE_VERSION = 36;
 export const CELLAR_BUILD_COST = 300;
 export const CELLAR_UNLOCK_LEVEL = 2;
 export const CELLAR_UPGRADE_COST: readonly [number, number] = [400, 900];
-export const CELLAR_RACK_MAX_BY_LEVEL: readonly [number, number, number] = [2, 4, 6];
+export const CELLAR_RACK_MAX_BY_LEVEL: readonly [number, number, number] = [2, 3, 3];
+/**
+ * MG-1 skill points (docs/PLAN-MINIGAMES.md 4.1, owner 17 Nov: use the plan's numbers). One point per experience level from SKILL_FIRST_LEVEL, plus one per Book
+ * reward taken (at most SKILL_BOOK_MAX). Earned by playing only, never bought; unspent points are derived (earned minus spent), never stored.
+ * Respec: the first SKILL_RESPEC_FREE are free, then SKILL_RESPEC_GOLD gold (ledger 'respec'). A tier-N node needs (N - 1) * SKILL_TIER_STEP points spent in its branch.
+ */
+export const SKILL_FIRST_LEVEL = 2;
+export const SKILL_BOOK_MAX = 4;
+export const SKILL_RESPEC_FREE = 3;
+export const SKILL_RESPEC_GOLD = 100;
+export const SKILL_TIER_STEP = 2;
 /** The ledger is folded into per-reason counters (GameState.quests.folded) when it passes LEDGER_TRIM_AT entries: the newest LEDGER_KEEP stay. */
 export const LEDGER_KEEP = 2000;
 export const LEDGER_TRIM_AT = 2500;

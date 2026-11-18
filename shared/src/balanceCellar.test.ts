@@ -19,7 +19,6 @@ import { buildCellar } from './cellarRooms.ts';
 import { DRINK_TYPES, TIER_DRINK_TYPES } from './materials.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { seededRng } from './rng.ts';
-import { sellRows } from './trader.ts';
 import { ledgerMaterials } from './testState.ts';
 import { upgradeRoom } from './economy.ts';
 
@@ -39,28 +38,24 @@ describe('CEL balance (docs/PLAN-CELLAR.md 4.3)', () => {
     }
   });
 
-  // KNOWN OPEN (CEL-5, reported to the manager): with the proposed numbers a FULL level 3 cellar (6 racks x 3 casks, all reserve) lifts the guest share of the level 8 best-kitchen
-  // mixed hour to about 59%, above the 55% cap. `it.fails` documents it without loosening the bound: it passes while the bound is broken and turns red the moment a number is
-  // changed so that the bound holds (then change it.fails to it). Options to bring it under 55%: reserve after 1440 min instead of 720 (common), or 3 racks per level 3 cellar.
-  it.fails('3. a full level 3 cellar of reserve keeps the level 8 best-kitchen guest share at or under 55% (KNOWN OPEN: about 59% with the proposed numbers)', () => {
+  // CEL 3 was open (59% with 6 racks at level 3); the owner OK'd fewer racks (18 Nov): racks per level 2 / 3 / 3 gives about 54.8% (5 racks 57.7%, 4 racks 56.3%).
+  it('3. a full level 3 cellar of reserve keeps the level 8 best-kitchen guest share at or under 55%', () => {
     const r = guestShareWithReserve('level8', seededRng(1));
     expect(r.share).toBeLessThanOrEqual(CEL_GUEST_SHARE_MAX);
   });
-  it('3b. the reserve flow is limited by what the cellar makes and the numbers are the proposed ones (6 racks, 3 casks each)', () => {
-    expect(CELLAR_RACK_MAX_BY_LEVEL).toEqual([2, 4, 6]);
+  it('3b. the reserve flow is limited by what the cellar makes and the numbers are the set ones (3 racks at level 3, 3 casks each)', () => {
+    expect(CELLAR_RACK_MAX_BY_LEVEL).toEqual([2, 3, 3]);
     const s = fullCellarReserveSupplyPerHour();
     expect(s.mugsPerHour).toBeGreaterThan(0);
     expect(s.extraGoldPerHour).toBeLessThan(bestFreshBarrelGoldPerHour() * 1.6);
-    expect(guestShareWithReserve('level8', seededRng(1)).share).toBeLessThan(0.65);
+    expect(guestShareWithReserve('level8', seededRng(1)).share).toBeLessThan(CEL_GUEST_SHARE_MAX + 0.05);
   });
 
-  it('4. tier items never show in the trader\'s sell rows, and a cask gives back exactly the mugs put in (ledger)', () => {
+  it('4. a cask gives back exactly the mugs put in (ledger); nothing is sold since 18 Nov', () => {
     const s0 = createNewPlayer(undefined, 0);
     const level = { ...s0, player: { ...s0.player, level: 2, wallet: { ...s0.player.wallet, gold: 1000 } } };
     const built = buildCellar(level, 1)!;
-    const stocked = applyChange(built, { reason: 'debug', materials: { root_ale_aged: 3, root_ale_vintage: 3, root_ale_reserve: 3 } }, 1)!;
-    const ids = sellRows(stocked).map((r) => r.id as string);
-    for (const t of TIER_DRINK_TYPES) expect(ids, t.id).not.toContain(t.id);
+    expect(TIER_DRINK_TYPES.length).toBeGreaterThan(0);
     const rack = built.items.find((i) => i.typeId === 'keg_rack' && i.roomId === built.player.cellarRoomId)!;
     const withAle = applyChange(built, { reason: 'debug', materials: { root_ale: 7 } }, 1)!;
     const before = ledgerMaterials(withAle);

@@ -2,7 +2,7 @@
 // become spares and never unlock twice, a refused buy changes nothing), selling spares, the ledger, the Book,
 // migration 18 -> 19.
 import { describe, expect, it } from 'vitest';
-import { PACKS, RANK_WEIGHTS, SAVE_VERSION, SPARE_SELL } from './config.ts';
+import { PACKS, RANK_WEIGHTS, SAVE_VERSION } from './config.ts';
 import { BLOCK_TYPES } from './blockTypes.ts';
 import { CLOTHING } from './clothing.ts';
 import { FURNITURE_TYPES } from './furniture.ts';
@@ -10,7 +10,7 @@ import { isValidIcon } from './icons.ts';
 import { applyChange } from './ledger.ts';
 import { MATERIAL_TYPES } from './materials.ts';
 import { createNewPlayer } from './newPlayer.ts';
-import { PACK_TYPES, copiesOwned, getPack, openPack, packOdds, packPool, piecesMissing, sellSpare, spareValue } from './packs.ts';
+import { PACK_TYPES, copiesOwned, getPack, openPack, packOdds, packPool, piecesMissing } from './packs.ts';
 import { RANKS } from './ranks.ts';
 import { readSave, toSaveText } from './save.ts';
 import { seededRng } from './rng.ts';
@@ -184,42 +184,6 @@ describe('duplicates: spares', () => {
   });
 });
 
-describe('selling a spare', () => {
-  const owned = (): GameState => openPack(withGems(100), 'common_clothes', seq(0, 0), 2)!.state;
-
-  it('pays gold (baseValue times SPARE_SELL), takes one spare, writes the ledger', () => {
-    const s = owned();
-    const gold = s.player.wallet.gold;
-    const sold = sellSpare(s, 'braids', 1, 9)!;
-    expect(sold.player.wallet.gold).toBe(gold + Math.floor(CLOTHING.find((c) => c.id === 'braids')!.baseValue * SPARE_SELL));
-    expect(spareValue('braids')).toBe(sold.player.wallet.gold - gold);
-    expect(sold.player.clothingSpares.braids).toBe(s.player.clothingSpares.braids! - 1);
-    expect(sold.player.unlockedClothing).toContain('braids');
-    expect(sold.ledger[sold.ledger.length - 1]).toMatchObject({ reason: 'spare_sale', clothing: { braids: -1 } });
-    expect(ledgerGold(sold)).toBe(sold.player.wallet.gold);
-  });
-
-  it('the piece itself is never sold: selling every spare keeps it unlocked, one more is refused', () => {
-    let s = owned();
-    const n = s.player.clothingSpares.braids!;
-    s = sellSpare(s, 'braids', n, 9)!;
-    expect(s.player.clothingSpares.braids).toBeUndefined();
-    expect(copiesOwned(s.player, 'braids')).toBe(1);
-    expect(sellSpare(s, 'braids', 1, 10)).toBeNull();
-  });
-
-  it('refuses more than the spares, a piece not owned, a free piece, a bad count', () => {
-    const s = owned();
-    const snapshot = JSON.stringify(s);
-    expect(sellSpare(s, 'braids', s.player.clothingSpares.braids! + 1, 9)).toBeNull();
-    expect(sellSpare(s, 'bob', 1, 9)).toBeNull();
-    expect(sellSpare(s, 'short', 1, 9)).toBeNull();
-    expect(sellSpare(s, 'braids', 0, 9)).toBeNull();
-    expect(sellSpare(s, 'braids', 1.5, 9)).toBeNull();
-    expect(JSON.stringify(s)).toBe(snapshot);
-  });
-});
-
 describe('the Book', () => {
   it('counts every pack find as found, clothes too (spares add to the count)', () => {
     const r = openPack(withGems(100), 'common_clothes', seq(0, 0), 7)!;
@@ -228,11 +192,6 @@ describe('the Book', () => {
     for (const f of b.finds) expect(b.state.player.seen[f.id]?.count).toBeGreaterThan(0);
     const s = openPack(withGems(100), 'basic_seeds', seededRng(4), 9)!;
     for (const f of s.finds) expect(s.state.player.seen[f.id]?.count).toBeGreaterThan(0);
-  });
-
-  it('selling a spare does not change what was found', () => {
-    const s = openPack(withGems(100), 'common_clothes', seq(0, 0), 7)!.state;
-    expect(sellSpare(s, 'braids', 1, 9)!.player.seen).toEqual(s.player.seen);
   });
 });
 

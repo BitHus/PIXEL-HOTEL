@@ -3103,3 +3103,249 @@
   bottom: auto;
 }
 .map-badge[hidden] { display: none; }
+
+/* ======================================================================
+   RUN 6 fixes (ui): keg rack text, first-steps card off the doors
+   ====================================================================== */
+
+/* Cask and tap cards: a hint or the controls under the icon row take the whole card width (no one-word-per-line column). */
+.cask-card > .catalog-sub,
+.cask-card > .tap-actions,
+.cask-card > .cask-bar,
+.tap-row > .catalog-sub,
+.tap-row > .tap-actions {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+/* Wide screen: the first-steps card sits at the left under the info panel, so it never covers a door in the back wall (centre) or the button column. */
+@media (min-width: 681px) {
+  .first-ten {
+    top: calc(var(--edge) + var(--info-h, 60px) + 56px + env(safe-area-inset-top)) !important; /* clear of the OPEN badge under the info panel */
+    left: calc(var(--edge) + env(safe-area-inset-left));
+    transform: none;
+    max-width: 300px;
+  }
+}
+
+/* RUN 6 (5): Pixelify Sans draws its "fi" ligature as a broken glyph ("first" read "Arst"); ligatures off for all UI text (the font itself is unchanged). */
+html,
+body,
+#ui,
+#ui * {
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'clig' 0;
+}
+
+/* Pour prompt vs panels (owner bug): the pour is blocked while a panel is open (tavernLife blocked()), so the hint and the bar never draw over a panel;
+   the hint is a small one-line label and sits below the tray pill and the orders strip (z-index under the panels' frames). */
+#ui:has(.panel:not([hidden])) .pour-hint,
+#ui:has(.panel:not([hidden])) .pour-bar-over {
+  display: none !important;
+}
+.pour-hint {
+  font-size: 12px !important;
+  padding: 2px 8px !important;
+  z-index: 2 !important;
+}
+.pour-bar-over {
+  z-index: 2 !important;
+}
+
+/* Owner bug (red square on the Worlds icon): the badge is a small round notification dot in the button's top-right corner, with a light ring,
+   not a red box over the globe; hidden when there is nothing waiting (the hidden attribute always wins). */
+.side-buttons .map-badge,
+.icon-btn .map-badge {
+  top: -2px !important;
+  right: -2px !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: 9px !important;
+  min-width: 9px !important;
+  height: 9px !important;
+  padding: 0 !important;
+  border-radius: 50%;
+  border: 2px solid var(--cream) !important;
+  box-sizing: content-box;
+  background: var(--no);
+  box-shadow: 0 0 0 1px var(--outline);
+}
+.map-badge[hidden] {
+  display: none !important;
+}
+
+/* ORDER MARKER AURA (owner): a soft pulsing halo (warm white, thin dark rim) so the tiny marker reads on any floor colour. The halo is a pseudo-element
+   animated with transform and opacity only (compositor, no layout, cheap for many guests); ready (serveable) orders pulse wider and faster. */
+.order-bubble::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  margin: -50% 0 0 -50%;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: radial-gradient(circle, rgba(255, 244, 214, 0.55) 40%, rgba(255, 244, 214, 0) 72%);
+  border: 1px solid rgba(24, 20, 37, 0.55);
+  pointer-events: none;
+  z-index: -1;
+  transform: scale(2);
+  opacity: 0.85;
+  animation: order-aura 1.2s ease-in-out infinite;
+}
+.order-bubble.ready { outline: 0; animation: none; }
+.order-bubble.ready::before {
+  animation-name: order-aura-ready;
+  animation-duration: 0.9s;
+}
+.order-bubble.taken::before { animation: none; opacity: 0.4; }
+@keyframes order-aura {
+  0%, 100% { transform: scale(1.7); opacity: 0.9; }
+  50% { transform: scale(2.4); opacity: 0.35; }
+}
+@keyframes order-aura-ready {
+  0%, 100% { transform: scale(1.8); opacity: 1; }
+  50% { transform: scale(3); opacity: 0.3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .order-bubble::before,
+  .order-bubble.ready::before { animation: none !important; transform: scale(2); opacity: 0.8; }
+}
+
+/* ======================================================================
+   OPEN / CLOSED sign redesign (owner): a hanging tavern board on two chains. CSS only (boxes, gradients, transforms/opacity).
+   Open = warm board with a flickering candle glow; closed = dim cool board. A turn (300 ms) when toggled, a slow 4 s swing at rest.
+   ====================================================================== */
+.btn.open-sign.room-only {
+  margin-top: 10px; /* room for the chains */
+  padding: 0 10px 0 6px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.14) 0 2px, transparent 2px),
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(24, 20, 37, 0.28) 14px 15px),
+    var(--wood);
+  color: var(--butter);
+  text-shadow: 0 1px 0 var(--outline), 0 0 6px rgba(254, 231, 97, 0.7);
+  box-shadow: inset 0 -3px 0 var(--wood-dk), inset 0 0 0 1px var(--candle), 0 0 0 var(--px) var(--outline), var(--shadow);
+  transform-origin: 50% -9px;
+  animation: sign-turn-a 0.3s ease-out, sign-swing 4s ease-in-out 0.3s infinite;
+  will-change: transform;
+}
+.btn.open-sign.room-only.closed {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 0 2px, transparent 2px),
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(0, 0, 0, 0.3) 14px 15px),
+    #3a4466;
+  color: #8b9bb4;
+  text-shadow: 0 1px 0 var(--outline);
+  box-shadow: inset 0 -3px 0 #262b44, inset 0 0 0 1px #5a6988, 0 0 0 var(--px) var(--outline), var(--shadow);
+  animation: sign-turn-b 0.3s ease-out, sign-swing-slow 5s ease-in-out 0.3s infinite;
+}
+.btn.open-sign.room-only > .pixel-icon { filter: none; }
+.btn.open-sign.room-only.closed > .pixel-icon { filter: grayscale(1) brightness(0.7); }
+/* The two chains */
+.btn.open-sign.room-only::before {
+  content: '';
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: -9px;
+  height: 9px;
+  background:
+    repeating-linear-gradient(180deg, #8b9bb4 0 2px, #3a4466 2px 3px) left / 2px 100% no-repeat,
+    repeating-linear-gradient(180deg, #8b9bb4 0 2px, #3a4466 2px 3px) right / 2px 100% no-repeat;
+  pointer-events: none;
+}
+/* The candle glow behind the board (also the invisible touch margin): opacity flicker only. */
+.btn.open-sign.room-only::after {
+  inset: -7px -4px;
+  z-index: -1;
+  border-radius: 6px;
+  background: radial-gradient(ellipse at center, rgba(255, 190, 90, 0.55) 30%, rgba(255, 190, 90, 0) 72%);
+  animation: sign-flicker 1.7s steps(6) infinite;
+}
+.btn.open-sign.room-only.closed::after { background: none; animation: none; }
+@keyframes sign-swing { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+@keyframes sign-swing-slow { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+@keyframes sign-turn-a { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+@keyframes sign-turn-b { 0% { transform: rotateX(-90deg); } 100% { transform: rotateX(0); } }
+@keyframes sign-flicker { 0%, 100% { opacity: 0.95; } 25% { opacity: 0.7; } 50% { opacity: 1; } 75% { opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) {
+  .btn.open-sign.room-only,
+  .btn.open-sign.room-only.closed,
+  .btn.open-sign.room-only::after { animation: none !important; transform: none; }
+}
+/* The board keeps one size for OPEN and CLOSED (no growing box when it toggles). */
+.btn.open-sign.room-only { width: 84px; justify-content: center; }
+
+/* ======================================================================
+   ORDERS RAIL (owner): the orders strip is now a small wooden ticket rail at the LEFT edge, bottom-anchored (desktop: vertical, under the sign and the
+   first-steps card, clear of the right button column and the hotbar; phone: a short horizontal rail above the toast zone, left aligned).
+   Each order is a big round ticket: the drink or dish icon (32 px) in a plate, the patience as a coloured ring rim (conic, --p set in ordersStrip.ts).
+   ====================================================================== */
+#ui .orders-strip,
+#ui .orders-strip[class] {
+  top: auto;
+  right: auto;
+  left: calc(var(--edge) + env(safe-area-inset-left));
+  bottom: calc(var(--bottom-clear) + 56px);
+  transform: none;
+  max-width: calc(100vw - var(--side-col) - 2 * var(--edge));
+  width: max-content;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px), var(--wood);
+  border: var(--px) solid var(--outline);
+  border-radius: 0;
+  box-shadow: inset 0 -3px 0 var(--wood-dk), var(--shadow);
+}
+.orders-strip .orders-chips { flex-direction: column; gap: 2px; }
+.orders-strip .orders-tray { border-left: 0; border-top: 1px solid var(--wood-light); padding: 4px 0 0; flex-direction: column; }
+.orders-strip .orders-chip { width: 48px; height: 48px; }
+.orders-strip .orders-chip::before {
+  inset: 2px;
+  border: 0;
+  border-radius: 50%;
+  /* the ring: coloured by state, filled by the patience left (--p 0..100) */
+  background: conic-gradient(var(--ring, #63c74d) calc(var(--p, 100) * 1%), var(--outline) 0);
+}
+.orders-strip .orders-chip::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--slot-bg);
+  box-shadow: inset 0 0 0 1px var(--outline);
+}
+.orders-strip .orders-chip img { position: relative; z-index: 1; width: 32px; height: 32px; }
+.orders-strip .orders-patience { display: none; }
+.orders-strip .orders-chip.urgent { --ring: var(--no); animation: orders-shake 0.5s steps(2) infinite; }
+.orders-strip .orders-chip[data-state='queued'] { --ring: var(--candle); opacity: 1; }
+.orders-strip .orders-chip[data-state='queued']::before { border-color: transparent; }
+.orders-strip .orders-chip[data-state='ready'] { --ring: #63c74d; animation: none; }
+.orders-strip .orders-chip[data-state='ready']::before { background: conic-gradient(#63c74d 100%, #63c74d 0); border: 0; }
+/* ready aura (same idea as the order markers): a pulsing halo behind the ticket */
+.orders-strip .orders-chip[data-state='ready'] img { animation: orders-bob 0.9s ease-in-out infinite alternate; }
+@keyframes orders-bob { to { transform: translateY(-2px) scale(1.06); } }
+.orders-strip .orders-chip[data-state='ready'] { filter: drop-shadow(0 0 4px rgba(99, 199, 77, 0.85)); }
+.orders-strip .orders-more { color: var(--butter); padding: 0; font-weight: 700; }
+.orders-strip .orders-tray-icons { flex-direction: column; align-items: center; }
+.orders-strip .orders-tray-icons img { width: 32px; height: 32px; }
+@media (max-width: 700px) {
+  #ui .orders-strip,
+  #ui .orders-strip[class] {
+    flex-direction: row;
+    padding: 4px 6px;
+    max-width: calc(100vw - var(--side-col) - 2 * var(--edge));
+    justify-content: flex-start;
+  }
+  .orders-strip .orders-chips { flex-direction: row; }
+  .orders-strip .orders-tray { flex-direction: row; border-top: 0; border-left: 1px solid var(--wood-light); padding: 0 0 0 4px; }
+  .orders-strip .orders-tray-icons { flex-direction: row; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orders-strip .orders-chip img, .orders-strip .orders-chip.urgent { animation: none !important; }
+}

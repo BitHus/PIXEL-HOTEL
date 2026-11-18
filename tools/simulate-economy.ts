@@ -36,7 +36,6 @@ import {
   RANK_NAMES,
   SEED_BACK_CHANCE,
   SEED_GROW_MS,
-  SPARE_SELL,
   STAGES,
   STAGE_NAMES,
   activities,
@@ -69,12 +68,7 @@ import {
   seededRng,
   CATALOG_PRICE_MULT,
   CROP_TYPES,
-  SELL_RATE,
-  spliceSellLoops,
-  surplusGoldPerHour,
-  mixedSurplusGoldPerHour,
   SPLICE_RECIPES,
-  SELL_RATES,
   firstHourGold,
   goldBySource,
   goldShares,
@@ -82,12 +76,11 @@ import {
   runGoldPerHour,
   tavernSetup,
   tavernTipGemsPerHour,
-  traderByActivity,
   TAVERN_ATTENTION_BY_STAGE,
   BALANCE_TARGETS as TARGETS,
 } from '../shared/src/index.ts';
 
-import { bestHarvestGemsPerCellMinute, cheapestSpliceCycle, plantsCapGoldPerHour, spliceGemRows } from '../shared/src/balance.ts';
+import { bestHarvestGemsPerCellMinute, cheapestSpliceCycle, spliceGemRows } from '../shared/src/balance.ts';
 import { allRecipes } from '../shared/src/spliceRule.ts';
 import { SPLICE_GEM_CAP, PLANTS_ROOM_CAP } from '../shared/src/config.ts';
 
@@ -145,7 +138,7 @@ for (const pack of PACK_TYPES) {
   );
 }
 const complete = PACK_TYPES.filter((p) => p.pool === 'clothing').map((p) => `${p.name}: ${f1(packsToComplete(p, seededRng(3)))} packs for every piece it can give`);
-console.log(complete.join('; ') + `. A spare piece sells for baseValue x SPARE_SELL (${SPARE_SELL}) gold.`);
+console.log(complete.join('; ') + `. Spares stay in the bag (nothing is sold since 18 Nov).`);
 
 console.log('\n=== BG9 4. Blocks and seeds: the punching loop ===');
 console.log(pad('block', 14) + pad('rank', 11) + pad('hits', 6) + pad('breaks/blk', 12) + pad('gems/blk', 10) + pad('seeds/blk', 11) + pad('seed ratio', 12) + pad('gems/seed', 11) + 'gems per bought block (gold)');
@@ -195,7 +188,7 @@ console.log('\n=== SG2. The general splice rule: every pair (special and general
   const gen = all.filter((x) => !x.special).length;
   const chs = chains();
   const rate = bestCropGoldPerCellMinute();
-  const sold = new Map(spliceSellLoops().map((x) => [x.seed, x.seedSold + x.productSold]));
+  const sold = new Map<string, number>(); // nothing is sold since 18 Nov: the 'sold back' column shows 0
   const rows = spliceGemRows().sort((p, q) => chs.get(p.seed)!.gold - chs.get(q.seed)!.gold || chs.get(p.seed)!.cellMs - chs.get(q.seed)!.cellMs);
   console.log(`${all.length} pairs make something (${all.length - gen} special, ${gen} by the general rule), ${rows.length} distinct non-starter results. A plain crop cell makes ${f1(rate)} gold per cell-min.`);
   const show = (label: string, list: typeof rows): void => {
@@ -203,7 +196,7 @@ console.log('\n=== SG2. The general splice rule: every pair (special and general
     console.log(pad('result', 24) + pad('rank', 11) + pad('wall clock', 12) + pad('seed gold', 11) + pad('cell-min', 10) + pad('worth', 8) + pad('worth/cell-min', 16) + pad('sold back', 11) + pad('gems/harvest', 14) + 'gems per cell-min');
     for (const r of list) {
       const c = chs.get(r.seed)!;
-      console.log(pad(r.seed, 24) + pad(RANK_NAMES[seedRank(r.seed)], 11) + pad(hr(c.ms / 3_600_000), 12) + pad(c.gold, 11) + pad(f1(c.cellMs / MINUTE), 10) + pad(seedProductValue(r.seed), 8) + pad(f1(seedProductValue(r.seed) / (c.cellMs / MINUTE)), 16) + pad(sold.get(r.seed)!, 11) + pad(r.gems.toFixed(2), 14) + r.perCellMin.toFixed(3));
+      console.log(pad(r.seed, 24) + pad(RANK_NAMES[seedRank(r.seed)], 11) + pad(hr(c.ms / 3_600_000), 12) + pad(c.gold, 11) + pad(f1(c.cellMs / MINUTE), 10) + pad(seedProductValue(r.seed), 8) + pad(f1(seedProductValue(r.seed) / (c.cellMs / MINUTE)), 16) + pad(sold.get(r.seed) ?? 0, 11) + pad(r.gems.toFixed(2), 14) + r.perCellMin.toFixed(3));
     }
   };
   show('The 10 cheapest results (by starter-seed gold):', rows.slice(0, 10));
@@ -212,7 +205,6 @@ console.log('\n=== SG2. The general splice rule: every pair (special and general
   console.log(`Gem rate: the best plain harvest gives ${cap.toFixed(3)} gems per cell-min; the splice cap is x${SPLICE_GEM_CAP} = ${(cap * SPLICE_GEM_CAP).toFixed(3)}; the best splice chain gives ${Math.max(...rows.map((r) => r.perCellMin)).toFixed(3)}.`);
   const loops = cheapestSpliceCycle(4);
   console.log(`Cycles (depth 4): ${loops.length} seeds can be had back by a loop; the cheapest loop costs ${loops.length ? f1(Math.min(...loops.map((l) => l.cost))) : '-'} gold-equivalent (must stay above 0).`);
-  console.log(`Plants cap: ${Object.entries(PLANTS_ROOM_CAP).map(([k, v]) => k + ' ' + v).join(', ')} slots; ceiling of a full set sold at the trader (net of seed): ${f1(plantsCapGoldPerHour('level8'))} gold per focused hour at level 8, a mixed hour has about ${f1(goldShares('level8', seededRng(11)).total)} gold in all.`);
 }
 console.log('\n=== K1. The tavern kitchen: dishes per hour per stove and gold per dish through the menu ===');
 const AVG_GROUP = GUEST_GROUP_WEIGHTS.reduce((sum, w, i) => sum + w * (i + 1), 0) / GUEST_GROUP_WEIGHTS.reduce((a, b) => a + b, 0);
@@ -271,19 +263,9 @@ console.log(`\nOne stove visited every 10 min adds up to ${STOVE_BATCH_MAX * 6} 
 console.log("REPORT (S3): the new start is tuned in section S3 below (7 mugs per 8-minute brew, an early dish, 3 seats); the old 0.5x to 2x of the old shop target is retired with the shop.");
 console.log(GOLD_PER_GEM_NOTE + '.');
 
-console.log('\n=== S2. The trader: gold per hour from selling surplus (rates per group since S3; the S3 section below compares it with guests and run gold) ===');
-console.log(`The trader pays baseValue x the rate of the thing's group (SELL_RATE ${SELL_RATE} for blocks; the groups are in section S3), at least 1; spare clothes keep SPARE_SELL (${SPARE_SELL}); food and drinks are never bought. Every thing the activities drop is counted as SURPLUS (so this is a CEILING: crops, ore and wood also feed cooking, brewing and crafting). Blocks are building stock and are not counted. Chest and kill gold is not counted here (it is run gold, see S3); crops are counted net of the seed.`);
-console.log(pad('stage', 24) + pad('mixed hour', 12) + 'focused hour by activity (gold/h)');
-for (const stage of STAGES) {
-  const rows = surplusGoldPerHour(stage, seededRng(11));
-  console.log(pad(STAGE_NAMES[stage], 24) + pad(f1(mixedSurplusGoldPerHour(stage, seededRng(11))), 12) + rows.map((r) => `${r.id} ${f1(r.gold)}`).join(', '));
-}
-console.log('Loops closed (balance.test.ts): selling the ingredients of a dish or brew pays less than the dish or the mugs; a bought catalog block sells back for less; a pack sold back is worth less than its gems at the gold-per-gem floor; a splice chain\'s results sold back are worth less than their seeds plus cell-time.');
-const traded = spliceSellLoops().filter((r) => r.productSold > r.gold || r.seedSold > r.gold);
-console.log(`Splice results sold back for more than the GOLD of their starter seeds (S3 strict reading, must be none): ${traded.length === 0 ? 'none' : traded.map((r) => `${r.seed} ${r.productSold} vs ${r.gold}`).join('; ')}.`);
+console.log('\n=== S2. The trader is gone (owner 18 Nov): nothing is sold for gold. Gold comes from tavern guests (drinks, dishes, tips) and dungeon run gold; crops, ore, fish, wood and spare clothes stay in the bag (player trading comes later). ===');
 
-console.log('\n=== S3. Gold per hour by SOURCE (tavern guests, dungeon run gold, the trader) and gems per hour by source ===');
-console.log(`Trader rates per group (baseValue x rate, at least 1 gold): ` + Object.entries(SELL_RATES).map(([k, v]) => `${k} ${v}`).join(', ') + '. All numbers are CEILINGS: every mug and dish is sold, everything the trader pays for is surplus. Assumptions are in shared/src/balance.ts.');
+console.log('\n=== S3. Gold per hour by SOURCE (tavern guests and dungeon run gold) and gems per hour by source ===');
 for (const stage of STAGES) {
   const t = tavernSetup(stage);
   const g = goldShares(stage, seededRng(11));
@@ -291,7 +273,6 @@ for (const stage of STAGES) {
   console.log(pad('gold source', 50) + pad('focused gold/h', 16) + pad('mixed gold/h', 14) + 'share of the mixed hour (target ' + TARGETS.minGoldShare * 100 + '% to ' + TARGETS.maxGoldShare * 100 + '%)');
   for (const r of goldBySource(stage, seededRng(11))) console.log(pad(r.label, 50) + pad(f1(r.focused), 16) + pad(f1(r.mixed), 14) + `${Math.round((r.mixed / g.total) * 100)}%`);
   console.log(pad('MIXED HOUR TOTAL', 50) + pad('', 16) + f1(g.total) + `   (guests limited by ${guestGoldPerHour(stage).limit}; run gold counts the keys: ${f1(runGoldPerHour(stage, seededRng(11)))}/h focused after them)`);
-  console.log('  the trader by activity (focused / mixed gold/h): ' + traderByActivity(stage, seededRng(11)).map((x) => `${x.id} ${f1(x.focused)} / ${f1(x.mixed)}`).join(', '));
   const gems = mixedBySource(stage);
   const gt = mixedGemsPerHour(stage);
   console.log(`  gems per hour by source (mixed, ${f1(gt)} in all): ` + [...gems].sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${f1(v)} (${Math.round((v / gt) * 100)}%)`).join(', ') + `; the tavern tip alone is ${tavernTipGemsPerHour(stage).toFixed(2)}/h`);
@@ -316,7 +297,7 @@ for (const n of [0, 1, 2, 3]) {
   const b = Math.min(n, PREP_BONUS.max);
   console.log(pad(n, 13) + pad(dishesPerBatch(b), 22) + pad((dishesPerBatch(b) / STOVE_BATCH_MAX).toFixed(2), 10) + STAGES.map((st) => f1(guestGoldPerHour(st, b).gold)).join(' / '));
 }
-console.log('Gold shares with the best kitchen (mixed hour, guests / dungeon / trader): ' + STAGES.map((st) => { const r = goldBySource(st, seededRng(11), PREP_BONUS.max); const t = r.reduce((a, x) => a + x.mixed, 0); return `${st} ` + r.map((x) => `${Math.round((x.mixed / t) * 100)}%`).join('/'); }).join(', ') + ` (cap ${Math.round(BALANCE_TARGETS.maxGoldShareBestKitchen * 100)}% with prep tables, ${Math.round(BALANCE_TARGETS.maxGoldShare * 100)}% without).`);
+console.log('Gold shares with the best kitchen (mixed hour, guests / dungeon): ' + STAGES.map((st) => { const r = goldBySource(st, seededRng(11), PREP_BONUS.max); const t = r.reduce((a, x) => a + x.mixed, 0); return `${st} ` + r.map((x) => `${Math.round((x.mixed / t) * 100)}%`).join('/'); }).join(', ') + ` (cap ${Math.round(BALANCE_TARGETS.maxGoldShareBestKitchen * 100)}% with prep tables, ${Math.round(BALANCE_TARGETS.maxGoldShare * 100)}% without).`);
 
 console.log('\n=== K2. Ripening: gold per mug fresh / aged / vintage (RIPEN ' + RIPEN.map((r) => r.tier + ' x' + r.valueMult).join(', ') + '), the wait, the casks ===');
 console.log(pad('drink', 16) + pad('fresh', 8) + pad('aged', 8) + pad('vintage', 9) + pad('aged x', 8) + pad('vint. x', 9) + pad('aged after', 12) + pad('vintage after', 15) + 'gold/h of a cask slot (mugs sit in it): aged / vintage, over fresh brewed and sold at once');

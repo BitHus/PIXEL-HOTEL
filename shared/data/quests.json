@@ -13,8 +13,7 @@
     { "id": "d_fish2", "text": "Catch 2 fish.", "area": "lakeside", "reasons": ["fish"], "target": 2, "gold": 15 },
     { "id": "d_run", "text": "Finish one dungeon run and bring your bag home.", "area": "dungeon", "reasons": ["dungeon_bank"], "notDead": true, "target": 1, "gold": 20 },
     { "id": "d_mine", "text": "Finish one visit to the mine.", "area": "mine", "reasons": ["mine_bank"], "target": 1, "gold": 20, "minLevel": 3 },
-    { "id": "d_craft", "text": "Craft something at the Workshop.", "area": "craft", "reasons": ["craft"], "target": 1, "gold": 15 },
-    { "id": "d_sell", "text": "Sell a surplus thing at the bar's Sell tab.", "area": "trade", "reasons": ["sell"], "target": 1, "gold": 10 }
+    { "id": "d_craft", "text": "Craft something at the Workshop.", "area": "craft", "reasons": ["craft"], "target": 1, "gold": 15 }
   ],
   "events": [
     {

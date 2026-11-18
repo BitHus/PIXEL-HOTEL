@@ -88,9 +88,11 @@ export interface Late {
   /** ONBOARD-1: Settings > Replay the first steps (set by tavernLife). */
   replayGuide: () => void;
   /** TUT-2: a tutorial step happened that the world cannot prove by itself (plant, harvest, wall piece, fish); set by tavernLife. */
-  guideEvent: (step: 'plant' | 'harvest' | 'wall' | 'fish') => void;
+  guideEvent: (step: 'plant' | 'harvest' | 'wall' | 'fish' | 'zoom' | 'holdwalk') => void;
   /** VG-1: shows a one-time hint chip (once per key, per device); false when seen already (set by guideWorld). */
   showHint: (key: string, text: string, at?: () => Point | null) => boolean;
+  /** TAP FORGIVENESS: where the shown guests stand (feet, world px); set by tavernLife. */
+  guestFeet: () => { id: number; x: number; y: number }[];
   /** CAT HOOK: a tap at a world point; true when it hit the cat (set by gameLoop). */
   catTap: (p: Point) => boolean;
 }

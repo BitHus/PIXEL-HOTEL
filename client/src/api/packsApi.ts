@@ -4,7 +4,6 @@
 import {
   buyHat,
   openPack,
-  sellSpare,
   PACK_HINT,
   type PackOpenResult,
 } from '@pixel-hotel/shared';
@@ -23,13 +22,5 @@ export const packsApi = {
     if (!next) return false;
     h.commit(next);
     return true;
-  },
-
-  async sellSpare(h: LocalGameAPI, clothingId: string, qty: number): Promise<number | null> {
-    const next = sellSpare(h.state, clothingId, qty, h.now());
-    if (!next) return null;
-    const paid = next.player.wallet.gold - h.state.player.wallet.gold;
-    h.commit(next);
-    return paid;
   },
 };

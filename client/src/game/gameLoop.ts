@@ -129,6 +129,7 @@ export async function setupGameLoop(g: G16) {
     blockViews.sync(st.room, Date.now());
     blockViews.update(ticker.deltaMS);
     plantViews.sync(st.room, Date.now());
+    view.updateDoors(st.avatar);
     plantViews.update(ticker.deltaMS, clockMs);
     if (st.pendingStove !== null && st.path.length === 0 && st.avatar.state !== 'walk') {
       const uid = st.pendingStove;

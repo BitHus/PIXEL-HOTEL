@@ -3,7 +3,7 @@
 // targets are shared/data/guide.json. Lives next to tavernLife (which owns the guide) and is started from there.
 
 import {
-  AVATAR_H, BUILD_CELL, LAKE_WATER, innDoorSpots, isKitchenPiece, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
+  AVATAR_H, BUILD_CELL, LAKE_WATER, innDoorSpots, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
   type GuideContext, type GuideTarget, type Point,
 } from '@pixel-hotel/shared';
 import { surfaceHeight } from '../render/furnitureArt.ts';
@@ -94,7 +94,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   /** CEL-3: the door that leads to the thing the pointer wants, when it stands in another room of the tavern area (null = it is here or no routing). */
   const routeDoor = (t: GuideTarget): string | null => {
     const typeId = t.kind === 'furniture' ? t.typeId : t.kind === 'stand' ? 'tap_stand' : null;
-    const home = typeId ? (isKitchenPiece(typeId) ? 'kitchen' : getFurnitureType(typeId).casks ? 'cellar' : 'shop') : t.kind === 'guest' || t.kind === 'coins' ? 'shop' : null;
+    const home = typeId ? (getFurnitureType(typeId).casks ? 'cellar' : 'shop') : t.kind === 'guest' || t.kind === 'coins' ? 'shop' : null;
     if (home === null || home === st.room.kind) return null;
     if (typeId && st.items.some((i) => i.roomId === st.room.id && i.typeId === typeId)) return null;
     return st.room.kind === 'shop' ? `tavern_to_${home}` : `${st.room.kind}_to_tavern`;
@@ -190,7 +190,6 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     const w = {
       walked,
       cooking: st.tavern.cooks.length > 0,
-      inKitchen: st.room.kind === 'kitchen',
       inFarm: st.room.kind === 'farm',
       buildOn: g.build.on,
       inDungeon: dungeon.isActive,

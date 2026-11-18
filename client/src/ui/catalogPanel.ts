@@ -51,7 +51,6 @@ export interface CatalogHooks {
   /** The Packs tab (step BG8): asks first, then opens the pack. */
   openPack(pack: PackType): void;
   /** Sells one spare piece of clothing. */
-  sellSpare(clothingId: string): void;
 }
 
 export interface CatalogPanel {
@@ -211,7 +210,7 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   /** The cards of one tab, appended to the list. */
   const addCards = (t: CatalogTab): void => {
     if (t === 'blocks') for (const b of catalogBlocks()) list.appendChild(blockCard(b));
-    else if (t === 'packs') drawPacks(list, packsData, { open: hooks.openPack, sell: hooks.sellSpare });
+    else if (t === 'packs') drawPacks(list, packsData, { open: hooks.openPack });
     else if (t === 'seeds') for (const c of seedsForSale()) list.appendChild(seedCard(c));
     else if (t === 'clothes') for (const h of HATS.filter((x) => hatCatalogPrice(x.id) !== null)) list.appendChild(hatCard(h.id));
     else if (t === 'decor') for (const s of STYLE_TYPES.filter((x) => x.inCatalog)) list.appendChild(styleCard(s));

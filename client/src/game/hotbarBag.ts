@@ -3,7 +3,7 @@
 
 import {
   countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId, PLANT_ROOMS, SEED_HINT,
-  type SeedId, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries, SELL_HINT_STACKS, SELL_HINT_TEXT,
+  type SeedId, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries,
 } from '@pixel-hotel/shared';
 import { createHotbar } from '../ui/hotbar.ts';
 import { createBagPanel } from '../ui/bagPanel.ts';
@@ -160,8 +160,6 @@ late.hotbar = hotbar;
   // Panels start under the info panel (phone) and end above the hotbar or the run bag.
   watchLayout(ui, info.panel, [hotbar.el, runBar.el]);
 
-  /** The "Sell what you do not need at the bar" hint shows once per visit, when the bag fills (step S2). */
-  let sellHinted = false;
   /** What the bag holds, by id, for the catalog's "Own N" badge (unplaced furniture and materials). */
   const bagCounts = (): Record<string, number> => {
     const out: Record<string, number> = { ...st.inventory.materials } as Record<string, number>;
@@ -171,10 +169,6 @@ late.hotbar = hotbar;
 
   async function refreshInventory(): Promise<void> {
     st.inventory = await api.getInventory();
-    if (!sellHinted && (await api.getSellRows()).length >= SELL_HINT_STACKS) {
-      sellHinted = true;
-      toast(SELL_HINT_TEXT);
-    }
     const p = await api.getPlayer();
     st.tavern = { ...st.tavern, appeal: (await api.getTavern()).appeal };
     if (!newIntro.running) {
@@ -200,7 +194,7 @@ late.hotbar = hotbar;
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     catalog.refresh(p.wallet.gold, p.unlockedStyles, st.room, { gems: p.wallet.gems, unlocked: p.unlockedClothing, spares: p.clothingSpares, owned: bagCounts() });
-    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null, st.room.kind === 'hotel' ? roomScore(st.room, st.items) : null, { tavernId: p.shopRoomId, kitchenId: p.kitchenRoomId, cellarId: p.cellarRoomId, playerLevel: p.level });
+    roomPanel.refresh(st.room, p.wallet.gold, p.unlockedStyles, st.room.kind === 'shop' ? st.tavern.appeal : null, st.room.kind === 'hotel' ? roomScore(st.room, st.items) : null, { tavernId: p.shopRoomId, cellarId: p.cellarRoomId, playerLevel: p.level });
     const materials = st.inventory.materials;
     const usable = (typeId: string): boolean =>
       countInInventory(st.inventory.furniture, typeId) > 0 && fitsRoomKind(getFurnitureType(typeId), st.room);

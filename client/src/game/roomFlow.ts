@@ -3,7 +3,7 @@
 
 import {
   INTRO_COINS, doorY, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, barCoinPoint,
-  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, INN_DOOR_HINT, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
+  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, innDoorHint, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { savePrefs } from '../api/prefs.ts';
@@ -150,7 +150,7 @@ export async function setupRoomFlow(g: G13) {
     if (arrived && innDoorSpots(st.room).length > 0 && !prefs.doorHintSeen) {
       prefs.doorHintSeen = true;
       savePrefs(storage, prefs);
-      toast(INN_DOOR_HINT);
+      toast(innDoorHint(st.room));
     }
     if (intro) startIntro();
     else fit();

@@ -70,6 +70,8 @@ export function createToast(parent: HTMLElement, avoid?: ToastAvoid): Toast {
       });
       box.append(b);
     }
+    // A plain toast never swallows a tap meant for the game under it; only a toast with a button takes taps (tap forgiveness, 18 Nov).
+    box.style.pointerEvents = action ? 'auto' : 'none';
     box.hidden = false;
     box.classList.remove('fading');
     // Clear of the avatar when possible: if the toast would cover it, it moves to the top band (skin.css .toast-top).

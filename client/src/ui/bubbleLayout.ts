@@ -34,7 +34,8 @@ export function placeBubbles(list: readonly BubbleIn[], screenW: number, gap: nu
     let y = bottom.get(b.avatarId) ?? b.headY;
     let x = Math.min(Math.max(b.headX - b.w / 2, 4), screenW - b.w - 4);
     for (const o of orders) if (x < o.right && x + b.w > o.left && y > o.top && y - b.h < o.bottom) y = Math.min(y, o.top - 2);
-    if (col && y - b.h < col.bottom && y > col.top && x + b.w > col.left - 4) x = Math.max(4, col.left - b.w - 4);
+    // RUN 6 (8): the whole strip the button column stands in is kept free (the column rect alone let bubbles clamped at the screen edge sit on its last buttons).
+    if (col && x + b.w > col.left - 4) x = Math.max(4, col.left - b.w - 4);
     // Another avatar's bubble in the way: go up above it (repeat until clear; at most once per placed bubble).
     for (let n = 0; n <= placed.length; n++) {
       const hit = placed.find((p) => p.avatarId !== b.avatarId && x < p.right && x + b.w > p.left && y - b.h < p.bottom + gap && y > p.top - gap);

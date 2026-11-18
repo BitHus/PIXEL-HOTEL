@@ -65,14 +65,13 @@ describe('the stove', () => {
     expect(t.icon.shape).toBe('stove');
   });
 
-  it('a new game starts with one stove, in the attached kitchen room (CEL-2), on every shop shape', () => {
+  it('a new game starts with one stove, inside the walled kitchen of the tavern, on every shop shape', () => {
     for (const shape of ROOM_SHAPES.filter((r) => r.shopStart)) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const list = stoves(s.items, kitchenRoomIds(s));
       expect(list, shape.id).toHaveLength(1);
       const room = s.rooms.find((r) => r.id === list[0]!.roomId)!;
-      expect(room.kind, shape.id).toBe('kitchen');
-      expect(s.player.kitchenRoomId).toBe(room.id);
+      expect(room.kind, shape.id).toBe('shop');
       // It stands where it may stand, with every other start item of the kitchen.
       const others = s.items.filter((i) => i.uid !== list[0]!.uid);
       expect(canPlace(room, others, getFurnitureType('stove'), list[0]!.x, list[0]!.y, 'down'), shape.id).toBe(true);

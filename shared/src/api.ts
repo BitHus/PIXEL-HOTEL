@@ -3,6 +3,7 @@
 // Methods are added in later steps as they are needed.
 
 import type { QuestBoard } from './questBoard.ts';
+import type { SkillsView } from './skills.ts';
 import type { BookTab } from './book.ts';
 import type { BarId, CropId, DrinkId, DrinkTier, FoodId, FurnitureItem, GearId, MaterialId, Player, Point, Facing, Rank, SeedId, StyleKind } from './types.ts';
 import type { FishInput, FishSession } from './fishing.ts';
@@ -27,7 +28,6 @@ import type { Cook } from './cooking.ts';
 import type { Cask, CaskView } from './casks.ts';
 import type { Tap } from './taps.ts';
 import type { TavernEvent } from './guests.ts';
-import type { SellKind, SellResult, SellRow } from './trader.ts';
 import type { TrayMug } from './tray.ts';
 import type { SplicePreview } from './splice.ts';
 
@@ -73,10 +73,9 @@ export type ItemsResult = FurnitureItem[] | null;
 /** The tavern as the client sees it (step 9t). */
 export interface TavernView {
   roomId: number;
-  /** CEL-2: the tavern plus its attached kitchen and cellar rooms (where machines work); the tavern is first. */
+  /** CEL-2: the tavern plus its attached cellar room (where machines work); the tavern is first. */
   workRooms: number[];
-  /** CEL-2: the attached rooms, when they exist. */
-  kitchenRoomId?: number;
+  /** The cellar room, when it is built. */
   cellarRoomId?: number;
   guests: Guest[];
   /** Coins and dishes left on table spots. */
@@ -447,8 +446,6 @@ export interface GameAPI {
   // ---------- Step BG8: packs bought with gems ----------
   /** Opens a pack for gems. Null = unknown pack or not enough gems (nothing changes). */
   openPack(packId: string): Promise<PackOpenResult | null>;
-  /** Sells spare copies of a piece of clothing for gold (config SPARE_SELL). Returns the gold paid; null = fewer spares than that. */
-  sellSpare(clothingId: string, qty: number): Promise<number | null>;
   /** Buys a catalog hat for gold (step 9g-1, baseValue * 3) and unlocks it. Null = not sold, already owned or not enough gold. */
   buyHat(hatId: string): Promise<boolean>;
   /**
@@ -465,10 +462,6 @@ export interface GameAPI {
   renamePet(name: string): Promise<boolean>;
   /** The emote playing now, or null. */
   currentEmote(): Promise<ActiveEmote | null>;
-  /** The trader's list (step S2, the bar's Sell tab): what the player may sell, with the gold for one piece. Nothing sells by itself. */
-  getSellRows(): Promise<SellRow[]>;
-  /** Sells `qty` pieces of one thing for gold (ledger 'sell'): the gold and its popup list, or null = refused (nothing changes). Only a tap calls it. */
-  sell(kind: SellKind, id: string, qty: number): Promise<SellResult | null>;
   /** Buys seeds from the catalog. Null = not for sale or not enough gold. */
   buySeeds(seed: SeedId, qty: number): Promise<GainList | null>;
   /**
@@ -496,6 +489,13 @@ export interface GameAPI {
   bookOpened(): Promise<void>;
   /** Takes a Book reward that is ready: the gold and the gems (step BG4), or null if it is not ready. */
   claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null>;
+  // ---------- MG-1: the skill tree (shared/src/skills.ts; a separate point pool, no UI yet) ----------
+  /** The tree with the player's ranks, the points (earned, spent, free) and why a node is locked. */
+  getSkills(): Promise<SkillsView>;
+  /** Buys one rank of a node (null when it cannot: unknown, maxed, locked, too few points). */
+  buySkill(id: string): Promise<SkillsView | null>;
+  /** Takes every rank back: the first 3 are free, then 100 gold (ledger 'respec'). Null without ranks or gold. */
+  respecSkills(): Promise<SkillsView | null>;
   // ---------- TUT-2 part 3: daily quests, event quests, achievements (shared/src/questBoard.ts) ----------
   /** The quest board for the local day (tzOffsetMin = Date.getTimezoneOffset()). */
   getQuestBoard(tzOffsetMin: number): Promise<QuestBoard>;

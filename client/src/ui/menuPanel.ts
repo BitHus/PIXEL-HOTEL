@@ -1,21 +1,20 @@
 // The Menu panel (step 9t part C): opened by tapping the bar in play mode (when no guest or mess is on it). Two tabs:
 //   Serve: the open orders (a guest's name-less row with the item's icon); a tap serves it (the existing serveGuest).
-//   Sell (step S2): the trader's list of what you own and do not need, Sell 1 / Sell all, never automatic (ui/sellTab.ts).
+//   (The Sell tab of the trader is gone since 18 Nov: nothing is sold; gold comes from guests and the dungeon.)
 //   Menu: every drink and dish the player owns or has set, each with an On/Off switch, a price stepper (- / +) and the stock;
 //         out of stock = off the menu. The price hint (one of the four faces and a short line) sits under the price; the last
 //         prices guests paid show beside it. An empty menu says how to fill it (brew, cook).
 // The rules (step, switch, hint) are in shared/src/menuEdit.ts; this file only draws them.
 
-import { EMPTY_MENU_HELP, MENU_HISTORY_LENGTH, TAP_CAP, isDrinkId, priceHint, priceCeiling, getMaterialType, type Guest, type MenuRowView, type MaterialId, type SellRow, type Tap } from '@pixel-hotel/shared';
+import { EMPTY_MENU_HELP, MENU_HISTORY_LENGTH, TAP_CAP, isDrinkId, priceHint, priceCeiling, getMaterialType, type Guest, type MenuRowView, type MaterialId, type Tap } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
-import { sellTabContent } from './sellTab.ts';
 import { materialIconUrl } from './itemIcon.ts';
 import { iconBox, panelShell, tabBar } from './panelShell.ts';
 import { pixelIcon } from './pixelIcons.ts';
 import { rankName } from './rank.ts';
 import { TAPS_HINT, mugGauge } from './tapsPanel.ts';
 
-export type MenuTab = 'serve' | 'menu' | 'sell';
+export type MenuTab = 'serve' | 'menu';
 
 export interface MenuHooks {
   /** Serve the order of this guest (the avatar fetches it). */
@@ -24,8 +23,6 @@ export interface MenuHooks {
   toggle(id: MaterialId, on: boolean): void;
   /** One tap of - (dir -1) or + (dir 1) on a price. */
   step(id: MaterialId, dir: 1 | -1): void;
-  /** The player tapped Sell 1 or Sell all on a row of the Sell tab. */
-  sell(row: SellRow, qty: number): void;
   /** Open the Taps panel (step T1: drinks are served from the taps). */
   openTaps(): void;
 }
@@ -36,8 +33,6 @@ export interface MenuPanel {
   setTab(tab: MenuTab): void;
   /** Redraw with the open orders (guests in phase 'order') and the menu rows. */
   update(orders: readonly Guest[], rows: readonly MenuRowView[], queued: readonly number[], taps?: readonly Tap[]): void;
-  /** Redraw the Sell tab with the trader's list. */
-  setSellRows(rows: readonly SellRow[]): void;
 }
 
 /** A small picture for a gauge caption. */
@@ -56,11 +51,10 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
   let orders: readonly Guest[] = [];
   let rows: readonly MenuRowView[] = [];
   let queued: readonly number[] = [];
-  let sellRows: readonly SellRow[] = [];
   let taps: readonly Tap[] = [];
   const mark = tabBar(
     shell.tabs,
-    [['serve', 'food', 'Serve'], ['menu', 'coin', 'Menu'], ['sell', 'bag', 'Sell']] as const,
+    [['serve', 'food', 'Serve'], ['menu', 'coin', 'Menu']] as const,
     (t) => {
       tab = t;
       draw();
@@ -123,10 +117,6 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
       );
       return;
     }
-    if (tab === 'sell') {
-      list.replaceChildren(...sellTabContent(sellRows, hooks));
-      return;
-    }
     const empty = !rows.some((r) => r.on && r.stock > 0);
     // The taps at a glance (step T1): what each holds, and a way to the Taps panel.
     const levels = el('div', 'panel-info tap-levels');
@@ -152,6 +142,5 @@ export function createMenuPanel(parent: HTMLElement, hooks: MenuHooks): MenuPane
     el: shell.el,
     setTab(t) { tab = t; draw(); },
     update(o, r, q, t) { orders = o; rows = r; queued = q; if (t) taps = t; draw(); },
-    setSellRows(r) { sellRows = r; if (tab === 'sell') draw(); },
   };
 }

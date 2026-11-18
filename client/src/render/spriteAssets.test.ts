@@ -103,6 +103,19 @@ describe('icon, block, floor, wall and plant sprite files', () => {
   }
 });
 
+describe('door sprite files (sprites/doors)', () => {
+  const SIZES: Record<string, [number, number]> = { door_cellar_down: [96, 64], door_cellar_down_open: [96, 64], door_cellar_up: [96, 64], door_kitchen: [96, 64], door_spill: [64, 14] };
+  for (const file of filesOf('doors')) {
+    it(`doors/${file} has a PNG header and a known size`, () => {
+      const ref = parseSpritePath(`doors/${file}`);
+      expect(ref, 'file name').not.toBeNull();
+      const { w, h, header } = sizeOf('doors', file);
+      expect(header).toEqual(PNG_SIGNATURE);
+      expect([w, h]).toEqual(SIZES[ref!.id]);
+    });
+  }
+});
+
 describe('outdoors sprite files (dungeon, actors, lake; C11)', () => {
   it('the three kinds are known (no files yet is fine)', () => {
     for (const k of ['dungeon', 'actors', 'lake']) expect(SPRITE_KINDS as readonly string[]).toContain(k);

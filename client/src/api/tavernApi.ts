@@ -43,8 +43,7 @@ import {
   findPath,
   tavernAppeal,
   buildNavGrid,
-  itemBlockers,
-  blockRects,
+  roomBlockers,
   type GameState,
   type TavernWorld,
   type DrinkId,
@@ -91,14 +90,14 @@ export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
     const room = h.roomById(t.roomId);
-    return structuredClone({ roomId: t.roomId, workRooms: tavernWorkRoomIds(h.state), ...(h.state.player.kitchenRoomId !== undefined ? { kitchenRoomId: h.state.player.kitchenRoomId } : {}), ...(h.state.player.cellarRoomId !== undefined ? { cellarRoomId: h.state.player.cellarRoomId } : {}), guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, caskCaps: Object.fromEntries(h.state.items.filter((i) => getFurnitureType(i.typeId).casks === true).map((i) => [i.uid, rackTierCap(h.state, i.uid)])), appeal: room ? tavernAppeal(room, h.state.items, attachedRooms(h.state)) : 0, at: h.now(), introSeen: t.introSeen, open: tavernOpen(t) });
+    return structuredClone({ roomId: t.roomId, workRooms: tavernWorkRoomIds(h.state), ...(h.state.player.cellarRoomId !== undefined ? { cellarRoomId: h.state.player.cellarRoomId } : {}), guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, caskCaps: Object.fromEntries(h.state.items.filter((i) => getFurnitureType(i.typeId).casks === true).map((i) => [i.uid, rackTierCap(h.state, i.uid)])), appeal: room ? tavernAppeal(room, h.state.items, attachedRooms(h.state)) : 0, at: h.now(), introSeen: t.introSeen, open: tavernOpen(t) });
   },
 
   /** What a guest step needs: the room, its items, the nav grid (rebuilt when the furniture changes) and the seats the player holds. */
   tavernWorld(h: LocalGameAPI, state: GameState): TavernWorld {
     const room = state.rooms.find((r) => r.id === state.tavern.roomId);
     if (!room) throw new Error('tavern room missing');
-    h.tavernGrid ??= buildNavGrid(room, [...itemBlockers(state.items, room.id), ...blockRects(room)]);
+    h.tavernGrid ??= buildNavGrid(room, roomBlockers(room, state.items));
     // The own avatar's seat in the tavern (guests do not sit there).
     const seated = state.currentRoomId === room.id ? h.walkState.seated : null;
     return { room, items: state.items, attached: attachedRooms(state), grid: h.tavernGrid, playerHere: state.currentRoomId === room.id, seatsTaken: seated ? [seated] : [] };

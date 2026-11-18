@@ -10,7 +10,7 @@ A browser game. Parts:
 - Dungeon: random, real-time, clicking fast is the game. Chests give loot; enemies are the danger.
 - Tavern (the shop room, step 9t; S1: nobody buys loot at a stall any more; T1: a real bar and kitchen): guests sit, order drinks and dishes from your menu, you
   serve them (their coins come in by themselves). The bar carries a REGISTER and TAP STANDS (drinks are poured from taps); a staff-only KITCHEN corner has the stove and prep tables. Brewing barrel (crops -> mugs, loaded on taps) and stove (crops -> dishes). Gold comes from guests and dungeon run
-  gold and the trader (S2: tap-to-sell Sell tab on the bar) and buys furniture in the catalog. Items are for USE: cook, brew, craft, build, plant.
+  gold and buys furniture in the catalog (18 Nov: the TRADER is gone, nothing is sold for gold). Items are for USE: cook, brew, craft, build, plant.
 - Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
 - Lakeside (10d): chop trees for wood, fish in the lake.
@@ -61,7 +61,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   Floors are painted per cell (Room.floorCells; one cell or a rectangle); wall styles stay per room.
 - New player: an empty level 1 hotel room and a level 1 TAVERN (internal kind 'shop') with the bar (the counter), a REGISTER and a TAP STAND standing on the bar (T1; the 7 root ale of a new game are loaded on the first tap), a round table with 3 stools (S3 had a bar stool in front of the bar for the 3rd seat; G2 removed it, the 3rd stool stands at the table; old saves keep their furniture), an idle brewing barrel and one stove (K1: you cook there, inside the kitchen zone); the early dish roasted turnip is on the menu.
 - The counter (the bar): one per tavern, movable, never picked up; the spot behind it must stay reachable. T1: it is a SURFACE item (one level): the register and tap stands are onSurface pieces on its 3 cells.
-- KITCHEN AND CELLAR ROOMS (OA-7, CEL-2..5, owner: use the plan's numbers, docs/PLAN-CELLAR.md): two attached rooms, reached only by a doorway in the tavern's back wall (innDoors.json: tavern_to_kitchen, tavern_to_cellar and the way back; guests never enter). The KITCHEN is free: a new game has it (Player.kitchenRoomId, 6 x 5 / 8 x 5 / 8 x 7 cells, upgrades 300 / 800) with the start stove and barrel inside; barrels, stoves, prep tables, pantry, sink and hatch work in the tavern (old layouts) and the kitchen (shared/src/workRooms.ts), and in the kitchen the whole room is the kitchen zone (prep bonus unchanged). The CELLAR (Player.cellarRoomId, 8 x 5 / 10 x 5 / 10 x 7) is built from the Room panel at player level 2 for 300 gold (ledger 'build', one free keg rack), upgrades 400 / 900, keg racks per level 2 / 4 / 6 (canPlace). Casks, taps and the register stay as before. RESERVE tier: a third ripening tier (x5 value, tip x1.5; after 720 / 1440 / 2880 / 5760 min by rank) only from a cellar of level 2 or more; level 1 cellars and tavern racks stop at vintage; TASTE_RESERVE_CHANCE 0.1. Tavern appeal counts the pieces of both rooms. Old saves (migration 35 -> 36) get the kitchen with their stove, barrel and prep tables moved in, and a free cellar with their keg racks.
+- THE KITCHEN IS A WALLED AREA OF THE TAVERN (owner 18 Nov, replaces the attached kitchen room; shared/src/kitchenWall.ts, save 37): the kitchen zone of roomShapes.json `kitchen` is the INSIDE; a one-cell ring of plank wall (blocks walking and placing, drawn in render/roomView.ts) stands around it wherever there is floor, with ONE doorway cell (south middle first). Staff only: guests never enter. The start stove and barrel stand inside; stove, barrels, prep tables, pantry, sink and hatch work anywhere in the tavern (old layouts stay valid), the prep bonus needs the inside (prep table next to a stove, both inside). No room switch, no kitchen door. The CELLAR stays a separate room (OA-7, CEL-2..5, docs/PLAN-CELLAR.md): reached by the tavern's back-wall doorway tavern_to_cellar; Player.cellarRoomId, 8 x 5 / 10 x 5 / 10 x 7 cells, built from the Room panel at player level 2 for 300 gold (ledger 'build', one free keg rack), upgrades 400 / 900, keg racks per level 2 / 3 / 3 (canPlace; 3 at level 3 keeps the best-kitchen guest share under the cap). RESERVE tier: a third ripening tier (x5 value, tip x1.5; after 720 / 1440 / 2880 / 5760 min by rank) only from a cellar of level 2 or more; level 1 cellars and tavern racks stop at vintage; TASTE_RESERVE_CHANCE 0.1. Tavern appeal counts the cellar's pieces. Migration 36 -> 37 dissolves an old kitchen room: its items move into the tavern's kitchen inside, what stood on the new wall goes to the nearest free cell or the bag (blocks back to the bag).
 - KITCHEN ZONE (T1): per tavern shape and level a cell rectangle (shared/data/roomShapes.json `kitchen`, level 1 a small corner next to the bar, levels 2 and 3 grow it). Staff only like behind the bar: guests never walk or sit there (npcGrid, tavernSeats); the owner's blocks and furniture are allowed. Shown as a faint tint while placing and in the Room panel.
 - Room upgrade (gold): next level of the shape; items stay; items in the new door zone go back
   to the inventory.
@@ -109,10 +109,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   pairs, groups of 3 (OWN-4: the members of a group walk in ONE BY ONE, GUEST_GROUP_STAGGER_MS apart; the rate is unchanged), every 45 s * 100 / (100 + appeal), never more than seats) sit at a table, order from the MENU (tap the bar: Serve and
   Menu tabs; each drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest:
   the avatar carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that are COLLECTED
-  AUTOMATICALLY (owner 17 Nov: same ledger reason, coin fx and popups still play; old piles in saves stay tappable; pouring, serving, selling, buying stay manual; unserved after 90 s = unhappy). Drinks: BREWING BARREL (tap it: Brewing panel, one brew at a time, real time, tap to
+  AUTOMATICALLY (owner 17 Nov: same ledger reason, coin fx and popups still play; old piles in saves stay tappable; pouring, serving, buying stay manual; unserved after 90 s = unhappy). Drinks: BREWING BARREL (tap it: Brewing panel, one brew at a time, real time, tap to
   collect) and TAPS (T1, below). Dishes: the stove (K1). Away: at most 3 seated orders; offline catch-up only fills seats (looks back at most 8 h).
 - THE BAR AND THE TAPS (T1, owner 15 Nov): the REGISTER (furniture 'register', onSurface, till) and TAP STANDS ('tap_stand', onSurface, TAP_SLOTS = 2 taps each; more stands
-  in the catalog) stand ON the bar. OWN-4 (d): above a guest who wants something there is only a tiny marker (a dot in the drink's colour, or the tiny dish icon; always shown while they want it; no big bubble). Tap the register = the bar's panel (Serve / Menu / Sell); collected coins fly into it. Tap a stand = the Taps panel (ui/panelShell.ts): each tap
+  in the catalog) stand ON the bar. OWN-4 (d): above a guest who wants something there is only a tiny marker (a dot in the drink's colour, or the tiny dish icon; always shown while they want it; no big bubble). Tap the register = the bar's panel (Serve / Menu); collected coins fly into it. Tap a stand = the Taps panel (ui/panelShell.ts): each tap
   shows its drink and mugs (max TAP_CAP = 12); Load moves mugs of ONE drink from the bag (a number or Fill; ledger 'tap'), Unload gives them back (TavernState.taps, shared/src/taps.ts).
   A DRINK is on the menu only while a tap holds at least one mug (menu stock = mugs on taps; an open order only reserves a mug); dishes still come from the bag and the stove. SERVING a
   drink (G2, hands-on): the avatar walks to the taps (stage 'bar') and WAITS (stage 'pourwait', event 'pour_ready'); the player PRESSES AND HOLDS THE TAP STAND in the world (no button; a press near the stand belongs to the pour and never walks or pans; mouse, touch, or Space/Enter held) and the mug fills (pourFill: POUR_FULL_MS = 1400 ms to full, a hold ends by itself at POUR_HOLD_CAP_MS; shared/src/pour.ts); the tap pressed is the one holding the ordered drink (one tap: a press anywhere on the stand; two: the nearest; another drink or empty: a toast, nothing poured; pickPourTap);
@@ -121,20 +121,13 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - KITCHEN EFFECT (T1): each prep table (surface; kitchen pieces prep_table, pantry, sink, serving_hatch, placeIn 'shop') inside the kitchen zone and cell-adjacent to a stove inside it adds
   +1 dish per batch (PREP_BONUS max +2; fixed when the batch starts, the inputs stay those of the batch). A stove outside the zone works without the bonus. Taps, register and kitchen
   pieces count for tavern appeal like other decor (each type at most 3 times).
-- NO SELLING TO LOOT CUSTOMERS (S1, owner 15 Nov): window-shoppers, buyers, the till queue, prices on slots and the stall sales are gone.
-  Stall table, shelf and display case are plain DECOR (no slots, no prices); goods that were on them went back to the bag (ledger reason
-  'shop_closed'). GOLD sources: tavern guests (main), dungeon run gold, the trader (S2: tap-to-sell Sell tab on the bar; never automatic).
-- THE TRADER (S2): the bar's panel has Serve, Menu, Sell. Sell lists materials, blocks, seeds, crops, fish, ore, bars, spare clothes and
-  furniture NOT placed; each row: icon, count, gold per piece, Sell 1 / Sell all. Price = baseValue * the rate of its group (S3: SELL_RATES in
-  config: crops 0.1, seeds 0.2, wood and loot 0.3, blocks 0.3, fish and things 0.5, bars 0.5, ore 0.85, splice results 0.03 (COD-1 retune: wood and loot 0.12 so a splice material never sells for more than its starter seeds' gold); at least 1
-  gold); spare clothes keep SPARE_SELL. Food, drinks (menu, lunch box), worn gear, placed items and the counter never list. Selling
-  more than 5 pieces (SELL_CONFIRM_QTY), any ultra_rare or legendary thing, or a hotbar item asks first (confirmBuy). Ledger reason
-  'sell' (pure rule shared/src/trader.ts; GameAPI.getSellRows / sell), gold popup, no Book find. Nothing ever sells by itself. Closed
-  loops in balance.ts: ingredients sold < the dish or brew; a bought catalog block sells back for less; a pack sold back < its gems at the
-  gold-per-gem floor; a splice result and its seed sold back <= the GOLD of its starter seeds (S3, strict; SG2: tested over every pair of the general rule and every special recipe, balance.test.ts group SG2); selling crops never beats guests, run gold or the mine.
-- GOLD BALANCE (S3, balance.ts, `npm run simulate`): a mixed hour is about 375 gold (new), 480 (level 3), 630 (level 8); tavern guests, dungeon run gold
-  and the trader are each 10% to 50% of it (now about 45% / 14% / 40%). A new game earns about 220 gold in its first 30 minutes and 460 in its
-  first hour at the tavern (7 root ale per 8-minute brew, roasted turnip on the menu, 3 seats), plus a few dozen per first run. T1 keeps these numbers (the start ale is on a tap; the pour adds 0.8 s; the best kitchen lifts the guest share to 51%, cap 55% with prep tables).
+- NO SELLING (S1 15 Nov, trader removed 18 Nov): window-shoppers, buyers, the till queue, prices on slots, the stall sales AND the trader (the bar's Sell tab,
+  GameAPI.getSellRows / sell, SELL_RATES, spare-clothes sales) are gone. Stall table, shelf and display case are plain DECOR. GOLD sources are ONLY tavern guests
+  (drinks, dishes, tips) and dungeon run gold. Crops, seeds, fish, ore, bars, wood, spare clothes and unused things stay in the bag (player trading comes later,
+  docs/NOTES.md TODO); the bar's panel has Serve and Menu. The gold sinks (catalog, rooms, potions, keys, fees) stay.
+- GOLD BALANCE (balance.ts, `npm run simulate`): a mixed hour is about 245 gold (new), 275 (level 3), 375 (level 8); tavern guests are about 77% and dungeon run gold
+  about 23% of it (BALANCE_TARGETS: each source 15% to 85%; the best kitchen lifts guests to 77-80%, 85% is the cap, also with a full cellar of reserve 82%). A new game earns
+  about 220 gold in its first 30 minutes and 460 in its first hour at the tavern (7 root ale per 8-minute brew, roasted turnip on the menu, 3 seats), plus a few dozen per first run.
 - TAVERN GEM TIP (S3): a guest who did not have to call out for the order sometimes leaves a gem with the coins (GEMS.tavern chance 5% x
   TAVERN_GEM_CHANCE_MULT by the rank of the order: rare 2.5, ultra rare 5, legendary 10). Mess.gems; one tap takes coins and gem; popup.
 - tavernAppeal = min(100, appeal of placed items, decor too (each type at most 3 times) + floor and wall style). It sets the guest rate.
@@ -142,8 +135,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Gold sinks: catalog, room upgrades (300 / 800; farm 200 / 600), potions, key (10), basic crop seeds (block and rare seeds only drop), fees.
 - GEM SINK (BG8, numbers BG9): packs cost gems (config PACKS; shared/data/packs.json; pure openPack in shared/src/packs.ts):
   Random Blocks 40, Basic Seeds 30 (5 rolls each), Common Clothes 75, Rare Clothes 225 (3 rolls). Rank first (RANK_WEIGHTS times
-  the pack's multiplier), then an item. A clothes piece found again is a SPARE (Player.clothingSpares), sold for baseValue *
-  SPARE_SELL (0.06, COD-1 retune) gold. GEM INCOME (BG9, config GEMS + BLOCK_DROPS, targets BALANCE_TARGETS): a mixed hour gives about 55 gems
+  the pack's multiplier), then an item. A clothes piece found again is a SPARE (Player.clothingSpares) and stays in the bag (no selling since 18 Nov). GEM INCOME (BG9, config GEMS + BLOCK_DROPS, targets BALANCE_TARGETS): a mixed hour gives about 55 gems
   (new player), 70 (level 3), 100 (level 8); no source over 40%; first pack about 25 min, Common Clothes about 1 h, Rare Clothes
   about 3 h at level 3. Closed loops: seed ratio of every block seed under 0.85, gold per gem through catalog blocks at least 30,
   a pack sells for less than its price, playing a pack's contents gives back at most half its price. shared/src/balance.ts (maths)
@@ -167,7 +159,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Loot tables are data (shared/data/loot.json). A roll picks a rank first (RANK_WEIGHTS 75 / 20 /
   4.5 / 0.5 %, times the table's rankMultiplier), then a drop of that rank. Each kill gives xp
   and a 10% chance of a drop from the enemy's own table.
-- Levels 1 to 8 (shared/data/levels.json): +3 max hp per level, +1 attack per even level. Crypt
+- Levels 1 to 12 (shared/data/levels.json, cap 12 since MG-2; the xp for 9 to 12 is 620 / 830 / 1090 / 1400): +3 max hp per level, +1 attack per even level. SKILL POINTS (MG-1, shared/src/skills.ts, data shared/data/skills.json, GameAPI getSkills / buySkill / respecSkills; no UI or rule reads them yet): 1 point per level from 2 plus 1 per Book reward taken (max 4), a separate pool derived (earned minus spent), 32 nodes in 4 branches (tavern, dungeon, fishing, mining), tier N needs (N-1)*2 points in its branch, respec 3 free then 100 gold (ledger respec), no node adds gold. Crypt
   furniture and styles are crafted (shared/data/recipes.json), never in the catalog.
 - THE BOOK: everything ever found (grey "???" until seen); 25 / 50 / 75 / 100% of a tab gives gold.
 
@@ -239,7 +231,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   purchases. No loot boxes in the usual sense; the ONE random thing you pay for is a PACK (BG8), and only
   under these FAIRNESS RULES: gems are earned in play only, never bought with money; the contents and
   the rank odds are shown on the pack card before buying; duplicates are allowed (extra copies are spares,
-  sellable); no timers, limited offers or daily tricks that push buying. The first release is a small private test.
+  kept in the bag); no timers, limited offers or daily tricks that push buying. The first release is a small private test.
 
 14. WORKING RULES FOR YOU (the AI)
 - NEWS: at the start read the top of docs/NEWS.md; at the end of every batch add a 1 to 3 line entry on top (format in the file).
@@ -264,14 +256,14 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 
 CURRENT STATE (at most 15 lines; updated by the AI at the end of each step; the live task list is docs/TEAM.md START HERE + docs/QUEUE.md)
 - Done (17 Nov 2026): the game loops (hotel, tavern with taps/register/kitchen/casks, dungeon, farm, mine, lakeside), blocks and seeds, gems and packs, the One Inn doors (suite, tavern, garden),
-  hats and emotes, usable furniture and the cat rules (cat not drawn yet), room stars, first-steps guide v2 (data shared/data/guide.json, animated pointer, ready dots, one-time hint chip, replay in Settings), stacked blocks (max 3), planting on a block with a tap (SG4b), hands-on tap pouring (hold, perfect-window tip, tap the guest), hold/drag walking in
+  hats and emotes, usable furniture and the cat rules (cat not drawn yet), room stars, first-steps guide v3 (data shared/data/guide.json: it STARTS AT 0/N and only counts up; it opens with zoom (pinch or wheel), tap to walk and hold to walk, then the tavern steps; animated pointer, ready dots, one-time hint chip, replay in Settings), stacked blocks (max 3), planting on a block with a tap (SG4b), hands-on tap pouring (hold, perfect-window tip, tap the guest), hold/drag walking in
   the dungeon, 70+ furniture (5 medieval pieces added), the outdoors rework (crypt and lakeside art, fx module, light layer, lakeside life), the UI skin (client/src/ui/skin.css), 63+ redrawn icons.
 - Art direction (owner): cozy MEDIEVAL pixel look like Travellers Rest, original only: docs/ART-STYLE.md, PIXEL-ART-GUIDE.md, ART-REDO.md, PLAN-CHARACTERS.md (cosy three-head avatar, layers in
   client/src/assets/sprites/avatar, rig data shared/data/avatarRig.json and ramps.json), PLAN-UI.md, PLAN-REWORK-OUTDOORS.md; research: RESEARCH-GAMES.md and RESEARCH-DEEP.md.
 - In progress: C18 layered avatar renderer (box avatar stays as fallback), avatar sit frames and more clothes, UI round 4 (title screen, pour bar, icons), furniture and item icon rounds, tester run 2 fixes
   (docs/FIXLIST.md), SG3d/SG5/SG6, ST2 stack look. Owner decisions open: the avatar style lock, pushing is done only when the owner says so.
 - Not done: step 10 (server, a placeholder), cat art, renown/regulars (tavern deep). The game has been run in a browser (Playwright e2e and tester runs); the avatar style lock is still the owner's.
-- DUNGEON_ROUND is 1. SAVE_VERSION is 36 (36 the attached kitchen and cellar rooms, 35 room kinds kitchen and cellar, 34 ledger folds into quests.folded counters past 2500 entries, 33 quests.claimed for daily quests and achievements, 24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
+- DUNGEON_ROUND is 1. SAVE_VERSION is 38 (38 optional Player.skills + level cap 12, 37 the kitchen is a walled tavern area (the kitchen room is dissolved), 36 the cellar room, 35 room kinds kitchen and cellar, 34 ledger folds into quests.folded counters past 2500 entries, 33 quests.claimed for daily quests and achievements, 24 taps+register, 25 Inn name, 26 casks, 27 Inn doors, 28 usable pieces and the cat, 29 held mug perfect pour, 30 plants on blocks, 31 the waiter tray replaces holding, 32 stacked blocks: Room.blocks per cell is an array). LocalGameAPI only. The indoor lighting look is approved: keep it.
 
 FILE MAP (one line per folder; file-by-file lists are in docs/NOTES.md)
 - Root: npm scripts dev, build, test, typecheck, e2e (Playwright smoke, e2e/), simulate, simulate:dungeon. Vite base stays './'.
@@ -298,7 +290,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   above the hotbar; toasts above the hotbar; debug tools only while Settings -> Debug is on. A new
   screen = a button in ui/sideButtons.ts plus a panel. Every buy asks first (ui/confirmBuy.ts).
   Texts stay at reading pace (shared/src/text.ts readingMs).
-- INPUT: a press is a TAP only if it moved under 8 px and lasted under 300 ms; else a drag or
+- INPUT: TAP FORGIVENESS (18 Nov, shared/src/tapPick.ts, game/tapForgive.ts): a tap that hits nothing uses the NEAREST usable thing (guests, bar, register, taps, machines, casks, seats, usable decor; drawn sprite bounds) within 20 px (mouse) / 28 px (finger) and at least a 44 px touch box; a real hit always wins, a tap far from everything still walks, blocks keep exact cells, build mode is exact; plain toasts never swallow a tap. A press is a TAP only if it moved under 8 px and lasted under 300 ms; else a drag or
   long press, which never walks or punches. PLAY MODE: with a block selected in the hotbar a tap on
   a free cell places it; a tap on a block punches it (with a block selected and room on the stack, a tap STACKS it on top and a hold punches; seeds on a block plant); any other tap
   walks, sits, or uses a thing. Farther than BLOCK_REACH: the avatar walks closer first. HOLD TO
@@ -318,7 +310,7 @@ CONVENTIONS EVERY SESSION NEEDS (full text and the reasons: docs/NOTES.md)
   100 ms) and the dungeon run.
 - SAVING: LocalGameAPI writes the whole GameState after every change to localStorage as
   { version, savedAt, state }, plus one automatic backup. When the GameState shape changes: bump
-  SAVE_VERSION (now 36) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
+  SAVE_VERSION (now 38) and add MIGRATIONS[old] in shared/src/save.ts, with a test. Device
   settings (sound, lighting, grid) live in prefs, not in the GameState.
 - NAVIGATION: shared/src/nav.ts; cells are BUILD_CELL (32 px); a cell is free only if all of it is
   on the floor and no blocker touches it. Use roomBlockers(room, items) for room grids. Guests

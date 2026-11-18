@@ -5,7 +5,7 @@
 // everywhere), then an item of that rank in the pool.
 
 import packData from '../data/packs.json';
-import { PACKS, SPARE_SELL } from './config.ts';
+import { PACKS } from './config.ts';
 import { BLOCK_TYPES } from './blockTypes.ts';
 import { CLOTHING, getClothing } from './clothing.ts';
 import { applyChange, type Change } from './ledger.ts';
@@ -159,17 +159,4 @@ export function openPack(state: GameState, packId: string, rng: Rng, at: number)
   const opened = { ...next.player.packsOpened, [pack.id]: (next.player.packsOpened[pack.id] ?? 0) + 1 };
   const out: GameState = { ...next, player: { ...next.player, packsOpened: opened } };
   return { state: out, finds, gains: gainsSince(state, out) };
-}
-
-/** What one spare piece sells for (gold, config SPARE_SELL times its baseValue). 0 for an unknown piece. */
-export function spareValue(id: string): number {
-  const c = getClothing(id);
-  return c ? Math.floor(c.baseValue * SPARE_SELL) : 0;
-}
-
-/** Sells spare copies of a piece for gold (reason 'spare_sale'). Null (nothing changes) if the player has fewer spares. */
-export function sellSpare(state: GameState, id: string, qty: number, at: number): GameState | null {
-  const c = getClothing(id);
-  if (!c || c.free || !Number.isInteger(qty) || qty <= 0) return null;
-  return applyChange(state, { reason: 'spare_sale', gold: spareValue(id) * qty, sellSpares: { [id]: qty }, note: id }, at);
 }

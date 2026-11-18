@@ -30,7 +30,6 @@ import {
   SEED_BACK_CHANCE,
   SEED_GROW_MS,
   SEED_YIELD,
-  SPARE_SELL,
   RIPEN_AFTER_MIN,
   CELLAR_RACK_MAX_BY_LEVEL,
   CASK_SLOTS,
@@ -42,7 +41,6 @@ import { getClothing } from './clothing.ts';
 import { getFurnitureType } from './furniture.ts';
 import { CROP_TYPES, DRINK_TYPES, FOOD_TYPES, getMaterialType } from './materials.ts';
 import { blockPrice } from './economy.ts';
-import { clothingSellPrice, furnitureSellPrice, materialSellPrice } from './trader.ts';
 import { getPack, packOdds, packPool, type PackItem, type PackType } from './packs.ts';
 import { RANKS } from './ranks.ts';
 import { getLootTable, rollLoot, type LootTableId } from './dungeon/loot.ts';
@@ -291,7 +289,7 @@ export function packGemReturn(pack: PackType): number {
 
 /** The gold value of one pack item when sold (a block or seed in the shop at its baseValue; a clothes piece as a SPARE). */
 export function itemSellValue(item: PackItem): number {
-  if (item.kind === 'clothing') return Math.floor(getClothing(item.id)!.baseValue * SPARE_SELL);
+  if (item.kind === 'clothing') return 0; // spares cannot be sold since 18 Nov: they stay in the bag
   return getMaterialType(item.id as never).baseValue;
 }
 
@@ -424,64 +422,6 @@ export function cheapestGoldPerGem(): number {
   return best;
 }
 
-// ---------- The trader (step S2): selling must never open a loop ----------
-
-/** Gold the trader pays for a bundle of ingredients (a recipe's inputs). */
-export function ingredientsSellGold(inputs: Partial<Record<string, number>>): number {
-  return Object.entries(inputs).reduce((a, [id, n]) => a + materialSellPrice(id) * (n ?? 0), 0);
-}
-
-/** For each dish: the trader's gold for its ingredients against the dish's own value (menu price at its baseValue). Selling the crops must pay less. */
-export function dishSellLoops(): { id: string; sold: number; made: number }[] {
-  return FOOD_TYPES.map((f) => ({ id: f.id, sold: ingredientsSellGold(f.inputs), made: f.baseValue }));
-}
-
-/** The same for one brew: the ingredients sold against all the mugs it gives at their baseValue. */
-export function brewSellLoops(): { id: string; sold: number; made: number }[] {
-  return DRINK_TYPES.map((d) => ({ id: d.id, sold: ingredientsSellGold(d.inputs), made: d.baseValue * d.mugs }));
-}
-
-/** Buying a catalog block and selling it back: gold paid and gold received (always a loss). */
-export function blockBuyBack(): { id: string; paid: number; back: number }[] {
-  return BLOCK_TYPES.filter((b) => b.inCatalog).map((b) => ({ id: b.id, paid: blockPrice(b.id), back: materialSellPrice(b.id) }));
-}
-
-/** Gold the trader pays for one pack item (a clothes piece as a spare). */
-export function itemTraderGold(item: PackItem): number {
-  return item.kind === 'clothing' ? clothingSellPrice(item.id) : materialSellPrice(item.id);
-}
-
-/** Expected gold from selling a whole pack's contents at the trader, and what the pack's gems are worth at the gold-per-gem floor. */
-export function packTraderBack(pack: PackType): { sold: number; peakPiece: number; gemValue: number } {
-  const chances = itemChances(pack);
-  return {
-    sold: pack.rolls * chances.reduce((a, { item, p }) => a + p * itemTraderGold(item), 0),
-    peakPiece: Math.max(0, ...chances.map(({ item }) => itemTraderGold(item))),
-    gemValue: pack.gemPrice * BALANCE_TARGETS.minGoldPerGem,
-  };
-}
-
-/**
- * For every spliced result: the trader's gold for the SEED and for what it grows (one harvest), against what the chain costs: the gold of its
- * starter seeds (`gold`) plus its cell-minutes at the best plain crop rate (`cost`, the same measure as the BG9 splice test). The gold alone is
- * NOT enough to close the loop for furniture results (NOTES S2): their time is what pays for them.
- */
-export function spliceSellLoops(): { seed: SeedId; seedSold: number; productSold: number; gold: number; cost: number }[] {
-  const ch = chains();
-  const start = starterSeeds();
-  const out: { seed: SeedId; seedSold: number; productSold: number; gold: number; cost: number }[] = [];
-  const rate = bestCropGoldPerCellMinute();
-  for (const seed of new Set(allRecipes().map((r) => r.result))) {
-    if (start.has(seed)) continue;
-    const g = seedGrows(seed);
-    const productSold =
-      g.kind === 'material' ? materialSellPrice(g.id) * harvestYield(seedRank(seed)) : g.kind === 'furniture' ? furnitureSellPrice(g.id) : clothingSellPrice(g.id);
-    const c = ch.get(seed)!;
-    out.push({ seed, seedSold: materialSellPrice(seed), productSold, gold: c.gold, cost: c.gold + (c.cellMs / 60_000) * rate });
-  }
-  return out;
-}
-
 // ---------- The general splice rule's gate (step SG2, plan 2.7) ----------
 
 /** Gems per cell-minute of the best plain harvest (any rank): the yardstick of the splice gem cap. */
@@ -503,25 +443,6 @@ export function spliceGemRows(): { seed: SeedId; gems: number; perCellMin: numbe
     out.push({ seed, gems, perCellMin: gems / (c.cellMs / 60_000), gemGold: gems * perGem, cost: c.gold + (c.cellMs / 60_000) * rate });
   }
   return out;
-}
-
-/**
- * Gold per hour the PLANT CAP can earn at the trader (plan 2.7 group 10): every plant slot of every room full of the crop with the best profit per
- * harvest (sold at the trader's crop rate, net of the seed that comes back only SEED_BACK_CHANCE), harvested as fast as the slots ripen but never
- * faster than a player does nothing but farm (the farm activity's harvests per hour at this stage). Base value is NOT the measure: a crop is
- * only worth its baseValue inside a dish, and that gold is the tavern's (guest-limited). An upper bound.
- */
-export function plantsCapGoldPerHour(stage: Stage = 'level8'): number {
-  const slots = Object.values(PLANTS_ROOM_CAP).reduce((a, n) => a + n, 0);
-  const focused = activities(stage).find((x) => x.id === 'farm')!.lines[0]!.perHour;
-  let best = 0;
-  for (const crop of CROP_TYPES) {
-    if (crop.seedPrice === null) continue;
-    const profit = Math.max(0, harvestYield(crop.rank) * materialSellPrice(crop.id) - crop.seedPrice * (1 - SEED_BACK_CHANCE));
-    const cycles = Math.min(slots * (3_600_000 / seedGrowMs(crop.seed as SeedId)), focused);
-    best = Math.max(best, cycles * profit);
-  }
-  return best;
 }
 
 /**
@@ -557,18 +478,7 @@ export function cheapestSpliceCycle(depth: number): { seed: SeedId; cost: number
   return out;
 }
 
-// ---------- What selling surplus adds to a mixed hour (step S2; ASSUMPTIONS, an upper bound: it counts everything as surplus) ----------
-
-/** Gold the trader pays for the sellable part of what a loot table gives, averaged over `n` seeded rolls (gold drops are not sold: they are gold already). */
-function lootTraderGold(table: LootTableId, rng: Rng, n = 600): number {
-  let total = 0;
-  for (let i = 0; i < n; i++) {
-    for (const l of rollLoot(getLootTable(table), rng)) {
-      total += isMaterialId(l.item) ? materialSellPrice(l.item) * l.qty : l.item === 'gold' ? 0 : furnitureSellPrice(l.item) * l.qty;
-    }
-  }
-  return total / n;
-}
+// ---------- Run gold (the dungeon is the only gold source besides the tavern since the trader went, 18 Nov) ----------
 
 /** Gold the loot table DROPS as gold (run gold), averaged over `n` seeded rolls. */
 function lootDroppedGold(table: LootTableId, rng: Rng, n = 600): number {
@@ -577,7 +487,7 @@ function lootDroppedGold(table: LootTableId, rng: Rng, n = 600): number {
   return total / n;
 }
 
-/** Run gold ONE event of a dungeon line drops (the gold that goes into the bag; the trader value of the rest is in lineTraderGoldPerEvent). */
+/** Run gold ONE event of a dungeon line drops (the gold that goes into the bag; the other loot is not gold: nothing is sold any more). */
 function lineRunGoldPerEvent(line: GemLine, rng: Rng): number {
   switch (line.source) {
     case 'chest': return lootDroppedGold(line.mix[0]![0] === 'common' ? 'wooden_chest' : 'golden_chest', rng);
@@ -588,50 +498,6 @@ function lineRunGoldPerEvent(line: GemLine, rng: Rng): number {
   }
 }
 
-/** Trader gold for ONE event of a line (a chest opened, a plant harvested, a rock mined, a tree felled, a fish caught). Blocks are not counted: they are building stock. */
-function lineTraderGoldPerEvent(line: GemLine, rng: Rng): number {
-  const weights = line.mix.reduce((a, [, w]) => a + w, 0);
-  const byRank = (f: (rank: Rank) => number): number => line.mix.reduce((a, [rank, w]) => a + (w / weights) * f(rank), 0);
-  switch (line.source) {
-    case 'chest': return lootTraderGold(line.mix[0]![0] === 'common' ? 'wooden_chest' : 'golden_chest', rng);
-    case 'kill': return RARE_DROP_CHANCE * lootTraderGold(line.note.startsWith('skeleton') ? 'skeleton' : 'slime', rng);
-    case 'mimic': return lootTraderGold('mimic', rng);
-    case 'boss': return lootTraderGold('bone_king', rng);
-    case 'harvest':
-      return byRank((rank) => {
-        const crops = CROP_TYPES.filter((c) => c.rank === rank && !c.spliceOnly);
-        const pool = crops.length > 0 ? crops : CROP_TYPES.filter((c) => c.rank === 'common' && !c.spliceOnly);
-        // Net of the seed: a bought seed comes back with SEED_BACK_CHANCE only (step S3).
-        return harvestYield(rank) * (pool.reduce((a, c) => a + materialSellPrice(c.id), 0) / pool.length) - (pool.reduce((a, c) => a + (c.seedPrice ?? 0), 0) / pool.length) * (1 - SEED_BACK_CHANCE);
-      });
-    case 'rock': return ((ROCK_ORE_MIN + ROCK_ORE_MAX) / 2) * materialSellPrice(line.note.startsWith('mithril') ? 'mithril_ore' : line.note.startsWith('iron') ? 'iron_ore' : 'copper_ore');
-    case 'chop': {
-      let total = 0;
-      for (let i = 0; i < 600; i++) for (const [id, n] of Object.entries(fellLoot(rng)) as [MaterialId, number][]) total += materialSellPrice(id) * n;
-      return total / 600;
-    }
-    case 'fish':
-      return byRank((rank) => {
-        const catches = CATCH_TYPES.filter((c) => c.rank === rank);
-        const w = catches.reduce((a, c) => a + c.weight, 0);
-        return w === 0 ? 0 : catches.reduce((a, c) => a + (c.weight / w) * materialSellPrice(c.id), 0);
-      });
-    default: return 0;
-  }
-}
-
-/** Trader gold per hour of one FOCUSED hour in each open activity of a stage (no blocks: they are not surplus). */
-export function surplusGoldPerHour(stage: Stage, rng: Rng): { id: string; label: string; gold: number }[] {
-  return activities(stage)
-    .filter((a) => a.id !== 'blocks')
-    .map((a) => ({ id: a.id, label: a.label, gold: a.lines.reduce((sum, l) => sum + l.perHour * lineTraderGoldPerEvent(l, rng), 0) }));
-}
-
-/** Trader gold per hour of a MIXED hour: equal time in each open activity (blocks counted as an activity with 0 surplus, as in the gem tables). */
-export function mixedSurplusGoldPerHour(stage: Stage, rng: Rng): number {
-  const all = activities(stage).length;
-  return surplusGoldPerHour(stage, rng).reduce((a, x) => a + x.gold, 0) / all;
-}
 
 
 // ====================================================================================================================
@@ -754,37 +620,29 @@ export function firstHourGold(minutes: number): { gold: number; mugs: number; di
 
 // ---------- Gold per hour by source ----------
 
-export type GoldSourceId = 'guests' | 'dungeon' | 'trader';
+export type GoldSourceId = 'guests' | 'dungeon';
 export interface GoldSource {
   id: GoldSourceId;
   label: string;
-  /** Gold per hour of FOCUSED play there (guests: full attention; trader: the dearest single activity). */
+  /** Gold per hour of FOCUSED play there (guests: full attention). */
   focused: number;
   /** Gold per hour of a MIXED hour. */
   mixed: number;
 }
 
-/** Run gold per hour of a FOCUSED crypt hour: the gold the chests and kills drop, minus the keys (round 2 at level 8). The loot that is not gold is the trader's. */
+/** Run gold per hour of a FOCUSED crypt hour: the gold the chests and kills drop, minus the keys (round 2 at level 8). The rest of the loot is not gold (nothing is sold since 18 Nov). */
 export function runGoldPerHour(stage: Stage, rng: Rng): number {
   const a = activities(stage).find((x) => x.id === 'crypt')!;
   return a.lines.reduce((sum, l) => sum + l.perHour * lineRunGoldPerEvent(l, rng), 0) - runsPerHour(stage) * DUNGEON_KEY_COST;
 }
 
-/** What the trader pays per hour of a FOCUSED hour in each activity (crypt loot, mine ore, farm crops net of seeds, lake wood and fish), and in a mixed hour. */
-export function traderByActivity(stage: Stage, rng: Rng): { id: string; focused: number; mixed: number }[] {
-  const share = 1 / activities(stage).length;
-  return surplusGoldPerHour(stage, rng).map((x) => ({ id: x.id, focused: x.gold, mixed: x.gold * share }));
-}
-
-/** Gold per hour by SOURCE for a stage (INN-PLAN 5: tavern guests, dungeon run gold, the trader): focused and mixed (equal time in every open activity; the tavern at TAVERN_ATTENTION). */
+/** Gold per hour by SOURCE for a stage (tavern guests and dungeon run gold; the trader is gone since 18 Nov): focused and mixed (equal time in every open activity; the tavern at TAVERN_ATTENTION). */
 export function goldBySource(stage: Stage, rng: Rng, prepBonus = 0): GoldSource[] {
   const guests = guestGoldPerHour(stage, prepBonus).gold;
   const run = runGoldPerHour(stage, rng);
-  const trade = traderByActivity(stage, rng);
   return [
     { id: 'guests', label: 'Tavern guests', focused: guests, mixed: guests * TAVERN_ATTENTION_BY_STAGE[stage] },
     { id: 'dungeon', label: 'Dungeon run gold (minus keys)', focused: run, mixed: run / activities(stage).length },
-    { id: 'trader', label: 'The trader (loot, ore, crops, wood, fish sold)', focused: Math.max(...trade.map((x) => x.focused)), mixed: trade.reduce((a, x) => a + x.mixed, 0) },
   ];
 }
 
@@ -811,8 +669,8 @@ export function tavernTipGemsPerHour(stage: Stage): number {
 
 /** CEL (PROPOSAL, owner: use it): a cask slot's gold per hour of a tier stays under the best fresh barrel's gold per hour times this. */
 export const CEL_RACK_RATIO_MAX = 1.6;
-/** CEL: the cap on the guest share of the best-kitchen mixed hour (BALANCE_TARGETS: 55% with prep tables). */
-export const CEL_GUEST_SHARE_MAX = 0.55;
+/** CEL: the cap on the guest share of the best-kitchen mixed hour (BALANCE_TARGETS: 85% since the trader went). */
+export const CEL_GUEST_SHARE_MAX = BALANCE_TARGETS.maxGoldShareBestKitchen;
 /** CEL: the best kitchen = prep tables up to PREP_BONUS.max. */
 const BEST_KITCHEN = PREP_BONUS.max;
 

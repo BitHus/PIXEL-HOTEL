@@ -3303,6 +3303,7 @@
 /* ---------- Step 9t: the tavern ---------- */
 /* The order bubble above a seated guest: the item's icon; tap to serve (44 px touch size). */
 .order-bubble {
+  isolation: isolate;
   /* OWN-4 (d): a really tiny marker over the guest who wants something: a dot in the drink's colour, or the tiny dish icon. The orders strip holds the details. */
   position: absolute;
   left: 0;

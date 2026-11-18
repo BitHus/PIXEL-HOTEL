@@ -12,10 +12,9 @@ export function inRooms(roomId: number | null, rooms: number | readonly number[]
   return typeof rooms === 'number' ? roomId === rooms : rooms.includes(roomId);
 }
 
-/** The rooms where barrels, stoves and prep tables work: the tavern and the kitchen room (when it exists). */
+/** The rooms where barrels, stoves and prep tables work: the tavern (its kitchen is a walled area inside it since SAVE 37). */
 export function kitchenRoomIds(state: RoomsOf): number[] {
-  const k = state.player.kitchenRoomId;
-  return k === undefined ? [state.tavern.roomId] : [state.tavern.roomId, k];
+  return [state.tavern.roomId];
 }
 
 /** The rooms where keg racks work: the tavern and the cellar room (when it is built). */

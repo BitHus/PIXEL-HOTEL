@@ -169,7 +169,7 @@ export class DungeonScreen {
   }
 
   /** A tap on the dungeon (world px). */
-  tap(p: Point): void {
+  tap(p: Point, slack = 0): void {
     const run = this.run;
     if (!this.active || this.halted || !run || run.status !== 'active') return;
     const enemy = this.view.enemyAt(run, p);
@@ -178,7 +178,7 @@ export class DungeonScreen {
       return;
     }
     // The mine (step 9c): a tap on a rock walks there and swings.
-    const rock = this.view.rockAt(run, p);
+    const rock = this.view.rockAt(run, p, slack);
     if (rock) {
       this.input({ t: 'click_rock', id: rock.id });
       return;
@@ -189,7 +189,7 @@ export class DungeonScreen {
       this.input({ t: 'click_point', x: pile.x, y: pile.y });
       return;
     }
-    const chest = this.view.chestAt(run, p);
+    const chest = this.view.chestAt(run, p, slack);
     this.input(chest ? { t: 'click_point', x: chest.x, y: chest.y } : { t: 'click_point', x: p.x, y: p.y });
   }
 

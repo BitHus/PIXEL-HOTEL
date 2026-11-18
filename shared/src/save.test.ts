@@ -14,39 +14,11 @@ import { testRun } from './dungeon/testRun.ts';
 import type { FurnitureItem } from './types.ts';
 import type { BlockCell } from './blockTypes.ts';
 
-/** A new game as it was before CEL-2 (save 35): no kitchen room, the stove and the barrel stand in the tavern. */
+/** The rules tests of the old versions start from a new game with the stove and barrel in the tavern (they stand in the walled kitchen area there). */
 function oldNew(): ReturnType<typeof createNewPlayer> {
-  const s = withTavernMachines(createNewPlayer(undefined, 1));
-  const { kitchenRoomId: _k, ...player } = s.player;
-  return { ...s, player, rooms: s.rooms.filter((r) => r.kind !== 'kitchen') };
+  return withTavernMachines(createNewPlayer(undefined, 1));
 }
-
-/**
- * The old-version tests below compare a migrated save with the save it started from. Migration 35 -> 36 (CEL-2) adds the attached kitchen and moves the
- * machines into it; this reader undoes exactly that (the kitchen room and id are dropped, a moved machine goes back where the input had it, a machine that a
- * migration created goes to its old tavern spot) so those tests keep checking what they were written for. The kitchen itself is tested in cellarRooms.test.ts.
- */
-function readSave(text: string): ReturnType<typeof readSaveReal> {
-  const r = readSaveReal(text);
-  if (!r.ok) return r;
-  const k = r.state.player.kitchenRoomId;
-  let input: { player?: { kitchenRoomId?: number }; items?: FurnitureItem[] } | undefined;
-  try {
-    input = (JSON.parse(text) as { state?: typeof input }).state;
-  } catch {
-    return r;
-  }
-  if (k === undefined || input?.player?.kitchenRoomId !== undefined || !Array.isArray(input?.items)) return r;
-  const was = new Map(input.items.map((i) => [i.uid, i]));
-  const { kitchenRoomId: _k, ...player } = r.state.player;
-  const back = (i: FurnitureItem): FurnitureItem => {
-    if (i.roomId !== k) return i;
-    const old = was.get(i.uid);
-    if (old) return { ...i, roomId: old.roomId, x: old.x, y: old.y, facing: old.facing };
-    return withTavernMachines({ ...r.state, items: [i] }).items[0]!;
-  };
-  return { ...r, state: { ...r.state, player, rooms: r.state.rooms.filter((x) => x.id !== k), items: r.state.items.map(back) } };
-}
+const readSave = readSaveReal;
 
 const state = applyChange(oldNew(), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
 
@@ -703,8 +675,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 36 (35 -> 36 the attached kitchen and cellar rooms, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(36);
+  it('SAVE_VERSION is 38 (37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(38);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');

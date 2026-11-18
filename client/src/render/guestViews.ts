@@ -110,6 +110,11 @@ export class GuestViews {
     }
   }
 
+  /** Where the shown walkers stand (feet, world px). */
+  feetWithIds(): { id: number; x: number; y: number }[] {
+    return [...this.shown].map(([id, s]) => ({ id, x: s.avatar.x, y: s.avatar.y }));
+  }
+
   /** The walker standing at a world point (the body box: a bit wider than the feet, as tall as the avatar), the nearest one, or null. */
   at(p: Point): number | null {
     let best: number | null = null;

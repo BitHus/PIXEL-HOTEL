@@ -1,9 +1,9 @@
 // The Packs tab of the Catalog (step BG8): one card per pack with its picture, its gem price, how many things it gives,
 // ALL the possible contents with the rank odds in percent (the fairness rule: the odds are shown before buying), and for
 // clothes packs how many pieces are still missing (duplicates are possible). Below the cards: the player's spare pieces,
-// each sold for gold with one tap. Rendering only: every number comes from shared/ (packOdds, piecesMissing, spareValue).
+// kept in the bag. Rendering only: every number comes from shared/ (packOdds, piecesMissing, spareValue).
 
-import { PACK_TYPES, RANK_NAMES, getClothing, packOdds, piecesMissing, spareValue, type PackItem, type PackType } from '@pixel-hotel/shared';
+import { PACK_TYPES, RANK_NAMES, getClothing, packOdds, piecesMissing, type PackItem, type PackType } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
 import { clothingIconUrl, materialIconUrl, packIconUrl } from './itemIcon.ts';
 import { gemImg, iconBox, priceTag } from './panelShell.ts';
@@ -23,8 +23,6 @@ export interface PacksData {
 export interface PacksHooks {
   /** Asks first (confirmBuy), then opens. */
   open(pack: PackType): void;
-  /** Sells one spare piece. */
-  sell(clothingId: string): void;
 }
 
 /** 88.2 -> "88.2", 80 -> "80", 0.5 -> "0.5". */
@@ -76,7 +74,7 @@ function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement 
 
   const miss = piecesMissing({ unlockedClothing: [...d.unlocked] }, pack);
   if (miss.total > 0) {
-    card.appendChild(el('div', 'catalog-sub pack-note', `You still miss ${miss.missing} of ${miss.total} pieces. Duplicates are possible: extra copies are kept as spares and sell for gold.`));
+    card.appendChild(el('div', 'catalog-sub pack-note', `You still miss ${miss.missing} of ${miss.total} pieces. Duplicates are possible: extra copies are kept as spares.`));
   }
 
   const short = pack.gemPrice - d.gems;
@@ -91,18 +89,14 @@ function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement 
   return card;
 }
 
-function spareRow(id: string, n: number, hooks: PacksHooks): HTMLElement {
+function spareRow(id: string, n: number): HTMLElement {
   const c = getClothing(id)!;
   const row = el('div', 'pack-spare');
   const img = el('img', 'pack-chip-icon');
   img.src = clothingIconUrl(id);
   img.alt = '';
   img.draggable = false;
-  const sell = textButton('', () => hooks.sell(id), 'pack-sell');
-  const gain = el('span', 'sell-gain');
-  gain.append(pixelIcon('coin'), el('span', '', String(spareValue(id))));
-  sell.append('Sell 1', gain);
-  row.append(img, rankName('span', 'pack-spare-name', `${c.name} ×${n}`, id), sell);
+  row.append(img, rankName('span', 'pack-spare-name', `${c.name} ×${n}`, id));
   return row;
 }
 
@@ -113,9 +107,9 @@ export function drawPacks(list: HTMLElement, d: PacksData, hooks: PacksHooks): v
   const box = el('div', 'pack-card inset pack-spares');
   box.appendChild(el('div', 'catalog-name', 'Your spares'));
   if (spares.length === 0) {
-    box.appendChild(el('div', 'catalog-sub', 'A piece of clothing a pack gives you twice is kept here as a spare. Spares sell for gold.'));
+    box.appendChild(el('div', 'catalog-sub', 'A piece of clothing a pack gives you twice is kept here as a spare. Spares stay in your bag.'));
   } else {
-    for (const [id, n] of spares) box.appendChild(spareRow(id, n, hooks));
+    for (const [id, n] of spares) box.appendChild(spareRow(id, n));
   }
   list.appendChild(box);
 }

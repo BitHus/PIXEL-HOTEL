@@ -6,6 +6,7 @@ import type { Container } from 'pixi.js';
 import { DUNGEON_BLOCK, LIGHT_TORCH_ALPHA, type DecorProp, type DungeonMap } from '@pixel-hotel/shared';
 import { drawDecor, propLight, PROP_INFO } from './propArt.ts';
 import type { LightSource } from './light.ts';
+import { cobwebVariantAt } from './cobwebSide.ts';
 
 /** The propArt kind for a generator kind (propArt names them all now: no aliases). */
 export function decorKind(kind: string): string {
@@ -67,6 +68,8 @@ export function landmarkToast(map: DungeonMap): string | null {
 }
 
 /** One prop for the view: the artist's drawDecor. */
-export function drawDecorProp(kind: string, c: number, r: number, clockMs: number): Container {
-  return drawDecor(decorKind(kind), decorVariant(c, r), clockMs);
+export function drawDecorProp(kind: string, c: number, r: number, clockMs: number, map?: DungeonMap): Container {
+  const hash = decorVariant(c, r);
+  const v = kind === 'cobweb' && map ? cobwebVariantAt(map, c, r, hash) : hash;
+  return drawDecor(decorKind(kind), v, clockMs);
 }

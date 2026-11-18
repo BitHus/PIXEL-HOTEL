@@ -1,12 +1,13 @@
 // Pointer input: camera control, taps, drags (R1 split of main.ts: part 16 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween, isUsable } from '@pixel-hotel/shared';
+import { blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween, isUsable, tapTolerance, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import { createItemUse } from './itemUse.ts';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
 import { walkDoorGoal } from './doorGoal.ts';
 import { avatarMoving } from './followCam.ts';
+import { createTapForgive, isTouchInput } from './tapForgive.ts';
 
 export async function setupPointerInput(g: G15) {
   const {
@@ -17,9 +18,40 @@ export async function setupPointerInput(g: G15) {
   } = g;
   /** True while a press belongs to the pour (the hold on the tap stand): it never walks, pans or hits. */
   let pourClaim = false;
+  const { nearTap } = createTapForgive({ st, itemViews, late });
 
   const useTap = createItemUse({ api, applyItems, toast, sound, panels });
   app.stage.hitArea = app.screen;
+  /** The use of a tapped piece (tavern things, bar, usable decor, seats). True = the tap was used; false = it did nothing (the caller walks). */
+  const useHit = (hit: FurnitureItem | undefined, world: Point): boolean => {
+    // The tavern (step 9t): a guest with an order, coins or a dish on a table, a brewing barrel.
+    if (tavernTap(world, hit)) return true;
+    // The bar: its Menu panel opens and the avatar walks behind it (the staff spot, like sitting).
+    // The register on the bar (step T1) does the same as the bar itself.
+    const barItem = hit && getFurnitureType(hit.typeId).till ? roomItem(hit.onItemUid) : hit;
+    if (barItem && getFurnitureType(barItem.typeId).servedFromBehind) {
+      barTap();
+      void serveAt(barItem.uid).then((ok) => {
+        if (ok) return;
+        itemViews.shake(barItem.uid);
+        toast('There is no way to get behind the bar.');
+      });
+      return true;
+    }
+    // A usable piece (lamp, fire, music box, clock, mirror, pet basket, darts, dice; step 9g-2): the tap uses it.
+    if (hit && isUsable(getFurnitureType(hit.typeId)) && !hasSeats(getFurnitureType(hit.typeId))) {
+      useTap(hit);
+      return true;
+    }
+    // An item with seats: walk to its nearest free side, then sit or lie (it shakes if no seat
+    // can be reached). Any other item is ignored: walk to the point (a blocked point walks to
+    // the nearest free cell).
+    if (hit && hasSeats(getFurnitureType(hit.typeId))) {
+      void sitOn(hit.uid, world).then((ok) => ok || itemViews.shake(hit.uid));
+      return true;
+    }
+    return false;
+  };
   const control = attachCameraControl(app.stage, app.canvas, {
     getCamera: () => (dungeon.isActive ? dungeon.camera : st.camera),
     setCamera: (cam, snap) => (dungeon.isActive ? dungeon.setCamera(cam) : setCamera(cam, snap)),
@@ -28,6 +60,11 @@ export async function setupPointerInput(g: G15) {
     isCameraLocked: () => prefs.followCamera && !dungeon.isActive && !build.on && !paint.active && !placer.active && avatarMoving(st.avatar, st.path.length),
     onGestureStart: () => {
       intro.cancel();
+    },
+    // First-steps guide: the player zoomed, or a press became a real hold-walk.
+    onZoomGesture: () => late.guideEvent('zoom'),
+    onHoldWalkConfirmed: () => {
+      if (!dungeon.isActive) late.guideEvent('holdwalk');
     },
     onPress: (screen) => {
       // G2: while the avatar waits at the taps, a press on the stand (or near it) is the pour: hold = pour, release = done.
@@ -121,7 +158,7 @@ export async function setupPointerInput(g: G15) {
       if (dungeon.isActive) {
         if (kind !== 'tap') return;
         if (panels.open !== null) panels.close();
-        else dungeon.tap(screenToWorld(screen, dungeon.camera));
+        else dungeon.tap(screenToWorld(screen, dungeon.camera), tapTolerance(isTouchInput()) / dungeon.camera.zoom);
         return;
       }
       st.marked = screenToWorld(screen, st.shown);
@@ -196,31 +233,12 @@ export async function setupPointerInput(g: G15) {
       if (blockTap(st.marked)) return;
       // The lakeside (step 9f): a tree (swing) or the water (cast).
       if (lakeside.tap(st.marked)) return;
-      // The tavern (step 9t): a guest with an order, coins or a dish on a table, a brewing barrel.
-      if (tavernTap(st.marked, hit)) return;
-      // The bar: its Menu panel opens and the avatar walks behind it (the staff spot, like sitting).
-      // The register on the bar (step T1) does the same as the bar itself.
-      const barItem = hit && getFurnitureType(hit.typeId).till ? roomItem(hit.onItemUid) : hit;
-      if (barItem && getFurnitureType(barItem.typeId).servedFromBehind) {
-        barTap();
-        void serveAt(barItem.uid).then((ok) => {
-          if (ok) return;
-          itemViews.shake(barItem.uid);
-          toast('There is no way to get behind the bar.');
-        });
-        return;
-      }
-      // A usable piece (lamp, fire, music box, clock, mirror, pet basket, darts, dice; step 9g-2): the tap uses it.
-      if (hit && isUsable(getFurnitureType(hit.typeId)) && !hasSeats(getFurnitureType(hit.typeId))) {
-        useTap(hit);
-        return;
-      }
-      // An item with seats: walk to its nearest free side, then sit or lie (it shakes if no seat
-      // can be reached). Any other item is ignored: walk to the point (a blocked point walks to
-      // the nearest free cell).
-      if (hit && hasSeats(getFurnitureType(hit.typeId))) {
-        void sitOn(hit.uid, st.marked).then((ok) => ok || itemViews.shake(hit.uid));
-        return;
+      // Tap forgiveness (owner 18 Nov): what was hit exactly is used first; a tap that hit nothing uses the nearest usable thing within a small radius
+      // (shared/src/tapPick.ts); a tap far from everything still walks.
+      if (useHit(hit, st.marked)) return;
+      if (!hit) {
+        const near = nearTap(screen);
+        if (near && (near.kind === 'item' ? useHit(near.item, st.marked) : tavernTap(near.world, undefined))) return;
       }
       const to = st.marked;
       void walkTo(to).then((ok) => {

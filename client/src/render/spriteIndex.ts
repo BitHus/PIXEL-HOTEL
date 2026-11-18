@@ -29,7 +29,7 @@ export function neededFacings(type: { facings: readonly Facing[] }): SpriteFacin
  * dungeon (crypt and mine tiles, 32 x 32), actors (enemies and chests) and lake (water, trees, pier, decor) are the outdoors kinds (PLAN-REWORK-OUTDOORS
  * section 4). Their files are `<id>.png`; an animation STRIP is `<id>_<tag>.png` (see stripId): a horizontal row of equal frames.
  */
-export const SPRITE_KINDS = ['furniture', 'icons', 'blocks', 'floors', 'walls', 'plants', 'dungeon', 'actors', 'lake', 'avatar'] as const;
+export const SPRITE_KINDS = ['furniture', 'icons', 'blocks', 'floors', 'walls', 'plants', 'dungeon', 'actors', 'lake', 'avatar', 'doors'] as const;
 export type SpriteKind = (typeof SPRITE_KINDS)[number];
 
 /** One sprite file: its kind (the folder), the id, and the variant: the facing (furniture), the growth stage 1 to 3 (plants), else ''. */

@@ -66,7 +66,8 @@ export async function setupUiShell(g: G3) {
   const emote = createEmoteButton(ui, (kind) => {
     void api.emote(kind).then((e) => {
       if (!e) {
-        toast('Stand still to emote.');
+        // Sitting or lying is standing still, so the message says what to do: stand up (RUN 6).
+        toast(st.avatar.state === 'sit' || st.avatar.state === 'lie' ? 'Stand up to emote.' : 'Stand still to emote.');
         return;
       }
       const now = performance.now();

@@ -5,18 +5,17 @@ import { MIGRATIONS } from './save.ts';
 import { createRoom, defaultShape, doorRect, shapesFor } from './room.ts';
 import { AMBIENT_LIGHT } from './config.ts';
 
-describe('kitchen and cellar rooms (CEL-1)', () => {
-  it('each kind has its shape with three growing levels', () => {
-    expect(shapesFor('kitchen').map((s) => s.id)).toEqual(['kitchen_room']);
+describe('the cellar room (CEL-1; the kitchen is a walled tavern area since SAVE 37)', () => {
+  it('the cellar has its shape with three growing levels, and there is no kitchen room kind', () => {
+    expect(shapesFor('cellar' as const).map((s) => s.id)).toEqual(['cellar_room']);
     expect(shapesFor('cellar').map((s) => s.id)).toEqual(['cellar_room']);
-    const sizes = (kind: 'kitchen' | 'cellar') => ([1, 2, 3] as const).map((l) => { const r = createRoom(1, kind, l, 1); return [r.w / 32, r.h / 32]; });
-    expect(sizes('kitchen')).toEqual([[6, 5], [8, 5], [8, 7]]);
+    const sizes = (kind: 'cellar') => ([1, 2, 3] as const).map((l) => { const r = createRoom(1, kind, l, 1); return [r.w / 32, r.h / 32]; });
     expect(sizes('cellar')).toEqual([[8, 5], [10, 5], [10, 7]]);
-    expect(defaultShape('kitchen')).toBe('kitchen_room');
+    expect(defaultShape('cellar')).toBe('cellar_room');
   });
 
-  it('has a door zone and a light for both', () => {
-    for (const kind of ['kitchen', 'cellar'] as const) {
+  it('has a door zone and a light', () => {
+    for (const kind of ['cellar'] as const) {
       const r = createRoom(7, kind, 1, 1);
       expect(r.kind).toBe(kind);
       expect(doorRect(r).w).toBeGreaterThan(0);
@@ -25,7 +24,7 @@ describe('kitchen and cellar rooms (CEL-1)', () => {
   });
 
   it('keeps the proposed cellar numbers', () => {
-    expect([CELLAR_BUILD_COST, CELLAR_UNLOCK_LEVEL, [...CELLAR_UPGRADE_COST], [...CELLAR_RACK_MAX_BY_LEVEL]]).toEqual([300, 2, [400, 900], [2, 4, 6]]);
+    expect([CELLAR_BUILD_COST, CELLAR_UNLOCK_LEVEL, [...CELLAR_UPGRADE_COST], [...CELLAR_RACK_MAX_BY_LEVEL]]).toEqual([300, 2, [400, 900], [2, 3, 3]]);
   });
 
   it('34 -> 35 leaves an old save as it is (the optional ids are simply missing)', () => {

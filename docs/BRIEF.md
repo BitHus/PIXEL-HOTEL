@@ -81,6 +81,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 - Draw order: see section 7.
 
 5. ROOMS
+- CHANGED 18 Nov (owner; supersedes the kitchen-room parts of the next paragraph; CLAUDE.md section 5 is the short form): the KITCHEN IS NOT A ROOM. It is a walled area inside the tavern: the kitchen zone of shared/data/roomShapes.json is the inside, a one-cell plank wall (shared/src/kitchenWall.ts) surrounds it wherever there is floor, with one doorway cell (south middle first); guests never enter; no room switch, no kitchen door, no Player.kitchenRoomId, no 'kitchen' room kind, no kitchen shape. The start stove and barrel stand inside it; the wall blocks walking and placing; the long tavern shape's zone moved to x 8 and its cellar door to column 5, the counters of the long, L, plus, wide-hall shapes moved 1 cell (so the ring never covers the bar). Cellar racks per level are 2 / 3 / 3. Save 37 dissolves an old kitchen room (items into the inside, the wall ring cleared, blocks back to the bag). Tutorial: no kitchen step.
 - KITCHEN AND CELLAR (OA-7, CEL-1..5; every number is the plan's PROPOSAL, used with the owner's OK; docs/PLAN-CELLAR.md): kinds 'kitchen' and 'cellar', same Room record, shapes kitchen_room 6x5 / 8x5 / 8x7 and
   cellar_room 8x5 / 10x5 / 10x7 cells, reached only by a doorway in the back wall of the tavern (innDoors.json) and back; guests never enter. Kitchen: free, in a new game with the start stove and
   barrel (Player.kitchenRoomId); upgrades ROOM_UPGRADE_COST 300 / 800; the whole room is the kitchen zone. Barrels, stoves, prep tables, pantry, sink and hatch work in the tavern and the kitchen
@@ -274,6 +275,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   fish and crops are for USE (cook, brew, craft, build, plant, splice); surplus goes to the trader (step S2, below).
 - Stall table, shelf and display case (step S1) are decor only: no slots, no prices, no selling. Goods that sat on slots in an old
   save went back to the bag (ledger reason 'shop_closed'; save version 22). Old saves keep their stall table as decor; a NEW game has a third stool at the round table instead (S3, G2).
+- CHANGED 18 Nov (owner): THE TRADER IS GONE (supersedes THE TRADER below, SELL_RATES, SELL_CONFIRM_QTY, SPARE_SELL, the bag's sell hint, the quest d_sell, GameAPI.getSellRows / sell / sellSpare). Gold comes ONLY from tavern guests (drinks, dishes, tips) and dungeon run gold: a mixed hour is about 245 / 275 / 375 gold at a new game / level 3 / level 8, guests about 77%, dungeon about 23% (BALANCE_TARGETS: each 15% to 85%, best-kitchen guest cap 85%). The first 30 minutes (about 220) and the first hour (about 460) are unchanged. Nothing else is sold; crops, seeds, fish, ore, bars, wood and spare clothes stay in the bag until player trading exists.
 - GOLD AND GEM BALANCE (step S3): gold comes from three sources, each 10% to 50% of a mixed hour (balance.ts, tests in balance.test.ts):
   tavern guests, dungeon run gold (after the keys) and the trader. A mixed hour is about 375 / 480 / 630 gold at a new game / level 3 / level 8.
   A new game earns about 220 gold at the tavern in its first 30 minutes and 460 in its first hour (7 mugs of root ale per 8-minute brew, the
@@ -418,6 +420,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - THE BOOK (owner's decision, step 9e): a collection book of everything the player ever found
   (tabs Materials, Furniture, Food and crops, Enemies). Never seen = a grey silhouette and
   "???". Filling 25 / 50 / 75 / 100% of a tab gives gold (and later a hat, step 9g).
+- CHANGED 18 Nov (owner, MG-2): the level cap is 12; the total xp for levels 9 to 12 is 620 / 830 / 1090 / 1400 (hp and attack rules unchanged). MG-1 skill points: shared/src/skills.ts, data shared/data/skills.json (32 nodes), 1 point per level from 2 plus 1 per Book reward taken (max 4), derived, respec 3 free then 100 gold, GameAPI getSkills / buySkill / respecSkills; no UI or rule reads the stats yet (docs/PLAN-MINIGAMES.md).
 - XP and levels: levels 1 to 8, thresholds in shared/data/levels.json (total xp for level 2
   to 8: 15, 40, 80, 140, 220, 320, 450). Every level gives +3 max hp, and every even level
   gives +1 attack (added to both ends of the damage range). Xp counts the moment an enemy

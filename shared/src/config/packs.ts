@@ -11,8 +11,6 @@ export const PACKS = {
 } as const;
 /** Client only: the pack's pop animation (shake, then burst) lasts this long, ms. */
 export const PACK_POP_MS = 700;
-/** A spare piece of clothing sells for its baseValue times this (gold, until trading exists). */
-export const SPARE_SELL = 0.06;
 /**
  * The balance targets of the block world (step BG9; the owner confirmed them). shared/src/balance.test.ts fails when a number
  * drifts away from them. Hours are of MIXED play (equal time in every open activity).
@@ -32,16 +30,14 @@ export const BALANCE_TARGETS = {
   minGoldPerGem: 30,
   /** Playing a pack's contents (punching its blocks, planting its seeds) gives back at most this share of its gem price (planting takes cell time too). */
   maxPackGemReturn: 0.5,
-  /** Gold (step S3): each gold source (tavern guests, dungeon run gold, the trader) is between these shares of the gold of a mixed hour. */
-  minGoldShare: 0.1,
-  maxGoldShare: 0.5,
-  /** The same cap for a tavern with the best kitchen (two prep tables next to the stove, step T1): free dishes lift the guests' share a little (51% at the start); 55% is the limit. */
-  maxGoldShareBestKitchen: 0.55,
+  /** Gold (step S3, rebounded 18 Nov when the trader went): the two gold sources (tavern guests, dungeon run gold) are each between these shares of the gold of a mixed hour (about 77% guests / 23% dungeon now). */
+  minGoldShare: 0.15,
+  maxGoldShare: 0.85,
+  /** The same cap for a tavern with the best kitchen (two prep tables next to the stove, step T1): free dishes lift the guests' share a little (77% to 80% now); 85% is the limit (also with a full cellar of reserve, 82%). */
+  maxGoldShareBestKitchen: 0.85,
   /** A new game earns about this much gold at the tavern in its first 30 minutes and in its first hour (a perfect-play expectation: the player visits the barrel every 10 minutes). */
   firstHalfHourGold: { min: 150, max: 280 },
   firstHourGold: { min: 300, max: 500 },
-  /** Selling a thing at the trader pays at most this share of its base value (things worth 1 or 2 gold are exempt: the trader pays at least 1 gold). */
-  maxSellShare: 0.9,
 } as const;
 /** The id a gem gain has in a gains list (gems are a currency, not an item). */
 export const GEMS_GAIN_ID = 'gems';

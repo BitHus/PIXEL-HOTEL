@@ -2,9 +2,9 @@
 // (brief section 7). All children are in world px; the camera scales and moves `world`.
 
 import { Container, Graphics, TilingSprite } from 'pixi.js';
-import { BUILD_CELL, borderRects, doorRect, floorCellList, floorRects, floorStyleAt, innDoorSpots, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
+import { BUILD_CELL, borderRects, doorRect, floorCellList, floorRects, floorStyleAt, innDoorSpots, kitchenWall, PALETTE, wallBands, type Rect, type Room } from '@pixel-hotel/shared';
 import { BORDER_COLOR } from './bareStyles.ts';
-import { drawInnDoor } from './innDoors.ts';
+import { doorOpenNear, doorSpill, drawInnDoor, setDoorOpen } from './innDoors.ts';
 import { floorTexture, wallTexture } from './styleArt.ts';
 import { DepthLayer } from './depthLayer.ts';
 
@@ -56,7 +56,15 @@ export class RoomView {
     this.objects.update();
   }
 
+  private doors: { c: Container; x: number; y: number }[] = [];
+
+  /** Shows the cellar door open while the avatar is near it (call per frame; null = nobody). */
+  updateDoors(avatar: { x: number; y: number } | null): void {
+    for (const d of this.doors) setDoorOpen(d.c, doorOpenNear(d.x, d.y, avatar));
+  }
+
   setRoom(room: Room): void {
+    this.doors = [];
     this.floorLayer.removeChildren().forEach((c) => c.destroy());
     this.wallLayer.removeChildren().forEach((c) => c.destroy());
 
@@ -89,7 +97,26 @@ export class RoomView {
     for (const r of borderRects(room)) fillRect(walls, r, BORDER_COLOR);
     this.wallLayer.addChild(walls);
     // Inn doors (step MB-3): the doorway in the back wall band above each door spot.
-    for (const d of innDoorSpots(room)) drawInnDoor(this.wallLayer, { id: d.id, x: d.spot.x + d.spot.w / 2, y: d.spot.y, w: d.spot.w });
+    // The tavern's walled kitchen (owner 18 Nov): a plank partition one cell thick around the kitchen zone, one doorway.
+    const kw = kitchenWall(room);
+    if (kw) {
+      const g = new Graphics();
+      for (const c of kw.walls) {
+        g.rect(c.x, c.y + 2, c.w, c.h - 2).fill(PALETTE[6]); // outline
+        g.rect(c.x + 1, c.y + 3, c.w - 2, 17).fill(PALETTE[4]); // top face
+        g.rect(c.x + 1, c.y + 3, c.w - 2, 2).fill(PALETTE[3]);
+        g.rect(c.x + 1, c.y + 20, c.w - 2, c.h - 22).fill(PALETTE[5]); // front face
+        for (const x of [c.x + 10, c.x + 21]) g.rect(x, c.y + 21, 1, c.h - 23).fill(PALETTE[6]); // plank seams
+      }
+      if (kw.door) g.rect(kw.door.x + 4, kw.door.y + 10, kw.door.w - 8, kw.door.h - 14).fill({ color: PALETTE[6], alpha: 0.25 }); // threshold
+      this.wallLayer.addChild(g);
+    }
+    for (const d of innDoorSpots(room)) {
+      const door = { id: d.id, x: d.spot.x + d.spot.w / 2, y: d.spot.y, w: d.spot.w };
+      this.doors.push({ c: drawInnDoor(this.wallLayer, door), x: door.x, y: door.y });
+      const spill = doorSpill(door);
+      if (spill) this.floorLayer.addChild(spill);
+    }
   }
 }
 

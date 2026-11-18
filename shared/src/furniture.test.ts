@@ -341,11 +341,11 @@ describe('standPointFor', () => {
 describe('the counter (served from behind)', () => {
   it('cannot stand against the back wall: the shopkeeper must fit behind it', () => {
     const shop = createRoom(2, 'shop', 1, 1);
-    expect(can([], 'counter', 4, 0, 'down', shop)).toBe(false);
-    expect(can([], 'counter', 4, 2, 'down', shop)).toBe(true);
-    expect(can([], 'counter', 4, 1, 'down', shop)).toBe(true); // one free row behind it is enough
+    expect(can([], 'counter', 3, 0, 'down', shop)).toBe(false);
+    expect(can([], 'counter', 3, 2, 'down', shop)).toBe(true);
+    expect(can([], 'counter', 3, 1, 'down', shop)).toBe(true); // one free row behind it is enough
     // Facing up, its back is toward the door side: against the back wall is fine then.
-    expect(can([], 'counter', 4, 0, 'up', shop)).toBe(true);
+    expect(can([], 'counter', 3, 0, 'up', shop)).toBe(true);
   });
 });
 

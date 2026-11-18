@@ -1,6 +1,7 @@
 # ROADMAP
 
 17 NOV: [x] TUT-2 tutorial (18 steps, always starts in a new game, Continue resumes) and small fixes (bubble vs buttons, Continue fade). [x] TUT-2 part 3 (built 17 Nov, coder; owner check in a browser pending): Daily / Events / Achievements quest panel (ledger-counted, SAVE 33 quests.claimed).
+18 NOV (coder): [x] kitchen is a walled tavern area (SAVE 37), CEL 3 racks 2/3/3, trader removed (guests + dungeon only), MG-1 skill rules + API (SAVE 38) and MG-2 level cap 12 (UI and rule hooks MG-7/8/9 still open), tap forgiveness, tutorial from 0 with zoom/tap/hold steps. [x] RUN 6 UI fixes (keg rack text, first-steps card off doors, fi ligature, bubbles vs button column); open: kitchen barrel under the phone button column (camera/layout hook).
 
 The one roadmap for the game (owner + AI, 14 Nov). It replaces the loose idea list. Work top to
 bottom. A phase is finished before the next one starts, unless the owner says otherwise.
@@ -17,7 +18,7 @@ something to look forward to, and the hotel and shop show what the player has ac
 ## 17 NOV OWNER SESSION (manager; this block comes first; details in docs/STATUS.md and docs/OWNER-AGENDA-17NOV.md)
 REVIEW 17 NOV fixes 1-5 done (daily re-claim, dead runs, level-up re-roll, ripe sparkle, ledger fold SAVE 34), tutorial stove supplies, guest walk on real elapsed time; open: crates/barrels/statues in the crypt look solid but are walkable (design question).
 Live: https://pocketbarrel.com (PB-2/PB-3 done: domain, VPS, HTTPS, tools/deploy.sh). Done today: CAM-LOCK (camera locked on the walking avatar), ST2, ST3 (walkable heights), SG5/SG6, PB-1 rename, OA-1 hold-walk, OA-4/13/14 (quest hold, centered camera, open sign), OA-5 stove/barrel states, OA-2/12 table plates, OA-6 bar extension, OA-9 dungeon placement, OA-10 free wall items, HUD round 1, ON-0/ON-1 server skeleton + cloud save (flag off), ON-6/ON-7 prep (tools/ops + docs/OPS.md written, NOT run on the VPS). 18 NOV: locked camera has no edge clamp; rock PNGs wired; PERF-2 useContextAlpha:false (ticker pause/pooling not done).
-17 NOV PLANS: [~] OA-7 cellar + kitchen room: docs/PLAN-CELLAR.md, CEL-1..5 and CEL-7 done 18 Nov (SAVE 36, doors, kitchen free, cellar built from the Room panel, reserve tier, tutorial steps); open: CEL-6 cask chips/ripe dots (basic tier chips done), CEL-8 art, CEL-9 decor, CEL-10 playtest, balance CEL 3 (59% vs 55%). [ ] OA-8 upgrade points: docs/PLAN-UPGRADES.md, tasks UPG-1..UPG-8 (numbers are PROPOSALS).
+17 NOV PLANS: [~] OA-7 cellar + kitchen room: docs/PLAN-CELLAR.md, CEL-1..5 and CEL-7 done 18 Nov (SAVE 36, doors, kitchen free, cellar built from the Room panel, reserve tier, tutorial steps); open: CEL-6 cask chips/ripe dots (basic tier chips done), CEL-8 art, CEL-9 decor, CEL-10 playtest, balance CEL 3 fixed 18 Nov (racks 2/3/3); the KITCHEN ROOM was replaced by a walled tavern area (SAVE 37). [ ] OA-8 upgrade points: docs/PLAN-UPGRADES.md, tasks UPG-1..UPG-8 (numbers are PROPOSALS).
 23:17 NOV PLANS: [ ] MG-1..MG-16 minigames (docs/PLAN-MINIGAMES.md): dig mine with exit and rare blocks, dungeon round 2 content, minigame gear, skill tree (supersedes UPG when the owner agrees). Numbers are PROPOSALS.
 Next in order: TUT-2 (one big tutorial + daily quests, event quests, achievements, OA-15) -> TF-1..TF-10 tavern flow (docs/PLAN-TAVERN-FLOW.md) -> FUN top 5 (docs/PLAN-FUN.md, events and things to do) -> OA-3 fishing redo (docs/RESEARCH-OA.md) -> OA-7 cellar + kitchen room (owner checks numbers) -> OA-8 upgrade points -> ON-2.. online P1/P2 (docs/PLAN-ONLINE.md) -> ST4 conveyors, SG3d, RN-1 renown, VG tasks. Art done 17 Nov: tap_stand_dry redo, wet tweak, bar-guest poses lean+drink (up, staging). Art pending: ripe sparkle hook, bar-guest poses facing right/down.
 17 NOV: [x] OA-11 r2 run HUD (ui): dungeon/mine bottom pill with bag used/12 (tap = drawer), gold, gems, potion Q, food E, Leave/Abandon; slim info panel during a run. [ ] crypt Abandon needs the coder to pass onAbandon in game/uiShell.ts.
@@ -35,7 +36,7 @@ THE GAME IN ONE PAGE: docs/GAME-VISION.md (owner 16 Nov: combine Growtopia + Tra
 
 Rule: the game must be fun and good-looking in a browser BEFORE it gets bigger or online. Depth that feeds the existing loops beats new areas.
 VIBES FIRST (owner 16 Nov, updated): the game must look and feel like a cozy MEDIEVAL pixel game (Travellers Rest is the reference; see docs/ART-STYLE.md MEDIEVAL DIRECTION). Four art/feel tracks run in parallel with the features and rank above 2 onward: (A) furniture and item redo with matching icons (docs/ART-REDO.md); (B) CHARACTERS: a real pixel avatar and NPCs, medieval outfits and hats (docs/PLAN-CHARACTERS.md; U1 approved); (C) the OUTDOORS REWORK (1b below); (D) medieval content: new furniture, clothes, recipes and decor in medieval style (anvil, weapon rack, banners, chandelier, hearth, trestle tables).
-NOW (in progress): C6 done; N1 done; art redo round 2; C11 outdoors hooks; character plan being written.
+NOW (in progress): outdoor tree/farm/door art hooks wired (NEWS OUTDOOR-HOOKS); C6 done; N1 done; art redo round 2; C11 outdoors hooks; character plan being written.
 RESEARCH (17 Nov): docs/RESEARCH-VISUAL-GAMEPLAY.md (Habbo, Pixel Worlds, Travellers Rest: visuals + gameplay, original takeaways). Top 10 ranked tasks (details and sizes in that file, section 3):
    1. VG-1 ready dots + context hint chip (T, S-M, ui+coder). 2. VG-2 ONBOARD-1 first reward in 90 s + replayable guide (T, S, coder). 3. VG-3 RN-1 renown ladder with 3-unlock preview, first rank in 15 min (T, M-L, coder). 4. VG-4 JU-1 juice + ready idle fx (T, M, artist+coder). 5. VG-5 decor sets with set bonus (I, M, coder+artist).
    6. VG-6 share card + room postcard PNG (I, M, ui+coder). 7. VG-7 AU-1 sound bed (T/I, M, coder; owner OKs audio source). 8. VG-8 titles, emotes, held mug idle (I, M, coder+animator). 9. VG-9 next-small-thing line + away-report hook (T, S-M, coder). 10. VG-10 light as decor: glow + appeal tick (I, S-M, coder+artist).
@@ -137,6 +138,7 @@ The list below is the order for the rest, not a gate.
 4.2 Avatar: clothing, hats, walk and sit frames.
 4.3 Furniture and styles (home, shop, crypt, lake).
 4.4 Outdoors: farm, lakeside, crops, trees, water.
+4.4b [x] OUTDOOR-ART r1: new lakeside tree PNGs (6 variants, stump, 2 saplings), farm grass/soil/hedge redrawn (tools/gen-outdoor-art.mjs). [ ] hooks: drawTree PNG lookup, per-cell grass variants, farm decor (see NEWS).
 4.5 Dungeon and mine: blocks, enemies, chests, rocks.
 4.6 Icons (materials, food, fish, gear) and the UI skin.
 The look and feel wanted: rooms packed with small props; warm, soft light close to its source;

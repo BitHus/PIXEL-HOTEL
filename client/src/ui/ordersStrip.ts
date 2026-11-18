@@ -22,7 +22,7 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
   root.setAttribute('aria-label', 'Open orders');
   parent.appendChild(root);
   // The top stack (UI-CAT): the strip is the top band; the first-steps card and the quest card start below it (skin.css reads --orders-h).
-  const setH = (): void => parent.style.setProperty('--orders-h', root.hidden ? '0px' : `${root.offsetHeight + 6}px`);
+  const setH = (): void => parent.style.setProperty('--orders-h', '0px');
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(setH).observe(root);
   const chipsEl = el('div', 'orders-chips');
   const trayEl = el('div', 'orders-tray');
@@ -88,6 +88,7 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
         if (chipsEl.children[index] !== s.button) chipsEl.insertBefore(s.button, chipsEl.children[index] ?? null);
         s.button.dataset.state = c.state;
         s.button.classList.toggle('urgent', c.urgent);
+        s.button.style.setProperty('--p', String(Math.round(c.patience * 100)));
         s.bar.style.width = `${Math.round(c.patience * 100)}%`;
         s.button.title = c.state === 'ready' ? 'A mug is ready: tap to carry it over' : c.state === 'queued' ? 'Being poured' : 'Tap to pour this order';
       });

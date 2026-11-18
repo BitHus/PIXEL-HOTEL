@@ -305,6 +305,8 @@ export type LedgerReason =
   | 'spare_sale'
   // The trader at the bar (step S2): surplus things sold for gold, only when the player taps.
   | 'sell'
+  // MG-1: gold paid to take the skill points back after the free respecs.
+  | 'respec'
   | 'debug';
 
 export interface LedgerEntry {
@@ -347,8 +349,7 @@ export interface Player {
   unlockedClothing: string[];
   hotelRoomId: number;
   shopRoomId: number;
-  /** CEL-1: the attached kitchen room and the cellar room (missing = not built yet; see docs/PLAN-CELLAR.md). */
-  kitchenRoomId?: number;
+  /** CEL-1: the cellar room (missing = not built yet; see docs/PLAN-CELLAR.md). The kitchen is a walled area of the tavern since SAVE 37. */
   cellarRoomId?: number;
   /** The farm (step 9b). */
   farmRoomId: number;
@@ -377,6 +378,8 @@ export interface Player {
   clothingSpares: Record<string, number>;
   /** How many packs of each kind were opened (step BG8; for quests later). */
   packsOpened: Record<string, number>;
+  /** MG-1 (save 38): skill ranks bought by node id and respecs used. Missing = nothing bought. Unspent points are derived (shared/src/skills.ts). */
+  skills?: { ranks: Record<string, number>; respecs: number };
   /** The adopted cat (step 9g-2, save 28): null until the pet basket is used. Only the name is saved; the cat's place is not. */
   pet: { name: string } | null;
 }

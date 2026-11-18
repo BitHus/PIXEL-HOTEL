@@ -26,7 +26,7 @@ import type { BlockCell } from './blockTypes.ts';
 import type { Point, Rect, SeedId } from './types.ts';
 
 /** The hotel room, the shop, the farm (step 9b) and the lakeside (step 9f). */
-export type RoomKind = 'hotel' | 'shop' | 'farm' | 'lakeside' | 'kitchen' | 'cellar';
+export type RoomKind = 'hotel' | 'shop' | 'farm' | 'lakeside' | 'cellar';
 
 /** A seed growing in a cell of a farm room (step BG6; Room.plants, key "col,row"). Times are ms on the game clock. */
 export interface Plant {
@@ -90,12 +90,12 @@ export function getRoomShape(id: string): RoomShape {
 
 /** The shapes a room of this kind can have. */
 export function shapesFor(kind: RoomKind): RoomShape[] {
-  return ROOM_SHAPES.filter((s) => s.kind === kind || (s.kind === 'both' && kind !== 'kitchen' && kind !== 'cellar'));
+  return ROOM_SHAPES.filter((s) => s.kind === kind || (s.kind === 'both' && kind !== 'cellar'));
 }
 
 /** The plain rectangle every room had before step 7b. */
 export function defaultShape(kind: RoomKind): string {
-  return kind === 'hotel' ? 'square' : kind === 'shop' ? 'square_shop' : kind === 'kitchen' ? 'kitchen_room' : kind === 'cellar' ? 'cellar_room' : kind;
+  return kind === 'hotel' ? 'square' : kind === 'shop' ? 'square_shop' : kind === 'cellar' ? 'cellar_room' : kind;
 }
 
 function shapeLevel(shape: string, level: RoomLevel): ShapeLevel {

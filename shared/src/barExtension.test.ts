@@ -92,7 +92,7 @@ describe('bar extension (OA-6)', () => {
       items = [...items, piece(900 + k, x, fp.y + fp.h, counter.facing, room.id)];
       placed++;
     }
-    expect(placed).toBeGreaterThanOrEqual(3); // the stove stands 4 cells to the right in the starter tavern
+    expect(placed).toBeGreaterThanOrEqual(2); // the kitchen wall stands 3 cells to the right in the starter tavern
     expect(placed).toBeLessThan(20);
     expect(barExtensionsConnected(items, room.id)).toBe(true);
   });

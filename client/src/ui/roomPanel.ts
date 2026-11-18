@@ -14,7 +14,7 @@ export interface RoomHooks {
   applyStyle(roomId: number, kind: StyleKind, id: string): void;
   /** Starts painting floor cells (step BG1): the panel closes and the paint bar opens. */
   startPaint(): void;
-  /** CEL-2/4: opens another room of the tavern area (tavern, kitchen, cellar). */
+  /** CEL-2/4: opens another room of the tavern area (tavern, cellar). */
   openRoom(roomId: number): void;
   /** CEL-4: builds the cellar (the caller asks first). */
   buildCellar(): void;
@@ -23,7 +23,6 @@ export interface RoomHooks {
 /** The rooms of the tavern area (CEL-2/4), for the Rooms cards. */
 export interface RoomLinks {
   tavernId: number;
-  kitchenId?: number;
   cellarId?: number;
   playerLevel: number;
 }
@@ -66,7 +65,6 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       cards.push(row);
     };
     open('Tavern', links.tavernId, 'Guests, the bar, the taps.');
-    open('Kitchen', links.kitchenId, 'Brew at the barrel, cook at the stove. The door is in the back wall of the tavern.');
     if (links.cellarId !== undefined) open('Cellar', links.cellarId, `Mugs left on a keg rack ripen and sell for more. Racks here: up to ${CELLAR_RACK_MAX_BY_LEVEL[(room.kind === 'cellar' ? room.level : 1) - 1]}.`);
     else {
       const b = textButton(`Build the cellar: ${CELLAR_BUILD_COST} gold`, () => hooks.buildCellar());
@@ -109,7 +107,7 @@ export function createRoomPanel(parent: HTMLElement, hooks: RoomHooks): RoomPane
       if (kitchen) facts.append(el('div', '', `Kitchen ${kitchen.w / BUILD_CELL} x ${kitchen.h / BUILD_CELL} cells (staff only)`));
       const cost = upgradeCost(room);
       // CEL-2/4: the tavern, its kitchen and its cellar: Open cards (the doors in the back wall do the same) and the cellar's Build card.
-      const rooms = links && (room.kind === 'shop' || room.kind === 'kitchen' || room.kind === 'cellar') ? roomCards(room, links, gold) : [];
+      const rooms = links && (room.kind === 'shop' || room.kind === 'cellar') ? roomCards(room, links, gold) : [];
       const up = textButton(cost === null ? 'Top level' : `Upgrade: ${cost} gold`, () => hooks.upgrade(room.id));
       up.disabled = cost === null;
       up.classList.toggle('poor', cost !== null && gold < cost);

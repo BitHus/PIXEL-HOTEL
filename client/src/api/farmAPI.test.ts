@@ -80,7 +80,7 @@ describe('the farm through the GameAPI', () => {
     const m = (await again.getPlayer()).materials;
     expect((m.turnip ?? 0) + (m.potato ?? 0)).toBe(crops);
     // Cook a stew in the tavern (step K1): 2 potatoes + 1 turnip (the 3 potato plants gave at least 6); it takes a minute.
-    const stove = (await again.enterRoom((await again.getPlayer()).kitchenRoomId!)).items.find((i) => i.typeId === 'stove')!;
+    const stove = (await again.enterRoom((await again.getPlayer()).shopRoomId)).items.find((i) => i.typeId === 'stove')!;
     expect(await again.startCook(stove.uid, 'potato_stew', 1)).toBe(true);
     expect(await again.collectCook(stove.uid)).toBeNull(); // not ready yet
     t += MIN;

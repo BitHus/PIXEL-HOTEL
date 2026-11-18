@@ -50,6 +50,12 @@ export const SHAKE_MS = 300;
 /** ...this many world px to each side. */
 export const SHAKE_PX = 2;
 
+// ---------- Tap forgiveness (owner 18 Nov, shared/src/tapPick.ts) ----------
+/** A tap that misses everything picks the nearest thing within this many screen px of its drawn bounds (a finger is less exact than a mouse). */
+export const TAP_TOLERANCE_PX = { touch: 28, mouse: 20 } as const;
+/** A thing counts as at least this big for a tap (touch: a 44 px box; mouse: a bit smaller), screen px. */
+export const TAP_MIN_SIZE_PX = { touch: 44, mouse: 28 } as const;
+
 // ---------- Camera intro (step 5, section 4) ----------
 /** When a room opens: wait this long at the overview zoom... */
 export const INTRO_WAIT_MS = 600;

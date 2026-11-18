@@ -24,6 +24,7 @@ import type { RoomView } from '../render/roomView.ts';
 import { spriteFrames } from '../render/spriteStore.ts';
 import { drawPlantArt, drawRipeMarker } from './farmArt.ts';
 import { plantSprite } from './plantSprite.ts';
+import { FarmAmbienceView } from './farmAmbienceView.ts';
 
 const SHAKE_MS = 160;
 /** One sparkle frame lasts this long (animator OA-5b: 450 ms). */
@@ -57,6 +58,7 @@ interface Bit {
 export class PlantViews {
   private readonly views = new Map<string, PlantView>();
   private roomId = -1;
+  private readonly ambience: FarmAmbienceView;
   private readonly bits: Bit[] = [];
   private readonly ghost = new Container();
   private readonly ghostArt = new Graphics();
@@ -64,6 +66,7 @@ export class PlantViews {
   private ghostFor = '';
 
   constructor(private readonly view: RoomView) {
+    this.ambience = new FarmAmbienceView(view);
     this.ghost.addChild(this.ghostArt, this.ghostFrame);
     this.ghost.visible = false;
     view.ghostLayer.addChild(this.ghost);
@@ -71,6 +74,7 @@ export class PlantViews {
 
   /** Shows the plants of this room: adds, removes and re-stages them (growth runs with `now`, ms on the game clock). */
   sync(room: Room, now: number): void {
+    this.ambience.sync(room);
     if (room.id !== this.roomId) {
       for (const v of this.views.values()) this.drop(v);
       this.views.clear();

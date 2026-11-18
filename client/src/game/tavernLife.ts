@@ -4,7 +4,7 @@
 import {
   REACTION_BUBBLE_MS, getFurnitureType, type FurnitureItem, type Point, kitchenZone, SERVE_QUEUE_MAX, seatKey,
   tavernSeats, type Guest, STOVE_REACH_PX, BARREL_REACH_PX, CASK_REACH_PX, cookOf, cookReady, cookMs, getFoodType, footprintCenter,
-  brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId, type SellRow, sellWarning,
+  brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen, pourTip,
   guestsTrayCanServe, ordersStrip as ordersStripData, nothingOrderable,
 } from '@pixel-hotel/shared';
@@ -22,7 +22,6 @@ import { startGuideWorld, type GuideWorldApi } from './guideWorld.ts';
 import { brewReady as brewIsReady, firstTenGoal, guideWaiting, machineStates, type FirstTenStep, type Point as P2 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { confirmBuy } from '../ui/confirmBuy.ts';
-import { sellDetail, sellRowIcon } from '../ui/sellTab.ts';
 import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
 import { GuestViews, type Walker } from '../render/guestViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
@@ -46,6 +45,7 @@ export async function setupTavernLife(g: G9) {
   if (st.introPending) guide.begin();
   late.replayGuide = () => guide.replay();
   late.guideEvent = (step) => guide.event(step);
+  late.guestFeet = () => guests.feetWithIds();
   // TUT-2: ONE guide at a time: the quest card and its glow wait while the tutorial shows a goal; hint chips too (guideWorld).
   const holdQuest = (): void => {
     const held = guide.goal() !== null;
@@ -479,27 +479,8 @@ export async function setupTavernLife(g: G9) {
   const openOrdersNow = (): Guest[] => st.tavern.guests.filter((g) => g.phase === 'order' && g.order);
   async function refreshMenu(): Promise<void> {
     menuRowsNow = await api.getMenu();
-    menuPanel.setSellRows(await api.getSellRows());
     menuPanel.update(openOrdersNow(), menuRowsNow, st.tavern.serveQueue, st.tavern.taps);
   }
-  /** The trader (step S2): a tap on Sell 1 / Sell all. Asks first for many pieces, very rare things and hotbar items; nothing else sells itself. */
-  const sellTap = async (row: SellRow, qty: number): Promise<void> => {
-    if (sellWarning(row, qty) !== null) {
-      const ok = await confirmBuy(ui, { name: `${row.name} x${qty}`, detail: sellDetail(row, qty), price: row.unit * qty, image: sellRowIcon(row), title: 'Sell this?', yes: 'Sell' });
-      if (!ok) return;
-    }
-    const res = await api.sell(row.kind, row.id, qty);
-    if (!res) {
-      toast('That could not be sold.');
-      await refreshMenu();
-      return;
-    }
-    sound.play('coin');
-    popups.show(res.gains);
-    toast(`Sold ${qty} x ${row.name} for ${res.gold} gold.`);
-    await late.refreshInventory();
-    await refreshMenu();
-  };
   const changeMenu = async (id: MaterialId, change: { on?: boolean; price?: number }): Promise<void> => {
     const rows = await api.setMenuEntry(id, change);
     if (!rows) {
@@ -517,7 +498,6 @@ export async function setupTavernLife(g: G9) {
       const row = menuRowsNow.find((r) => r.id === id);
       if (row) void changeMenu(id, { price: stepPrice(row.price, row.baseValue, dir) });
     },
-    sell: (row, qty) => void sellTap(row, qty),
     openTaps: () => standTap(),
   });
   panels.add('menu', menuPanel.el);
@@ -696,6 +676,8 @@ export async function setupTavernLife(g: G9) {
         if (!on) break;
         pourFor = { standUid: e.standUid, item: e.item, guestId: e.guestId };
         pourControl.wait(e.standUid, e.item);
+        // Serving started from the bar's panel: close it so the Hold the tap prompt does not sit on top of the Serve menu. Nothing reopens it.
+        if (panels.open === 'menu') panels.close();
         pourBar.show();
         const i = standInfo(e.standUid);
         if (i) {

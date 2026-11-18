@@ -33,7 +33,9 @@ export async function setupPlaceLife(g: G8) {
   const updateBadge = (): void => {
     const orders = st.tavern.guests.filter((g) => g.phase === 'order' && g.order).length;
     const coins = st.tavern.mess.filter((m) => m.coins > 0).length;
-    const parts = [orders > 0 ? `${orders} ${orders === 1 ? 'order' : 'orders'}` : '', coins > 0 ? `${coins} ${coins === 1 ? 'coin pile' : 'coin piles'}` : ''].filter(Boolean);
+    // In the tavern itself the orders strip shows what waits: no badge there (nor in the cellar); elsewhere it counts the tavern's orders and coins.
+    const away = st.room.id !== st.tavern.roomId && !st.tavern.workRooms.includes(st.room.id);
+    const parts = !away ? [] : [orders > 0 ? `${orders} ${orders === 1 ? 'order' : 'orders'}` : '', coins > 0 ? `${coins} ${coins === 1 ? 'coin pile' : 'coin piles'}` : ''].filter(Boolean);
     mapBadge.hidden = parts.length === 0;
     mapBadge.textContent = parts.join(', ');
     mapButton.title = parts.length > 0 ? `Worlds: travel (${parts.join(', ')} in your tavern)` : 'Worlds: travel';

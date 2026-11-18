@@ -122,7 +122,6 @@ export async function setupShopPanels(g: G6) {
       late.avatarPanel.setLook(st.avatar.look, (await api.getPlayer()).unlockedClothing);
     },
     openPack: (pack) => void packFlow.open(pack),
-    sellSpare: (id) => void packFlow.sell(id),
     buyStyle: async (kind, id) => {
       const s = getStyle(kind, id);
       const detail = `${kind === 'floor' ? 'Floor' : 'Wall'}: yours forever, put on this room now.`;

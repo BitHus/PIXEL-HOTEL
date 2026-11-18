@@ -1,5 +1,5 @@
 // Inn doors (step MB-2, INN-PLAN M-B): one connected Inn. Walking order suite (hotel) - tavern (shop) - garden (farm), and (CEL-2) the tavern's
-// back wall also leads to the attached kitchen and, once built, the cellar; the lakeside, the mine
+// back wall also leads to the cellar once it is built; the lakeside, the mine
 // and the dungeon stay on the Map. Pure rules on plain data.
 //
 // A door is a 2-cell wide doorway in the BACK WALL BAND; its SPOT is the 2 x 1 floor cells right in front of it (shared/data/innDoors.json:
@@ -18,8 +18,6 @@ export type InnDoorId =
   | 'tavern_to_suite'
   | 'tavern_to_garden'
   | 'garden_to_tavern'
-  | 'tavern_to_kitchen'
-  | 'kitchen_to_tavern'
   | 'tavern_to_cellar'
   | 'cellar_to_tavern';
 
@@ -41,7 +39,7 @@ export interface InnDoorSpot extends InnDoorData {
 
 interface InnDoorFile {
   /** Where each door leads: the room kind and the id of the matching door there. */
-  links: Record<InnDoorId, { room: 'hotel' | 'shop' | 'farm' | 'kitchen' | 'cellar'; arrive: InnDoorId }>;
+  links: Record<InnDoorId, { room: 'hotel' | 'shop' | 'farm' | 'cellar'; arrive: InnDoorId }>;
   /** kind -> shape -> doors per level (index 0 = level 1). */
   rooms: Record<string, Record<string, InnDoorData[][]>>;
 }
@@ -124,4 +122,13 @@ export function innTravelProblem(state: Pick<GameState, 'run' | 'rooms' | 'playe
 /** All door data (tests, tools). */
 export function innDoorFile(): InnDoorFile {
   return FILE;
+}
+
+/** RUN 6 bug 2: the one-time door hint names only the places this room's doors lead to ("the tavern and the garden", "the tavern"). */
+export function innDoorHint(room: Room): string {
+  const names = innDoorSpots(room).map((d) => d.id.split('_to_')[1] ?? '').filter((n) => n.length > 0);
+  const list = [...new Set(names)];
+  if (list.length === 0) return '';
+  const text = list.length === 1 ? list[0]! : `${list.slice(0, -1).join(', ')} and the ${list[list.length - 1]}`;
+  return `Doors lead to the ${text}. Walk onto the doorway to step through.`;
 }

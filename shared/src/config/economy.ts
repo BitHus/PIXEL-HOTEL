@@ -90,29 +90,7 @@ export const SPARKLE_MS = 900;
 /** The Book's reward steps: this part of a tab found (percent). The gold is in shared/data/bookRewards.json. */
 export const BOOK_REWARD_STEPS = [25, 50, 75, 100] as const;
 
-// ---------- The trader (step S2, docs/INN-PLAN.md section 5) ----------
-/** What the trader pays for a surplus thing: baseValue * SELL_RATE (at least 1 gold). Low on purpose: using a thing always beats selling it (balance.ts tests). */
-export const SELL_RATE = 0.3;
-/**
- * The trader's rate PER GROUP (step S3): baseValue * rate, at least 1 gold. Crops pay least (they are for brewing and cooking, and a seed costs gold),
- * ore and fish pay more (they cost time at the mine and the lake and are not cooked or brewed as much), loot and wood sit between. A thing made only
- * by SPLICING (its result seed, its furniture, its clothes) has its own low rate: its chain costs time and seeds, so selling it never beats keeping it.
- */
-export const SELL_RATES = {
-  block: SELL_RATE,
-  material: 0.12,
-  ore: 0.85,
-  seed: 0.2,
-  crop: 0.1,
-  bar: 0.5,
-  fish: 0.5,
-  thing: 0.5,
-  splice: 0.03,
-} as const;
-/** Selling MORE than this many pieces in one tap asks first (ui/confirmBuy.ts). Ultra rare and legendary things always ask. */
-export const SELL_CONFIRM_QTY = 5;
-/** The Bag counts as filling when this many different stacks are sellable; the first time, a hint says "Sell what you do not need at the bar". */
-export const SELL_HINT_STACKS = 24;
+// ---------- The trader is gone (owner 18 Nov): nothing is sold for gold; SELL_RATE(S), SELL_CONFIRM_QTY and the bag hint were removed. Gold comes from guests and the dungeon. ----------
 
 // ---------- Emotes (step 9g-1) ----------
 /** How long each emote plays before the avatar returns to normal, ms. Walking cancels it at once. */

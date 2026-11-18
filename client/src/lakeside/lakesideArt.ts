@@ -7,11 +7,12 @@
 // anti-aliasing (whole rows and rects only). Medieval touches: rope-wrapped posts, an iron lantern, a nailed deck.
 // Palette only from shared/palette.ts (shade() is the placeholder shading helper).
 
-import { Graphics } from 'pixi.js';
+import { Graphics, Sprite } from 'pixi.js';
 import { LAKE_BUSHES, LAKE_PIER, LAKE_WATER, PALETTE, type Point } from '@pixel-hotel/shared';
 import { DARK_WARM } from '../render/bareStyles.ts';
 import { shade } from '../render/colors.ts';
 import { hash01 } from '../render/atmosphere.ts';
+import { spriteTexture } from '../render/spriteStore.ts';
 
 const WOOD = PALETTE[4]!;
 const SAND_DRY = shade(PALETTE[2]!, 0.97);
@@ -291,6 +292,32 @@ export function drawTree(look: TreeLook, hits: number, variant = 0, part: 'all' 
   const withTrunk = part !== 'crown';
   const withCrown = part !== 'trunk';
   if (withTrunk) oval(g, 4, 1, kind === 1 ? 16 : 20, 4, { color: DARK_WARM, alpha: 0.3 });
+  // PNG art (sprites/lake: tree_<v>_trunk / _crown, tree_stump, tree_sapling_<0|1>; canvas 64 x 88, anchor (32, 80)); the code art below is the fallback.
+  const png = (id: string): boolean => {
+    const t = spriteTexture('lake', id);
+    if (!t) return false;
+    const sp = new Sprite(t);
+    sp.position.set(-32, -80);
+    g.addChild(sp);
+    return true;
+  };
+  if (look === 'tree') {
+    const trunkId = `tree_${variant}_trunk`;
+    if (spriteTexture('lake', trunkId) && spriteTexture('lake', `tree_${variant}_crown`)) {
+      if (withTrunk) png(trunkId);
+      const hw = kind === 2 ? 5 : kind === 1 ? 4 : 7;
+      for (let i = 0; withTrunk && i < Math.min(hits, 4); i++) {
+        const y = -6 - i * 5;
+        const left = i % 2 === 0;
+        px(g, left ? -hw : 1, y, hw - 1, 2, shade(PALETTE[2]!, 0.95));
+        px(g, left ? -hw : 1, y + 1 + 1, hw - 1, 1, shade(WOOD, 0.45));
+      }
+      if (withCrown) png(`tree_${variant}_crown`);
+      return g;
+    }
+  } else if (part !== 'crown' && png(look === 'stump' ? 'tree_stump' : `tree_sapling_${variant >= 3 ? 1 : 0}`)) {
+    return g;
+  }
   if (look === 'tree') {
     const hw = kind === 2 ? 5 : kind === 1 ? 4 : 7;
     const th = kind === 1 ? 20 : 26;
