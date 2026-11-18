@@ -6,9 +6,10 @@
 // shade, iron-banded chests, rusty swords, bone and cloth (docs/ART-STYLE.md MEDIEVAL DIRECTION).
 // Anchors are the feet / the bottom middle of the footprint, as everywhere else.
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import { DUNGEON_BLOCK, PALETTE, ROCK_HITS, torchAllowed, type DungeonMap, type EnemyKind, type RockKind, type RunPlace } from '@pixel-hotel/shared';
 import { desaturate, shade } from '../render/colors.ts';
+import { spriteTexture } from '../render/spriteStore.ts';
 
 const B = DUNGEON_BLOCK;
 /** Cool dark outline for the crypt (warm DARK_WARM is for the hotel). */
@@ -570,13 +571,21 @@ export const ROCK_HEIGHT = 26;
 export function drawRock(kind: RockKind, hitsLeft: number): Graphics {
   const g = new Graphics();
   shadow(g, 30);
-  const stone = PALETTE[22]!;
-  box(g, -14, 0, 28, 10, 14, stone);
-  box(g, -9, -14, 18, 6, 4, shade(stone, 1.08));
-  const ore = ORE[kind];
-  for (const [x, y, w, h] of [[-10, -9, 4, 3], [3, -6, 5, 3], [-3, -19, 4, 2], [7, -16, 3, 2], [-12, -16, 3, 2]] as const) {
-    g.rect(x, y, w, h).fill(ore);
-    g.rect(x, y, w, 1).fill(shade(ore, 1.3));
+  const tex = spriteTexture('dungeon', `rock_${kind}`);
+  if (tex) {
+    // PNG rock (32x32, foot at the bottom centre); the cracks are drawn over it.
+    const sp = new Sprite(tex);
+    sp.position.set(-Math.round(tex.width / 2), -tex.height);
+    g.addChild(sp);
+  } else {
+    const stone = PALETTE[22]!;
+    box(g, -14, 0, 28, 10, 14, stone);
+    box(g, -9, -14, 18, 6, 4, shade(stone, 1.08));
+    const ore = ORE[kind];
+    for (const [x, y, w, h] of [[-10, -9, 4, 3], [3, -6, 5, 3], [-3, -19, 4, 2], [7, -16, 3, 2], [-12, -16, 3, 2]] as const) {
+      g.rect(x, y, w, h).fill(ore);
+      g.rect(x, y, w, 1).fill(shade(ore, 1.3));
+    }
   }
   // Cracks: more of them the more it was hit.
   const done = 1 - hitsLeft / ROCK_HITS[kind];
@@ -589,6 +598,8 @@ export function drawRock(kind: RockKind, hitsLeft: number): Graphics {
     [6, -22, 1, 5],
   ];
   const n = Math.round(done * cracks.length);
-  for (const [x, y, w, h] of cracks.slice(0, n)) g.rect(x, y, w, h).fill(CRYPT_OUTLINE);
+  const cg = new Graphics();
+  for (const [x, y, w, h] of cracks.slice(0, n)) cg.rect(x, y, w, h).fill(CRYPT_OUTLINE);
+  g.addChild(cg);
   return g;
 }

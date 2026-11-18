@@ -64,7 +64,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   that is closer, and the camera snaps to whole device pixels. The canvas renders at the
   full devicePixelRatio. The default (overview) zoom is the
   largest one where the whole room fits on screen, and at least 0.5. If the room does not
-  fit at zoom 0.5, the camera follows the avatar and the player can pan. CAM-LOCK: while the avatar walks the camera is locked on it (exactly centred, no pan; soft edge clamp 64 px); standing still a drag pans, walking again eases back. Settings: Camera Locked while walking / Free look.
+  fit at zoom 0.5, the camera follows the avatar and the player can pan. CAM-LOCK: while the avatar walks the camera is locked on it (exactly centred, no pan; NO edge clamp while locked: also at walls and corners, dark backdrop beyond the room); standing still a drag pans, walking again eases back. Settings: Camera Locked while walking / Free look.
 - Camera intro: when a room opens, the camera starts at the overview zoom, waits 0.6 s
   (INTRO_WAIT_MS), then zooms in smoothly over 0.8 s (INTRO_ZOOM_MS) to the settled zoom
   (the zooms above where zoom * devicePixelRatio is whole) nearest to 3 real pixels per art

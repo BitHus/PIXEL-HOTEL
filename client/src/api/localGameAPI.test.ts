@@ -189,6 +189,19 @@ describe('LocalGameAPI', () => {
     const next = await api.walk({ x: start.x, y: start.y });
     expect(next?.[0]?.y).toBeCloseTo(start.y - 64);
   });
+
+  it('an emote works right after a walk ended, without anyone polling the avatar (no false "stand still")', async () => {
+    const { api } = LocalGameAPI.open(memoryStorage(), clock);
+    const room = await api.enterRoom(1);
+    const start = room.avatars[0]!;
+    await api.walk({ x: start.x, y: start.y - 64 });
+    expect(await api.emote('wave')).toBeNull(); // still walking
+    t += 5000; // far longer than the 0.5 s walk
+    for (const kind of ['wave', 'dance', 'laugh', 'cheer', 'sleep']) {
+      const e = await api.emote(kind);
+      expect(e?.kind).toBe(kind);
+    }
+  });
 });
 
 describe('LocalGameAPI tavern (step 7, S1: the shop is the tavern)', () => {

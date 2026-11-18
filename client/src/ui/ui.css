@@ -879,6 +879,18 @@
   pointer-events: none;
 }
 
+/* NPC chatter: small compact pill right above the head, one line, cut with an ellipsis. */
+.bubble.bubble-npc {
+  max-width: 132px;
+  padding: 1px 5px 2px;
+  font-size: var(--fs-sm, 11px);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.92;
+}
+
 .bubble.tail {
   margin-top: -8px;
 }
@@ -2448,6 +2460,13 @@
 
 .bubble-icon .npc-line {
   font-size: var(--fs-md);
+}
+
+.bubble-npc .npc-line {
+  max-width: none;
+  white-space: nowrap;
+  font-size: var(--fs-sm, 11px);
+  gap: 3px;
 }
 
 /* ---------- Step 9e: ranks and the Book ---------- */

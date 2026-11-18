@@ -141,13 +141,14 @@ export const roomsApi = {
   },
 
   async emote(h: LocalGameAPI, kind: string): Promise<ActiveEmote | null> {
-    const e = emoteAllowed(h.walkState.avatar.state) ? startEmote(kind, h.now()) : null;
+    // Advance the walk first: walkState.avatar.state is only updated by avatarNow(), so right after a walk ended it could still say 'walk' ("Stand still" while standing).
+    const e = emoteAllowed(h.avatarNow().state) ? startEmote(kind, h.now()) : null;
     h.emoteNow = e;
     return e;
   },
 
   async currentEmote(h: LocalGameAPI): Promise<ActiveEmote | null> {
-    h.emoteNow = emoteAfterState(emoteAt(h.emoteNow, h.now()), h.walkState.avatar.state);
+    h.emoteNow = emoteAfterState(emoteAt(h.emoteNow, h.now()), h.avatarNow().state);
     return h.emoteNow;
   },
 

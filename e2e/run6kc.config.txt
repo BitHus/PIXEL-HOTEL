@@ -1,0 +1,10 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({
+  testDir: 'e2e', testMatch: /run6kc2?.spec\.ts/, outputDir: 'test-results-r6c',
+  use: { baseURL: 'http://localhost:4191' },
+  projects: [
+    { name: 'desktop', use: { viewport: { width: 1000, height: 700 } } },
+    { name: 'phone', use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true } },
+  ],
+  webServer: { command: 'npm run preview -w client -- --port 4191', url: 'http://localhost:4191', reuseExistingServer: true, timeout: 60000 },
+});

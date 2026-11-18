@@ -68,13 +68,13 @@ describe('lockTarget (CAM-LOCK)', () => {
     const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: 5, y: 5 }, W, H, ROOM);
     expect(cameraCenter(t, W, H)).toEqual({ x: 5, y: 5 });
   });
-  it('never centres more than the margin beyond the room edge', () => {
+  it('is never clamped: the avatar stays centred far beyond the room edge', () => {
     const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: -500, y: 300 }, W, H, ROOM);
-    expect(cameraCenter(t, W, H)).toEqual({ x: -64, y: 300 });
+    expect(cameraCenter(t, W, H)).toEqual({ x: -500, y: 300 });
   });
-  it('a room that fits on an axis stays centred on that axis only', () => {
-    const wide = { x: 0, y: 0, w: 100, h: 600 };
-    const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: 10, y: 400 }, W, H, wide);
-    expect(cameraCenter(t, W, H)).toEqual({ x: 50, y: 400 });
+  it('a room that fits on screen does not stop the lock either', () => {
+    const small = { x: 0, y: 0, w: 100, h: 100 };
+    const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: 10, y: 20 }, W, H, small);
+    expect(cameraCenter(t, W, H)).toEqual({ x: 10, y: 20 });
   });
 });
