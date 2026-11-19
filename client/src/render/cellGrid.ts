@@ -3,7 +3,7 @@
 // shared (floorCellList). Hidden unless asked for.
 
 import { Container, Graphics } from 'pixi.js';
-import { BUILD_CELL, PALETTE, floorCellList, kitchenZone, type Room } from '@pixel-hotel/shared';
+import { BUILD_CELL, PALETTE, floorCellList, kitchenZone, type Rect, type Room } from '@pixel-hotel/shared';
 
 /** Line colour (cream) and how strong it is; the grid must stay a hint, never the picture. */
 const LINE_COLOR = PALETTE[2];
@@ -12,14 +12,30 @@ const LINE_ALPHA = 0.22;
 const KITCHEN_COLOR = PALETTE[9];
 const KITCHEN_ALPHA = 0.16;
 
+/** A2: the faint guides for the pieces that are NOT on the cell grid: the back wall bands (wall items hang anywhere on them) and the tops of surfaces (small decor sits anywhere on them). */
+const AID_COLOR = PALETTE[2];
+
 export class CellGrid {
   readonly container = new Container({ eventMode: 'none' });
+  /** Above the walls and the objects (the wall bands and the bar tops are drawn over the things they belong to); the caller adds it to the room view's marker layer. */
+  readonly aids = new Container({ eventMode: 'none' });
+  private readonly aidLines = new Graphics();
   private readonly lines = new Graphics();
   private readonly kitchen = new Graphics();
 
   constructor() {
     this.container.addChild(this.kitchen, this.lines);
+    this.aids.addChild(this.aidLines);
     this.container.visible = false;
+    this.aids.visible = false;
+  }
+
+  /** Draws the wall bands and the surface tops (null lists = hide them); a band is a hint of where wall pieces hang, a top where small decor sits. */
+  setAids(bands: readonly Rect[], tops: readonly Rect[]): void {
+    this.aidLines.clear();
+    for (const r of bands) this.aidLines.rect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1).fill({ color: AID_COLOR, alpha: 0.08 }).stroke({ color: AID_COLOR, width: 1, alpha: 0.35 });
+    for (const r of tops) this.aidLines.rect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1).stroke({ color: AID_COLOR, width: 1, alpha: 0.45 });
+    this.aids.visible = bands.length + tops.length > 0;
   }
 
   /** Redraws the lines for a room (call when the room or its level changes). */

@@ -6,6 +6,11 @@ import { MEDIEVAL_ICONS } from './pixelIconsMedieval.ts';
 import { CURRENCY_ICONS } from './pixelIconsCurrency.ts';
 import { UI_ICONS } from './pixelIconsUi.ts';
 
+// PixelLab 32 x 32 icons (docs/PLAN-PIXELLAB-ART.md, owner 19 Nov): client/src/assets/ui/icons/<icon name>.png wins over the code map of the same name.
+const ART_URLS = import.meta.glob('../assets/ui/icons/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const ART: Record<string, string> = {};
+for (const [path, url] of Object.entries(ART_URLS)) ART[path.slice(path.lastIndexOf('/') + 1, -4)] = url;
+
 type PixelMap = { rows: string[]; colors: Record<string, string> };
 
 const O = PALETTE[6]; // dark warm outline
@@ -703,11 +708,27 @@ const SKILLS_ICON = {
 // UI round 4: the 16 x 16 medieval redraws win over the old 12 x 12 maps of the same name (and add level, refused).
 const ICONS = { ...BASE_ICONS, ...MEDIEVAL_ICONS, ...CURRENCY_ICONS, ...UI_ICONS, ...SKILLS_ICON };
 
-export type IconName = keyof typeof ICONS;
+export type IconName = keyof typeof ICONS | 'account' | 'packs' | 'pickaxe' | 'lookaround';
 
 /** An inline SVG element for the icon (crisp edges, scaled by CSS). */
 export function pixelIcon(name: IconName): SVGSVGElement {
-  const { rows, colors } = ICONS[name] as PixelMap;
+  const art = ART[name];
+  if (art) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 32 32');
+    svg.setAttribute('shape-rendering', 'crispEdges');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('pixel-icon', 'px16', 'px-art');
+    const img = document.createElementNS(ns, 'image');
+    img.setAttribute('href', art);
+    img.setAttribute('width', '32');
+    img.setAttribute('height', '32');
+    img.setAttribute('style', 'image-rendering:pixelated');
+    svg.appendChild(img);
+    return svg;
+  }
+  const { rows, colors } = ICONS[name as keyof typeof ICONS] as PixelMap;
   const w = Math.max(...rows.map((r) => [...r].length));
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
@@ -738,7 +759,8 @@ const urlCache = new Map<string, string>();
 export function pixelIconUrl(name: IconName): string {
   const hit = urlCache.get(name);
   if (hit !== undefined) return hit;
-  const { rows, colors } = ICONS[name] as PixelMap;
+  if (ART[name]) return ART[name];
+  const { rows, colors } = ICONS[name as keyof typeof ICONS] as PixelMap;
   const w = Math.max(...rows.map((r) => [...r].length));
   const canvas = document.createElement('canvas');
   canvas.width = w;

@@ -52,7 +52,8 @@ export async function setupTavernLife(g: G9) {
   const holdQuest = (): void => {
     const held = guide.goal() !== null;
     g.hint.setHeld(held);
-    g.questButton.hidden = held; // TUT-2 part 3: the Quest button waits too while the tutorial runs
+    // A1b: the Quest button is NOT hidden while the tutorial runs (it lives in the More grid; hiding it made it vanish there). Only the quest card waits.
+    g.questButton.hidden = false;
   };
   window.addEventListener('first-ten-layout', holdQuest);
   holdQuest();
@@ -83,10 +84,11 @@ export async function setupTavernLife(g: G9) {
     g.itemViews.setMachineStates(states);
     g.atmosphere.setUnlit(new Set(st.items.filter((i) => getFurnitureType(i.typeId).cooks && states.get(i.uid) !== 'cooking').map((i) => i.uid)));
     const brewReady = [...ready].some((k) => k[0] === 'b');
-    const waiting: FirstTenStep[] = guideWorld ? guideWaiting(guide.state, guideWorld.context(brewReady)) : [];
+    const guideCtx = guideWorld ? guideWorld.context(brewReady) : null;
+    const waiting: FirstTenStep[] = guideCtx ? guideWaiting(guide.state, guideCtx) : [];
     // The tutorial card shows in every room (farm, mine, lakeside steps) except inside a dungeon run.
     // RUN 10 #9: outside the tavern the card shows only while no step is done yet (it must not cover the top-left of every room).
-    guide.refresh(waiting, !g.dungeon.isActive && (st.room.kind === 'shop' || guide.state.done.length === 0));
+    guide.refresh(waiting, !g.dungeon.isActive && (st.room.kind === 'shop' || guide.state.done.length === 0), guideCtx?.stock);
     // The stove step needs something to cook: the first brew used the starter crops, so top up once when it becomes the goal.
     if (!stoveSupplyAsked && firstTenGoal(guide.state, waiting) === 'stove') {
       stoveSupplyAsked = true;

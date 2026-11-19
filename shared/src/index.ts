@@ -45,6 +45,7 @@ export * from './economy.ts';
 export * from './clothing.ts';
 export * from './emotes.ts';
 export * from './firstTen.ts';
+export * from './guideStock.ts';
 export * from './hats.ts';
 export * from './text.ts';
 export * from './hints.ts';

@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  styleKey, getFurnitureType, screenToWorld, type Camera, type FurnitureItem, type ItemsResult, type Point,
+  styleKey, getFurnitureType, screenToWorld, footprintRect, wallBands, type Camera, type FurnitureItem, type ItemsResult, type Point,
 } from '@pixel-hotel/shared';
 import { Placer } from '../build/placer.ts';
 import { createPlaceBar } from '../ui/placeBar.ts';
@@ -70,6 +70,14 @@ late.placer = placer;
     cellGrid.visible = prefs.cellGrid && (placer.active || paint.active || g.build.on || st.selectedBlock !== null);
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
     ui.classList.toggle('painting', paint.active);
+    // A2: wall pieces and small decor are free (not per cell), so while building or placing them the wall bands and the tops of the bars and tables show faintly too.
+    const held = placer.typeId === null ? null : getFurnitureType(placer.typeId);
+    const showBands = prefs.cellGrid && (g.build.on || held?.wall === true);
+    const showTops = prefs.cellGrid && (g.build.on || held?.freeOnSurface === true || held?.onSurface === true);
+    cellGrid.setAids(
+      showBands ? wallBands(st.room) : [],
+      showTops ? st.items.filter((i) => i.roomId === st.room.id && i.onItemUid === null && getFurnitureType(i.typeId).surface).map((i) => footprintRect(i, getFurnitureType(i.typeId))) : [],
+    );
   };
   const paint: FloorPaint = new FloorPaint({
     getRoom: () => st.room,

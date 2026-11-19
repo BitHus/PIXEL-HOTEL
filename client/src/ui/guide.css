@@ -33,19 +33,8 @@
   height: 22px;
   animation: guide-bob 900ms ease-in-out infinite;
 }
-/* The arrow points down at the thing (pure CSS, two layers for the dark outline). */
-.guide-hand::before,
-.guide-hand::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-left: 9px solid transparent;
-  border-right: 9px solid transparent;
-}
-.guide-hand::before { top: 0; border-top: 18px solid var(--outline, #3e2731); }
-.guide-hand::after { top: 2px; left: 2px; border-left-width: 7px; border-right-width: 7px; border-top: 13px solid var(--candle, #fee761); }
+/* The arrow points down at the thing: an inline SVG made in guidePointer.ts (A1c). */
+.guide-hand svg { display: block; }
 .guide-pointer.calm .guide-ring,
 .guide-pointer.calm .guide-hand { animation: none; }
 @keyframes guide-pulse {

@@ -94,6 +94,7 @@ export async function setupCore(g: G0) {
   // The faint build grid (step BG1): shown while placing furniture or painting floors.
   const cellGrid = new CellGrid();
   view.gridLayer.addChild(cellGrid.container);
+  view.markerLayer.addChild(cellGrid.aids);
   cellGrid.setRoom(st.room);
   // Atmosphere step: the dark planks outside the room, then the room with its shadows and light.
   const backdrop = new Backdrop(app.renderer);

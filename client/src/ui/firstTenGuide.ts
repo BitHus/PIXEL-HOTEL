@@ -4,7 +4,7 @@
 
 import {
   FIRST_TEN_ALL_DONE_TEXT, FIRST_TEN_DONE_TEXT, FIRST_TEN_KEY, FIRST_TEN_NEW, FIRST_TEN_STEPS, MACHINE_TIP_TEXT, firstTenEvent,
-  firstTenFinished, firstTenGoal, firstTenOpen, firstTenProgress, firstTenReplay, firstTenSkip, guideText, firstTenToastDue, machineTipOnce, type FirstTenState, type FirstTenStep, type MachineTip,
+  firstTenFinished, firstTenGoal, firstTenOpen, firstTenProgress, firstTenReplay, firstTenSkip, guideCardText, firstTenToastDue, machineTipOnce, type FirstTenState, type FirstTenStep, type GuideStock, type MachineTip,
 } from '@pixel-hotel/shared';
 import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
@@ -18,7 +18,7 @@ export interface FirstTenGuide {
   /** The first touch of a machine: a one-time tooltip (also when the guide is skipped). */
   tip(tip: MachineTip): void;
   /** Redraws; `waiting` = steps that cannot be done yet (they are skipped as the goal); `visible` = false hides the card (other rooms). */
-  refresh(waiting: readonly FirstTenStep[], visible: boolean): void;
+  refresh(waiting: readonly FirstTenStep[], visible: boolean, stock?: GuideStock): void;
   /** Settings: start the guide again from step 1. */
   replay(): void;
   /** The step the card shows now (null = none), for the pointer. */
@@ -41,6 +41,7 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   let state = firstTenOpen(storage.get(FIRST_TEN_KEY), newGame);
   let waiting: readonly FirstTenStep[] = [];
   let visible = true;
+  let stock: GuideStock | undefined;
   const save = (): void => void storage.set(FIRST_TEN_KEY, JSON.stringify(state));
   const card = el('div', 'ui-panel first-ten');
   card.setAttribute('role', 'status');
@@ -83,7 +84,8 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
     }
     count.textContent = `${firstTenProgress(state)}/${FIRST_TEN_STEPS.length}`;
     // RUN 5: a folded card on a phone shows the step's short line (never cut off); a tap on the card shows the whole text.
-    text.textContent = guideText(goal, isTouch(), isPhone() && !card.classList.contains('expanded'));
+    // A1e: when something real blocks the step (no crops, no mugs, no gold) the card says how to fix that instead.
+    text.textContent = guideCardText(goal, stock, isTouch(), isPhone() && !card.classList.contains('expanded'));
     pips.querySelectorAll('i').forEach((p, i) => p.classList.toggle('done', state.done.includes(FIRST_TEN_STEPS[i]!)));
     card.setAttribute('aria-label', `First steps, ${count.textContent}`);
     announce();
@@ -126,7 +128,8 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
       save();
       toast(MACHINE_TIP_TEXT[tip]);
     },
-    refresh(w, v) {
+    refresh(w, v, s) {
+      stock = s;
       waiting = w;
       visible = v;
       draw();

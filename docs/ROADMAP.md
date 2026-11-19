@@ -14,6 +14,7 @@
 19 NOV (coder): [x] CAM-LOCK v2: always locked in play mode, Look around toggle in More, Settings camera option removed, first view centred in the free area (phone bug RUN 10 item 5; not seen in a browser on a phone).
 18 NOV (coder): [x] kitchen is a walled tavern area (SAVE 37), CEL 3 racks 2/3/3, trader removed (guests + dungeon only), MG-1 skill rules + API (SAVE 38) and MG-2 level cap 12 (UI and rule hooks MG-7/8/9 still open), tap forgiveness, tutorial from 0 with zoom/tap/hold steps. [x] RUN 6 UI fixes (keg rack text, first-steps card off doors, fi ligature, bubbles vs button column); open: kitchen barrel under the phone button column (camera/layout hook).
 19 NOV (artist): [x] PixelLab UI proof set (panels, buttons, tab, sign, bar, 10 icons) in art-src/pixellab/ui, not wired; wiring = ui worker after owner OK.
+19 NOV (artist ICONS-1): [x] 42 PixelLab icons (items + UI side/More icons, catalog, packs) wired through sprites/icons and ui/icons; [ ] part 2: crops, food, drinks, fish, remaining materials, skill node icons, pack/gem tier icons, 16 px small-spot variants.
 19 NOV (ui): [x] title screen reworked (Continue pill, save line, still-life) + dark panel frame wired into panelShell panels (border-image); [ ] tabs, round buttons, bar, parchment still unwired.
 19 NOV (ui): [x] Panel close button wired to PixelLab close X art (ui/close.css, assets/ui/close_x.png).
 
@@ -240,7 +241,7 @@ New items only; the ten above (RN-1 to SF-1) are not repeated. Suggested order i
 12. AU-1 Crowd soundscape and music: murmur and clinks that scale with guests, a cheer on a served round, a soft music loop, a toggle. S to M. [coder] + sound pass [artist]
 13. JU-1 Loop juice: pour splash and foam, coin arc into the register, "delighted" ding, stove smoke. S. [artist] + hooks [coder]. Render only.
 14. GT-1 Guest tastes: favourite drink, dish or rank per guest; served-to-taste means a bigger tip or gem; menu variety raises satisfaction. Needs balance test and save bump. M. [coder]
-15. NC-1 Odd guest archetypes: a few funny, memorable guest types with portraits and one-liners (pairs with RG-1). S to M. [artist] + npcLines [coder]
+15. [x] NPC-TALK lines data (19 Nov, 428 lines; hooks in NOTES NPC LINES). NC-1 Odd guest archetypes: a few funny, memorable guest types with portraits and one-liners (pairs with RG-1). S to M. [artist] + npcLines [coder]
 16. DS-1 Decor style sets: matching pieces add a small capped appeal bonus and a named look title (keeps the 3-per-type and 100 caps). M. [coder] + set art [artist]
 17. CL-1 Cleanliness and troublemakers: spills show as mess, a broom clears them; a rude guest is shooed; never required. M. [coder] + props [artist]
 18. CR-1 Open/Closed sign and closing report: guests, gold, tips, mood; optional, no forced hours. S. [coder] + sign and panel [artist]
@@ -261,3 +262,4 @@ hidden NPC, mine carts, mining companions, fishing tournaments, a radio with mus
 - [~] PixelLab furniture redo (owner 18 Nov, docs/PLAN-PIXELLAB-ART.md): batch 3 done = 18 tavern pieces (down facing); next: right/up facings, hotel pieces, decor, farm, walls/floors (156 of 200 generations used); render hooks for stove, tap stand pour and bar surface height fitted 19 Nov (NOTES PIXELLAB-HOOKS).
 - [ ] SK-0..9 (planner 19 Nov, docs/PLAN-SKILLTREE.md): real skill tree (7 branches, ~92 linked nodes, keystones, capstones), level cap 30 + XP from every loop, SAVE 42, pan/zoom tree UI, 98 icons. Waits for the owner's OK on the 5 decisions (section 9).
 - (owner 19 Nov) SLOT PIECES: bigger tap stands (3-4 slots) as catalog upgrades, mixed drink+food slot pieces, menu variety attracting more guest kinds (ties to guests with tastes); build after the slot-panel redo + food stash.
+- [x] A1 guide pointer and stock fixes, A2 build pick and aids (19 Nov, coder; not seen in a browser; tester verifies, UI worker restyles the tutorial later)

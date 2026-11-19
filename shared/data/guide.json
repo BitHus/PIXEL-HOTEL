@@ -23,6 +23,14 @@
     { "id": "lakeside", "target": { "kind": "ui", "label": "Worlds" }, "text": "{Tap} Worlds and walk to the lakeside: chop trees for wood and fish in the lake.", "short": "Visit the lakeside" },
     { "id": "fish", "target": { "kind": "none" }, "text": "{Tap} the water to cast, {tap} again at the \"!\", then hold to keep the fish in the box.", "short": "Go fishing" }
   ],
+  "fixes": {
+    "noCook": { "target": { "kind": "ui", "label": "Worlds" }, "text": "Nothing to cook yet. {Tap} Worlds and grow crops on your farm first.", "short": "Grow crops first (Worlds)" },
+    "noBrew": { "target": { "kind": "ui", "label": "Worlds" }, "text": "No crops for a brew. {Tap} Worlds and grow some on your farm first.", "short": "Grow crops first (Worlds)" },
+    "noMugs": { "target": { "kind": "furniture", "typeId": "brewing_barrel" }, "text": "No mugs yet. {Tap} the brewing barrel and brew some first.", "short": "Brew mugs first" },
+    "noGold": { "target": { "kind": "furniture", "typeId": "register" }, "text": "Not enough gold yet. Serve guests at the bar to earn some.", "short": "Earn gold at the bar first" },
+    "hasSeeds": { "target": { "kind": "none" }, "text": "Pick the seeds in the hotbar, then {tap} a soil cell on your farm.", "short": "Plant your seeds on the farm" },
+    "hasWall": { "target": { "kind": "ui", "label": "Build" }, "text": "{Tap} Build and hang the wall piece from your bag on the back wall.", "short": "Hang your wall piece (Build)" }
+  },
   "done": "Nice, that is one more done.",
   "allDone": "You know the tavern now. Have fun, tavern keeper!"
 }

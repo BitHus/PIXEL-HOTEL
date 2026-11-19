@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, firstTenProgress, firstTenToastDue, guideAutoEvents, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type GuideContext } from './firstTen.ts';
+import { FIRST_TEN_NEW, FIRST_TEN_OFF, FIRST_TEN_STEPS, GUIDE_STEPS, firstTenEvent, firstTenFinished, firstTenGoal, firstTenOpen, firstTenReplay, firstTenSkip, firstTenProgress, firstTenToastDue, guideAutoEvents, guideBlocker, guideCardText, guideFixFor, guidePointerKind, guideTargetOf, guideText, guideWaiting, machineTipOnce, parseFirstTen, type FirstTenStep, type GuideContext, type GuideStock } from './firstTen.ts';
 import { getFurnitureType } from './furniture.ts';
 import { FIRST_GUEST_DELAY_MS } from './config.ts';
 
@@ -196,5 +196,60 @@ describe('RUN 5: phone short lines', () => {
     expect(guideText('menu', true, true)).toBe('Tap the register');
     expect(guideText('menu', false, true)).toBe('Click the register');
     expect(guideText('menu', true)).toContain('serve and set prices');
+  });
+});
+
+describe('A1e: the guide checks what the player has (blockers and fixes)', () => {
+  const full = { canCook: true, canBrew: true, mugs: 5, gold: 500, hasSeeds: false, seedPrice: 4, hasWallPiece: false, wallPrice: 30 };
+  it('no stock known = no blocker, steps stay as written', () => {
+    for (const k of FIRST_TEN_STEPS) expect(guideBlocker(k, undefined)).toBeNull();
+  });
+  it('a stocked player has no blocker on any step', () => {
+    for (const k of FIRST_TEN_STEPS.filter((x) => x !== 'plant' && x !== 'wall')) expect(guideBlocker(k, full)).toBeNull();
+    expect(guideBlocker('plant', full)).toBeNull();
+    expect(guideBlocker('wall', full)).toBeNull();
+  });
+  it('cook with nothing to cook points at the farm, not the stove', () => {
+    const stock = { ...full, canCook: false };
+    expect(guideBlocker('stove', stock)).toBe('noCook');
+    expect(guidePointerKind('stove', { ...quiet, stock })).toEqual({ kind: 'ui', label: 'Worlds' });
+    expect(guideCardText('stove', stock, true)).toMatch(/Nothing to cook/);
+    expect(guidePointerKind('stove', { ...quiet, stock: full })).toEqual({ kind: 'furniture', typeId: 'stove' });
+  });
+  it('brew without crops, load without mugs', () => {
+    expect(guideBlocker('barrel', { ...full, canBrew: false })).toBe('noBrew');
+    expect(guideBlocker('load', { ...full, mugs: 0 })).toBe('noMugs');
+    expect(guidePointerKind('load', { ...quiet, stock: { ...full, mugs: 0 } })).toEqual({ kind: 'furniture', typeId: 'brewing_barrel' });
+    expect(guideBlocker('load', { ...full, mugs: 0, canBrew: false })).toBe('noBrew');
+    expect(guideBlocker('cellar', { ...full, mugs: 0 })).toBe('noMugs');
+  });
+  it('plant and wall need seeds or gold, and use what is in the bag', () => {
+    expect(guideBlocker('plant', { ...full, gold: 1 })).toBe('noGold');
+    expect(guideBlocker('plant', { ...full, gold: 1, hasSeeds: true })).toBe('hasSeeds');
+    expect(guideBlocker('wall', { ...full, gold: 1 })).toBe('noGold');
+    expect(guideBlocker('wall', { ...full, gold: 1, hasWallPiece: true })).toBe('hasWall');
+  });
+  it('every fix has a known target and a short text, worded for touch and mouse, at most 120 characters', () => {
+    for (const id of ['noCook', 'noBrew', 'noMugs', 'noGold', 'hasSeeds', 'hasWall'] as const) {
+      const stockFor: Record<string, [FirstTenStep, GuideStock]> = {
+        noCook: ['stove', { ...full, canCook: false }],
+        noBrew: ['barrel', { ...full, canBrew: false }],
+        noMugs: ['load', { ...full, mugs: 0 }],
+        noGold: ['plant', { ...full, gold: 0 }],
+        hasSeeds: ['plant', { ...full, hasSeeds: true }],
+        hasWall: ['wall', { ...full, hasWallPiece: true }],
+      };
+      const [step, stock] = stockFor[id]!;
+      const fix = guideFixFor(step, stock)!;
+      expect(fix.id).toBe(id);
+      expect(['floor', 'guest', 'stand', 'coins', 'none', 'furniture', 'ui', 'door']).toContain(fix.target.kind);
+      if (fix.target.kind === 'furniture') expect(() => getFurnitureType(fix.target.kind === 'furniture' ? fix.target.typeId : '')).not.toThrow();
+      const touch = guideCardText(step, stock, true);
+      const mouse = guideCardText(step, stock, false);
+      expect(touch).not.toMatch(/[{}]|click|mouse/i);
+      expect(mouse).not.toMatch(/[{}]|tap|finger/i);
+      expect(touch.length).toBeLessThanOrEqual(120);
+      expect(guideCardText(step, stock, true, true).length).toBeGreaterThan(5);
+    }
   });
 });

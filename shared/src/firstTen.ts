@@ -26,17 +26,87 @@ export const FIRST_TEN_STEPS: readonly FirstTenStep[] = GUIDE_STEPS.map((s) => s
 /** The goal line for a step; {Tap}/{tap}/{hold} read right for touch and for mouse. `short` = the phone's folded one-liner (the full text when a step has none). */
 export function guideText(step: FirstTenStep, touch: boolean, short = false): string {
   const data = GUIDE_STEPS.find((s) => s.id === step);
-  const raw = (short ? data?.short : undefined) ?? data?.text ?? '';
+  return applyWords((short ? data?.short : undefined) ?? data?.text ?? '', touch);
+}
+
+export function guideTargetOf(step: FirstTenStep): GuideTarget {
+  return GUIDE_STEPS.find((s) => s.id === step)?.target ?? { kind: 'none' };
+}
+
+/** A1e: what the player owns, filled by guideStock.ts (the guide never asks for a thing that cannot be done yet). */
+export interface GuideStock {
+  /** The bag covers the inputs of at least one dish. */
+  canCook: boolean;
+  /** The bag covers at least one drink recipe. */
+  canBrew: boolean;
+  /** Mugs in the bag, on the taps and on the tray together. */
+  mugs: number;
+  gold: number;
+  /** A seed of a crop that is sold is in the bag. */
+  hasSeeds: boolean;
+  /** The cheapest seed price. */
+  seedPrice: number;
+  /** A wall piece waits in the bag. */
+  hasWallPiece: boolean;
+  /** The cheapest wall piece in the catalog. */
+  wallPrice: number;
+}
+
+/** Why a step cannot be done right now; guide.json `fixes` has the text and the pointer target of each. */
+export type GuideBlocker = 'noCook' | 'noBrew' | 'noMugs' | 'noGold' | 'hasSeeds' | 'hasWall';
+
+export interface GuideFix {
+  id: GuideBlocker;
+  target: GuideTarget;
+  text: string;
+  short: string;
+}
+
+const GUIDE_FIXES = guideData.fixes as unknown as Record<GuideBlocker, Omit<GuideFix, 'id'>>;
+
+/**
+ * A1e: the blocker of a step, or null when it can be done. `stock` missing (a caller that does not know) = no blocker.
+ * Cook needs crops, brew needs crops, load and cellar need mugs, plant needs seeds or gold for them, a wall piece needs one in the bag or gold for one.
+ */
+export function guideBlocker(step: FirstTenStep, stock: GuideStock | undefined): GuideBlocker | null {
+  if (!stock) return null;
+  switch (step) {
+    case 'stove':
+      return stock.canCook ? null : 'noCook';
+    case 'barrel':
+      return stock.canBrew ? null : 'noBrew';
+    case 'load':
+    case 'cellar':
+      return stock.mugs > 0 ? null : stock.canBrew ? 'noMugs' : 'noBrew';
+    case 'plant':
+      return stock.hasSeeds ? 'hasSeeds' : stock.gold >= stock.seedPrice ? null : 'noGold';
+    case 'wall':
+      return stock.hasWallPiece ? 'hasWall' : stock.gold >= stock.wallPrice ? null : 'noGold';
+    default:
+      return null;
+  }
+}
+
+/** The fix for a step now (text, short line and pointer target), or null when the step can be done as written. */
+export function guideFixFor(step: FirstTenStep, stock: GuideStock | undefined): GuideFix | null {
+  const id = guideBlocker(step, stock);
+  return id === null ? null : { id, ...GUIDE_FIXES[id] };
+}
+
+/** The card line for a step: the fix text when something blocks it, else the step's own text. */
+export function guideCardText(step: FirstTenStep, stock: GuideStock | undefined, touch: boolean, short = false): string {
+  const fix = guideFixFor(step, stock);
+  if (!fix) return guideText(step, touch, short);
+  return applyWords(short ? fix.short : fix.text, touch);
+}
+
+function applyWords(raw: string, touch: boolean): string {
   return raw
     .replaceAll('{Tap}', touch ? 'Tap' : 'Click')
     .replaceAll('{tap}', touch ? 'tap' : 'click')
     .replaceAll('{hold}', touch ? 'hold your finger on' : 'hold the mouse button on')
     .replaceAll('{Hold}', touch ? 'Hold your finger on' : 'Hold the mouse button on')
     .replaceAll('{Zoom}', touch ? 'Pinch with two fingers' : 'Scroll the mouse wheel');
-}
-
-export function guideTargetOf(step: FirstTenStep): GuideTarget {
-  return GUIDE_STEPS.find((s) => s.id === step)?.target ?? { kind: 'none' };
 }
 
 /** Done line shown when a step ticks off. */
@@ -59,6 +129,8 @@ export interface GuideContext {
   mineOpen: boolean;
   /** CEL-3: the cellar room is built (the cellar step waits until then). */
   cellarBuilt?: boolean;
+  /** A1e: what the player owns (guideStock.ts); the guide points at the real blocker instead of a step that cannot be done. */
+  stock?: GuideStock;
 }
 
 /** What the world shows about the steps that have no event of their own (the client fills it; polled). */
@@ -108,6 +180,8 @@ export function guideWaiting(s: FirstTenState, c: GuideContext): FirstTenStep[] 
 
 /** Where the pointer goes for the goal step: the stand while the avatar waits to pour (else the guest to tap first); serve = the guest the tray can serve. */
 export function guidePointerKind(step: FirstTenStep, c: GuideContext): GuideTarget {
+  const fix = guideFixFor(step, c.stock);
+  if (fix) return fix.target;
   const t = guideTargetOf(step);
   if (t.kind === 'stand') return c.pouring ? t : { kind: 'guest' };
   return t;

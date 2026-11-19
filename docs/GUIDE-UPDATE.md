@@ -37,3 +37,7 @@ The first-steps guide is data. When a feature in the first ten minutes changes, 
 Steps now: walk, menu, pour, serve, coins, barrel, collect, load, stove, farm, plant, harvest, build, wall, dungeon, mine, lakeside, fish. Events plant/harvest/wall/fish come from late.guideEvent (blockInput, placing, lakesideScreen onCaught); farm, mine, lakeside, dungeon are proven by the world poll. A new game always starts (firstTenOpen); nothing stored = starts.
 
 TUT-2 part 3: the Quest button and card never show while the tutorial runs (holdQuest in tavernLife.ts hides both); afterwards the button opens the Quest panel (daily, events, achievements). Pointers: outside the tavern a tavern step points at the Worlds button; harvest points at a ripe plant on the farm, fish at the lake water. No guide.json change.
+
+## A1 (19 Nov): blockers and panel pointer
+- guide.json `fixes`: a step that cannot be done because of what the player owns shows the fix text and points at the fix (guideBlocker in firstTen.ts; stock from shared/src/guideStock.ts, filled in guideWorld.ts every 250 ms). A new step with an ingredient, mug or gold need = a case in guideBlocker, a fix (or reuse one) and a test.
+- The pointer moves INTO an open panel (guideWorld.panelTarget): add a selector there when a step gets a new panel action.

@@ -17,7 +17,7 @@ export async function setupPointerInput(g: G15) {
   } = g;
   /** True while a press belongs to the pour (the hold on the tap stand): it never walks, pans or hits. */
   let pourClaim = false;
-  const { nearTap } = createTapForgive({ st, itemViews, late });
+  const { nearTap, buildPick } = createTapForgive({ st, itemViews, late });
 
   const useTap = createItemUse({ api, applyItems, toast, sound, panels });
   app.stage.hitArea = app.screen;
@@ -191,7 +191,8 @@ export async function setupPointerInput(g: G15) {
         return;
       }
       // The placed item under the pointer, found by Pixi's hit testing (item views are 'static').
-      const hit = roomItem(itemViews.uidOf(target));
+      // A2: in build mode a small piece (candle, lamp, wall item, anything on a surface) is found with a touch box, ahead of the big piece it sits on or in front of.
+      const hit = build.on && panels.open === null ? (buildPick(screen) ?? roomItem(itemViews.uidOf(target))) : roomItem(itemViews.uidOf(target));
       if (build.on) {
         // Build mode: taps never walk. A tap or long press on an item opens its menu.
         if (kind === 'tap' && panels.open !== null) {
@@ -246,10 +247,10 @@ export async function setupPointerInput(g: G15) {
         if (door !== null) st.pendingDoor = door;
       });
     },
-    getDragMode: (target) => {
+    getDragMode: (target, start) => {
       if (dungeon.isActive || blockers.on || placer.active || paint.active) return 'draw';
       // Build mode: a drag that starts on an item moves that item (no Move button, no ✓).
-      const hit = build.on && panels.open === null ? roomItem(itemViews.uidOf(target)) : undefined;
+      const hit = build.on && panels.open === null ? (buildPick(start) ?? roomItem(itemViews.uidOf(target))) : undefined;
       if (!hit) return 'pan';
       menu.close();
       placer.startMove(hit.uid);

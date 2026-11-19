@@ -77,3 +77,13 @@ export function pickTap<T>(p: Point, targets: readonly TapTarget<T>[], opts: { t
   }
   return best;
 }
+
+/**
+ * A2: pieces that are small or sit on something else: wall items, small decor on a surface (freeOnSurface), anything standing on a surface, and
+ * floor decor you can walk over (rugs excluded: they are big and the real sprite hit finds them). In BUILD mode a tap uses these with a touch-sized
+ * box and a tolerance, so a candle on the bar or a banner on the wall can be selected and dragged, not only hit pixel-exactly.
+ */
+export function isTinyPiece(type: { wall?: boolean; freeOnSurface?: boolean; blocks?: boolean; w: number; d: number }, onItemUid: number | null): boolean {
+  if (type.wall || type.freeOnSurface || onItemUid !== null) return true;
+  return type.blocks === false && type.w <= 32 && type.d <= 32;
+}

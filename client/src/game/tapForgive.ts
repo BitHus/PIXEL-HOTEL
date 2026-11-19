@@ -3,7 +3,7 @@
 // Blocks, plants, trees and the water keep their exact cells (the placing and punching rules are unchanged).
 
 import {
-  getFurnitureType, hasSeats, isUsable, pickTap, tapMinSize, tapTolerance, worldToScreen,
+  getFurnitureType, hasSeats, isTinyPiece, isUsable, pickTap, tapMinSize, tapTolerance, worldToScreen,
   type FurnitureItem, type Point, type TapTarget,
 } from '@pixel-hotel/shared';
 import type { G15 } from './ctx.ts';
@@ -20,9 +20,20 @@ export function isTapUseful(typeId: string): boolean {
   return !!(t.servedFromBehind || t.till || t.taps || t.cooks || t.brews || t.casks || isUsable(t) || hasSeats(t));
 }
 
-export function createTapForgive(g: Pick<G15, 'st' | 'itemViews' | 'late'>): { nearTap(screen: Point): NearTap | null } {
+export function createTapForgive(g: Pick<G15, 'st' | 'itemViews' | 'late'>): { nearTap(screen: Point): NearTap | null; buildPick(screen: Point): FurnitureItem | null } {
   const { st, itemViews, late } = g;
   return {
+    /** A2: BUILD mode. The small pieces (wall items, decor on a surface, riders, walk-over decor) with a touch box and a tolerance, so they can be selected and dragged; null = none near. */
+    buildPick(screen) {
+      const targets: TapTarget<FurnitureItem>[] = [];
+      for (const item of st.items) {
+        if (item.roomId !== st.room.id || !isTinyPiece(getFurnitureType(item.typeId), item.onItemUid)) continue;
+        const b = itemViews.screenBounds(item.uid);
+        if (b) targets.push({ ref: item, bounds: b, depth: item.y + (item.onItemUid === null ? 0 : 1) });
+      }
+      const touch = isTouchInput();
+      return pickTap(screen, targets, { tolerance: tapTolerance(touch), minSize: tapMinSize(touch) })?.target.ref ?? null;
+    },
     nearTap(screen) {
       const targets: TapTarget<NearTap>[] = [];
       for (const item of st.items) {

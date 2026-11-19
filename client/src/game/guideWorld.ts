@@ -3,8 +3,8 @@
 // targets are shared/data/guide.json. Lives next to tavernLife (which owns the guide) and is started from there.
 
 import {
-  AVATAR_H, BUILD_CELL, LAKE_WATER, innDoorSpots, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guestsTrayCanServe, worldToScreen,
-  type GuideContext, type GuideTarget, type Point,
+  AVATAR_H, BUILD_CELL, LAKE_WATER, innDoorSpots, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, catalogTypes, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guideFixFor, guideStock, guestsTrayCanServe, worldToScreen,
+  type FirstTenStep, type GuideContext, type GuideStock, type GuideTarget, type Point,
 } from '@pixel-hotel/shared';
 import { surfaceHeight } from '../render/furnitureArt.ts';
 import { createGuidePointer } from '../ui/guidePointer.ts';
@@ -37,6 +37,8 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   let walked = false;
   let brewReady = false;
   let mineOpen = false;
+  // A1e: what the player owns (refreshed by the poll below); the guide points at the real blocker instead of a step that cannot be done.
+  let stock: GuideStock | undefined;
 
   const context = (ready: boolean): GuideContext => {
     brewReady = ready;
@@ -49,6 +51,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
       coinsOnTable: t.mess.some((m) => m.coins > 0),
       mineOpen,
       cellarBuilt: t.cellarRoomId !== undefined,
+      stock,
     };
   };
 
@@ -100,6 +103,40 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     return st.room.kind === 'shop' ? `tavern_to_${home}` : `${st.room.kind}_to_tavern`;
   };
   const button = (label: string): HTMLElement | null => document.querySelector<HTMLElement>(`button[aria-label^="${label}"]`);
+  const shown = (b: HTMLElement): boolean => b.offsetParent !== null && b.getClientRects().length > 0;
+  /** A1a: a button of the side column; one that stands in the closed More grid (hidden) points at More instead, and at itself once the grid is open. */
+  const uiButton = (label: string): HTMLElement | null => {
+    const b = button(label);
+    if (!b) return null;
+    if (shown(b)) return b;
+    return b.closest('.more-menu') ? button('More') : null;
+  };
+  const openPanel = (): HTMLElement | null => document.querySelector<HTMLElement>('.panel:not([hidden]):not(.panel-leaving)');
+  const inPanel = (sel: string): HTMLElement | null => {
+    const el = openPanel()?.querySelector<HTMLElement>(sel) ?? null;
+    return el && shown(el) ? el : null;
+  };
+  /** A1a: the step's next tap INSIDE the panel that is open now (null = nothing to point at there, the pointer hides). */
+  const panelTarget = (goal: FirstTenStep, fixId: string | null): HTMLElement | null => {
+    const open = panels.open;
+    if (open === 'travel') {
+      const place = fixId === 'noCook' || fixId === 'noBrew' ? 'farm' : goal === 'farm' || goal === 'mine' || goal === 'lakeside' ? goal : null;
+      return place ? inPanel(`.place-${place}:not([disabled])`) : null;
+    }
+    if (open === 'catalog') {
+      if (goal === 'plant' && fixId === null) return inPanel('.card-grid button[aria-label^="Turnip seeds"]') ?? inPanel('.tab-btn[aria-label="Seeds"]');
+      if (goal === 'wall' && fixId === null) {
+        const names = catalogTypes().filter((t) => getFurnitureType(t.id).wall).map((t) => t.name);
+        const cards = [...(openPanel()?.querySelectorAll<HTMLElement>('.card-grid button:not([disabled])') ?? [])];
+        return cards.find((c) => names.some((n) => (c.getAttribute('aria-label') ?? '').startsWith(n))) ?? inPanel('.tab-btn[aria-label="Home"]');
+      }
+      return null;
+    }
+    if (open === 'brewing') return goal === 'collect' ? inPanel('.collect-btn') : goal === 'barrel' ? inPanel('.collect-btn') ?? inPanel('.btn.primary:not([disabled])') : null;
+    if (open === 'cooking') return goal === 'stove' ? inPanel('.collect-btn') ?? inPanel('.btn.primary:not([disabled])') : null;
+    if (open === 'taps') return goal === 'load' ? inPanel('.tap-load:not([disabled])') ?? inPanel('.btn.primary:not([disabled])') : null;
+    return null;
+  };
 
   const resolve = (t: GuideTarget): void => {
     switch (t.kind) {
@@ -121,7 +158,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
         pointer.place(doorScreen(t.id));
         break;
       case 'ui':
-        pointer.placeOn(button(t.label));
+        pointer.placeOn(uiButton(t.label));
         break;
       case 'floor':
         pointer.place(floorSpot());
@@ -164,11 +201,13 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     dotFrame();
     const goal = h.guide.goal();
     const tavernTarget = (k: GuideTarget['kind']): boolean => k !== 'ui' && k !== 'none';
-    if (goal === null || panels.open !== null || dungeon.isActive) return pointer.place(null);
+    if (goal === null || dungeon.isActive) return pointer.place(null);
+    // A1a: with a panel open the pointer moves INTO it (the next card, tab or button of the step) instead of vanishing; nothing to point at there = hidden.
+    if (panels.open !== null) return pointer.placeOn(panelTarget(goal, guideFixFor(goal, stock)?.id ?? null));
     const base = guideTargetOf(goal);
     const t = guidePointerKind(goal, context(brewReady));
     // World things show only in the tavern; elsewhere the pointer shows the way back (the Worlds button) instead of nothing.
-    if (tavernTarget(base.kind) && !h.inWork()) return pointer.placeOn(button('Worlds'));
+    if (tavernTarget(base.kind) && !h.inWork()) return pointer.placeOn(uiButton('Worlds'));
     // CEL-3: the thing is in the kitchen, the cellar or the tavern but not in this room: point at the door that leads there.
     const via = routeDoor(t);
     if (via !== null) return pointer.place(doorScreen(via));
@@ -182,8 +221,9 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   // The world proves some steps (about 4 times a second, only while the guide runs).
   window.setInterval(() => {
     if (!h.guide.state.active) return;
-    void g.api.getPlayer().then((p) => {
+    void Promise.all([g.api.getPlayer(), g.api.getInventory()]).then(([p, inv]) => {
       mineOpen = p.level >= MINE_UNLOCK_LEVEL;
+      stock = guideStock({ gold: p.wallet.gold, materials: inv.materials, bagFurniture: inv.furniture, tavern: st.tavern });
     });
     // The intro walks the avatar in through the door: that is not the player's first step.
     if (st.avatar.state === 'walk' && !g.newIntro.running) walked = true;

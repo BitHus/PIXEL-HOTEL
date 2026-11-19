@@ -1,7 +1,7 @@
 // Tap forgiveness: a real hit beats a near miss, the nearest centre wins, the front wins ties, a far tap picks nothing, small things grow to a touch box.
 import { describe, expect, it } from 'vitest';
 import { TAP_MIN_SIZE_PX, TAP_TOLERANCE_PX } from './config.ts';
-import { atLeast, distanceToRect, pickTap, tapMinSize, tapTolerance, type TapTarget } from './tapPick.ts';
+import { atLeast, distanceToRect, isTinyPiece, pickTap, tapMinSize, tapTolerance, type TapTarget } from './tapPick.ts';
 
 const box = (ref: string, x: number, y: number, w: number, h: number, depth = y + h): TapTarget<string> => ({ ref, bounds: { x, y, w, h }, depth });
 const opts = { tolerance: 24, minSize: 44 };
@@ -58,5 +58,20 @@ describe('tap forgiveness (pickTap)', () => {
   });
   it('no targets, no pick', () => {
     expect(pickTap({ x: 1, y: 1 }, [], opts)).toBeNull();
+  });
+});
+
+describe('A2: tiny pieces in build mode', () => {
+  it('wall items, free decor and riders are tiny; a big rug or a table is not', () => {
+    expect(isTinyPiece({ wall: true, w: 32, d: 0 }, null)).toBe(true);
+    expect(isTinyPiece({ freeOnSurface: true, blocks: true, w: 32, d: 32 }, null)).toBe(true);
+    expect(isTinyPiece({ blocks: true, w: 32, d: 32 }, 9)).toBe(true);
+    expect(isTinyPiece({ blocks: false, w: 32, d: 32 }, null)).toBe(true);
+    expect(isTinyPiece({ blocks: false, w: 96, d: 64 }, null)).toBe(false);
+    expect(isTinyPiece({ blocks: true, w: 64, d: 32 }, null)).toBe(false);
+  });
+  it('a candle 20 px wide is found by a tap 12 px beside it (finger box and tolerance)', () => {
+    const t = [{ ref: 'candle', bounds: { x: 100, y: 100, w: 20, h: 20 }, depth: 5 }];
+    expect(pickTap({ x: 132, y: 110 }, t, { tolerance: 28, minSize: 44 })?.target.ref).toBe('candle');
   });
 });
