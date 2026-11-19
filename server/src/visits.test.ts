@@ -164,13 +164,9 @@ describe('the room view (pure, leak tests)', () => {
     expect(view.savedAt).toBe(123);
     expectNoLeak(view);
   });
-  it('the tavern view shows only its placed furniture (no tavern state, taps, menu or coins)', () => {
+  it('the tavern gives no view (owner 19 Nov: online is only the hotel room, garden and public spaces)', () => {
     const state = hostState();
-    const shop = state.rooms.find((r) => r.kind === 'shop')!;
-    const view = buildRoomView(state, shop.id, 1)!;
-    expect(view.items.length).toBe(state.items.filter((i) => i.roomId === shop.id).length);
-    expect(view.items.length).toBeGreaterThan(0);
-    expectNoLeak(view);
+    expect(buildRoomView(state, state.rooms.find((r) => r.kind === 'shop')!.id, 1)).toBeNull();
   });
   it('farm, lakeside and unknown rooms give no view', () => {
     const state = hostState();
@@ -199,10 +195,10 @@ describe('sharing a room', () => {
       expect(r.status, path).toBe(401);
     }
   });
-  it('rooms are private by default: no code, not on the board; only the hotel room and the tavern can be shared', async () => {
+  it('rooms are private by default: no code, not on the board; only the hotel room can be shared (never the tavern)', async () => {
     const a = await host();
     const mine = await json<{ rooms: Share[] }>(await get(a, '/api/rooms/mine'));
-    expect(mine.rooms.map((r) => r.kind).sort()).toEqual(['hotel', 'shop']);
+    expect(mine.rooms.map((r) => r.kind).sort()).toEqual(['hotel']);
     for (const r of mine.rooms) expect(r).toMatchObject({ visibility: 'private', code: null });
     expect((await json<{ rooms: unknown[] }>(await get(a, '/api/rooms/public'))).rooms).toEqual([]);
     expect(db.prepare('SELECT COUNT(*) AS n FROM room_shares').get()).toEqual({ n: 0 });
@@ -229,7 +225,7 @@ describe('sharing a room', () => {
     expect((await get(a, `/api/visit/${s.code}`)).status).toBe(200);
     expect((await json<{ rooms: unknown[] }>(await get(b, '/api/rooms/public'))).rooms).toEqual([]);
     const mine = await json<{ rooms: Share[] }>(await get(a, '/api/rooms/mine'));
-    expect(mine.rooms.find((x) => x.kind === 'shop')).toMatchObject({ visibility: 'private', code: null });
+    expect(mine.rooms.find((x) => x.kind === 'shop')).toBeUndefined();
   });
   it('a client cannot plant a view, a name or a code: the body is only roomId, visibility, title, rotate', async () => {
     const a = await host();
@@ -310,13 +306,12 @@ describe('the public list', () => {
     const a = await host('HostA', 'Ada');
     const b = await host('HostB', 'Bram');
     const c = await register('Visitor');
-    const pub = await share(a, { roomId: roomIdOf('shop'), visibility: 'public', title: 'The Barrel' });
-    await share(a, { roomId: roomIdOf('hotel'), visibility: 'code' });
+    const pub = await share(a, { roomId: roomIdOf('hotel'), visibility: 'public', title: 'The Barrel' });
     await share(b, { roomId: roomIdOf('hotel'), visibility: 'code' });
     const list = await json<{ rooms: Record<string, unknown>[]; page: number; more: boolean }>(await get(c, '/api/rooms/public'));
     expect(list).toMatchObject({ page: 0, more: false });
     expect(list.rooms).toHaveLength(1);
-    expect(list.rooms[0]).toMatchObject({ code: pub.code, title: 'The Barrel', owner: 'Ada', kind: 'shop' });
+    expect(list.rooms[0]).toMatchObject({ code: pub.code, title: 'The Barrel', owner: 'Ada', kind: 'hotel' });
     expect(Object.keys(list.rooms[0]!).sort()).toEqual(['code', 'kind', 'owner', 'stars', 'title', 'updatedAt']);
     expect(JSON.stringify(list)).not.toContain('HostA'); // the login name is not the display name
     expect((await get(c, `/api/visit/${pub.code}`)).status).toBe(200);
@@ -324,7 +319,7 @@ describe('the public list', () => {
   it('going from public back to code leaves the board and changes the code', async () => {
     const a = await host();
     const c = await register('Visitor');
-    const shop = roomIdOf('shop');
+    const shop = roomIdOf('hotel');
     const pub = await share(a, { roomId: shop, visibility: 'public' });
     const back = await share(a, { roomId: shop, visibility: 'code' });
     expect(back.code).not.toBe(pub.code);

@@ -7,8 +7,8 @@ import { cleanDisplayName, roomScore, type AvatarLook, type Facing, type GameSta
 /** Bump when the shape below changes. */
 export const ROOM_VIEW_VERSION = 1;
 
-/** The room kinds a visitor may see (PLAN-ONLINE decision 4: hotel room and tavern; farm and lakeside later). */
-export const VISITABLE_KINDS: readonly RoomKind[] = ['hotel', 'shop'];
+/** The room kinds a visitor may see (PLAN-ONLINE decision 4: OWNER 19 Nov: hotel room only for now, garden and public spaces later, never the tavern). */
+export const VISITABLE_KINDS: readonly RoomKind[] = ['hotel']; // owner 19 Nov: online = hotel room, garden (TBD), public spaces; never the tavern
 
 export interface RoomViewItem {
   uid: number;
