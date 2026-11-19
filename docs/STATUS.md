@@ -34,6 +34,8 @@ Owner: these UIs are important. Fishing: cast, bite !, reel bar + catch box + fi
 
 ## QUEUED (owner 19 Nov): SEAT SCALE. bone_chair is 32x39 and sunken_throne 32x42, smaller than chair 32x48: makes no sense when you sit. Artist: redo them taller/chunkier (chair >= 48 tall, thrones taller than chairs), audit all sittable sprites vs the avatar (54 px), fix the fit step (tools/pixellab-fit.mjs shrinks wide art to the 32 px footprint width). Plus the rug + plant redo above.
 
+## QUEUED (owner 19 Nov): AUDIO round. Retro chiptune music in code (tavern, title, dungeon, mine, lake, farm), more SFX, volume sliders; free CC0 packs only if licence checked. PixelLab music needs Tier 2 (owner has Tier 1): not used.
+
 ## Done this session (all live)
 Camera locked without edge clamp; emote state fix; small NPC chat pills; kitchen = walled area inside the tavern (SAVE 37, cellar stays a room, racks 2/3/3); skills MG-1/2 (SAVE 38, level cap 12, Skills panel + stat hooks MG-7); TRADER REMOVED (gold = guests + dungeon run gold, ~76/24); tap forgiveness; tutorial starts at 0 (zoom, walk, hold-walk steps); orders rail bottom-left, hanging OPEN/CLOSED sign, aura on order markers, pour hint hides under panels, Serve closes the bar panel; Worlds badge hidden in the tavern; lakeside trees + farm ground/ambience + door art (cellar down/open/up, kitchen) wired; cobweb corner, stand flames; rock sprites.
 
