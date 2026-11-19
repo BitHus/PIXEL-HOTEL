@@ -46,7 +46,7 @@ Owner: these UIs are important. Fishing: cast, bite !, reel bar + catch box + fi
 
 ## QUEUED (owner 19 Nov): DOORS: redo suite/garden/tavern doors like the cellar door (they look like the wallpaper). Cellar walking bug: coder fixing first.
 
-## QUEUED (owner 19 Nov): TAVERN START LAYOUT + REAL BAR: longer real bar with checkout (register at one end, taps middle), tables + chairs placed away from the taps like a real tavern; with the kitchen-above job; then bar art (artist).
+## QUEUED (owner 19 Nov): TAVERN START LAYOUT + REAL BAR: MODULAR BAR (2 tileable pieces bar_straight + bar_corner, owner idea) = longer real bar with checkout (register at one end, taps middle), tables + chairs placed away from the taps like a real tavern; with the kitchen-above job; then bar art (artist).
 
 ## Done this session (all live)
 Camera locked without edge clamp; emote state fix; small NPC chat pills; kitchen = walled area inside the tavern (SAVE 37, cellar stays a room, racks 2/3/3); skills MG-1/2 (SAVE 38, level cap 12, Skills panel + stat hooks MG-7); TRADER REMOVED (gold = guests + dungeon run gold, ~76/24); tap forgiveness; tutorial starts at 0 (zoom, walk, hold-walk steps); orders rail bottom-left, hanging OPEN/CLOSED sign, aura on order markers, pour hint hides under panels, Serve closes the bar panel; Worlds badge hidden in the tavern; lakeside trees + farm ground/ambience + door art (cellar down/open/up, kitchen) wired; cobweb corner, stand flames; rock sprites.
