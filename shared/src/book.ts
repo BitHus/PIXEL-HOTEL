@@ -3,6 +3,7 @@
 // is Player.seen (seen.ts).
 
 import { RETIRED_TABLE } from './retireRoundTable.ts';
+import { RETIRED_BAR_TYPES } from './modularBar.ts';
 import rewardData from '../data/bookRewards.json';
 import { applyChange } from './ledger.ts';
 import { RECIPES } from './crafting.ts';
@@ -53,7 +54,7 @@ function droppedBy(id: string): EnemyTableId[] {
 const ORES = ['copper_ore', 'iron_ore', 'mithril_ore', 'gem', 'coal', 'gold_nugget', 'diamond', 'crystal'];
 const TREE_DROPS = ['wood', 'resin', 'amber', 'golden_acorn'];
 const BARS = ['copper_bar', 'iron_bar', 'mithril_bar'];
-const START_FURNITURE = ['counter', 'stall_table'];
+const START_FURNITURE = ['bar', 'counter', 'stall_table'];
 /** Furniture and clothes only a splice seed grows (their source is "Splicing"). */
 const FURNITURE_GROWN = new Set(SPLICE_SEEDS.flatMap((s) => (s.grows.kind === 'furniture' ? [s.grows.id] : [])));
 const CLOTHING_GROWN = new Set(SPLICE_SEEDS.flatMap((s) => (s.grows.kind === 'clothing' ? [s.grows.id] : [])));
@@ -84,7 +85,7 @@ export function sourceOf(id: string): string {
   if (furniture?.inCatalog) parts.push('Catalog');
   if (RECIPES.some((r) => r.makesKind === 'furniture' && r.makes === id)) parts.push('Crafted');
   if (START_FURNITURE.includes(id)) parts.push('Your tavern');
-  if (id === RETIRED_TABLE) parts.push('Retired (old saves)');
+  if (id === RETIRED_TABLE || RETIRED_BAR_TYPES.includes(id)) parts.push('Retired (old saves)');
   return parts.length > 0 ? parts.join(', ') : 'Unknown';
 }
 
@@ -108,7 +109,7 @@ export function bookEntries(tab: BookTab): BookEntry[] {
   if (tab === 'enemies') {
     return ENEMY_TABLES.map((t) => ({ key: enemyKey(t), id: t, kind: 'enemy' as const, name: ENEMY_NAMES[t], rank: ENEMY_RANKS[t], source: t === 'mimic' ? 'Dungeon chests' : 'Dungeon', drops: getLootTable(t).drops.map((d) => d.item) }));
   }
-  if (tab === 'furniture') return FURNITURE_TYPES.filter((f) => f.id !== RETIRED_TABLE).map((f) => ({ key: f.id, id: f.id, kind: 'furniture' as const, name: f.name, rank: f.rank, source: sourceOf(f.id) }));
+  if (tab === 'furniture') return FURNITURE_TYPES.filter((f) => f.id !== RETIRED_TABLE && !RETIRED_BAR_TYPES.includes(f.id)).map((f) => ({ key: f.id, id: f.id, kind: 'furniture' as const, name: f.name, rank: f.rank, source: sourceOf(f.id) }));
   if (tab === 'fish') {
     return CATCH_TYPES.map((c) => ({ key: c.id, id: c.id, kind: 'material' as const, name: c.name, rank: c.rank, source: sourceOf(c.id), ...(c.kind === 'fish' ? { cm: { min: c.minCm ?? 0, max: c.maxCm ?? 0 } } : {}) }));
   }

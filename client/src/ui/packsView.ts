@@ -5,9 +5,9 @@
 
 import { PACK_TYPES, RANK_NAMES, getClothing, packOdds, piecesMissing, type PackItem, type PackType } from '@pixel-hotel/shared';
 import { el, textButton } from './dom.ts';
-import { clothingIconUrl, materialIconUrl, packIconUrl } from './itemIcon.ts';
+import { clothingIconUrl, materialIconUrl } from './itemIcon.ts';
 import { gemImg, iconBox, priceTag } from './panelShell.ts';
-import { pixelIcon } from './pixelIcons.ts';
+import { pixelIconUrl } from './pixelIcons.ts';
 import { rankClassOf, rankName } from './rank.ts';
 import type { MaterialId } from '@pixel-hotel/shared';
 
@@ -51,12 +51,22 @@ function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement 
   const info = el('div', 'pack-info');
   info.append(
     el('div', 'catalog-name', pack.name),
-    el('div', 'catalog-sub', `Gives ${pack.rolls} things.`),
+    el('div', 'catalog-sub', `${pack.rolls} things per pack`),
     priceTag(pack.gemPrice, d.gems, 'gems'),
   );
-  head.append(iconBox(packIconUrl(pack.icon), 'pack-icon'), info);
+  head.append(iconBox(pixelIconUrl('packs'), 'pack-icon'), info);
   card.appendChild(head);
 
+  const short = pack.gemPrice - d.gems;
+  const btn = textButton(short > 0 ? `Need ${short} more gem${short === 1 ? '' : 's'}` : 'Buy and open for', () => hooks.open(pack), 'pack-open primary');
+  if (short <= 0) {
+    const cost = el('span', 'pack-cost');
+    cost.append(gemImg(), el('span', '', String(pack.gemPrice)));
+    btn.append(cost);
+  }
+  btn.disabled = short > 0;
+  card.appendChild(btn);
+  card.appendChild(el('div', 'pack-inside', `What is inside: ${pack.rolls} rolls, the chance of each rank in percent`));
   const odds = el('div', 'pack-odds');
   for (const row of packOdds(pack)) {
     const line = el('div', 'pack-odds-row');
@@ -77,15 +87,6 @@ function packCard(pack: PackType, d: PacksData, hooks: PacksHooks): HTMLElement 
     card.appendChild(el('div', 'catalog-sub pack-note', `You still miss ${miss.missing} of ${miss.total} pieces. Duplicates are possible: extra copies are kept as spares.`));
   }
 
-  const short = pack.gemPrice - d.gems;
-  const btn = textButton(short > 0 ? `Need ${short} more gem${short === 1 ? '' : 's'}` : 'Open for', () => hooks.open(pack), 'pack-open primary');
-  if (short <= 0) {
-    const cost = el('span', 'pack-cost');
-    cost.append(gemImg(), el('span', '', String(pack.gemPrice)));
-    btn.append(cost);
-  }
-  btn.disabled = short > 0;
-  card.appendChild(btn);
   return card;
 }
 

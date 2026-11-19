@@ -273,14 +273,26 @@ export function canPlace(
   if (!doorReachesMiddle(room, [...blockers, fp])) return false;
   // OA-6: a bar piece (counter or extension) leaves every extension joined to the counter in a straight line.
   if (isBarPiece(type) && !barExtensionsConnected([...items, { typeId: type.id, x, y, facing, roomId: room.id, onItemUid: null }], room.id, types)) return false;
-  // The counter: the shopkeeper must be able to get behind it.
-  if (type.servedFromBehind) return behindReachable(room, [...blockers, fp], behindPoint({ x, y, facing }, type));
-  // An extension is one more blocker: the staff spot behind the counter must stay reachable.
-  if (type.barExtension) {
-    const counter = items.find((o) => o.roomId === room.id && o.onItemUid === null && types(o.typeId).servedFromBehind === true);
-    if (counter) return behindReachable(room, [...blockers, fp], behindPoint(counter, types(counter.typeId)));
-  }
-  return true;
+  // MODULAR BAR (19 Nov): every bar piece is served from behind. The staff spot behind each piece (this one too) must stay reachable from the door,
+  // whatever is placed: a piece, a table or a stove may never shut the bar off.
+  const bars = items.filter((o) => o.roomId === room.id && o.onItemUid === null && types(o.typeId).servedFromBehind === true).map((o) => behindPoint(o, types(o.typeId)));
+  if (type.servedFromBehind) bars.push(behindPoint({ x, y, facing }, type));
+  return bars.length === 0 || behindAllReachable(room, [...blockers, fp], bars);
+}
+
+/** True if the staff spot near every point is reachable from the door (one nav grid for all, like behindReachable). */
+export function behindAllReachable(room: Room, blockers: readonly Rect[], points: readonly Point[]): boolean {
+  const grid = buildNavGrid(room, blockers);
+  const door = cellAt(grid, doorPoint(room));
+  if (!isCellFree(grid, door.c, door.r)) return false;
+  const reach = reachableCells(grid, door.r * grid.cols + door.c);
+  return points.every((p) => {
+    const i = nearestFreeCell(grid, p, (k) => reach[k] === true);
+    if (i === null) return false;
+    const col = i % grid.cols;
+    const cc = { x: (col + 0.5) * grid.cell, y: ((i - col) / grid.cols + 0.5) * grid.cell };
+    return Math.hypot(cc.x - p.x, cc.y - p.y) <= APPROACH_REACH_PX;
+  });
 }
 
 /**

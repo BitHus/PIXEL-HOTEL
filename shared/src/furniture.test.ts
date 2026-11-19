@@ -237,8 +237,8 @@ describe('canPlace on cells', () => {
 
   it('respects placeIn', () => {
     const shop = createRoom(2, 'shop', 1, 1);
-    expect(can([], 'bed', 3, 2, 'down', shop)).toBe(false);
-    expect(can([], 'chair', 3, 2, 'down', shop)).toBe(true);
+    expect(can([], 'bed', 3, 8, 'down', shop)).toBe(false); // the tavern's main floor starts 6 rows down (KITCHEN-ABOVE)
+    expect(can([], 'chair', 3, 8, 'down', shop)).toBe(true);
   });
 });
 
@@ -341,11 +341,16 @@ describe('standPointFor', () => {
 describe('the counter (served from behind)', () => {
   it('cannot stand against the back wall: the shopkeeper must fit behind it', () => {
     const shop = createRoom(2, 'shop', 1, 1);
-    expect(can([], 'counter', 3, 0, 'down', shop)).toBe(false);
-    expect(can([], 'counter', 3, 2, 'down', shop)).toBe(true);
-    expect(can([], 'counter', 3, 1, 'down', shop)).toBe(true); // one free row behind it is enough
+    // Right of the kitchen annex the main floor's first row (6) is against the back wall (KITCHEN-ABOVE). The bar piece follows the same rule.
+    expect(can([], 'counter', 12, 6, 'down', shop)).toBe(false);
+    expect(can([], 'counter', 12, 8, 'down', shop)).toBe(true);
+    expect(can([], 'counter', 12, 7, 'down', shop)).toBe(true); // one free row behind it is enough
     // Facing up, its back is toward the door side: against the back wall is fine then.
-    expect(can([], 'counter', 3, 0, 'up', shop)).toBe(true);
+    expect(can([], 'counter', 12, 6, 'up', shop)).toBe(true);
+    expect(can([], 'bar', 12, 6, 'down', shop)).toBe(false);
+    expect(can([], 'bar', 12, 7, 'down', shop)).toBe(true);
+    // Under the open kitchen the cell behind is kitchen floor: a bar piece may stand right at the kitchen's mouth.
+    expect(can([], 'bar', 6, 6, 'down', shop)).toBe(true);
   });
 });
 
@@ -394,13 +399,14 @@ describe('non-rectangular rooms (step 7b)', () => {
   });
 
   it('wall items hang on any back wall band, also the inner one of an L', () => {
+    // KITCHEN-ABOVE: the tavern L has the kitchen annex on top (cols 0-7, rows 0-5), the main floor from row 6, the inner band at y 384 (row 12).
     const l = createRoom(7, 'shop', 1, 1, 'l_shape'); // banners are shop items
-    expect(canPlace(l, [], T('banner'), 480, 192, 'down')).toBe(true); // the inner band
-    expect(canPlace(l, [], T('banner'), 160, 0, 'down')).toBe(true); // the top band
-    expect(canPlace(l, [], T('banner'), 320, 192, 'down')).toBe(false); // half off the inner band
+    expect(canPlace(l, [], T('banner'), 352, 384, 'down')).toBe(true); // the inner band
+    expect(canPlace(l, [], T('banner'), 64, 0, 'down')).toBe(true); // the kitchen's back wall band
+    expect(canPlace(l, [], T('banner'), 320, 384, 'down')).toBe(false); // half off the inner band
     expect(canPlace(l, [], T('banner'), 480, 0, 'down')).toBe(false); // no wall up there
-    const p = planPlacement(l, [], T('banner'), 500, 230, 'down'); // clear of the cellar door's 16 px sprite clearance
-    expect(p).toMatchObject({ x: 500, y: 192, ok: true });
+    const p = planPlacement(l, [], T('banner'), 360, 420, 'down'); // clear of the suite door's 16 px sprite clearance
+    expect(p).toMatchObject({ x: 360, y: 384, ok: true });
   });
 });
 

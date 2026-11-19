@@ -23,6 +23,7 @@ export function barCoinPoint(bar: FurnitureItem | undefined): Point | null {
   if (!bar) return null;
   const t = getFurnitureType(bar.typeId);
   // The register stands left of the middle (step T1: TAVERN_START_RIDERS), turned with the bar.
-  const side = bar.facing === 'down' ? -32 : bar.facing === 'up' ? 32 : 0;
+  // A one-cell bar piece (MODULAR BAR) carries the register itself: no side step.
+  const side = t.w <= 32 ? 0 : bar.facing === 'down' ? -32 : bar.facing === 'up' ? 32 : 0;
   return { x: bar.x + side, y: bar.y - 16 - topOf(t.id) - 12 };
 }

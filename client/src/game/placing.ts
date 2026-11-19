@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  styleKey, getFurnitureType, screenToWorld, footprintRect, wallBands, type Camera, type FurnitureItem, type ItemsResult, type Point,
+  styleKey, canPickUp, getFurnitureType, screenToWorld, footprintRect, wallBands, type Camera, type FurnitureItem, type ItemsResult, type Point,
 } from '@pixel-hotel/shared';
 import { Placer } from '../build/placer.ts';
 import { createPlaceBar } from '../ui/placeBar.ts';
@@ -122,7 +122,7 @@ late.paint = paint;
     },
   });
 late.menu = menu;
-  const openMenu = (item: FurnitureItem): void => menu.open(item.uid, getFurnitureType(item.typeId));
+  const openMenu = (item: FurnitureItem): void => menu.open(item.uid, getFurnitureType(item.typeId), canPickUp(item, st.items));
 
   return { newIntro, syncItems, shown0, applyItems, placer, paintableStyles, syncGrid, paint, paintBar, viewCenter, placeBar, menu, openMenu };
 }

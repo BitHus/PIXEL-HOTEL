@@ -18,19 +18,28 @@ export * from './config/home.ts';
 
 
 // ---------- The tavern (step 9t) ----------
-/** What a new tavern starts with besides the bar (the old stall table is not in a new game any more; step S3 gave it a bar stool in front of the bar,
- *  the owner took that stool away again (G2): the table has a third stool in front, so a new tavern still has 3 seats): `key` is the spot in the shop shape's shopStart (roomShapes.json); x and y here are the square shop's. */
-export const TAVERN_START_ITEMS = [
-  { key: 'table', typeId: 'table', x: 192, y: 288, facing: 'down' },
-  { key: 'stool_left', typeId: 'bar_stool', x: 144, y: 288, facing: 'right' },
-  { key: 'stool_right', typeId: 'bar_stool', x: 240, y: 288, facing: 'left' },
-  { key: 'stool_front', typeId: 'bar_stool', x: 208, y: 320, facing: 'up' },
-  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 48, y: 384, facing: 'down' },
-  { key: 'stove', typeId: 'stove', x: 160, y: 384, facing: 'down' },
-] as const;
 /**
- * What stands ON the bar in a new tavern (step T1): the register and a tap stand, side by side, as dx from the bar's anchor (px, bar facing down).
- * The bar is 3 cells wide; the third cell stays free for a second stand.
+ * What a new tavern starts with besides the bar (START LAYOUT REDO, owner 19 Nov): a dining table with a chair on every side, two bar stools in front of the
+ * bar (sit-down seats at the bar), the brewing barrel and the stove in the kitchen annex behind the bar. `key` is the spot in the shop shape's shopStart
+ * (roomShapes.json, the bar pieces are there too: bar .. bar_end); x and y here are the square tavern's. The table stands 2 free rows away from the bar
+ * front (the row where bar guests stand and one more), so the bar and the dining area never crowd each other.
+ */
+export const TAVERN_START_ITEMS = [
+  { key: 'table', typeId: 'table', x: 192, y: 352, facing: 'down' },
+  { key: 'chair_left', typeId: 'chair', x: 144, y: 352, facing: 'right' },
+  { key: 'chair_right', typeId: 'chair', x: 240, y: 352, facing: 'left' },
+  { key: 'chair_back', typeId: 'chair', x: 176, y: 320, facing: 'down' },
+  { key: 'chair_front', typeId: 'chair', x: 208, y: 384, facing: 'up' },
+  { key: 'bar_stool_1', typeId: 'bar_stool', x: 272, y: 256, facing: 'up' },
+  { key: 'bar_stool_2', typeId: 'bar_stool', x: 304, y: 256, facing: 'up' },
+  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 272, y: 160, facing: 'down' },
+  { key: 'stove', typeId: 'stove', x: 224, y: 160, facing: 'down' },
+] as const;
+/** MODULAR BAR (19 Nov): a new tavern's bar is this many one-cell 'bar' pieces in a row (facing down) when its shape has no bar..bar_end spots: the register on the first, the tap stand on the third. */
+export const TAVERN_START_BAR_PIECES = 6;
+/**
+ * LEGACY (migration 23 -> 24, addBarFittings): what went ON the old 3-cell counter, as dx from its anchor. A new tavern puts the register on the first bar
+ * piece and the tap stand on the shape's shopStart tap_stand piece instead.
  */
 export const TAVERN_START_RIDERS = [
   { typeId: 'register', dx: -32 },
@@ -110,6 +119,8 @@ export const BAR_CHANCE_MAX = 0.8;
 export const BAR_DISH_TABLE_SHIFT = 0.3;
 /** TF: at most this many bar spots per tavern (GUEST_MAX 8 holds). */
 export const BAR_SPOTS_MAX = 8;
+/** RUN 11: bar guests keep this many free cells between each other (a spot this close to a held one is not free; 1 = never side by side). Not a ranked number. */
+export const BAR_SPOT_GAP = 1;
 /** TF: a bar guest waits this long for the drink (a table guest GUEST_PATIENCE_MS) and calls out at the warn mark. */
 export const BAR_PATIENCE_MS = 60_000;
 export const BAR_PATIENCE_WARN_MS = 25_000;

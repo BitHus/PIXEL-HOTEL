@@ -65,7 +65,7 @@ describe('the stove', () => {
     expect(t.icon.shape).toBe('stove');
   });
 
-  it('a new game starts with one stove, inside the walled kitchen of the tavern, on every shop shape', () => {
+  it('a new game starts with one stove, inside the kitchen annex of the tavern, on every shop shape', () => {
     for (const shape of ROOM_SHAPES.filter((r) => r.shopStart)) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const list = stoves(s.items, kitchenRoomIds(s));
@@ -93,7 +93,7 @@ describe('cooking in real time', () => {
     expect(startCook(rich, uid, 'potato_stew', 1.5, 1)).toBeNull();
     expect(startCook(rich, uid, 'no_such_dish', 1, 1)).toBeNull();
     expect(startCook(rich, 9999, 'potato_stew', 1, 1)).toBeNull(); // not a stove of the tavern
-    expect(startCook(rich, rich.items.find((i) => i.typeId === 'counter')!.uid, 'potato_stew', 1, 1)).toBeNull();
+    expect(startCook(rich, rich.items.find((i) => i.typeId === 'bar')!.uid, 'potato_stew', 1, 1)).toBeNull();
     // 4 stews need 8 potatoes and 4 turnips: fine here, short with 7 potatoes.
     expect(startCook(rich, uid, 'potato_stew', 4, 1)).not.toBeNull();
     expect(startCook(withGoods({ potato: 7, turnip: 4 }), uid, 'potato_stew', 4, 1)).toBeNull();

@@ -42,9 +42,14 @@ export function isBarPiece(type: FurnitureType): boolean {
   return type.servedFromBehind === true || type.barExtension === true;
 }
 
-/** True if taking `uid` away (picked up) leaves every other piece joined. Non-bar items always pass. */
+/**
+ * True if taking `uid` away (picked up) is allowed: MODULAR BAR (owner 19 Nov) the LAST piece served from behind in its room never goes (a tavern keeps a
+ * bar: one piece at least), and an old extension piece leaves every other piece joined. Non-bar items always pass.
+ */
 export function canRemoveBarPiece(items: readonly FurnitureItem[], uid: number, types: Lookup = getFurnitureType): boolean {
   const item = items.find((i) => i.uid === uid);
   if (!item || item.roomId === null || !isBarPiece(types(item.typeId))) return true;
-  return barExtensionsConnected(items.filter((i) => i.uid !== uid), item.roomId, types);
+  const rest = items.filter((i) => i.uid !== uid);
+  if (types(item.typeId).servedFromBehind && !rest.some((i) => i.roomId === item.roomId && i.onItemUid === null && types(i.typeId).servedFromBehind === true)) return false;
+  return barExtensionsConnected(rest, item.roomId, types);
 }

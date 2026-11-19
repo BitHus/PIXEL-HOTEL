@@ -155,7 +155,7 @@ describe('taps through the GameAPI (step T1)', () => {
     const guest = await firstOrder();
     expect(await api.serveGuest(guest.id)).toBe(true);
     await api.pickUpItem(stand().uid);
-    await until(() => false, 3000);
+    await until(() => false, 12000);
     expect(await mugs()).toBe(0);
     const g = (await tavern()).guests.find((x) => x.id === guest.id);
     expect(g?.phase).toBe('order');

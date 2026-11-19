@@ -82,9 +82,11 @@ describe('Inn door data', () => {
         const grid = buildNavGrid(grown, roomBlockers(grown, s.items));
         const door = cellAt(grid, doorPoint(grown));
         const reach = reachableCells(grid, door.r * grid.cols + door.c);
-        for (const spot of innDoorSpotRects(grown)) {
+        for (const d of innDoorSpots(grown)) {
+          const spot = d.spot;
           expect(zones.some((z) => rectsOverlap(spot, z)), `${sh.id} L${l}`).toBe(false);
-          expect(kitchen !== null && rectsOverlap(spot, kitchen), `${sh.id} L${l} kitchen`).toBe(false);
+          // KITCHEN-ABOVE (19 Nov): the cellar stairs are in the kitchen's back wall (staff only anyway); the suite and garden doors stay out of the kitchen.
+          expect(kitchen !== null && rectsOverlap(spot, kitchen), `${sh.id} L${l} kitchen`).toBe(d.id === 'tavern_to_cellar');
           const r = spot.y / BUILD_CELL;
           for (let c = spot.x / BUILD_CELL; c < (spot.x + spot.w) / BUILD_CELL; c++) {
             expect(isCellFree(grid, c, r) && reach[r * grid.cols + c] === true, `${sh.id} L${l} reachable`).toBe(true);

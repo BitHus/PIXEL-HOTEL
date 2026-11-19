@@ -73,6 +73,9 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
     x.addEventListener('click', () => setMenu(false));
     menu.appendChild(x);
   }
+  // Packs (owner 19 Nov: it was tucked away): the first button of the More grid, with a gem badge.
+  const packsBtn = extra.find((x) => x.dataset.moreLabel === 'Packs');
+  if (packsBtn) menu.prepend(packsBtn);
   wrap.append(more, menu);
   col.appendChild(wrap);
   parent.appendChild(col);

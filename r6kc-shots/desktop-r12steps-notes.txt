@@ -1,0 +1,20 @@
+inv {"furniture":[],"materials":{"wood":4,"cloth":2,"turnip":2,"potato":1},"hotbar":[null,null,null,null,null,null],"bag":{"furniture":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"materials":["wood","cloth","turnip","potato",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}}
+== menu nocrops=false {"on":true,"ptr":[185,59,0,0],"ring":[161,35,47,47],"card":"Click the register on the bar to open the menu: serve and set prices. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[185,59,0,0],"ring":[161,35,49,49],"card":"Click the register on the bar to open the menu: serve and set prices. ×","cardCls":"ui-panel first-ten"}
+== barrel nocrops=false {"on":true,"ptr":[185,506,0,0],"ring":[162,483,47,47],"card":"Click the brewing barrel in the walled kitchen and start a brew for more drinks. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[185,506,0,0],"ring":[161,482,49,49],"card":"Click the brewing barrel in the walled kitchen and start a brew for more drinks. ×","cardCls":"ui-panel first-ten"}
+== load nocrops=false {"on":true,"ptr":[281,30,0,0],"ring":[258,7,47,47],"card":"Click a tap stand on the bar and load the mugs on it. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[281,30,0,0],"ring":[258,7,47,47],"card":"Click a tap stand on the bar and load the mugs on it. ×","cardCls":"ui-panel first-ten"}
+== stove nocrops=true {"on":true,"ptr":[521,485,0,0],"ring":[497,461,47,47],"card":"Click the stove in the walled kitchen and cook a dish for the menu. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[521,485,0,0],"ring":[497,461,49,49],"card":"Click the stove in the walled kitchen and cook a dish for the menu. ×","cardCls":"ui-panel first-ten"}
+== farm nocrops=true {"on":true,"ptr":[970,174,0,0],"ring":[946,150,47,47],"card":"Click Worlds and visit your farm: crops grow there while you play. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[970,174,0,0],"ring":[946,150,49,49],"card":"Click Worlds and visit your farm: crops grow there while you play. ×","cardCls":"ui-panel first-ten"}
+== plant nocrops=false {"on":true,"ptr":[970,30,0,0],"ring":[946,6,47,47],"card":"Click Catalog, buy turnip seeds, pick them in the hotbar, click a soil cell. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[970,30,0,0],"ring":[946,6,49,49],"card":"Click Catalog, buy turnip seeds, pick them in the hotbar, click a soil cell. ×","cardCls":"ui-panel first-ten"}
+== build nocrops=false {"on":true,"ptr":[970,78,0,0],"ring":[947,55,46,46],"card":"Click Build to move furniture and place new pieces. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[970,78,0,0],"ring":[947,55,46,46],"card":"Click Build to move furniture and place new pieces. ×","cardCls":"ui-panel first-ten"}
+== wall nocrops=false {"on":true,"ptr":[970,30,0,0],"ring":[946,6,48,48],"card":"Click Catalog, pick a wall piece (banner, mirror) and hang it on the back wall. ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[970,30,0,0],"ring":[946,6,49,49],"card":"Click Catalog, pick a wall piece (banner, mirror) and hang it on the back wall. ×","cardCls":"ui-panel first-ten"}
+== dungeon nocrops=false {"on":true,"ptr":[970,126,0,0],"ring":[946,102,47,47],"card":"Click Dungeon to fight for loot. One hit per click, so go fast! ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[970,126,0,0],"ring":[946,102,49,49],"card":"Click Dungeon to fight for loot. One hit per click, so go fast! ×","cardCls":"ui-panel first-ten"}
+errors []

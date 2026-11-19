@@ -96,11 +96,18 @@ export async function setupUiShell(g: G3) {
     lookButton.classList.toggle('on', on);
     if (on) toast('Look around: drag to pan. Walk, or tap Look around again, to come back.');
   };
-  const accountButton = iconButton('heart', 'Account: keep your game in the cloud', () => panels.toggle('account'), 'room-only');
+  const accountButton = iconButton('account', 'Account: keep your game in the cloud', () => panels.toggle('account'), 'room-only');
   accountButton.dataset.moreLabel = 'Account';
   panels.onChange(() => accountButton.classList.toggle('on', panels.open === 'account'));
   const cloudOn = cloudConfig(import.meta.env as { VITE_CLOUD_SAVE?: string; VITE_SERVER_URL?: string }) !== null;
-  const side = createSideButtons(ui, panels, [build.button, dungeonButton, questButton, mapButton, emote.button, lookButton, ...(cloudOn ? [accountButton] : [])]);
+  // PACKS: its own button, first in the More grid (sideButtons.ts), opens the Catalog on the Packs tab (catalogPanel.ts listens for 'catalog-tab').
+  const packsButton = iconButton('packs', 'Packs: open card packs with gems', () => {
+    if (panels.open !== 'catalog') panels.toggle('catalog');
+    window.dispatchEvent(new CustomEvent('catalog-tab', { detail: 'packs' }));
+  }, 'room-only packs-btn');
+  packsButton.dataset.moreLabel = 'Packs';
+  panels.onChange(() => packsButton.classList.toggle('on', panels.open === 'catalog'));
+  const side = createSideButtons(ui, panels, [build.button, dungeonButton, packsButton, questButton, mapButton, emote.button, lookButton, ...(cloudOn ? [accountButton] : [])]);
   panels.onChange(() => mapButton.classList.toggle('on', panels.open === 'travel'));
   panels.onChange(() => questButton.classList.toggle('on', panels.open === 'quests'));
   panels.onChange(() => hint.setCovered(panels.open !== null));

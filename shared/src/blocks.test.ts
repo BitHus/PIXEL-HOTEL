@@ -86,8 +86,9 @@ describe('where a block may stand', () => {
   it('refuses a cell with floor furniture, but not the cell next to it', () => {
     const s = rich();
     const id = s.player.shopRoomId;
-    const counter = s.items.find((i) => i.typeId === 'counter' && i.roomId === id)!;
-    const t = getFurnitureType('counter');
+    // MODULAR BAR: the last (right) bar piece; the cell to its right is the way into the kitchen, free.
+    const counter = s.items.filter((i) => i.typeId === 'bar' && i.roomId === id).sort((a, b) => b.x - a.x)[0]!;
+    const t = getFurnitureType('bar');
     const { c, r } = cellOf({ x: counter.x, y: counter.y - 1 });
     expect(blockProblem(shop(s), s.items, getBlockType('dirt'), c, r, free)).toBe('furniture');
     const w = t.w / BUILD_CELL;
@@ -120,7 +121,7 @@ describe('where a block may stand', () => {
     expect(placeBlock(s, lake.id, 3, 3, 'dirt', 1, free)).toMatchObject({ ok: false, problem: 'not_buildable' });
     const shopOnly = { ...getBlockType('dirt'), placeIn: ['shop'] } as BlockType;
     expect(blockProblem(hotel(s), s.items, shopOnly, 3, 3, free)).toBe('wrong_room');
-    expect(blockProblem(shop(s), s.items, shopOnly, 3, 3, free)).toBeNull();
+    expect(blockProblem(shop(s), s.items, shopOnly, 12, 10, free)).toBeNull(); // a free cell of the tavern's main floor (it starts 6 rows down: the kitchen is above)
   });
   it('works in the farm (also on soil, step BG6), also where the cooking pot stood (step K1)', () => {
     const s = rich();
@@ -163,8 +164,8 @@ describe('blocks block walking', () => {
   it('the spot behind the counter must stay reachable', () => {
     let s = rich();
     const id = s.player.shopRoomId;
-    const counter = s.items.find((i) => i.typeId === 'counter' && i.roomId === id)!;
-    const t = getFurnitureType('counter');
+    const counter = s.items.find((i) => i.typeId === 'bar' && i.roomId === id)!;
+    const t = getFurnitureType('bar');
     const b = behindPoint(counter, t);
     const centre = cellOf(b);
     const ring: { c: number; r: number }[] = [];
@@ -181,17 +182,17 @@ describe('blocks block walking', () => {
     expect(doorReachesMiddle(shop(s), roomBlockers(shop(s), s.items))).toBe(true);
   });
   it('the tavern: the last block that would cut a reachable seat off from the door is refused (seat_blocked)', () => {
-    // The left stool of the start tavern stands on cell (4, 8); the table is on columns 5-6, row 8; the bar's right end is on (3, 7).
-    // Its free neighbours are the six cells around it that the bar does not hold (diagonals too); with all six shut, no guest could get within reach of the seat.
+    // The left chair of the start tavern stands on cell (4, 10); the table is on columns 5-6, row 10 and the back chair on (5, 9) (START LAYOUT REDO 19 Nov).
+    // Its free neighbours are the six cells around it that the table and the back chair do not hold (diagonals too); with all six shut, no guest could get within reach of the seat.
     let st = rich();
     const id = st.player.shopRoomId;
-    const ring = [[4, 7], [5, 7], [3, 8], [3, 9], [4, 9], [5, 9]] as const;
+    const ring = [[3, 9], [4, 9], [3, 10], [3, 11], [4, 11], [5, 11]] as const;
     for (const [c, r] of ring.slice(0, 5)) st = put(st, id, c, r, 'dirt');
     const [c, r] = ring[5];
     const res = placeBlock(st, id, c, r, 'dirt', 1, free);
     expect(res).toEqual({ ok: false, problem: 'seat_blocked' });
     // A block that cuts nothing off is still allowed somewhere else.
-    const others = Array.from({ length: 12 }, (_, k) => placeBlock(st, id, 10 + k, 5, 'dirt', 1, free));
+    const others = Array.from({ length: 12 }, (_, k) => placeBlock(st, id, 10 + k, 13, 'dirt', 1, free));
     expect(others.some((o) => o.ok)).toBe(true);
   });
   it('furniture cannot be put on a block (the blockers include the blocks)', () => {

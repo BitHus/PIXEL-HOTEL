@@ -61,6 +61,8 @@ export * from './spliceAsk.ts';
 export * from './farm.ts';
 export * from './cooking.ts';
 export * from './kitchen.ts';
+export * from './modularBar.ts';
+export * from './kitchenAbove.ts';
 export * from './skills.ts';
 export * from './skillRules.ts';
 export * from './tapPick.ts';

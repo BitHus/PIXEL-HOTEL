@@ -1,0 +1,3 @@
+lake room {"kind":"lakeside","w":576,"h":384,"av":{"x":288,"y":360},"cam":{"x":121.33333333333333,"y":184,"zoom":3}}
+lake room items []
+errors []

@@ -61,6 +61,12 @@ export interface Room {
   ownerId: number;
   /** Owners can set a room to private (section 13). */
   private: boolean;
+  /**
+   * KITCHEN-ABOVE (owner 19 Nov, SAVE 42): true = a tavern whose kitchen annex sits ABOVE the main floor (behind the back wall and the bar; the main floor
+   * starts annex-h cells lower). Every tavern made since has it (createRoom); a missing flag = the old annex BELOW the main floor (shape.kitchenBelow):
+   * only saves older than 42 have that, and the 41 -> 42 migration turns them (kitchenAbove.ts).
+   */
+  annexAbove?: boolean;
 }
 
 /** One level of a shape as it is stored: rectangles in CELLS, and the door's x as a cell boundary. */
@@ -75,12 +81,18 @@ export interface RoomShape {
   kind: RoomKind | 'both';
   /** Levels 1, 2 and 3; each floor contains the one before. */
   levels: ShapeLevel[];
-  /** Where a new shop's counter and stall_table stand (level 1), for shapes a shop can use. */
-  shopStart?: Record<'counter' | 'stall_table' | 'table' | 'stool_left' | 'stool_right' | 'stool_front' | 'brewing_barrel' | 'stove', Point>;
-  /** The KITCHEN ANNEX per level 1..3, in CELLS (owner 18 Nov, replaces the T1 zone and the wall ring): a rectangle OUTSIDE the main floor that is added to a tavern's floor
-   * (below its bottom edge, touching other floor only along its top edge). It is OPEN to the tavern along its whole top edge (no wall, no door) and staff only for guests.
-   * Shapes a tavern can use only; a hotel with the same shape gets no annex. */
+  /**
+   * Where a new tavern's pieces stand (level 1, px anchors, the annex-above geometry): bar = the first (left) bar piece, bar_end = the last one (the pieces fill
+   * the cells between, facing down; the register stands on the first, tap_stand marks the piece with the tap stand), bar_stool_1/2 in front of the bar, the
+   * table with chair_left/right/back/front, brewing_barrel and stove in the kitchen annex. Shapes a tavern can use only.
+   */
+  shopStart?: Record<string, Point>;
+  /** The KITCHEN ANNEX per level 1..3, in CELLS (owner 18 Nov; ABOVE the main floor since 19 Nov): x and w in cells, y always 0, h = how many cells the
+   * main floor starts lower (the same h on every level, so an upgrade never moves the main floor). It touches the main floor only along its bottom edge, is
+   * OPEN to the tavern there (no wall, no door) and staff only for guests. Shapes a tavern can use only; a hotel with the same shape gets no annex. */
   kitchen?: Rect[];
+  /** The old annex BELOW the main floor (18 Nov to save 41): only rooms without annexAbove (old saves, until the 41 -> 42 migration) use it. */
+  kitchenBelow?: Rect[];
 }
 
 export const ROOM_SHAPES = roomShapeData as RoomShape[];
@@ -107,22 +119,30 @@ function shapeLevel(shape: string, level: RoomLevel): ShapeLevel {
   return l;
 }
 
-/** The floor rectangles of a shape level in px (the data is in cells). */
-function levelRects(shape: string, level: RoomLevel, kind?: RoomKind): Rect[] {
-  const main = shapeLevel(shape, level).rects.map((r) => ({ x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL }));
-  const annex = kind === 'shop' ? annexRectOf(shape, level) : null;
+/** The floor rectangles of a shape level in px (the data is in cells). A tavern (annex above) has its main floor `mainShiftOf` px lower. */
+function levelRects(shape: string, level: RoomLevel, kind?: RoomKind, above = false): Rect[] {
+  const annex = kind === 'shop' ? annexRectOf(shape, level, above) : null;
+  const dy = kind === 'shop' && above && annex ? annex.h : 0;
+  const main = shapeLevel(shape, level).rects.map((r) => ({ x: r.x * BUILD_CELL, y: r.y * BUILD_CELL + dy, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL }));
   return annex ? [...main, annex] : main;
 }
 
-/** The kitchen annex of a tavern shape at a level in px (owner 18 Nov), or null for a shape without one. */
-export function annexRectOf(shape: string, level: RoomLevel): Rect | null {
-  const r = getRoomShape(shape).kitchen?.[level - 1];
+/** The kitchen annex of a tavern shape at a level in px, or null for a shape without one. above = the 19 Nov geometry (on top, y 0), else the old one below. */
+export function annexRectOf(shape: string, level: RoomLevel, above = true): Rect | null {
+  const s = getRoomShape(shape);
+  const r = (above ? s.kitchen : s.kitchenBelow)?.[level - 1];
   return r ? { x: r.x * BUILD_CELL, y: r.y * BUILD_CELL, w: r.w * BUILD_CELL, h: r.h * BUILD_CELL } : null;
 }
 
 /** The annex of a room (a tavern only), or null. */
 export function roomAnnex(room: Room | undefined): Rect | null {
-  return room && room.kind === 'shop' ? annexRectOf(room.shape ?? defaultShape(room.kind), room.level) : null;
+  return room && room.kind === 'shop' ? annexRectOf(room.shape ?? defaultShape(room.kind), room.level, room.annexAbove === true) : null;
+}
+
+/** How many px the main floor of a room starts below y 0: the annex height of a tavern with its kitchen above, else 0. */
+export function mainShiftOf(room: Pick<Room, 'kind' | 'shape' | 'level' | 'annexAbove'>): number {
+  if (room.kind !== 'shop' || room.annexAbove !== true) return 0;
+  return annexRectOf(room.shape ?? defaultShape(room.kind), room.level, true)?.h ?? 0;
 }
 
 /** The bounding box of rectangles. */
@@ -136,8 +156,10 @@ export function boundsOf(rects: readonly Rect[]): Rect {
 
 /** A new room of the given kind, level and shape, with the bare styles (the farm: grass and hedge). */
 export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId: number, shape = defaultShape(kind)): Room {
-  const b = boundsOf(levelRects(shape, level, kind));
+  const above = kind === 'shop';
+  const b = boundsOf(levelRects(shape, level, kind, above));
   return {
+    ...(above ? { annexAbove: true } : {}),
     id,
     kind,
     level,
@@ -155,13 +177,13 @@ export function createRoom(id: number, kind: RoomKind, level: RoomLevel, ownerId
 
 /** The same room at another level of its shape (the size follows). */
 export function roomAtLevel(room: Room, level: RoomLevel): Room {
-  const b = boundsOf(levelRects(room.shape, level, room.kind));
+  const b = boundsOf(levelRects(room.shape, level, room.kind, room.annexAbove === true));
   return { ...room, level, w: b.x + b.w, h: b.y + b.h };
 }
 
 /** The floor's rectangles. */
 export function floorRects(room: Room): Rect[] {
-  return levelRects(room.shape ?? defaultShape(room.kind), room.level, room.kind);
+  return levelRects(room.shape ?? defaultShape(room.kind), room.level, room.kind, room.annexAbove === true);
 }
 
 /** The floor's bounding box. */

@@ -140,7 +140,7 @@ describe('room geometry for every shape and level', () => {
 
   it('roomAtLevel switches to the next level of the same shape', () => {
     const p = createRoom(3, 'shop', 1, 1, 'plus');
-    expect(roomAtLevel(p, 2)).toMatchObject({ id: 3, shape: 'plus', level: 2, w: 736, h: 608 });
+    expect(roomAtLevel(p, 2)).toMatchObject({ id: 3, shape: 'plus', level: 2, w: 736, h: 800 } /* 16 rows of main floor + the 9-row kitchen above */);
   });
 });
 

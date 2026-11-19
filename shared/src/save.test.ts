@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIGRATIONS, readSave as readSaveReal, saveKey, toSaveText } from './save.ts';
 import { ledgerGold, ledgerMaterials } from './testState.ts';
-import { withTavernMachines } from './tavernTest.ts';
+import { save41Start } from './tavernTest.ts';
 import { arrangeState, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { FARM_HINT, HINTS, MINE_HINT, PACK_HINT, SAVE_VERSION, SPLICE_HINT } from './config.ts';
@@ -16,9 +16,10 @@ import type { BlockCell } from './blockTypes.ts';
 
 /** The rules tests of the old versions start from a new game with the stove and barrel in the tavern (they stand in the walled kitchen area there). */
 function oldNew(): ReturnType<typeof createNewPlayer> {
-  return withTavernMachines(createNewPlayer(undefined, 1));
+  return save41Start('square_shop', 1);
 }
-const readSave = readSaveReal;
+// The old-version tests below check the migrations up to save 41 (what they were written for); 41 -> 42 (modular bar, kitchen above) is tested in kitchenAboveMigration.test.ts.
+const readSave = (text: string) => readSaveReal(text, 41);
 
 const state = applyChange(oldNew(), { reason: 'debug', addFurniture: ['chair', 'rug'] }, 2)!;
 
@@ -675,8 +676,9 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 41 (38 -> 39 the kitchen is an attached annex, 37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(41);
+  it('SAVE_VERSION is 42 (41 -> 42 the modular bar and the kitchen above, 38 -> 39 the kitchen is an attached annex, 37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(42);
+    expect(typeof MIGRATIONS[41]).toBe('function');
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');

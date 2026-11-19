@@ -27,6 +27,7 @@ import { FARM_START_SOIL, SOIL_STYLE,
   TAVERN_START_DRINK,
   TAVERN_START_ITEMS,
   TAVERN_START_RIDERS,
+  TAVERN_START_BAR_PIECES,
   BUILD_CELL,
 } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
@@ -40,7 +41,14 @@ import { emptyLakeside } from './woodcut.ts';
 import { emptyTavern } from './tavern.ts';
 import { getDrinkType, getFoodType } from './materials.ts';
 import type { FurnitureItem } from './types.ts';
-import type { MaterialId, StyleKind } from './types.ts';
+import type { Facing, MaterialId, StyleKind } from './types.ts';
+
+/** The modular bar piece (modularBar.ts BAR_PIECE; spelled here to keep the import graph flat). */
+const BAR_PIECE = 'bar';
+/** The stove's start spot per tavern shape in the OLD geometry (kitchen annex below, save 41): only addStove on an old save uses it. */
+const LEGACY_STOVE_SPOT: Record<string, { x: number; y: number }> = {
+  square_shop: { x: 160, y: 384 }, long: { x: 96, y: 640 }, l_shape: { x: 160, y: 512 }, plus: { x: 128, y: 384 }, wide_hall: { x: 160, y: 320 },
+};
 import { drawnLook } from './drawnPieces.ts';
 
 export interface NewPlayerConfig {
@@ -121,16 +129,26 @@ function startMenu(): Record<string, { on: boolean; price: number }> {
 
 export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at = 0): GameState {
   const shopStart = getRoomShape(config.shopShape).shopStart;
-  // The bar and the stall table, then the tavern's round table, two stools and the brewing barrel.
+  // MODULAR BAR (19 Nov): the bar = one-cell pieces from shopStart.bar to bar_end (facing down, the kitchen annex behind it), then the dining table with its
+  // chairs, the bar stools, the brewing barrel and the stove.
+  const first = shopStart?.bar ?? { x: BUILD_CELL * 4 + BUILD_CELL / 2, y: BUILD_CELL * 7 };
+  const last = shopStart?.bar_end ?? { x: first.x + (TAVERN_START_BAR_PIECES - 1) * BUILD_CELL, y: first.y };
+  const barCells = Array.from({ length: Math.round((last.x - first.x) / BUILD_CELL) + 1 }, (_, k) => ({ x: first.x + k * BUILD_CELL, y: first.y }));
   const startItems: FurnitureItem[] = [
-    ...SHOP_START_ITEMS.filter((s) => s.typeId !== 'stall_table').map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.typeId] ?? { x: s.x, y: s.y }, facing: s.facing })),
-    ...TAVERN_START_ITEMS.map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.key] ?? { x: s.x, y: s.y }, facing: s.facing })),
+    ...barCells.map((at) => ({ typeId: BAR_PIECE as string, at, facing: 'down' as Facing })),
+    // A shape without a spot for a piece (a short bar has room for one bar stool or none) leaves it out.
+    ...TAVERN_START_ITEMS.filter((s) => !shopStart || shopStart[s.key] !== undefined).map((s) => ({ typeId: s.typeId as string, at: shopStart?.[s.key] ?? { x: s.x, y: s.y }, facing: s.facing as Facing })),
   ].map((s, k) => ({ uid: k + 1, typeId: s.typeId, ownerId: config.playerId, roomId: config.shopRoomId, x: s.at.x, y: s.at.y, facing: s.facing, onItemUid: null }));
-  // The register and a tap stand stand ON the bar, side by side (step T1); the start ale is loaded on the first tap.
-  const bar = startItems.find((i) => i.typeId === 'counter')!;
-  const riders = TAVERN_START_RIDERS.map((r, k) => ({ uid: startItems.length + k + 1, typeId: r.typeId as string, ownerId: config.playerId, roomId: config.shopRoomId, x: bar.x + r.dx, y: bar.y, facing: 'down' as const, onItemUid: bar.uid }));
+  // The register stands ON the first bar piece (the checkout end), the tap stand on the shape's tap_stand piece (step T1); the start ale is loaded on its first tap.
+  const pieces = startItems.filter((i) => i.typeId === BAR_PIECE);
+  const tapAt = shopStart?.tap_stand ?? { x: first.x + 2 * BUILD_CELL, y: first.y };
+  const tapPiece = pieces.find((p) => p.x === tapAt.x && p.y === tapAt.y) ?? pieces[Math.min(2, pieces.length - 1)]!;
+  const riders = [
+    { uid: startItems.length + 1, typeId: 'register', ownerId: config.playerId, roomId: config.shopRoomId, x: pieces[0]!.x, y: pieces[0]!.y, facing: 'down' as const, onItemUid: pieces[0]!.uid },
+    { uid: startItems.length + 2, typeId: 'tap_stand', ownerId: config.playerId, roomId: config.shopRoomId, x: tapPiece.x, y: tapPiece.y, facing: 'down' as const, onItemUid: tapPiece.uid },
+  ];
   startItems.push(...riders);
-  const stand = riders.find((i) => i.typeId === 'tap_stand')!;
+  const stand = riders[1]!;
   const empty: GameState = {
     player: {
       id: config.playerId,
@@ -233,7 +251,8 @@ export function arrangeState(state: GameState): GameState {
  * empty with introSeen false, so the game explains it once.
  */
 export function addTavern(state: GameState, at: number): GameState {
-  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: TAVERN_START_ITEMS.filter((i) => i.typeId !== 'stove' && i.key !== 'stool_front').map((i) => i.typeId), note: 'the shop is a tavern now' }, at);
+  // What this migration gave then (a table, two stools and the barrel; TAVERN_START_ITEMS has changed since): kept as a list so old saves migrate the same.
+  const gift = applyChange(state, { reason: 'tavern_gift', addFurniture: ['table', 'bar_stool', 'bar_stool', 'brewing_barrel'], note: 'the shop is a tavern now' }, at);
   if (!gift) throw new Error('cannot add the tavern');
   const barrel = gift.items.find((i) => i.typeId === 'brewing_barrel' && i.uid >= state.nextUid);
   return {
@@ -255,7 +274,8 @@ export function addStove(state: GameState, at: number): GameState {
   if (!gift) throw new Error('cannot add the stove');
   const stove = gift.items.find((i) => i.typeId === 'stove' && i.uid >= base.nextUid);
   const room = gift.rooms.find((r) => r.id === gift.tavern.roomId);
-  const spot = room ? getRoomShape(room.shape).shopStart?.stove : undefined;
+  // An old save's tavern (no annexAbove, migration 41 -> 42 turns it later) uses the stove spot of the old geometry.
+  const spot = room ? (room.annexAbove === true ? getRoomShape(room.shape).shopStart?.stove : LEGACY_STOVE_SPOT[room.shape]) : undefined;
   if (!stove || !room || !spot || !canPlace(room, gift.items.filter((i) => i.uid !== stove.uid), getFurnitureType('stove'), spot.x, spot.y, 'down')) return arrangeState(gift);
   const placed = { ...stove, roomId: room.id, x: spot.x, y: spot.y, facing: 'down' as const };
   return arrangeState({ ...gift, items: gift.items.map((i) => (i.uid === stove.uid ? placed : i)) });

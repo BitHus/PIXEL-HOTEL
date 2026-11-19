@@ -42,6 +42,14 @@ describe('furniture sprite files', () => {
         const strip = sizeOf('furniture', file);
         expect(strip.header).toEqual(PNG_SIGNATURE);
         const tag = name!.id.slice(cut + 1);
+        const base = getFurnitureType(name!.id.slice(0, cut));
+        if (base.autotile) {
+          // MODULAR BAR tile `<typeId>_<tile>.png` (bar_hmid, bar_cse...; shared barTiles): one cell wide, a straight piece 39 tall, an up-down or corner piece 58 (its top plate sits over the cell above).
+          expect(strip.w, 'one cell wide').toBe(footprintSize(base, 'down').w);
+          expect(strip.h, 'height').toBeGreaterThanOrEqual(footprintSize(base, 'down').d);
+          expect(strip.h, 'height').toBeLessThanOrEqual(footprintSize(base, 'down').d + base.height + 8);
+          return;
+        }
         if (tag === 'cold' || tag === 'ready') {
           // OA-5 state body `<typeId>_cold|ready.png`: replaces the body, so every frame is as wide as the footprint (a ready strip has 2 or more
           // frames in a row, cold is one) and as tall as a body may be.

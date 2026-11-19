@@ -5,9 +5,12 @@ import type { GameState } from './gameState.ts';
 import { kitchenZone, rectInZone } from './kitchen.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { SAVE_VERSION } from './config.ts';
-import { readSave } from './save.ts';
+import { readSave as readSaveReal } from './save.ts';
+/** These tests check the migrations up to save 41; 41 -> 42 is kitchenAboveMigration.test.ts. */
+const readSave = (text: string) => readSaveReal(text, 41);
 import { rectInsideFloor, roomAnnex, roomAtLevel } from './room.ts';
 import { withItem } from './tavernTest.ts';
+import { save41Start } from './tavernTest.ts';
 
 /** The old (save 38) start spots of the stove and the barrel per shape. */
 const OLD_START: Record<string, { stove: [number, number]; barrel: [number, number] }> = {
@@ -20,7 +23,7 @@ const OLD_START: Record<string, { stove: [number, number]; barrel: [number, numb
 
 /** A version 38 tavern: the old room size (no annex), the stove and barrel at the old start spots inside the old zone (square_shop cells 7..9 x 0..2). */
 function save38(shape = 'square_shop', mutate: (s: GameState) => GameState = (s) => s): string {
-  let s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape }, 0);
+  let s = save41Start(shape, 0);
   const tavern = s.rooms.find((r) => r.id === s.tavern.roomId)!;
   s = { ...s, rooms: s.rooms.map((r) => (r.id === tavern.id ? { ...r, h: r.h - roomAnnex(r)!.h } : r)) }; // the old floor had no annex rows
   s = {
@@ -32,8 +35,8 @@ function save38(shape = 'square_shop', mutate: (s: GameState) => GameState = (s)
 }
 
 describe('migration 38 -> 39 (the kitchen annex)', () => {
-  it('SAVE_VERSION is 41; the tavern grows by the annex and the old kitchen machines move inside it, nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(41);
+  it('SAVE_VERSION is 42; the tavern grows by the annex and the old kitchen machines move inside it, nothing is lost', () => {
+    expect(SAVE_VERSION).toBe(42);
     const text = save38();
     const before = JSON.parse(text).state as GameState;
     const r = readSave(text);
@@ -102,7 +105,7 @@ describe('migration 38 -> 39 (the kitchen annex)', () => {
 describe('migration 39 -> 40 (the kitchen is open and bigger)', () => {
   /** A version 39 tavern: the old 5 x 4 annex size (room h 448), the stove and the prep table in the old annex. */
   function save39(mutate: (s: GameState) => GameState = (s) => s): string {
-    let s = createNewPlayer(undefined, 0);
+    let s = save41Start('square_shop', 0);
     s = { ...s, rooms: s.rooms.map((r) => (r.id === s.tavern.roomId ? { ...r, h: 448 } : r)) };
     s = { ...s, items: s.items.map((i) => (i.typeId === 'stove' ? { ...i, x: 80, y: 384 } : i.typeId === 'brewing_barrel' ? { ...i, x: 16, y: 384 } : i)) };
     s = withItem(s, 80, 'prep_table', 80, 416); // inside the old annex (cells 0..4 x 10..13), one row lower than the stove

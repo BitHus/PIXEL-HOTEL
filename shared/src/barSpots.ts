@@ -3,7 +3,7 @@
 // footprint: one guest per front cell. A spot counts only if the cell is on the floor, free, reachable from the door by the customers' grid
 // (npcGrid: the staff zone, the kitchen and the Inn doors are already blocked in it).
 
-import { BAR_BASE, BAR_CHANCE_MAX, BAR_CHANCE_MIN, BAR_DISH_TABLE_SHIFT, BAR_SPOTS_MAX } from './config.ts';
+import { BAR_BASE, BAR_CHANCE_MAX, BAR_CHANCE_MIN, BAR_DISH_TABLE_SHIFT, BAR_SPOT_GAP, BAR_SPOTS_MAX } from './config.ts';
 import { behindPoint, doorPoint, footprintRect, getFurnitureType } from './furniture.ts';
 import { cellCenter, isCellFree, type NavGrid } from './nav.ts';
 import { reachableFrom } from './npcNav.ts';
@@ -44,6 +44,15 @@ export function barSpots(items: readonly FurnitureItem[], room: Room, grid: NavG
   const reach = new Set(reachableFrom(grid, doorPoint(room)));
   const seen = new Set<string>();
   const out: BarSpot[] = [];
+  // RUN 11: no guest stands in front of a bar cell that carries the register or a tap stand (they hid the stand); small free decor does not count.
+  const carried = new Set<string>();
+  for (const r of items) {
+    if (r.roomId !== room.id || r.onItemUid === null) continue;
+    const rt = getFurnitureType(r.typeId);
+    if (rt.freeOnSurface) continue;
+    const f = footprintRect(r, rt);
+    carried.add(`${Math.floor((f.x + f.w / 2) / grid.cell)},${Math.floor((f.y + f.h / 2) / grid.cell)}`);
+  }
   for (const it of items) {
     if (it.roomId !== room.id || it.onItemUid !== null) continue;
     const type = getFurnitureType(it.typeId);
@@ -64,8 +73,10 @@ export function barSpots(items: readonly FurnitureItem[], room: Room, grid: NavG
     if (vertical) for (let c = c0; c <= c1; c++) cells.push({ c, r: front === 'below' ? r1 + 1 : r0 - 1 });
     else for (let r = r0; r <= r1; r++) cells.push({ c: front === 'right' ? c1 + 1 : c0 - 1, r });
     const facing: Facing = front === 'below' ? 'up' : front === 'above' ? 'down' : front === 'right' ? 'left' : 'right';
+    const step = facingStep(facing);
     for (const k of cells) {
       const key = `${k.c},${k.r}`;
+      if (carried.has(`${k.c + step.x},${k.r + step.y}`)) continue;
       if (seen.has(key) || !isCellFree(grid, k.c, k.r) || !reach.has(k.r * grid.cols + k.c)) continue;
       seen.add(key);
       const p = cellCenter(grid, k.c, k.r);
@@ -91,10 +102,12 @@ export function freeBarSpots(
   mess: readonly { seatUid: number; seatIndex: number }[] = [],
   reserved: readonly GuestBarSpot[] = [],
 ): BarSpot[] {
+  // RUN 11 (they clumped): a spot within BAR_SPOT_GAP cells of a held one is not free either, so bar guests stand spread out.
+  const held = [...guests.flatMap((g) => (g.barSpot ? [g.barSpot] : [])), ...reserved];
+  const near = (s: BarSpot): boolean => held.some((h) => Math.max(Math.abs(h.c - s.cell.c), Math.abs(h.r - s.cell.r)) <= BAR_SPOT_GAP);
   return spots.filter(
     (s) =>
-      !guests.some((g) => holds(g, s)) &&
-      !reserved.some((r) => holds({ barSpot: r }, s)) &&
+      !near(s) &&
       !mess.some((m) => m.seatUid === s.barUid && m.seatIndex === barSpotIndex(s.cell)),
   );
 }

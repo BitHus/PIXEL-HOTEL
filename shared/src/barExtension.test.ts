@@ -15,13 +15,14 @@ const start = () => {
 const piece = (uid: number, x: number, y: number, facing: FurnitureItem['facing'], roomId: number): FurnitureItem => ({ uid, typeId: 'counter_ext', x, y, facing, roomId, ownerId: 1, onItemUid: null }) as FurnitureItem;
 
 describe('bar extension (OA-6)', () => {
-  it('the type: one cell, surface, in the catalog, a fair price, art for all facings', () => {
+  it('the type: one cell, surface, retired from the catalog (the modular bar piece replaced it, 19 Nov), a fair price, art for all facings', () => {
     expect(ext.w).toBe(32);
     expect(ext.d).toBe(32);
     expect(ext.height).toBe(72);
     expect(ext.surface).toBe(true);
     expect(ext.placeIn).toBe('shop');
-    expect(ext.inCatalog).toBe(true);
+    expect(ext.inCatalog).toBe(false);
+    expect(getFurnitureType('bar').inCatalog).toBe(true);
     expect(ext.noPickup).toBeUndefined();
     expect(ext.baseValue).toBeLessThan(getFurnitureType('counter').baseValue);
   });

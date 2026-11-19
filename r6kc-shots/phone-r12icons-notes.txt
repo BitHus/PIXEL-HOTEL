@@ -1,0 +1,3 @@
+bag tabs ["Wave","Dance","Laugh","Cheer","Sleep","Workshop: crafting a","Book: everything you","Skills: spend your s","Room","Avatar","Chat (Enter)","Settings","Quests: daily, event","Emote","Look around: drag to","Show the cell grid","Done","Shelf","Cheapest","I can afford","Wooden chair15Buy","Settle60Buy","Table30Buy","Candle stand18Buy"]
+ws tabs 0
+catalog tabs 1

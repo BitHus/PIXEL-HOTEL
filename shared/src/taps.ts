@@ -126,7 +126,8 @@ export function barOf(state: GameState): FurnitureItem | undefined {
 export function pourStop(state: GameState, drink: string): { tap: Tap; stand: FurnitureItem; at: Point } | null {
   const tap = tapFor(state.tavern.taps, drink);
   const stand = tap ? tapStands(state.items, state.tavern.roomId).find((i) => i.uid === tap.standUid) : undefined;
-  const bar = barOf(state);
+  // MODULAR BAR: the piece the stand stands on (its own staff side), else any piece.
+  const bar = state.items.find((i) => i.uid === stand?.onItemUid && getFurnitureType(i.typeId).servedFromBehind === true) ?? barOf(state);
   if (!tap || !stand || !bar) return null;
   return { tap, stand, at: pourPoint(bar, stand) };
 }

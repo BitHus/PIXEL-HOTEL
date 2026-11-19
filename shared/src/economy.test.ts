@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { OFFLINE_MAX_MS } from './config.ts';
 import { applyStyle, buyCatalog, catalogPrice, isStyleUnlocked, paintFloor, unlockStyle, upgradeCost, upgradeRoom } from './economy.ts';
-import { canPickUp, canPlace, footprintRect, getFurnitureType, poseAtCell } from './furniture.ts';
+import { canPickUp, canPlace, footprintRect, getFurnitureType, pickUpItem, poseAtCell } from './furniture.ts';
+import { legacyStart } from './tavernTest.ts';
 import { applyChange } from './ledger.ts';
 import { kitchenZone, rectInZone } from './kitchen.ts';
 import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
@@ -62,9 +63,9 @@ describe('styles', () => {
   it('the shop appeal follows the floor style that covers most cells', () => {
     let s = unlockStyle(rich(500), 'floor', 'wood_planks', 1)!;
     const shop = s.player.shopRoomId;
-    s = paintFloor(s, shop, { c: 0, r: 0 }, { c: 17, r: 4 }, 'wood_planks')!; // 18 x 5 of 18 x 10 cells: half
+    s = paintFloor(s, shop, { c: 0, r: 6 }, { c: 17, r: 10 }, 'wood_planks')!; // 18 x 5 of the 18 x 10 cells of the main floor (it starts 6 rows down, under the kitchen): half; the kitchen keeps its stone
     expect(dominantFloorStyle(s.rooms.find((r) => r.id === shop)!)).toBe('bare');
-    s = paintFloor(s, shop, { c: 0, r: 5 }, { c: 4, r: 5 }, 'wood_planks')!;
+    s = paintFloor(s, shop, { c: 0, r: 11 }, { c: 4, r: 11 }, 'wood_planks')!;
     expect(dominantFloorStyle(s.rooms.find((r) => r.id === shop)!)).toBe('wood_planks');
   });
 
@@ -103,14 +104,12 @@ describe('room upgrades (section 5)', () => {
     expect(upgradeCost(room1)).toBe(300);
     s = upgradeRoom(s, shopId, 1)!;
     const room2 = s.rooms.find((r) => r.id === shopId)!;
-    expect(room2).toMatchObject({ level: 2, w: 704, h: 576 }); // 22 x 12 cells of main floor + the kitchen annex (9 x 6 cells) under it
+    expect(room2).toMatchObject({ level: 2, w: 704, h: 576 }); // 22 x 12 cells of main floor + the kitchen annex (9 x 6 cells) above it
     expect(s.player.wallet.gold).toBe(1800);
     expect(doorRect(room2).x).toBe(704 / 2 - 32);
-    expect(doorRect(room2).y).toBe(384);
-    // Everything keeps its place, except what stood in the kitchen annex: it moves down with the annex (64 px at both upgrades).
-    const kitchen = new Set(['stove', 'brewing_barrel']);
-    expect(s.items.filter((i) => i.roomId === shopId && !kitchen.has(i.typeId))).toEqual(before.filter((i) => !kitchen.has(i.typeId)));
-    expect(s.items.filter((i) => i.roomId === shopId && kitchen.has(i.typeId))).toEqual(before.filter((i) => kitchen.has(i.typeId)).map((i) => ({ ...i, y: i.y + 64 })));
+    expect(doorRect(room2).y).toBe(576);
+    // KITCHEN-ABOVE (19 Nov): the annex sits on top and keeps its height, so EVERYTHING keeps its place (the annex grows to the right, the main floor right and down).
+    expect(s.items.filter((i) => i.roomId === shopId)).toEqual(before);
     expect(upgradeCost(room2)).toBe(800);
     s = upgradeRoom(s, shopId, 2)!;
     expect(s.rooms.find((r) => r.id === shopId)).toMatchObject({ level: 3, w: 832, h: 640 });
@@ -137,15 +136,23 @@ describe('room upgrades (section 5)', () => {
   });
 });
 
-describe('the counter', () => {
-  it('cannot be picked up, and there is always exactly one', () => {
+describe('the bar (MODULAR BAR, 19 Nov)', () => {
+  it('pieces can be picked up and bought cheaply, but the tavern always keeps its last piece; the old counter is never sold', () => {
     let s = rich(5000);
-    const counter = s.items.find((i) => i.typeId === 'counter')!;
-    expect(canPickUp(counter)).toBe(false);
+    const pieces = () => s.items.filter((i) => i.typeId === 'bar' && i.roomId === s.player.shopRoomId);
+    expect(pieces()).toHaveLength(6);
+    expect(canPickUp(legacyStart().items.find((i) => i.typeId === 'counter')!)).toBe(false);
     expect(buyCatalog(s, 'counter', 1)).toBeNull();
+    expect(buyCatalog(s, 'bar', 1)).not.toBeNull();
+    // Take the pieces away one by one (riders go to the bag with theirs): the last one stays.
+    while (pieces().length > 1) {
+      const p = pieces()[0]!;
+      expect(canPickUp(p, s.items)).toBe(true);
+      s = { ...s, items: pickUpItem(s.items, p.uid) };
+    }
+    expect(canPickUp(pieces()[0]!, s.items)).toBe(false);
     s = upgradeRoom(upgradeRoom(s, s.player.shopRoomId, 1)!, s.player.shopRoomId, 2)!;
-    expect(s.items.filter((i) => i.typeId === 'counter')).toHaveLength(1);
-    expect(s.items.find((i) => i.typeId === 'counter')?.roomId).toBe(s.player.shopRoomId);
+    expect(pieces()).toHaveLength(1);
   });
 });
 

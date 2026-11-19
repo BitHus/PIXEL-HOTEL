@@ -1,0 +1,18 @@
+inv {"furniture":[],"materials":{"wood":4,"cloth":2,"turnip":2,"potato":1},"hotbar":[null,null,null,null,null,null],"bag":{"furniture":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"materials":["wood","cloth","turnip","potato",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}}
+   mats {"wood":4,"cloth":2}
+== farm nocrops=true {"on":true,"ptr":[388,188,0,0],"ring":[365,164,46,46],"card":"Visit your farm (Worlds) ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[388,188,0,0],"ring":[365,165,46,46],"card":"Visit your farm (Worlds) ×","cardCls":"ui-panel first-ten"}
+   panel {"on":true,"ptr":[182,385,0,0],"ring":[162,365,40,40],"card":"12/21First stepsVisit your farm (Worlds)×","cardCls":"ui-panel first-ten"}
+   mats {"wood":4,"cloth":2}
+== plant nocrops=false {"on":true,"ptr":[388,32,0,0],"ring":[365,9,46,46],"card":"Plant turnip seeds ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[388,32,0,0],"ring":[365,9,46,46],"card":"Plant turnip seeds ×","cardCls":"ui-panel first-ten"}
+   panel {"on":true,"ptr":[218,75,0,0],"ring":[198,55,39,39],"card":"13/21First stepsPlant turnip seeds×","cardCls":"ui-panel first-ten"}
+   mats {"wood":4,"cloth":2}
+== wall nocrops=false {"on":true,"ptr":[388,32,0,0],"ring":[365,9,47,47],"card":"Hang a wall piece ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[388,32,0,0],"ring":[365,9,46,46],"card":"Hang a wall piece ×","cardCls":"ui-panel first-ten"}
+   panel {"on":true,"ptr":[257,760,0,0],"ring":[237,740,40,40],"card":"16/21First stepsHang a wall piece×","cardCls":"ui-panel first-ten"}
+   mats {"wood":4,"cloth":2}
+== build nocrops=false {"on":true,"ptr":[388,84,0,0],"ring":[365,60,46,46],"card":"Tap Build ×","cardCls":"ui-panel first-ten"}
+   more open {"on":true,"ptr":[388,84,0,0],"ring":[365,60,46,46],"card":"Tap Build ×","cardCls":"ui-panel first-ten"}
+   panel {"on":true,"ptr":[388,32,0,0],"ring":[368,12,40,40],"card":"16/21First stepsHang a wall piece×","cardCls":"ui-panel first-ten"}
+errors []

@@ -188,14 +188,14 @@ describe('blocks through the GameAPI', () => {
     const { api } = open(s);
     await api.enterRoom(s.player.shopRoomId);
     // A few blocks near the door; the shop keeps working and the player can still serve.
-    for (const [c, r] of [[6, 6], [7, 6], [10, 6], [11, 6]] as const) {
+    for (const [c, r] of [[6, 13], [7, 13], [10, 13], [11, 13]] as const) { // near the door (the main floor starts 6 rows down, under the kitchen)
       const res = await api.placeBlock(c, r, 'stone');
       expect(['placed', 'walk']).toContain(res.kind);
     }
     t += 5000;
     const view = await api.getTavern();
     expect(view.roomId).toBe(s.player.shopRoomId);
-    const counter = (await api.getItems()).find((i) => i.typeId === 'counter')!;
+    const counter = (await api.getItems()).find((i) => i.typeId === 'bar')!;
     expect(await api.serve(counter.uid)).not.toBeNull();
   });
 });

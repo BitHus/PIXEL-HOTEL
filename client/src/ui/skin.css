@@ -1114,6 +1114,14 @@
   height: 16px;
 }
 
+/* 19 Nov: PixelLab icons are 32 px art; at 16 px they went mushy. Small spots show them at 24 (pixelated), never below. */
+:is(.btn.small, .info-gold, .price-field, .catalog-price, .quest-head, .info-bar, .run-gold, .forge-slot, .book-reward) .pixel-icon.px16.px-art {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+.pixel-icon.px-art image { image-rendering: pixelated; }
+
 .icon-btn > .pixel-icon.px16,
 .tab-btn .pixel-icon.px16,
 .more-item > .pixel-icon.px16,

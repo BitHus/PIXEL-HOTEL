@@ -14,16 +14,16 @@ import { startCook } from './cooking.ts';
 import { firstHourGold } from './balance.ts';
 
 describe('a new tavern (step S3)', () => {
-  it('has three seats on every shop shape: three at the table, all reachable from the door', () => {
+  it('START LAYOUT REDO (19 Nov): at least four seats on every shop shape (a chair on every side of the table, bar stools at a long bar), all reachable from the door', () => {
     for (const shape of shapesFor('shop')) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const seats = tavernSeats(s.items, room.id);
-      expect(seats, shape.id).toHaveLength(3);
+      expect(seats.length, shape.id).toBeGreaterThanOrEqual(4);
       const grid = buildNavGrid(room, itemBlockers(s.items, room.id));
       for (const seat of seats) {
         // A guest walks to the cell beside the seat's stool (the seat itself is blocked by the stool): some path from the door must end near it.
-        const path = findPath(grid, doorPoint(room), { x: seat.x, y: seat.y + 32 }) ?? findPath(grid, doorPoint(room), { x: seat.x + 32, y: seat.y }) ?? findPath(grid, doorPoint(room), { x: seat.x - 32, y: seat.y });
+        const path = findPath(grid, doorPoint(room), { x: seat.x, y: seat.y + 32 }) ?? findPath(grid, doorPoint(room), { x: seat.x + 32, y: seat.y }) ?? findPath(grid, doorPoint(room), { x: seat.x - 32, y: seat.y }) ?? findPath(grid, doorPoint(room), { x: seat.x, y: seat.y - 32 });
         expect(path, `${shape.id} seat ${seat.uid}`).not.toBeNull();
       }
     }
@@ -33,13 +33,13 @@ describe('a new tavern (step S3)', () => {
     expect(createNewPlayer(undefined, 0).items.some((i) => i.typeId === 'stall_table')).toBe(false);
   });
 
-  it('no stool stands at the bar (G2): all three seats belong to the table', () => {
+  it('owner 19 Nov: four chairs at the table and two bar stools at the bar (6 seats in the square tavern)', () => {
     const s = createNewPlayer(undefined, 0);
-    const counter = s.items.find((i) => i.typeId === 'counter')!;
+    const bars = new Set(s.items.filter((i) => i.typeId === 'bar').map((i) => i.uid));
     const round = s.items.find((i) => i.typeId === 'table')!;
     const seats = tavernSeats(s.items, s.tavern.roomId);
-    expect(seats.filter((k) => k.tableUid === counter.uid)).toHaveLength(0);
-    expect(seats.filter((k) => k.tableUid === round.uid)).toHaveLength(3);
+    expect(seats.filter((k) => bars.has(k.tableUid))).toHaveLength(2);
+    expect(seats.filter((k) => k.tableUid === round.uid)).toHaveLength(4);
   });
 
   it('the start barrel holds 7 root ale and the early dish is on the menu', () => {

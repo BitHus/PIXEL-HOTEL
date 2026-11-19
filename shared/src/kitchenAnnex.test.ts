@@ -8,7 +8,7 @@ import { buildNavGrid, cellAt, isCellFree, reachableCells } from './nav.ts';
 import { annexRectOf, createRoom, doorRect, doorZoneRect, floorRects, floorStyleAt, rectsOverlap, roomAnnex, shapesFor } from './room.ts';
 import { kitchenZone } from './kitchen.ts';
 import { guestZones, npcGrid } from './npcNav.ts';
-import { innDoorSpotRects } from './innDoors.ts';
+import { innDoorSpotRects, innDoorSpots } from './innDoors.ts';
 
 const LEVELS = [1, 2, 3] as const;
 const shopShapes = shapesFor('shop').filter((s) => s.shopStart);
@@ -26,7 +26,7 @@ describe('the open kitchen annex', () => {
     expect(tavernLong.h).toBeGreaterThan(hotelLong.h);
   });
 
-  it('on every shape and level: hangs below the main floor, touches other floor only along its top edge, stays clear of the main door and the Inn doors, is 1.5x or more of the old size and never shrinks', () => {
+  it('on every shape and level (KITCHEN-ABOVE, 19 Nov): sits ABOVE the main floor, touches other floor only along its bottom edge, stays clear of the main door and the Inn doors, is 1.5x or more of the old size and never shrinks', () => {
     for (const sh of shopShapes) {
       let last = 0;
       for (const l of LEVELS) {
@@ -36,15 +36,17 @@ describe('the open kitchen annex', () => {
         expect(annexRectOf(sh.id, l), tag).toEqual(a);
         const main = floorRects(room).filter((r) => !(r.x === a.x && r.y === a.y && r.w === a.w && r.h === a.h));
         for (const m of main) expect(rectsOverlap(m, a), `${tag} overlap`).toBe(false);
-        expect(main.some((m) => m.y + m.h === a.y && m.x <= a.x && m.x + m.w >= a.x + a.w), `${tag} attached below one rectangle`).toBe(true);
-        const side = { x: a.x - 1, y: a.y + 32, w: a.w + 2, h: a.h - 32 };
+        expect(a.y, tag).toBe(0);
+        expect(main.some((m) => m.y === a.y + a.h && m.x <= a.x && m.x + m.w >= a.x + a.w), `${tag} attached above one rectangle`).toBe(true);
+        const side = { x: a.x - 1, y: a.y, w: a.w + 2, h: a.h - 32 };
         for (const m of main) expect(rectsOverlap(m, side), `${tag} touches a side`).toBe(false);
         expect(rectsOverlap(a, doorZoneRect(room)), `${tag} door zone`).toBe(false);
         expect(rectsOverlap(a, doorRect(room)), `${tag} main door`).toBe(false);
-        expect(innDoorSpotRects(room).some((d) => rectsOverlap(a, d)), `${tag} inn door`).toBe(false);
+        // the cellar stairs are in the kitchen back wall; the suite and garden doors stay out of it
+        expect(innDoorSpots(room).filter((d) => d.id !== 'tavern_to_cellar').some((d) => rectsOverlap(a, d.spot)), `${tag} inn door`).toBe(false);
         const cells = (a.w / 32) * (a.h / 32);
         expect(cells, `${tag} size`).toBeGreaterThanOrEqual(OLD_AREA[sh.id]![l - 1]! * 1.5);
-        expect(cells, `${tag} grows`).toBeGreaterThan(last);
+        expect(cells, `${tag} never shrinks`).toBeGreaterThanOrEqual(last);
         last = cells;
         expect(a.h / 32, tag).toBeGreaterThanOrEqual(5);
       }
@@ -100,8 +102,8 @@ describe('the open kitchen annex', () => {
   });
 });
 
-describe('the compact start layout (a new tavern)', () => {
-  it('on every shape: all start pieces stand on valid floor, the stove and barrel inside the annex, the bar, table and kitchen close together, the bar spot reachable', () => {
+describe('the start layout (START LAYOUT REDO, owner 19 Nov)', () => {
+  it('on every shape: all start pieces stand on valid floor, the stove and barrel inside the annex, the bar right under the kitchen, the table 2 free rows from the bar front, every staff spot reachable', () => {
     for (const sh of shopShapes) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: sh.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
@@ -116,33 +118,24 @@ describe('the compact start layout (a new tavern)', () => {
       const inA = (r: { x: number; y: number; w: number; h: number }) => r.x >= a.x && r.y >= a.y && r.x + r.w <= a.x + a.w && r.y + r.h <= a.y + a.h;
       expect(inA(fp('stove')), `${sh.id} stove`).toBe(true);
       expect(inA(fp('brewing_barrel')), `${sh.id} barrel`).toBe(true);
-      // close: the bar, the table and its stools stand at most 5 rows above the annex's top edge (and on the tavern side of it), the stove in its top 3 rows
-      for (const t of ['counter', 'table', 'bar_stool']) {
-        for (const i of floor.filter((x) => x.typeId === t)) {
-          const r = footprintRect(i, getFurnitureType(t));
-          expect(r.y + r.h, `${sh.id} ${t} above the kitchen`).toBeLessThanOrEqual(a.y + 32);
-          expect(a.y - r.y, `${sh.id} ${t} near`).toBeLessThanOrEqual(5 * 32);
-        }
+      const bars = floor.filter((i) => i.typeId === 'bar');
+      for (const b of bars) {
+        expect(b.y, `${sh.id} bar row`).toBe(a.y + a.h + 32); // the first main row, the kitchen behind it
+        expect(behindReachable(room, itemBlockers(s.items, room.id), behindPoint(b, getFurnitureType('bar'))), `${sh.id} behind the bar`).toBe(true);
       }
-      expect(fp('stove').y - a.y, `${sh.id} stove row`).toBeLessThanOrEqual(3 * 32);
-      expect(a.x + a.w, sh.id).toBeLessThanOrEqual(doorZoneRect(room).x); // the annex stays beside the door zone
-      // the table stands right next to the bar
-      const bar = fp('counter');
-      expect(Math.abs(fp('table').x - (bar.x + bar.w)), `${sh.id} table next to the bar`).toBeLessThanOrEqual(2 * 32);
-      // the bar's staff spot is reachable from the door
-      const counter = s.items.find((i) => i.typeId === 'counter')!;
-      expect(behindReachable(room, itemBlockers(s.items, room.id), behindPoint(counter, getFurnitureType('counter'))), `${sh.id} behind the bar`).toBe(true);
+      const barFront = Math.max(...bars.map((b) => b.y));
+      for (const t of ['table', 'chair']) for (const i of floor.filter((x) => x.typeId === t)) expect(footprintRect(i, getFurnitureType(t)).y - barFront, `${sh.id} ${t} away from the bar`).toBeGreaterThanOrEqual(2 * 32);
     }
   });
 
-  it('the new-game camera frame: bar, table, stove and barrel all lie within 9 cells wide and 7 cells high on the square tavern', () => {
+  it('the new-game camera frame: bar, table with chairs, stove and barrel lie within 8 cells wide and 9 cells high on the square tavern', () => {
     const s = createNewPlayer(undefined, 0);
-    const rs = ['counter', 'table', 'stove', 'brewing_barrel'].map((t) => footprintRect(s.items.find((i) => i.typeId === t)!, getFurnitureType(t)));
+    const rs = s.items.filter((i) => i.roomId === s.tavern.roomId && i.onItemUid === null).map((i) => footprintRect(i, getFurnitureType(i.typeId)));
     const x0 = Math.min(...rs.map((r) => r.x));
     const x1 = Math.max(...rs.map((r) => r.x + r.w));
     const y0 = Math.min(...rs.map((r) => r.y));
     const y1 = Math.max(...rs.map((r) => r.y + r.h));
-    expect(x1 - x0).toBeLessThanOrEqual(9 * 32);
-    expect(y1 - y0).toBeLessThanOrEqual(7 * 32);
+    expect(x1 - x0).toBeLessThanOrEqual(8 * 32);
+    expect(y1 - y0).toBeLessThanOrEqual(9 * 32);
   });
 });

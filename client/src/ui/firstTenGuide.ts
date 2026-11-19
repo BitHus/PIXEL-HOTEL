@@ -8,6 +8,7 @@ import {
 } from '@pixel-hotel/shared';
 import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
+import { pixelIcon } from './pixelIcons.ts';
 import type { Toast } from './toast.ts';
 
 export interface FirstTenGuide {
@@ -61,7 +62,9 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   }, 'small first-ten-skip');
   skip.title = 'Skip the first steps';
   skip.setAttribute('aria-label', 'Skip the first steps');
-  card.append(count, body, skip);
+  const icon = pixelIcon('quest');
+  icon.classList.add('first-ten-icon');
+  card.append(icon, body, count, skip);
   body.appendChild(pips);
   card.hidden = true;
   // Phone: the card is ONE line plus the step count; a tap on it opens the whole text and Skip (skin.css .first-ten:not(.expanded)).

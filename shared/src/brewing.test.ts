@@ -78,7 +78,7 @@ describe('brewing (step 9t)', () => {
     expect(startBrew(s, uid, 'root_ale', 2000)).toBeNull();
     const rich = withCrops(s);
     expect(startBrew(rich, uid, 'turnip', 2000)).toBeNull();
-    expect(startBrew(rich, rich.items.find((i) => i.typeId === 'counter')!.uid, 'root_ale', 2000)).toBeNull();
+    expect(startBrew(rich, rich.items.find((i) => i.typeId === 'bar')!.uid, 'root_ale', 2000)).toBeNull();
     const inBag = { ...rich, items: rich.items.map((i) => (i.uid === uid ? { ...i, roomId: null } : i)) };
     expect(startBrew(inBag, uid, 'root_ale', 2000)).toBeNull();
     expect(startBrew(rich, uid, 'root_ale', 2000)).not.toBeNull();

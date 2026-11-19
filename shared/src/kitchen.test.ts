@@ -1,3 +1,4 @@
+import { save41Start } from './tavernTest.ts';
 import { nearestValidPlacement } from './furniture.ts';
 import { describe, expect, it } from 'vitest';
 import { PREP_BONUS, BUILD_CELL } from './config.ts';
@@ -17,7 +18,7 @@ import { tavernAppeal } from './appeal.ts';
 import { withItem, withTavernMachines } from './tavernTest.ts';
 import { itemBlockers } from './furniture.ts';
 
-const fresh = (shape = 'square_shop'): GameState => withTavernMachines(createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape }, 0));
+const fresh = (shape = 'square_shop'): GameState => save41Start(shape, 0);
 const roomOf = (s: GameState) => s.rooms.find((r) => r.id === s.tavern.roomId)!;
 const stoveOf = (s: GameState) => s.items.find((i) => i.typeId === 'stove')!;
 const crops = (s: GameState): GameState => applyChange(s, { reason: 'debug', materials: { turnip: 20 } }, 0)!;

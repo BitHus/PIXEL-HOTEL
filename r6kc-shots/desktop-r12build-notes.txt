@@ -1,0 +1,25 @@
+newgame ok
+buy rug "ok"
+buy lamp "ok"
+buy plant "ok"
+buy banner "ok"
+buy mug_shelf "ok"
+buy shop_rug "ok"
+items [{"uid":1,"t":"counter","x":80,"y":256,"room":2,"surf":null},{"uid":2,"t":"table","x":192,"y":288,"room":2,"surf":null},{"uid":3,"t":"bar_stool","x":144,"y":288,"room":2,"surf":null},{"uid":4,"t":"bar_stool","x":240,"y":288,"room":2,"surf":null},{"uid":5,"t":"bar_stool","x":208,"y":320,"room":2,"surf":null},{"uid":6,"t":"brewing_barrel","x":48,"y":384,"room":2,"surf":null},{"uid":7,"t":"stove","x":160,"y":384,"room":2,"surf":null},{"uid":8,"t":"register","x":48,"y":256,"room":2,"surf":null},{"uid":9,"t":"tap_stand","x":80,"y":256,"room":2,"surf":null}]
+bag [[10,"rug",null],[11,"lamp",null],[12,"plant",null],[13,"banner",null],[14,"mug_shelf",null],[15,"shop_rug",null]] wallet {"gold":4835,"gems":2} item0 {"uid":15,"typeId":"shop_rug","ownerId":1,"roomId":null,"x":0,"y":0,"facing":"down","onItemUid":null}
+place rug @300,160 "ok"
+place banner @200,-24 "ok"
+place mug_shelf @280,-24 "ok"
+place lamp @112,236 "ok"
+place plant @400,300 "ok"
+place shop_rug @336,180 "ok"
+placed [[10,"rug",2,304,192,null],[11,"lamp",2,112,256,1],[12,"plant",2,400,320,null],[13,"banner",2,200,0,null],[14,"mug_shelf",2,280,-4,null],[15,"shop_rug",2,336,224,null]]
+select lamp at {"x":401,"y":305} menu ["Wave","Dance","Laugh","Cheer","Sleep","Workshop","Book","Skills"] selUid {"x":112,"y":242}
+select plant at {"x":689,"y":369} menu ["Wave","Dance","Laugh","Cheer","Sleep","Workshop","Book","Skills"] selUid {"x":400,"y":306}
+select banner at {"x":489,"y":39} menu ["Wave","Dance","Laugh","Cheer","Sleep","Workshop","Book","Skills"] selUid {"x":200,"y":-24}
+select rug at {"x":593,"y":223} menu ["Wave","Dance","Laugh","Cheer","Sleep","Workshop","Book","Skills"] selUid {"x":304,"y":160}
+drag lamp {"x":112,"y":256} -> {"x":112,"y":256}
+drag banner {"x":200,"y":0} -> {"x":200,"y":0}
+drag rug {"x":304,"y":192} -> {"x":304,"y":192}
+drag plant {"x":400,"y":320} -> {"x":400,"y":320}
+errors []

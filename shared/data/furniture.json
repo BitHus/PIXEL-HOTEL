@@ -991,7 +991,7 @@
     "seats": [],
     "baseValue": 15,
     "rank": "common",
-    "inCatalog": true,
+    "inCatalog": false,
     "barExtension": true,
     "art": {
       "boxes": [
@@ -1005,6 +1005,52 @@
       "colors": [
         "oak",
         "walnut"
+      ]
+    }
+  },
+  {
+    "id": "bar",
+    "name": "Bar piece",
+    "category": "shop_furniture",
+    "theme": "tavern",
+    "placeIn": "shop",
+    "appeal": 3,
+    "w": 32,
+    "d": 32,
+    "height": 72,
+    "blocks": true,
+    "sittable": false,
+    "surface": true,
+    "onSurface": false,
+    "wall": false,
+    "facings": [
+      "down",
+      "right",
+      "up",
+      "left"
+    ],
+    "standPoint": {
+      "dx": 0,
+      "dy": 24
+    },
+    "seats": [],
+    "baseValue": 5,
+    "rank": "common",
+    "inCatalog": true,
+    "servedFromBehind": true,
+    "autotile": "bar",
+    "art": {
+      "boxes": [
+        { "dx": -16, "dy": 0, "w": 32, "d": 32, "z": 0, "h": 36, "color": 5 },
+        { "dx": -16, "dy": 0, "w": 32, "d": 32, "z": 36, "h": 4, "color": 4 },
+        { "dx": -11, "dy": 0, "w": 22, "d": 0, "z": 6, "h": 16, "color": 4 }
+      ]
+    },
+    "icon": {
+      "shape": "counter",
+      "colors": [
+        "rust",
+        "oak"
       ]
     }
   },

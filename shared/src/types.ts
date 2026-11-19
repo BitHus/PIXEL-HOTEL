@@ -97,6 +97,11 @@ export interface FurnitureType {
   servedFromBehind?: boolean;
   /** OA-6: a bar extension piece (one cell, surface): it must touch the counter or another piece in a straight line, same facing (barExtension.ts). Register, taps and mugs may stand on it; it is picked up freely. */
   barExtension?: boolean;
+  /**
+   * MODULAR BAR (owner 19 Nov): 'bar' = a one-cell bar piece that joins its neighbours like a wall (barTiles.ts picks the straight, end or corner art by the
+   * bar pieces around it; the renderer draws that tile). Rules see every piece as a counter of its own (servedFromBehind, surface).
+   */
+  autotile?: 'bar';
   /** Where each slot's goods stand when the item faces down (bottom middle of the good, drawn px
    *  from the anchor: on a shelf board, inside a case). Other facings and types without it: spread
    *  along the top. */

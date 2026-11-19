@@ -416,6 +416,8 @@ export const tavernApi = {
     if (task.stage === 'pourwait') {
       // The guest left (or the order was served otherwise) while the avatar waited: nothing to pour for, no stuck avatar.
       if (nextOrder(h.state)?.guestId !== task.guestId) h.dropServe();
+      // The stand (or its drink) went away while the avatar waited at it: the order stays open, nothing to pour, no stuck avatar.
+      else if (!pourStop(h.state, task.item)) h.dropServe();
       return;
     }
     h.walkState = { ...w, task: undefined };

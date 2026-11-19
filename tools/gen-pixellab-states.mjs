@@ -60,7 +60,7 @@ const br = mk(64, bb.height + BP);
 const isLiq = (c) => c && ['f77622', 'feae34', 'a22633'].includes(hx(c));
 for (let f = 0; f < 2; f++) {
   const fr = mk(32, bb.height + BP); blit(fr, bb, 0, BP);
-  for (let y = 6 + BP; y <= 14 + BP; y++) for (let x = 9; x <= 23; x++) { const c = get(fr, x, y); if (isLiq(c)) put(fr, x, y, hx(c) === 'f77622' ? (f ? C.yellow : C.amber) : hx(c) === 'feae34' ? C.yellow : C.orange); }
+  for (let y = 1 + BP; y <= 11 + BP; y++) for (let x = 4; x <= 27; x++) { const c = get(fr, x, y); if (isLiq(c)) put(fr, x, y, hx(c) === 'f77622' ? (f ? C.yellow : C.amber) : hx(c) === 'feae34' ? C.yellow : C.orange); }
   const sp = f ? [[10, 2], [22, 3], [16, 0]] : [[12, 3], [20, 1], [8, 4]];
   for (const [x, y] of sp) { put(fr, x, y, C.yellow); put(fr, x - 1, y, C.cream); put(fr, x + 1, y, C.cream); put(fr, x, y - 1, C.white); put(fr, x, y + 1, C.cream); }
   blit(br, fr, f * 32, 0);

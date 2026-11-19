@@ -1,0 +1,138 @@
+/* TUTORIAL UI RESTYLE (19 Nov, owner: "very ugly"): the first-steps card and the hint chip look like the new panels (Lantern Dark night colour,
+   a stepped pixel frame in the panel's warm iron/wood tones, no soft glow). ONE compact row: small quest icon, one line of text with tiny
+   progress dots under it, the step count and a 44 px Skip. Placement stays in skin.css / declutter.css (desktop: left under the info panel,
+   phone: between the info panel and the button column); this file only changes the look and keeps the card from growing over the room.
+   The PixelLab 24 px 9-slice frame is too heavy for a chip (it would eat the line), so the chip uses the same colours with a 2 px stepped frame. */
+.first-ten.ui-panel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 8px;
+  border: 0;
+  border-image: none;
+  border-radius: 0;
+  background: var(--ui-bg-solid, #262b44);
+  /* stepped pixel frame: dark outline, warm iron line, inner light line, drop shadow */
+  box-shadow:
+    0 0 0 2px var(--outline, #181425),
+    0 0 0 4px var(--wood-mid, #733e39),
+    0 0 0 5px var(--outline, #181425),
+    inset 0 0 0 1px var(--ui-lit, #3a4466),
+    0 7px 0 1px rgba(24, 20, 37, 0.5);
+  image-rendering: pixelated;
+}
+.first-ten .first-ten-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+.first-ten .first-ten-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.first-ten.ui-panel .first-ten-text {
+  font-size: var(--fs-sm, 13px);
+  line-height: 15px;
+  color: var(--ui-text, #f4e9d8);
+}
+.first-ten .first-ten-head { display: none; }
+
+/* progress dots: tiny whole-pixel squares, done = candle gold, left to right */
+.first-ten.ui-panel .first-ten-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0;
+  max-width: 156px;
+}
+.first-ten.ui-panel .first-ten-pips i {
+  width: 5px;
+  height: 5px;
+  background: var(--ui-lit, #3a4466);
+  box-shadow: none;
+  border-radius: 0;
+}
+.first-ten.ui-panel .first-ten-pips i.done { background: var(--ui-accent, #fee761); }
+
+/* the step count: small gold digits, no seal */
+.first-ten.ui-panel .first-ten-count {
+  display: block;
+  flex: none;
+  width: auto;
+  height: auto;
+  background: none;
+  clip-path: none;
+  padding: 0 2px;
+  font-size: var(--fs-xs, 11px);
+  color: var(--ui-accent, #fee761);
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+/* Skip: a plain 44 px touch box with a small dim cross; always live and reachable on a phone */
+.first-ten .btn.small.first-ten-skip {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  border-image: none;
+  box-shadow: none;
+  color: var(--ui-muted, #8b9bb4);
+}
+.first-ten .btn.small.first-ten-skip:active,
+.first-ten .btn.small.first-ten-skip:hover { color: var(--ui-accent, #fee761); }
+
+@media (max-width: 680px) {
+  .first-ten.ui-panel {
+    display: flex;
+    grid-template-columns: none;
+    padding: 3px 2px 3px 6px;
+    gap: 4px;
+  }
+  .first-ten .first-ten-icon { width: 24px; height: 24px; }
+  .first-ten.ui-panel .first-ten-text { font-size: var(--fs-xs, 12px); line-height: 14px; }
+  .first-ten.ui-panel .first-ten-pips { max-width: 100%; }
+  /* the count is in the dots on a phone; keep the chip narrow */
+  .first-ten.ui-panel .first-ten-count { display: none; }
+}
+
+/* HINT CHIP (game/hintChip.ts): same dark chip, gold text, stepped pixel frame, small bob */
+.hint-chip.hint-chip {
+  padding: 3px 8px;
+  color: var(--ui-accent, #fee761);
+  background: var(--ui-bg-solid, #262b44);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px var(--outline, #181425), 0 0 0 3px var(--wood-mid, #733e39), 0 3px 0 3px rgba(24, 20, 37, 0.5);
+  font-size: var(--fs-xs, 12px);
+}
+
+/* POINTER: crisp pixel ring (stepped octagon, no soft glow) and a stepped arrow; both are inline SVG made in guidePointer.ts */
+.guide-pointer .guide-ring {
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  animation: guide-ring-step 900ms steps(1, end) infinite;
+}
+.guide-pointer .guide-ring svg { display: block; width: 44px; height: 44px; }
+.guide-pointer .guide-hand { left: -8px; top: -50px; width: 16px; height: 20px; animation: guide-bob 900ms steps(2, end) infinite; }
+.guide-pointer .guide-hand svg { width: 16px; height: 20px; }
+@keyframes guide-ring-step {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.91); }
+}
+.guide-pointer.calm .guide-ring, .guide-pointer.calm .guide-hand { animation: none; }
+.guide-pointer ~ .ready-dot, .ready-dot.ready-dot { border-radius: 0; box-shadow: none; }

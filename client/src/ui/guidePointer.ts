@@ -17,9 +17,11 @@ export function createGuidePointer(parent: HTMLElement, calm: () => boolean): Gu
   const root = el('div', 'guide-pointer');
   root.setAttribute('aria-hidden', 'true');
   const ring = el('div', 'guide-ring');
+  // Crisp pixel ring: a stepped octagon outline (gold with a dark edge), no blur, no glow.
+  ring.innerHTML = '<svg viewBox="-1 -1 46 46" width="44" height="44" shape-rendering="crispEdges" aria-hidden="true"><path fill-rule="evenodd" d="M12 0H32V4H40V12H44V32H40V40H32V44H12V40H4V32H0V12H4V4H12ZM12 4H32V8H36V12H40V32H36V36H32V40H12V36H8V32H4V12H8V8H12Z" fill="#fee761" stroke="#3e2731" stroke-width="1"/></svg>';
   const hand = el('div', 'guide-hand');
   // A1c: the arrow is a small inline SVG (outline + fill), not CSS border triangles: those collapsed into a filled yellow block when another rule touched box-sizing or size.
-  hand.innerHTML = '<svg viewBox="0 0 18 22" width="18" height="22" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 0h18L9 22z" fill="#3e2731"/><path d="M3 2.5h12L9 17z" fill="#fee761"/></svg>';
+  hand.innerHTML = '<svg viewBox="-1 -1 17 20" width="16" height="20" shape-rendering="crispEdges" aria-hidden="true"><path d="M4 0H11V8H15V10H13V12H11V14H10V16H9V18H6V16H5V14H4V12H2V10H0V8H4Z" fill="#fee761" stroke="#3e2731" stroke-width="2" stroke-linejoin="miter"/><rect x="8" y="1" width="2" height="8" fill="#feae34"/></svg>';
   root.append(ring, hand);
   parent.appendChild(root);
   let shown = false;

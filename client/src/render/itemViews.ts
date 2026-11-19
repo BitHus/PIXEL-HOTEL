@@ -4,7 +4,7 @@
 // find the item under it. A refused rotate shakes the item (shake(), call update() every frame).
 
 import { Graphics, type Container } from 'pixi.js';
-import { PALETTE, POP_MS, SHAKE_MS, SHAKE_PX, getFurnitureType, type FurnitureItem, type MachineState, type Rect } from '@pixel-hotel/shared';
+import { PALETTE, POP_MS, SHAKE_MS, SHAKE_PX, barTiles, getFurnitureType, type FurnitureItem, type MachineState, type Rect } from '@pixel-hotel/shared';
 import { FurnitureSprite } from './furnitureSprite.ts';
 import { surfaceHeight } from './furnitureArt.ts';
 import { PropAnim } from './propAnim.ts';
@@ -67,6 +67,8 @@ export class ItemViews {
   sync(items: readonly FurnitureItem[], hidden: ReadonlySet<number> = new Set()): void {
     const byUid = new Map(items.map((i) => [i.uid, i]));
     const here = items.filter((i) => i.roomId === this.roomId);
+    // MODULAR BAR: each bar piece shows the straight, end or corner tile of its neighbours (shared barTiles).
+    const tiles = barTiles(items, this.roomId);
     for (const [uid, sprite] of this.sprites) {
       const item = byUid.get(uid);
       if (!item || item.roomId !== this.roomId || item.typeId !== sprite.type.id) this.drop(uid, sprite);
@@ -82,7 +84,7 @@ export class ItemViews {
         this.layerFor(item).add(sprite.container, itemDepthKey(item));
       }
       const under = item.onItemUid !== null ? byUid.get(item.onItemUid) : undefined;
-      sprite.set(item.x, item.y, item.facing, under ? surfaceHeight(getFurnitureType(under.typeId)) : 0);
+      sprite.set(item.x, item.y, item.facing, under ? surfaceHeight(getFurnitureType(under.typeId)) : 0, tiles.get(item.uid) ?? null);
       this.props.attach(sprite, item, spriteFor(type.id, item.facing));
       sprite.container.visible = !hidden.has(item.uid);
       this.layerFor(item).setKey(sprite.container, itemDepthKey(item, under));

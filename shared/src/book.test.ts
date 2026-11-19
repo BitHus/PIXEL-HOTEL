@@ -26,9 +26,9 @@ const fresh = (): GameState => createNewPlayer(undefined, 1000);
 describe('the seen list (Player.seen, step 9e)', () => {
   it('a new player has seen what they start with', () => {
     const s = fresh();
-    expect(Object.keys(s.player.seen).sort()).toEqual(['bar_stool', 'brewing_barrel', 'cloth', 'counter', 'register', 'stove', 'table', 'tap_stand', 'wood']);
+    expect(Object.keys(s.player.seen).sort()).toEqual(['bar', 'bar_stool', 'brewing_barrel', 'chair', 'cloth', 'register', 'stove', 'table', 'tap_stand', 'wood']);
     expect(s.player.seen.wood).toEqual({ count: 4, firstSeenAt: 1000 });
-    expect(s.player.seen.counter).toEqual({ count: 1, firstSeenAt: 1000 });
+    expect(s.player.seen.bar).toEqual({ count: 6, firstSeenAt: 1000 }); // MODULAR BAR: six bar pieces
     expect(s.player.bookRewards).toEqual([]);
   });
 
@@ -40,8 +40,8 @@ describe('the seen list (Player.seen, step 9e)', () => {
     // Using things up never lowers the count.
     expect(seenCount(s.player.seen, 'wood')).toBe(4);
     s = applyChange(s, { reason: 'debug', gold: 500 }, 3500)!;
-    const bought = buyCatalog(s, 'chair', 4000)!;
-    expect(bought.player.seen.chair).toEqual({ count: 1, firstSeenAt: 4000 });
+    const bought = buyCatalog(s, 'bench', 4000)!;
+    expect(bought.player.seen.bench).toEqual({ count: 1, firstSeenAt: 4000 });
   });
 
   it('crafting counts what is made', () => {
@@ -96,7 +96,7 @@ describe('the seen list (Player.seen, step 9e)', () => {
 
   it('ownedFinds counts materials and furniture', () => {
     const s = fresh();
-    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, counter: 1, table: 1, bar_stool: 3, brewing_barrel: 1, stove: 1, register: 1, tap_stand: 1 });
+    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, bar: 6, table: 1, chair: 4, bar_stool: 2, brewing_barrel: 1, stove: 1, register: 1, tap_stand: 1 });
   });
 
   it('addSeen keeps the first time', () => {
@@ -112,7 +112,7 @@ describe('the Book (step 9e)', () => {
     const keys = BOOK_TABS.flatMap((t) => bookEntries(t).map((e) => e.key));
     expect(new Set(keys).size).toBe(keys.length);
     for (const m of MATERIAL_TYPES) expect(keys).toContain(m.id);
-    for (const f of FURNITURE_TYPES.filter((x) => x.id !== 'round_table')) expect(keys).toContain(f.id); // the retired round table is not in the Book
+    for (const f of FURNITURE_TYPES.filter((x) => !['round_table', 'counter', 'counter_ext'].includes(x.id))) expect(keys).toContain(f.id); // the retired round table and the old bar pieces are not in the Book
     expect(bookEntries('food').every((e) => ['seed', 'crop', 'food', 'drink'].includes(MATERIAL_TYPES.find((m) => m.id === e.id)!.group))).toBe(true);
     expect(bookEntries('enemies').map((e) => e.id)).toEqual(['slime', 'bat', 'skeleton', 'mimic', 'bone_king']);
     for (const e of bookEntries('enemies')) expect(e.drops).toHaveLength(4);
@@ -130,7 +130,8 @@ describe('the Book (step 9e)', () => {
     expect(sourceOf('potato_stew')).toBe('Cooked');
     expect(sourceOf('iron_ore')).toBe('Mine');
     expect(sourceOf('iron_bar')).toBe('Forge');
-    expect(sourceOf('counter')).toBe('Your tavern');
+    expect(sourceOf('counter')).toBe('Your tavern, Retired (old saves)');
+    expect(sourceOf('bar')).toContain('Your tavern');
     for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) expect(e.source, e.id).not.toBe('Unknown');
     expect(getFurnitureType('slime_jar').rank).toBe('rare');
   });
@@ -138,11 +139,11 @@ describe('the Book (step 9e)', () => {
   it('counts found per tab and in total', () => {
     const s = fresh();
     expect(bookProgress(s.player.seen, 'materials')).toEqual({ found: 2, total: bookEntries('materials').length });
-    expect(bookProgress(s.player.seen, 'furniture').found).toBe(7);
+    expect(bookProgress(s.player.seen, 'furniture').found).toBe(8);
     expect(bookProgress(s.player.seen, 'enemies').found).toBe(0);
     const total = bookTotal(s.player.seen);
-    expect(total.found).toBe(9);
-    expect(total.percent).toBe(Math.floor(900 / total.total));
+    expect(total.found).toBe(10);
+    expect(total.percent).toBe(Math.floor(1000 / total.total));
     let seen = s.player.seen;
     for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) seen = addSeen(seen, e.kind === 'spliceSeed' ? e.id : e.key, 1, 5);
     expect(bookTotal(seen, bookEntries('splice').map((e) => e.key)).percent).toBe(100);

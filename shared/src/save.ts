@@ -16,6 +16,8 @@ import { clearDoorSpots } from './innDoorClear.ts';
 import { widenStoves } from './stoveWide.ts';
 import { addCellarForRacks, dissolveKitchenRoom, growKitchenAnnex, moveKitchenToAnnex } from './cellarRooms.ts';
 import { retireRoundTables } from './retireRoundTable.ts';
+import { convertCounters } from './modularBar.ts';
+import { moveKitchenAbove } from './kitchenAbove.ts';
 import { applyChange, type Change } from './ledger.ts';
 import type { LootRef, Player } from './types.ts';
 import type { GameState } from './gameState.ts';
@@ -353,6 +355,14 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     return { ...state, rooms };
   },
   // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  // 41 -> 42 (owner 19 Nov): the MODULAR BAR (counter and counter_ext become one-cell 'bar' pieces on the same cells, riders and bar guests follow: modularBar.ts
+  // convertCounters), then the KITCHEN moves ABOVE the main floor behind the bar (the main floor moves down by the annex height, the old annex's pieces move into the new one,
+  // door spots cleared, what does not fit goes to the bag: kitchenAbove.ts moveKitchenAbove; Room.annexAbove = true).
+  41: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms) || !Array.isArray(state.items) || !isObject(state.tavern) || !isObject(state.player)) return state;
+    const s = state as unknown as GameState;
+    return moveKitchenAbove(convertCounters(s, s.tavern.updatedAt ?? 0));
+  },
   // 40 -> 41 (owner 19 Nov, the stove is a 2 x 1 cell kitchen range): every stove keeps its cell and grows over the free neighbour (right, left), else the nearest free spot, else the bag (widenStoves).
   40: (state) => {
     if (!isObject(state) || !Array.isArray(state.rooms) || !Array.isArray(state.items)) return state;
@@ -496,8 +506,11 @@ export function toSaveText(state: GameState, savedAt: number): string {
   return JSON.stringify(file);
 }
 
-/** Reads a save text: checks the version, migrates old ones, and checks the shape. */
-export function readSave(text: string): LoadResult {
+/**
+ * Reads a save text: checks the version, migrates old ones, and checks the shape. `upTo` (tests of old migrations only) stops the migrations at that version
+ * instead of SAVE_VERSION; the game never passes it.
+ */
+export function readSave(text: string, upTo = SAVE_VERSION): LoadResult {
   let file: unknown;
   try {
     file = JSON.parse(text);
@@ -512,7 +525,7 @@ export function readSave(text: string): LoadResult {
   let state: unknown = file.state;
   let returnedToBag = 0;
   let doorsChanged = 0;
-  for (let v = version; v < SAVE_VERSION; v++) {
+  for (let v = version; v < Math.min(upTo, SAVE_VERSION); v++) {
     const migrate = MIGRATIONS[v];
     if (!migrate) return { ok: false, problem: 'too_old', version };
     const was = v === 13 && isObject(state) && Array.isArray(state.items) ? placedCount(state.items as GameState['items']) : 0;

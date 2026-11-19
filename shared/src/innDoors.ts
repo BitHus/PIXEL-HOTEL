@@ -49,9 +49,14 @@ const FILE = innDoorData as unknown as InnDoorFile;
 /** Why a door cannot be used now (the client shows a text). */
 export type InnTravelProblem = 'no_door' | 'in_run' | 'no_room';
 
-/** The doors of a room (hotel, shop, farm; the lakeside has none). */
-export function innDoorSpots(room: Pick<Room, 'kind' | 'shape' | 'level'>): InnDoorSpot[] {
-  const shape = FILE.rooms[room.kind]?.[room.shape];
+/**
+ * The doors of a room (hotel, shop, farm; the lakeside has none). KITCHEN-ABOVE (19 Nov, SAVE 42): a tavern's rows in innDoors.json `shop` are absolute in the
+ * annex-above geometry (the cellar door sits in the kitchen annex's back wall, row 0); `shopLegacy` holds the old doors for a tavern without annexAbove
+ * (a save older than 42, only while it migrates).
+ */
+export function innDoorSpots(room: Pick<Room, 'kind' | 'shape' | 'level'> & { annexAbove?: boolean }): InnDoorSpot[] {
+  const kind = room.kind === 'shop' && room.annexAbove !== true ? 'shopLegacy' : room.kind;
+  const shape = FILE.rooms[kind]?.[room.shape];
   const list = shape?.[room.level - 1] ?? [];
   return list.map((d) => ({
     ...d,

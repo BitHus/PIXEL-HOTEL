@@ -25,11 +25,11 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.rooms.find((r) => r.kind === 'lakeside')).toMatchObject({ floorStyle: 'grass', wallStyle: 'hedge' });
   });
 
-  it('has an empty level 1 hotel room (576x384) and a level 1 shop room (576x480, with the kitchen annex)', () => {
+  it('has an empty level 1 hotel room (576x384) and a level 1 shop room (576x512: the kitchen annex of 6 rows above 10 rows of main floor)', () => {
     const hotel = s.rooms.find((r) => r.id === s.player.hotelRoomId);
     const shop = s.rooms.find((r) => r.id === s.player.shopRoomId);
     expect(hotel).toMatchObject({ kind: 'hotel', level: 1, w: 576, h: 384, ownerId: s.player.id });
-    expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 480, ownerId: s.player.id });
+    expect(shop).toMatchObject({ kind: 'shop', level: 1, w: 576, h: 512, ownerId: s.player.id, annexAbove: true });
     expect(s.rooms).toHaveLength(4); // hotel, tavern, farm, lakeside (the kitchen is a walled area of the tavern)
     // Step 9f: a level 1 lakeside (576x384) with 8 whole trees.
     expect(s.rooms.find((r) => r.id === s.player.lakesideRoomId)).toMatchObject({ kind: 'lakeside', level: 1, w: 576, h: 384 });
@@ -47,11 +47,12 @@ describe('createNewPlayer (brief section 9)', () => {
     expect(s.hotbar).toEqual(Array(HOTBAR_SLOTS).fill(null));
   });
 
-  it('puts the bar, a bar stool in front of it, a table with 2 stools in the tavern (the brewing barrel and the stove stand in the walled kitchen area), at their fixed spots; no stall table (S3)', () => {
+  it('puts the modular bar (6 pieces, register on the first, tap stand on the third), 2 bar stools, a table with a chair on every side, and the barrel and stove in the kitchen above, at their fixed spots; no stall table (S3)', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
-    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'stove', 'table', 'tap_stand']);
-    const at = getRoomShape('square_shop').shopStart!.counter; // the compact start layout (18 Nov): the shape's own start spot
-    expect(shop.find((i) => i.typeId === 'counter')).toMatchObject({ x: at.x, y: at.y, facing: 'down' });
+    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar', 'bar', 'bar', 'bar', 'bar', 'bar', 'bar_stool', 'bar_stool', 'brewing_barrel', 'chair', 'chair', 'chair', 'chair', 'register', 'stove', 'table', 'tap_stand']);
+    const at = getRoomShape('square_shop').shopStart!.bar!; // the first bar piece: the shape's own start spot
+    expect(shop.find((i) => i.typeId === 'bar')).toMatchObject({ x: at.x, y: at.y, facing: 'down' });
+    expect(shop.find((i) => i.typeId === 'register')!.onItemUid).toBe(shop.find((i) => i.typeId === 'bar')!.uid);
     const shopRoom = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
     for (const i of shop) {
       const others = s.items.filter((o) => o.uid !== i.uid);
@@ -122,14 +123,16 @@ describe('a new player from character creation (step 7b)', () => {
     expect(lookAllowed(START_LOOK)).toBe(true);
   });
 
-  it('every shop shape has a counter (with room behind it) and a table with three stools that fit (no stool at the bar)', () => {
+  it('every shop shape has a modular bar (with room behind it) and a table with a chair on every side, all of it fits', () => {
     for (const shape of shapesFor('shop')) {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: shape.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const shop = s.items.filter((i) => i.roomId === room.id);
-      expect(shop.map((i) => i.typeId).sort(), shape.id).toEqual(['bar_stool', 'bar_stool', 'bar_stool', 'brewing_barrel', 'counter', 'register', 'stove', 'table', 'tap_stand']);
-      // Three seats (S3, G2): all three stools stand at the table (uid 2).
-      expect(tavernSeats(s.items, room.id).map((x) => x.tableUid), shape.id).toEqual([2, 2, 2]);
+      expect(shop.filter((i) => i.typeId === 'bar').length, shape.id).toBeGreaterThanOrEqual(3);
+      expect(shop.filter((i) => i.typeId === 'chair').length, shape.id).toBe(4);
+      // Four chairs at the table; bar stools (if the bar is long enough) sit at the bar.
+      const table = shop.find((i) => i.typeId === 'table')!;
+      expect(tavernSeats(s.items, room.id).filter((x) => x.tableUid === table.uid), shape.id).toHaveLength(4);
       for (const i of shop) {
         const others = s.items.filter((o) => o.uid !== i.uid);
         expect(canPlace(room, others, getFurnitureType(i.typeId), i.x, i.y, i.facing), `${shape.id} ${i.typeId}`).toBe(true);

@@ -15,7 +15,8 @@ export interface ItemMenuHooks {
 export interface ItemMenu {
   /** The uid of the item the menu is open for, or null. */
   readonly uid: number | null;
-  open(uid: number, type: FurnitureType): void;
+  /** canPick: false hides Pick up (the old counter, the last bar piece of a tavern: shared canPickUp). */
+  open(uid: number, type: FurnitureType, canPick?: boolean): void;
   close(): void;
   /** Keeps the menu above the item (screen rect); call every frame. */
   follow(item: Rect | null): void;
@@ -62,11 +63,11 @@ export function createItemMenu(parent: HTMLElement, hooks: ItemMenuHooks): ItemM
     get uid() {
       return uid;
     },
-    open(next, type) {
+    open(next, type, canPick = type.noPickup !== true) {
       uid = next;
       name.textContent = type.name;
-      // The shop counter can be moved and rotated, never picked up.
-      pickUp.hidden = type.noPickup === true;
+      // The last bar piece of a tavern (and the old counter) can be moved and rotated, never picked up.
+      pickUp.hidden = !canPick;
       menu.hidden = false;
     },
     close() {

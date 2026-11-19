@@ -1,0 +1,47 @@
+/* PACKS (owner 19 Nov: "needs a lot more attention, tucked away"): a Packs button first in the More grid and a gem-badged Packs tab in the Catalog,
+   and a clearer card: big sack icon, name, gem price, a full-width Buy button right under the head (thumb reach on a phone), then the contents
+   and rank odds (the fairness rule: shown before buying). */
+.more-item.packs-btn::after,
+.tab-btn.tab-gems::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  background: url('../assets/ui/icons/gem.png') center / 16px 16px no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.more-item.packs-btn,
+.tab-btn.tab-gems { position: relative; }
+
+.pack-card .pack-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pack-card .pack-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pack-card .pack-icon .slot-icon,
+.pack-card .pack-icon img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+.pack-card .pack-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin: 8px 0 4px;
+  font-size: var(--fs-md, 14px);
+}
+.pack-card .pack-open:disabled { opacity: 0.6; }
+.pack-card .pack-inside {
+  margin: 6px 0 2px;
+  font-size: var(--fs-xs, 11px);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ui-muted, #8b9bb4);
+}

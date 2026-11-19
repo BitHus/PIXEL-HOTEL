@@ -8,8 +8,11 @@ import { rectsOverlap } from './room.ts';
 import { seededRng } from './rng.ts';
 import { itemBlockers } from './furniture.ts';
 import { legacyStart, withItem } from './tavernTest.ts';
+import { createNewPlayer } from './newPlayer.ts';
 
-function world(extra: (s: ReturnType<typeof legacyStart>) => ReturnType<typeof legacyStart> = (s) => s) {
+/** The legacy tavern; bare = without the register and the tap stand on the counter (RUN 11: no spot in front of a carried cell). */
+const bare = (s: ReturnType<typeof legacyStart>) => ({ ...s, items: s.items.filter((i) => i.typeId !== 'register' && i.typeId !== 'tap_stand') });
+function world(extra: (s: ReturnType<typeof legacyStart>) => ReturnType<typeof legacyStart> = bare) {
   const s = extra(legacyStart());
   const room = s.rooms.find((r) => r.id === s.tavern.roomId)!;
   const grid = npcGrid(buildNavGrid(room, itemBlockers(s.items, room.id)), guestZones(s.items, room));
@@ -47,7 +50,7 @@ describe('bar spots (TF-1)', () => {
     const base = world();
     const counter = base.s.items.find((i) => i.typeId === 'counter')!;
     const fp = footprintRect(counter, getFurnitureType('counter'));
-    const more = world((s) => withItem(s, 90, 'counter_ext', fp.x + fp.w + 16, fp.y + fp.h, counter.facing));
+    const more = world((s) => withItem(bare(s), 90, 'counter_ext', fp.x + fp.w + 16, fp.y + fp.h, counter.facing));
     expect(more.spots).toHaveLength(base.spots.length + 1);
     expect(BAR_SPOTS_MAX).toBeLessThanOrEqual(GUEST_MAX);
     expect(more.spots.length).toBeLessThanOrEqual(BAR_SPOTS_MAX);
@@ -55,7 +58,7 @@ describe('bar spots (TF-1)', () => {
 
   it('a turned counter still has spots on its customer side, facing it', () => {
     for (const facing of ['up', 'left', 'right'] as const) {
-      const { s, spots } = world((st) => ({ ...st, items: st.items.map((i) => (i.typeId === 'counter' ? { ...i, facing } : i)) }));
+      const { s, spots } = world((st) => ({ ...bare(st), items: bare(st).items.map((i) => (i.typeId === 'counter' ? { ...i, facing } : i)) }));
       const counter = s.items.find((i) => i.typeId === 'counter')!;
       const zone = staffZone(counter, getFurnitureType('counter'));
       for (const p of spots) expect(rectsOverlap({ x: p.x - 16, y: p.y - 16, w: 32, h: 32 }, zone)).toBe(false);
@@ -67,9 +70,10 @@ describe('bar spots (TF-1)', () => {
     expect(spots.length).toBeGreaterThan(1);
     const first = spots[0]!;
     const held = { barSpot: { barUid: first.barUid, c: first.cell.c, r: first.cell.r } };
-    expect(freeBarSpots(spots, [held])).toHaveLength(spots.length - 1);
+    // RUN 11: a held spot also takes its neighbours (BAR_SPOT_GAP 1): the first spot and the one next to it.
+    expect(freeBarSpots(spots, [held])).toHaveLength(spots.length - 2);
     expect(freeBarSpots(spots, [], [{ seatUid: first.barUid, seatIndex: barSpotIndex(first.cell) }])).toHaveLength(spots.length - 1);
-    expect(freeBarSpots(spots, [], [], [held.barSpot])).toHaveLength(spots.length - 1);
+    expect(freeBarSpots(spots, [], [], [held.barSpot])).toHaveLength(spots.length - 2);
     const door = doorPoint(room);
     const pick = barSpotFor(spots, door)!;
     const d = (p: { x: number; y: number }): number => Math.hypot(p.x - door.x, p.y - door.y);
@@ -89,6 +93,33 @@ describe('bar spots (TF-1)', () => {
       expect(sp.y).toBeLessThanOrEqual(zone.y + zone.h);
       expect(Math.abs(sp.x - p.x)).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe('bar spots and the register / tap stand (RUN 11)', () => {
+  it('no spot in front of a bar cell that carries the register or a tap stand', () => {
+    const full = world((s) => s);
+    const counter = full.s.items.find((i) => i.typeId === 'counter')!;
+    const carried = full.s.items.filter((i) => i.onItemUid === counter.uid).map((i) => Math.floor(i.x / 32));
+    expect(full.spots).toHaveLength(1);
+    for (const p of full.spots) expect(carried).not.toContain(p.cell.c);
+  });
+  it('the spots of the new modular bar skip the register and the tap stand, and no two held spots are side by side', () => {
+    const s = createNewPlayer(undefined, 0);
+    const room = s.rooms.find((r) => r.id === s.tavern.roomId)!;
+    const grid = npcGrid(buildNavGrid(room, itemBlockers(s.items, room.id)), guestZones(s.items, room));
+    const spots = barSpots(s.items, room, grid);
+    const carried = s.items.filter((i) => i.typeId === 'register' || i.typeId === 'tap_stand').map((i) => Math.floor(i.x / 32));
+    expect(spots.length).toBeGreaterThanOrEqual(2);
+    for (const p of spots) expect(carried).not.toContain(p.cell.c);
+    let free = spots;
+    const held: { barSpot: { barUid: number; c: number; r: number } }[] = [];
+    while (free.length > 0) {
+      const p = barSpotFor(free, doorPoint(room))!;
+      held.push({ barSpot: { barUid: p.barUid, c: p.cell.c, r: p.cell.r } });
+      free = freeBarSpots(spots, held);
+    }
+    for (const a of held) for (const b of held) if (a !== b) expect(Math.abs(a.barSpot.c - b.barSpot.c) + Math.abs(a.barSpot.r - b.barSpot.r)).toBeGreaterThan(1);
   });
 });
 

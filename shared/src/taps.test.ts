@@ -1,3 +1,4 @@
+import { save41Start } from './tavernTest.ts';
 import { describe, expect, it } from 'vitest';
 import { TAP_CAP, TAP_SLOTS, TAVERN_START_RIDERS } from './config.ts';
 import { footprintRect, getFurnitureType, planPlacement, snapToSurface, canPlace, ridersOf } from './furniture.ts';
@@ -13,7 +14,8 @@ import { ledgerMaterials } from './testState.ts';
 import { SHOP_TICK_MS } from './config.ts';
 
 const MIN = 60_000;
-const fresh = (): GameState => createNewPlayer(undefined, 0);
+// The old counter tavern (save 41 layout): the rules of the taps are the same on a bar piece (tested in modularBar.test.ts).
+const fresh = (): GameState => save41Start();
 const standOf = (s: GameState) => s.items.find((i) => i.typeId === 'tap_stand')!;
 const withBag = (s: GameState, materials: Record<string, number>): GameState => applyChange(s, { reason: 'debug', materials }, 0)!;
 /** The state at the moment the first guest has an open order (taps as given). */

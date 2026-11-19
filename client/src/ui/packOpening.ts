@@ -5,7 +5,7 @@
 import { RANKS, getClothing, type GameAPI, type PackFind, type PackType, type Rank } from '@pixel-hotel/shared';
 import { confirmBuy } from './confirmBuy.ts';
 import type { GainPopups } from './gainPopups.ts';
-import { packIconUrl } from './itemIcon.ts';
+import { pixelIconUrl } from './pixelIcons.ts';
 import { playPackPop } from './packPop.ts';
 import type { Toast } from './toast.ts';
 
@@ -49,7 +49,7 @@ export function createPackFlow(d: PackFlowDeps): { open(pack: PackType): Promise
         name: pack.name,
         detail: `Gives ${pack.rolls} things. The odds are on the card. Duplicates are possible: extra clothes are kept as spares.`,
         price: pack.gemPrice,
-        image: packIconUrl(pack.icon),
+        image: pixelIconUrl('packs'),
         gold: gems,
         currency: 'gems',
         title: 'Open this pack?',
@@ -63,7 +63,7 @@ export function createPackFlow(d: PackFlowDeps): { open(pack: PackType): Promise
           d.toast('Not enough gems.');
           return;
         }
-        await playPackPop(d.ui, packIconUrl(pack.icon), bestRank(res.finds));
+        await playPackPop(d.ui, pixelIconUrl('packs'), bestRank(res.finds));
         d.popups.show(res.gains);
         const t = packToast(pack, res.finds);
         const wear = t.wear;

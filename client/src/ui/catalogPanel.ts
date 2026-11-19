@@ -66,7 +66,7 @@ const TABS = [
   ['blocks', 'bricks', 'Blocks'],
   ['seeds', 'sprout', 'Seeds'],
   ['clothes', 'shirt', 'Clothes'],
-  ['packs', 'gems', 'Packs'],
+  ['packs', 'packs', 'Packs'],
 ] as const;
 
 /** Where a furniture type goes, in words (for the confirm panel). */
@@ -131,6 +131,15 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
   let made: { node: HTMLElement; price: number; owned: boolean; name: string }[] = [];
 
   let tab: CatalogTab = 'home';
+  // The More grid's Packs button (game/uiShell.ts) opens this panel and asks for the Packs tab with this window event.
+  window.addEventListener('catalog-tab', (e) => {
+    const t = (e as CustomEvent<CatalogTab>).detail;
+    if (!TABS.some(([id]) => id === t)) return;
+    tab = t;
+    draw();
+    applySort();
+    shell.body.scrollTop = 0;
+  });
   let gold = 0;
   let unlocked: readonly string[] = [];
   let room: Room | null = null;
@@ -142,6 +151,8 @@ export function createCatalogPanel(parent: HTMLElement, hooks: CatalogHooks): Ca
     applySort();
     shell.body.scrollTop = 0;
   });
+
+  shell.tabs.querySelector('.tab-btn[title="Packs"]')?.classList.add('tab-gems');
 
   /** One card: tag (or none), big icon, name, price. `owned` cards cannot be bought. */
   const card = (img: string, name: string, price: number, tag: string | null, owned: boolean, buy: () => void, rankId: string | null = null, own = 0): HTMLElement => {

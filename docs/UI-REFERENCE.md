@@ -340,3 +340,6 @@ Side column on every size: Catalog, Build, Dungeon, Worlds, More (owner 19 Nov: 
 
 ## Close button (19 Nov)
 One close style for every panel: the round dark-disc X art (ui/close.css), 45 px hit box, no text glyph. Keep titles clear of the top-right 40 px.
+
+## Tutorial card and Packs (19 Nov)
+First-steps card, hint chip and guide pointer are styled in client/src/ui/guideCard.css (loaded after declutter.css): dark chip with a stepped 2 px frame (the 24 px PixelLab 9-slice is too heavy for a one-line chip), quest icon, text, tiny progress dots, step count (hidden on phone), 44 px Skip. Pointer ring and arrow are inline crispEdges SVG (guidePointer.ts), no glow. Packs: first button of the More grid (data-more-label Packs, gem badge) and a gem-badged Packs tab; the button fires window event 'catalog-tab' (detail 'packs') after opening the Catalog. Pack card order: head (icon, name, gem price), full-width Buy, contents with rank odds. packsCards.css.

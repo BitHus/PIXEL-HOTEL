@@ -19,22 +19,31 @@ export class FurnitureSprite {
 
   constructor(readonly type: FurnitureType) {}
 
-  /** Shows the item at (x, y), drawn `lift` px higher (standing on a surface). */
-  set(x: number, y: number, facing: Facing, lift = 0): void {
+  /** The autotile art this piece shows (MODULAR BAR: shared barTiles), as `<id>_<tile>` + mirror; '' = none. */
+  private tileKey = '';
+
+  /**
+   * Shows the item at (x, y), drawn `lift` px higher (standing on a surface). `tile` (MODULAR BAR, shared barTiles): the bar piece's tile from its
+   * neighbours: the sprite furniture/<id>_<tile>.png replaces the facing art (mirrored when asked); a missing tile file keeps the facing art.
+   */
+  set(x: number, y: number, facing: Facing, lift = 0, tile: { tile: string; mirror: boolean } | null = null): void {
     this.container.position.set(Math.round(x), Math.round(y - lift));
-    if (facing === this.facing) return;
+    const tileTex = tile ? spriteTexture('furniture', `${this.type.id}_${tile.tile}`, 'down') : null;
+    const tileKey = tileTex && tile ? `${tile.tile}:${tile.mirror}` : '';
+    if (facing === this.facing && tileKey === this.tileKey) return;
     this.facing = facing;
+    this.tileKey = tileKey;
     this.art?.destroy();
     // A PNG sprite (docs/PLAN-SPRITES.md) when the piece has all its facings, else the code art. Anchor = bottom centre.
     // The tap stand is drawn knob-less in the world: its levers are separate overlay sprites (pourFx.ts syncRest).
-    const tex = (this.type.id === 'tap_stand' ? spriteTexture('furniture', 'tap_stand_nolever') : null) ?? spriteFor(this.type.id, facing);
+    const tex = tileTex ?? (this.type.id === 'tap_stand' ? spriteTexture('furniture', 'tap_stand_nolever') : null) ?? spriteFor(this.type.id, facing);
     this.baseTex = tex;
     if (tex) {
       const s = new Sprite(tex);
       s.anchor.set(0.5, 1);
       this.art = s;
     } else this.art = drawFurniture(this.type, facing);
-    this.art.scale.x = facing === 'left' ? -1 : 1;
+    this.art.scale.x = tileTex ? (tile!.mirror ? -1 : 1) : facing === 'left' ? -1 : 1;
     this.container.addChildAt(this.art, 0);
     if (this.type.swim && !this.fish) {
       const s = this.type.swim;

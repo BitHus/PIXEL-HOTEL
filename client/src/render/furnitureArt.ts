@@ -43,7 +43,7 @@ export function boxesForFacing(type: FurnitureType, facing: Facing): { boxes: Ar
  * The PixelLab bar pieces are flat: counter.png is 39 px tall with a top face of about 13 rows (front edge at row 14, so 25 px high), counter_ext.png 32 tall (front edge 12, 20 high). Their code boxes
  * say 40, which floated the register and the tap stands 12 px over the bar. Items stand at the top face near its front edge: 28 and 23.
  */
-export const SPRITE_SURFACE_HEIGHT: Readonly<Record<string, number>> = { counter: 28, counter_ext: 23 };
+export const SPRITE_SURFACE_HEIGHT: Readonly<Record<string, number>> = { counter: 28, counter_ext: 23, bar: 28 };
 
 /** Height of the top that items on this surface stand on, in px. */
 export function surfaceHeight(type: FurnitureType): number {

@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  INTRO_COINS, doorY, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, barCoinPoint,
+  INTRO_COINS, doorY, getFurnitureType, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, barCoinPoint,
   roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, CELLAR_BUILD_COST, CELLAR_RACK_MAX_BY_LEVEL, CELLAR_UNLOCK_LEVEL, innDoorHint, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
@@ -72,13 +72,16 @@ export async function setupRoomFlow(g: G13) {
       { once: true },
     );
 
-    const counter = startItems.find((i) => i.typeId === 'counter');
+    // MODULAR BAR: all bar pieces pop together first; the coins fly from the piece with the register.
+    const barPieces = startItems.filter((i) => getFurnitureType(i.typeId).servedFromBehind === true);
+    const till0 = startItems.find((i) => getFurnitureType(i.typeId).till === true);
+    const counter = barPieces.find((p) => p.uid === till0?.onItemUid) ?? barPieces[0];
     await wait(INTRO_FIRST_POP_MS);
-    for (const item of [counter, ...startItems.filter((i) => i !== counter)]) {
-      if (skipped || !item) break;
-      newIntro.hidden.delete(item.uid);
+    for (const group of [barPieces, ...startItems.filter((i) => !barPieces.includes(i)).map((i) => [i])]) {
+      if (skipped || group.length === 0) break;
+      for (const item of group) newIntro.hidden.delete(item.uid);
       syncItems();
-      itemViews.pop(item.uid);
+      for (const item of group) itemViews.pop(item.uid);
       await wait(INTRO_STEP_MS);
     }
     if (!skipped) {

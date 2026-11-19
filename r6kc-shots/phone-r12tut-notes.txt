@@ -1,0 +1,11 @@
+start {"on":false,"ptr":[0,0,0,0],"ring":[-24,-24,48,48],"card":"1/21First stepsPinch with two fingers to zoom×","cardCls":"ui-panel first-ten"}
+keys ["api","st","late","guestViews","setCamera","pourControl","pour","worldToScreen","tapStands","serveTap","standPoint","--","introPending","room","bounds","lightingOn","avatar","path","goal","serving","items","inventory","walletGold","unlockedStyles","camera","shown","marked","lookAround","onItemsSynced","tavern","seatedGuests","selectedBlock","pendingBlock","pendingStove","pendingBarrel","pendingCask","pendingDoor","walkHold","walkHoldCell","shiftHeld","skills"]
+t0 {"on":false,"ptr":[0,0,0,0],"ring":[-25,-25,49,49],"card":"1/21First stepsPinch with two fingers to zoom×","cardCls":"ui-panel first-ten"}
+t1 {"on":false,"ptr":[0,0,0,0],"ring":[-24,-24,48,48],"card":"Pinch with two fingers to zoom ×","cardCls":"ui-panel first-ten"}
+t2 {"on":false,"ptr":[0,0,0,0],"ring":[-21,-21,42,42],"card":"Pinch with two fingers to zoom ×","cardCls":"ui-panel first-ten"}
+t3 {"on":false,"ptr":[0,0,0,0],"ring":[-19,-19,38,38],"card":"Pinch with two fingers to zoom ×","cardCls":"ui-panel first-ten"}
+t4 {"on":false,"ptr":[0,0,0,0],"ring":[-19,-19,38,38],"card":"Pinch with two fingers to zoom ×","cardCls":"ui-panel first-ten"}
+t5 {"on":false,"ptr":[0,0,0,0],"ring":[-20,-20,41,41],"card":"Pinch with two fingers to zoom ×","cardCls":"ui-panel first-ten"}
+t6 {"on":false,"ptr":[0,0,0,0],"ring":[-23,-23,46,46],"card":"Pinch with two fingers to zoom ×","cardCls":"ui-panel first-ten"}
+t7 {"on":false,"ptr":[0,0,0,0],"ring":[-25,-25,49,49],"card":"Pinch with two fingers to zoom ×","cardCls":"ui-panel first-ten"}
+errors []

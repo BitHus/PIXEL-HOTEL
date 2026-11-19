@@ -19,6 +19,7 @@ import { BLOCK_TYPES, getBlockType } from './blockTypes.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
 import { blocksOverlapping } from './blocks.ts';
 import { shiftAnnexContents } from './cellarRooms.ts';
+import { annexUpgradeMap, remapRoomContents } from './kitchenAbove.ts';
 import { doorZoneRect, paintFloorCells, paintWholeFloor, rectsOverlap, roomAtLevel, type Room } from './room.ts';
 import { findStyle, stylePrice } from './styles.ts';
 import { GEAR_TYPES, type ShopGearId } from './gear.ts';
@@ -112,8 +113,9 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
   const level = (room.level + 1) as RoomLevel;
   // The next level of the room's shape: its floor contains the old one, so every item still fits.
   const grown: Room = roomAtLevel(room, level);
-  // The kitchen annex (owner 18 Nov) hangs under the main floor: what stands in it moves down with it.
-  const moved = shiftAnnexContents(paid, room, grown);
+  // The kitchen annex: above the main floor (19 Nov) nothing moves unless the data grows the annex's height (annexUpgradeMap); an old annex below moves down with the floor.
+  const map = grown.annexAbove === true ? annexUpgradeMap(room, grown) : null;
+  const moved = grown.annexAbove === true ? (map ? remapRoomContents(paid, room, grown, map) : paid) : shiftAnnexContents(paid, room, grown);
   // The new door zone must be free: what stands there goes back.
   const zone = doorZoneRect(grown);
   let items = moved.items;
@@ -123,7 +125,7 @@ export function upgradeRoom(state: GameState, roomId: number, at: number): GameS
     const fp = footprintRect(i, t);
     if (rectsOverlap(fp, zone)) items = pickUpItem(items, i.uid);
   }
-  let next: GameState = { ...moved, rooms: moved.rooms.map((r) => (r.id === roomId ? { ...grown, blocks: r.blocks, plants: r.plants } : r)), items };
+  let next: GameState = { ...moved, rooms: moved.rooms.map((r) => (r.id === roomId ? { ...grown, blocks: r.blocks, plants: r.plants, ...(r.floorCells ? { floorCells: r.floorCells } : {}) } : r)), items };
   // Blocks (step BG5) on the new door zone go back to the bag, and so do the seeds of plants there (BG6); if the
   // door still cannot reach the middle of the grown room, all of its blocks do.
   const room2 = next.rooms.find((r) => r.id === roomId) ?? grown;
