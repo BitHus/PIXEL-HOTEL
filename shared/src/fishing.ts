@@ -28,6 +28,7 @@ import {
   FISH_REEL_FULL,
   FISH_REEL_MAX_MS,
   FISH_REEL_START,
+  FISH_SIZE_POWER,
   FISH_NIBBLE_GAP_MAX_MS,
   FISH_NIBBLE_GAP_MIN_MS,
   FISH_NIBBLE_MS,
@@ -51,6 +52,8 @@ import type { MaterialId, Rank, Rng } from './types.ts';
 
 export type FishPhase = 'wait' | 'bite' | 'reel' | 'done';
 export type FishOutcome = 'caught' | 'escaped' | 'missed' | 'cancelled';
+/** FISH-2: what the fish is doing in the reel (rules: FISH_REEL; the art may show a burst or a hover). */
+export type FishMood = 'swim' | 'burst' | 'pause';
 
 export type FishEvent =
   /** FISH-1: the fish nibbles at the bait (2 to 3 times just before the bite). */
@@ -79,11 +82,14 @@ export interface FishSession {
   // ---- the reel (positions in bar units, 0 to FISH_BAR) ----
   /** The catch bar, 0 to FISH_REEL_FULL. */
   fill: number;
-  /** Where the fish is, where it swims to, ms until it picks a new direction, and 1 or 2.4 (a dart). */
+  /** Where the fish is, where it swims to, ms until the next segment, and the segment's tempo (x speed; 0 = a pause). */
   fishPos: number;
   fishTarget: number;
   fishTurnMs: number;
   fishSpeedMul: number;
+  /** FISH-2: the segment's mood (swim, burst or pause; absent = swim) for the art, and the catch's strength (1 to 1 + FISH_SIZE_POWER by size; absent = 1). */
+  fishMood?: FishMood;
+  fishPower?: number;
   /** FISH-1: the fish's speed (units/s, signed, smooth) and the way it faces (follows the speed). */
   fishVel: number;
   fishFace: 'left' | 'right';
@@ -133,6 +139,13 @@ export function rollCatch(rng: Rng, multiplier: Partial<Record<Rank, number>> = 
   return { type: pick, rank };
 }
 
+/** FISH-2: how strong a catch fights: 1 for the smallest of its kind (and things), up to 1 + FISH_SIZE_POWER for the biggest. */
+export function fishPowerOf(type: Pick<CatchType, 'minCm' | 'maxCm'>, cm: number | null): number {
+  if (cm === null || type.minCm === undefined || type.maxCm === undefined || type.maxCm <= type.minCm) return 1;
+  const t = Math.max(0, Math.min(1, (cm - type.minCm) / (type.maxCm - type.minCm)));
+  return 1 + FISH_SIZE_POWER * t;
+}
+
 /** A new session: the line is cast. The rod comes from the player's gear (`gear`). */
 export function newFishSession(rng: Rng, gear: readonly string[] = [], skill?: Bonuses): FishSession {
   const rod = ownedRod(gear as never);
@@ -143,6 +156,7 @@ export function newFishSession(rng: Rng, gear: readonly string[] = [], skill?: B
   const cm = type.kind === 'fish' ? rngInt(rng, type.minCm ?? 10, type.maxCm ?? 30) : null;
   const boxSize = effective(FISH_BOX_BASE + (rod?.boxBonus ?? 0), 'boxSizePct', skill); // Wide box
   return {
+    fishPower: fishPowerOf(type, cm),
     phase: 'wait',
     outcome: null,
     catchId: type.id,
@@ -191,6 +205,7 @@ function hook(s: FishSession): void {
   s.fishTarget = s.fishPos;
   s.fishTurnMs = 600;
   s.fishSpeedMul = 1;
+  s.fishMood = 'swim';
   s.fishVel = 0;
   s.fishFace = 'right';
   s.nibbleMs = 0;
@@ -228,29 +243,54 @@ const lo = (s: FishSession): number => s.boxSize / 2;
 const hi = (s: FishSession): number => FISH_BAR - s.boxSize / 2;
 
 /** The fish's swim state (the part of a session the path changes). */
-export type FishSwim = Pick<FishSession, 'fishPos' | 'fishTarget' | 'fishTurnMs' | 'fishSpeedMul' | 'fishVel' | 'fishFace'>;
+export type FishSwim = Pick<FishSession, 'fishPos' | 'fishTarget' | 'fishTurnMs' | 'fishSpeedMul' | 'fishVel' | 'fishFace' | 'fishMood'>;
+
+/** FISH-2: the top speed a fish of this rank and strength can ever reach (a burst at full tempo), units/s. */
+export function fishTopSpeed(rank: Rank, power = 1): number {
+  const r = FISH_REEL[rank];
+  return r.speed * Math.max(1, r.burstMul) * power;
+}
 
 /**
- * FISH-1: one tick of the fish's path, pure (rng passed in). It picks a target and a speed now and
- * then (a turn; the rarer, the faster and the more darts), speeds up and slows down smoothly (a turn
- * goes through a stop, never a snap), eases in at its target, stays in the bar, and faces the way it moves.
+ * FISH-1 / FISH-2: one tick of the fish's path, pure (rng passed in). The fish swims in segments
+ * (FISH_REEL): a swim at a varying tempo, a sudden burst, or a pause where it hovers; while moving
+ * it may jink (reverse at once). It speeds up and slows down smoothly (a turn goes through a stop,
+ * never a snap), eases in at its target, stays in the bar, and faces the way it moves. `power`
+ * (fishPowerOf: a big fish) makes it faster.
  */
-export function swimStep(f: FishSwim, rank: Rank, rng: Rng, dtMs: number): FishSwim {
+export function swimStep(f: FishSwim, rank: Rank, rng: Rng, dtMs: number, power = 1): FishSwim {
   const r = FISH_REEL[rank];
   const out: FishSwim = { ...f };
   const dtS = dtMs / 1000;
   out.fishTurnMs -= dtMs;
-  if (out.fishTurnMs <= 0 || Math.abs(out.fishTarget - out.fishPos) < 4) {
-    // A new direction: anywhere in the bar (the far ends are a little rare), sometimes a sudden dart.
-    out.fishTarget = 6 + rng() * (FISH_BAR - 12);
-    out.fishTurnMs = rngInt(rng, r.turnMin, r.turnMax);
-    out.fishSpeedMul = rng() < r.dart ? 2.4 : 1;
+  const pausing = out.fishMood === 'pause';
+  if (out.fishTurnMs <= 0 || (!pausing && Math.abs(out.fishTarget - out.fishPos) < 4)) {
+    // A new segment. A pause never follows a pause (it always sets off again).
+    const roll = rng();
+    if (!pausing && roll < r.pause) {
+      out.fishMood = 'pause';
+      out.fishSpeedMul = 0;
+      out.fishTarget = out.fishPos;
+      out.fishTurnMs = rngInt(rng, r.pauseMin, r.pauseMax);
+    } else {
+      const burst = rng() < r.burst;
+      out.fishMood = burst ? 'burst' : 'swim';
+      out.fishSpeedMul = burst ? r.burstMul : 0.75 + 0.25 * rng();
+      // Anywhere in the bar (the far ends a little rare); a burst goes at least a third of the bar.
+      let target = 6 + rng() * (FISH_BAR - 12);
+      if (burst && Math.abs(target - out.fishPos) < FISH_BAR / 3) target = out.fishPos < FISH_BAR / 2 ? Math.min(FISH_BAR - 6, out.fishPos + FISH_BAR / 3) : Math.max(6, out.fishPos - FISH_BAR / 3);
+      out.fishTarget = target;
+      out.fishTurnMs = burst ? rngInt(rng, 400, 800) : rngInt(rng, r.turnMin, r.turnMax);
+    }
+  } else if (!pausing && r.jink > 0 && rng() < r.jink * dtS) {
+    // A jink: it turns back the way it came (mirrored around where it is, kept in the bar).
+    out.fishTarget = Math.max(6, Math.min(FISH_BAR - 6, 2 * out.fishPos - out.fishTarget));
   }
-  const maxV = r.speed * out.fishSpeedMul;
+  const maxV = r.speed * out.fishSpeedMul * power;
   const d = out.fishTarget - out.fishPos;
-  // Ease in: the wanted speed falls to 0 as the target gets near.
+  // Ease in: the wanted speed falls to 0 as the target gets near (a pause brakes to a hover).
   const want = Math.sign(d) * Math.min(maxV, Math.abs(d) * 6);
-  const a = FISH_SWIM_ACCEL[rank] * out.fishSpeedMul * dtS;
+  const a = FISH_SWIM_ACCEL[rank] * Math.max(1, out.fishSpeedMul) * power * dtS;
   out.fishVel += Math.max(-a, Math.min(a, want - out.fishVel));
   out.fishPos = Math.max(0, Math.min(FISH_BAR, out.fishPos + out.fishVel * dtS));
   if (out.fishPos === 0 || out.fishPos === FISH_BAR) out.fishVel = 0;
@@ -259,7 +299,7 @@ export function swimStep(f: FishSwim, rank: Rank, rng: Rng, dtMs: number): FishS
 }
 
 function swim(s: FishSession, rng: Rng): void {
-  Object.assign(s, swimStep(s, s.rank, rng, FISH_TICK_MS));
+  Object.assign(s, swimStep(s, s.rank, rng, FISH_TICK_MS, s.fishPower ?? 1));
 }
 
 function moveBox(s: FishSession, dtS: number): void {
@@ -312,7 +352,7 @@ function tick(s: FishSession, rng: Rng): void {
     swim(s, rng);
     moveBox(s, dtS);
     const r = FISH_REEL[s.rank];
-    s.fill += (fishInBox(s) ? r.gain : -r.drain * (s.drainScale ?? 1)) * dtS;
+    s.fill += (fishInBox(s) ? r.gain : -r.drain * (s.fishPower ?? 1) * (s.drainScale ?? 1)) * dtS;
     if (s.fill >= FISH_REEL_FULL) {
       s.fill = FISH_REEL_FULL;
       finish(s, 'caught', { t: 'caught', id: s.catchId, rank: s.rank, cm: s.cm });

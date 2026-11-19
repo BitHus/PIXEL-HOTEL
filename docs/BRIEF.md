@@ -558,7 +558,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   HOLD (the button, the bar or Space) pushes the box to the right, a tap kicks it, and it falls
   back to the left by itself. While the fish is inside the box the catch bar fills; outside it
   drains. Full = caught, empty = it escapes. Rank sets the strength: a common fish is slow and
-  forgiving, a legendary one swims fast, turns often and darts, and drains the bar faster. Missing
+  forgiving, a legendary one swims fast, in bursts, pauses and sudden jinks (never one tempo), and drains the bar faster; with the basic rod a legendary is near impossible, a better rod and the fishing skills make it fair. Missing
   loses nothing. All timing is in one pure function, step(session, inputs, dtMs, rng), in 50 ms
   ticks (shared/src/fishing.ts).
 - RODS (forge): basic rod (start), copper-reel rod (4 copper bars), mithril rod (4 mithril bars,

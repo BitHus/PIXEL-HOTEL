@@ -1166,6 +1166,11 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
     every 0.1 / 0.25 / 0.4 s: a common fish is landed by everyone, a legendary one with the basic
     rod by about 40% of sharp players and almost nobody slow; the mithril rod makes a legendary
     about as easy as an ultra rare one with the basic rod (tested).
+  - FISHING BALANCE (FISH-2, 20 Nov): the fish swims in segments (swimStep, shared/src/fishing.ts): swim (target, speed x 0.75..1), burst (chance FISH_REEL.burst, speed x burstMul, at least a third of the bar), pause (hovers, never two in a row), plus jinks (reverse at once, chance per second). FISH_REEL per rank now has burst, burstMul, pause, pauseMin/Max, jink, gain, drain; FISH_SIZE_POWER 0.2 = the biggest of a kind is 1.2 x faster and drains 1.2 x more (fishPowerOf; session.fishPower, session.fishMood swim|burst|pause for the art). Bots (shared/src/fishingSim.ts: casual looks every 400 ms, average 250, sharp 100) give the win % over 120 hooked fish (npx tsx tools/simulate-fishing.ts 120):
+      casual:  basic rod  common 100  rare 84  ultra 4   legendary 0  | copper 100/99/16/0 | mithril 100/100/51/2 | mithril+skills 100/100/98/38
+      average: basic rod  100/98/33/0 | copper 100/100/63/1 | mithril 100/100/90/23 | mithril+skills 100/100/98/78
+      sharp:   basic rod  100/100/86/1 | copper 100/100/95/20 | mithril 100/100/97/64 | mithril+skills 100/100/100/99
+    (skills = FISH_SKILLS_MAX: boxSizePct 12, tensionRisePct -16, strikeWindowMs 120). fishing.test.ts holds the bands. OPEN for the owner: the per-rank numbers are ranked.
   - GameAPI: getLakeside, chopTree (the avatar must stand within CHOP_REACH_PX), castAt (the cast
     plan: path, spot, bobber), fishStart, fishStep(inputs, dtMs) (a catch is banked at once),
     fishStop. A cast line is not saved (a reload loses it, nothing is lost with it).
