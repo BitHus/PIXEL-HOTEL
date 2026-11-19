@@ -2,14 +2,11 @@
 
 Updated 2026-11-19 (manager). LIVE site is still main at 4e781d4, older than the working tree (see Right now). Startup file: C:/Users/ajren/pixel-hotel-team/MANAGER-START.md (has a 19 Nov update). Owner list: docs/OWNER-AGENDA-17NOV.md.
 
-## Right now (workers) - 19 Nov
-- READ docs/TOOLS.md FIRST (PixelLab MCP is approved, owner decisions, startup checklist). NOT YET COMMITTED/PUSHED: a big green batch sits in the working tree (open kitchen annex, dig mine, Lantern Dark + UI declutter, run 8 fixes, 18+ PixelLab furniture pieces with rotations/states, catalog icons from sprites). Ship (commit, push, deploy) as soon as the running workers below are done and npm run check is green.
-- Coder: stove/tap_stand render hooks (propAnimSpecs.ts, pourFx.ts, surface anchor) for the new sprites.
-- Artist: PixelLab UI proof set (panel 9-slice, buttons, tab, OPEN sign, bar, 10 icons) in art-src/pixellab/ui, max 120 generations; contact sheet on the Desktop in PocketBarrel-styletest/ui-art. Owner looks, then the ui worker wires it.
-- Tester: updates e2e for the new UI (More grid etc.), RUN 10.
-- PIXELLAB BUDGET: cap 1000 generations used for 18-19 Nov (about 510 used when this was written; 200 reserved for UI art). Ledger in docs/PLAN-PIXELLAB-ART.md.
-- OWNER DECISIONS 18-19 Nov: top-down stays (isometric tests were ugly); PixelLab style = couch/statue; hotbar + Bag stay full size and never fade; calmer UI (4 side buttons, rest in More).
-- Open art: sofa_right old, tap_stand_lever/_mug/_mugfill old, decor/farm/lakeside/crypt props, walls/floors, avatar (later, owner style call).
+## Right now (workers) - 19 Nov, after ship 7c3df8b
+- SHIPPED 7c3df8b (pushed + deployed, check green 2239 tests): open annex, dig mine, Lantern Dark + declutter, PixelLab furniture/floors/walls/UI proof/close X/logo, cloud visits client + net protocol (flag off). Stray pourBar.test.ts parked in art-src/staging/unfinished.
+- Old-session worker (UI declutter / Worlds) may still have written files after: check git status before the next commit.
+- PIXELLAB: 925/2000 used; owner cap about 1000 (not exact), then the owner says go for the next 1000. Ledger in docs/PLAN-PIXELLAB-ART.md.
+- Started next: tester RUN 10 (screenshot ship gate, desktop + phone, new art unseen in a browser) and coder on the FIXLIST open items.
 
 ## Done this session (all live)
 Camera locked without edge clamp; emote state fix; small NPC chat pills; kitchen = walled area inside the tavern (SAVE 37, cellar stays a room, racks 2/3/3); skills MG-1/2 (SAVE 38, level cap 12, Skills panel + stat hooks MG-7); TRADER REMOVED (gold = guests + dungeon run gold, ~76/24); tap forgiveness; tutorial starts at 0 (zoom, walk, hold-walk steps); orders rail bottom-left, hanging OPEN/CLOSED sign, aura on order markers, pour hint hides under panels, Serve closes the bar panel; Worlds badge hidden in the tavern; lakeside trees + farm ground/ambience + door art (cellar down/open/up, kitchen) wired; cobweb corner, stand flames; rock sprites.

@@ -1,1 +1,1 @@
-room square_shop 576x448
+room square_shop 576x480

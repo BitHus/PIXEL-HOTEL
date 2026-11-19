@@ -1,4 +1,6 @@
 # ROADMAP
+19 NOV (coder TF-1..5): [x] TF-1 bar spots, TF-4 chips where/pouring + grabAll + serveRoute, TF-2 chooseSpot + bar guests in the step, TF-3 handOver, TF-5 GameAPI grabAll/serveAll/handOver (all behind BAR_GUESTS_ENABLED=false). [ ] TF-9 balance sim + owner OK of the BAR_* numbers, TF-6 render, TF-7 strip UI, TF-8 art, TF-10 variety.
+19 NOV (coder RUN8-9-CODE): [x] pourBarShouldShow + test; RUN 8 items 8 and 10 confirmed fixed; UNHOOKED_STATS (bait, deep cast, bag slots) still open.
 18 NOV (coder RUN8-FIX): [x] RUN 8 items 1-6, 8-11 fixed in client/src/ui (not seen in a browser).
 18 NOV (tester RUN 8): [x] open kitchen, first serve, Lantern Dark and dig mine walked in a browser on desktop and phone (e2e/run8.spec.ts, docs/FIXLIST.md RUN 8): 0 errors; open: pour bar too big on phone, OPEN sign, Skills icons, mine HUD says Crypt.
 
@@ -10,6 +12,7 @@
 18 NOV (coder MG-7): [x] skill stats hooked into the rules (skillRules.ts, tests) and the Skills panel (More > Skills, tabs, tier locks, Learn/Respec ask first). Open: unhooked stats (see NEWS), dot on the button, art for skill icons (MG-15).
 18 NOV (coder): [x] kitchen is a walled tavern area (SAVE 37), CEL 3 racks 2/3/3, trader removed (guests + dungeon only), MG-1 skill rules + API (SAVE 38) and MG-2 level cap 12 (UI and rule hooks MG-7/8/9 still open), tap forgiveness, tutorial from 0 with zoom/tap/hold steps. [x] RUN 6 UI fixes (keg rack text, first-steps card off doors, fi ligature, bubbles vs button column); open: kitchen barrel under the phone button column (camera/layout hook).
 19 NOV (artist): [x] PixelLab UI proof set (panels, buttons, tab, sign, bar, 10 icons) in art-src/pixellab/ui, not wired; wiring = ui worker after owner OK.
+19 NOV (ui): [x] title screen reworked (Continue pill, save line, still-life) + dark panel frame wired into panelShell panels (border-image); [ ] tabs, round buttons, bar, parchment still unwired.
 19 NOV (ui): [x] Panel close button wired to PixelLab close X art (ui/close.css, assets/ui/close_x.png).
 
 The one roadmap for the game (owner + AI, 14 Nov). It replaces the loose idea list. Work top to
@@ -178,6 +181,8 @@ Never copy another game; no screenshots of other games in the repo.
 ## PHASE 6 - Online (step 10 and on; after depth, owner's decision)
 The long-term goal: a real online hotel.
 6.1 Server, accounts (username + password), saves on the server, RemoteGameAPI.
+    [x] ONLINE P1 server side (19 Nov): accounts + 13+ check, sessions, cloud save, read-only visit/share endpoints, bans + admin CLI, safe-env start check
+    (server/, tests green; NOT yet run on the VPS). [ ] client account panel wiring (ON-5, flag off), [ ] RemoteGameAPI (P5).
 6.2 Visiting rooms (by room name, like typing a world name; see BLOCKS-PLAN 3.9): see other players walk, sit, emote; public room chat with the filter, report
     and mute (section 13).
 6.3 A lobby / town square as the shared place to meet; a room list.

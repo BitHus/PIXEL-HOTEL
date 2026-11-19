@@ -27,7 +27,7 @@ import { GuestViews, type Walker } from '../render/guestViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
 import { createOrderBubbles, type OrderMark } from '../ui/orderBubbles.ts';
 import { createOrdersStrip } from '../ui/ordersStrip.ts';
-import { createPourBar } from '../ui/pourBar.ts';
+import { createPourBar, pourBarShouldShow } from '../ui/pourBar.ts';
 import { drawTray } from '../render/trayArt.ts';
 import { pixelIcon } from '../ui/pixelIcons.ts';
 import type { G9 } from './ctx.ts';
@@ -678,7 +678,7 @@ export async function setupTavernLife(g: G9) {
         pourControl.wait(e.standUid, e.item);
         // Serving started from the bar's panel: close it so the Hold the tap prompt does not sit on top of the Serve menu. Nothing reopens it.
         if (panels.open === 'menu') panels.close();
-        pourBar.show();
+        if (pourBarShouldShow({ waiting: true, panelOpen: panels.open !== null, released: false })) pourBar.show();
         const i = standInfo(e.standUid);
         if (i) {
           pour.wait(i.stand, i.bar, e.item);

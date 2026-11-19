@@ -17,6 +17,10 @@
 
 import { walkAvatar, type Avatar } from './avatar.ts';
 import {
+  BAR_GUESTS_ENABLED,
+  BAR_PATIENCE_MS,
+  BAR_PATIENCE_WARN_MS,
+  BUILD_CELL,
   CUSTOMER_ENTER_PAUSE_MS,
   CUSTOMER_SPEED_VARIATION,
   CUSTOMER_WALK_SPEED,
@@ -43,6 +47,7 @@ import {
   OFFLINE_MAX_MS,
   REMARK_APPEAL_MIN,
 } from './config.ts';
+import { barSpotFor, barSpotIndex, barSpots, barTopPoint, chooseSpot, freeBarSpots, type BarSpot } from './barSpots.ts';
 import { pourTip } from './pour.ts';
 import { awayOrdersMaxOf, bonusesOf, guestMaxOf } from './skillRules.ts';
 import { returnTray, takeMug } from './tray.ts';
@@ -89,6 +94,8 @@ export interface TavernWorld {
   seatsTaken?: readonly { uid: number; index: number }[];
   /** CEL-2: the attached kitchen and cellar room ids (their pieces count for the appeal). */
   attached?: readonly number[];
+  /** TF: bar guests on or off for this step (default config BAR_GUESTS_ENABLED, off until the client draws them). */
+  barGuests?: boolean;
 }
 
 export type TavernEvent =
@@ -125,7 +132,7 @@ export function rollGroupSize(rng: Rng): number {
 
 const between = (rng: Rng, lo: number, hi: number): number => lo + Math.floor(rng() * (hi - lo));
 
-function newGuest(id: number, groupId: number, rng: Rng, at: Point, seat: TavernSeat | null): Guest {
+function newGuest(id: number, groupId: number, rng: Rng, at: Point, seat: TavernSeat | null, bar?: BarSpot): Guest {
   const kind = rollGuestKind(rng);
   let speed = CUSTOMER_WALK_SPEED * (1 + (rng() * 2 - 1) * CUSTOMER_SPEED_VARIATION);
   if (kind === 'hurried') speed *= 1 + HURRIED_SPEED_BONUS;
@@ -150,6 +157,7 @@ function newGuest(id: number, groupId: number, rng: Rng, at: Point, seat: Tavern
     talkInMs: between(rng, GUEST_TALK_MIN_MS, GUEST_TALK_MAX_MS),
     sipInMs: 0,
     reaction: null,
+    ...(bar ? { kind2: 'bar' as const, barSpot: { barUid: bar.barUid, c: bar.cell.c, r: bar.cell.r } } : {}),
   };
 }
 
@@ -197,8 +205,11 @@ export function guestTip(g: Pick<Guest, 'warned' | 'reaction'>, item: MaterialId
 function leaveMess(state: GameState, g: Guest, seat: TavernSeat | undefined, rng: Rng): { state: GameState; mess: Mess | null } {
   if (!g.order) return { state, mess: null };
   const t = state.tavern;
-  const at = seat?.spot ?? { x: g.x, y: g.y };
-  const mess: Mess = { id: t.nextMessId, seatUid: g.seat?.uid ?? 0, seatIndex: g.seat?.index ?? -1, x: at.x, y: at.y, coins: g.order.coins, gems: guestTip(g, g.order.item, rng), dish: g.order.item };
+  // TF: a bar guest leaves the coins and the mug ON THE BAR in front of the spot (seatUid = the bar piece, seatIndex = barSpotIndex).
+  const at = seat?.spot ?? (g.barSpot ? barTopPoint(g, g.facing, BUILD_CELL) : { x: g.x, y: g.y });
+  const seatUid = g.seat?.uid ?? g.barSpot?.barUid ?? 0;
+  const seatIndex = g.seat?.index ?? (g.barSpot ? barSpotIndex({ c: g.barSpot.c, r: g.barSpot.r }) : -1);
+  const mess: Mess = { id: t.nextMessId, seatUid, seatIndex, x: at.x, y: at.y, coins: g.order.coins, gems: guestTip(g, g.order.item, rng), dish: g.order.item };
   return { state: withTavern(state, { mess: [...t.mess, mess], nextMessId: t.nextMessId + 1, history: recordOrder(t.history, g.order.item, g.order.price) }), mess };
 }
 
@@ -229,6 +240,13 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
   const seats = tavernSeats(w.items, w.room.id, kitchenZone(w.room));
   const seatOf = (c: Guest): TavernSeat | undefined => (c.seat ? seats.find((k) => seatKey(k) === seatKey(c.seat!)) : undefined);
   const door = doorPoint(w.room);
+  let spotList: BarSpot[] | null = null;
+  const spotOf = (c: Guest): BarSpot | undefined => {
+    if (!c.barSpot) return undefined;
+    spotList ??= barSpots(w.items, w.room, g);
+    const b = c.barSpot;
+    return spotList.find((p) => p.barUid === b.barUid && p.cell.c === b.c && p.cell.r === b.r);
+  };
   const exit = (from: Point): Point[] => [...npcPath(g, from, door), outsidePoint(w.room)];
   const sayOut = (c: Guest, moment: NpcMoment, talk: TalkMoment | 'always'): void => {
     const r = maybeSay(s.tavern.lastLines, moment, talk === 'always' ? 1 : talkChance(talk, c.kind), rng);
@@ -244,17 +262,33 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
     left += guestIntervalMs(tavernAppeal(w.room, w.items, w.attached));
     const here = s.tavern.guests;
     // OA-14: the CLOSED sign: the timer runs, nobody comes.
-    let n = s.tavern.closed === true ? 0 : Math.min(rollGroupSize(rng), Math.min(guestMaxOf(bonusesOf(s.player)), seats.length) - here.length);
+    const barOn = w.barGuests ?? BAR_GUESTS_ENABLED;
+    const spots = barOn ? freeBarSpots(barSpots(w.items, w.room, g), here, s.tavern.mess) : [];
+    let n = s.tavern.closed === true ? 0 : Math.min(rollGroupSize(rng), Math.min(guestMaxOf(bonusesOf(s.player)), seats.length + spots.length) - here.length);
     // Away: only while fewer than AWAY_ORDERS_MAX sit (or will sit) with an open order.
     if (!w.playerHere) n = Math.min(n, awayOrdersMaxOf(bonusesOf(s.player)) - here.filter((c) => c.phase !== 'eat' && c.phase !== 'leave').length);
-    const picks = n > 0 ? pickSeats(reachable(g, door, freeTavernSeats(s.tavern, seats, w.seatsTaken)), n, rng) : null;
-    if (n > 0 && (picks || w.playerHere)) {
+    const freeSeats = n > 0 ? reachable(g, door, freeTavernSeats(s.tavern, seats, w.seatsTaken)) : [];
+    // TF: bar or table (only with bar guests on; the rng is not touched otherwise).
+    const where = barOn && n > 0 ? chooseSpot(rng, { size: n, seatsFree: freeSeats.length, spotsFree: spots.length }) : 'table';
+    const picks = n > 0 && where !== 'bar' ? pickSeats(freeSeats, n, rng) : null;
+    let barPicks: BarSpot[] | null = null;
+    if (n > 0 && where === 'bar') {
+      let rest = spots;
+      barPicks = [];
+      for (let k = 0; k < n; k++) {
+        const sp = barSpotFor(rest, door);
+        if (!sp) break;
+        barPicks.push(sp);
+        rest = rest.filter((o) => o !== sp);
+      }
+    }
+    if (n > 0 && (picks || barPicks || w.playerHere)) {
       const out = outsidePoint(w.room);
       let id = s.tavern.nextGuestId;
       const first = id;
       const group: Guest[] = [];
       for (let k = 0; k < n; k++) {
-        const c = newGuest(id--, first, rng, { x: out.x, y: out.y + k * GUEST_GROUP_GAP_PX }, picks?.[k] ?? null);
+        const c = newGuest(id--, first, rng, { x: out.x, y: out.y + k * GUEST_GROUP_GAP_PX }, picks?.[k] ?? null, barPicks?.[k]);
         group.push({ ...c, path: [door], waitMs: CUSTOMER_ENTER_PAUSE_MS + k * GUEST_GROUP_STAGGER_MS });
       }
       s = withTavern(s, { guests: [...here, ...group], nextGuestId: id });
@@ -303,30 +337,51 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
       }
       c = leave(c);
       changed = true;
+    } else if (c.barSpot && c.phase !== 'enter' && c.phase !== 'leave' && !w.items.some((i) => i.uid === c.barSpot!.barUid)) {
+      // TF: the bar piece was taken away: an open order goes back, a guest who was drinking pays.
+      if (c.phase === 'order') s = giveBack(s, c, at);
+      if (c.phase === 'bar_drink') {
+        const m = leaveMess(s, c, undefined, rng);
+        s = m.state;
+        if (m.mess) events.push({ t: 'coins', guestId: c.id, mess: m.mess });
+      }
+      c = leave(c);
+      changed = true;
     } else if (c.phase === 'enter') {
       c = { ...c, waitMs: c.waitMs - dtMs };
       if (c.waitMs <= 0) {
         changed = true;
-        if (seat) {
+        const bar = spotOf(c);
+        if (bar) {
+          c = { ...c, phase: 'to_bar', waitMs: 0, path: [...npcPath(g, c, bar), { x: bar.x, y: bar.y }] };
+        } else if (seat) {
           c = { ...c, phase: 'to_seat', waitMs: 0, path: [...npcPath(g, c, seat), { x: seat.x, y: seat.y }] };
         } else {
           c = { ...c, seat: null, phase: 'no_seat', waitMs: GUEST_NO_SEAT_MS };
+          delete c.barSpot;
+          delete c.kind2;
           if (c.groupId === c.id) sayOut(c, 'no_seat', 'always');
         }
       }
+    } else if (c.phase === 'to_bar') {
+      const bar = spotOf(c);
+      c = bar ? { ...c, x: bar.x, y: bar.y, facing: bar.facing, phase: 'bar_wait', waitMs: between(rng, GUEST_ORDER_AFTER_MIN_MS, GUEST_ORDER_AFTER_MAX_MS) } : leave(c);
+      changed = true;
     } else if (c.phase === 'to_seat' && seat) {
       c = { ...c, x: seat.x, y: seat.y, facing: seat.facing, seated: true, phase: 'settle', waitMs: between(rng, GUEST_ORDER_AFTER_MIN_MS, GUEST_ORDER_AFTER_MAX_MS) };
       changed = true;
-    } else if (c.phase === 'settle') {
+    } else if (c.phase === 'settle' || c.phase === 'bar_wait') {
       c = { ...c, waitMs: c.waitMs - dtMs };
       if (c.waitMs <= 0) {
         changed = true;
-        const choice = chooseOrder(tasteOffers(menuOffers(s, [...out, ...all.filter((o) => !out.some((x) => x.id === o.id))]), rng), c.tolerance, rng);
+        const offered = menuOffers(s, [...out, ...all.filter((o) => !out.some((x) => x.id === o.id))]);
+        // TF: a bar guest orders drinks only (plan open decision 5).
+        const choice = chooseOrder(tasteOffers(c.kind2 === 'bar' ? offered.filter((o) => isDrinkId(o.id)) : offered, rng), c.tolerance, rng);
         const taken = choice?.order ? reserve(s, choice.order.id, at) : null;
         if (choice?.order && taken) {
           s = taken;
           const o = choice.order;
-          c = { ...c, phase: 'order', reaction: choice.reaction, patienceMs: GUEST_PATIENCE_MS, warned: false, order: { item: o.id, price: o.price, coins: coinsFor(o.id, o.price) } };
+          c = { ...c, phase: 'order', reaction: choice.reaction, patienceMs: c.kind2 === 'bar' ? BAR_PATIENCE_MS : GUEST_PATIENCE_MS, warned: false, order: { item: o.id, price: o.price, coins: coinsFor(o.id, o.price) } };
           events.push({ t: 'order', guestId: c.id, item: o.id, price: o.price, reaction: choice.reaction, ...(choice.refused ? { refused: choice.refused.id } : {}) });
           sayOut(c, reactionMoment(choice.reaction), 'reaction');
         } else if (choice && !choice.order && choice.refused) {
@@ -343,7 +398,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
     } else if (c.phase === 'order') {
       if (w.playerHere) {
         c = { ...c, patienceMs: c.patienceMs - dtMs };
-        if (!c.warned && c.patienceMs <= GUEST_PATIENCE_WARN_MS) {
+        if (!c.warned && c.patienceMs <= (c.kind2 === 'bar' ? BAR_PATIENCE_WARN_MS : GUEST_PATIENCE_WARN_MS)) {
           c = { ...c, warned: true };
           sayOut(c, 'order_wait', 'always');
         }
@@ -354,8 +409,22 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
         sayOut(c, 'unhappy', 'always');
         c = { ...leave(c), reaction: 'frown' };
         changed = true;
-      } else {
+      } else if (c.kind2 !== 'bar') {
         c = tableTalk(c);
+      }
+    } else if (c.phase === 'bar_drink') {
+      // TF: drinks the handed-over mug on the spot, then leaves the coins and the mug on the bar.
+      c = { ...c, waitMs: c.waitMs - dtMs, sipInMs: c.sipInMs - dtMs };
+      if (c.waitMs <= 0) {
+        const m = leaveMess(s, c, undefined, rng);
+        s = m.state;
+        if (m.mess) events.push({ t: 'coins', guestId: c.id, mess: m.mess });
+        sayOut(c, 'thanks', 'leave');
+        changed = true;
+        c = leave(c);
+      } else if (c.sipInMs <= 0) {
+        events.push({ t: 'sip', guestId: c.id });
+        c = { ...c, sipInMs: between(rng, GUEST_SIP_MIN_MS, GUEST_SIP_MAX_MS) };
       }
     } else if (c.phase === 'eat') {
       c = { ...c, waitMs: c.waitMs - dtMs, sipInMs: c.sipInMs - dtMs };
@@ -378,7 +447,7 @@ export function stepTavern(state: GameState, w: TavernWorld, dtMs: number, rng: 
       if (c.waitMs <= 0) {
         c = leave(c);
         changed = true;
-      } else if (c.phase === 'no_menu' && c.reaction === null) {
+      } else if (c.phase === 'no_menu' && c.reaction === null && c.kind2 !== 'bar') {
         c = tableTalk(c);
       }
     }
@@ -398,6 +467,11 @@ export function repathGuests(state: GameState, w: TavernWorld): GameState {
     if (c.phase === 'leave') return { ...c, path: [...npcPath(g, c, doorPoint(w.room)), outsidePoint(w.room)] };
     const seat = c.seat ? seats.find((k) => seatKey(k) === seatKey(c.seat!)) : undefined;
     if (c.phase === 'to_seat' && seat) return { ...c, path: [...npcPath(g, c, seat), { x: seat.x, y: seat.y }] };
+    if (c.phase === 'to_bar' && c.barSpot) {
+      const b = c.barSpot;
+      const spot = barSpots(w.items, w.room, g).find((p) => p.barUid === b.barUid && p.cell.c === b.c && p.cell.r === b.r);
+      if (spot) return { ...c, path: [...npcPath(g, c, spot), { x: spot.x, y: spot.y }] };
+    }
     return c;
   });
   return withTavern(state, { guests });
@@ -418,8 +492,9 @@ export function catchUpTavern(state: GameState, w: TavernWorld, at: number, rng:
   const kept: Guest[] = [];
   for (const c of state.tavern.guests) {
     const seat = find(c);
-    if (c.phase === 'eat') s = leaveMess(s, seat ? c : { ...c, seat: null }, seat, rng).state;
+    if (c.phase === 'eat' || c.phase === 'bar_drink') s = leaveMess(s, seat || c.barSpot ? c : { ...c, seat: null }, seat, rng).state;
     else if (c.phase === 'order' && seat) kept.push({ ...c, x: seat.x, y: seat.y, facing: seat.facing, path: [], seated: true });
+    else if (c.phase === 'order' && c.barSpot) kept.push({ ...c, path: [] }); // TF: a bar guest stays at the bar
     else if (c.phase === 'order') s = giveBack(s, c, at);
   }
   s = withTavern(s, { guests: kept });

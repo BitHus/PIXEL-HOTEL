@@ -5,7 +5,7 @@
 // matching mug on the tray carries exactly ONE mug there, never the whole stack. The ORDERS STRIP data (one chip per open order)
 // is made here too, so the client only draws it.
 
-import { GUEST_PATIENCE_MS, GUEST_PATIENCE_WARN_MS, TRAY_MAX } from './config.ts';
+import { BAR_PATIENCE_MS, BAR_PATIENCE_WARN_MS, GUEST_PATIENCE_MS, GUEST_PATIENCE_WARN_MS, TRAY_MAX } from './config.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import type { Guest, TavernState } from './tavern.ts';
@@ -60,11 +60,13 @@ export interface OrderChip {
   /** The guest called out (patience at or under the warning mark). */
   urgent: boolean;
   /** waiting = nobody is on it; queued = in the serve queue (the avatar goes to pour it); ready = a matching mug is on the tray. */
-  state: 'waiting' | 'queued' | 'ready';
+  state: 'waiting' | 'queued' | 'pouring' | 'ready';
+  /** TF: where it is delivered: a bar guest takes a hand-over at the bar, a table guest gets the mug carried. */
+  where: 'bar' | 'table';
 }
 
 /** The orders strip: one chip per open order, the guest who waits longest first (least patience left). */
-export function ordersStrip(t: Pick<TavernState, 'guests' | 'tray' | 'serveQueue'>): OrderChip[] {
+export function ordersStrip(t: Pick<TavernState, 'guests' | 'tray' | 'serveQueue'>, pouringId: number | null = null): OrderChip[] {
   const have = new Map<MaterialId, number>();
   for (const m of t.tray) have.set(m.item, (have.get(m.item) ?? 0) + 1);
   const open = t.guests.filter((g): g is Guest & { order: NonNullable<Guest['order']> } => g.phase === 'order' && g.order !== null);
@@ -77,9 +79,10 @@ export function ordersStrip(t: Pick<TavernState, 'guests' | 'tray' | 'serveQueue
     chips.push({
       guestId: g.id,
       item: g.order.item,
-      patience: Math.max(0, Math.min(1, g.patienceMs / GUEST_PATIENCE_MS)),
-      urgent: g.patienceMs <= GUEST_PATIENCE_WARN_MS,
-      state: ready ? 'ready' : t.serveQueue.includes(g.id) ? 'queued' : 'waiting',
+      patience: Math.max(0, Math.min(1, g.patienceMs / (g.kind2 === 'bar' ? BAR_PATIENCE_MS : GUEST_PATIENCE_MS))),
+      urgent: g.patienceMs <= (g.kind2 === 'bar' ? BAR_PATIENCE_WARN_MS : GUEST_PATIENCE_WARN_MS),
+      state: ready ? 'ready' : g.id === pouringId ? 'pouring' : t.serveQueue.includes(g.id) ? 'queued' : 'waiting',
+      where: g.kind2 === 'bar' ? 'bar' : 'table',
     });
   }
   return chips;

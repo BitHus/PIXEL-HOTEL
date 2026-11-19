@@ -5,6 +5,10 @@ import {
   gain,
   gainsSince,
   deliverOrder,
+  handOver,
+  grabAll,
+  serveRoute,
+  barServePoint,
   requestServe,
   serveStops,
   cancelServe,
@@ -314,6 +318,58 @@ export const tavernApi = {
       h.emitTavern({ t: 'pour_cancel' });
     }
     if (h.errand) return false;
+    // TF: a BAR guest takes a hand-over on the staff side of the bar, a table guest gets the mug carried.
+    const guest = h.state.tavern.guests.find((g) => g.id === guestId);
+    if (guest?.kind2 === 'bar' && guest.barSpot) {
+      const bar = h.state.items.find((i) => i.uid === guest.barSpot!.barUid);
+      return bar !== undefined && h.startErrand(barServePoint({ x: guest.x, y: guest.y, facing: guest.facing }, bar), { stage: 'handover', guestId });
+    }
+    const stops = serveStops(h.state, guestId);
+    return stops !== null && h.startErrand(stops.table, { stage: 'table', guestId });
+  },
+
+  /** TF-5 GRAB ALL: queues the pours (see shared grabAll) and starts the first. */
+  async grabAll(h: LocalGameAPI): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const r = grabAll(h.state);
+    if (!r) return false;
+    h.commit(r.state);
+    h.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
+    if (h.errand) return true;
+    if (h.nextServe()) return true;
+    h.dropServe();
+    return false;
+  },
+
+  /** TF-5 SERVE ALL: the tray's tour (bar guests first, then tables by distance), one delivery after the other. */
+  async serveAll(h: LocalGameAPI): Promise<boolean> {
+    if (!h.inTavern() || h.state.tavern.tray.length === 0) return false;
+    const me = h.avatarNow();
+    const route = serveRoute(h.state.tavern.tray, h.state.tavern.guests, { x: me.x, y: me.y });
+    if (route.length === 0) return false;
+    h.serveTour = route.slice(1);
+    const ok = await tavernApi.carryHeld(h, route[0]!);
+    if (!ok) h.serveTour = [];
+    return ok;
+  },
+
+  /** After a delivery: the next guest of a SERVE ALL tour, else the queued pours. */
+  nextAfterDelivery(h: LocalGameAPI): void {
+    while (h.serveTour.length > 0) {
+      const id = h.serveTour.shift()!;
+      if (guestsTrayCanServe(h.state.tavern).includes(id) && tavernApi.startCarry(h, id)) return;
+    }
+    if (!h.nextServe()) h.dropServe();
+  },
+
+  /** Starts the carry or hand-over errand for one guest (no await, used by the tour). */
+  startCarry(h: LocalGameAPI, guestId: number): boolean {
+    if (h.errand) return false;
+    const guest = h.state.tavern.guests.find((g) => g.id === guestId);
+    if (guest?.kind2 === 'bar' && guest.barSpot) {
+      const bar = h.state.items.find((i) => i.uid === guest.barSpot!.barUid);
+      return bar !== undefined && h.startErrand(barServePoint({ x: guest.x, y: guest.y, facing: guest.facing }, bar), { stage: 'handover', guestId });
+    }
     const stops = serveStops(h.state, guestId);
     return stops !== null && h.startErrand(stops.table, { stage: 'table', guestId });
   },
@@ -396,7 +452,18 @@ export const tavernApi = {
         h.emitTavern({ t: 'served', guestId: d.guestId, item: d.item, spot });
       }
       h.emitTavern({ t: 'tray', mugs: h.state.tavern.tray.map((m) => ({ ...m })) });
-      if (!h.nextServe()) h.dropServe();
+      tavernApi.nextAfterDelivery(h);
+    } else if (task.stage === 'handover') {
+      // TF: the mug slides across the bar into the guest's hands.
+      const guest = h.state.tavern.guests.find((g) => g.id === task.guestId);
+      const spot = guest ? { x: guest.x, y: guest.y } : null;
+      const d = handOver(h.state, h.rng, task.guestId);
+      if (d && spot) {
+        h.commit(d.state);
+        h.emitTavern({ t: 'served', guestId: d.guestId, item: d.item, spot });
+      }
+      h.emitTavern({ t: 'tray', mugs: h.state.tavern.tray.map((m) => ({ ...m })) });
+      tavernApi.nextAfterDelivery(h);
     } else {
       const mess = h.state.tavern.mess.find((m) => m.id === task.messId);
       if (!mess) return;

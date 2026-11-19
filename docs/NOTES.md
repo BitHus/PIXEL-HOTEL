@@ -62,7 +62,14 @@ types, with round 2), 9i (questline), then step 6 (art), then step 10.
   Settings -> Pages -> Source: GitHub Actions). The site lives under /pixel-hotel/, so the vite
   base stays './' (relative asset paths): never use absolute paths like '/assets/...'.
 - netlify.toml: the old Netlify deploy (stopped: free plan credits used up). Kept for now.
-- server/src/index.ts: placeholder only (step 10).
+- server/ (ONLINE P1 + read-only visits, stage A of docs/PLAN-ONLINE.md; run `npm run server`, ops in docs/OPS.md): src/index.ts (start,
+  refuses an unsafe env via config.ts configProblems), config.ts (PB_* env only), db.ts (better-sqlite3, numbered MIGRATIONS: 1 accounts/sessions/
+  saves/backups, 2 room_shares/visit_blocks/reports, 3 banned_until/ban_reason), http.ts (node:http router, CORS one origin, body caps, rate limits,
+  30 s request / 10 s header timeouts, 500 sockets), accounts.ts (shared usernameProblem/passwordProblem, bcrypt, sha256 session tokens, max 10
+  sessions per account, bans: right password + banned = 403 'banned', a wrong one never tells), saves.ts (readSave from shared, newest savedAt
+  wins, backups), rooms.ts + roomView.ts (share codes, public board, RoomView without wallet/bag/ledger), admin.ts + adminCli.ts (set-password,
+  ban, unban, delete-user). Tests: server.test.ts, visits.test.ts, admin.test.ts, hardening.test.ts (all :memory: SQLite, server on port 0).
+  The `ws` dependency is not used yet (P2 ws hub ON-9: walk, chat).
 
 ## File lists: shared/ (steps 1 to 5b)
 
@@ -1842,5 +1849,15 @@ logo.gif = PixelLab 256x256 still (barrel mug, candles, plank with PocketBarrel)
 ## PixelLab UI proof set (artist, 19 Nov)
 Art in art-src/pixellab/ui/ (38 PNGs, palette bad 0, NOT wired): panel_dark 112x110 (9-slice 16 px all sides), panel_parchment 234x234 (20 px), btn_round 61x61 (+_pressed, _disabled), btn_pill 101x33 (+_pressed, _disabled), tab_active / tab_inactive / tab_disabled 86x35, bar_frame 218x24, bar_fill 193x17 (sits at offset 12,4 inside bar_frame, clip its width to the percent; bar_full = frame with a full fill), sign_open / sign_closed 161x85 (_s = 81x43 half size), icon_* 61x61 on a round disc (_s = 31x31): coin gem book hammer swords more bag close plus minus. Pixel scale: PixelLab UI draws at about 1 art px per px of a 256 canvas, so native pieces are bigger than the old 60x28 sign; use the _s files or scale by whole numbers. Known weak spots: the bar frame is a bevelled gold bar (fill sits slightly high), the dark panel centre is transparent (put the Lantern night colour behind it), pill and disc normal state is the gold ACTIVE look, the dull brown PRESSED look doubles as the inactive tab. Tools: tools/pixellab-ui-fit.mjs <unzipped zips dir>, tools/pixellab-ui-sheet.mjs <out.png>. Owner sheet: Desktop/PocketBarrel-styletest/ui-art/ui-contact-sheet.png.
 
+## PixelLab panel frame + title screen (ui, 19 Nov)
+client/src/ui/panelArt.css (last panel skin, imported in layout.ts): `:is(.panel-frame, .confirm-panel, .charmaker-panel, .newgame-frame, .run-drawer).ui-panel.ui-panel` gets border 24 px + border-image of assets/ui/panel_dark.png (slice 24: the corner plates are 23 px, 16 left gaps), night colour behind (background-clip padding-box), close disc moved to -28 px. paint-bar, emote-menu, fish-bar, HUD cards keep the plain Lantern look (small). Title: ui/titleScreen.ts builds .title-head/.title-menu/.title-motes/.title-life/.title-version for title.css; savedAgo() is pure (tested). Unused proof art still: btn_round, tabs, bar, sign, parchment panel, icons.
+
 ## Panel close X (ui, 19 Nov)
 .panel-close (panels.ts add(), confirmBuy.ts) is an empty button; all looks in client/src/ui/close.css (loaded last): PixelLab icon_close_s as client/src/assets/ui/close_x.png, 31 px art at 1x (pixelated), 45x45 box, top/right -4 px, hover brightness, :active sinks 2 px + darker, :focus-visible 2 px butter ring. Older rules in ui.css/skin.css/lantern.css are overridden, not deleted. Other proof-set art (btn_round, pills, panels) is still unwired.
+
+## TF-1..5 tavern flow slice 1 (19 Nov, coder)
+- Files: shared/src/barSpots.ts (BarSpot, barSpots(items, room, npcGrid), freeBarSpots, barSpotFor, barServePoint, barTopPoint, barSpotIndex, chooseSpot) + guestsBar.ts (handOver, speedTip, grabAll, serveRoute) + tests; guests.ts stepTavern runs bar guests; tray.ts ordersStrip(t, pouringId?) chips have where + state 'pouring'; client/src/api/tavernApi.ts grabAll, serveAll (h.serveTour), carryHeld/handOver, errand stage 'handover' (apiShared TavernTask).
+- Guest optional fields kind2 ('bar'), barSpot {barUid,c,r}; no SAVE bump (guests are runtime; a loaded bar guest with an open order stays, others are dropped by catchUpTavern). Mess for a bar spot: seatUid = the bar piece, seatIndex = barSpotIndex(cell) = 1000 + r*1000 + c; x,y = half a cell toward the bar.
+- Bar guests only when TavernWorld.barGuests (default config BAR_GUESTS_ENABLED = false). With the flag off the rng stream and every old test are unchanged. Spots: one per customer-side front cell of the counter and each counter_ext, max BAR_SPOTS_MAX 8, only cells free + reachable in npcGrid.
+- Bar guests order DRINKS only (plan open decision 5); patience BAR_PATIENCE_MS; speed tip BAR_SPEED_TIP_RATE if handed over within BAR_SPEED_TIP_MS of ordering; drink time BAR_DRINK_MIN/MAX_MS.
+- serveStops: a bar guest's 'table' point is where they stand (a drink is handed over from the staff side: barServePoint), so serveGuest on a bar guest pours first, then carryHeld/handOver does the hand-over walk.

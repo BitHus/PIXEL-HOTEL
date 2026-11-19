@@ -7,6 +7,11 @@ import { POUR_MAX_FILL, POUR_PERFECT_RANGE, type Point } from '@pixel-hotel/shar
 import { el } from './dom.ts';
 import './ordersStrip.css';
 
+/** The HTML bar shows only while the avatar waits at the taps, no panel is open and the pour was not released (the world gauge in render/pourFx.ts is separate). */
+export function pourBarShouldShow(s: { waiting: boolean; panelOpen: boolean; released: boolean }): boolean {
+  return s.waiting && !s.panelOpen && !s.released;
+}
+
 export interface PourBar {
   /** Shows the empty bar (the avatar waits at the taps). */
   show(): void;

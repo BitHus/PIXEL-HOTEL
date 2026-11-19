@@ -69,6 +69,8 @@ export * from './innDoorClear.ts';
 export * from './taps.ts';
 export * from './pour.ts';
 export * from './tray.ts';
+export * from './barSpots.ts';
+export * from './guestsBar.ts';
 export * from './cameraFollow.ts';
 export * from './casks.ts';
 export * from './forge.ts';

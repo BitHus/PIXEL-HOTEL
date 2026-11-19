@@ -68,6 +68,15 @@ sudo -u pocketbarrel /opt/pocketbarrel/current/tools/ops/set-password.sh <userna
 ```
 It asks for the password (hidden, read from stdin, never argv), applies the same rules as register (8 to 72 bytes), and ends all that user's sessions. Pure rule + tests: server/src/admin.ts, admin.test.ts.
 
+Ban, unban, delete (19 Nov; run in `/opt/pocketbarrel/current` as `pocketbarrel` with the env loaded: `set -a; . /etc/pocketbarrel.env; set +a`):
+```
+node --import tsx server/src/adminCli.ts ban <username> <days 1..3650> <reason>
+node --import tsx server/src/adminCli.ts unban <username>
+node --import tsx server/src/adminCli.ts delete-user <username> --yes
+```
+A ban ends every session at once; login with the right password then answers 403 `banned` until it runs out. delete-user removes the account, its save, backups and shared rooms (reports keep the row). Tests: server/src/hardening.test.ts.
+The server refuses to START when the env is unsafe (config.ts configProblems): with `PB_TRUST_PROXY=1` it needs `PB_IP_KEY` of 32+ characters (not CHANGE_ME) and https-only `PB_ORIGINS`; a non-loopback `PB_HOST` needs `PB_ALLOW_PUBLIC=1`. The reason is printed in `journalctl -u pocketbarrel-server`.
+
 ## 9. Rollback and logs
 Rollback by hand: `ln -sfn /opt/pocketbarrel/releases/<older> /opt/pocketbarrel/current && systemctl restart pocketbarrel-server`. Logs: `journalctl -u pocketbarrel-server -f`, `/var/log/nginx/error.log`.
 

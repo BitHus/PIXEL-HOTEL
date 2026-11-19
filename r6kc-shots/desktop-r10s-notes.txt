@@ -1,0 +1,5 @@
+guest order after 12s
+tray [{"item":"root_ale","perfect":false}]
+delivered at 20s
+gold 109 at 53s
+errors []

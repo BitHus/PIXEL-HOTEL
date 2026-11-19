@@ -1,4 +1,4 @@
-// The title screen (UI round 4): after the logo splash, before the game opens. A hanging tavern sign with the logo,
+// The title screen (UI round 5): after the logo splash, before the game opens. A hanging tavern sign with the logo,
 // candle glow, and three wood buttons: Continue (a saved game that reads), New game (over a save it asks first; the
 // old save becomes the backup), Settings (sound and volume, device settings kept in prefs). It resolves with the choice;
 // core.ts does the rest (open the API, api.newGame() when a save was there). Markup only: no game rules here.
@@ -10,6 +10,7 @@ import type { SaveStorage } from '../api/saveStorage.ts';
 import { el, textButton } from './dom.ts';
 
 const LOGO_URL = new URL('../assets/logo.gif', import.meta.url).href;
+const LIFE_URL = (name: string): string => new URL(`../assets/sprites/furniture/${name}.png`, import.meta.url).href;
 
 export type TitleChoice = 'continue' | 'new';
 
@@ -23,23 +24,37 @@ export function continueNote(peek: SavePeek): string {
   return `${who}${inn}${lvl}`;
 }
 
+/** 'just now', '5 min ago', '3 h ago', 'yesterday', '4 days ago' (pure, now passed in). */
+export function savedAgo(savedAt: number, now: number): string {
+  const min = Math.max(0, Math.round((now - savedAt) / 60000));
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  if (min < 60 * 24) return `${Math.round(min / 60)} h ago`;
+  const d = Math.round(min / 1440);
+  return d === 1 ? 'yesterday' : `${d} days ago`;
+}
+
 export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveStorage): Promise<TitleChoice> {
   return new Promise((resolve) => {
     const screen = el('div', 'title-screen');
     const glow = el('div', 'title-glow');
-    // The sign: two chains, a wooden board with the logo and the name.
-    const sign = el('div', 'title-sign');
-    sign.append(el('i', 'title-chain left'), el('i', 'title-chain right'));
-    const board = el('div', 'ui-panel title-board');
+    const motes = el('div', 'title-motes');
+    for (let i = 0; i < 16; i++) motes.append(el('i', 'mote'));
+    // The still-life along the floor: furniture sprites (title.css sizes and places them).
+    const life = el('div', 'title-life');
+    for (const [cls, file] of [['life-a', 'barrel'], ['life-b', 'bar_stool'], ['life-c', 'sofa'], ['life-d', 'plant'], ['life-e', 'lamp']] as const) {
+      const img = el('img', cls);
+      img.src = LIFE_URL(file);
+      img.alt = '';
+      img.draggable = false;
+      life.append(img);
+    }
+    const head = el('div', 'title-head');
     const logo = el('img', 'title-logo');
     logo.src = LOGO_URL;
-    logo.alt = '';
+    logo.alt = 'PocketBarrel';
     logo.draggable = false;
-    board.append(logo, el('h1', 'title-name', 'PocketBarrel'), el('p', 'title-tag', 'A tavern of your own'));
-    sign.append(board);
-    const candleL = el('div', 'title-candle left');
-    const candleR = el('div', 'title-candle right');
-    for (const c of [candleL, candleR]) c.append(el('i', 'flame'), el('i', 'wax'));
+    head.append(logo, el('p', 'title-tag', 'A tavern of your own'));
 
     const menu = el('div', 'title-menu');
     const note = el('p', 'title-note');
@@ -56,9 +71,10 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
       cont.disabled = !peek.canContinue;
       note.textContent = continueNote(peek);
       note.classList.toggle('off', !peek.canContinue);
+      const when = el('p', 'title-note when', peek.canContinue && peek.savedAt ? `Saved ${savedAgo(peek.savedAt, Date.now())}` : '');
       const fresh = textButton('New game', () => (peek.exists ? showSure() : finish('new')), 'title-btn');
-      const sets = textButton('Settings', showSettings, 'title-btn');
-      menu.replaceChildren(cont, note, fresh, sets);
+      const sets = textButton('Settings', showSettings, 'title-link');
+      menu.replaceChildren(cont, note, when, fresh, sets);
       (peek.canContinue ? cont : fresh).focus();
     };
 
@@ -105,7 +121,7 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
       back.focus();
     };
 
-    screen.append(glow, sign, candleL, candleR, menu);
+    screen.append(glow, motes, life, head, menu, el('p', 'title-version', 'PocketBarrel · private test'));
     root.appendChild(screen);
     showMain();
   });

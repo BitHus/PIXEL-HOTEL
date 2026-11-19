@@ -64,7 +64,7 @@ export function passwordProblem(pw: unknown): PasswordProblem | null {
 /** Every error code the server sends in { error }. */
 export type ApiErrorCode =
   | 'bad_request' | 'bad_json' | 'too_large' | 'rate_limited' | 'unauthorized' | 'not_found' | 'server_error'
-  | 'age_required' | UsernameProblem | PasswordProblem | 'username_taken' | 'bad_login'
+  | 'age_required' | UsernameProblem | PasswordProblem | 'username_taken' | 'bad_login' | 'banned'
   | 'no_save' | 'not_a_save' | 'too_new' | 'too_old' | 'invalid' | 'bad_time' | 'bad_state' | 'newer_on_server'
   | 'bad_title' | 'no_room' | 'not_visitable';
 

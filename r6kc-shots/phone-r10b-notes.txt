@@ -1,0 +1,10 @@
+close X count 1
+X box {"x":324.171875,"y":81,"width":44,"height":44}
+Room X {"x":324.171875,"y":36,"width":44,"height":44}
+Book X {"x":324.171875,"y":81,"width":44,"height":44}
+Skills X {"x":324.171875,"y":81,"width":44,"height":44}
+Settings X {"x":324.171875,"y":36,"width":44,"height":44}
+Quests X {"x":324.171875,"y":81,"width":44,"height":44}
+Avatar X {"x":324.171875,"y":81,"width":44,"height":44}
+no travel card Suite
+errors []

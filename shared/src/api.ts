@@ -400,6 +400,12 @@ export interface GameAPI {
   carryHeld(guestId: number): Promise<boolean>;
   /** COD-1: puts every mug of the tray back in the bag. False = the tray was empty. */
   returnTray(): Promise<boolean>;
+  /** TF-5 GRAB ALL: queues one pour per open order of the most urgent item (up to the free tray slots); the avatar pours them back to back (each pour is still a hold). False = nothing to queue. */
+  grabAll(): Promise<boolean>;
+  /** TF-5 SERVE ALL: one tour with the tray: bar guests first (hand-over, nearest first), then the tables by distance (shared serveRoute). False = nothing on the tray matches an open order. */
+  serveAll(): Promise<boolean>;
+  /** TF-5: the avatar steps to the staff side of the bar and hands ONE mug of the tray to a BAR guest (same as carryHeld for a table guest). False = no matching mug, not a bar guest, or no way. */
+  handOver(guestId: number): Promise<boolean>;
   /** Walks to a table spot and takes its coins (`what` 'coins') or clears its empty mug or plate ('dish'). False = refused. */
   tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean>;
   /** Collects the mugs of a ready brew from a barrel in the tavern. Null if it is not ready. */

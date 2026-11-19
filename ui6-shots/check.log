@@ -1,0 +1,533 @@
+
+> check
+> npm test && npm run typecheck && npm run build
+
+
+> test
+> vitest run
+
+
+ RUN  v5.1.0 C:/Users/ajren/PIXEL-HOTEL
+
+
+ Test Files  174 passed (174)
+      Tests  2274 passed (2274)
+   Start at  01:14:59
+   Duration  40.07s (import 46%, tests 44%, transform 9%, worker 1%)
+
+    Isolate  174 workers spawned · ~439ms startup each (spawn + environment, per file)
+             at least ~2.88s faster with isolate: false — reuses workers across files instead of one per file
+
+
+> typecheck
+> npm run typecheck --workspaces && tsc -p tools/tsconfig.json
+
+
+> typecheck
+> tsc -p tsconfig.json
+
+
+> typecheck
+> tsc -p tsconfig.json
+
+
+> typecheck
+> tsc -p tsconfig.json
+
+
+> build
+> npm run build -w client
+
+
+> build
+> vite build
+
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 1600 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/assets/face_default_blink_right-BZ_HwudI.png               0.09 kB
+dist/assets/face_default_blink_down-Pwi_oWUd.png                0.10 kB
+dist/assets/face_default_still_right-ChIwOv_r.png               0.11 kB
+dist/assets/face_default_still_down-DcGXsioV.png                0.12 kB
+dist/assets/tap_stand_dry-BqCN5g3I.png                          0.12 kB
+dist/assets/hair_back_long_still_down-CuYTodwu.png              0.14 kB
+dist/assets/legs_hose_sit_up-_Z3d4b14.png                       0.14 kB
+dist/assets/outer_belt_sit_up-B7pdU-d5.png                      0.15 kB
+dist/assets/tap_stand_wet-Bg8P3RR6.png                          0.15 kB
+dist/assets/legs_trousers_sit_down-BTWu4EPE.png                 0.16 kB
+dist/assets/legs_trousers_sit_right-D8oEDpLE.png                0.17 kB
+dist/assets/bench-DcHvQk5x.png                                  0.17 kB
+dist/assets/shoes_boots_sit_right-BrWDEPd9.png                  0.17 kB
+dist/assets/legs_hose_sit_down-CO3DZCPg.png                     0.17 kB
+dist/assets/wood-BbjtcC3h.png                                   0.18 kB
+dist/assets/legs_hose_sit_right-BnqH9wl0.png                    0.18 kB
+dist/assets/outer_belt_sit_right-BjS51lI-.png                   0.18 kB
+dist/assets/shoes_boots_sit_down-CeGxfZ5x.png                   0.18 kB
+dist/assets/iron_bar-CgLxhqaV.png                               0.18 kB
+dist/assets/mithril_bar-BRYFj3c3.png                            0.18 kB
+dist/assets/copper_bar-BTk2tQU9.png                             0.19 kB
+dist/assets/hair_back_long_still_right-DgYRLwMp.png             0.19 kB
+dist/assets/outer_belt_idle_up-g3D8hpG7.png                     0.19 kB
+dist/assets/outer_belt_sit_down-CeF-aAtP.png                    0.19 kB
+dist/assets/ripe_sparkle-_E4S3xz9.png                           0.19 kB
+dist/assets/hanging_lantern-DXRSxxvt.png                        0.19 kB
+dist/assets/sign-CX8WXIrq.png                                   0.19 kB
+dist/assets/mug_shelf-KuwenRxQ.png                              0.19 kB
+dist/assets/menu_board-DSO8YRCN.png                             0.19 kB
+dist/assets/outer_belt_walk_up-Cwn5b_rI.png                     0.20 kB
+dist/assets/gems-BbnXTmCp.png                                   0.20 kB
+dist/assets/rug-DtP73XxX.png                                    0.20 kB
+dist/assets/lamp-CaD7OS2v.png                                   0.20 kB
+dist/assets/legs_trousers_idle_up-DVVep6P6.png                  0.21 kB
+dist/assets/outer_tabard_sit_right-CzMy1aEC.png                 0.21 kB
+dist/assets/hat_cook_cap_still_down-BwrOnGER.png                0.21 kB
+dist/assets/legs_trousers_idle_right-DnFr5uu7.png               0.21 kB
+dist/assets/potato-DEjoiEAY.png                                 0.21 kB
+dist/assets/pumpkin_seed-rn8LLLOA.png                           0.21 kB
+dist/assets/key-Jtggd5c0.png                                    0.21 kB
+dist/assets/serving_hatch-BbsgqnTa.png                          0.21 kB
+dist/assets/outer_tabard_sit_up-2U5WTtLt.png                    0.21 kB
+dist/assets/pumpkin_stout-Cu-iAiri.png                          0.22 kB
+dist/assets/hat_cook_cap_still_right-tzZmUhVY.png               0.22 kB
+dist/assets/outer_cloak_sit_down-BqTyRblo.png                   0.22 kB
+dist/assets/outer_cloak_sit_up-BfrSEfZ-.png                     0.22 kB
+dist/assets/outer_cloak_sit_right-Bep3-PQV.png                  0.22 kB
+dist/assets/iron_sword-MusIhKxY.png                             0.23 kB
+dist/assets/carrot_seed-B05-DV83.png                            0.23 kB
+dist/assets/potato_seed-DutlWjIX.png                            0.23 kB
+dist/assets/sofa-aYlmVHQF.png                                   0.23 kB
+dist/assets/turnip_seed-82BqWJdA.png                            0.23 kB
+dist/assets/glowcap_spore-BG-aQT8U.png                          0.23 kB
+dist/assets/hat_cook_cap_still_up-CxyzB9ac.png                  0.23 kB
+dist/assets/iron_ore-BHCZ8mwi.png                               0.23 kB
+dist/assets/mithril_sword-zd2qY1-D.png                          0.23 kB
+dist/assets/pantry-BV9HXznf.png                                 0.23 kB
+dist/assets/copper_ore-KO0W8GKr.png                             0.23 kB
+dist/assets/hair_front_short_still_right-BGRD_McO.png           0.23 kB
+dist/assets/mithril_ore-AHfWSk-e.png                            0.23 kB
+dist/assets/carrot_cider-2Fc3COp8.png                           0.23 kB
+dist/assets/hair_back_long_still_up-M4uzTxN8.png                0.23 kB
+dist/assets/hat_skull_cap_still_up-B8WJ_BVf.png                 0.23 kB
+dist/assets/hat_tavern_keeper_hat_still_up-Dl8FpLhz.png         0.23 kB
+dist/assets/root_ale-C52v9yqW.png                               0.23 kB
+dist/assets/stove_fire-BvuJXWEH.png                             0.23 kB
+dist/assets/hat_gold_crown_still_right-DrLU93d1.png             0.24 kB
+dist/assets/hat_skull_cap_still_right-CMuqOfkI.png              0.24 kB
+dist/assets/shop_rug-7aHUXrSj.png                               0.24 kB
+dist/assets/prep_table-3GGirYoI.png                             0.24 kB
+dist/assets/carrot-tErFzpPX.png                                 0.24 kB
+dist/assets/copper_sword-Cue-LyH4.png                           0.24 kB
+dist/assets/hair_front_short_still_down-BXuAJjCv.png            0.24 kB
+dist/assets/health_potion-C35lO1As.png                          0.24 kB
+dist/assets/banner-DvtTdJQu.png                                 0.24 kB
+dist/assets/bookshelf-DWV3Vz1Q.png                              0.24 kB
+dist/assets/hat_fisher_hat_still_up-BgOBv3LI.png                0.24 kB
+dist/assets/outer_apron_sit_down-ATBayFI4.png                   0.24 kB
+dist/assets/outer_tabard_sit_down-BrVv4kse.png                  0.25 kB
+dist/assets/sink-DDfH03J5.png                                   0.25 kB
+dist/assets/steel_axe-DSmlA1n4.png                              0.25 kB
+dist/assets/hair_front_long_still_right-DJR0oN1v.png            0.25 kB
+dist/assets/hat_skull_cap_still_down-DMhS4vX-.png               0.25 kB
+dist/assets/outer_apron_sit_up-Bb9jh3em.png                     0.25 kB
+dist/assets/outer_belt_walk_right-CcC6jMNu.png                  0.25 kB
+dist/assets/desk-ByVuY7Jq.png                                   0.25 kB
+dist/assets/glowcap-B-_Cm4s2.png                                0.25 kB
+dist/assets/torso_jerkin_sit_up-Dz0meQup.png                    0.25 kB
+dist/assets/potato_stew-zB-2YeOH.png                            0.25 kB
+dist/assets/gold-DLfObqiU.png                                   0.25 kB
+dist/assets/hat_fisher_hat_still_right-DfpGeAXc.png             0.25 kB
+dist/assets/torso_jerkin_sit_right-BW5I02Cl.png                 0.25 kB
+dist/assets/hat_flower_crown_still_right-DcyRvR_t.png           0.26 kB
+dist/assets/outer_apron_sit_right-CExzRsjE.png                  0.26 kB
+dist/assets/outer_belt_walk_down-ZpGGmQ9B.png                   0.26 kB
+dist/assets/hat_fisher_hat_still_down-RQrkZ2M5.png              0.26 kB
+dist/assets/legs_trousers_walk_up-LkqrcBYJ.png                  0.26 kB
+dist/assets/steel_pickaxe-sJDu_Zny.png                          0.26 kB
+dist/assets/hair_front_long_still_down-0Ih0Knse.png             0.26 kB
+dist/assets/hat_tavern_keeper_hat_still_right-Q0-eEz7Y.png      0.26 kB
+dist/assets/hat_gold_crown_still_up-DpFJZWNo.png                0.26 kB
+dist/assets/long_table-Bvgr-a17.png                             0.26 kB
+dist/assets/pumpkin-B20eX9lf.png                                0.26 kB
+dist/assets/hat_miner_lamp_cap_still_down-D95rxkGS.png          0.26 kB
+dist/assets/stall_table-_0CiLtjs.png                            0.26 kB
+dist/assets/hat_miner_lamp_cap_still_right-DnDvyqj-.png         0.26 kB
+dist/assets/shoes_boots_idle_right-BRxsu5w2.png                 0.27 kB
+dist/assets/hat_flower_crown_still_up-ub46CL94.png              0.27 kB
+dist/assets/copper_reel_rod-B6ZHtDJQ.png                        0.27 kB
+dist/assets/hat_wool_cap_still_down-BzQn2Grz.png                0.27 kB
+dist/assets/body_base_sit_right-m3Jt1UgA.png                    0.27 kB
+dist/assets/hat_tavern_keeper_hat_still_down-E-qQ6nmy.png       0.27 kB
+dist/assets/hat_wool_cap_still_up-Czjus09V.png                  0.27 kB
+dist/assets/hat_miner_lamp_cap_still_up-BgyBeoIf.png            0.27 kB
+dist/assets/hat_wool_cap_still_right-ciIcbFCU.png               0.27 kB
+dist/assets/hair_front_long_still_up-Bste_m4r.png               0.27 kB
+dist/assets/hat_gold_crown_still_down-CLcb8OjE.png              0.27 kB
+dist/assets/hat_straw_hat_still_up-C-iOP3xK.png                 0.27 kB
+dist/assets/roasted_turnip-CRuXtZ8D.png                         0.27 kB
+dist/assets/bones-CJHSJuxM.png                                  0.28 kB
+dist/assets/brick-BGXPaKQ6.png                                  0.28 kB
+dist/assets/turnip-DKrfECyf.png                                 0.28 kB
+dist/assets/body_base_sit_up--TmuyapE.png                       0.28 kB
+dist/assets/crate-BLjaAcyB.png                                  0.28 kB
+dist/assets/hat_felt_cap_still_up-BWxK_Rpo.png                  0.28 kB
+dist/assets/body_base_lean_up-Bu3nz9dF.png                      0.28 kB
+dist/assets/table-C_JMXMCH.png                                  0.28 kB
+dist/assets/stairs_down-BU0YKWEC.png                            0.29 kB
+dist/assets/grass-C6siXW0B.png                                  0.29 kB
+dist/assets/chair-CDN4a0Tt.png                                  0.29 kB
+dist/assets/shelf-BTLAxn2P.png                                  0.29 kB
+dist/assets/legs_trousers_walk_right-CA93qdnH.png               0.29 kB
+dist/assets/body_base_sit_down-DUKYOayw.png                     0.29 kB
+dist/assets/outer_belt_idle_right-1ZSwCrDf.png                  0.29 kB
+dist/assets/hat_feather_cap_still_up-CZ4b339y.png               0.29 kB
+dist/assets/torso_tunic_sit_right-bCRwJz0Y.png                  0.30 kB
+dist/assets/torch_stand-DQ9F0-zV.png                            0.30 kB
+dist/assets/hat_knight_helm_still_right-B1oX7ol5.png            0.30 kB
+dist/assets/hat_feather_cap_still_right-BgqXwvPb.png            0.30 kB
+dist/assets/hat_hood_coif_still_up-i2VhQgAO.png                 0.30 kB
+dist/assets/shoes_boots_idle_up-CFxkr6QU.png                    0.30 kB
+dist/assets/counter-08YIj2uI.png                                0.30 kB
+dist/assets/potted_flowers-G7hcVgFG.png                         0.31 kB
+dist/assets/grass_b-DOt6hpK3.png                                0.31 kB
+dist/assets/legs_hose_idle_right-DiowH1yW.png                   0.31 kB
+dist/assets/torso_jerkin_sit_down-BRixalwR.png                  0.31 kB
+dist/assets/legs_hose_idle_up-zPfG_7JW.png                      0.31 kB
+dist/assets/stairs_up-DimeOGg3.png                              0.31 kB
+dist/assets/hat_knight_helm_still_down-ByrP4k_I.png             0.31 kB
+dist/assets/legs_hose_walk_up-zNQPWBA0.png                      0.31 kB
+dist/assets/glass-B0qBguEV.png                                  0.31 kB
+dist/assets/torso_tunic_sit_up-DkY1Vg--.png                     0.31 kB
+dist/assets/hat_knight_helm_still_up-CfnUIckr.png               0.32 kB
+dist/assets/clay-d9sAkMJC.png                                   0.32 kB
+dist/assets/outer_belt_idle_down-CFrosUGL.png                   0.32 kB
+dist/assets/dig_crack_1-CUlt47yL.png                            0.32 kB
+dist/assets/display_case-DAueqOv3.png                           0.33 kB
+dist/assets/planks-C3T9xcYj.png                                 0.33 kB
+dist/assets/stone_tiles-CXaiYqhk.png                            0.33 kB
+dist/assets/outer_tabard_walk_up-B4irbrNU.png                   0.34 kB
+dist/assets/outer_tabard_walk_right-CP2oSOxW.png                0.34 kB
+dist/assets/candles-CNpeThtS.png                                0.34 kB
+dist/assets/dig_crack_2-CPF7G-td.png                            0.35 kB
+dist/assets/outer_cloak_walk_up-DbonB9dn.png                    0.35 kB
+dist/assets/cat_sleep-Csi-0tWy.png                              0.35 kB
+dist/assets/candle_stand-CMWrLsvZ.png                           0.35 kB
+dist/assets/outer_cloak_walk_down-CeLrRR3r.png                  0.35 kB
+dist/assets/crypt_flagstones-BxV4y0lB.png                       0.35 kB
+dist/assets/hat_hood_coif_still_down-CBRGv9pJ.png               0.35 kB
+dist/assets/trestle_table-C3O4nTKJ.png                          0.35 kB
+dist/assets/barrel-Cp_R2Lx5.png                                 0.36 kB
+dist/assets/dig_glint-DJiZOVcY.png                              0.36 kB
+dist/assets/hat_hood_coif_still_right-D528Pwk3.png              0.36 kB
+dist/assets/sarcophagus_small-Mg3Uryt3.png                      0.36 kB
+dist/assets/shoes_boots_walk_up-DH7FdXLY.png                    0.36 kB
+dist/assets/dig_crack_3-CBL6_fWb.png                            0.37 kB
+dist/assets/sofa_right-KR2XjuyF.png                             0.37 kB
+dist/assets/stone-ghGuTmzh.png                                  0.37 kB
+dist/assets/bed-CoDtvz4p.png                                    0.37 kB
+dist/assets/outer_tabard_idle_right-B4lGNnL-.png                0.37 kB
+dist/assets/tree_4_trunk-Bx1OeDji.png                           0.37 kB
+dist/assets/brazier-DOsgXXNi.png                                0.37 kB
+dist/assets/body_base_drink_up-qeE2NToI.png                     0.38 kB
+dist/assets/torso_tunic_sit_down-DoWCkd8_.png                   0.38 kB
+dist/assets/outer_cloak_idle_right-D3r9P22k.png                 0.38 kB
+dist/assets/wood_planks-CF4kZXGR.png                            0.38 kB
+dist/assets/outer_tabard_idle_up-BgFzU6zF.png                   0.38 kB
+dist/assets/torso_jerkin_walk_up-DDQmhyCG.png                   0.38 kB
+dist/assets/fish_swim-COS9T6Mh.png                              0.38 kB
+dist/assets/tree_1_trunk-Ca6kr_Fk.png                           0.38 kB
+dist/assets/dig_clay-BRatuxgT.png                               0.38 kB
+dist/assets/legs_hose_walk_right-DOB0N2Ej.png                   0.38 kB
+dist/assets/body_base_wave_right-BYrn1r-H.png                   0.38 kB
+dist/assets/outer_cloak_walk_right-O0Ab6Tq8.png                 0.38 kB
+dist/assets/outer_tabard_walk_down-D3iLJXoR.png                 0.39 kB
+dist/assets/stove-CdtKvBZG.png                                  0.39 kB
+dist/assets/dig_stone-CRhpGnD8.png                              0.39 kB
+dist/assets/thatch-VMlmwulY.png                                 0.39 kB
+dist/assets/dig_dirt-DNBk8AQl.png                               0.39 kB
+dist/assets/shoes_boots_walk_right-MHmJR7IP.png                 0.39 kB
+dist/assets/skull_pile-BpiVssxT.png                             0.39 kB
+dist/assets/dig_cavein_armed-DpuQlGmE.png                       0.39 kB
+dist/assets/bare-BcJd6sU5.png                                   0.39 kB
+dist/assets/mimic_tongue-n4hN4csT.png                           0.39 kB
+dist/assets/torso_jerkin_walk_right-7lrM-3xM.png                0.39 kB
+dist/assets/banner-CSrKpZ16.png                                 0.40 kB
+dist/assets/tap_stand-CPtTv9wL.png                              0.40 kB
+dist/assets/banner_1-F9oifPi2.png                               0.40 kB
+dist/assets/body_base_idle_right-SAtM-W-x.png                   0.40 kB
+dist/assets/cinder_block-BBouDQOQ.png                           0.40 kB
+dist/assets/dig_bedrock-BrG3dWd3.png                            0.40 kB
+dist/assets/outer_apron_idle_down-apDlDKVc.png                  0.40 kB
+dist/assets/sarcophagus-C38Vsihs.png                            0.40 kB
+dist/assets/outer_apron_idle_up-qNk3EMsU.png                    0.40 kB
+dist/assets/anvil-NGZ0dkvf.png                                  0.40 kB
+dist/assets/dig_exit-X2orKtsr.png                               0.40 kB
+dist/assets/outer_apron_walk_up-BB93YO97.png                    0.41 kB
+dist/assets/banner_2-BwrdFbUO.png                               0.41 kB
+dist/assets/outer_cloak_idle_down-DjGNF6z4.png                  0.41 kB
+dist/assets/torso_tunic_lean_up-Delzb5F8.png                    0.41 kB
+dist/assets/barrel-D3TpbWUy.png                                 0.41 kB
+dist/assets/body_base_eat_right-eYucwGMA.png                    0.41 kB
+dist/assets/torso_tunic_idle_right-C-BgpPkE.png                 0.41 kB
+dist/assets/lantern_block-D8dLma_p.png                          0.41 kB
+dist/assets/iron_chandelier-BLttd_OB.png                        0.41 kB
+dist/assets/coat_rack-08xZP1Da.png                              0.41 kB
+dist/assets/dig_coal-lrl9T0Yf.png                               0.41 kB
+dist/assets/music_box-qVUdfr_o.png                              0.42 kB
+dist/assets/outer_cloak_idle_up-DUakZkdd.png                    0.42 kB
+dist/assets/cat_sit-Cd8GVoM6.png                                0.42 kB
+dist/assets/antler_mount-haAkZ3RV.png                           0.42 kB
+dist/assets/register-CEOPpqSQ.png                               0.42 kB
+dist/assets/plaster-rwMIw6GX.png                                0.43 kB
+dist/assets/outer_apron_idle_right-Dx5l2qZj.png                 0.43 kB
+dist/assets/outer_apron_walk_down-BsxXaOoD.png                  0.43 kB
+dist/assets/crate-76fkpxBY.png                                  0.43 kB
+dist/assets/mossy_stone-Ccqx96n2.png                            0.43 kB
+dist/assets/body_base_idle_up-BuJZsMPv.png                      0.43 kB
+dist/assets/dig_copper-BnjNtuRC.png                             0.43 kB
+dist/assets/window_curtains-BJIpB5Ih.png                        0.44 kB
+dist/assets/dig_iron-Fz60wbQu.png                               0.44 kB
+dist/assets/body_base_walk_right-n2Ab6saF.png                   0.44 kB
+dist/assets/body_base_wave_down-BHq1li1a.png                    0.44 kB
+dist/assets/dig_cavein_fallen-7UBO0ic5.png                      0.44 kB
+dist/assets/torso_tunic_drink_up-CDm4RDUR.png                   0.44 kB
+dist/assets/dig_gold_vein-IKms5vd1.png                          0.44 kB
+dist/assets/body_base_walk_up-CuYPl7y9.png                      0.45 kB
+dist/assets/dig_mithril-B2bHzv4l.png                            0.45 kB
+dist/assets/torso_tunic_eat_right-DZV8jApc.png                  0.45 kB
+dist/assets/body_base_idle_down-CglAsahk.png                    0.45 kB
+dist/assets/statue-DAy0nqSE.png                                 0.45 kB
+dist/assets/throne_piece-CbS2vnfd.png                           0.45 kB
+dist/assets/campfire-BjAqTCm0.png                               0.45 kB
+dist/assets/outer_apron_walk_right-DGsBJl5W.png                 0.46 kB
+dist/assets/weapon_rack-DJXgMUXy.png                            0.46 kB
+dist/assets/cloth-gR_LDF8m.png                                  0.46 kB
+dist/assets/dig_crystal-B0T9s5R7.png                            0.46 kB
+dist/assets/torso_jerkin_walk_down-hx_05fWz.png                 0.46 kB
+dist/assets/body_base_eat_down-Ckr4D9ms.png                     0.46 kB
+dist/assets/torso_tunic_wave_right-BemGbITN.png                 0.46 kB
+dist/assets/tree_0_trunk-Cszdn7Mj.png                           0.46 kB
+dist/assets/body_base_walk_down-InLwatmX.png                    0.47 kB
+dist/assets/rubble-Blvg_NYD.png                                 0.47 kB
+dist/assets/dig_diamond-C9yYAAdz.png                            0.47 kB
+dist/assets/shelf-Bb1ALOf7.png                                  0.47 kB
+dist/assets/root-3kAXkbbE.png                                   0.47 kB
+dist/assets/torso_tunic_walk_right-VfALSiex.png                 0.47 kB
+dist/assets/tree_3_trunk-C39pC2Q4.png                           0.47 kB
+dist/assets/torso_tunic_idle_up-Du7QZmB-.png                    0.47 kB
+dist/assets/dice_cup-D7GMIz-s.png                               0.48 kB
+dist/assets/wall_clock-_fFFfvdA.png                             0.49 kB
+dist/assets/plant-DNt0f-Fs.png                                  0.49 kB
+dist/assets/rock_iron-B-qWLpSw.png                              0.49 kB
+dist/assets/torso_tunic_walk_up-CDt4UN4_.png                    0.49 kB
+dist/assets/spice_bundle-DAr3JbzP.png                           0.50 kB
+dist/assets/hat_sunken_crown_hat_still_right-DCYSLjug.png       0.50 kB
+dist/assets/round_table-CeE141-t.png                            0.50 kB
+dist/assets/wall_mirror-1RwhTUj1.png                            0.50 kB
+dist/assets/rock_mithril-D_1dwEpb.png                           0.50 kB
+dist/assets/door_spill-ByJ63N1i.png                             0.51 kB
+dist/assets/iron_brazier-b73O2GT4.png                           0.51 kB
+dist/assets/pearl_chandelier-D2bhMWHQ.png                       0.51 kB
+dist/assets/rock_copper-Bni1wK4K.png                            0.51 kB
+dist/assets/torso_jerkin_idle_right-8lQTKm8H.png                0.52 kB
+dist/assets/outer_tabard_idle_down-Bb8i0xHn.png                 0.52 kB
+dist/assets/counter_ext_up-V7u4p56Y.png                         0.52 kB
+dist/assets/crypt_garden-DyAlIMp1.png                           0.52 kB
+dist/assets/dig_cavein_cracking-C1CXnmIO.png                    0.52 kB
+dist/assets/hat_sunken_crown_hat_still_down-5tQomVtf.png        0.53 kB
+dist/assets/kitchen_tiles-a961Tmjm.png                          0.53 kB
+dist/assets/bat_wing_fan-DLzjVq1q.png                           0.53 kB
+dist/assets/hat_sunken_crown_hat_still_up-BSIkvR4B.png          0.53 kB
+dist/assets/torso_jerkin_eat_right-C9PDMjsE.png                 0.54 kB
+dist/assets/red_carpet-DH_wJkZX.png                             0.54 kB
+dist/assets/bar_stool-DnnmVp7n.png                              0.54 kB
+dist/assets/tree_2_trunk-CKugftCr.png                           0.54 kB
+dist/assets/torso_jerkin_idle_up-CxNkBUrR.png                   0.55 kB
+dist/assets/brazier_big-2T2IWse9.png                            0.55 kB
+dist/assets/keg_stack-iH9wjPcy.png                              0.55 kB
+dist/assets/slime_idle-B2HySK8V.png                             0.55 kB
+dist/assets/torso_jerkin_wave_right-BNNQx0mg.png                0.56 kB
+dist/assets/counter_ext-CIL6TIlz.png                            0.56 kB
+dist/assets/tree_5_trunk-B7ho6-Dw.png                           0.57 kB
+dist/assets/dirt-8k81fnjK.png                                   0.58 kB
+dist/assets/mimic_idle-DwxfVN78.png                             0.58 kB
+dist/assets/counter_ext_right-p6mGs8iv.png                      0.59 kB
+dist/assets/dungeon_gate-PcsmfBFr.png                           0.59 kB
+dist/assets/torso_tunic_walk_down-Cjaa8MED.png                  0.59 kB
+dist/assets/pet_basket-DEjLIN0i.png                             0.59 kB
+dist/assets/torso_tunic_idle_down-OvNgSQ_J.png                  0.60 kB
+dist/assets/gem_pile-BnshGZIb.png                               0.61 kB
+dist/assets/bat_idle-YlUYzKak.png                               0.63 kB
+dist/assets/anvil-CnibNsh8.png                                  0.64 kB
+dist/assets/bench_up-CPSL3VkN.png                               0.64 kB
+dist/assets/torso_tunic_wave_down-BSxRH4Xx.png                  0.65 kB
+dist/assets/glowcap-BhDXqDo3.png                                0.65 kB
+dist/assets/torso_tunic_eat_down-Czo0DdGw.png                   0.65 kB
+dist/assets/guard_post-BSML0PuN.png                             0.66 kB
+dist/assets/rock_beetle_idle-D3S3y_ZK.png                       0.66 kB
+dist/assets/brewing_barrel-zdJ1wthU.png                         0.67 kB
+dist/assets/bare-QHCoi9VO.png                                   0.67 kB
+dist/assets/scarecrow-Bwtd8FaZ.png                              0.69 kB
+dist/assets/cat_walk-DuLs9CBj.png                               0.69 kB
+dist/assets/library_shelf-BXVnGIts.png                          0.72 kB
+dist/assets/keg_stack-BaljOmHQ.png                              0.73 kB
+dist/assets/chair_right-JwkXCPwH.png                            0.76 kB
+dist/assets/iron_chandelier-CgDoIyjy.png                        0.76 kB
+dist/assets/dartboard-C5N89pZ1.png                              0.78 kB
+dist/assets/torso_jerkin_idle_down-Cb2188s3.png                 0.82 kB
+dist/assets/vault_door-BmOBj3oP.png                             0.82 kB
+dist/assets/torso_jerkin_wave_down-DjJzfV56.png                 0.82 kB
+dist/assets/trestle_table-CA-kqIQq.png                          0.83 kB
+dist/assets/soil-OGm7Hvm6.png                                   0.84 kB
+dist/assets/torso_jerkin_eat_down-CR42j_Oc.png                  0.84 kB
+dist/assets/fish_tank-DvjSOGtZ.png                              0.85 kB
+dist/assets/long_table_right-Bi7qzHgZ.png                       0.87 kB
+dist/assets/serving_hatch_right-BMmmTQTW.png                    0.88 kB
+dist/assets/display_case_right-fqDYZOw6.png                     0.91 kB
+dist/assets/banner-DHHklRo4.png                                 0.91 kB
+dist/assets/chair_up-DkgboFMq.png                               0.92 kB
+dist/assets/table_right-CekAAuK0.png                            0.92 kB
+dist/assets/sofa_up-DYo5Rfof.png                                0.94 kB
+dist/assets/tree_stump-DYCVzK95.png                             0.94 kB
+dist/assets/kings_banner-Dvx2Zvje.png                           0.97 kB
+dist/assets/sink_up-DpQ-fgfc.png                                0.98 kB
+dist/assets/tap_stand_lever-C2BPaNyK.png                        0.99 kB
+dist/assets/bookshelf_right-CUr-GgxJ.png                        1.02 kB
+dist/assets/straw_bale-BHjHIbgb.png                             1.03 kB
+dist/assets/wall_torch-BJm34wAB.png                             1.05 kB
+dist/assets/sink_right-DDKGcn55.png                             1.06 kB
+dist/assets/fountain-D-mUwkgS.png                               1.06 kB
+dist/assets/bench-BD_VKsII.png                                  1.07 kB
+dist/assets/pantry_right-CLJVOB6V.png                           1.09 kB
+dist/assets/wood_panels-D5EB6tOZ.png                            1.09 kB
+dist/assets/bar_stool-CO8bMAIG.png                              1.09 kB
+dist/assets/mug_shelf-BIAuLzZX.png                              1.11 kB
+dist/assets/grass_c-CQC8eybo.png                                1.11 kB
+dist/assets/bench_right-DjjLqKB-.png                            1.12 kB
+dist/assets/ember_lamp-BMINsFJn.png                             1.12 kB
+dist/assets/long_table-CVvvhVjI.png                             1.13 kB
+dist/assets/tree_sapling_0-C0HpMPGn.png                         1.15 kB
+dist/assets/btn_pill_pressed-CfhDTS_7.png                       1.16 kB
+dist/assets/counter_up-C-QP9U7y.png                             1.16 kB
+dist/assets/tree_sapling_1-CXwDgcht.png                         1.17 kB
+dist/assets/table-Cu1ZfRmZ.png                                  1.18 kB
+dist/assets/sign-ChsD6rgE.png                                   1.18 kB
+dist/assets/register-C3O-dkXu.png                               1.19 kB
+dist/assets/pantry_up-BhoqBV9A.png                              1.22 kB
+dist/assets/skull_trophy-CVSJ4LUB.png                           1.23 kB
+dist/assets/bat_wing_fan-CJfXO3p_.png                           1.23 kB
+dist/assets/brick-CCMDRy_-.png                                  1.24 kB
+dist/assets/close_x-C_kkOJ64.png                                1.24 kB
+dist/assets/chair-Cjh8a_Yr.png                                  1.27 kB
+dist/assets/counter_right-C32m78f-.png                          1.28 kB
+dist/assets/weapon_rack-BGpsiYp1.png                            1.28 kB
+dist/assets/sink-Xbn1gcA8.png                                   1.32 kB
+dist/assets/counter-DQoK-KfK.png                                1.34 kB
+dist/assets/shelf_right-BppSv-FZ.png                            1.34 kB
+dist/assets/mimic_chest-D58GbJMp.png                            1.35 kB
+dist/assets/menu_board-p-YxapCw.png                             1.35 kB
+dist/assets/crate-C_nDOw3e.png                                  1.38 kB
+dist/assets/bone_chair-C3AICh5I.png                             1.39 kB
+dist/assets/serving_hatch_up-DkggfgqF.png                       1.39 kB
+dist/assets/desk_right-BBmLe661.png                             1.40 kB
+dist/assets/lamp-KNaGZecx.png                                   1.40 kB
+dist/assets/anchor-DLsSQSdF.png                                 1.41 kB
+dist/assets/btn_pill_disabled-SaYo0ksD.png                      1.42 kB
+dist/assets/gilded_chair_right-DKARRixx.png                     1.42 kB
+dist/assets/hedge-BLu2iyNw.png                                  1.45 kB
+dist/assets/plant-Dioc4j46.png                                  1.47 kB
+dist/index.html                                                 1.48 kB │ gzip:   0.60 kB
+dist/assets/shelf_up-DDqlTHNs.png                               1.52 kB
+dist/assets/slime_jar-BXreUJid.png                              1.52 kB
+dist/assets/bookshelf_up-DSxqBNhb.png                           1.53 kB
+dist/assets/bone_chair_up-CoQ_5-Jh.png                          1.54 kB
+dist/assets/prep_table_right-C9NubMO_.png                       1.62 kB
+dist/assets/keg_rack_right-DJGsEJn8.png                         1.63 kB
+dist/assets/serving_hatch-BJh2FpBd.png                          1.65 kB
+dist/assets/skull_lamp-DmIzpOwl.png                             1.66 kB
+dist/assets/barrel-CJhztToo.png                                 1.66 kB
+dist/assets/tree_2_crown-DOkM9lPw.png                           1.72 kB
+dist/assets/door_cellar_up-C0uvBEt3.png                         1.72 kB
+dist/assets/farm_barrel-Biq6lPMm.png                            1.74 kB
+dist/assets/bone_chair_right-DhJ-CH0S.png                       1.79 kB
+dist/assets/sofa-BIEYsY2K.png                                   1.81 kB
+dist/assets/btn_pill-Ccl8-klJ.png                               1.82 kB
+dist/assets/mounted_fish-tNjJYdRL.png                           1.83 kB
+dist/assets/gilded_chair_up-rXMHaniQ.png                        1.83 kB
+dist/assets/vine_bench_up-DCHEbqUD.png                          1.84 kB
+dist/assets/brewing_barrel-B0eyxeKy.png                         1.85 kB
+dist/assets/coffin_table-DTN7dRph.png                           1.90 kB
+dist/assets/tap_stand-DZB1Qlc3.png                              1.91 kB
+dist/assets/tree_0_crown-CF1QhZGR.png                           1.91 kB
+dist/assets/driftwood_bench_up-D7-PUDp0.png                     1.92 kB
+dist/assets/tap_stand_nolever-idUc6JTi.png                      1.92 kB
+dist/assets/shell_lamp-CiV9hXs_.png                             1.93 kB
+dist/assets/gilded_chair-DZx1eVBn.png                           1.95 kB
+dist/assets/tree_5_crown-BXkgXQ_o.png                           1.99 kB
+dist/assets/desk_up-C1xr1VTj.png                                2.00 kB
+dist/assets/coffin_table_right-y-Lc4w_i.png                     2.00 kB
+dist/assets/tree_1_crown-G0bJBibb.png                           2.00 kB
+dist/assets/stove_cold-Ilh50wf5.png                             2.04 kB
+dist/assets/stove-CciX_iAG.png                                  2.11 kB
+dist/assets/display_case_up-mjurQ_Q9.png                        2.23 kB
+dist/assets/favicon-BKVGGsgy.png                                2.23 kB
+dist/assets/tree_4_crown-G6f3pHL_.png                           2.30 kB
+dist/assets/bed_right-BJ7IwFkI.png                              2.33 kB
+dist/assets/tree_3_crown-CHDweCfz.png                           2.34 kB
+dist/assets/door_cellar_down_open-BHpqnkru.png                  2.36 kB
+dist/assets/bed_up-DVMTkxNX.png                                 2.49 kB
+dist/assets/bone_throne_right-C9Q8p-wd.png                      2.50 kB
+dist/assets/desk-BNEKKAUB.png                                   2.53 kB
+dist/assets/sunken_throne-BbYLxrVw.png                          2.62 kB
+dist/assets/rug-FxTNyYNx.png                                    2.64 kB
+dist/assets/prep_table-BV28tYyW.png                             2.65 kB
+dist/assets/rug_right-Bk5eKycN.png                              2.67 kB
+dist/assets/bookshelf-C3xcxzNc.png                              2.82 kB
+dist/assets/pearl_chandelier-BE3FnuK-.png                       3.05 kB
+dist/assets/stall_table_right-C5u0y6jP.png                      3.09 kB
+dist/assets/pantry-CAdRpCOp.png                                 3.12 kB
+dist/assets/door_cellar_down-DNZ-wU05.png                       3.13 kB
+dist/assets/honey_table-zpVb5CR9.png                            3.16 kB
+dist/assets/driftwood_bench-Cj3v1_rn.png                        3.26 kB
+dist/assets/vine_bench-DIGy6oWW.png                             3.32 kB
+dist/assets/heartwood_throne_right-CUFn7-aG.png                 3.39 kB
+dist/assets/brewing_barrel_ready-Ds4Q8y-9.png                   3.60 kB
+dist/assets/keg_rack-DSgyiLCC.png                               3.68 kB
+dist/assets/fishing_net-BRom9OTQ.png                            3.82 kB
+dist/assets/bed-CTWqe6Sy.png                                    3.87 kB
+dist/assets/stove_ready-CI3-Q1xL.png                            3.89 kB
+dist/assets/panel_dark-CGGX5CxF.png                             4.03 kB
+dist/assets/shelf-Dzajspw6.png                                  4.10 kB
+dist/assets/round_table-C5Fo5IEc.png                            4.22 kB
+dist/assets/display_case-CWsM4jMS.png                           4.40 kB
+dist/assets/bone_throne-BpUKECst.png                            4.75 kB
+dist/assets/bone_throne_up-C6n4Ptpr.png                         5.00 kB
+dist/assets/heartwood_throne_up-BU25Qpo0.png                    5.09 kB
+dist/assets/heartwood_throne--zssOyOc.png                       5.80 kB
+dist/assets/stall_table-DuLtyo2t.png                            5.81 kB
+dist/assets/pixelify-sans-latin-400-normal-DLrIX9QE.woff2       7.69 kB
+dist/assets/pixelify-sans-latin-700-normal-D3Xxx3QE.woff2       7.90 kB
+dist/assets/jersey-15-latin-400-normal-C8Nlw5JP.woff2          16.58 kB
+dist/assets/logo-B4mZSOs9.gif                                 162.53 kB
+dist/assets/index-CtKqbL1X.css                                172.11 kB │ gzip:  32.32 kB
+dist/assets/webworkerAll-BvyF-fR7.js                            0.05 kB │ gzip:   0.06 kB
+dist/assets/getTextureBatchBindGroup-CPM2N5IT.js                0.34 kB │ gzip:   0.26 kB
+dist/assets/Cache-BvoTVWBQ.js                                   1.10 kB │ gzip:   0.55 kB
+dist/assets/canvasUtils-D8Fc3Bye.js                             6.19 kB │ gzip:   2.09 kB
+dist/assets/getTexelRangeRects-Djoa-kaz.js                     11.44 kB │ gzip:   3.01 kB
+dist/assets/init-DPhcGM4I.js                                   15.76 kB │ gzip:   4.86 kB
+dist/assets/GCManagedHash-DiWqm-qY.js                          19.32 kB │ gzip:   6.28 kB
+dist/assets/Filter-BiMBz9qe.js                                 42.29 kB │ gzip:  12.11 kB
+dist/assets/browserAll-BH5VRrCo.js                             43.57 kB │ gzip:  11.29 kB
+dist/assets/RenderTargetSystem-TxI37FLa.js                     59.84 kB │ gzip:  16.82 kB
+dist/assets/GraphicsContext-0QHRR96c.js                        62.27 kB │ gzip:  20.81 kB
+dist/assets/CanvasPool-cZm-qJ09.js                             74.73 kB │ gzip:  24.38 kB
+dist/assets/index-Dcm1NkYu.js                               1,157.53 kB │ gzip: 352.97 kB
+
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 493ms[39m

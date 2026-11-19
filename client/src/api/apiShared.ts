@@ -27,6 +27,8 @@ export type TavernTask =
   /** G2: the avatar stands at the taps and waits for pourHeld (the player holds the pour). */
   | { stage: 'pourwait'; guestId: number; item: string }
   | { stage: 'table'; guestId: number }
+  /** TF: the avatar stands on the staff side of the bar and hands ONE mug to a bar guest. */
+  | { stage: 'handover'; guestId: number }
   | { stage: 'mess'; messId: number; what: 'coins' | 'dish' };
 
 export function finitePoint(p: Point): boolean {

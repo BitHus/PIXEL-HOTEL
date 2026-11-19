@@ -2,7 +2,7 @@
 // and the visits of PLAN-ONLINE P2: /api/rooms/mine, /api/rooms/share, /api/rooms/public, /api/rooms/block, /api/visit/<code>, /api/visit/report.
 // Every input is validated, bodies are size-limited, rate limits follow docs/PLAN-ONLINE.md section 4, CORS allows only the configured origins.
 
-import { SAVE_VERSION } from '@pixel-hotel/shared';
+import { SAVE_VERSION, type ApiErrorCode } from '@pixel-hotel/shared';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { authenticate, checkLogin, createSession, endSession, hashIp, registerAccount } from './accounts.ts';
 import type { ServerConfig } from './config.ts';
@@ -20,10 +20,15 @@ export interface AppDeps {
   now: () => number;
 }
 
+/** Slow or stuck clients are cut off (slowloris): whole request 30 s (a 1 MB save on a slow phone fits), headers 10 s, idle keep-alive 5 s. */
+export const HTTP_TIMEOUTS = { requestMs: 30_000, headersMs: 10_000, keepAliveMs: 5_000 } as const;
+/** Open sockets at most (PLAN-ONLINE caps; nginx sits in front as well). */
+export const HTTP_MAX_CONNECTIONS = 500;
+
 class HttpError extends Error {
   constructor(
     readonly status: number,
-    readonly code: string,
+    readonly code: ApiErrorCode,
   ) {
     super(code);
   }
@@ -128,8 +133,8 @@ export function createApp(deps: AppDeps): { handle: (req: IncomingMessage, res: 
       const nameKey = typeof body.username === 'string' ? body.username.toLowerCase().slice(0, 64) : '';
       // Failed or not, every attempt counts (a throttle on guessing).
       if (!loginPerIp.take(ipKey, t) || !loginPerName.take(nameKey, t)) throw new HttpError(429, 'rate_limited');
-      const r = await checkLogin(db, body.username, body.password, config.bcryptCost);
-      if (!r.ok) throw new HttpError(401, 'bad_login');
+      const r = await checkLogin(db, body.username, body.password, config.bcryptCost, t);
+      if (!r.ok) throw r.banned ? new HttpError(403, 'banned') : new HttpError(401, 'bad_login');
       const token = createSession(db, r.accountId, ipKey, config.sessionDays, t);
       return send(res, 200, { token, username: r.username }, origin);
     }
@@ -251,7 +256,8 @@ export function createApp(deps: AppDeps): { handle: (req: IncomingMessage, res: 
 
 export function createApiServer(deps: AppDeps): Server {
   const app = createApp(deps);
-  const server = createServer(app.handle);
+  const server = createServer({ requestTimeout: HTTP_TIMEOUTS.requestMs, headersTimeout: HTTP_TIMEOUTS.headersMs, keepAliveTimeout: HTTP_TIMEOUTS.keepAliveMs }, app.handle);
+  server.maxConnections = HTTP_MAX_CONNECTIONS;
   const timer = setInterval(app.sweep, 60_000);
   timer.unref();
   server.on('close', () => clearInterval(timer));

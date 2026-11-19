@@ -1,0 +1,10 @@
+close X count 1
+X box {"x":883,"y":65,"width":45,"height":45}
+Room X {"x":883,"y":20,"width":45,"height":45}
+Book X {"x":883,"y":65,"width":45,"height":45}
+Skills X {"x":883,"y":65,"width":45,"height":45}
+Settings X {"x":883,"y":20,"width":45,"height":45}
+Quests X {"x":883,"y":65,"width":45,"height":45}
+Avatar X {"x":883,"y":65,"width":45,"height":45}
+no travel card Suite
+errors []

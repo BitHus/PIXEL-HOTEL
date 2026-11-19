@@ -439,7 +439,7 @@ describe('abuse cases', () => {
     expect((await send('PUT', a, '/api/rooms/share', { roomId: hotel, visibility: 'code' })).status).toBe(429);
   });
   it('an old database gets the visit tables by migration 2', () => {
-    expect((db.prepare('SELECT v FROM schema_version').get() as { v: number }).v).toBe(2);
+    expect((db.prepare('SELECT v FROM schema_version').get() as { v: number }).v).toBeGreaterThanOrEqual(2); // later migrations (3: bans) come on top
     const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((t) => t.name);
     for (const t of ['room_shares', 'visit_blocks', 'reports']) expect(tables).toContain(t);
   });

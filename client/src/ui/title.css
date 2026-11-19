@@ -385,3 +385,19 @@
     transition: none !important;
   }
 }
+
+/* Round 6: the notes sit on the wall as plain candle-lit text (no dark box), an empty line takes no room. */
+.title-screen .title-note {
+  background: none;
+  padding: 0;
+}
+
+.title-screen .title-note:empty {
+  display: none;
+}
+
+/* The big pill shows focus as a glow (the 4 px ring around a 9-sliced pill looked heavy). */
+.title-screen .title-btn.primary:focus-visible {
+  outline: 0;
+  filter: brightness(1.15) drop-shadow(0 0 6px #feae34);
+}

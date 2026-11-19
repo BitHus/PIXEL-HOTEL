@@ -20,18 +20,18 @@ const stove = rd('stove');
 const isFire = (c) => c && ['a22633', 'f77622', 'be4a2f'].includes(hx(c));
 const isHot = (c) => c && ['a22633', 'f77622', 'be4a2f', 'feae34', 'fee761'].includes(hx(c));
 const cold = copy(stove);
-for (let y = 24; y <= 31; y++) for (let x = 10; x <= 22; x++) if (isHot(get(cold, x, y))) put(cold, x, y, (x + y) % 4 === 0 ? C.brown : C.dark);
+for (let y = 41; y <= 50; y++) for (let x = 10; x <= 22; x++) if (isHot(get(cold, x, y))) put(cold, x, y, (x + y) % 4 === 0 ? C.brown : C.dark);
 save('stove_cold', cold);
 const PAD = 6; // top padding for steam
 const ready = mk(64, stove.height + PAD);
 for (let f = 0; f < 2; f++) {
   const fr = mk(32, stove.height + PAD); blit(fr, stove, 0, PAD);
-  for (let y = 24 + PAD; y <= 31 + PAD; y++) for (let x = 10; x <= 22; x++) { const c = get(fr, x, y); if (isFire(c)) put(fr, x, y, hx(c) === 'f77622' ? (f ? C.yellow : C.amber) : hx(c) === 'a22633' ? C.orange : C.amber); }
+  for (let y = 41 + PAD; y <= 50 + PAD; y++) for (let x = 10; x <= 22; x++) { const c = get(fr, x, y); if (isFire(c)) put(fr, x, y, hx(c) === 'f77622' ? (f ? C.yellow : C.amber) : hx(c) === 'a22633' ? C.orange : C.amber); }
   // steam puffs over the chimney (chimney top is at x 19-21), alternate frames
-  const sx = 20; const puffs = f ? [[sx, 3], [sx + 1, 1], [sx - 1, 0]] : [[sx - 1, 3], [sx, 2], [sx + 1, 0]];
+  const sx = 16; const puffs = f ? [[sx, 3], [sx + 1, 1], [sx - 1, 0]] : [[sx - 1, 3], [sx, 2], [sx + 1, 0]];
   for (const [px, py] of puffs) put(fr, px, py, py > 1 ? C.white : C.pale);
   // a warm rim light on the firebox arch = "done"
-  for (let x = 12; x <= 20; x++) put(fr, x, 25 + PAD, f ? C.amber : C.rust);
+  for (let x = 12; x <= 20; x++) put(fr, x, 40 + PAD, f ? C.amber : C.rust);
   blit(ready, fr, f * 32, 0);
 }
 save('stove_ready', ready);

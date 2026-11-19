@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { continueNote } from './titleScreen.ts';
+import { continueNote, savedAgo } from './titleScreen.ts';
 import { MEDIEVAL_ICONS } from './pixelIconsMedieval.ts';
 
 describe('title screen', () => {
@@ -7,6 +7,16 @@ describe('title screen', () => {
     expect(continueNote({ exists: false, canContinue: false })).toBe('No saved game yet.');
     expect(continueNote({ exists: true, canContinue: false, problem: 'invalid' })).toContain('damaged');
     expect(continueNote({ exists: true, canContinue: true, playerName: 'Mira', innName: 'The Lantern', level: 3 })).toBe('Mira, The Lantern, level 3');
+  });
+});
+
+describe('savedAgo', () => {
+  it('reads like a person', () => {
+    const n = 10_000_000_000;
+    expect(savedAgo(n, n)).toBe('just now');
+    expect(savedAgo(n - 5 * 60000, n)).toBe('5 min ago');
+    expect(savedAgo(n - 3 * 3600000, n)).toBe('3 h ago');
+    expect(savedAgo(n - 86400000, n)).toBe('yesterday');
   });
 });
 

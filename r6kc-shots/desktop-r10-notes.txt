@@ -6,4 +6,4 @@ guide card height 122
 info panel {"text":"100\n0","h":34,"w":92.8125}
 More items ["Workshop","Book","Skills","Room","Avatar","Chat ","Settings","Quests","Worlds","Emote"]
 bar menu visible detail blocks 0
-side column opacity after idle 1
+side column opacity after idle 0.25

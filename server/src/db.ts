@@ -72,6 +72,9 @@ const MIGRATIONS: readonly string[] = [
      created_at INTEGER NOT NULL,
      status TEXT NOT NULL
    );`,
+  // 3: bans (PLAN-ONLINE section 4, set by the admin CLI). banned_until in ms; NULL = not banned. A banned account cannot log in and its sessions stop.
+  `ALTER TABLE accounts ADD COLUMN banned_until INTEGER;
+   ALTER TABLE accounts ADD COLUMN ban_reason TEXT;`,
 ];
 
 export function openDb(path: string): Db {

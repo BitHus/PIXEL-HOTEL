@@ -20,6 +20,7 @@ import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
 import type { Cask } from './casks.ts';
 import type { Cook } from './cooking.ts';
+import type { GuestBarSpot } from './barSpots.ts';
 import type { TrayMug } from './tray.ts';
 import { kitchenZone } from './kitchen.ts';
 import { inStaffZone, staffZones } from './npcNav.ts';
@@ -38,9 +39,9 @@ import type { Facing, FurnitureItem, FurnitureType, MaterialId, Point, Reaction,
  * enter: walks in and stops just inside the door. to_seat: walks to the seat. settle: sits a moment
  * before ordering. order: waits for the order. eat: eats or drinks. no_seat: found no free seat,
  * stands a moment. no_menu: sits without an order (an empty menu, or everything too expensive).
- * leave: walks out.
+ * leave: walks out. TF (bar guests, plan TAVERN-FLOW): to_bar walks to a bar spot, bar_wait stands a moment before ordering, bar_drink drinks the handed-over mug on the spot.
  */
-export type GuestPhase = 'enter' | 'to_seat' | 'settle' | 'order' | 'eat' | 'no_seat' | 'no_menu' | 'leave';
+export type GuestPhase = 'enter' | 'to_seat' | 'settle' | 'order' | 'eat' | 'no_seat' | 'no_menu' | 'leave' | 'to_bar' | 'bar_wait' | 'bar_drink';
 
 export interface GuestOrder {
   item: MaterialId;
@@ -79,6 +80,10 @@ export interface Guest {
   talkInMs: number;
   sipInMs: number;
   reaction: Reaction | null;
+  /** TF: 'bar' = a BAR GUEST (stands at barSpot, drinks only, hand-over). Missing = a table guest (old saves, no SAVE bump: guests are runtime state). */
+  kind2?: 'bar' | 'table';
+  /** TF: the bar spot a bar guest holds (reserved from the moment they come in). */
+  barSpot?: GuestBarSpot;
 }
 
 /** What a guest left on a table spot. It blocks the seat until the coins are taken and the dish is cleared. */
@@ -469,10 +474,11 @@ export function serveStops(state: GameState, guestId: number): { bar: Point; tab
   const guest = t.guests.find((g) => g.id === guestId);
   const bar = state.items.find((i) => i.roomId === t.roomId && getFurnitureType(i.typeId).servedFromBehind === true);
   const seat = guest?.seat ? tavernSeats(state.items, t.roomId, kitchenZone(state.rooms.find((r) => r.id === t.roomId))).find((s) => seatKey(s) === seatKey(guest.seat!)) : undefined;
-  if (!bar || !seat) return null;
+  // TF: a bar guest has no table: the 'table' point is where they stand (a drink is handed over, never carried).
+  if (!bar || (!seat && !(guest?.kind2 === 'bar'))) return null;
   // A drink is poured at its tap (step T1): the avatar stands level with the stand that holds it; else behind the middle of the bar.
   const pour = guest?.order && isDrinkId(guest.order.item) ? pourStop(state, guest.order.item) : null;
-  return { bar: pour?.at ?? behindPoint(bar, getFurnitureType(bar.typeId)), table: seat.spot };
+  return { bar: pour?.at ?? behindPoint(bar, getFurnitureType(bar.typeId)), table: seat?.spot ?? { x: guest!.x, y: guest!.y } };
 }
 
 // ---------- Coins and dishes ----------

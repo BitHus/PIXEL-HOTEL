@@ -308,7 +308,7 @@ export const PROP_ANIMS: Readonly<Record<string, PropSpec>> = {
   shell_lamp: { glints: [{ at: { code: [0, -26] }, periodMs: 3600 }] },
   // Hearth and kitchen.
   stove: {
-    flames: [{ kind: 'stove_window', at: { png: [16, 31], code: [0, -8] }, flicker: 1, strip: { tag: 'fire', frameW: 14 } }],
+    flames: [{ kind: 'stove_window', at: { png: [16, 46], code: [0, -8] }, flicker: 1, strip: { tag: 'fire', frameW: 14 } }],
     emits: [{ kind: 'smoke', at: { png: [21, 1], code: [0, -62] }, everyMs: 1100 }],
   },
   stone_fireplace: {

@@ -65,6 +65,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   readonly tavernListeners = new Set<(e: TavernClientEvent) => void>();
   /** True while the own avatar is on a tavern errand (walkState.task); a walk of any other kind ends it. */
   errand = false;
+  /** TF: the guests still to serve on a SERVE ALL tour (the next one starts after each delivery). */
+  serveTour: number[] = [];
   /** The tavern's navigation grid (guests), rebuilt when its furniture changes. */
   tavernGrid: NavGrid | null = null;
   clock = 0;
@@ -268,6 +270,9 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async pourHeld(heldMs: number, pick?: { standUid: number; slot: number }): Promise<boolean> { return tavernApi.pourHeld(this, heldMs, pick); }
   async carryHeld(guestId: number): Promise<boolean> { return tavernApi.carryHeld(this, guestId); }
   async returnTray(): Promise<boolean> { return tavernApi.returnTray(this); }
+  async grabAll(): Promise<boolean> { return tavernApi.grabAll(this); }
+  async serveAll(): Promise<boolean> { return tavernApi.serveAll(this); }
+  async handOver(guestId: number): Promise<boolean> { return tavernApi.carryHeld(this, guestId); }
   async tidyTable(messId: number, what: 'coins' | 'dish'): Promise<boolean> { return tavernApi.tidyTable(this, messId, what); }
   async getCasks(): Promise<CaskView[]> { return tavernApi.getCasks(this); }
   async fillCask(rackUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean> { return tavernApi.fillCask(this, rackUid, slot, drink, qty); }

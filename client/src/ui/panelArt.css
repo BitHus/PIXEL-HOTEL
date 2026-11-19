@@ -1,0 +1,19 @@
+/* PIXELLAB PANEL FRAME (19 Nov, owner: "the UI background can be prettier"): the panelShell panels get the PixelLab dark wood-and-iron
+   frame (assets/ui/panel_dark.png = art-src/pixellab/ui/panel_dark.png, 112 x 110, 9-slice 24 px: corner plates are 23 px) through border-image at 1x
+   (whole art pixels, pixelated). Still ONE panel class (.ui-panel); Lantern Dark night colour stays behind the transparent centre so
+   text keeps its contrast. The frame art is 16 px, so the padding the old 1 px outline needed is gone (content inset = 24). */
+:is(.panel-frame, .confirm-panel, .charmaker-panel, .newgame-frame, .run-drawer).ui-panel.ui-panel {
+  border: 24px solid transparent;
+  border-image: url('../assets/ui/panel_dark.png') 24 / 24px / 0 stretch;
+  background: var(--ui-bg-solid);
+  background-clip: padding-box;
+  box-shadow: 0 3px 0 rgba(24, 20, 37, 0.5);
+  image-rendering: pixelated;
+  padding: 0 0 2px;
+}
+
+/* The close disc sits on the iron corner. */
+:is(.panel-frame, .confirm-panel, .charmaker-panel, .newgame-frame, .run-drawer).ui-panel .panel-close {
+  top: -28px;
+  right: -28px;
+}

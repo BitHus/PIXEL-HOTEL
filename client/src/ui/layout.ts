@@ -8,6 +8,9 @@
 // Pure and tested (layout.test.ts); watchLayout (layoutVars.ts) calls watchSizeClass once.
 
 import './lantern.css'; // the Lantern Dark skin loads after skin.css (main.ts imports skin.css and sizes.css first)
+import './panelArt.css'; // PixelLab 9-slice panel frames (loaded after declutter)
+import './title.css'; // title screen
+import './close.css'; // panel close X (last of the panel rules)
 import './declutter.css'; // DECLUTTER pass (docs/PLAN-UI-DECLUTTER.md) loads after Lantern Dark
 
 export type SizeClass = 'phone' | 'tablet' | 'desktop';

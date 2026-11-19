@@ -1,5 +1,5 @@
-guest with an order after 14s {"id":-1,"kind":"browser","look":{"skin":31,"hair":0,"hairStyle":"short","top":"tunic","shirt":14,"bottoms":"trousers","legs":5,"shoes":5},"x":144,"y":272,"facing":"right","path":[],"speed":69.03006941181326,"phase":"order","groupId":-1,"seat":{"uid":3,"index":0},"seated":true,"tolerance":1.3296006480664322,"waitMs":-84,"order":{"item":"root_ale","price":9,"coins":9},"patienceMs":89400,"warned":false,"talkInMs":11826,"sipInMs":0,"reaction":"smile"}
-stand point {"x":500,"y":372.5}
-tray [{"item":"root_ale","perfect":true}]
-delivered at 22s tray left 0
-gold now 110
+guest with an order after 9s {"id":-1,"kind":"chatty","look":{"skin":31,"hair":0,"hairStyle":"short","top":"tunic","shirt":14,"bottoms":"trousers","legs":5,"shoes":5},"x":144,"y":272,"facing":"right","path":[],"speed":68.22376635423319,"phase":"order","groupId":-1,"seat":{"uid":3,"index":0},"seated":true,"tolerance":1.3357426849457776,"waitMs":0,"order":{"item":"root_ale","price":9,"coins":9},"patienceMs":90000,"warned":false,"talkInMs":6930,"sipInMs":0,"reaction":"smile"}
+stand point {"x":500,"y":387.5}
+tray [{"item":"root_ale","perfect":false}]
+delivered at 19s tray left 0
+gold now 109
