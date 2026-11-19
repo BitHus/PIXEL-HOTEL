@@ -5,6 +5,9 @@
 
 import {
   BALANCE_TARGETS,
+  BAR_DRINK_MAX_MS,
+  BAR_DRINK_MIN_MS,
+  BAR_SPEED_TIP_RATE,
   BLOCK_DROPS,
   FIRST_GUEST_DELAY_MS,
   GUEST_BASE_INTERVAL_MS,
@@ -537,6 +540,8 @@ export function guestsPerHour(appeal: number): number {
 /** The seconds a guest holds a seat (the pause before the order, the carry, the meal, the walk out; the pour at the taps adds POUR_MS). */
 const SERVE_S = 15 + POUR_MS / 1000;
 export const GUEST_STAY_S = (GUEST_ORDER_AFTER_MIN_MS + GUEST_ORDER_AFTER_MAX_MS) / 2000 + SERVE_S + (GUEST_EAT_MIN_MS + GUEST_EAT_MAX_MS) / 2000 + 5;
+/** TF-9: the seconds a bar guest holds a bar spot (the pause before the order, the pour and hand-over, the drink, the walk out). */
+export const BAR_STAY_S = (GUEST_ORDER_AFTER_MIN_MS + GUEST_ORDER_AFTER_MAX_MS) / 2000 + SERVE_S + (BAR_DRINK_MIN_MS + BAR_DRINK_MAX_MS) / 2000 + 5;
 /** Guests the seats can hold per hour. */
 export function seatCapPerHour(seats: number): number {
   return (seats * 3600) / GUEST_STAY_S;
@@ -576,7 +581,7 @@ export function tapLastsMin(stage: Stage, taps = 1): number {
 }
 
 /** What the tavern earns per hour at FULL attention: the smaller of the guests who come, the seats and the supply, at the average drink and dish. */
-export function guestGoldPerHour(stage: Stage, prepBonus = 0): { gold: number; sold: number; limit: 'guests' | 'seats' | 'supply' } {
+export function guestGoldPerHour(stage: Stage, prepBonus = 0, barShare = 0): { gold: number; sold: number; limit: 'guests' | 'seats' | 'supply' } {
   const base = tavernSetup(stage);
   // Prep tables (step T1) add dishes to every batch: the batches stay the same, so dishes per hour grow by (batch + bonus) / batch.
   const t = { ...base, dishesPerHour: base.dishesPerHour * dishesPerBatch(prepBonus) / STOVE_BATCH_MAX };
@@ -588,10 +593,12 @@ export function guestGoldPerHour(stage: Stage, prepBonus = 0): { gold: number; s
   const dishPrice = dishes.reduce((a, f) => a + f.baseValue, 0) / dishes.length;
   const supply = mugs + t.dishesPerHour;
   const arrive = guestsPerHour(t.appeal);
-  const cap = seatCapPerHour(t.seats);
+  // TF-9: a bar guest holds a bar spot only BAR_STAY_S instead of a seat's GUEST_STAY_S (a CEILING: the spots are not limited here), so with a bar share the seats turn over faster; each bar guest also tips the speed tip on a drink (assumed always earned).
+  const cap = seatCapPerHour(t.seats) * (GUEST_STAY_S / ((1 - barShare) * GUEST_STAY_S + barShare * BAR_STAY_S));
   const sold = Math.min(arrive, cap, supply);
   const limit = sold === supply ? 'supply' : sold === cap ? 'seats' : 'guests';
-  return { gold: sold * ((mugs * mugPrice + t.dishesPerHour * dishPrice) / supply), sold, limit };
+  const speedTip = sold * barShare * mugPrice * BAR_SPEED_TIP_RATE;
+  return { gold: sold * ((mugs * mugPrice + t.dishesPerHour * dishPrice) / supply) + speedTip, sold, limit };
 }
 
 // ---------- The first hour of a new game (target: BALANCE_TARGETS.firstHour) ----------
@@ -637,8 +644,8 @@ export function runGoldPerHour(stage: Stage, rng: Rng): number {
 }
 
 /** Gold per hour by SOURCE for a stage (tavern guests and dungeon run gold; the trader is gone since 18 Nov): focused and mixed (equal time in every open activity; the tavern at TAVERN_ATTENTION). */
-export function goldBySource(stage: Stage, rng: Rng, prepBonus = 0): GoldSource[] {
-  const guests = guestGoldPerHour(stage, prepBonus).gold;
+export function goldBySource(stage: Stage, rng: Rng, prepBonus = 0, barShare = 0): GoldSource[] {
+  const guests = guestGoldPerHour(stage, prepBonus, barShare).gold;
   const run = runGoldPerHour(stage, rng);
   return [
     { id: 'guests', label: 'Tavern guests', focused: guests, mixed: guests * TAVERN_ATTENTION_BY_STAGE[stage] },

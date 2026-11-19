@@ -19,7 +19,8 @@ let gridFor: { items: GameState['items']; grid: TavernWorld['grid'] } | null = n
 export function tavernWorld(s: GameState, playerHere = true): TavernWorld {
   const room = s.rooms.find((r) => r.id === s.tavern.roomId)!;
   if (gridFor?.items !== s.items) gridFor = { items: s.items, grid: buildNavGrid(room, itemBlockers(s.items, room.id)) };
-  return { room, items: s.items, grid: gridFor.grid, playerHere };
+  // TF: the rules tests of table guests run with bar guests off (guestsBar.test.ts turns them on itself).
+  return { room, items: s.items, grid: gridFor.grid, playerHere, barGuests: false };
 }
 
 /**

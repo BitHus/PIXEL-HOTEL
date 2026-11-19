@@ -27,6 +27,7 @@ function storageWith(materials: Record<string, number>) {
 async function openTavern(seed = 7, storage = memoryStorage(), start = 1_000_000) {
   let now = start;
   const { api } = LocalGameAPI.open(storage, () => now, seeded(seed));
+  api.barGuests = false;
   const p = await api.getPlayer();
   await api.enterRoom(p.shopRoomId);
   const events: { e: TavernClientEvent; at: number }[] = [];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLOUD_SESSION_KEY, cloudConfig, createCloudSave, decideSync } from './cloudSave.ts';
+import { CLOUD_LASTSYNC_KEY, CLOUD_SESSION_KEY, cloudConfig, createCloudSave, decideSync } from './cloudSave.ts';
 import { memoryStorage } from './saveStorage.ts';
 
 type Call = { url: string; method: string; auth: string | null; body: string | null };
@@ -73,7 +73,7 @@ describe('CloudSave with a fake server', () => {
   });
 
   it('sync: uploads when this device is newer, downloads when the cloud is newer, does nothing on a tie', async () => {
-    const storage = memoryStorage({ [CLOUD_SESSION_KEY]: JSON.stringify({ token: 'T', username: 'Tester' }) });
+    const storage = memoryStorage({ [CLOUD_SESSION_KEY]: JSON.stringify({ token: 'T', username: 'Tester' }), [CLOUD_LASTSYNC_KEY]: '1000' });
     const answers = {
       'GET /api/save/meta': { status: 200, body: { revision: 3, version: 32, savedAt: 1000 } },
       'PUT /api/save': { status: 200, body: { revision: 4, version: 32, savedAt: 2000 } },
@@ -108,5 +108,50 @@ describe('CloudSave with a fake server', () => {
     const expired = createCloudSave(cfg, storage, fakeFetch({ 'GET /api/save/meta': { status: 401, body: { error: 'unauthorized' } } }).fn);
     expect(await expired.syncNow(local(1))).toEqual({ ok: false, error: 'unauthorized' });
     expect(expired.username()).toBeNull();
+  });
+});
+
+describe('sync conflicts', () => {
+  const session = { [CLOUD_SESSION_KEY]: JSON.stringify({ token: 'T', username: 'Tester' }) };
+  const answers = {
+    'GET /api/save/meta': { status: 200, body: { revision: 3, version: 32, savedAt: 1500 } },
+    'PUT /api/save': { status: 200, body: { revision: 4, version: 32, savedAt: 2600 } },
+    'GET /api/save': { status: 200, body: { revision: 3, version: 32, savedAt: 1500, save: { version: 32, savedAt: 1500, state: { cloud: true } } } },
+  };
+
+  it('asks when both changed since the last sync, and when two different saves have no shared past', async () => {
+    const f = fakeFetch(answers);
+    const c = createCloudSave(cfg, memoryStorage({ ...session, [CLOUD_LASTSYNC_KEY]: '1000' }), f.fn);
+    expect(await c.syncNow(local(2000))).toEqual({ ok: true, action: 'conflict', localAt: 2000, remoteAt: 1500 });
+    expect(f.calls.some((x) => x.method === 'PUT')).toBe(false);
+    const first = createCloudSave(cfg, memoryStorage(session), fakeFetch(answers).fn);
+    expect(await first.syncNow(local(2000))).toMatchObject({ action: 'conflict' });
+  });
+
+  it('choosing the cloud save fetches it and remembers the sync time', async () => {
+    const storage = memoryStorage(session);
+    const c = createCloudSave(cfg, storage, fakeFetch(answers).fn);
+    const r = await c.resolve('cloud', local(2000), 9000);
+    expect(r).toMatchObject({ ok: true, action: 'download', savedAt: 1500 });
+    expect(c.lastSyncedAt()).toBe(1500);
+  });
+
+  it('keeping this device uploads it re-stamped above the cloud save', async () => {
+    const storage = memoryStorage(session);
+    const f = fakeFetch(answers);
+    const c = createCloudSave(cfg, storage, f.fn);
+    const r = await c.resolve('local', local(1200), 1000);
+    expect(r).toMatchObject({ ok: true, action: 'kept', savedAt: 1501 });
+    expect(JSON.parse(f.calls.find((x) => x.method === 'PUT')!.body!).savedAt).toBe(1501);
+    expect(c.lastSyncedAt()).toBe(1501);
+    expect(await c.resolve('local', null, 1)).toEqual({ ok: false, error: 'not_a_save' });
+  });
+
+  it('a banned login reports banned; logout forgets the sync time', async () => {
+    const storage = memoryStorage({ ...session, [CLOUD_LASTSYNC_KEY]: '5' });
+    const c = createCloudSave(cfg, storage, fakeFetch({ 'POST /api/login': { status: 403, body: { error: 'banned' } }, 'POST /api/logout': { status: 200 } }).fn);
+    expect(await c.login('a', 'b')).toEqual({ ok: false, error: 'banned' });
+    await c.logout();
+    expect(c.lastSyncedAt()).toBeNull();
   });
 });

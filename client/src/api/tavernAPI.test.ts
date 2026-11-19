@@ -20,6 +20,7 @@ function seeded(seed: number): Rng {
 async function openTavern(seed = 7) {
   let now = 1_000_000;
   const { api } = LocalGameAPI.open(memoryStorage(), () => now, seeded(seed));
+  api.barGuests = false;
   const p = await api.getPlayer();
   await api.enterRoom(p.shopRoomId);
   const events: TavernClientEvent[] = [];

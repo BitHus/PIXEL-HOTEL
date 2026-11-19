@@ -7,6 +7,7 @@ import { createSettingsPanel } from '../ui/settingsPanel.ts';
 import { typing } from '../ui/dom.ts';
 import { savePrefs } from '../api/prefs.ts';
 import { cloudConfig, createCloudSave } from '../api/cloudSave.ts';
+import { createAccountPanel } from '../ui/accountPanel.ts';
 import { saveKey } from '@pixel-hotel/shared';
 import type { G11 } from './ctx.ts';
 
@@ -52,7 +53,6 @@ late.avatarPanel = avatarPanel;
   const settings = createSettingsPanel(ui, {
     exportSave: () => api.exportSave(),
     importSave: importSaveText,
-    account: cloudCfg ? { cloud: createCloudSave(cloudCfg, storage), localSaveText: () => storage.get(saveKey()), importCloudSave: importSaveText } : undefined,
     restoreBackup: () => {
       const r = api.restoreBackup();
       if (r.ok) window.location.reload();
@@ -117,6 +117,11 @@ late.avatarPanel = avatarPanel;
     },
   });
   panels.add('settings', settings.el);
+  // ON-5: the Account panel (opened from More) exists only with the cloud flag; its button is made in uiShell.ts.
+  if (cloudCfg) {
+    const account = createAccountPanel(ui, { cloud: createCloudSave(cloudCfg, storage), localSaveText: () => storage.get(saveKey()), importCloudSave: importSaveText, now: () => Date.now() });
+    panels.add('account', account.el, () => account.refresh());
+  }
   cross.visible = false;
 
   return { avatarPanel, chat };

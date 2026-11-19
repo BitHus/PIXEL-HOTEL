@@ -105,7 +105,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
 9. ECONOMY (all numbers in shared/config.ts)
 - One currency: gold (integer). Everything has a baseValue. New player (createNewPlayer): level
   1, 100 gold, bare styles, 4 wood and 2 cloth (plus 2 turnip and 1 potato for the first brew, ledger reason start), no furniture in the inventory.
-- TAVERN (9t, done; S1 retired the loot shop): the shop room is the tavern (kind 'shop', same room id; the counter is the bar). GUESTS (alone,
+- TAVERN (9t, done; S1 retired the loot shop): the shop room is the tavern (kind 'shop', same room id; the counter is the bar). BAR GUESTS (TF, owner 19 Nov, config BAR_GUESTS_ENABLED = true): about 30% of single guests stand at a spot in front of the bar instead of sitting (drinks only, 60 s patience, drink 6-10 s on the spot, coins and mug ON THE BAR, a +5% speed tip when handed over within 20 s); you pour as usual and tap the guest or its chip (or Serve all) to hand the mug over from the staff side; the orders strip chips show a bar or table badge, a pouring state and Grab all / Serve all. GUESTS (alone,
   pairs, groups of 3 (OWN-4: the members of a group walk in ONE BY ONE, GUEST_GROUP_STAGGER_MS apart; the rate is unchanged), every 45 s * 100 / (100 + appeal), never more than seats) sit at a table, order from the MENU (tap the bar: Serve and
   Menu tabs; each drink or dish On/Off with a price stepper; price rule = tolerance + the four faces; out of stock = off), you tap the guest:
   the avatar carries the order from the bar (queue of 3), the guest eats 20 to 40 s and leaves coins + an empty mug that are COLLECTED

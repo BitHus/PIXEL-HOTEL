@@ -328,7 +328,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 - No trading between players in v1.
 - Every change to gold, gems or items goes through one function and is written to a ledger.
 - THE TAVERN (owner's decision, step 9t; parts A, B, K1 and C are done): the shop room is a tavern (internal kind 'shop'
-  and the room id stay; the counter is the bar). GUESTS come alone, as a pair or as three, sit on
+  and the room id stay; the counter is the bar). BAR GUESTS (TF, owner 19 Nov, config BAR_GUESTS_ENABLED = true): about 30% of single guests stand at a spot in front of the bar instead of sitting (drinks only, 60 s patience, drink 6-10 s on the spot, coins and mug ON THE BAR, a +5% speed tip when handed over within 20 s); you pour as usual and tap the guest or its chip (or Serve all) to hand the mug over from the staff side; the orders strip chips show a bar or table badge, a pouring state and Grab all / Serve all. GUESTS come alone, as a pair or as three, sit on
   free seats at a table, order one drink or dish from the menu, and wait for the player to bring
   it from the bar (taps queue up, at most 3). They eat 20 to 40 s, leave coins and an empty mug or
   plate on the table and walk out; the coins, tip and dish are collected automatically (17 Nov; old piles stay tappable) 

@@ -6,6 +6,7 @@
 import { TRAY_MAX, type MaterialId, type OrderChip } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import { materialIconUrl } from './itemIcon.ts';
+import { bestGuestForTrayItem, chipTitle, showGrabAll, showServeAll } from './ordersStripLogic.ts';
 import './ordersStrip.css';
 
 export interface OrdersStrip {
@@ -15,7 +16,10 @@ export interface OrdersStrip {
   hide(): void;
 }
 
-export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: number) => void; onPutBack: () => void }): OrdersStrip {
+export function createOrdersStrip(
+  parent: HTMLElement,
+  h: { onChip: (guestId: number) => void; onPutBack: () => void; onGrabAll?: () => void; onServeAll?: () => void },
+): OrdersStrip {
   const root = el('div', 'orders-strip');
   root.hidden = true;
   root.setAttribute('role', 'list');
@@ -36,15 +40,41 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
   });
   // OA-11: the tray is a small pill of icons (no title); 'Put back' is a small button inside it.
   trayEl.append(trayIcons, putBack);
+  // TF-7: Grab all (queues one pour per open order of the most urgent item) and Serve all (one tour with the whole tray).
+  const bulk = (cls: string, text: string, title: string, on: (() => void) | undefined): HTMLButtonElement => {
+    const b = el('button', `orders-bulk ${cls}`, text);
+    b.type = 'button';
+    b.title = title;
+    b.hidden = true;
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      on?.();
+    });
+    return b;
+  };
+  const grabBtn = bulk('grab-all', 'Grab all', 'Pour one mug for every order of the most urgent drink', h.onGrabAll);
+  const serveBtn = bulk('serve-all', 'Serve all', 'Walk one tour and serve every order the tray can', h.onServeAll);
   const moreEl = el('span', 'orders-more');
   moreEl.hidden = true;
-  root.append(chipsEl, moreEl, trayEl);
+  root.append(chipsEl, moreEl, grabBtn, serveBtn, trayEl);
   const CHIP_CAP: Record<string, number> = { phone: 3, tablet: 5, desktop: 7 };
-  const shown = new Map<number, { button: HTMLButtonElement; img: HTMLImageElement; bar: HTMLElement; item: MaterialId }>();
+  const shown = new Map<number, { button: HTMLButtonElement; img: HTMLImageElement; bar: HTMLElement; badge: HTMLElement; item: MaterialId }>();
   let trayKey = '';
+  let lastChips: readonly OrderChip[] = [];
+  // A tap on a tray icon = hand it to the best open order of that item (the least patient).
+  trayIcons.addEventListener('click', (e) => {
+    const item = (e.target as HTMLElement).dataset.item as MaterialId | undefined;
+    if (!item) return;
+    e.stopPropagation();
+    const id = bestGuestForTrayItem(lastChips, item);
+    if (id !== null) h.onChip(id);
+  });
   return {
     sync(allChips, tray) {
+      lastChips = allChips;
       root.hidden = allChips.length === 0 && tray.length === 0;
+      grabBtn.hidden = !showGrabAll(allChips);
+      serveBtn.hidden = !showServeAll(allChips);
       setH();
       // OA-11: the chips that fit (the least patient first); the rest is a +N badge.
       const cap = CHIP_CAP[document.documentElement.dataset.size ?? 'desktop'] ?? 7;
@@ -71,12 +101,13 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
           const track = el('span', 'orders-patience');
           const bar = el('span', 'orders-patience-fill');
           track.appendChild(bar);
-          button.append(img, track);
+          const badge = el('span', 'orders-where');
+          button.append(img, track, badge);
           button.addEventListener('click', (e) => {
             e.stopPropagation();
             h.onChip(c.guestId);
           });
-          s = { button, img, bar, item: c.item };
+          s = { button, img, bar, badge, item: c.item };
           img.src = materialIconUrl(c.item);
           shown.set(c.guestId, s);
         }
@@ -90,7 +121,9 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
         s.button.classList.toggle('urgent', c.urgent);
         s.button.style.setProperty('--p', String(Math.round(c.patience * 100)));
         s.bar.style.width = `${Math.round(c.patience * 100)}%`;
-        s.button.title = c.state === 'ready' ? 'A mug is ready: tap to carry it over' : c.state === 'queued' ? 'Being poured' : 'Tap to pour this order';
+        s.button.dataset.where = c.where;
+        s.badge.textContent = c.where === 'bar' ? 'B' : 'T';
+        s.button.title = chipTitle(c);
       });
       const key = tray.join(',');
       if (key !== trayKey) {
@@ -101,6 +134,7 @@ export function createOrdersStrip(parent: HTMLElement, h: { onChip: (guestId: nu
           img.alt = '';
           img.draggable = false;
           img.src = materialIconUrl(item);
+          img.dataset.item = item;
           trayIcons.appendChild(img);
         }
       }

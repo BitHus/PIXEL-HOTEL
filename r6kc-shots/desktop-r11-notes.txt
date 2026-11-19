@@ -1,0 +1,22 @@
+spacing {"zoom":1.25,"items":["counter@2,7","table@6,8","bar_stool@4,8","bar_stool@7,8","bar_stool@6,9","brewing_barrel@1,11","stove@4,11","register@1,7","tap_stand@2,7"]}
+bar panel 0,0 0x0 sw>cw:false overflowing:
+bag panel 0,0 0x0 sw>cw:false overflowing:
+catalog panel 0,0 0x0 sw>cw:false overflowing:
+catalog tabs 0
+Skills panel 0,0 0x0 sw>cw:false overflowing:
+Skills X {"x":875,"y":73,"width":45,"height":45}
+Room panel 0,0 0x0 sw>cw:false overflowing:
+Room X {"x":875,"y":28,"width":45,"height":45}
+Settings panel 0,0 0x0 sw>cw:false overflowing:
+Settings X {"x":875,"y":28,"width":45,"height":45}
+Book panel 0,0 0x0 sw>cw:false overflowing:
+Book X {"x":875,"y":73,"width":45,"height":45}
+Avatar panel 0,0 0x0 sw>cw:false overflowing:
+Avatar X {"x":875,"y":73,"width":45,"height":45}
+Quests panel 0,0 0x0 sw>cw:false overflowing:
+Quests X {"x":875,"y":73,"width":45,"height":45}
+hitbox stove (css px from sprite centre, -1 = never, zoom 1.25) R:28 L:28 U:70 D:28
+hitbox brewing_barrel (css px from sprite centre, -1 = never, zoom 1.25) R:28 L:28 U:42 D:28
+hitbox register (css px from sprite centre, -1 = never, zoom 1.25) R:70 L:28 U:70 D:28
+hitbox tap_stand (css px from sprite centre, -1 = never, zoom 1.25) R:56 L:70 U:70 D:28
+errors []

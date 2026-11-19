@@ -2,6 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import { EMOTE_MS, GEMS_GAIN_ID, bagGains, worldToScreen, type Point, HINTS, DUNGEON_HINT, MINE_HINT } from '@pixel-hotel/shared';
+import { cloudConfig } from '../api/cloudSave.ts';
 import { createEmoteButton } from '../ui/emoteButton.ts';
 import { createNameTag } from '../ui/nameTag.ts';
 import { createDebugLabel } from '../ui/debugLabel.ts';
@@ -85,7 +86,12 @@ export async function setupUiShell(g: G3) {
   const mapButton = iconButton('worlds', 'Worlds: travel', () => panels.toggle('travel'), 'room-only');
   mapButton.dataset.moreLabel = 'Worlds';
   emote.button.dataset.moreLabel = 'Emote';
-  const side = createSideButtons(ui, panels, [build.button, dungeonButton, questButton, mapButton, emote.button]);
+  // ON-5: the Account button stands in More only when the cloud build flag is on (the panel is added in settingsPanels.ts).
+  const accountButton = iconButton('heart', 'Account: keep your game in the cloud', () => panels.toggle('account'), 'room-only');
+  accountButton.dataset.moreLabel = 'Account';
+  panels.onChange(() => accountButton.classList.toggle('on', panels.open === 'account'));
+  const cloudOn = cloudConfig(import.meta.env as { VITE_CLOUD_SAVE?: string; VITE_SERVER_URL?: string }) !== null;
+  const side = createSideButtons(ui, panels, [build.button, dungeonButton, questButton, mapButton, emote.button, ...(cloudOn ? [accountButton] : [])]);
   panels.onChange(() => mapButton.classList.toggle('on', panels.open === 'travel'));
   panels.onChange(() => questButton.classList.toggle('on', panels.open === 'quests'));
   panels.onChange(() => hint.setCovered(panels.open !== null));

@@ -63,3 +63,24 @@
 .confirm-panel .panel-title {
   margin-right: 38px;
 }
+
+/* ON-5: the save conflict dialog (ui/saveConflictDialog.ts) */
+.conflict-panel .conflict-card {
+  padding: 8px 10px;
+  margin: 6px 0;
+  min-height: 44px;
+}
+.conflict-panel .conflict-card.newest {
+  outline: 2px solid var(--accent, #f0a040);
+}
+.conflict-panel .conflict-buttons {
+  flex-wrap: wrap;
+}
+.conflict-panel .conflict-buttons .btn {
+  min-height: 44px;
+}
+.account-panel .name-input,
+.account-panel .btn {
+  min-height: 44px;
+  margin-bottom: 6px;
+}

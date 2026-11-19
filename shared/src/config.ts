@@ -98,10 +98,10 @@ export const SERVE_QUEUE_MAX = 3;
 /** COD-1: the waiter's tray carries at most this many poured mugs (or dishes) at once; one pour is one mug. */
 export const TRAY_MAX = 3;
 /**
- * TF (docs/PLAN-TAVERN-FLOW.md): BAR GUESTS stand at the bar and are served by hand-over. OFF until the client draws them (TF-6) and the owner OKs the numbers:
+ * TF (docs/PLAN-TAVERN-FLOW.md): BAR GUESTS stand at the bar and are served by hand-over. ON since 19 Nov (owner go; the client draws them, TF-6, balance gate TF-9 green):
  * every number below is a PROPOSAL of the plan (section 3.3), none is a ranked or balance number. TavernWorld.barGuests overrides this flag (tests).
  */
-export const BAR_GUESTS_ENABLED = false;
+export const BAR_GUESTS_ENABLED = true;
 /** TF: base chance that a single guest (with seats and bar spots free) takes the bar. +0.1 per extra free spot, -0.05 per free seat, clamped to BAR_CHANCE_MIN..BAR_CHANCE_MAX. */
 export const BAR_BASE = 0.35;
 export const BAR_CHANCE_MIN = 0.1;
@@ -119,6 +119,8 @@ export const BAR_DRINK_MAX_MS = 10_000;
 /** TF: a bar guest also tips BAR_SPEED_TIP_RATE of the price when served within BAR_SPEED_TIP_MS of ordering. */
 export const BAR_SPEED_TIP_RATE = 0.05;
 export const BAR_SPEED_TIP_MS = 20_000;
+/** TF-9 (balance model only): the share of guests the economy simulation assumes take the bar when bar guests are on (the plan's PROPOSAL: about 30% of single guests). */
+export const BAR_SHARE_ASSUMED = 0.3;
 /** While the player is elsewhere (or the game is closed) at most this many guests sit with an open order. */
 export const AWAY_ORDERS_MAX = 3;
 /** The menu panel shows this many last prices paid per drink or dish. */

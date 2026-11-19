@@ -18,6 +18,8 @@ import {
   TAP_SLOTS,
   POUR_MS,
   PREP_BONUS,
+  BAR_SHARE_ASSUMED,
+  BAR_GUESTS_ENABLED,
   RIPEN,
   RIPEN_AFTER_MIN,
   CASK_SLOTS,
@@ -297,6 +299,11 @@ for (const n of [0, 1, 2, 3]) {
   const b = Math.min(n, PREP_BONUS.max);
   console.log(pad(n, 13) + pad(dishesPerBatch(b), 22) + pad((dishesPerBatch(b) / STOVE_BATCH_MAX).toFixed(2), 10) + STAGES.map((st) => f1(guestGoldPerHour(st, b).gold)).join(' / '));
 }
+// TF-9: bar guests (BAR_SHARE_ASSUMED of the guests stand at the bar: a shorter stay, drinks only, a speed tip). Pass --bar-share=0.4 to try another share.
+const barArg = process.argv.find((a) => a.startsWith('--bar-share='));
+const barShare = barArg ? Number(barArg.split('=')[1]) : BAR_SHARE_ASSUMED;
+console.log(`
+TF-9 BAR GUESTS (${Math.round(barShare * 100)}% of guests at the bar, flag BAR_GUESTS_ENABLED=${BAR_GUESTS_ENABLED}): guest gold/h new / level 3 / level 8 = ` + STAGES.map((st) => `${f1(guestGoldPerHour(st, 0, 0).gold)} -> ${f1(guestGoldPerHour(st, 0, barShare).gold)}`).join(' / ') + '; guest share of the mixed hour (best kitchen) ' + STAGES.map((st) => { const r = goldBySource(st, seededRng(11), PREP_BONUS.max, barShare); const t = r.reduce((a, x) => a + x.mixed, 0); return `${st} ${Math.round((r[0]!.mixed / t) * 100)}%`; }).join(', ') + ` (cap ${Math.round(BALANCE_TARGETS.maxGoldShareBestKitchen * 100)}%).`);
 console.log('Gold shares with the best kitchen (mixed hour, guests / dungeon): ' + STAGES.map((st) => { const r = goldBySource(st, seededRng(11), PREP_BONUS.max); const t = r.reduce((a, x) => a + x.mixed, 0); return `${st} ` + r.map((x) => `${Math.round((x.mixed / t) * 100)}%`).join('/'); }).join(', ') + ` (cap ${Math.round(BALANCE_TARGETS.maxGoldShareBestKitchen * 100)}% with prep tables, ${Math.round(BALANCE_TARGETS.maxGoldShare * 100)}% without).`);
 
 console.log('\n=== K2. Ripening: gold per mug fresh / aged / vintage (RIPEN ' + RIPEN.map((r) => r.tier + ' x' + r.valueMult).join(', ') + '), the wait, the casks ===');

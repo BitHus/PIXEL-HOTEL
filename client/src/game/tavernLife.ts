@@ -7,6 +7,7 @@ import {
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen, pourTip,
   guestsTrayCanServe, ordersStrip as ordersStripData, nothingOrderable, caskSlotsOf, tapCapOf,
+  BAR_GUESTS_ENABLED, BUILD_CELL, barSpots, barTopPoint, buildNavGrid, guestZones, npcGrid, roomBlockers,
 } from '@pixel-hotel/shared';
 import { createPourControl } from './pourControl.ts';
 import { el, iconButton } from '../ui/dom.ts';
@@ -25,6 +26,7 @@ import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
 import { GuestViews, type Walker } from '../render/guestViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
+import { BarSpotMarkers, barMarkersWanted } from '../render/barSpotMarkers.ts';
 import { createOrderBubbles, type OrderMark } from '../ui/orderBubbles.ts';
 import { createOrdersStrip } from '../ui/ordersStrip.ts';
 import { createPourBar, pourBarShouldShow } from '../ui/pourBar.ts';
@@ -175,9 +177,10 @@ export async function setupTavernLife(g: G9) {
   });
   const guests = new GuestViews(view);
   const tableMess = new TableMess(view);
+  const barMarkers = new BarSpotMarkers(view);
   /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
   const walkers = (list: readonly Guest[]): Walker[] =>
-    list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing, eating: g.phase === 'eat' }));
+    list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing, eating: g.phase === 'eat', barPose: g.kind2 !== 'bar' ? null : g.phase === 'bar_drink' ? 'drink' : g.phase === 'bar_wait' || g.phase === 'order' ? 'lean' : null }));
   const inTavern = (): boolean => st.room.id === st.tavern.roomId;
   /** CEL-2: the tavern or its attached kitchen or cellar (machines, ready dots, the guide's door routing). */
   const inWork = (): boolean => st.tavern.workRooms.includes(st.room.id);
@@ -215,6 +218,8 @@ export async function setupTavernLife(g: G9) {
   // COD-1 (d): the orders strip at the top: one chip per open order (data from the pure shared/src/tray.ts ordersStrip).
   const strip = createOrdersStrip(uiRoot, {
     onChip: (id) => void serveTap(id),
+    onGrabAll: () => void api.grabAll().then((ok) => { if (!ok) toast('Nothing to grab: no matching orders, or the tray is full.'); }),
+    onServeAll: () => void api.serveAll().then((ok) => { if (!ok) toast('Nothing on the tray matches an open order.'); }),
     onPutBack: () => void api.returnTray().then(async (ok) => {
       if (ok) {
         sound.play('pop');
@@ -236,10 +241,27 @@ export async function setupTavernLife(g: G9) {
   const meals = (): Meal[] => {
     const seats = tavernSeats(st.items, st.tavern.roomId, kitchenZone(st.room));
     return st.tavern.guests.flatMap((g) => {
+      // TF-6: a bar guest's mug stands on the bar in front of them while they drink.
+      if (g.kind2 === 'bar' && g.phase === 'bar_drink' && g.order) return [{ guestId: g.id, item: g.order.item, spot: barTopPoint({ x: g.x, y: g.y }, g.facing, BUILD_CELL) }];
       const seat = g.phase === 'eat' && g.order && g.seat ? seats.find((k) => seatKey(k) === seatKey(g.seat!)) : undefined;
       return seat && g.order ? [{ guestId: g.id, item: g.order.item, spot: seat.spot }] : [];
     });
   };
+  /** TF-6: faint spot markers only while a bar guest walks in or while furniture is placed (never with the feature off). */
+  const syncBarMarkers = (): void => {
+    const walkingIn = st.tavern.guests.some((x) => x.phase === 'to_bar');
+    const placing = !!late.placer?.active;
+    if (!barMarkersWanted({ enabled: BAR_GUESTS_ENABLED, inTavern: inTavern(), walkingIn, placing })) {
+      barMarkers.set([]);
+      return;
+    }
+    const grid = npcGrid(buildNavGrid(st.room, roomBlockers(st.room, st.items)), guestZones(st.items, st.room));
+    const spots = barSpots(st.items, st.room, grid);
+    const taken = new Set(st.tavern.guests.flatMap((x) => (x.barSpot ? [`${x.barSpot.barUid}:${x.barSpot.c}:${x.barSpot.r}`] : [])));
+    barMarkers.set(spots.map((p) => ({ x: p.x, y: p.y, id: `${p.barUid}:${p.cell.c}:${p.cell.r}` })), taken);
+  };
+  // The placing state changes outside the tavern events: a light poll keeps the markers right.
+  window.setInterval(syncBarMarkers, 300);
   /** Draws the tavern as it is now (guests, coins and dishes, order bubbles, the Map badge). */
   const syncTavern = (): void => {
     const on = inTavern();
@@ -249,9 +271,10 @@ export async function setupTavernLife(g: G9) {
     tableMess.sync(on ? st.tavern.mess : [], on ? meals() : [], st.items);
     orders.sync(on ? orderMarks() : []);
     // COD-1 (c, d): the strip, and the guests who wait for a mug that is on the tray pulse.
-    if (on) strip.sync(ordersStripData(st.tavern), st.tavern.tray.map((m) => m.item));
+    if (on) strip.sync(ordersStripData(st.tavern, pourFor?.guestId ?? null), st.tavern.tray.map((m) => m.item));
     else strip.hide();
     guests.setPulse(on ? new Set(guestsTrayCanServe(st.tavern)) : new Set());
+    syncBarMarkers();
     updateBadge();
     syncMachines();
     const standList = tapStands(st.items, st.tavern.roomId).flatMap((s) => { const i = standInfo(s.uid); return i ? [{ stand: i.stand, bar: i.bar }] : []; });
@@ -655,6 +678,8 @@ export async function setupTavernLife(g: G9) {
         if (on) {
           bubbles.addNode(e.guestId, pixelIcon('smile'), REACTION_BUBBLE_MS);
           fx.sparkle(e.spot, 4);
+          // TF-6: the hand-over: the guest reaches for the mug (a bar guest takes it from the bar).
+          if (st.tavern.guests.some((x) => x.id === e.guestId && x.kind2 === 'bar')) guests.gesture(e.guestId, 'reach');
         }
         sprite.gesture('hand');
         void refreshTavern();

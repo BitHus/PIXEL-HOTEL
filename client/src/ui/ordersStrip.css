@@ -73,6 +73,13 @@
 .orders-chip.urgent .orders-patience-fill { background: var(--no); }
 .orders-chip.urgent { animation: orders-shake 0.5s steps(2) infinite; }
 .orders-chip[data-state='queued'] { opacity: 0.85; }
+.orders-chip[data-state='pouring']::before { border-color: var(--warm); background: var(--wood); }
+/* TF-7 (hook for the artist): bar or table badge on a chip (text B / T for now), the bulk buttons and a tappable tray. */
+.orders-where { position: absolute; top: 5px; right: 4px; font-size: 9px; line-height: 1; color: var(--warm); pointer-events: none; }
+.orders-bulk { position: relative; min-height: 28px; padding: 0 6px; font-family: var(--font); font-size: var(--fs-xs); color: var(--cream); background: var(--wood); border: 1px solid var(--outline); cursor: pointer; pointer-events: auto; }
+.orders-bulk::after { content: ''; position: absolute; inset: -8px -2px; }
+.orders-bulk[hidden] { display: none; }
+.orders-tray-icons img { pointer-events: auto; cursor: pointer; }
 .orders-chip[data-state='queued']::before { border-color: var(--warm); }
 .orders-chip[data-state='ready']::before { border-color: #63c74d; background: var(--warm); }
 .orders-chip[data-state='ready'] { animation: orders-pulse 0.9s steps(2) infinite; }

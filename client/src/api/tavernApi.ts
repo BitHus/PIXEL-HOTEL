@@ -105,7 +105,7 @@ export const tavernApi = {
     h.tavernGrid ??= buildNavGrid(room, roomBlockers(room, state.items));
     // The own avatar's seat in the tavern (guests do not sit there).
     const seated = state.currentRoomId === room.id ? h.walkState.seated : null;
-    return { room, items: state.items, attached: attachedRooms(state), grid: h.tavernGrid, playerHere: state.currentRoomId === room.id, seatsTaken: seated ? [seated] : [] };
+    return { room, items: state.items, attached: attachedRooms(state), grid: h.tavernGrid, playerHere: state.currentRoomId === room.id, seatsTaken: seated ? [seated] : [], barGuests: h.barGuests };
   },
 
   onTavern(h: LocalGameAPI, listener: (e: TavernClientEvent) => void): () => void {

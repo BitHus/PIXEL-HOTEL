@@ -37,7 +37,7 @@ import {
   gemsPerEvent,
   harvestYield,
 } from './balance.ts';
-import { BALANCE_TARGETS, PACKS, PLANTS_ROOM_CAP, POUR_MS, PREP_BONUS, SEED_BACK_CHANCE, SPLICE_BONUS_CHANCE, SPLICE_GEM_CAP, STOVE_BATCH_MAX, TAP_CAP } from './config.ts';
+import { BALANCE_TARGETS, BAR_SHARE_ASSUMED, PACKS, PLANTS_ROOM_CAP, POUR_MS, PREP_BONUS, SEED_BACK_CHANCE, SPLICE_BONUS_CHANCE, SPLICE_GEM_CAP, STOVE_BATCH_MAX, TAP_CAP } from './config.ts';
 import { CROP_TYPES, getMaterialType } from './materials.ts';
 import { getFurnitureType } from './furniture.ts';
 import { PACK_TYPES } from './packs.ts';
@@ -211,6 +211,24 @@ describe('taps, the pour and the prep tables keep the S3 numbers (T1)', () => {
         const share = row.mixed / goldShares(stage, seededRng(11), PREP_BONUS.max).total;
         expect(share, `${stage} ${row.id} ${Math.round(share * 100)}%`).toBeGreaterThanOrEqual(BALANCE_TARGETS.minGoldShare);
         expect(share, `${stage} ${row.id} ${Math.round(share * 100)}%`).toBeLessThanOrEqual(BALANCE_TARGETS.maxGoldShareBestKitchen);
+      }
+    }
+  });
+
+  it('TF-9: with about 30% bar guests (BAR_SHARE_ASSUMED) guest gold stays inside the share cap at every stage, with and without the best kitchen, and rises less than a third', () => {
+    for (const stage of STAGES) {
+      for (const prep of [0, PREP_BONUS.max]) {
+        const base = guestGoldPerHour(stage, prep).gold;
+        const bar = guestGoldPerHour(stage, prep, BAR_SHARE_ASSUMED).gold;
+        expect(bar, `${stage} prep ${prep}`).toBeGreaterThanOrEqual(base);
+        expect(bar / base, `${stage} prep ${prep}`).toBeLessThan(1.34);
+        const rows = goldBySource(stage, seededRng(11), prep, BAR_SHARE_ASSUMED);
+        const total = rows.reduce((a, r) => a + r.mixed, 0);
+        for (const row of rows) {
+          const share = row.mixed / total;
+          expect(share, `${stage} ${row.id} ${Math.round(share * 100)}%`).toBeGreaterThanOrEqual(BALANCE_TARGETS.minGoldShare);
+          expect(share, `${stage} ${row.id} ${Math.round(share * 100)}%`).toBeLessThanOrEqual(prep ? BALANCE_TARGETS.maxGoldShareBestKitchen : BALANCE_TARGETS.maxGoldShare);
+        }
       }
     }
   });

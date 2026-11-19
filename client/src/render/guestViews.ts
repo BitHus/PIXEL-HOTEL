@@ -4,7 +4,7 @@
 // depth-sorted list. A guest at a table sits (drawn right after the seat, like the own avatar), and
 // short gestures (a nod at a sip) play.
 
-import { CUSTOMER_WALK_SPEED, GUEST_RESYNC_PX, getFurnitureType, skipPassed, walkAvatar, type Avatar, type AvatarLook, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
+import { CUSTOMER_WALK_SPEED, GUEST_RESYNC_PX, getFurnitureType, skipPassed, walkAvatar, type Avatar, type AvatarLook, type BarPose, type Facing, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import { AvatarSprite, type Gesture } from './avatarSprite.ts';
 import { avatarDepthKey } from './depthOrder.ts';
 import { idleShift } from './atmosphere.ts';
@@ -22,6 +22,8 @@ interface Shown {
   /** The way they look while seated (guests), or null: the seat's way. */
   sitFacing: Facing | null;
   eating: boolean;
+  /** TF-6: the standing bar pose (lean while waiting, drink while drinking), or null. */
+  barPose: BarPose | null;
 }
 
 /**
@@ -41,6 +43,8 @@ export interface Walker {
   sitFacing?: Facing;
   /** True while the guest eats or drinks (CH1: the eat strips play). */
   eating?: boolean;
+  /** TF-6: a guest at the bar: 'lean' while waiting for the mug, 'drink' while drinking (only when standing still). */
+  barPose?: BarPose | null;
 }
 
 function walkerAvatar(c: Walker, roomId: number): Avatar {
@@ -68,7 +72,7 @@ export class GuestViews {
         const sprite = new AvatarSprite(c.look, false);
         sprite.container.eventMode = 'none';
         this.view.objects.add(sprite.container, avatarDepthKey(a));
-        s = { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite, seat, sitFacing: c.sitFacing ?? null, eating: c.eating ?? false };
+        s = { avatar: a, path: [...c.path], speed: c.speed ?? CUSTOMER_WALK_SPEED, sprite, seat, sitFacing: c.sitFacing ?? null, eating: c.eating ?? false, barPose: c.barPose ?? null };
         this.shown.set(c.id, s);
       } else {
         // Keep the shown position unless it is clearly off (tiny timing differences are walked off).
@@ -78,6 +82,7 @@ export class GuestViews {
         s.seat = seat;
         s.sitFacing = c.sitFacing ?? null;
         s.eating = c.eating ?? false;
+        s.barPose = c.barPose ?? null;
       }
     }
   }
@@ -100,6 +105,7 @@ export class GuestViews {
       const sitting = s.seat !== null && s.path.length === 0;
       if (sitting) s.avatar = { ...s.avatar, state: 'sit', facing: s.sitFacing ?? s.seat!.facing };
       s.sprite.setEating(sitting && s.eating);
+      s.sprite.setBarPose(!sitting && s.path.length === 0 ? s.barPose : null);
       s.sprite.update(s.avatar, timeMs);
       s.sprite.container.tint = this.pulse.has(id) ? (Math.floor(timeMs / 450) % 2 === 0 ? 0xffffff : 0xffe9a8) : 0xffffff;
       s.sprite.container.tint = this.pulse.has(id) ? (Math.floor(timeMs / 450) % 2 === 0 ? 0xffffff : 0xffe9a8) : 0xffffff;

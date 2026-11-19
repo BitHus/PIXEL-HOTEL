@@ -43,7 +43,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     const t = st.tavern;
     return {
       brewReady: ready,
-      guestWaiting: t.guests.some((x) => x.seated && x.order !== null),
+      guestWaiting: t.guests.some((x) => (x.seated || x.kind2 === 'bar') && x.order !== null),
       pouring: h.pouring(),
       trayServes: guestsTrayCanServe(t).length > 0,
       coinsOnTable: t.mess.some((m) => m.coins > 0),
@@ -62,7 +62,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   const guestScreen = (serve: boolean): Point | null => {
     const t = st.tavern;
     const ids = new Set(guestsTrayCanServe(t));
-    const pick = t.guests.find((x) => ids.has(x.id)) ?? (serve ? undefined : t.guests.find((x) => x.seated && x.order !== null));
+    const pick = t.guests.find((x) => ids.has(x.id)) ?? (serve ? undefined : t.guests.find((x) => (x.seated || x.kind2 === 'bar') && x.order !== null));
     return pick ? worldToScreen({ x: pick.x, y: pick.y - AVATAR_H / 2 }, st.shown) : null;
   };
   // The walk step points at a free, open cell a few cells away toward the middle of the room (cached per avatar cell and item count).

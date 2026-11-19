@@ -69,6 +69,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   serveTour: number[] = [];
   /** The tavern's navigation grid (guests), rebuilt when its furniture changes. */
   tavernGrid: NavGrid | null = null;
+  /** TF: overrides config BAR_GUESTS_ENABLED for this API (tests that need table guests only). */
+  barGuests: boolean | undefined = undefined;
   clock = 0;
   /** A run loaded from a save waits for dungeonResume (the player taps Resume). */
   runPaused: boolean;

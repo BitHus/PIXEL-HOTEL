@@ -1,4 +1,5 @@
 # ROADMAP
+19 NOV (coder TF-6/7/9, owner go): [x] TF-6 bar guests drawn (lean/drink poses, mug on the bar, spot markers, hand-over reach), TF-7 strip (bar/table badge, pouring, Grab all, Serve all, tray tap), TF-9 balance (BAR_SHARE_ASSUMED 0.3, test + simulate), BAR_GUESTS_ENABLED = true. [ ] TF-8 art (facing right/down poses, chip icons, marker art), TF-10 variety.
 19 NOV (coder TF-1..5): [x] TF-1 bar spots, TF-4 chips where/pouring + grabAll + serveRoute, TF-2 chooseSpot + bar guests in the step, TF-3 handOver, TF-5 GameAPI grabAll/serveAll/handOver (all behind BAR_GUESTS_ENABLED=false). [ ] TF-9 balance sim + owner OK of the BAR_* numbers, TF-6 render, TF-7 strip UI, TF-8 art, TF-10 variety.
 19 NOV (coder RUN8-9-CODE): [x] pourBarShouldShow + test; RUN 8 items 8 and 10 confirmed fixed; UNHOOKED_STATS (bait, deep cast, bag slots) still open.
 18 NOV (coder RUN8-FIX): [x] RUN 8 items 1-6, 8-11 fixed in client/src/ui (not seen in a browser).
@@ -182,7 +183,7 @@ Never copy another game; no screenshots of other games in the repo.
 The long-term goal: a real online hotel.
 6.1 Server, accounts (username + password), saves on the server, RemoteGameAPI.
     [x] ONLINE P1 server side (19 Nov): accounts + 13+ check, sessions, cloud save, read-only visit/share endpoints, bans + admin CLI, safe-env start check
-    (server/, tests green; NOT yet run on the VPS). [ ] client account panel wiring (ON-5, flag off), [ ] RemoteGameAPI (P5).
+    (server/, tests green; NOT yet run on the VPS). [x] client account panel + conflict dialog (ON-5, flag off, 19 Nov), [ ] RemoteGameAPI (P5).
 6.2 Visiting rooms (by room name, like typing a world name; see BLOCKS-PLAN 3.9): see other players walk, sit, emote; public room chat with the filter, report
     and mute (section 13).
 6.3 A lobby / town square as the shared place to meet; a room list.
