@@ -30,6 +30,8 @@ Online (visiting, sharing, later live avatars) is only for the HOTEL ROOM (suite
 ## QUEUED (owner 19 Nov): UI polish for FISHING and TAP POURING
 Owner: these UIs are important. Fishing: cast, bite !, reel bar + catch box + fish, result. Pouring: pour bar/gauge, green perfect window, tip feedback, tray. Clearer, juicier, phone sizes; PixelLab art as part of the icon round. After the sign fix. Tester RUN 10 shots first.
 
+## QUEUED (owner 19 Nov): redo RUG (rug + shop_rug copy) and POTTED FLOWER (plant) in the couch style, outline-fix after fit (artist, PixelLab, when a slot frees). Ask/learn what the owner dislikes.
+
 ## Done this session (all live)
 Camera locked without edge clamp; emote state fix; small NPC chat pills; kitchen = walled area inside the tavern (SAVE 37, cellar stays a room, racks 2/3/3); skills MG-1/2 (SAVE 38, level cap 12, Skills panel + stat hooks MG-7); TRADER REMOVED (gold = guests + dungeon run gold, ~76/24); tap forgiveness; tutorial starts at 0 (zoom, walk, hold-walk steps); orders rail bottom-left, hanging OPEN/CLOSED sign, aura on order markers, pour hint hides under panels, Serve closes the bar panel; Worlds badge hidden in the tavern; lakeside trees + farm ground/ambience + door art (cellar down/open/up, kitchen) wired; cobweb corner, stand flames; rock sprites.
 
