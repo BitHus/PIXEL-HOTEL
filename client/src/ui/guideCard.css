@@ -136,3 +136,23 @@
 }
 .guide-pointer.calm .guide-ring, .guide-pointer.calm .guide-hand { animation: none; }
 .guide-pointer ~ .ready-dot, .ready-dot.ready-dot { border-radius: 0; box-shadow: none; }
+
+/* R13 TUTORIAL REDO (owner 19 Nov: "still sucks"): final layer, wins over skin.css / declutter.css. One compact card: icon, one short line, a tiny
+   dots + count row, a 44 px Skip. It sizes to its text (never a tall narrow box), sits clear of the OPEN sign and info panel, and never grows over the room. */
+.first-ten.ui-panel { width: max-content; max-width: min(340px, calc(100vw - 2 * var(--edge, 8px))); box-sizing: border-box; }
+@media (min-width: 681px) {
+  .first-ten.ui-panel { top: calc(var(--edge) + var(--info-h, 60px) + 66px + env(safe-area-inset-top)) !important; }
+}
+.first-ten .first-ten-body { gap: 4px; }
+.first-ten.ui-panel .first-ten-text { font-family: var(--font); font-size: 13px; line-height: 16px; text-wrap: balance; }
+.first-ten .first-ten-meta { display: flex; align-items: center; gap: 6px; }
+.first-ten.ui-panel .first-ten-pips { max-width: none; flex: 1 1 auto; flex-wrap: nowrap; }
+.first-ten.ui-panel .first-ten-pips i { width: 4px; height: 4px; flex: none; }
+.first-ten.ui-panel .first-ten-count { display: block; padding: 0; font-size: 11px; line-height: 1; color: var(--ui-muted, #8b9bb4); }
+.first-ten.ui-panel .first-ten-count { color: var(--ui-accent, #fee761); }
+@media (max-width: 680px) {
+  .first-ten.ui-panel { width: auto; max-width: none; }
+  .first-ten.ui-panel .first-ten-count { display: block; }
+  .first-ten.ui-panel .first-ten-pips i { width: 3px; height: 3px; }
+  .first-ten.ui-panel .first-ten-pips { gap: 1px; }
+}

@@ -1,0 +1,16 @@
+import { chromium } from '@playwright/test';
+const tag=process.argv[2]; const base=process.argv[3]||'http://localhost:5199';
+const b = await chromium.launch();
+const ctx = await b.newContext({viewport:{width:1000,height:700},deviceScaleFactor:3});
+const page = await ctx.newPage();
+await page.goto(base+'/?e2e');
+await page.waitForSelector('.title-btn'); await page.getByText('New game').first().click();
+await page.waitForSelector('.charmaker-panel'); await page.getByLabel('Display name').fill('T');
+await page.getByText('Begin your story').click(); await page.waitForSelector('.shape-card');
+await page.getByRole('button',{name:'Open my tavern'}).click(); await page.waitForTimeout(800); await page.mouse.click(5,300); await page.waitForTimeout(500); await page.mouse.click(5,300); await page.waitForTimeout(3000);
+await page.evaluate(async()=>{const {api}=window.__ph;
+ for (const [ox,oy] of [[-8,-2],[-8,-16],[8,-24]]) { await api.buyCatalog('lamp'); const inv=await api.getItems(); const lamp=inv.find(i=>i.typeId==='lamp'&&i.x===0&&i.y===0)||inv.filter(i=>i.typeId==='lamp').pop();
+  await api.placeItem(lamp.uid,{center:{x:200+ox*0+(ox<0?(oy*-2):80),y:224+oy-8},facing:'down',snap:true}); }});
+await page.reload(); await page.waitForSelector('.title-btn'); await page.getByText('Continue').first().click(); await page.waitForTimeout(6000);
+await page.screenshot({path:`r14-shots/${tag}-bar.png`,clip:{x:300,y:150,width:600,height:300}});
+await b.close();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LAKE_BIRD_FLEE_PX, LAKE_BIRDS, LAKE_BUSHES, LAKE_DECOR_COUNT, LAKE_PIER, LAKE_TREES, LAKE_WATER, type Rect } from '@pixel-hotel/shared';
-import { BIRD_PERCHES, birdPose, butterflyAt, decorSpots, distToRect, isInsideWater, leafAt, newBird, newFishShadow, scareFish, stepBird, stepFish } from './lakeLife.ts';
+import { LAKE_BIRD_FLEE_PX, LAKE_BIRDS, LAKE_BUSHES, LAKE_DECOR_COUNT, LAKE_PIER, LAKE_TREES, isWater, isWaterCell, terrainAt, type Rect } from '@pixel-hotel/shared';
+import { BIRD_PERCHES, birdPose, butterflyAt, decorSpots, distToRect, FISH_WATER, isInsideWater, leafAt, newBird, newFishShadow, scareFish, stepBird, stepFish } from './lakeLife.ts';
 
 const OPTS = { w: 576, h: 384, doorZone: { x: 256, y: 320, w: 64, h: 64 } as Rect, start: { x: 288, y: 330 } };
 
@@ -15,8 +15,9 @@ describe('decorSpots', () => {
     for (let seed = 1; seed <= 50; seed++) {
       for (const s of decorSpots(seed, OPTS)) {
         const p = { x: s.x, y: s.y };
-        if (s.kind !== 'lily') expect(LAKE_WATER.some((r) => p.x > r.x && p.x < r.x + r.w && p.y > r.y && p.y < r.y + r.h)).toBe(false);
+        if (s.kind !== 'lily') expect(isWaterCell(Math.floor(p.x / 32), Math.floor(p.y / 32))).toBe(false);
         else expect(isInsideWater(p, 14)).toBe(true);
+        if (['flower', 'tuft', 'stone', 'mushroom'].includes(s.kind)) expect(terrainAt(p)).toBeLessThanOrEqual(0.25); // A3: grass decor never on the sand
         expect(distToRect(p, LAKE_PIER)).toBeGreaterThanOrEqual(14);
         for (const t of LAKE_TREES) expect(Math.hypot(t.x - s.x, t.y - s.y)).toBeGreaterThanOrEqual(30);
         for (const b of LAKE_BUSHES) expect(Math.hypot(b.x - s.x, b.y - s.y)).toBeGreaterThanOrEqual(22);
@@ -65,7 +66,8 @@ describe('fish, butterflies, leaves', () => {
     expect(fish[0]!.fleeMs).toBeGreaterThan(0);
     for (let i = 0; i < 400; i++) fish = fish.map((f) => stepFish(f, 50));
     for (const f of fish) {
-      const r = LAKE_WATER[f.rect]!;
+      const r = FISH_WATER[f.rect]!;
+      expect(isWater({ x: f.x, y: f.y })).toBe(true);
       expect(f.x).toBeGreaterThanOrEqual(r.x);
       expect(f.x).toBeLessThanOrEqual(r.x + r.w);
       expect(f.y).toBeGreaterThanOrEqual(r.y);

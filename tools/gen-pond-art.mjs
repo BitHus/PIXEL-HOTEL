@@ -3,7 +3,7 @@
 // Only reorders (corner mask order), snaps to Endesga 32, wraps (water drift frames) and pixel-draws the ripple rings. NO scaling.
 // Also draws the sample pond contact sheet (4x nearest) to the Desktop styletest folder.
 import fs from 'fs'; import path from 'path'; import { PNG } from 'pngjs';
-const SRC = 'art-src/pixellab/lake', OUT = 'art-src/staging/lake';
+const SRC = 'art-src/pixellab/lake', OUT = 'client/src/assets/sprites/lake';
 const SHEET = process.env.POND_SHEET || 'C:/Users/ajren/Desktop/PocketBarrel-styletest/pond';
 fs.mkdirSync(OUT, { recursive: true }); fs.mkdirSync(SHEET, { recursive: true });
 const pal = [...new Set([...fs.readFileSync('shared/src/palette.ts', 'utf8').matchAll(/#([0-9a-fA-F]{6})/g)].map((m) => m[1].toLowerCase()))].map((h) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)));

@@ -64,8 +64,11 @@ export function createFirstTenGuide(parent: HTMLElement, storage: SaveStorage, t
   skip.setAttribute('aria-label', 'Skip the first steps');
   const icon = pixelIcon('quest');
   icon.classList.add('first-ten-icon');
-  card.append(icon, body, count, skip);
-  body.appendChild(pips);
+  card.append(icon, body, skip);
+  // R13: the dots and the step count share one tiny row under the line of text.
+  const meta = el('span', 'first-ten-meta');
+  meta.append(pips, count);
+  body.appendChild(meta);
   card.hidden = true;
   // Phone: the card is ONE line plus the step count; a tap on it opens the whole text and Skip (skin.css .first-ten:not(.expanded)).
   card.addEventListener('click', (e) => {

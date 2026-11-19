@@ -31,7 +31,7 @@ import {
   type Room,
 } from '@pixel-hotel/shared';
 import { FurnitureSprite } from '../render/furnitureSprite.ts';
-import { surfaceHeight } from '../render/furnitureArt.ts';
+import { riderLift, surfaceHeight } from '../render/furnitureArt.ts';
 
 const OK_COLOR = PALETTE[12];
 const BAD_COLOR = PALETTE[8];
@@ -238,7 +238,7 @@ export class Placer {
     }
     const under = plan.onItemUid !== null ? items.find((i) => i.uid === plan.onItemUid) : undefined;
     const lift = under ? surfaceHeight(getFurnitureType(under.typeId)) : 0;
-    this.sprite.set(plan.x, plan.y, plan.facing, lift);
+    this.sprite.set(plan.x, plan.y, plan.facing, riderLift(under, under ? getFurnitureType(under.typeId) : undefined, plan.y));
     this.sprite.container.tint = color;
     // A small free-standing piece (lamp, candle) shows its real sprite size, not the 32 x 32 cell.
     let box = { x: fp.x, y: fp.y, w: fp.w, h: fp.h };
@@ -258,7 +258,7 @@ export class Placer {
       const top = surfaceHeight(type) + lift;
       for (const r of ridersOf(moveItem(items, s.uid, to), s.uid)) {
         const rs = new FurnitureSprite(getFurnitureType(r.typeId));
-        rs.set(r.x, r.y, r.facing, top);
+        rs.set(r.x, r.y, r.facing, riderLift({ typeId: type.id, y: plan.y }, type, r.y) || top);
         rs.container.tint = color;
         this.riders.addChild(rs.container);
       }

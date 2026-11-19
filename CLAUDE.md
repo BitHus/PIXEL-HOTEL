@@ -13,7 +13,7 @@ A browser game. Parts:
   gold and buys furniture in the catalog (18 Nov: the TRADER is gone, nothing is sold for gold). Items are for USE: cook, brew, craft, build, plant.
 - Farm (10b): grow crops in real time. The tavern kitchen (K1): a stove cooks them into food that heals or buffs.
 - Mine (10c): click-to-mine trips for ore; ore -> bars at the forge -> weapons, armor, tools.
-- Lakeside (10d): chop trees for wood, fish in the lake.
+- Lakeside (10d): chop trees for wood, fish in the pond.
 The loop: dungeon (loot) -> tavern (gold) -> furniture; farm (food) -> stronger runs; mine (ore) ->
 better gear -> deeper runs. Every player starts with two small basic rooms (hotel room, shop).
 Name: PocketBarrel (renamed from the working title Pixel Hotel, 17 Nov; ids, save keys and repo name keep the old name).
@@ -200,10 +200,10 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   (shared/data/forge.json). Each piece replaces the one before. Gold only buys potions.
 
 10d. LAKESIDE
-- Outdoor room (kind 'lakeside', one level, open from the start, not buildable): lake, pier, 8
+- Outdoor room (kind 'lakeside', one level, open from the start, not buildable): an organic pond (A3: vertex grid LAKE_LEVELS, corner-mask tiles, water cells block), a 5-cell pier, 8
   trees. Woodcutting: tap a tree, 5 hits, 400 ms cooldown, 2-3 wood plus a ranked drop; it grows
   back in 5 minutes of real time.
-- Fishing: tap the water to cast, tap in time at the "!", then THE REEL: hold to push the catch
+- Fishing: tap the water: walk to the nearest cast spot BY PATH (shore or pier, never round the pond; a press on water never hold-walks) and cast, tap in time at the "!", then THE REEL: hold to push the catch
   box right, it falls back left; keep the fish inside to fill the catch bar. Rank sets the
   difficulty; better rods help. All timing in one pure step function (50 ms ticks,
   shared/src/fishing.ts). Catches: shared/data/fish.json. Lake furniture is crafted.

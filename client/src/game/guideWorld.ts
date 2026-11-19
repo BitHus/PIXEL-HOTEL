@@ -3,7 +3,7 @@
 // targets are shared/data/guide.json. Lives next to tavernLife (which owns the guide) and is started from there.
 
 import {
-  AVATAR_H, BUILD_CELL, LAKE_WATER, innDoorSpots, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, catalogTypes, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guideFixFor, guideStock, guestsTrayCanServe, worldToScreen,
+  AVATAR_H, BUILD_CELL, waterRects, innDoorSpots, MINE_UNLOCK_LEVEL, growthStage, plantList, buildNavGrid, getFurnitureType, catalogTypes, guideFloorSpot, roomBlockers, guideAutoEvents, guideTargetOf, guidePointerKind, guideFixFor, guideStock, guestsTrayCanServe, worldToScreen,
   type FirstTenStep, type GuideContext, type GuideStock, type GuideTarget, type Point,
 } from '@pixel-hotel/shared';
 import { surfaceHeight } from '../render/furnitureArt.ts';
@@ -86,7 +86,8 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     return ripe ? worldToScreen({ x: ripe.c * BUILD_CELL + BUILD_CELL / 2, y: ripe.r * BUILD_CELL + BUILD_CELL / 2 }, st.shown) : null;
   };
   const waterScreen = (): Point | null => {
-    const w = LAKE_WATER[0];
+    const ws = waterRects();
+    const w = ws[Math.floor(ws.length / 2)];
     return w ? worldToScreen({ x: w.x + w.w / 2, y: w.y + w.h / 2 }, st.shown) : null;
   };
   /** CEL-3: the pointer on an Inn door of the room on screen (null when it has no such door). */

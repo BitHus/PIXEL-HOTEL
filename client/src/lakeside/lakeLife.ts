@@ -24,7 +24,13 @@ import {
   LAKE_LEAF_GAP_MS,
   LAKE_PIER,
   LAKE_TREES,
-  LAKE_WATER,
+  LAKE_POND_DECOR,
+  distToWater,
+  isPierCell,
+  isWaterCell,
+  waterRects,
+  terrainAt,
+  LAKE_CELL,
   type Point,
   type Rect,
 } from '@pixel-hotel/shared';
@@ -58,10 +64,6 @@ export function distToRect(p: Point, r: Rect): number {
   return Math.hypot(dx, dy);
 }
 
-function distToWater(p: Point): number {
-  return Math.min(...LAKE_WATER.map((r) => distToRect(p, r)));
-}
-
 /**
  * Decor for a seed: reeds and cattails just outside the water, lily pads inside it, flowers, stones, mushrooms and tufts on the grass.
  * Never on the pier, a tree trunk, a bush, the door zone or the avatar start; the grass kinds stay clear of the water; spots keep a gap.
@@ -90,9 +92,10 @@ export function decorSpots(seed: number, opts: DecorOptions): DecorSpot[] {
       if (!(isInsideWater(p, 14))) continue;
     } else {
       kind = GRASS[Math.floor(hash01(seed, i * 5 + 3) * GRASS.length)]!;
-      if (water < LAKE_DECOR_GRASS_EDGE_PX) continue;
+      if (water < LAKE_DECOR_GRASS_EDGE_PX || terrainAt(p) > 0.25) continue; // A3: grass decor stays off the sand
     }
     if (distToRect(p, pier) < LAKE_DECOR_PIER_PX) continue;
+    if (LAKE_POND_DECOR.some((d) => Math.hypot(d.x - x, d.y - 12 - y) < (d.kind === 'rowboat' ? 40 : LAKE_DECOR_GAP_PX))) continue;
     if (LAKE_TREES.some((t) => Math.hypot(t.x - x, t.y - y) < LAKE_DECOR_TREE_PX)) continue;
     if (LAKE_BUSHES.some((b) => Math.hypot(b.x - x, b.y - y) < LAKE_DECOR_BUSH_PX)) continue;
     if (door && distToRect(p, door) === 0) continue;
@@ -103,9 +106,17 @@ export function decorSpots(seed: number, opts: DecorOptions): DecorSpot[] {
   return out;
 }
 
-/** True if p is inside a water rectangle by at least `inset` px on every side (the pier is not excluded here: decorSpots keeps clear of it). */
+/** A3: open water at a world point (a water cell of the pond, not under the pier). */
+function openWaterAt(x: number, y: number): boolean {
+  const c = Math.floor(x / LAKE_CELL);
+  const r = Math.floor(y / LAKE_CELL);
+  return isWaterCell(c, r) && !isPierCell(c, r);
+}
+
+/** True if p is in open water with at least `inset` px of it on every side (and diagonally): lily pads float there. */
 export function isInsideWater(p: Point, inset: number): boolean {
-  return LAKE_WATER.some((r) => p.x >= r.x + inset && p.x <= r.x + r.w - inset && p.y >= r.y + inset && p.y <= r.y + r.h - inset);
+  for (const dx of [-inset, 0, inset]) for (const dy of [-inset, 0, inset]) if (!openWaterAt(p.x + dx, p.y + dy)) return false;
+  return true;
 }
 
 // ---------- Birds ----------
@@ -223,7 +234,7 @@ export function butterflyAt(i: number, clockMs: number, home: Point): Point & { 
 // ---------- Fish shadows ----------
 
 export interface FishShadow {
-  /** Which LAKE_WATER rect it lives in. */
+  /** Which FISH_WATER rect it lives in. */
   rect: number;
   x: number;
   y: number;
@@ -235,10 +246,13 @@ export interface FishShadow {
   vy: number;
 }
 
-/** Fish shadow `i`: placed inside a water rect (never near its edge) by hash. */
+/** A3: the open water rows the fish shadows swim in: runs of 3 or more water cells, not the pier's row. */
+export const FISH_WATER: readonly Rect[] = waterRects().filter((r) => r.w >= 3 * LAKE_CELL && (r.y >= LAKE_PIER.y + LAKE_PIER.h || r.y + r.h <= LAKE_PIER.y));
+
+/** Fish shadow `i`: placed inside a water row (never near its ends) by hash. */
 export function newFishShadow(i: number): FishShadow {
-  const rect = i % LAKE_WATER.length;
-  const r = LAKE_WATER[rect]!;
+  const rect = i % FISH_WATER.length;
+  const r = FISH_WATER[rect]!;
   return {
     rect,
     x: Math.round(r.x + 20 + hash01(i, 11) * (r.w - 40)),
@@ -264,7 +278,7 @@ export function scareFish(fish: readonly FishShadow[], at: Point): FishShadow[] 
 /** One step of a fish shadow: drifts along x, turns at the edge of its water rect (14 px in), darts when scared. Stays in its rect. */
 export function stepFish(f0: FishShadow, dtMs: number): FishShadow {
   const f = { ...f0 };
-  const r = LAKE_WATER[f.rect]!;
+  const r = FISH_WATER[f.rect]!;
   const speed = f.fleeMs > 0 ? LAKE_FISH_FLEE_SPEED : LAKE_FISH_SPEED;
   f.x += (f.dir * speed * dtMs) / 1000;
   if (f.fleeMs > 0) {

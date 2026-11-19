@@ -5,10 +5,15 @@
 import { PREFS_KEY, SOUND_DEFAULT_VOLUME } from '@pixel-hotel/shared';
 import type { SaveStorage } from './saveStorage.ts';
 
+/** The music volume a new player starts with (0 to 1). */
+export const MUSIC_DEFAULT_VOLUME = 0.4;
+
 export interface Prefs {
   sound: boolean;
   /** 0 to 1. */
   volume: number;
+  /** AU-2: music volume 0 to 1 (`volume` is the sound-effects volume). */
+  musicVolume: number;
   lighting: boolean;
   /** Show the faint cell grid while placing furniture and painting floors (step BG1). */
   cellGrid: boolean;
@@ -25,7 +30,7 @@ export interface Prefs {
   hintsSeen: string[];
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, hintsSeen: [] };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, musicVolume: MUSIC_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, hintsSeen: [] };
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -40,6 +45,7 @@ export function parsePrefs(text: string | null): Prefs {
   return {
     sound: typeof o.sound === 'boolean' ? o.sound : DEFAULT_PREFS.sound,
     volume,
+    musicVolume: typeof o.musicVolume === 'number' && Number.isFinite(o.musicVolume) ? Math.max(0, Math.min(1, o.musicVolume)) : DEFAULT_PREFS.musicVolume,
     lighting: typeof o.lighting === 'boolean' ? o.lighting : DEFAULT_PREFS.lighting,
     cellGrid: typeof o.cellGrid === 'boolean' ? o.cellGrid : DEFAULT_PREFS.cellGrid,
     popups: typeof o.popups === 'boolean' ? o.popups : DEFAULT_PREFS.popups,

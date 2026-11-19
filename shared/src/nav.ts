@@ -171,6 +171,30 @@ export function reachableCells(grid: NavGrid, start: number, dropFrom = -1): boo
   return seen;
 }
 
+/**
+ * A3: the walking cost (in cells: 1 straight, sqrt 2 diagonal; the same steps as A*) from cell index start to every cell
+ * (Infinity = cannot be reached). Dijkstra over the free cells.
+ */
+export function pathCosts(grid: NavGrid, start: number): number[] {
+  const g = new Array<number>(grid.blocked.length).fill(Infinity);
+  const open = new MinHeap();
+  g[start] = 0;
+  open.push(start, 0);
+  while (open.size > 0) {
+    const cur = open.pop()!;
+    const cc = cur % grid.cols;
+    for (const nb of neighbours(grid, cur, start)) {
+      const diagonal = nb % grid.cols !== cc && Math.abs(nb - cur) !== 1;
+      const cost = g[cur]! + (diagonal ? Math.SQRT2 : 1);
+      if (cost < g[nb]!) {
+        g[nb] = cost;
+        open.push(nb, cost);
+      }
+    }
+  }
+  return g;
+}
+
 /** A* over cell indices. Returns the cells from start to goal, or null. */
 function aStar(grid: NavGrid, start: number, goal: number, dropFrom = -1): number[] | null {
   const n = grid.blocked.length;

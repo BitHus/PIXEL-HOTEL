@@ -21,7 +21,8 @@
   pointer-events: none;
   z-index: 1;
 }
-.side-buttons:has(.more-menu .glow) .more-btn { animation: quest-glow 1s steps(2) infinite; }
+.side-buttons:has(.more-menu .glow) .more-btn { animation: more-glow 3.6s ease-in-out infinite; }
+@keyframes more-glow { 50% { background-color: rgba(254, 174, 52, 0.4); } }
 /* The Dungeon key cost is in the Dungeon confirm now. */
 .dungeon-btn .btn-badge { display: none !important; }
 
@@ -130,4 +131,43 @@
 @media (prefers-reduced-motion: reduce) {
   .top-left,
   .side-buttons { transition: none; }
+}
+
+/* ---------- R14 (owner 19 Nov: "the emote is suddenly to the left"): the Emote item in More is a plain grid item like its neighbours (icon over label), and its
+   five-button menu opens beside the More button in the right column area, in the same place the More grid opens (thumb reach, off the hotbar and the orders row). ---------- */
+.side-buttons .more-item.emote-btn {
+  display: grid;
+  width: 74px;
+  height: 56px;
+  min-width: 0;
+  padding: 0;
+  grid-template-rows: 32px auto;
+  align-content: center;
+  justify-items: center;
+}
+.more-wrap > .emote-menu {
+  position: absolute;
+  top: 0;
+  bottom: auto;
+  right: calc(100% + 8px);
+  z-index: 7;
+  transform-origin: top right;
+}
+
+/* ---------- R14b: the idle side discs are lighter (the faded column kept heavy dark discs): 40% night fill, thinner line; open/hover states are unchanged ---------- */
+.side-buttons .icon-btn:not(.open-sign):not(.on) {
+  background-image: radial-gradient(circle closest-side, rgba(24, 20, 37, 0.42) 0 calc(var(--disc) / 2 - 1.5px), rgba(58, 68, 102, 0.55) calc(var(--disc) / 2 - 1.5px) calc(var(--disc) / 2 - 0.5px), transparent calc(var(--disc) / 2));
+}
+
+/* ---------- R14a: a toast is a small dark card (it was bare outline text; the 4-line welcome on a phone sat unframed against the hotbar). Smaller text, lifted a little. ---------- */
+.toast.ui-hud {
+  background: rgba(24, 20, 37, 0.82);
+  box-shadow: inset 0 1px 0 var(--ui-lit), 0 0 0 1px var(--ui-line);
+  max-width: min(340px, calc(100vw - 2 * var(--edge) - var(--side-col, 56px)));
+  font-size: 13px;
+  line-height: 16px;
+  text-align: left;
+}
+:root[data-size='phone'] .toast.ui-hud {
+  bottom: calc(var(--bottom-clear) + 12px);
 }

@@ -540,8 +540,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
 
 10d. LAKESIDE (step 9f)
 - A fifth place on the Map, open from the start: an outdoor room (kind 'lakeside', 576x384, one
-  level) with grass and a hedge like the farm, a lake taking up about a third, a short wooden pier
-  (walkable) reaching into it, 8 trees and some bushes. Daylight (no shade, no light pools). Not
+  level) with grass and a hedge like the farm, an organic POND (A3, 19 Nov: a vertex grid of terrain levels grass / sand / shallow / deep,
+  config LAKE_LEVELS, drawn with corner-mask tiles; water cells block walking, shore cells do not) of about a fifth of it, a
+  5-cell wooden pier (walkable) reaching into it, 8 trees and some bushes. Daylight (no shade, no light pools). Not
   buildable in v1 (no furniture, no upgrade, no styles).
 - WOODCUTTING: tap a tree: the avatar walks next to it and swings; each tap is one swing, with a
   400 ms axe cooldown (tapping is the game; taps during the cooldown are ignored). A tree falls
@@ -550,8 +551,8 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   real time (time passed in, also while the game is closed). Wood stays a dungeon drop too. Axe
   tiers at the forge: basic axe (start), steel axe (5 iron bars + 2 copper bars; each hit counts
   double).
-- FISHING: tap the water (from the shore or the pier): the avatar walks to the nearest shore spot
-  and casts. The bobber floats 2 to 8 s (rng), then dips with a "!" for 700 ms (shorter for rarer
+- FISHING: tap the water (from the shore or the pier): the avatar walks to the NEAREST cast spot BY PATH
+  LENGTH (shore or pier; A3: path + CAST_AIM_WEIGHT x the distance to the tap, never round the pond) and casts toward the tap. The bobber floats 2 to 8 s (rng), then dips with a "!" for 700 ms (shorter for rarer
   fish): tap in time to hook. THE REEL (owner's change after the first playtest, like Stardew
   Valley and Pixel Worlds): a bar with a fish swimming back and forth and a green catch box.
   HOLD (the button, the bar or Space) pushes the box to the right, a tap kicks it, and it falls

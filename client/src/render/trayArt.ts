@@ -7,8 +7,9 @@ import { Container, Graphics } from 'pixi.js';
 import { TRAY_MAX, type MaterialId } from '@pixel-hotel/shared';
 import { drawGood } from './slotGoods.ts';
 
-const MUG_SCALE = 0.5;
-const MUG_GAP = 10;
+import { TRAY_MUG_GAP, TRAY_MUG_SCALE } from "./markerSize.ts";
+const MUG_SCALE = TRAY_MUG_SCALE;
+const MUG_GAP = TRAY_MUG_GAP;
 // Endesga 32 (shared/palette.ts holds the list): outline, steel ramp, skin, sleeve.
 const OUTLINE = 0x3e2731;
 const STEEL_DARK = 0x5a6988;

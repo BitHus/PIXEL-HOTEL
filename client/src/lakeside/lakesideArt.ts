@@ -1,14 +1,13 @@
 // The lakeside's art (step 9f, look v1 = A16), drawn in code like the farm's; the PNG hooks of C15 fall back
-// to these. Bright, lush, chunky and Growtopia-like with warm dark outlines: a lake with a rounded shore
-// (dry sand, wet sand, a foam line, shallows, a deeper middle, a shadow under the pier), a railed pier with a
-// lantern post and rope posts, three kinds of tree in two leaf shades (oak, pine, birch), three bushes, a better
+// to these. Since A3 (19 Nov) the pond, its water, the pier and the pond decor are PNG tiles (pondView.ts) and the code
+// lake and pier are gone. Here: three kinds of tree in two leaf shades (oak, pine, birch), three bushes, a better
 // stump and sapling, decor pieces for the coder to place (reeds, cattails, flowers, stones, mushrooms, tufts,
 // lily pads) and the bobber, rings and a splash as small pre-built Graphics. Light from the top-left; no
 // anti-aliasing (whole rows and rects only). Medieval touches: rope-wrapped posts, an iron lantern, a nailed deck.
 // Palette only from shared/palette.ts (shade() is the placeholder shading helper).
 
 import { Graphics, Sprite } from 'pixi.js';
-import { LAKE_BUSHES, LAKE_PIER, LAKE_WATER, PALETTE, type Point } from '@pixel-hotel/shared';
+import { LAKE_BUSHES, PALETTE, type Point } from '@pixel-hotel/shared';
 import { DARK_WARM } from '../render/bareStyles.ts';
 import { shade } from '../render/colors.ts';
 import { hash01 } from '../render/atmosphere.ts';
@@ -23,15 +22,6 @@ const WATER_MID = shade(PALETTE[17]!, 0.92);
 const WATER_DEEP = shade(PALETTE[17]!, 0.72);
 const WATER_DEEPEST = shade(PALETTE[17]!, 0.56);
 const SKY_GLINT = PALETTE[18]!;
-
-/** The whole lake: the bounding box of the water rectangles (they cover it fully: the pier's gap is water). */
-const LAKE = (() => {
-  const x0 = Math.min(...LAKE_WATER.map((r) => r.x));
-  const y0 = Math.min(...LAKE_WATER.map((r) => r.y));
-  const x1 = Math.max(...LAKE_WATER.map((r) => r.x + r.w));
-  const y1 = Math.max(...LAKE_WATER.map((r) => r.y + r.h));
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-})();
 
 /** A flat colour, or a colour with alpha. */
 type Fill = string | { color: string; alpha: number };
@@ -55,190 +45,6 @@ function oval(g: Graphics, cx: number, cy: number, rx: number, ry: number, color
 
 function px(g: Graphics, x: number, y: number, w: number, h: number, color: Fill): void {
   g.rect(x, y, w, h).fill(color);
-}
-
-/** A rectangle with stepped round corners (radius r), as whole rows. */
-function rrect(g: Graphics, x: number, y: number, w: number, h: number, r: number, color: string): void {
-  for (let dy = 0; dy < h; dy++) {
-    const t = Math.min(dy, h - 1 - dy);
-    let inset = 0;
-    if (t < r) {
-      const d = r - t - 0.5;
-      inset = r - Math.round(Math.sqrt(Math.max(0, r * r - d * d)));
-    }
-    g.rect(x + inset, y + dy, w - inset * 2, 1).fill(color);
-  }
-}
-
-/** Grows (d > 0) or shrinks (d < 0) the lake rectangle by d px on every side. */
-function grown(d: number): { x: number; y: number; w: number; h: number } {
-  return { x: LAKE.x - d, y: LAKE.y - d, w: LAKE.w + d * 2, h: LAKE.h + d * 2 };
-}
-
-/**
- * The lake: a dark rim, dry sand, wet sand, a white foam line, shallows, mid water, a deeper middle and the deepest
- * heart, all with rounded corners; a lighter north-west edge and a darker south-east edge; pebbles on the sand; a
- * dark patch of shade under the pier. The pier itself is drawn by drawPier on top.
- */
-export function drawLake(g: Graphics): void {
-  g.clear();
-  const layers: [number, number, string][] = [
-    [7, 18, DARK_WARM],
-    [6, 17, SAND_DRY],
-    [3, 13, SAND_WET],
-    [1, 10, shade(SAND_WET, 0.85)],
-    [0, 9, FOAM],
-    [-2, 8, SHALLOW],
-    [-9, 14, WATER_MID],
-    [-26, 22, WATER_DEEP],
-    [-58, 28, WATER_DEEPEST],
-  ];
-  for (const [d, r, color] of layers) {
-    const q = grown(d);
-    rrect(g, q.x, q.y, q.w, q.h, r, color);
-  }
-  // Light from the top-left: a lighter band inside the north-west shallows, a darker one inside the south-east.
-  const sh = grown(-2);
-  px(g, sh.x + 12, sh.y, sh.w - 24, 2, shade(SHALLOW, 1.22));
-  px(g, sh.x, sh.y + 12, 2, sh.h - 24, shade(SHALLOW, 1.15));
-  px(g, sh.x + 12, sh.y + sh.h - 2, sh.w - 24, 2, shade(SHALLOW, 0.8));
-  px(g, sh.x + sh.w - 2, sh.y + 12, 2, sh.h - 24, shade(SHALLOW, 0.85));
-  // Foam flecks along the foam line.
-  for (let i = 0; i < 60; i++) {
-    const t = hash01(i, 11) * (LAKE.w * 2 + LAKE.h * 2 - 80) + 40;
-    let x: number;
-    let y: number;
-    if (t < LAKE.w) { x = LAKE.x + t; y = LAKE.y + 2; }
-    else if (t < LAKE.w + LAKE.h) { x = LAKE.x + LAKE.w - 4; y = LAKE.y + (t - LAKE.w); }
-    else if (t < LAKE.w * 2 + LAKE.h) { x = LAKE.x + (t - LAKE.w - LAKE.h); y = LAKE.y + LAKE.h - 4; }
-    else { x = LAKE.x + 2; y = LAKE.y + (t - LAKE.w * 2 - LAKE.h); }
-    px(g, Math.round(x), Math.round(y), 3, 1, FOAM);
-  }
-  // Pebbles and shells on the dry sand.
-  for (let i = 0; i < 70; i++) {
-    const side = Math.floor(hash01(i, 21) * 4);
-    const u = hash01(i, 22);
-    const off = 3 + Math.floor(hash01(i, 23) * 3);
-    let x: number;
-    let y: number;
-    if (side === 0) { x = LAKE.x + 16 + u * (LAKE.w - 32); y = LAKE.y - off - 1; }
-    else if (side === 1) { x = LAKE.x + LAKE.w + off - 1; y = LAKE.y + 16 + u * (LAKE.h - 32); }
-    else if (side === 2) { x = LAKE.x + 16 + u * (LAKE.w - 32); y = LAKE.y + LAKE.h + off - 1; }
-    else { x = LAKE.x - off - 1; y = LAKE.y + 16 + u * (LAKE.h - 32); }
-    const kind = hash01(i, 24);
-    const rx = Math.round(x);
-    const ry = Math.round(y);
-    if (kind < 0.55) { px(g, rx, ry, 3, 2, shade(SAND_DRY, 0.72)); px(g, rx, ry, 2, 1, shade(SAND_DRY, 0.95)); }
-    else if (kind < 0.85) { px(g, rx, ry, 2, 2, shade(PALETTE[21]!, 0.9)); px(g, rx, ry, 1, 1, PALETTE[20]!); }
-    else { px(g, rx, ry, 3, 2, PALETTE[30]!); px(g, rx + 1, ry, 1, 2, PALETTE[29]!); }
-  }
-  // The shade of the pier on the water: a dark patch under the deck and a soft strip just south of it.
-  const p = LAKE_PIER;
-  const lakeL = LAKE.x;
-  px(g, lakeL, p.y + 2, p.x + p.w - lakeL, p.h, { color: PALETTE[24]!, alpha: 0.3 });
-  px(g, Math.max(lakeL, p.x), p.y + p.h + 4, p.x + p.w - Math.max(lakeL, p.x) + 4, 5, { color: PALETTE[24]!, alpha: 0.22 });
-  px(g, p.x + p.w - 6, p.y + p.h + 9, 14, 3, { color: PALETTE[24]!, alpha: 0.14 });
-}
-
-/**
- * Ripples and sun glints on the water: short light lines that come and go, and white sparkles that twinkle
- * (stepped every 250 ms; the coder may animate the whole layer with a tile strip later).
- */
-export function drawRipples(g: Graphics, clockMs: number): void {
-  g.clear();
-  const step = Math.floor(clockMs / 250);
-  const inner = grown(-14);
-  for (let i = 0; i < 34; i++) {
-    const phase = (step + Math.floor(hash01(i, 1) * 10)) % 10;
-    if (phase > 4) continue;
-    const x = inner.x + Math.floor(hash01(i, 3) * (inner.w - 24));
-    const y = inner.y + Math.floor(hash01(i, 4) * (inner.h - 6));
-    const w = 4 + phase * 2;
-    g.rect(x, y, w, 1).fill({ color: PALETTE[19]!, alpha: phase === 0 || phase === 4 ? 0.22 : 0.5 });
-    if (phase === 2 && i % 3 === 0) g.rect(x + 2, y + 1, Math.max(2, w - 4), 1).fill({ color: SKY_GLINT, alpha: 0.3 });
-  }
-  for (let i = 0; i < 18; i++) {
-    const on = (step + Math.floor(hash01(i, 7) * 6)) % 6;
-    if (on > 1) continue;
-    const x = inner.x + 6 + Math.floor(hash01(i, 8) * (inner.w - 12));
-    const y = inner.y + 6 + Math.floor(hash01(i, 9) * (inner.h - 12));
-    g.rect(x, y, 1, 1).fill(PALETTE[19]!);
-    if (on === 0) {
-      g.rect(x - 1, y, 3, 1).fill({ color: PALETTE[19]!, alpha: 0.6 });
-      g.rect(x, y - 1, 1, 3).fill({ color: PALETTE[19]!, alpha: 0.6 });
-    }
-  }
-}
-
-/**
- * The pier: a nailed plank deck with lit tops, rope-wrapped posts at the shore end, side rails with a rope (none at the
- * casting end, where you stand and cast), and a lantern post at the far corner. The deck's own footprint is unchanged.
- */
-export function drawPier(g: Graphics): void {
-  g.clear();
-  const p = LAKE_PIER;
-  const railEnd = p.x + p.w - 22; // the rails stop here: the casting end stays open
-  g.rect(p.x - 1, p.y - 1, p.w + 2, p.h + 6).fill(DARK_WARM);
-  for (let x = p.x; x < p.x + p.w; x += 8) {
-    const odd = ((x - p.x) / 8) % 2 === 1;
-    px(g, x, p.y, 7, p.h, odd ? shade(WOOD, 0.92) : shade(WOOD, 1.08));
-    px(g, x, p.y, 7, 1, shade(WOOD, 1.3));
-    px(g, x, p.y, 1, p.h, shade(WOOD, 1.15));
-    px(g, x + 7, p.y, 1, p.h, shade(WOOD, 0.55));
-    px(g, x + 2, p.y + 9 + ((x / 8) % 3) * 4, 1, 1, shade(WOOD, 0.65)); // a knot
-    px(g, x + 3, p.y + 2, 1, 1, PALETTE[21]!); // nails along both long edges
-    px(g, x + 3, p.y + p.h - 3, 1, 1, PALETTE[21]!);
-  }
-  // The front edge of the deck, lower than the boards, in shade, with the beam ends.
-  px(g, p.x, p.y + p.h, p.w, 5, shade(WOOD, 0.55));
-  px(g, p.x, p.y + p.h, p.w, 1, shade(WOOD, 0.8));
-  for (let x = p.x + 8; x < p.x + p.w; x += 32) px(g, x, p.y + p.h + 1, 4, 4, shade(WOOD, 0.4));
-  // Side rails: posts every 32 px, a wooden top rail and a rope sagging between them.
-  const rails: number[] = [];
-  for (let x = p.x + 4; x < railEnd; x += 32) rails.push(x);
-  for (const y of [p.y - 2, p.y + p.h - 4]) {
-    const front = y > p.y;
-    px(g, p.x + 4, y - 1, railEnd - p.x - 2, 4, DARK_WARM);
-    px(g, p.x + 4, y, railEnd - p.x - 2, 2, shade(WOOD, front ? 1.0 : 0.85));
-    px(g, p.x + 4, y, railEnd - p.x - 2, 1, shade(WOOD, 1.3));
-    for (const x of rails) {
-      px(g, x - 1, y - 9, 6, 13, DARK_WARM);
-      px(g, x, y - 8, 4, 11, shade(WOOD, 0.8));
-      px(g, x, y - 8, 1, 11, shade(WOOD, 1.2));
-      px(g, x, y - 8, 4, 2, shade(WOOD, 1.3)); // cap
-    }
-    // The rope: cream, one px sag between posts.
-    for (let i = 0; i + 1 < rails.length; i++) {
-      const a = rails[i]! + 4;
-      const b = rails[i + 1]!;
-      px(g, a, y - 5, b - a, 1, PALETTE[2]!);
-      px(g, a + 6, y - 4, b - a - 12, 1, shade(PALETTE[2]!, 0.7));
-    }
-  }
-  // Rope-wrapped posts at the shore end (a coil of cream bands).
-  for (const y of [p.y - 2, p.y + p.h - 4]) {
-    px(g, p.x + 4, y - 6, 4, 1, PALETTE[2]!);
-    px(g, p.x + 4, y - 4, 4, 1, shade(PALETTE[2]!, 0.7));
-  }
-  // The far posts (stand on the casting end) and a lantern post on the north-east corner.
-  for (const [x, y] of [[p.x + p.w - 6, p.y + p.h - 4], [p.x + p.w - 6, p.y - 2]] as const) {
-    px(g, x - 1, y - 1, 6, 8, DARK_WARM);
-    px(g, x, y, 4, 6, shade(WOOD, 0.8));
-    px(g, x, y, 1, 6, shade(WOOD, 1.15));
-  }
-  const lx = p.x + p.w - 5;
-  const ly = p.y - 2;
-  px(g, lx - 1, ly - 25, 6, 28, DARK_WARM);
-  px(g, lx, ly - 24, 4, 26, shade(WOOD, 0.8));
-  px(g, lx, ly - 24, 1, 26, shade(WOOD, 1.2));
-  px(g, lx + 4, ly - 24, 7, 2, DARK_WARM); // iron arm
-  px(g, lx + 4, ly - 24, 7, 1, PALETTE[21]!);
-  px(g, lx + 7, ly - 23, 6, 9, DARK_WARM); // the lantern
-  px(g, lx + 8, ly - 22, 4, 7, PALETTE[10]!);
-  px(g, lx + 9, ly - 21, 2, 4, PALETTE[11]!);
-  px(g, lx + 6, ly - 24, 8, 1, PALETTE[22]!);
-  g.rect(lx - 6, ly - 28, 26, 22).fill({ color: PALETTE[9]!, alpha: 0.12 });
-  g.rect(lx - 2, ly - 25, 18, 16).fill({ color: PALETTE[10]!, alpha: 0.16 });
 }
 
 export type TreeLook = 'tree' | 'stump' | 'sapling';

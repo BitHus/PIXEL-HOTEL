@@ -56,7 +56,8 @@ import {
 } from '@pixel-hotel/shared';
 import type { FishBar, ReelView } from '../ui/fishBar.ts';
 import type { RoomView } from '../render/roomView.ts';
-import { drawBang, drawBobber, drawBush, drawLake, drawPier, drawRipples, drawTree, treeVariantOf, type TreeLook } from './lakesideArt.ts';
+import { drawBang, drawBobber, drawBush, drawTree, treeVariantOf, type TreeLook } from './lakesideArt.ts';
+import { PondView } from './pondView.ts';
 import { LakeLifeView } from './lakeLifeView.ts';
 import { BobberSet, arcPoint, nibbleDip, reelFeedback, reelTickPitch, reelTickStep, swayPx, treeFall } from './lakeFeel.ts';
 import { LakeFx } from './lakeFx.ts';
@@ -109,9 +110,8 @@ export class LakesideScreen {
   private lake: LakesideView | null = null;
   private readAt = 0;
   private readonly ground = new Container({ eventMode: 'none' });
-  private readonly water = new Graphics();
-  private readonly ripples = new Graphics();
-  private readonly pier = new Graphics();
+  /** A3: the pond tiles, water drift, pier and pond decor. */
+  private readonly pond: PondView;
   private readonly overlay = new Container({ eventMode: 'none' });
   private readonly line = new Graphics();
   private readonly bobber = new Container();
@@ -125,7 +125,6 @@ export class LakesideScreen {
   private trees: { c: Container; art: Graphics | null; look: TreeLook | null; hits: number; shakeMs: number; fallMs: number; landed: boolean }[] = [];
   private bushes: Container[] = [];
   private drawnKey = '';
-  private lastRipple = -1;
   private pending: Pending | null = null;
 
   // Fishing.
@@ -164,7 +163,8 @@ export class LakesideScreen {
     private readonly hooks: LakesideHooks,
   ) {
     this.life = new LakeLifeView(view);
-    this.ground.addChild(this.water, this.life.waterLayer, this.ripples, this.pier);
+    this.pond = new PondView(view);
+    this.ground.addChild(this.pond.water, this.life.waterLayer, this.pond.deck);
     this.bobber.addChild(this.bobberArt.idle, this.bobberArt.dip, this.bang);
     this.bobberArt.dip.visible = false;
     this.bang.visible = false;
@@ -189,8 +189,7 @@ export class LakesideScreen {
       this.leave();
       return;
     }
-    drawLake(this.water);
-    drawPier(this.pier);
+    this.pond.build();
     this.view.rugLayer.addChildAt(this.ground, 0);
     this.view.markerLayer.addChild(this.overlay);
     for (let i = 0; i < TREE_COUNT; i++) {
@@ -217,6 +216,7 @@ export class LakesideScreen {
     if (this.lake === null && this.trees.length === 0) return;
     this.lake = null;
     this.life.destroy();
+    this.pond.destroy();
     this.fx.clear();
     this.prizeFly = null;
     this.prizeHoldMs = 0;
@@ -287,6 +287,11 @@ export class LakesideScreen {
     void this.hooks.api.fishStop();
     this.pending = null;
     this.endFishing();
+  }
+
+  /** A3: true when a world point is on the pond's water (a press there never starts a hold-walk: the tap casts). */
+  waterUnder(p: Point): boolean {
+    return this.lake !== null && treeAt(p) === null && isWater(p);
   }
 
   /** A play mode tap on the lakeside. True when it was about a tree or the water. */
@@ -565,13 +570,9 @@ export class LakesideScreen {
   update(dtMs: number, clockMs: number): void {
     const lake = this.lake;
     if (!lake) return;
-    // Ripples.
-    const ripple = Math.floor(clockMs / 500);
-    if (ripple !== this.lastRipple) {
-      this.lastRipple = ripple;
-      drawRipples(this.ripples, clockMs);
-    }
     this.reduce = this.hooks.reduceEffects();
+    // The pond's water drift (A3).
+    this.pond.update(clockMs, this.reduce);
     if (this.reduce && this.fx.pool.count > 0) this.fx.clear();
     // Trees: shake, squash, fall, sway, and the look (tree, stump, sapling) with the notches.
     this.trees.forEach((t, i) => {

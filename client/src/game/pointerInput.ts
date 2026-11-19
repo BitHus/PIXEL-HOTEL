@@ -109,6 +109,8 @@ export async function setupPointerInput(g: G15) {
       }
       if (st.selectedBlock !== null || holdBusyElsewhere() || lakeside.fishing || menu.uid !== null) return false;
       if (hold.active || st.lookAround) return false; // Look around: a drag never walks
+      // A3: a press on the pond never hold-walks (it used to head for the nearest free cell by straight line, often the far shore): the tap casts.
+      if (lakeside.waterUnder(screenToWorld(screen, st.shown))) return false;
       // OA-1: on press only free floor starts a walk at once (a press on an item or a build/placing state waits for its tap).
       if (early && (roomItem(itemViews.uidOf(target ?? null)) || placer.active)) return false;
       st.walkHold = true;

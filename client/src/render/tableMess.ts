@@ -11,8 +11,9 @@ import { surfaceHeight } from './furnitureArt.ts';
 import type { RoomView } from './roomView.ts';
 
 /** Coins and dishes are drawn in squares this wide, px. */
+import { TABLE_DISH_PX } from './markerSize.ts';
 const COIN_PX = 12;
-const DISH_PX = 14;
+const DISH_PX = TABLE_DISH_PX;
 /** A tap within this many px of a drawn thing hits it. */
 const HIT_PX = 14;
 

@@ -2,7 +2,8 @@
 // birds, butterflies and falling leaves in the air. Everything is built once (the art functions run at build time, never per frame);
 // frames are chosen by toggling visibility. Ambient life is off with Reduce effects; decor is static and stays.
 
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
+import { spriteTexture } from '../render/spriteStore.ts';
 import {
   LAKE_BIRDS,
   LAKE_BUTTERFLIES,
@@ -32,7 +33,20 @@ import {
 
 const POSES = ['perch', 'fly1', 'fly2'] as const;
 
-function drawDecor(s: DecorSpot): Graphics {
+/** A3: the pond PNG for a decor kind (lily pads, reeds), centred (lily) or standing on its foot (reeds); null = the code art. */
+function pondSprite(s: DecorSpot): Sprite | null {
+  const id = s.kind === 'lily' ? (s.variant % 3 === 0 ? 'lily_flower' : 'lily_plain') : s.kind === 'reeds' ? 'reeds' : null;
+  const tex = id ? spriteTexture('lake', id) : null;
+  if (!tex) return null;
+  const sp = new Sprite(tex);
+  sp.anchor.set(0.5, s.kind === 'lily' ? 0.5 : 1);
+  if (s.variant % 2 === 1) sp.scale.x = -1; // a mirror for variety (never a resize)
+  return sp;
+}
+
+function drawDecor(s: DecorSpot): Container {
+  const sp = pondSprite(s);
+  if (sp) return sp;
   switch (s.kind) {
     case 'reeds': return drawReeds(s.variant);
     case 'cattail': return drawCattail(s.variant);
@@ -53,7 +67,7 @@ export class LakeLifeView {
   private birds: Bird[] = [];
   private birdArt: Graphics[][] = [];
   private fish: FishShadow[] = [];
-  private fishArt: Graphics[] = [];
+  private fishArt: Container[] = [];
   private flies: { home: Point; art: Graphics[] }[] = [];
   private leaves: Graphics[][] = [];
   private rngN = 0;
@@ -79,7 +93,9 @@ export class LakeLifeView {
     // Fish shadows under the water's shine.
     this.fish = Array.from({ length: LAKE_FISH_SHADOWS }, (_, i) => newFishShadow(i));
     this.fishArt = this.fish.map((f) => {
-      const g = drawFishShadow(f.size);
+      // A3: the fish shadow PNG at 60 percent (the code art without it).
+      const tex = spriteTexture('lake', 'fish_shadow');
+      const g: Container = tex ? new Sprite({ texture: tex, anchor: 0.5, alpha: 0.6 }) : drawFishShadow(f.size);
       this.waterLayer.addChildAt(g, 0);
       return g;
     });
@@ -126,7 +142,7 @@ export class LakeLifeView {
     if (!this.built) return;
     this.air.visible = !reduce;
     this.waterLayer.children.forEach((c) => {
-      if (this.fishArt.includes(c as Graphics)) c.visible = !reduce;
+      if (this.fishArt.includes(c)) c.visible = !reduce;
     });
     if (reduce) return;
     const rng = (): number => hash01(this.seed, ++this.rngN);

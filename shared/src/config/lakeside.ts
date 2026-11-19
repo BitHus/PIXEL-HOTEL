@@ -1,12 +1,42 @@
 // ---------- Lakeside: woodcutting and fishing (section 10d, step 9f) ----------
-/** The lake: three water rectangles around the pier (floor px). The lake is about a third of the 576 x 384 lakeside. */
-export const LAKE_WATER: readonly { x: number; y: number; w: number; h: number }[] = [
-  { x: 288, y: 32, w: 256, h: 128 },
-  { x: 288, y: 192, w: 256, h: 96 },
-  { x: 384, y: 160, w: 160, h: 32 },
+/** The lakeside's cells (= BUILD_CELL, tested): the pond is drawn and walked on this grid. The room is 18 x 12 cells. */
+export const LAKE_CELL = 32;
+/**
+ * POND (A3, 19 Nov; docs/NOTES.md POND ART SET): the pond as a VERTEX grid of terrain levels, (cols + 1) x (rows + 1) = 19 x 13 digits:
+ * 0 grass, 1 sand, 2 shallow water, 3 deep water. Cell (c, r) has the corners NW = [r][c], NE = [r][c + 1], SE = [r + 1][c + 1],
+ * SW = [r + 1][c]; the four corners of a cell never differ by more than 1 (tested). A cell whose corners are all 2 or more is WATER
+ * (blocks walking, the pier excepted); a cell with some corners under 2 is land or shore (walkable).
+ */
+export const LAKE_LEVELS: readonly string[] = [
+  '0000000000000000000',
+  '0000000011111111100',
+  '0000000112212222110',
+  '0000000122222332210',
+  '0000001123333333210',
+  '0000001223333333210',
+  '0000001222333322210',
+  '0000001112332222110',
+  '0000000012222221100',
+  '0000000011111111000',
+  '0000000000000000000',
+  '0000000000000000000',
+  '0000000000000000000',
 ];
-/** The wooden pier (walkable) reaching into the lake from the shore. */
-export const LAKE_PIER = { x: 256, y: 160, w: 128, h: 32 } as const;
+/** The wooden pier (walkable) reaching east into the pond from the west shore: 5 cells, cell aligned (floor px). */
+export const LAKE_PIER = { x: 192, y: 160, w: 160, h: 32 } as const;
+/**
+ * Pond decor (look only, never in the way; anchor = bottom centre, px): reeds on the shore, rocks on the sand, a rowboat on deep
+ * water, a lantern post at the pier's shore end. Sizes are the art's (32x48, 32x32, 64x40, 32x64).
+ */
+export const LAKE_POND_DECOR: readonly { kind: 'reeds' | 'rocks' | 'rowboat' | 'lantern'; x: number; y: number }[] = [
+  { kind: 'lantern', x: 204, y: 160 },
+  { kind: 'rowboat', x: 432, y: 150 },
+  { kind: 'reeds', x: 266, y: 252 },
+  { kind: 'reeds', x: 522, y: 118 },
+  { kind: 'reeds', x: 498, y: 250 },
+  { kind: 'rocks', x: 240, y: 286 },
+  { kind: 'rocks', x: 560, y: 212 },
+];
 /** The 8 trees: anchor = the bottom middle of the trunk. They stay (a stump) when felled. */
 export const LAKE_TREES: readonly { x: number; y: number }[] = [
   { x: 48, y: 96 }, { x: 112, y: 64 }, { x: 176, y: 96 }, { x: 48, y: 224 },
@@ -16,8 +46,8 @@ export const LAKE_TREES: readonly { x: number; y: number }[] = [
 export const TREE_FOOTPRINT = { w: 24, d: 16 } as const;
 /** Bushes: decoration only (drawn, never in the way). */
 export const LAKE_BUSHES: readonly { x: number; y: number }[] = [
-  { x: 24, y: 160 }, { x: 96, y: 150 }, { x: 250, y: 60 }, { x: 310, y: 300 }, { x: 366, y: 312 },
-  { x: 470, y: 304 }, { x: 556, y: 352 }, { x: 24, y: 330 }, { x: 170, y: 330 },
+  { x: 24, y: 160 }, { x: 96, y: 150 }, { x: 250, y: 344 }, { x: 392, y: 344 },
+  { x: 488, y: 336 }, { x: 556, y: 352 }, { x: 24, y: 330 }, { x: 170, y: 330 },
 ];
 /** A tree falls after this many hits (a swing counts hitsPerSwing hits: the steel axe 2). */
 export const TREE_HITS = 5;
@@ -32,6 +62,12 @@ export const TREE_REGROW_MS = 5 * 60_000;
 export const CHOP_REACH_PX = 40;
 /** The avatar casts from a free spot within this distance of the water, px. */
 export const CAST_REACH_PX = 24;
+/**
+ * A3 (owner 19 Nov, 'tapping the water walks all around it'): a tap on the water picks the cast spot with the least
+ * path length (px) from the avatar + CAST_AIM_WEIGHT x its straight distance to the tap: the nearest shore or pier spot by walking,
+ * turned a little toward the tap, never a walk around the pond.
+ */
+export const CAST_AIM_WEIGHT = 0.5;
 /** The bobber lands at least this far from the avatar (a cast goes out into the lake; more than the avatar is tall, so it is not hidden behind it), px. */
 export const CAST_MIN_PX = 80;
 /** The fishing session runs in fixed ticks, like the dungeon, ms (finer than the dungeon's 100: the reel is a moving bar). */

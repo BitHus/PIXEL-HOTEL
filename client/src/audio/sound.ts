@@ -2,14 +2,17 @@
 // audio context is only made after the first tap or key (browsers do not allow sound before).
 
 import type { Rank } from '@pixel-hotel/shared';
+import { Music } from './music.ts';
+import type { TrackId } from './musicData.ts';
+import { volumeGain } from './sequencer.ts';
 
-export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'pourTick' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found' | 'cast' | 'splash' | 'reelTick' | 'rustle' | 'door' | 'arrive' | 'ready' | 'collect' | 'uiOpen' | 'uiClose';
+export type SoundName = 'step' | 'coin' | 'bell' | 'pop' | 'click' | 'hit' | 'hurt' | 'clink' | 'murmur' | 'pour' | 'pourTick' | 'kill' | 'chestOpen' | 'windup' | 'levelUp' | 'stairs' | 'found' | 'cast' | 'splash' | 'reelTick' | 'rustle' | 'door' | 'arrive' | 'ready' | 'collect' | 'uiOpen' | 'uiClose' | 'serve' | 'bite' | 'confirm' | 'error';
 
 /** The ping of a find, by rank: the rarer, the higher (G5, B5, E6, G6). */
 const FOUND_HZ: Record<Rank, number> = { common: 784, rare: 988, ultra_rare: 1319, legendary: 1568 };
 
 /** The same sound is never started twice within this many ms. */
-export const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, pourTick: 80, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120, door: 400, arrive: 1500, ready: 2500, collect: 120, uiOpen: 120, uiClose: 120 };
+export const MIN_GAP_MS: Record<SoundName, number> = { step: 120, coin: 60, bell: 6000, pop: 60, click: 40, hit: 50, hurt: 80, clink: 120, murmur: 12000, pour: 600, pourTick: 80, kill: 70, chestOpen: 300, windup: 250, levelUp: 1000, stairs: 500, found: 90, cast: 300, splash: 150, reelTick: 90, rustle: 120, door: 400, arrive: 1500, ready: 2500, collect: 120, uiOpen: 120, uiClose: 120, serve: 200, bite: 400, confirm: 150, error: 200 };
 
 type Wave = OscillatorType;
 
@@ -24,11 +27,16 @@ export class Sound {
   private ambienceSources: AudioBufferSourceNode[] = [];
   private murmurGain: GainNode | null = null;
   private ambienceTimer = 0;
+  private readonly music = new Music();
 
   constructor(
     private enabled: boolean,
     private volume: number,
-  ) {}
+    musicVolume = 0.4,
+  ) {
+    this.music.setEnabled(enabled);
+    this.music.setVolume(musicVolume);
+  }
 
   /** Call from the first tap or key press: makes (or wakes) the audio context. */
   unlock(): void {
@@ -45,6 +53,7 @@ export class Sound {
         this.noise = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
         const data = this.noise.getChannelData(0);
         for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
+        this.music.attach(this.ctx, this.noise);
       }
       if (this.ctx.state === 'suspended') void this.ctx.resume();
       this.syncAmbience(); // an ambience asked for before the first tap starts now
@@ -59,6 +68,13 @@ export class Sound {
     const go = (): void => this.unlock();
     window.addEventListener('pointerdown', go, { capture: true, passive: true });
     window.addEventListener('keydown', go, { capture: true, passive: true });
+    // A hidden tab goes quiet (and costs nothing); it wakes when you are back.
+    document.addEventListener('visibilitychange', () => {
+      const ctx = this.ctx;
+      if (!ctx) return;
+      if (document.hidden) void ctx.suspend();
+      else void ctx.resume();
+    });
   }
 
   /**
@@ -138,7 +154,18 @@ export class Sound {
 
   setEnabled(on: boolean): void {
     this.enabled = on;
+    this.music.setEnabled(on);
     this.applyVolume();
+  }
+
+  /** Music for a place (AU-2): a TrackId from sequencer.ts trackFor(), or null for none. Crossfades; starts after the first tap. */
+  setMusic(id: TrackId | null): void {
+    this.music.play(id);
+  }
+
+  /** Music volume 0 to 1 (its own slider); `setVolume` stays the sound-effects volume. */
+  setMusicVolume(v: number): void {
+    this.music.setVolume(v);
   }
 
   setVolume(v: number): void {
@@ -148,7 +175,7 @@ export class Sound {
 
   private applyVolume(): void {
     // Squared: the slider feels even to the ear.
-    if (this.master) this.master.gain.value = this.enabled ? this.volume * this.volume : 0;
+    if (this.master && this.ctx) this.master.gain.setTargetAtTime(volumeGain(this.enabled, this.volume), this.ctx.currentTime, 0.03);
   }
 
   /** `rank` only matters for 'found': a rank-pitched ping, rarer = higher. */
@@ -274,6 +301,23 @@ export class Sound {
         break;
       case 'uiClose':
         this.tone('triangle', 700, 440, 0.07, 0.06);
+        break;
+      case 'serve':
+        // A mug handed over: a soft thunk and a bright clink.
+        this.tone('sine', 200, 120, 0.08, 0.1);
+        this.tone('triangle', 2093, 2093, 0.1, 0.05, 0.05);
+        break;
+      case 'bite':
+        // A fish on the line: two quick high blips.
+        this.tone('square', 1175, 1175, 0.06, 0.05);
+        this.tone('square', 1568, 1568, 0.09, 0.05, 0.08);
+        break;
+      case 'confirm':
+        this.tone('triangle', 660, 660, 0.07, 0.07);
+        this.tone('triangle', 990, 990, 0.12, 0.07, 0.07);
+        break;
+      case 'error':
+        this.tone('square', 220, 160, 0.14, 0.05);
         break;
       case 'found':
         this.tone('triangle', FOUND_HZ[rank], FOUND_HZ[rank], 0.16, 0.08);

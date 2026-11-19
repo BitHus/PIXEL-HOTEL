@@ -16,9 +16,12 @@ export interface SettingsHooks {
   newGame(): void;
   onDebug(on: boolean): void;
   /** The device settings as stored (atmosphere step), and what happens when they change. */
-  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean; reduceEffects: boolean };
+  prefs: { sound: boolean; volume: number; musicVolume?: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean; reduceEffects: boolean };
   onSound(on: boolean): void;
+  /** Sound-effects volume. */
   onVolume(volume: number): void;
+  /** AU-2: music volume; the Music row only shows when this is wired. */
+  onMusicVolume?(volume: number): void;
   onLighting(on: boolean): void;
   onCellGrid(on: boolean): void;
   onPopups(on: boolean): void;
@@ -93,7 +96,22 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
     hooks.onVolume(Number(volume.value) / 100);
   });
   const volumeRow = el('label', 'volume-row');
-  volumeRow.append(el('span', '', 'Volume'), volume, volumeText);
+  volumeRow.append(el('span', '', 'Effects'), volume, volumeText);
+  const musicRow = el('label', 'volume-row');
+  const music = el('input', 'volume-slider');
+  music.type = 'range';
+  music.min = '0';
+  music.max = '100';
+  music.step = '5';
+  music.value = String(Math.round((hooks.prefs.musicVolume ?? 0.4) * 100));
+  music.setAttribute('aria-label', 'Music volume');
+  const musicText = el('span', 'volume-value', music.value);
+  music.addEventListener('input', () => {
+    musicText.textContent = music.value;
+    hooks.onMusicVolume?.(Number(music.value) / 100);
+  });
+  musicRow.append(el('span', '', 'Music'), music, musicText);
+  if (!hooks.onMusicVolume) musicRow.style.display = 'none'; // until game/settingsPanels.ts wires it
   let lighting = hooks.prefs.lighting;
   const lightBtn = textButton(`Lighting: ${lighting ? 'on' : 'off'}`, () => {
     lighting = !lighting;
@@ -160,6 +178,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'PocketBarrel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, musicRow, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

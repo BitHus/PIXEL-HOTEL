@@ -6,7 +6,7 @@
 import { Graphics, type Container } from 'pixi.js';
 import { PALETTE, POP_MS, SHAKE_MS, SHAKE_PX, barTiles, getFurnitureType, type FurnitureItem, type MachineState, type Rect } from '@pixel-hotel/shared';
 import { FurnitureSprite } from './furnitureSprite.ts';
-import { surfaceHeight } from './furnitureArt.ts';
+import { riderLift } from './furnitureArt.ts';
 import { PropAnim } from './propAnim.ts';
 import { spriteFor } from './spriteStore.ts';
 import { itemDepthKey } from './depthOrder.ts';
@@ -84,7 +84,7 @@ export class ItemViews {
         this.layerFor(item).add(sprite.container, itemDepthKey(item));
       }
       const under = item.onItemUid !== null ? byUid.get(item.onItemUid) : undefined;
-      sprite.set(item.x, item.y, item.facing, under ? surfaceHeight(getFurnitureType(under.typeId)) : 0, tiles.get(item.uid) ?? null);
+      sprite.set(item.x, item.y, item.facing, riderLift(under, under ? getFurnitureType(under.typeId) : undefined, item.y), tiles.get(item.uid) ?? null);
       this.props.attach(sprite, item, spriteFor(type.id, item.facing));
       sprite.container.visible = !hidden.has(item.uid);
       this.layerFor(item).setKey(sprite.container, itemDepthKey(item, under));

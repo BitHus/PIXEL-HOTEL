@@ -77,6 +77,9 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
   const packsBtn = extra.find((x) => x.dataset.moreLabel === 'Packs');
   if (packsBtn) menu.prepend(packsBtn);
   wrap.append(more, menu);
+  // R14: the emote menu belongs to the More area: it opens beside the More button (where the grid opens), not at the far bottom.
+  const emoteMenu = parent.querySelector<HTMLElement>(':scope > .emote-menu');
+  if (emoteMenu) wrap.appendChild(emoteMenu);
   col.appendChild(wrap);
   parent.appendChild(col);
   panels.onChange(mark);

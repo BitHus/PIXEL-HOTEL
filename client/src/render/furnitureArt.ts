@@ -209,3 +209,16 @@ export function seatHeight(type: FurnitureType): number {
 export function seatLiftFor(type: FurnitureType): number {
   return Math.max(0, seatHeight(type) - SIT_DROP);
 }
+
+/**
+ * R14: the lift of a piece standing on a surface at its own y. The bar pieces draw a top face only about 12 px deep (heights 26..37 above the anchor row) over a 32 px deep
+ * footprint, so a free rider (mug, candle: FS1, any point of the footprint) used to float up to 23 px over the bar when it stood at the back of the footprint. For the bar the
+ * feet follow the drawn top face: lift = 28 at the front edge, 5 at the back (feet height 28 .. 37). Other surfaces keep their one height. Per-cell riders (register, taps) stand at the front.
+ */
+export function riderLift(under: { typeId: string; y: number } | undefined, underType: FurnitureType | undefined, riderY: number): number {
+  if (!under || !underType) return 0;
+  const h = surfaceHeight(underType);
+  if (underType.id !== 'bar') return h;
+  const depth = Math.min(32, Math.max(0, under.y - riderY));
+  return Math.round(h - (depth * (h - 5)) / 32);
+}

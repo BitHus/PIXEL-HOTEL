@@ -5,6 +5,7 @@
 
 import { PALETTE, getDrinkType, isDrinkId, type MaterialId, type Point } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
+import { ORDER_DISH_PX, ORDER_DOT_PX } from '../render/markerSize.ts';
 import { materialIconUrl } from './itemIcon.ts';
 
 /** The right-edge button column (icon buttons and their gap): bubbles stay left of it. */
@@ -85,7 +86,7 @@ export function createOrderBubbles(parent: HTMLElement, onTap: (guestId: number)
         s.button.hidden = !head;
         if (!head) continue;
         // Fixed CSS size (10 px dot, 14 px dish): no layout read per frame (OWN-4 a).
-        const w = s.button.classList.contains('dish') ? 14 : 10;
+        const w = s.button.classList.contains('dish') ? ORDER_DISH_PX : ORDER_DOT_PX;
         const h = w;
         // Beside the head, so the guest's spoken lines (centred above it) stay readable: on the right, or on the left
         // near the right edge (where the button column is).

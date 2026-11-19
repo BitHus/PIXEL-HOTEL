@@ -1711,7 +1711,7 @@
 }
 
 .quest-btn.glow {
-  animation: quest-glow 1s steps(2) infinite;
+  animation: quest-glow 3.6s ease-in-out infinite;
 }
 
 @keyframes quest-glow {
@@ -1814,7 +1814,7 @@
 }
 
 .dungeon-btn.glow {
-  animation: quest-glow 1s steps(2) infinite;
+  animation: quest-glow 3.6s ease-in-out infinite;
 }
 
 /* The run bag: bottom center in the hotbar's place. 12 slots in one row, two rows on a phone. */
@@ -3259,6 +3259,7 @@
 
 /* ---------- Step 9t: the tavern ---------- */
 /* The order bubble above a seated guest: the item's icon; tap to serve (44 px touch size). */
+/* sizes mirror render/markerSize.ts ORDER_DOT_PX 12 / ORDER_DISH_PX 16 */
 .order-bubble {
   isolation: isolate;
   /* OWN-4 (d): a really tiny marker over the guest who wants something: a dot in the drink's colour, or the tiny dish icon. The orders strip holds the details. */
@@ -3266,8 +3267,8 @@
   left: 0;
   top: 0;
   box-sizing: border-box;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   padding: 0;
   margin: 0;
   display: block;
@@ -3277,8 +3278,8 @@
   pointer-events: none;
 }
 .order-bubble.dish {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   background: none;
   border: 0;
   border-radius: 0;
@@ -3287,8 +3288,8 @@
   display: none;
 }
 .order-bubble img {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   image-rendering: pixelated;
   pointer-events: none;
   display: block;

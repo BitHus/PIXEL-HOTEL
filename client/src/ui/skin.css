@@ -111,7 +111,7 @@
 }
 
 .flame-pulse {
-  animation: flame-pulse 1.4s steps(2, end) infinite;
+  animation: flame-pulse 3.2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2186,7 +2186,7 @@
 .btn.collect-btn {
   min-height: 52px;
   font-size: 18px;
-  animation: flame-pulse 1.4s steps(2, end) infinite;
+  animation: flame-pulse 3.2s ease-in-out infinite;
 }
 
 .cook-batch {
@@ -3125,7 +3125,7 @@ body,
   z-index: -1;
   transform: scale(2);
   opacity: 0.85;
-  animation: order-aura 1.2s ease-in-out infinite;
+  animation: order-aura 3.4s ease-in-out infinite;
 }
 .order-bubble.ready { outline: 0; animation: none; }
 .order-bubble.ready::before {
@@ -3134,8 +3134,8 @@ body,
 }
 .order-bubble.taken::before { animation: none; opacity: 0.4; }
 @keyframes order-aura {
-  0%, 100% { transform: scale(1.7); opacity: 0.9; }
-  50% { transform: scale(2.4); opacity: 0.35; }
+  0%, 100% { transform: scale(1.9); opacity: 0.75; }
+  50% { transform: scale(2.15); opacity: 0.5; }
 }
 @keyframes order-aura-ready {
   0%, 100% { transform: scale(1.8); opacity: 1; }

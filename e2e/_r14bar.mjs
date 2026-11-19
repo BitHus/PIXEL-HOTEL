@@ -1,0 +1,21 @@
+import { chromium } from '@playwright/test';
+const tag=process.argv[2];
+const b = await chromium.launch();
+const ctx = await b.newContext({viewport:{width:1000,height:700},deviceScaleFactor:3});
+const page = await ctx.newPage();
+await page.goto('http://localhost:5199/?e2e');
+await page.waitForSelector('.title-btn'); await page.getByText('New game').first().click();
+await page.waitForSelector('.charmaker-panel'); await page.getByLabel('Display name').fill('T');
+await page.getByText('Begin your story').click(); await page.waitForSelector('.shape-card');
+await page.getByRole('button',{name:'Open my tavern'}).click(); await page.waitForTimeout(800); await page.mouse.click(5,300); await page.waitForTimeout(500); await page.mouse.click(5,300); await page.waitForTimeout(5000);
+const r = await page.evaluate(async()=>{const {api}=window.__ph;
+ const items=await api.getItems(); const bar=items.filter(i=>i.typeId==='bar'); 
+ const b0=bar.sort((a,c)=>a.x-c.x)[Math.floor(bar.length/2)];
+ const out={bars:bar.map(i=>[i.x,i.y])};
+ for (const dy of [-2,-16,-30]) { await api.buyCatalog('lamp'); const inv=await api.getItems(); const lamp=inv.find(i=>i.typeId==='lamp'&&i.onItemUid==null&&i.roomId==null)||inv.filter(i=>i.typeId==='lamp').pop();
+  const res=await api.placeItem(lamp.uid,{center:{x:b0.x+(dy*0)-4+ (dy+30)*3,y:b0.y+dy-8},facing:'down',snap:true}); out['p'+dy]=res?'ok':'null'; }
+ out.lamps=(await api.getItems()).filter(i=>i.typeId==='lamp').map(i=>[i.x,i.y,i.onItemUid,i.roomId]); return out;});
+console.log(JSON.stringify(r));
+await page.waitForTimeout(800);
+await page.screenshot({path:`r14-shots/${tag}-bar.png`,clip:{x:300,y:150,width:600,height:300}});
+await b.close();
