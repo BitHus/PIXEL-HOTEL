@@ -9,6 +9,13 @@ Updated 2026-11-19 (manager). LIVE site is still main at 4e781d4, older than the
 - Next: TF-6/7 render + strip UI (bar guests, Grab all/Serve all), ON-5 account panel, TF-9 balance gate, bar/table spacing, hitbox check, unwired panel art (tabs, buttons, sign).
 - PIXELLAB: ~925/2000 used, owner cap about 1000, then owner says go.
 
+## PLAN after this batch (manager opinion, owner OK 19 Nov)
+1. Hold new features until tester RUN 10 (first browser look at floors, walls, panel frame, spacing, hitbox) is fixed.
+2. Check the 24 px panel frame on narrow panels (Bar, Skills, Bag, phone); thinner frame variant if cramped.
+3. Bar guests (TF-6/7/9) are IN (owner: fun); switch on only if the simulate passes.
+4. Online: account panel ON-5 now, then visiting (P2) so others can see a tavern.
+5. NEXT ROUND: depth for the mine, dungeon and fishing (the weak links), then avatar style lock.
+
 ## Done this session (all live)
 Camera locked without edge clamp; emote state fix; small NPC chat pills; kitchen = walled area inside the tavern (SAVE 37, cellar stays a room, racks 2/3/3); skills MG-1/2 (SAVE 38, level cap 12, Skills panel + stat hooks MG-7); TRADER REMOVED (gold = guests + dungeon run gold, ~76/24); tap forgiveness; tutorial starts at 0 (zoom, walk, hold-walk steps); orders rail bottom-left, hanging OPEN/CLOSED sign, aura on order markers, pour hint hides under panels, Serve closes the bar panel; Worlds badge hidden in the tavern; lakeside trees + farm ground/ambience + door art (cellar down/open/up, kitchen) wired; cobweb corner, stand flames; rock sprites.
 
