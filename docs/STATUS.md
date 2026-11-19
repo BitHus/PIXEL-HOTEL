@@ -2,13 +2,23 @@
 
 Updated 2026-11-19 (manager). LIVE site = main at 85c9ab9 (see Right now). Startup file: C:/Users/ajren/pixel-hotel-team/MANAGER-START.md (has a 19 Nov update). Owner list: docs/OWNER-AGENDA-17NOV.md.
 
-## Right now (workers) - 19 Nov late, wrap-up at 93% usage
+## Right now (workers) - 20 Nov, wrap-up at 99% weekly usage
+- LIVE: 9d8b442 (fishing 3f, SK-3..5 46 nodes live, taps panel, skill icons, ore_sense, new logo, NPC hooks, peek fix). Local commits after it are NOT pushed: push only after npm run check exit 0.
+- RUNNING (may die at the limit; relaunch from WORKERS-RESUME.md): coder OPUS 3e food stash + refill loop, tester RUN 15 (one tab, prod build). Then: tutorial splice step, SK-6 tree canvas, RUN 15 fixes, PLAN-SPLICING.
+- OWNER open: fish numbers, peek exception, SFX volume, brewing to cellar, www redirect, crypt round 2, early xp pace, logo verdict.
+
+## Earlier (19 Nov)
 - LIVE: 85c9ab9 (pond rework, new floor/wall/icons, tutorial card, bigger markers, stool, emote menu, bar rider lift, audio engine NOT wired, calmer glows). Server still SAVE 41 vs client 42 (cloud flag off; ask owner before DEPLOY_SERVER).
 - WRAPPING UP (finish, check, commit, push, deploy): coder a4180397 DOOR BUG (doors do nothing, owner: door too small, avatar glitched in it once, walking against the wall next to the door should enter it); artist a55eabe1 FLOOR/WALL/BAR/STOOL/REGISTER redo (owner: bright wood floor and its repeating pattern are very ugly; wanted: DARK calm non-repeating standard floor with a big 192-256 px tile, 5-6 other floor styles to choose, new bar art, stool, register facing the guests, research notes); UI a96f17c1 right-column icons +20% on desktop only.
 - OWNER FEEDBACK this session: new bar ugly, register wrong way, doors too small/0 depth, order dots calmer (done), tray beer bigger (done), bar guests OFF (done, BAR_GUESTS_ENABLED=false), NPC chat lines low priority ('does not have to be spoken'), use better models when needed (memory updated).
 - OPEN owner questions: brewing into the cellar?, SFX default volume 0.35 -> 0.7?, 'door to the block placing' (unclear), avatar try keeper (art-src/avatar-try, 6/10, walk too subtle from the front): keep / stronger walk / drop.
 - NEXT (in order): misclick-proof interaction (hover, E key, phone context button, priority; see WORKERS-RESUME), audio hookup (hooks list in WORKERS-RESUME), door depth art, floor variants render hook (per-cell variants), SK-1/2 skill tree, 3f fishing, 3e food stash + tap panel, tester RUN 13 (cellar, pond, new floor, doors, tutorial pointer), camera ease to guide target, build grid contrast, long-shape bar 3 pieces, 3g NPC hooks (low).
 - PIXELLAB: about 1570-1750 of 2000 used (check get_balance).
+
+## Right now (workers) - 20 Nov, wrap-up at 99% weekly usage
+- LIVE: 9d8b442 (fishing 3f, SK-3..5 46 nodes live, taps panel, skill icons, ore_sense, new logo, NPC hooks, peek fix). Local commits after it NOT pushed (roadmap notes + maybe WIP of the coder): push only after npm run check exit 0.
+- RUNNING (may die at the limit; relaunch from WORKERS-RESUME): coder OPUS 3e food stash + refill loop, tester RUN 15 (one tab, prod build). Then: tutorial splice step, SK-6 tree canvas, fix RUN 15 findings, PLAN-SPLICING.
+- OWNER open: fish numbers, peek exception, SFX volume, brewing to cellar, www redirect, crypt round 2, early xp pace, logo verdict.
 
 ## PLAN after this batch (manager opinion, owner OK 19 Nov)
 1. Hold new features until tester RUN 10 (first browser look at floors, walls, panel frame, spacing, hitbox) is fixed.
