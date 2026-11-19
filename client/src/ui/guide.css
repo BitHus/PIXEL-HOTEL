@@ -89,3 +89,10 @@
 .hint-chip.on { opacity: 1; animation: hint-bob 900ms ease-in-out infinite; }
 .hint-chip.calm { animation: none; }
 @keyframes hint-bob { 0%, 100% { margin-top: -38px; } 50% { margin-top: -43px; } }
+
+/* RUN 12: the target is off screen: no ring, the arrow turns (--edge-rot, set in guidePointer.ts) toward it and stays inside the view. */
+.guide-pointer.edge .guide-ring { display: none; }
+.guide-pointer.edge .guide-hand {
+  transform-origin: 50% 50px;
+  rotate: var(--edge-rot, 0deg);
+}

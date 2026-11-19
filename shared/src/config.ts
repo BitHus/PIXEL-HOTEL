@@ -110,7 +110,7 @@ export const TRAY_MAX = 3;
  * TF (docs/PLAN-TAVERN-FLOW.md): BAR GUESTS stand at the bar and are served by hand-over. ON since 19 Nov (owner go; the client draws them, TF-6, balance gate TF-9 green):
  * every number below is a PROPOSAL of the plan (section 3.3), none is a ranked or balance number. TavernWorld.barGuests overrides this flag (tests).
  */
-export const BAR_GUESTS_ENABLED = true;
+export const BAR_GUESTS_ENABLED = false;
 /** TF: base chance that a single guest (with seats and bar spots free) takes the bar. +0.1 per extra free spot, -0.05 per free seat, clamped to BAR_CHANCE_MIN..BAR_CHANCE_MAX. */
 export const BAR_BASE = 0.35;
 export const BAR_CHANCE_MIN = 0.1;

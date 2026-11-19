@@ -9,6 +9,7 @@ import { annexRectOf, createRoom, doorRect, doorZoneRect, floorRects, floorStyle
 import { kitchenZone } from './kitchen.ts';
 import { guestZones, npcGrid } from './npcNav.ts';
 import { innDoorSpotRects, innDoorSpots } from './innDoors.ts';
+import { upgradeRoom } from './economy.ts';
 
 const LEVELS = [1, 2, 3] as const;
 const shopShapes = shapesFor('shop').filter((s) => s.shopStart);
@@ -137,5 +138,41 @@ describe('the start layout (START LAYOUT REDO, owner 19 Nov)', () => {
     const y1 = Math.max(...rs.map((r) => r.y + r.h));
     expect(x1 - x0).toBeLessThanOrEqual(8 * 32);
     expect(y1 - y0).toBeLessThanOrEqual(9 * 32);
+  });
+});
+describe('the real bar and its start layout across shapes and levels (job 3d, 19 Nov)', () => {
+  const BAR_MIN: Record<string, number> = { square_shop: 6, l_shape: 6, wide_hall: 6, plus: 6, long: 3 }; // long: its annex is only 4 cells wide at level 1
+  it('a long bar of one-cell pieces: the register on the first (the checkout end), a tap stand in the middle, bar stools along the front, all in a row', () => {
+    for (const sh of shopShapes) {
+      const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: sh.id }, 0);
+      const bars = s.items.filter((i) => i.typeId === 'bar').sort((a, b) => a.x - b.x);
+      expect(bars.length, sh.id).toBeGreaterThanOrEqual(BAR_MIN[sh.id]!);
+      expect(new Set(bars.map((b) => b.y)).size, `${sh.id} one row`).toBe(1);
+      bars.forEach((b, k) => k > 0 && expect(b.x - bars[k - 1]!.x, `${sh.id} no gap`).toBe(32));
+      const reg = s.items.find((i) => i.typeId === 'register')!;
+      expect(reg.onItemUid, sh.id).toBe(bars[0]!.uid);
+      const tap = s.items.find((i) => i.typeId === 'tap_stand')!;
+      const at = bars.findIndex((b) => b.uid === tap.onItemUid);
+      expect(at, `${sh.id} tap not at the register`).toBeGreaterThan(0);
+      if (bars.length >= 5) expect(at, `${sh.id} tap not at the far end`).toBeLessThan(bars.length - 1);
+      for (const st of s.items.filter((i) => i.typeId === 'bar_stool')) expect(st.y, `${sh.id} stool in front`).toBe(bars[0]!.y + 32);
+    }
+  });
+
+  it('every start piece stays valid after the upgrade to level 2 and 3, and the bar stays served and reachable', () => {
+    for (const sh of shopShapes) {
+      let s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: sh.id }, 0);
+      for (const l of [2, 3]) {
+        s = upgradeRoom({ ...s, player: { ...s.player, wallet: { ...s.player.wallet, gold: 99999 } } }, s.player.shopRoomId, 1)!;
+        const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
+        expect(room.level).toBe(l);
+        const floor = s.items.filter((i) => i.roomId === room.id && i.onItemUid === null);
+        expect(floor.length, `${sh.id} L${l} nothing sent to the bag`).toBeGreaterThanOrEqual(10);
+        for (const i of floor) {
+          const rest = s.items.filter((x) => x.uid !== i.uid && x.onItemUid !== i.uid);
+          expect(canPlace(room, rest, getFurnitureType(i.typeId), i.x, i.y, i.facing), `${sh.id} L${l} ${i.typeId}`).toBe(true);
+        }
+      }
+    }
   });
 });

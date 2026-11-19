@@ -125,6 +125,8 @@
 .side-buttons { transition: opacity 0.35s linear; }
 .hud-faded .top-left,
 .hud-faded .side-buttons { opacity: 0.25; }
+/* RUN 12: the side discs are the way into every screen: they only dim to 60% (readable), the info panel still goes to 25%. */
+.hud-faded .side-buttons { opacity: 0.6; }
 @media (prefers-reduced-motion: reduce) {
   .top-left,
   .side-buttons { transition: none; }

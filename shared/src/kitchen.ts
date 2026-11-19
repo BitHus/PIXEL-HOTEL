@@ -1,4 +1,4 @@
-// The tavern kitchen zone (step T1; since 18 Nov an OPEN ANNEX of floor below the tavern, no wall, no door). Pure.
+// The tavern kitchen zone (step T1; since 18 Nov an OPEN ANNEX of floor ABOVE the tavern, behind the bar and the back wall (19 Nov; below before), no wall, no door). Pure.
 //
 // - THE ZONE: the whole kitchen annex (shared/data/roomShapes.json "kitchen" is the annex rectangle per level, open to the tavern along its top edge), staff only like the strip
 //   behind the bar: guests never walk or sit there (npcNav.guestZones feeds npcGrid and the seats). The owner may put blocks and

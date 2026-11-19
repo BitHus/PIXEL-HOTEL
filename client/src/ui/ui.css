@@ -3527,8 +3527,13 @@
 }
 
 /* A craftable row gets a warm edge so the ready ones stand out in a long list. */
+/* RUN 12: the chip stays cream, so its text is always dark (the light-green --ok of Lantern Dark vanished on cream = blank pills); ready = a green edge instead. */
+.workshop-panel .recipe-needs .need {
+  color: var(--night);
+}
 .workshop-panel .catalog-row:not(.missing) .recipe-needs .need:not(.short) {
-  color: var(--ok);
+  color: var(--night);
+  box-shadow: 0 0 0 1px #265c42;
 }
 
 /* ---------- Step T1 (ART-T1): the Taps panel (ui/tapsPanel.ts) ----------

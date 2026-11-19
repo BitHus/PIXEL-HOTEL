@@ -146,7 +146,7 @@ export function fitsRoomKind(type: FurnitureType, room: Room): boolean {
   return type.placeIn === 'both' || type.placeIn === room.kind;
 }
 
-/** The kitchen pieces of the tavern (they stand in the walled kitchen area; the prep bonus needs the zone, nothing forces them in). */
+/** The kitchen pieces of the tavern (they stand in the kitchen annex behind the bar; the prep bonus needs the zone, nothing forces them in). */
 const KITCHEN_PIECES: ReadonlySet<string> = new Set(['brewing_barrel', 'stove', 'prep_table', 'pantry', 'sink', 'serving_hatch']);
 export function isKitchenPiece(typeId: string): boolean {
   return KITCHEN_PIECES.has(typeId);

@@ -126,11 +126,8 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   The hotel room starts completely empty. The tavern (kind 'shop') starts with the bar (the counter), a stall_table,
   a square table with 3 stools (the round table is retired), an idle brewing barrel and a stove (inside the kitchen zone), at fixed positions from the shape's data (since G2 the third stool stands at the round table;
   S3 had it as a bar stool in front of the bar; no stall table), and, since T1, a register and a tap stand standing ON the bar with the 7 root ale loaded on the first tap.
-- The counter (step 7): every shop has exactly one counter. Since T1 it is a SURFACE item (3 cells, one level) and the cash register is its own piece, 'register', standing on it.
-  It is placed at the start (near the back wall with room behind it, left of center) and can be
-  moved and rotated in build mode, but never picked up or sold (FurnitureType.noPickup). The
-  spot behind it (where the player serves) must stay reachable from the door: a placement that
-  blocks it is refused (FurnitureType.servedFromBehind, canPlace).
+- The bar (CHANGED 19 Nov, owner: the MODULAR BAR, SAVE 42, supersedes the single 3-cell counter): the bar is built from one-cell 'bar' pieces (surface, FurnitureType.autotile 'bar') that join their neighbours like walls (shared/src/modularBar.ts barTiles: straight, end or corner art). Every piece is served from behind: the staff spot behind each piece must stay reachable from the door (servedFromBehind, canPlace / behindAllReachable). The register and tap stands sit on any piece; bar guests stand in front of any piece. Extra pieces are cheap in the catalog. Pieces move, rotate and pick up freely, but the last piece of a tavern is never picked up (canRemoveBarPiece). Old counter / counter_ext became bar pieces in migration 41 -> 42. Start bar: 6 pieces (long shape 3), register at the first piece, tap stand in the middle, bar stools in front, the dining table at least 2 free rows from the bar front.
+- CHANGED 19 Nov (owner: kitchen ABOVE): the KITCHEN ANNEX now sits ABOVE the tavern floor, behind the bar and the back wall (roomShapes.json kitchen, Room.annexAbove, SAVE 42; the old annex below is kitchenBelow, only for saves before 42). Everything else in the open-kitchen paragraph above (open, staff only, stone floor, prep bonus) stays.
 - Room upgrade (costs gold): the room switches to the next level of its shape. Every item
   keeps its position. The door moves to the new level's door, and any item standing in the new
   door zone goes back to the inventory (blocks there go back to the bag too). Costs are in config.

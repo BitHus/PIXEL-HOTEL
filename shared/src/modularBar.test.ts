@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { barTileFor, barTiles, convertCounters } from './modularBar.ts';
 import { createNewPlayer } from './newPlayer.ts';
+import type { GameState } from './gameState.ts';
 import { save41Start } from './tavernTest.ts';
 
 const n = (e: boolean, w: boolean, no: boolean, s: boolean) => ({ e, w, n: no, s });
@@ -50,5 +51,24 @@ describe('convertCounters (migration 41 -> 42)', () => {
     expect(after.ledger.at(-1)).toMatchObject({ reason: 'tavern_gift' });
     expect(after.player.seen.bar).toBeDefined();
     expect(convertCounters(after, 6)).toBe(after);
+  });
+
+  it('an old save with a counter_ext, a counter in the bag, a bar guest and bar mess: pieces keep their cells, riders and guests follow, the bag counter becomes a piece', () => {
+    const before = save41Start();
+    const counter = before.items.find((i) => i.typeId === 'counter')!;
+    const ext = { uid: 90, typeId: 'counter_ext', ownerId: counter.ownerId, roomId: counter.roomId, x: counter.x + 80, y: counter.y, facing: counter.facing, onItemUid: null };
+    const spare = { uid: 91, typeId: 'counter', ownerId: counter.ownerId, roomId: null, x: 0, y: 0, facing: 'down' as const, onItemUid: null };
+    const c = Math.floor(ext.x / 32);
+    const r = Math.floor(counter.y / 32) + 1;
+    const guest = { id: -5, barSpot: { barUid: 90, c, r } } as unknown as GameState['tavern']['guests'][number];
+    const mess = { seatUid: 90, seatIndex: 1000 + r * 1000 + c } as unknown as GameState['tavern']['mess'][number];
+    const withOld: GameState = { ...before, nextUid: Math.max(before.nextUid, 92), items: [...before.items, ext, spare], tavern: { ...before.tavern, guests: [guest], mess: [mess] } };
+    const after = convertCounters(withOld, 5);
+    expect(after.items.some((i) => i.typeId === 'counter' || i.typeId === 'counter_ext')).toBe(false);
+    expect(after.items.find((i) => i.uid === 90)).toMatchObject({ typeId: 'bar', x: ext.x, y: ext.y });
+    expect(after.items.find((i) => i.uid === 91)).toMatchObject({ typeId: 'bar', roomId: null });
+    expect(after.tavern.guests[0]!.barSpot!.barUid).toBe(90);
+    expect(after.tavern.mess[0]!.seatUid).toBe(90);
+    expect(after.items.filter((i) => i.typeId === 'bar' && i.roomId !== null)).toHaveLength(4);
   });
 });
