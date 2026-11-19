@@ -38,6 +38,8 @@ Owner: these UIs are important. Fishing: cast, bite !, reel bar + catch box + fi
 
 ## QUEUED HIGH (owner 19 Nov): no drag-to-pan in play mode; camera always locked on the avatar; free look only via a Look around toggle in More (build mode keeps panning). Removes walking/camera bugs. Changes the CAM-LOCK rule in CLAUDE.md (owner decision).
 
+## QUEUED (owner 19 Nov): REWORK the CHARACTER MAKER screen (ugly): title-screen look, big live preview, clean pickers, phone + desktop.
+
 ## Done this session (all live)
 Camera locked without edge clamp; emote state fix; small NPC chat pills; kitchen = walled area inside the tavern (SAVE 37, cellar stays a room, racks 2/3/3); skills MG-1/2 (SAVE 38, level cap 12, Skills panel + stat hooks MG-7); TRADER REMOVED (gold = guests + dungeon run gold, ~76/24); tap forgiveness; tutorial starts at 0 (zoom, walk, hold-walk steps); orders rail bottom-left, hanging OPEN/CLOSED sign, aura on order markers, pour hint hides under panels, Serve closes the bar panel; Worlds badge hidden in the tavern; lakeside trees + farm ground/ambience + door art (cellar down/open/up, kitchen) wired; cobweb corner, stand flames; rock sprites.
 
