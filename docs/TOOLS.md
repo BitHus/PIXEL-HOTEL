@@ -27,3 +27,6 @@ The owner OKs downloading better fonts. Rules (CLAUDE.md section 12): local open
 
 ## ART RULE (owner 19 Nov): NEVER squeeze or stretch sprites
 No squeezing, no stretching, no non-uniform or fractional scaling of any sprite to fit a footprint (it ruins proportions: tiny chairs, flat tables). If art does not fit, REGENERATE it at the right size/proportion (PixelLab width/height in multiples of 4), or change the footprint in data. tools/pixellab-fit.mjs must only trim, pad and snap colours (no downscale, no row stretching); a sprite may be taller or wider than its footprint (anchor bottom centre, overlap is fine). Seats must be at least as tall as the plain chair (48) next to the 54 px avatar.
+
+## UI RULE (owner 19 Nov): FLEXIBLE LAYOUT PER SCREEN
+Every screen/panel adapts to the device: phone portrait (one column, 44px+ touch, key actions within thumb reach at the bottom, nothing cut off, scroll inside if needed, safe-area insets), phone landscape (side by side), desktop (roomier layout, hover, keyboard). Use the existing size classes (client/src/ui size-class code, docs/UI-REFERENCE.md); test 420x760, a short phone (360x640), phone landscape and desktop 1000x700. Frequent actions near the bottom (thumb reach).
