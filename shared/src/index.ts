@@ -68,6 +68,7 @@ export * from './skillRules.ts';
 export * from './tapPick.ts';
 export * from './stats.ts';
 export * from './innDoors.ts';
+export * from './doorArrive.ts';
 export * from './innDoorClear.ts';
 export * from './taps.ts';
 export * from './pour.ts';

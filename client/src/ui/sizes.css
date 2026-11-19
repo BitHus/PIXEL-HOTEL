@@ -179,3 +179,31 @@
 .catalog-row > .btn {
   align-self: center;
 }
+
+/* ---------- R15 (owner 19 Nov): the RIGHT-SIDE column (Catalog, Build, Dungeon, Worlds, More + the More grid) is a bit bigger on desktop.
+   ONE knob: --side-scale (1 = as before; 1.2 = +20%). Desktop only (fine pointer, width >= 900, height >= 500: also the 1000 x 700 tablet class); phones and touch keep 1.
+   The art is 32 px: the icon is 32 * scale css px, drawn pixelated; on a 1.5x screen the size is snapped to 2 whole device px per art px (43 css px)
+   so it stays crisp there (1x and 2x screens: 38.4 css px = 1.2x / 2.4x, pixelated, not whole). Hotbar, Bag, info panel, panels and orders row do NOT read this. ---------- */
+:root { --side-scale: 1; --side-icon: 32px; }
+@media (pointer: fine) and (min-width: 900px) and (min-height: 500px) {
+  :root:not(#r15) {
+    --side-scale: 1.2;
+    --side-icon: calc(32px * var(--side-scale));
+    --side-btn: calc(44px * var(--ui-s) * var(--side-scale));
+  }
+}
+@media (pointer: fine) and (min-width: 900px) and (min-height: 500px) and (min-resolution: 1.4dppx) and (max-resolution: 1.6dppx) {
+  :root:not(#r15) { --side-icon: calc(64px / 1.5); } /* 2 device px per art px */
+}
+@media (pointer: fine) and (min-width: 900px) and (min-height: 500px) {
+  .side-buttons .icon-btn:not(.open-sign) > .pixel-icon,
+  .side-buttons .more-item:not(.open-sign) > .pixel-icon {
+    width: var(--side-icon);
+    height: var(--side-icon);
+  }
+  .side-buttons .more-item:not(.open-sign) {
+    width: calc(74px * var(--side-scale));
+    height: calc(56px * var(--side-scale));
+    grid-template-rows: var(--side-icon) auto;
+  }
+}

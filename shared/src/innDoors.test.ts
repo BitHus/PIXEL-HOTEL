@@ -6,7 +6,7 @@ import { blockProblem, placeBlock } from './blocks.ts';
 import { getBlockType } from './blockTypes.ts';
 import { canPlace, doorPoint, doorReachesMiddle, footprintRect, getFurnitureType, roomBlockers, staffZone } from './furniture.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
-import { doorAt, innDoorFile, innDoorHint, innDoorSpotRects, innDoorHasSprite, innDoorSpots, innDoorwayRects, innTravel, innTravelProblem } from './innDoors.ts';
+import { doorAt, doorTapAt, doorWalkPoint, innDoorFile, innDoorHint, innDoorSpotRects, innDoorHasSprite, innDoorSpots, innDoorwayRects, innTravel, innTravelProblem } from './innDoors.ts';
 import { buildNavGrid, cellAt, isCellFree, reachableCells } from './nav.ts';
 import { configForChoice, createNewPlayer, DEFAULT_NEW_PLAYER } from './newPlayer.ts';
 import { guestZones, npcGrid } from './npcNav.ts';
@@ -302,5 +302,34 @@ describe('door sprite clearance', () => {
     const x = left - 8 - w / 2;
     expect(canPlace(tavern, [], torch, x, foot, 'down')).toBe(false);
     expect(canPlace(tavern, [], torch, left - 16 - w / 2 - 4, foot, 'down')).toBe(true);
+  });
+});
+
+describe('doorTapAt (owner bug 19 Nov: tapping the door picture did nothing)', () => {
+  const s = createNewPlayer(undefined, 0);
+  for (const room of s.rooms.filter((r) => innDoorSpots(r).length > 0)) {
+    it(`${room.kind}: the spot, the doorway, the wall and floor one cell beside it and one cell in front are the door; the floor beside or further down is not`, () => {
+      for (const d of innDoorSpots(room)) {
+        const mid = d.spot.x + d.spot.w / 2;
+        expect(doorTapAt(room, { x: mid, y: d.spot.y + 8 })?.id).toBe(d.id); // on the spot
+        expect(doorTapAt(room, { x: mid, y: d.doorway.y + 4 })?.id).toBe(d.id); // top of the arch
+        expect(doorTapAt(room, { x: d.doorway.x - 8, y: d.doorway.y + 30 })?.id).toBe(d.id); // the arch frame (sprite wider than the doorway)
+        expect(doorTapAt(room, { x: mid, y: d.spot.y + d.spot.h + 8 })?.id).toBe(d.id); // one cell in front of the spot (forgiving, owner 'too small')
+        expect(doorTapAt(room, { x: mid, y: d.spot.y + d.spot.h + 40 })).toBeNull(); // two cells in front
+        expect(doorTapAt(room, { x: mid, y: d.spot.y + d.spot.h + 40 }, 12)?.id).toBe(d.id); // a tap tolerance margin grows it
+        expect(doorTapAt(room, { x: d.spot.x - 24, y: d.spot.y + 8 })?.id).toBe(d.id); // against the wall one cell beside the doorway
+        expect(doorTapAt(room, { x: d.spot.x - 24, y: d.doorway.y + 20 })?.id).toBe(d.id); // the wall one cell beside the doorway
+        expect(doorTapAt(room, { x: d.spot.x - 40, y: d.spot.y + 8 })).toBeNull(); // two cells beside: plain floor
+      }
+    });
+  }
+  it('doorWalkPoint: a tap on the door walks to the spot cell under the tap; any other point is kept', () => {
+    const hotel = s.rooms.find((r) => r.kind === 'hotel')!;
+    const d = innDoorSpots(hotel)[0]!;
+    expect(doorWalkPoint(hotel, { x: d.spot.x + 5, y: d.doorway.y + 10 })).toEqual({ x: d.spot.x + 16, y: d.spot.y + 16 });
+    expect(doorWalkPoint(hotel, { x: d.spot.x + d.spot.w - 2, y: d.doorway.y + 10 })).toEqual({ x: d.spot.x + d.spot.w - 16, y: d.spot.y + 16 });
+    expect(doorWalkPoint(hotel, { x: d.doorway.x - 30, y: d.doorway.y + 10 })).toEqual({ x: d.spot.x + 16, y: d.spot.y + 16 });
+    const off = { x: d.spot.x + 8, y: d.spot.y + 80 };
+    expect(doorWalkPoint(hotel, off)).toBe(off);
   });
 });

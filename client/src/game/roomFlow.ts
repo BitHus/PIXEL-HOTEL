@@ -3,7 +3,7 @@
 
 import {
   INTRO_COINS, doorY, getFurnitureType, INTRO_COIN_EVERY_MS, INTRO_COIN_FLY_MS, INTRO_FIRST_POP_MS, INTRO_STEP_MS, barCoinPoint,
-  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, CELLAR_BUILD_COST, CELLAR_RACK_MAX_BY_LEVEL, CELLAR_UNLOCK_LEVEL, innDoorHint, innDoorSpots, BUILD_CELL, type RoomKind, type RoomState,
+  roomBoundsRect, worldToScreen, TAVERN_INTRO_NEW, CELLAR_BUILD_COST, CELLAR_RACK_MAX_BY_LEVEL, CELLAR_UNLOCK_LEVEL, innDoorHint, innDoorSpots, type RoomKind, type RoomState,
 } from '@pixel-hotel/shared';
 import { flyCoin } from '../ui/coinFly.ts';
 import { savePrefs } from '../api/prefs.ts';
@@ -149,7 +149,7 @@ export async function setupRoomFlow(g: G13) {
     st.items = await api.getItems();
     const mine = state.avatars[0];
     if (mine) st.avatar = { ...mine, look: st.avatar.look };
-    st.path = arrived && mine ? [{ x: mine.x, y: mine.y + BUILD_CELL }] : []; // a door arrival steps one cell down
+    st.path = []; // a door arrival already stands in front of the door (roomsApi.useDoor), never inside the arch
     st.goal = null;
     seating.clear();
     st.marked = null;

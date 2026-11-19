@@ -27,7 +27,7 @@ describe('useDoor', () => {
     const me = inTavern!.avatars[0]!;
     expect(me.roomId).toBe(p.shopRoomId);
     expect(me.x).toBe(spot.spot.x + 16);
-    expect(me.y).toBe(spot.spot.y + 16);
+    expect(me.y).toBe(spot.spot.y + 48); // one cell in front of the spot (owner 19 Nov: never inside the arch)
     expect(me.facing).toBe('down');
     const inGarden = await api.useDoor('tavern_to_garden');
     expect(inGarden?.room.id).toBe(p.farmRoomId);
@@ -67,7 +67,7 @@ describe('the tavern clock across a door trip', () => {
     expect(inTavern?.room.id).toBe(p.shopRoomId);
     const spot = innDoorSpots(inTavern!.room).find((d) => d.id === 'tavern_to_suite')!;
     expect(inTavern!.avatars[0]!.x).toBe(spot.spot.x + 16);
-    expect(inTavern!.avatars[0]!.y).toBe(spot.spot.y + 16);
+    expect(inTavern!.avatars[0]!.y).toBe(spot.spot.y + 48);
     // The door trip does not reset the shop: guests walk on and place an order within the next minute.
     run(60_000);
     expect((await api.getTavern()).guests.some((g) => g.phase === 'order' || g.phase === 'eat')).toBe(true);

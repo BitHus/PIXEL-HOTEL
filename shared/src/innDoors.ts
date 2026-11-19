@@ -8,7 +8,7 @@
 // bar's staff spot or the start items (tests). The spot itself is walkable: walking onto it is how you change rooms.
 
 import innDoorData from '../data/innDoors.json';
-import { BUILD_CELL, WALL_BAND } from './config.ts';
+import { BUILD_CELL, DOOR_TAP_FRONT_CELLS, DOOR_TAP_SIDE_CELLS, WALL_BAND } from './config.ts';
 import type { GameState } from './gameState.ts';
 import type { Room } from './room.ts';
 import type { Facing, Point, Rect } from './types.ts';
@@ -93,6 +93,38 @@ export function innDoorwayRects(room: Pick<Room, 'kind' | 'shape' | 'level'>, cl
 /** The door whose spot contains this cell, or null. */
 export function doorAt(room: Pick<Room, 'kind' | 'shape' | 'level'>, cell: { c: number; r: number }): InnDoorSpot | null {
   return innDoorSpots(room).find((d) => cell.r === d.row && cell.c >= d.col && cell.c < d.col + d.w) ?? null;
+}
+
+/**
+ * The door a tap or walk goal means (owner bug 19 Nov: the player taps the door PICTURE, which stands in the wall band, and the old cell rule only knew
+ * the 2 x 1 spot, so nothing happened). The door's area: its arch (doorway, widened by DOOR_TAP_SIDE_CELLS cells on each side: owner 'when you almost walk against the wall there, you take the door'), its spot, and DOOR_TAP_FRONT_CELLS rows in front
+ * of the spot; `margin` (world px, the client's tap tolerance / zoom) grows it on every side. Null = no door there.
+ */
+export function doorTapAt(room: Pick<Room, 'kind' | 'shape' | 'level'>, p: Point, margin = 0): InnDoorSpot | null {
+  let best: InnDoorSpot | null = null;
+  let bestD = Infinity;
+  for (const d of innDoorSpots(room)) {
+    const side = Math.max(innDoorHasSprite(d.id) ? DOOR_SPRITE_CLEARANCE_PX : 0, DOOR_TAP_SIDE_CELLS * BUILD_CELL);
+    const x0 = d.doorway.x - side - margin;
+    const x1 = d.doorway.x + d.doorway.w + side + margin;
+    const y0 = d.doorway.y - margin;
+    const y1 = d.spot.y + d.spot.h + DOOR_TAP_FRONT_CELLS * BUILD_CELL + margin;
+    if (p.x < x0 || p.x >= x1 || p.y < y0 || p.y >= y1) continue;
+    const dist = Math.abs(p.x - (d.spot.x + d.spot.w / 2));
+    if (dist < bestD) {
+      best = d;
+      bestD = dist;
+    }
+  }
+  return best;
+}
+
+/** Where a tap on a door walks to: the centre of the spot cell under the tap (clamped to the spot); any point that is not on a door is returned as it is. */
+export function doorWalkPoint(room: Pick<Room, 'kind' | 'shape' | 'level'>, p: Point, margin = 0): Point {
+  const d = doorTapAt(room, p, margin);
+  if (!d) return p;
+  const c = Math.min(d.col + d.w - 1, Math.max(d.col, Math.floor(p.x / BUILD_CELL)));
+  return { x: c * BUILD_CELL + BUILD_CELL / 2, y: d.spot.y + BUILD_CELL / 2 };
 }
 
 /** The point where a door leads to: the matching door's spot (its first cell, centred), facing down (the avatar then steps one cell down). */

@@ -7,7 +7,7 @@ import {
 } from '@pixel-hotel/shared';
 import { HoldControl, type HoldResult, type HoldTarget } from '../input/holdControl.ts';
 import type { G14 } from './ctx.ts';
-import { walkDoorGoal } from './doorGoal.ts';
+import { doorWalkGoal, walkDoorGoal } from './doorGoal.ts';
 import { askSplice } from './spliceDialog.ts';
 
 export async function setupBlockInput(g: G14) {
@@ -235,7 +235,8 @@ export async function setupBlockInput(g: G14) {
     const key = `${c},${r}`;
     if (key === st.walkHoldCell && st.walkHold) return;
     st.walkHoldCell = key;
-    const goal = st.marked;
+    // Owner bug 19 Nov: holding on the door picture (or against the wall beside it) walks onto the door spot and enters.
+    const goal = doorWalkGoal(st.room, st.marked);
     st.pendingDoor = null;
     void walkTo(goal).then((ok) => {
       st.pendingDoor = walkDoorGoal(st.room, goal, ok, st.walkHoldCell === key) ?? st.pendingDoor;

@@ -1,13 +1,14 @@
 # STATUS: where we are in the roadmap (the manager rewrites this after EVERY batch; read it first)
 
-Updated 2026-11-19 (manager). LIVE site is still main at 4e781d4, older than the working tree (see Right now). Startup file: C:/Users/ajren/pixel-hotel-team/MANAGER-START.md (has a 19 Nov update). Owner list: docs/OWNER-AGENDA-17NOV.md.
+Updated 2026-11-19 (manager). LIVE site = main at 85c9ab9 (see Right now). Startup file: C:/Users/ajren/pixel-hotel-team/MANAGER-START.md (has a 19 Nov update). Owner list: docs/OWNER-AGENDA-17NOV.md.
 
-## Right now (workers) - 19 Nov, after ship a30c5e5
-- SHIPPED a30c5e5: TF-1..5 bar-guest rules (BAR_GUESTS_ENABLED=false until TF-6 render), server hardening, title screen + PixelLab panel frame, taller stove (32x56).
-- GAME SERVER LIVE on the VPS (owner OK 19 Nov): https://server.pocketbarrel.com/api/health ok, systemd pocketbarrel-server + backup timer, nginx + cert, Node 22 installed. NOT done: ufw/fail2ban (script not run: lockout risk, ssh port unchecked), off-box backup target. Cloud client flag still OFF; needs ON-5 account panel. nginx default site no longer lists server.pocketbarrel.com (backup /root/nginx-default.bak on the VPS).
-- Worker cap: max 2-3 at once, one browser-heavy (owner 19 Nov, PC CPU). Tester RUN 10 was stopped: restart it ALONE.
-- Next: TF-6/7 render + strip UI (bar guests, Grab all/Serve all), ON-5 account panel, TF-9 balance gate, bar/table spacing, hitbox check, unwired panel art (tabs, buttons, sign).
-- PIXELLAB: ~925/2000 used, owner cap about 1000, then owner says go.
+## Right now (workers) - 19 Nov late, wrap-up at 93% usage
+- LIVE: 85c9ab9 (pond rework, new floor/wall/icons, tutorial card, bigger markers, stool, emote menu, bar rider lift, audio engine NOT wired, calmer glows). Server still SAVE 41 vs client 42 (cloud flag off; ask owner before DEPLOY_SERVER).
+- WRAPPING UP (finish, check, commit, push, deploy): coder a4180397 DOOR BUG (doors do nothing, owner: door too small, avatar glitched in it once, walking against the wall next to the door should enter it); artist a55eabe1 FLOOR/WALL/BAR/STOOL/REGISTER redo (owner: bright wood floor and its repeating pattern are very ugly; wanted: DARK calm non-repeating standard floor with a big 192-256 px tile, 5-6 other floor styles to choose, new bar art, stool, register facing the guests, research notes); UI a96f17c1 right-column icons +20% on desktop only.
+- OWNER FEEDBACK this session: new bar ugly, register wrong way, doors too small/0 depth, order dots calmer (done), tray beer bigger (done), bar guests OFF (done, BAR_GUESTS_ENABLED=false), NPC chat lines low priority ('does not have to be spoken'), use better models when needed (memory updated).
+- OPEN owner questions: brewing into the cellar?, SFX default volume 0.35 -> 0.7?, 'door to the block placing' (unclear), avatar try keeper (art-src/avatar-try, 6/10, walk too subtle from the front): keep / stronger walk / drop.
+- NEXT (in order): misclick-proof interaction (hover, E key, phone context button, priority; see WORKERS-RESUME), audio hookup (hooks list in WORKERS-RESUME), door depth art, floor variants render hook (per-cell variants), SK-1/2 skill tree, 3f fishing, 3e food stash + tap panel, tester RUN 13 (cellar, pond, new floor, doors, tutorial pointer), camera ease to guide target, build grid contrast, long-shape bar 3 pieces, 3g NPC hooks (low).
+- PIXELLAB: about 1570-1750 of 2000 used (check get_balance).
 
 ## PLAN after this batch (manager opinion, owner OK 19 Nov)
 1. Hold new features until tester RUN 10 (first browser look at floors, walls, panel frame, spacing, hitbox) is fixed.

@@ -173,3 +173,13 @@ export const CAMERA_FOLLOW_EASE_MS = 350;
 export const GUEST_RESYNC_PX = 48;
 /** The follow camera stops gliding when it is this close to its target, px (the final snap to whole device px follows in the redraw). */
 export const CAMERA_FOLLOW_EPS_PX = 0.25;
+
+/**
+ * DOOR TAP AREA (owner bug 19 Nov 'all doors do nothing', 'it is too small'): a tap or hold-walk goal counts as an Inn door when it lies on the door's
+ * arch (the doorway in the wall band, plus the sprite's frame beside it), on its 2 x 1 spot, or up to this many cells in FRONT of the spot.
+ */
+export const DOOR_TAP_FRONT_CELLS = 1;
+/** The door area also reaches this many cells beside the doorway on each side (a walk that ends against the wall next to the door takes the door). */
+export const DOOR_TAP_SIDE_CELLS = 1;
+/** After a door trip the avatar stands this many cells in front of the arrival spot (never inside the arch or the wall); the nearest free cell if blocked. */
+export const DOOR_ARRIVE_CELLS = 1;

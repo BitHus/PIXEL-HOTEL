@@ -8,6 +8,7 @@ import {
   startEmote,
   type ActiveEmote,
   innTravel,
+  doorArrivalPoint,
   type Avatar,
   applyStyle,
   paintFloor,
@@ -77,9 +78,12 @@ export const roomsApi = {
     h.commit({ ...h.state, currentRoomId: trip.roomId });
     h.debugRects = [];
     const p = h.state.player;
-    const avatar: Avatar = { id: p.id, name: p.name, look: { ...h.state.look }, roomId: room.id, x: trip.point.x, y: trip.point.y, facing: trip.facing, state: 'walk' };
-    h.walkState = { avatar, path: [trip.stepTo], at: h.now(), sitOn: null, seated: null };
     h.grid = h.buildGrid();
+    // Owner 19 Nov ('I glitched in the door'): the avatar arrives standing DOOR_ARRIVE_CELLS in front of the spot (doorArrivalPoint: the nearest free reachable non-door cell when
+    // that one is taken), never on the spot under the arch and never walking into furniture that stands below it.
+    const stand = doorArrivalPoint(h.grid, room, trip.point);
+    const avatar: Avatar = { id: p.id, name: p.name, look: { ...h.state.look }, roomId: room.id, x: stand.x, y: stand.y, facing: trip.facing, state: 'idle' };
+    h.walkState = { avatar, path: [], at: h.now(), sitOn: null, seated: null };
     return {
       room: { ...room },
       items: h.state.items.filter((i) => i.roomId === room.id).map((i) => ({ ...i })),

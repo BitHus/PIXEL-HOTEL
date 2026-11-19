@@ -5,7 +5,7 @@ import { playCameraLocked, blockInCell, plantInCell, cellOf, getFurnitureType, s
 import { createItemUse } from './itemUse.ts';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
-import { walkDoorGoal } from './doorGoal.ts';
+import { doorGoalAt, doorWalkGoal, walkDoorGoal } from './doorGoal.ts';
 import { createTapForgive, isTouchInput } from './tapForgive.ts';
 
 export async function setupPointerInput(g: G15) {
@@ -239,11 +239,15 @@ export async function setupPointerInput(g: G15) {
       // Tap forgiveness (owner 18 Nov): what was hit exactly is used first; a tap that hit nothing uses the nearest usable thing within a small radius
       // (shared/src/tapPick.ts); a tap far from everything still walks.
       if (useHit(hit, st.marked)) return;
-      if (!hit) {
+      // Owner bug 19 Nov ('all doors do nothing'): a tap on the door picture (wall band), beside it or just in front of it walks onto the spot and enters.
+      // A door beats tap forgiveness (a stool or barrel near the door must not steal the tap); an exact hit on an item still wins.
+      const doorMargin = tapTolerance(isTouchInput()) / st.shown.zoom;
+      const onDoor = !hit && doorGoalAt(st.room, st.marked, doorMargin) !== null;
+      if (!hit && !onDoor) {
         const near = nearTap(screen);
         if (near && (near.kind === 'item' ? useHit(near.item, st.marked) : tavernTap(near.world, undefined))) return;
       }
-      const to = st.marked;
+      const to = onDoor ? doorWalkGoal(st.room, st.marked, doorMargin) : st.marked;
       void walkTo(to).then((ok) => {
         const door = walkDoorGoal(st.room, to, ok, true);
         if (door !== null) st.pendingDoor = door;
