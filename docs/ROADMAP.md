@@ -259,6 +259,7 @@ New items only; the ten above (RN-1 to SF-1) are not repeated. Suggested order i
 Later: IQ-1 ingredient qualities (flavour tags) after GT-1 proves out. Rejected again after the deep dive: trading, real-money gems, daily rewards, PvP.
 
 ## IDEA POOL (not planned yet)
+- (owner 20 Nov) SPLICING MORE EXTENSIVE: the splice system (BG7 / SG1: spliceRule.ts general rule + splice.json special recipes) needs more depth. Ideas to plan (ask the owner before building): more hand-authored special recipes and discoverable combos, a splice Book/log of found pairs with hints, 3-seed or catalyst splices, mutation/quality traits and rare outcomes, ore and style results (SG3), a dedicated splice station/UI with a result preview, splice skills (seed_lore, harvest_moon are Soon nodes), balance gates (seed ratio under 0.85, closed loops). Planner writes docs/PLAN-SPLICING.md first, owner reviews, then a coder builds.
 Item descriptions and comparison, favourites, search in the bag, a pet that sits on your head,
 candles that burn down, a rare rainbow, shooting stars, footprints in snow, hidden passages, a
 hidden NPC, mine carts, mining companions, fishing tournaments, a radio with music.
