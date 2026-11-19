@@ -16,6 +16,9 @@ Updated 2026-11-19 (manager). LIVE site is still main at 4e781d4, older than the
 4. Online: account panel ON-5 now, then visiting (P2) so others can see a tavern.
 5. NEXT ROUND: depth for the mine, dungeon and fishing (the weak links), then avatar style lock.
 
+## OWNER DECISION 19 Nov: ONLINE SCOPE
+Online (visiting, sharing, later live avatars) is only for the HOTEL ROOM (suite), the GARDEN and PUBLIC spaces. The TAVERN (and its kitchen/cellar), farm, mine and dungeon stay private/solo. Server share/visit must refuse any other room kind; the Rooms board lists only these. OPEN: what exactly are the public spaces (shared lobby with live avatars? a plaza?) and is the garden the farm or a separate room.
+
 ## Done this session (all live)
 Camera locked without edge clamp; emote state fix; small NPC chat pills; kitchen = walled area inside the tavern (SAVE 37, cellar stays a room, racks 2/3/3); skills MG-1/2 (SAVE 38, level cap 12, Skills panel + stat hooks MG-7); TRADER REMOVED (gold = guests + dungeon run gold, ~76/24); tap forgiveness; tutorial starts at 0 (zoom, walk, hold-walk steps); orders rail bottom-left, hanging OPEN/CLOSED sign, aura on order markers, pour hint hides under panels, Serve closes the bar panel; Worlds badge hidden in the tavern; lakeside trees + farm ground/ambience + door art (cellar down/open/up, kitchen) wired; cobweb corner, stand flames; rock sprites.
 

@@ -215,3 +215,7 @@ Rough budget: P0+P1 about 6 to 8 worker-days; P2 about 8 to 10; P3 about 3.
 9. Moderation. Recommend you read reports via a daily CLI digest, auto-mute at 3 reports, an editable block-list data file.
 10. Public name. "PocketBarrel" is the domain; confirm it as the public name (CLAUDE.md 1 wants a final original name).
 11. Money between players. Recommend visitors can never pay or tip the host in stage A; revisit only with trading (P4).
+
+
+## OWNER DECISION 19 Nov: SCOPE
+Online is only for the hotel room (suite), the garden and public spaces. The tavern (with kitchen and cellar), farm, mine and dungeon are not shared or visitable. Share/visit endpoints and the Rooms board must refuse other room kinds (server validates by Room.kind). Public spaces: design open (lobby/plaza with live avatars?), decide before P2 ON-9.
