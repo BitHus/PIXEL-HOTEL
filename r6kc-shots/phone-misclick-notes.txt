@@ -1,0 +1,4 @@
+coarse=true panel=false av={"x":224,"y":200} stove={"x":224,"y":160,"uid":15}
+ctx visible=true text=Menu
+at button: BUTTON.ctx-btn parent 
+panel after button: Bar

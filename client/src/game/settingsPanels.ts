@@ -8,7 +8,8 @@ import { typing } from '../ui/dom.ts';
 import { savePrefs } from '../api/prefs.ts';
 import { cloudConfig, createCloudSave } from '../api/cloudSave.ts';
 import { createAccountPanel } from '../ui/accountPanel.ts';
-import { saveKey } from '@pixel-hotel/shared';
+import { bigTapsOn, saveKey } from '@pixel-hotel/shared';
+import { isTouchInput } from './tapForgive.ts';
 import type { G11 } from './ctx.ts';
 
 export async function setupSettingsPanels(g: G11) {
@@ -73,6 +74,11 @@ late.avatarPanel = avatarPanel;
       sound.setVolume(v);
       savePrefs(storage, prefs);
     },
+    onMusicVolume: (v) => {
+      prefs.musicVolume = v;
+      sound.setMusicVolume(v);
+      savePrefs(storage, prefs);
+    },
     onCellGrid: (on) => {
       prefs.cellGrid = on;
       savePrefs(storage, prefs);
@@ -86,6 +92,11 @@ late.avatarPanel = avatarPanel;
     onReplayGuide: () => {
       late.replayGuide();
       panels.close();
+    },
+    bigTaps: bigTapsOn(prefs.bigTaps, isTouchInput()),
+    onBigTaps: (on) => {
+      prefs.bigTaps = on;
+      savePrefs(storage, prefs);
     },
     onReduceEffects: (on) => {
       prefs.reduceEffects = on;

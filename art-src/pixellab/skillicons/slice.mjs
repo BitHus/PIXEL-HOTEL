@@ -1,0 +1,2 @@
+import {sheet} from './list.mjs'; import {spawnSync} from 'child_process';
+for(let i=0;i<4;i++){const s=sheet(i);const r=spawnSync('node',['tools/pixellab-icon-slice.mjs',`art-src/pixellab/skillicons/s${i}.png`,'5','art-src/staging/skill-icons',...s.names],{encoding:'utf8',env:{...process.env,GAP:process.env.G||'2'}});console.log('SHEET',i,r.stdout.split('\n').filter(l=>/MISMATCH|TOO BIG/.test(l)).join('|')||'ok');}

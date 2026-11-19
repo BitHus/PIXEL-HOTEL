@@ -148,11 +148,21 @@ export interface VisitResult {
 
 /** The room behind a code for this visitor, or null: unknown code, a room made private, a deleted host, or a visitor the host blocked (all look the same). */
 export function visitByCode(db: Db, visitorId: number, code: string): VisitResult | null {
-  const row = db.prepare('SELECT account_id, code, title, view FROM room_shares WHERE code = ?').get(code) as { account_id: number; code: string; title: string | null; view: Buffer } | undefined;
-  if (!row) return null;
+  const row = db.prepare('SELECT account_id, code, title, kind, view FROM room_shares WHERE code = ?').get(code) as { account_id: number; code: string; title: string | null; kind: string; view: Buffer } | undefined;
+  // Owner 19 Nov scope: a stored share of a kind that is not visitable (an old row, a tavern, kitchen, cellar, farm...) is never served.
+  if (!row || !isVisitableKind(row.kind)) return null;
   if (row.account_id !== visitorId && isBlocked(db, row.account_id, visitorId)) return null;
-  return { code: row.code, title: row.title, view: JSON.parse(gunzipSync(row.view).toString('utf8')) as RoomView };
+  const view = JSON.parse(gunzipSync(row.view).toString('utf8')) as RoomView;
+  if (!isVisitableKind(view.room?.kind)) return null;
+  return { code: row.code, title: row.title, view };
 }
+
+/** True for the room kinds a visitor may see (VISITABLE_KINDS; owner 19 Nov: hotel room only until the garden and public spaces are decided). */
+export function isVisitableKind(kind: unknown): boolean {
+  return typeof kind === 'string' && (VISITABLE_KINDS as readonly string[]).includes(kind);
+}
+
+const KIND_SQL = `kind IN (${VISITABLE_KINDS.map(() => '?').join(', ')})`;
 
 export interface PublicRoom {
   code: string;
@@ -168,9 +178,9 @@ export function listPublic(db: Db, viewerId: number, page: number, sort: 'new' |
   const order = sort === 'stars' ? 'stars DESC, updated_at DESC' : 'updated_at DESC';
   const rows = db.prepare(
     `SELECT code, title, owner_name AS owner, kind, stars, updated_at AS updatedAt FROM room_shares s
-     WHERE visibility = 'public' AND NOT EXISTS (SELECT 1 FROM visit_blocks b WHERE b.owner_id = s.account_id AND b.blocked_id = ?)
+     WHERE visibility = 'public' AND ${KIND_SQL} AND NOT EXISTS (SELECT 1 FROM visit_blocks b WHERE b.owner_id = s.account_id AND b.blocked_id = ?)
      ORDER BY ${order}, code LIMIT ? OFFSET ?`,
-  ).all(viewerId, PUBLIC_PAGE_SIZE + 1, page * PUBLIC_PAGE_SIZE) as PublicRoom[];
+  ).all(...VISITABLE_KINDS, viewerId, PUBLIC_PAGE_SIZE + 1, page * PUBLIC_PAGE_SIZE) as PublicRoom[];
   return { rooms: rows.slice(0, PUBLIC_PAGE_SIZE), page, more: rows.length > PUBLIC_PAGE_SIZE };
 }
 
@@ -198,8 +208,8 @@ export function addReport(db: Db, reporterId: number, input: Record<string, unkn
   if (!code || typeof kind !== 'string' || !(REPORT_KINDS as readonly string[]).includes(kind)) return { ok: false, error: 'bad_request' };
   if (input.note !== undefined && (typeof input.note !== 'string' || input.note.length > REPORT_NOTE_MAX)) return { ok: false, error: 'bad_request' };
   const note = typeof input.note === 'string' ? [...input.note].map((c) => (c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127 ? ' ' : c)).join('').trim() : '';
-  const row = db.prepare('SELECT account_id, room_id FROM room_shares WHERE code = ?').get(code) as { account_id: number; room_id: number } | undefined;
-  if (!row || row.account_id === reporterId || isBlocked(db, row.account_id, reporterId)) return { ok: false, error: 'no_room' };
+  const row = db.prepare('SELECT account_id, room_id, kind FROM room_shares WHERE code = ?').get(code) as { account_id: number; room_id: number; kind: string } | undefined;
+  if (!row || !isVisitableKind(row.kind) || row.account_id === reporterId || isBlocked(db, row.account_id, reporterId)) return { ok: false, error: 'no_room' };
   db.prepare("INSERT INTO reports (reporter_id, target_id, room_id, kind, note, created_at, status) VALUES (?, ?, ?, ?, ?, ?, 'open')").run(reporterId, row.account_id, row.room_id, kind, note, now);
   return { ok: true };
 }

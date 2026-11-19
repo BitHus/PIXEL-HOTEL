@@ -388,7 +388,8 @@ export interface Player {
   /** How many packs of each kind were opened (step BG8; for quests later). */
   packsOpened: Record<string, number>;
   /** MG-1 (save 38): skill ranks bought by node id and respecs used. Missing = nothing bought. Unspent points are derived (shared/src/skills.ts). */
-  skills?: { ranks: Record<string, number>; respecs: number };
+  // SK-1 (save 43): tree 2 = the v2 graph; freeReset = one free full respec from the 42 -> 43 migration (does not count toward respecs).
+  skills?: { ranks: Record<string, number>; respecs: number; tree?: 2; freeReset?: boolean };
   /** The adopted cat (step 9g-2, save 28): null until the pet basket is used. Only the name is saved; the cat's place is not. */
   pet: { name: string } | null;
 }

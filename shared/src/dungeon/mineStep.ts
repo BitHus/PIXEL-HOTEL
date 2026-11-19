@@ -13,6 +13,7 @@ import {
 } from '../config.ts';
 import { findPath, type NavGrid } from '../nav.ts';
 import { rngInt } from '../rng.ts';
+import { xpFor } from '../xp.ts';
 import { glintBlocksOf, hazardDamageOf, oreQtyOf, pickCooldownOf, rockGemChanceOf, chestGlintBlocksOf } from '../skillRules.ts';
 import type { Rank, Rng } from '../types.ts';
 import { blockAt, blockCenter, isFloorBlock } from './grid.ts';
@@ -26,6 +27,8 @@ export interface DigHooks {
   /** Loot for a filler block: goes in only if it fits, never "left behind". */
   addFiller(loot: Loot): void;
   dropGems(rank: Rank, at: { x: number; y: number }): void;
+  /** SK-2: run xp (ore dug, a rare block broken). */
+  gainXp(xp: number): void;
 }
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number => Math.hypot(a.x - b.x, a.y - b.y);
@@ -133,6 +136,7 @@ function swing(r: DungeonRun, cell: number, now: number, rng: Rng, hooks: DigHoo
   const loot: (Loot & { rank?: Rank })[] = [{ item: b.drop.item, qty, ...(b.rank !== 'common' ? { rank: b.rank } : {}) }];
   if (rng() < rockGemChanceOf(p.skill)) loot.push({ item: 'gem', qty: 1 });
   hooks.addLoot(loot);
+  hooks.gainXp(b.rank === 'common' ? xpFor({ t: 'ore', qty }) : xpFor({ t: 'rare_block' }));
   if (b.gemRank) hooks.dropGems(b.gemRank, at);
 }
 

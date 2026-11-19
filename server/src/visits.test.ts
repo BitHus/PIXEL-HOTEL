@@ -2,6 +2,7 @@
 // rate limits and abuse cases. Time is driven by `now`.
 
 import type { AddressInfo } from 'node:net';
+import { gzipSync } from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createNewPlayer, toSaveText, type GameState } from '@pixel-hotel/shared';
 import { loadConfig } from './config.ts';
@@ -437,5 +438,64 @@ describe('abuse cases', () => {
     expect((db.prepare('SELECT v FROM schema_version').get() as { v: number }).v).toBeGreaterThanOrEqual(2); // later migrations (3: bans) come on top
     const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((t) => t.name);
     for (const t of ['room_shares', 'visit_blocks', 'reports']) expect(tables).toContain(t);
+  });
+});
+
+describe('scope (owner 19 Nov): online is only the hotel room; tavern, kitchen, cellar, farm, mine, dungeon are refused', () => {
+  /** The host's state with one extra room of `kind` (a copy of the hotel room with a new id). */
+  function withRoom(kind: string, id: number): GameState {
+    const s = hostState();
+    const hotel = s.rooms.find((r) => r.kind === 'hotel')!;
+    return { ...s, rooms: [...s.rooms, { ...hotel, id, kind } as unknown as GameState['rooms'][number]] };
+  }
+  it('the share endpoint refuses every room kind but the hotel room, by Room.kind', async () => {
+    const a = await host();
+    for (const kind of ['shop', 'farm', 'lakeside']) {
+      const r = await send('PUT', a, '/api/rooms/share', { roomId: roomIdOf(kind), visibility: 'public' });
+      expect(r.status, kind).toBe(400);
+      expect(await r.json()).toEqual({ error: 'not_visitable' });
+      tick(7_000);
+    }
+    const accepted: string[] = [];
+    for (const [i, kind] of ['cellar', 'kitchen', 'mine', 'dungeon', 'tavern'].entries()) {
+      tick();
+      const up = await send('PUT', a, '/api/save', toSaveText(withRoom(kind, 500 + i), now));
+      if (up.status !== 200) continue; // the save check already refuses an unknown kind: just as good
+      accepted.push(kind);
+      for (const visibility of ['code', 'public']) {
+        const r = await send('PUT', a, '/api/rooms/share', { roomId: 500 + i, visibility });
+        expect(r.status, `${kind} ${visibility}`).toBe(400);
+        expect(await r.json()).toEqual({ error: 'not_visitable' });
+        tick(7_000);
+      }
+      expect((await json<{ rooms: Share[] }>(await get(a, '/api/rooms/mine'))).rooms.map((r) => r.kind)).toEqual(['hotel']);
+    }
+    expect(accepted).toContain('cellar'); // the cellar is a real room of SAVE 42 and reaches the share check (a kitchen room is refused by the save check: it is the tavern annex since SAVE 39)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM room_shares').get()).toEqual({ n: 0 });
+  });
+  it('a stored share of another kind (an old row) is never served, listed or reportable', async () => {
+    const a = await host();
+    const b = await register('Visitor');
+    const ownerId = (db.prepare("SELECT id FROM accounts WHERE username = 'Host'").get() as { id: number }).id;
+    const tavern = hostState().rooms.find((r) => r.kind === 'shop')!;
+    const fakeView = { v: 1, owner: { name: 'Ada', look: hostState().look }, room: { kind: 'shop', level: 1, shape: tavern.shape, w: tavern.w, h: tavern.h, floorStyle: 'bare', floorCells: {}, wallStyle: 'bare', blocks: {}, plants: {} }, items: [], stars: 3, savedAt: now };
+    db.prepare(
+      `INSERT INTO room_shares (account_id, room_id, visibility, code, title, kind, owner_name, stars, view, shared_at, updated_at) VALUES (?, ?, 'public', 'TAVRNX', 'Old tavern', 'shop', 'Ada', 3, ?, ?, ?)`,
+    ).run(ownerId, tavern.id, gzipSync(Buffer.from(JSON.stringify(fakeView))), now, now);
+    // A hotel row whose stored view claims another kind is refused as well.
+    db.prepare(
+      `INSERT INTO room_shares (account_id, room_id, visibility, code, title, kind, owner_name, stars, view, shared_at, updated_at) VALUES (?, 777, 'code', 'HTMXYZ', NULL, 'hotel', 'Ada', 3, ?, ?, ?)`,
+    ).run(ownerId, gzipSync(Buffer.from(JSON.stringify(fakeView))), now, now);
+    for (const code of ['TAVRNX', 'HTMXYZ']) {
+      const r = await get(b, `/api/visit/${code}`);
+      expect(r.status, code).toBe(404);
+      expect(await r.json()).toEqual({ error: 'no_room' });
+    }
+    expect((await json<{ rooms: unknown[] }>(await get(b, '/api/rooms/public'))).rooms).toEqual([]);
+    expect((await send('POST', b, '/api/visit/report', { code: 'TAVRNX', kind: 'room' })).status).toBe(404);
+    // The next accepted save drops the stale rows (refreshShares rebuilds only visitable rooms).
+    tick();
+    expect((await send('PUT', a, '/api/save', hostSave(now))).status).toBe(200);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM room_shares').get()).toEqual({ n: 0 });
   });
 });

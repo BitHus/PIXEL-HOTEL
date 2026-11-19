@@ -1,0 +1,8 @@
+stove screen {"x":430.18918918918916,"y":232}
+hover {"hl":[392,167,76,82],"hidden":false,"tag":"Cook","cur":"pointer","pk":true}
+hover register {"tag":"Menu","hidden":false}
+hover tap_stand {"tag":"Menu","hidden":false}
+hover brewing_barrel {"tag":"Brew","hidden":false}
+after E panel none
+walk ring {"w":[342,309,35,35],"hidden":false}
+errors []

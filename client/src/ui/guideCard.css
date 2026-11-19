@@ -116,25 +116,30 @@
 }
 
 /* POINTER: crisp pixel ring (stepped octagon, no soft glow) and a stepped arrow; both are inline SVG made in guidePointer.ts */
+/* R16: the ring is the shared highlight (ui/highlight.css .pk-hl: four cream corner brackets, hollow, sized to the target by --hl-w/--hl-h);
+   the arrow is a stepped cream pixel arrow that bobs in two whole-pixel steps and sits just outside the ring (flips below it near the top edge). */
 .guide-pointer .guide-ring {
-  left: -22px;
-  top: -22px;
-  width: 44px;
-  height: 44px;
+  left: calc(var(--hl-w, 44px) / -2);
+  top: calc(var(--hl-h, 44px) / -2);
   border: 0;
   border-radius: 0;
   box-shadow: none;
   background: none;
-  animation: guide-ring-step 900ms steps(1, end) infinite;
+  animation: none;
 }
-.guide-pointer .guide-ring svg { display: block; width: 44px; height: 44px; }
-.guide-pointer .guide-hand { left: -8px; top: -50px; width: 16px; height: 20px; animation: guide-bob 900ms steps(2, end) infinite; }
+.guide-pointer .guide-hand {
+  left: -8px;
+  top: calc(var(--hl-h, 44px) / -2 - 28px);
+  width: 16px;
+  height: 20px;
+  animation: guide-bob 900ms steps(1, end) infinite;
+}
 .guide-pointer .guide-hand svg { width: 16px; height: 20px; }
-@keyframes guide-ring-step {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(0.91); }
-}
-.guide-pointer.calm .guide-ring, .guide-pointer.calm .guide-hand { animation: none; }
+.guide-pointer.flip .guide-hand { top: calc(var(--hl-h, 44px) / 2 + 8px); rotate: 180deg; animation-name: guide-bob-up; }
+.guide-pointer.edge .guide-hand { top: -10px; animation: none; transform-origin: 50% 50%; }
+@keyframes guide-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@keyframes guide-bob-up { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.guide-pointer.calm .guide-hand { animation: none; }
 .guide-pointer ~ .ready-dot, .ready-dot.ready-dot { border-radius: 0; box-shadow: none; }
 
 /* R13 TUTORIAL REDO (owner 19 Nov: "still sucks"): final layer, wins over skin.css / declutter.css. One compact card: icon, one short line, a tiny

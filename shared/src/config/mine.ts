@@ -32,10 +32,13 @@ export const MINE_REACH = 40;
 export const MINE_DEATH_ORE_LOSS = 0.5;
 
 // ---------- XP and levels ----------
-// The level thresholds (levels 1 to 8) live in shared/data/levels.json (levels.ts).
+// The level thresholds (levels 1 to 30, SK-2) live in shared/data/levels.json (levels.ts); xp per event in shared/data/xp.json (xp.ts).
 export const HP_PER_LEVEL = 3;
-/** Every even level adds this to both ends of the attack range. */
+/** Every even level adds this to both ends of the attack range (up to LEVEL_STATS_FULL_UNTIL). */
 export const ATTACK_PER_EVEN_LEVEL = 1;
+/** SK-2 [OWNER] (docs/PLAN-SKILLTREE.md 0): after this level a level adds only HP_PER_LEVEL_LATE max hp and no attack (power past it comes from skills and gear). */
+export const LEVEL_STATS_FULL_UNTIL = 12;
+export const HP_PER_LEVEL_LATE = 1;
 
 // ---------- The dig mine (MG-3, docs/PLAN-MINIGAMES.md section 1; owner 17 Nov: no lantern timer) ----------
 // A cave of blocks you pickaxe your way through to the exit. Block kinds are data (shared/data/mineBlocks.json).

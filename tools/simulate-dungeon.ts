@@ -170,6 +170,20 @@ for (const round of ROUNDS) {
   }
 }
 
+// ---------- SK-2: round 2 at a high level (cap 30; after 12 only +1 hp per level, no attack). Target: bare gear clears at most 90% at level 30. ----------
+{
+  console.log(`\n=== SK-2: round 2 by player level, bare gear, no potions, ${RUNS} runs per cell (survive = left alive) ===`);
+  console.log('level      ' + SPEEDS.map((ms) => `${ms} ms`.padStart(9)).join(''));
+  for (const [level, xp] of [[8, 450], [12, 1400], [20, 5460], [30, 18750]] as const) {
+    const cells = SPEEDS.map((ms) => {
+      let ok = 0;
+      for (let i = 0; i < RUNS; i++) if (playRun(i + 1, 2, ms, xp, []).status === 'left') ok++;
+      return pct(ok / RUNS).padStart(9);
+    }).join('');
+    console.log(`${String(level).padEnd(11)}${cells}`);
+  }
+}
+
 // ---------- Step 9e: how many kills each rank needs ----------
 /**
  * Rolls the enemy drop rule (RARE_DROP_CHANCE per kill, the Bone King always; the enemy's table

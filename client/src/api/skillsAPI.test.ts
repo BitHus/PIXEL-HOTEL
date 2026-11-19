@@ -26,7 +26,7 @@ describe('skills through the GameAPI', () => {
     expect((await api.getSkills()).spent).toBe(1);
   });
 
-  it('respec is free three times, then costs 100 gold; the points come back', async () => {
+  it('respec is free three times, then costs 25 gold x level (125 at level 5); the points come back', async () => {
     const { api } = open(5, 150);
     for (let i = 0; i < 3; i++) {
       await api.buySkill('quick_feet');
@@ -35,9 +35,26 @@ describe('skills through the GameAPI', () => {
     }
     await api.buySkill('quick_feet');
     expect(await api.respecSkills()).toMatchObject({ spent: 0, respecs: 4 });
-    expect((await api.getPlayer()).wallet.gold).toBe(50);
+    expect((await api.getPlayer()).wallet.gold).toBe(25);
     await api.buySkill('quick_feet');
-    expect(await api.respecSkills()).toBeNull(); // 50 gold is not enough
+    expect(await api.respecSkills()).toBeNull(); // 25 gold is not enough
+  });
+
+  it('SK-1: a rank bought since the panel opened comes back free (undo); after reopening it costs 10 gold x ring', async () => {
+    const { api } = open(6, 300);
+    await api.getSkills();
+    await api.buySkill('steady_hands');
+    for (let i = 0; i < 3; i++) await api.buySkill('quick_feet');
+    const v = (await api.buySkill('keen_eye'))!;
+    expect(v.nodes.find((n) => n.id === 'keen_eye')).toMatchObject({ rank: 1, undo: true, unlearn: null, unlearnCost: 0 });
+    expect(await api.unlearnSkill('steady_hands')).toBeNull(); // keen_eye hangs on it
+    expect(await api.unlearnSkill('keen_eye')).toMatchObject({ spent: 4 });
+    expect((await api.getPlayer()).wallet.gold).toBe(300);
+    await api.buySkill('keen_eye');
+    const reopened = await api.getSkills();
+    expect(reopened.nodes.find((n) => n.id === 'keen_eye')).toMatchObject({ undo: false, unlearnCost: 20 });
+    expect(await api.unlearnSkill('keen_eye')).toMatchObject({ spent: 4 });
+    expect((await api.getPlayer()).wallet.gold).toBe(280);
   });
 
   it('survives a reload', async () => {

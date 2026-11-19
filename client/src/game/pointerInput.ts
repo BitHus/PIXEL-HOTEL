@@ -1,12 +1,15 @@
 // Pointer input: camera control, taps, drags (R1 split of main.ts: part 16 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { playCameraLocked, blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween, isUsable, tapTolerance, type FurnitureItem, type Point } from '@pixel-hotel/shared';
+import { playCameraLocked, blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween, isUsable, tapTolerance, bigTapsOn, worldToScreen, BUILD_CELL, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import { createItemUse } from './itemUse.ts';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
 import { doorGoalAt, doorWalkGoal, walkDoorGoal } from './doorGoal.ts';
-import { createTapForgive, isTouchInput } from './tapForgive.ts';
+import { createTapForgive, isTouchInput, type NearTap } from './tapForgive.ts';
+import { chooseTap, createInteractAssist } from './interactAssist.ts';
+import { createInteractUi } from '../ui/interactUi.ts';
+import type { Container } from 'pixi.js';
 
 export async function setupPointerInput(g: G15) {
   const {
@@ -17,7 +20,12 @@ export async function setupPointerInput(g: G15) {
   } = g;
   /** True while a press belongs to the pour (the hold on the tap stand): it never walks, pans or hits. */
   let pourClaim = false;
-  const { nearTap, buildPick } = createTapForgive({ st, itemViews, late });
+  // MISCLICK-PROOF (owner 19 Nov): the picks carry their state (urgent, machine, seat) and 'Big tap targets' widens them (prefs.bigTaps, on by default on touch).
+  const forgive = createTapForgive({ st, itemViews, late }, {
+    bigTaps: () => bigTapsOn(prefs.bigTaps, isTouchInput()),
+    pourWaiting: () => pourControl.waiting !== null,
+  });
+  const { buildPick } = forgive;
 
   const useTap = createItemUse({ api, applyItems, toast, sound, panels });
   app.stage.hitArea = app.screen;
@@ -51,6 +59,30 @@ export async function setupPointerInput(g: G15) {
     }
     return false;
   };
+  /** Uses a pick (a forgiven tap, the E key, the context button): a piece as if tapped, a guest through the tavern. */
+  const runPick = (ref: NearTap, at: Point): boolean => (ref.kind === 'item' ? useHit(ref.item, at) : tavernTap(ref.world, undefined));
+  const doorMarginNow = (): number => tapTolerance(isTouchInput()) / st.shown.zoom;
+  const interactUi = createInteractUi(g.uiRoot, { onButtonDown: () => assist.buttonDown(), onButtonUp: () => assist.buttonUp() });
+  const assist = createInteractAssist({
+    ui: interactUi,
+    canvas: app.canvas,
+    forgive,
+    hitAt: (screen) => {
+      const t = app.renderer.events.rootBoundary.hitTest(screen.x, screen.y) as Container | null;
+      return roomItem(itemViews.uidOf(t ?? null));
+    },
+    onDoor: (screen, hit) => !hit && doorGoalAt(st.room, screenToWorld(screen, st.shown), doorMarginNow()) !== null,
+    run: runPick,
+    avatar: () => ({ x: st.avatar.x, y: st.avatar.y }),
+    blocked: () => dungeon.isActive || build.on || paint.active || placer.active || lakeside.fishing || panels.open !== null || st.lookAround || menu.uid !== null,
+    touch: isTouchInput,
+    pour: pourControl,
+    toScreen: (r) => {
+      const a = worldToScreen({ x: r.x, y: r.y }, st.shown);
+      return { x: a.x, y: a.y, w: r.w * st.shown.zoom, h: r.h * st.shown.zoom };
+    },
+    walking: () => st.path.length > 0 || st.avatar.state === 'walk',
+  });
   const control = attachCameraControl(app.stage, app.canvas, {
     getCamera: () => (dungeon.isActive ? dungeon.camera : st.camera),
     setCamera: (cam, snap) => (dungeon.isActive ? dungeon.setCamera(cam) : setCamera(cam, snap)),
@@ -66,7 +98,7 @@ export async function setupPointerInput(g: G15) {
     onHoldWalkConfirmed: () => {
       if (!dungeon.isActive) late.guideEvent('holdwalk');
     },
-    onPress: (screen) => {
+    onPress: (screen, target) => {
       // G2: while the avatar waits at the taps, a press on the stand (or near it) is the pour: hold = pour, release = done.
       if (!dungeon.isActive && !build.on && !paint.active && !placer.active && !lakeside.fishing && pourControl.claims(screen)) {
         pourClaim = true;
@@ -75,7 +107,11 @@ export async function setupPointerInput(g: G15) {
         return 'repeat';
       }
       const t = holdTargetAt(screen);
-      if (!t) return null;
+      if (!t) {
+        // MISCLICK-PROOF (5): the press highlights what it would use; sliding off cancels (onPressMove), the release uses it.
+        assist.pressStart(screen, roomItem(itemViews.uidOf(target)));
+        return null;
+      }
       if (!dungeon.isActive) {
         st.marked = screenToWorld(screen, st.shown);
         st.pendingBlock = null;
@@ -146,6 +182,10 @@ export async function setupPointerInput(g: G15) {
       const here = cellOf(screenToWorld(screen, st.shown));
       if (here.c !== last.c || here.r !== last.r) hold.push(cellsBetween(last, here).slice(1));
     },
+    onPressMove: (screen) => assist.pressMove(screen),
+    onPressEnd: (screen, kind) => {
+      assist.pressEnd(screen, kind);
+    },
     onHoldEnd: () => {
       if (pourClaim) {
         pourClaim = false;
@@ -168,7 +208,11 @@ export async function setupPointerInput(g: G15) {
       // A plain mouse hover only needs the redraw for the debug cross and label (the camera did not move).
       if (kind !== 'hover' || label.visible) redraw();
       updateBlockGhost();
-      if (kind === 'hover') return;
+      if (kind === 'hover') {
+        // MISCLICK-PROOF (1): PC hover shows what a click would use (same pick as the click below).
+        assist.hover(screen);
+        return;
+      }
       // While the line is out every tap on the room is a fishing tap (the bar's ✗ stops).
       if (lakeside.fishing && !placer.active) {
         if (kind === 'tap') {
@@ -238,17 +282,35 @@ export async function setupPointerInput(g: G15) {
       if (lakeside.tap(st.marked)) return;
       // Tap forgiveness (owner 18 Nov): what was hit exactly is used first; a tap that hit nothing uses the nearest usable thing within a small radius
       // (shared/src/tapPick.ts); a tap far from everything still walks.
-      if (useHit(hit, st.marked)) return;
+      // MISCLICK-PROOF (2): when things overlap, a ready/urgent thing that is hit (a guest with an order on a stool, a ready stove) beats the exact hit.
+      const exact = hit ? forgive.pickOfItem(hit) : null;
+      const pick = forgive.pickAt(screen);
+      const chosen = chooseTap(exact, pick, false);
+      if (chosen && chosen !== exact && chosen.hit && runPick(chosen.ref, st.marked)) {
+        assist.confirm(chosen);
+        return;
+      }
+      if (useHit(hit, st.marked)) {
+        assist.confirm(exact);
+        return;
+      }
       // Owner bug 19 Nov ('all doors do nothing'): a tap on the door picture (wall band), beside it or just in front of it walks onto the spot and enters.
-      // A door beats tap forgiveness (a stool or barrel near the door must not steal the tap); an exact hit on an item still wins.
-      const doorMargin = tapTolerance(isTouchInput()) / st.shown.zoom;
+      // A door beats tap forgiveness (a stool or barrel near the door must not steal the tap); an exact hit on a USABLE item still wins.
+      const doorMargin = doorMarginNow();
       const onDoor = !hit && doorGoalAt(st.room, st.marked, doorMargin) !== null;
-      if (!hit && !onDoor) {
-        const near = nearTap(screen);
-        if (near && (near.kind === 'item' ? useHit(near.item, st.marked) : tavernTap(near.world, undefined))) return;
+      // A tap that hit nothing usable (the floor, a plain table) uses the nearest usable thing within the radius (seats before the floor).
+      if (!exact && !onDoor && pick && runPick(pick.ref, st.marked)) {
+        assist.confirm(pick);
+        return;
       }
       const to = onDoor ? doorWalkGoal(st.room, st.marked, doorMargin) : st.marked;
       void walkTo(to).then((ok) => {
+        // The walk-target ring (crisp brackets on the goal cell, fades on arrival).
+        if (ok) {
+          const goal = st.goal ?? to;
+          const { c, r } = cellOf(goal);
+          assist.markWalk({ x: c * BUILD_CELL, y: r * BUILD_CELL, w: BUILD_CELL, h: BUILD_CELL });
+        }
         const door = walkDoorGoal(st.room, to, ok, true);
         if (door !== null) st.pendingDoor = door;
       });
@@ -292,5 +354,5 @@ export async function setupPointerInput(g: G15) {
     },
   });
 
-  return { control };
+  return { control, assist };
 }

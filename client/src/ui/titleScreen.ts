@@ -34,7 +34,8 @@ export function savedAgo(savedAt: number, now: number): string {
   return d === 1 ? 'yesterday' : `${d} days ago`;
 }
 
-export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveStorage): Promise<TitleChoice> {
+/** `audio` (AU-2): the title Settings change the live sound (and the title music) at once. */
+export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveStorage, audio?: { setEnabled(on: boolean): void; setVolume(v: number): void }): Promise<TitleChoice> {
   return new Promise((resolve) => {
     const screen = el('div', 'title-screen');
     const glow = el('div', 'title-glow');
@@ -93,6 +94,7 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
         prefs.sound = !prefs.sound;
         sound.textContent = prefs.sound ? 'Sound: on' : 'Sound: off';
         sound.classList.toggle('on', prefs.sound);
+        audio?.setEnabled(prefs.sound);
         savePrefs(storage, prefs);
       }, 'title-btn');
       sound.classList.toggle('on', prefs.sound);
@@ -105,6 +107,7 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
       vol.setAttribute('aria-label', 'Volume');
       vol.addEventListener('change', () => {
         prefs.volume = Number(vol.value) / 100;
+        audio?.setVolume(prefs.volume);
         savePrefs(storage, prefs);
       });
       const row = el('div', 'title-volume');

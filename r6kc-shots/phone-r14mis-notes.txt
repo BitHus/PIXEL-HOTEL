@@ -1,0 +1,4 @@
+stove screen {"x":140.65789473684208,"y":304.6578947368421}
+walk ring {"w":[0,0,0,0],"hidden":true}
+ctx {"text":"Menu","box":[284,604,72,72]}
+errors []

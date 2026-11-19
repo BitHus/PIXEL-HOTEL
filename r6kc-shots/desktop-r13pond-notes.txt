@@ -1,0 +1,51 @@
+room {"kind":"lakeside","id":4,"lvl":1,"shape":"lakeside","w":576,"h":384,"av":{"x":288,"y":360},"items":[]}
+deep-mid tap 600,190 from 288,346 walked 34px end 295,313 fishUi=[Nice, that i  one more done.
+100
+0
+Te ter
+Waiting for a bite...
+Hold!
+1
+2
+3
+4
+5
+] trace 295,313
+deep-low tap 560,262 from 304,293 walked 21px end 304,272 fishUi=[Nice, that i  one more done.
+100
+0
+Te ter
+Waiting for a bite...
+Hold!
+1
+2
+3
+4
+5
+] trace 304,272
+east-shallow tap 715,200 from 304,293 walked 21px end 304,272 fishUi=[100
+0
+Te ter
+Waiting for a bite...
+Hold!
+1
+2
+3
+4
+5
+6 | Nice, that i  one more do] trace 304,272
+southeast tap 735,275 from 304,293 walked 32px end 336,289 fishUi=[Nice, that i  one more done. | Waiting for a bite...Hold! | Waiting for a bite..] trace 336,289
+north tap 640,118 from 432,366 walked 30px end 459,353 fishUi=[Nice, that i  one more done. | Waiting for a bite...Hold! | Waiting for a bite..] trace 459,353
+west-by-pier tap 470,170 from 496,330 walked 32px end 481,302 fishUi=[100
+0
+Te ter
+Waiting for a bite...
+Hold!
+1
+2
+3
+4
+5
+6 | Nice, that i  one more do] trace 481,302
+far-east-top tap 750,140 from 464,293 walked 32px end 479,265 fishUi=[Nice, that i  one more done. | Waiting for a bite...Hold! | Waiting for a bite..] trace 479,265
+errors []

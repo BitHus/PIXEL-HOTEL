@@ -123,6 +123,13 @@ export function createPourControl(h: PourControlHooks) {
       const n = nearest(screen);
       if (n) begin(n.spot.standUid, n.side, 'pointer');
     },
+    /** MISCLICK-PROOF: the context button or the E key starts the pour at the waited stand (like holding Space); holdEnd() releases it. */
+    holdStart(): void {
+      if (waiting && !h.blocked()) begin(waiting.standUid, 0, 'key');
+    },
+    holdEnd(): void {
+      if (press?.source === 'key') end();
+    },
     /** The pointer ended (camera control: pointer up, cancel or a second finger). */
     up(): void {
       end();

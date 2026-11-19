@@ -1,0 +1,10 @@
+packs {"panel":[8,48,348,636],"tab":[211,48,97,48],"side":[364,8,48,255],"labels":["Common75.4%","Rare20.1%","Ultra rare4.5%","Common88.2%"]}
+== menu {"on":true,"edge":false,"ring":[34,163,44,44],"hand":[48,135,16,20],"card":null,"vw":420,"vh":760} {"ringHasPk":true,"orders":[125,602,169,52]}
+peek menu before {"x":106.66666666666667,"y":56,"g":{"x":144,"y":224}} after {"x":106.66666666666667,"y":56,"g":{"x":144,"y":224}}
+== stove {"on":true,"edge":false,"ring":[60,88,44,44],"hand":[74,60,16,20],"card":null,"vw":420,"vh":760} {"ringHasPk":true,"orders":[125,602,169,52]}
+peek stove before {"x":169.33333333333334,"y":56,"g":{"x":224,"y":160}} after {"x":169.33333333333334,"y":56,"g":{"x":224,"y":160}}
+== cellar {"on":true,"edge":false,"ring":[60,88,44,44],"hand":[74,60,16,20],"card":null,"vw":420,"vh":760} {"ringHasPk":true,"orders":[125,602,169,52]}
+== wall {"on":true,"edge":false,"ring":[360,4,56,56],"hand":[380,68,16,20],"card":null,"vw":420,"vh":760} {"ringHasPk":true,"orders":[125,602,169,52]}
+== farm {"on":true,"edge":false,"ring":[360,160,56,56],"hand":[380,132,16,20],"card":null,"vw":420,"vh":760} {"ringHasPk":true,"orders":[125,602,169,52]}
+== build {"on":true,"edge":false,"ring":[360,56,56,56],"hand":[380,28,16,20],"card":null,"vw":420,"vh":760} {"ringHasPk":true,"orders":[125,602,169,52]}
+errors []

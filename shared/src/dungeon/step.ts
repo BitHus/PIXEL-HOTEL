@@ -48,6 +48,7 @@ import { POTION } from '../gear.ts';
 import { gemDrop, type GemSource } from '../gems.ts';
 import { getFoodType } from '../materials.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
+import { xpFor } from '../xp.ts';
 import { findPath, lineOfSight, type NavGrid } from '../nav.ts';
 import { rngInt } from '../rng.ts';
 import type { Rank, FoodId, Point, Rng } from '../types.ts';
@@ -123,8 +124,15 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
   const now = r.timeMs + r.carryMs;
   if (input.t === 'choose_exit') {
     if (r.status !== 'exit_choice') return;
-    if (input.choice === 'leave') leave(r);
-    else if (input.choice === 'deeper' && r.floor < r.maxFloors) deeper(r);
+    // SK-2: reaching an exit (going deeper or out through it) gives xp; a mine 'leave' from anywhere does not.
+    const exitXp = (): void => gainRunXp(r, xpFor({ t: r.dig ? 'mine_exit' : 'floor_exit' }));
+    if (input.choice === 'leave') {
+      exitXp();
+      leave(r);
+    } else if (input.choice === 'deeper' && r.floor < r.maxFloors) {
+      exitXp();
+      deeper(r);
+    }
     else if (input.choice === 'stay') {
       r.status = 'active';
       p.exitArmed = false;
@@ -240,6 +248,7 @@ function digHooks(r: DungeonRun, rng: Rng): DigHooks {
       r.events.push({ t: 'loot', item: loot.item, qty: loot.qty });
     },
     dropGems: (rank, at) => dropGems(r, 'rock', rank, at, rng),
+    gainXp: (xp) => gainRunXp(r, xp),
   };
 }
 
@@ -330,25 +339,12 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
     p.pendingHit = false;
   }
   const xp = e.mimic ? MIMIC_XP : ENEMIES[e.kind].xp;
-  r.xpGained += xp;
-  p.xp += xp;
   r.events.push({ t: 'kill', enemyId: e.id, kind: e.kind, xp, mimic: e.mimic === true });
   // The Book: a kill counts for the enemy's type (a mimic is its own type).
   const type = enemyTypeOf(e);
   r.kills[type] = (r.kills[type] ?? 0) + 1;
   if (!r.met.includes(type)) r.met.push(type);
-  const level = levelForXp(p.xp);
-  if (level > p.level) {
-    // Level up: new stats and a full heal.
-    const bonus = attackBonusAt(level) - attackBonusAt(p.level);
-    // The new level's hp on top of what food added (pumpkin pie).
-    p.maxHp += maxHpAt(level) - maxHpAt(p.level);
-    p.level = level;
-    p.hp = p.maxHp;
-    p.attackMin += bonus;
-    p.attackMax += bonus;
-    r.events.push({ t: 'level_up', level });
-  }
+  gainRunXp(r, xp);
   if (e.mimic) addLoot(r, rollLoot(getLootTable('golden_chest'), rng));
   if (e.kind === 'bone_king') addLoot(r, rollLoot(getLootTable('boss'), rng));
   // The enemy's own drop table (step 9e): RARE_DROP_CHANCE per kill, and the table decides the
@@ -362,6 +358,26 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
     r.bossDefeated = true;
     bankBag(r);
     r.events.push({ t: 'boss_banked' });
+  }
+}
+
+/** Xp earned in the run (kills, SK-2 mine digs and exits): counted now, banked at the end (never lost); a level up gives the new stats and a full heal. */
+function gainRunXp(r: DungeonRun, xp: number): void {
+  if (xp <= 0) return;
+  const p = r.player;
+  r.xpGained += xp;
+  p.xp += xp;
+  const level = levelForXp(p.xp);
+  if (level > p.level) {
+    // Level up: new stats and a full heal.
+    const bonus = attackBonusAt(level) - attackBonusAt(p.level);
+    // The new level's hp on top of what food added (pumpkin pie).
+    p.maxHp += maxHpAt(level) - maxHpAt(p.level);
+    p.level = level;
+    p.hp = p.maxHp;
+    p.attackMin += bonus;
+    p.attackMax += bonus;
+    r.events.push({ t: 'level_up', level });
   }
 }
 

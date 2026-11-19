@@ -1,0 +1,16 @@
+room {"kind":"lakeside","id":4,"lvl":1,"shape":"lakeside","w":576,"h":384,"av":{"x":288,"y":360},"items":[]}
+p-up tap 210,300 from 309,305 walked 34px end 304,272 fishUi=[100
+0
+Te ter
+2 order 
+Waiting for a bite...
+Hold! | Welcome to your tavern! Gue ] trace 304,272
+p-far tap 210,160 from 304,368 walked 41px end 304,327 fishUi=[100
+0
+Te ter
+2 order 
+Waiting for a bite...
+Hold! | Welcome to your tavern! Gue ] trace 304,327
+p-right tap 340,330 from 304,368 walked 104px end 391,311 fishUi=[Welcome to your tavern! Gue t   it and order: tap them to  erve. Tap the regi te] trace 334,348 > 391,311 > 391,311 > 391,311 > 391,311 > 391,311 > 391,311 > 391,311 > 391,311
+p-left tap 80,330 from 400,368 walked 104px end 313,311 fishUi=[Welcome to your tavern! Gue t   it and order: tap them to  erve. Tap the regi te] trace 370,348 > 313,311 > 313,311 > 313,311 > 313,311 > 313,311 > 313,311 > 313,311 > 313,311
+errors []

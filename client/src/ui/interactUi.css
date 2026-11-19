@@ -1,0 +1,62 @@
+/* MISCLICK-PROOF (owner 19 Nov): hover / press highlight, confirm ring, phone context button (client/src/ui/interactUi.ts). Artist may restyle. */
+/* The box uses the ONE shared highlight (ui/highlight.css .pk-hl, corner brackets, no pulse for hover); press and the Tab cycle tint the brackets warm. */
+.interact-hl { z-index: 4; }
+.interact-hl[data-mode='press'],
+.interact-hl[data-mode='key'] { --hl-c: #feae34; }
+.interact-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -3px);
+  padding: 1px 6px;
+  white-space: nowrap;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--cream);
+  background: var(--night);
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+}
+.interact-confirm {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  border: 3px solid var(--warm);
+  border-radius: 50%;
+  animation-name: interact-confirm;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+@keyframes interact-confirm {
+  from { opacity: 1; transform: scale(0.8); }
+  to { opacity: 0; transform: scale(1.25); }
+}
+.ctx-btn {
+  position: absolute;
+  z-index: 6;
+  right: var(--side-col);
+  bottom: calc(var(--bottom-clear) + 8px);
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid var(--outline);
+  background: var(--warm);
+  color: var(--outline);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1;
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ctx-btn.down { transform: translateY(2px); background: var(--select); }
+#ui:has(.panel:not([hidden])) .ctx-btn { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .interact-confirm { animation-name: none; opacity: 0; }
+}
+.walk-mark { z-index: 3; --hl-l: 6px; opacity: 1; transition: opacity 250ms steps(3, end); }
+.walk-mark.fade { opacity: 0; }

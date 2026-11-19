@@ -35,16 +35,22 @@ export async function setupCore(g: G0) {
   // UI round 4: the title screen (Continue / New game / Settings) comes after the splash and before the API opens (open always writes a save).
   await splashGone;
   const peek = peekSavedGame(storage);
-  const titleChoice = await runTitleScreen(ui, peek, storage);
+  // Atmosphere step + AU-2: sound is made before the title screen so the title music plays there (it wakes on the first tap; every UI button clicks).
+  const titlePrefs = loadPrefs(storage);
+  const sound = new Sound(titlePrefs.sound, titlePrefs.volume, titlePrefs.musicVolume);
+  sound.listenForFirstTap();
+  sound.setMusic('title');
+  const titleChoice = await runTitleScreen(ui, peek, storage, sound);
   const { api, notice } = LocalGameAPI.open(storage);
   // New game over a save: the old one becomes the backup, then the character maker runs as for any new game.
   if (titleChoice === 'new' && peek.exists) api.newGame();
-  // Atmosphere step: the device settings, and sound (it wakes on the first tap; every UI button clicks).
+  // The device settings, read again: the title Settings may have changed them.
   const prefs = loadPrefs(storage);
-  const sound = new Sound(prefs.sound, prefs.volume);
-  sound.listenForFirstTap();
+  sound.setEnabled(prefs.sound);
+  sound.setVolume(prefs.volume);
   uiRoot.addEventListener('click', (e) => {
-    if (e.target instanceof Element && e.target.closest('button')) sound.play('click');
+    const b = e.target instanceof Element ? e.target.closest('button') : null;
+    if (b) sound.play(b.classList.contains('confirm-yes') ? 'confirm' : 'click'); // AU-2: a buy/build accept chimes
   });
   // Step 7b: a brand new game first makes the character and picks the room shapes, then plays
   // the intro in the shop. A save that already has a player skips all of this.

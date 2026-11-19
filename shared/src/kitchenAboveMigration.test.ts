@@ -11,7 +11,7 @@ describe('migration 41 -> 42', () => {
     it(`${shape}: the annex goes on top, the main floor moves down, the old kitchen pieces move into the new annex, every piece stands well, nothing is lost`, () => {
       const old = save41Start(shape, 0);
       const r = readSave(JSON.stringify({ version: 41, savedAt: 1, state: old }));
-      expect(SAVE_VERSION).toBe(42);
+      expect(SAVE_VERSION).toBe(43);
       expect(r.ok).toBe(true);
       if (!r.ok) return;
       const s = r.state;

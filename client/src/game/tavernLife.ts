@@ -677,7 +677,7 @@ export async function setupTavernLife(g: G9) {
         }
         break;
       case 'served':
-        sound.play('clink');
+        sound.play('serve'); // AU-2: the hand-over chime (was a clink)
         guide.event('serve');
         if (on) {
           bubbles.addNode(e.guestId, pixelIcon('smile'), REACTION_BUBBLE_MS);

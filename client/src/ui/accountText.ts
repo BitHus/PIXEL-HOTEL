@@ -24,10 +24,22 @@ const MESSAGES: Record<string, string> = {
   bad_time: 'This device clock looks wrong. Fix the date and time, then try again.',
   server_error: 'The server had a problem. Try again later.',
   bad_answer: 'The server gave an answer this game does not know. Try again later.',
+  no_save: 'There is no save in the cloud yet. Tap Sync now to put this one there.',
+  bad_request: 'The server did not understand that. Please reload the game.',
+  bad_json: 'The server did not understand that. Please reload the game.',
+  not_found: 'The server does not know that yet. Please reload the game.',
+  bad_title: 'Use letters, digits and spaces, at most 24.',
+  no_room: 'No room found for that code.',
+  not_visitable: 'Only your hotel room can be shared.',
 };
 
 export function accountMessage(error: string): string {
-  return MESSAGES[error] ?? 'Something went wrong. Try again later.';
+  const known = MESSAGES[error];
+  if (known) return known;
+  // A bare status (nginx answers some limits itself, without a JSON body).
+  if (error === 'http_429') return MESSAGES.rate_limited as string;
+  if (/^http_5\d\d$/.test(error)) return MESSAGES.server_error as string;
+  return 'Something went wrong. Try again later.';
 }
 
 /** "19 Nov 2026, 14:05" in the player's own time zone. */

@@ -1,0 +1,60 @@
+/* ONE highlight style (R16): used by the guide pointer ring (ui/guidePointer.ts) AND the hover highlight (coder, game/tapForgive hover).
+   Four crisp corner brackets around the thing, hollow in the middle (never covers it): a cream bar with a 1 px warm-dark outline, whole pixels,
+   no blur, no glow, no filled colour. Palette (Endesga 32): outline 181425, cream ead4aa, tan e4a672.
+   USE: add class `pk-hl` to an absolutely/fixed positioned box that sits ON the target and give it the size with --hl-w / --hl-h (css px, default 44).
+   Add `pk-hl-pulse` for the 2 step breathing (guide only; hover stays still), `pk-hl-calm` or .calm parent to stop it. pointer-events: none always. */
+.pk-hl {
+  --hl-c: #ead4aa;
+  --hl-o: #181425;
+  --hl-l: 10px;
+  position: absolute;
+  box-sizing: border-box;
+  width: var(--hl-w, 44px);
+  height: var(--hl-h, 44px);
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+.pk-hl::before,
+.pk-hl::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+}
+/* dark outline bars: 5 px thick, length l + 2 */
+.pk-hl::before {
+  --t: 5px;
+  --l: calc(var(--hl-l) + 2px);
+  background-image:
+    linear-gradient(var(--hl-o), var(--hl-o)), linear-gradient(var(--hl-o), var(--hl-o)),
+    linear-gradient(var(--hl-o), var(--hl-o)), linear-gradient(var(--hl-o), var(--hl-o)),
+    linear-gradient(var(--hl-o), var(--hl-o)), linear-gradient(var(--hl-o), var(--hl-o)),
+    linear-gradient(var(--hl-o), var(--hl-o)), linear-gradient(var(--hl-o), var(--hl-o));
+  background-size: var(--l) var(--t), var(--t) var(--l), var(--l) var(--t), var(--t) var(--l), var(--l) var(--t), var(--t) var(--l), var(--l) var(--t), var(--t) var(--l);
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+}
+/* cream bars: 3 px thick, one pixel in from the outline edge */
+.pk-hl::after {
+  --t: 3px;
+  --l: var(--hl-l);
+  inset: 1px;
+  background-image:
+    linear-gradient(var(--hl-c), var(--hl-c)), linear-gradient(var(--hl-c), var(--hl-c)),
+    linear-gradient(var(--hl-c), var(--hl-c)), linear-gradient(var(--hl-c), var(--hl-c)),
+    linear-gradient(var(--hl-c), var(--hl-c)), linear-gradient(var(--hl-c), var(--hl-c)),
+    linear-gradient(var(--hl-c), var(--hl-c)), linear-gradient(var(--hl-c), var(--hl-c));
+  background-size: var(--l) var(--t), var(--t) var(--l), var(--l) var(--t), var(--t) var(--l), var(--l) var(--t), var(--t) var(--l), var(--l) var(--t), var(--t) var(--l);
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+}
+/* breathing: the brackets step out 3 px and back, two whole-pixel steps (not a smooth scale: that would smear the pixels) */
+.pk-hl-pulse::before { animation: pk-hl-out 1000ms steps(1, end) infinite; }
+.pk-hl-pulse::after { animation: pk-hl-in 1000ms steps(1, end) infinite; }
+@keyframes pk-hl-out { 0%, 100% { inset: 0; } 50% { inset: -3px; } }
+@keyframes pk-hl-in { 0%, 100% { inset: 1px; } 50% { inset: -2px; } }
+.pk-hl-calm.pk-hl-pulse::before,
+.pk-hl-calm.pk-hl-pulse::after,
+.calm .pk-hl-pulse::before,
+.calm .pk-hl-pulse::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .pk-hl-pulse::before, .pk-hl-pulse::after { animation: none; }
+}

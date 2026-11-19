@@ -1,3 +1,4 @@
+import { eventXp } from './xpTest.ts';
 import { describe, expect, it } from 'vitest';
 import { AXE_COOLDOWN_MS, RANK_WEIGHTS, TREE_HITS, TREE_REGROW_MS, TREE_WOOD_MAX, TREE_WOOD_MIN } from './config.ts';
 import { applyChange } from './ledger.ts';
@@ -45,6 +46,7 @@ describe('woodcutting (section 10d, step 9f)', () => {
     expect(r.state.player.materials.wood).toBe(wood + got);
     expect(r.state.ledger[r.state.ledger.length - 1]).toMatchObject({ reason: 'chop' });
     expect(isStump(r.state.lakeside.trees[0]!, t)).toBe(true);
+    expect(eventXp(s, r.state)).toBe(2); // SK-2: a tree felled
     // The other trees are untouched.
     expect(r.state.lakeside.trees.slice(1).every((x) => x.hits === 0 && x.felledAt === null)).toBe(true);
   });

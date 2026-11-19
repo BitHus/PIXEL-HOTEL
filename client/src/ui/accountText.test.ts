@@ -7,7 +7,14 @@ describe('accountMessage', () => {
     expect(accountMessage('username_taken')).toBe('That name is taken.');
   });
   it('falls back for unknown codes and never says inn', () => {
-    expect(accountMessage('http_502')).toMatch(/went wrong/);
+    expect(accountMessage('http_418')).toMatch(/went wrong/);
+    expect(accountMessage('http_502')).toBe(accountMessage('server_error'));
+    expect(accountMessage('http_429')).toBe(accountMessage('rate_limited'));
+  });
+  it('every server error code has its own text', () => {
+    for (const code of ['bad_request', 'bad_json', 'too_large', 'rate_limited', 'unauthorized', 'not_found', 'server_error', 'age_required', 'username_taken', 'bad_login', 'banned', 'no_save', 'not_a_save', 'too_new', 'too_old', 'invalid', 'bad_time', 'bad_state', 'newer_on_server', 'bad_title', 'no_room', 'not_visitable', 'network', 'bad_answer']) {
+      expect(accountMessage(code), code).not.toMatch(/went wrong/);
+    }
     expect(accountMessage('x')).not.toMatch(/\binn\b/i);
   });
 });

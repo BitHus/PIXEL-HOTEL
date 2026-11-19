@@ -1,0 +1,37 @@
+tavern_to_suite arch spot 64,204 target 64,176 screen 276,270 on=true av 288,488
+  -> hotel av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_suite left+14 spot 64,204 target 18,188 screen 230,109 on=true av 288,488
+  -> hotel av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_suite right+14 spot 64,204 target 110,188 screen 322,109 on=true av 288,488
+  -> hotel av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_suite left+30 spot 64,204 target 2,188 screen 214,109 on=true av 288,488
+  -> hotel av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_suite right+30 spot 64,204 target 126,188 screen 338,109 on=true av 288,488
+  -> hotel av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_suite front spot 64,204 target 64,234 screen 276,155 on=true av 288,488
+  -> hotel av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_garden arch spot 512,204 target 512,176 screen 724,97 on=true av 288,488
+  -> farm av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_garden left+14 spot 512,204 target 466,188 screen 678,109 on=true av 288,488
+  -> farm av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_garden right+14 spot 512,204 target 558,188 screen 770,109 on=true av 288,488
+  -> farm av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_garden left+30 spot 512,204 target 450,188 screen 662,109 on=true av 288,488
+  -> farm av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_garden right+30 spot 512,204 target 574,188 screen 786,109 on=true av 288,488
+  -> farm av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_garden front spot 512,204 target 512,234 screen 724,155 on=true av 288,488
+  -> farm av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_cellar arch spot 288,12 target 288,-16 screen 500,-95 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar left+14 spot 288,12 target 242,-4 screen 454,-83 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar right+14 spot 288,12 target 334,-4 screen 546,-83 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar left+30 spot 288,12 target 226,-4 screen 438,-83 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar right+30 spot 288,12 target 350,-4 screen 562,-83 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar front spot 288,12 target 288,42 screen 500,-37 on=false av 288,488
+  OFFSCREEN (skipped)
+errors []

@@ -65,7 +65,7 @@ import { easeOutBack, easeOutQuad } from '../fx/ease.ts';
 import { Shake } from '../fx/shake.ts';
 
 /** The sounds the lakeside plays (client/src/audio/sound.ts). `rank` is for 'found', `pitch` (0 to 1) for 'reelTick'. */
-export type LakeSound = 'hit' | 'pop' | 'bell' | 'coin' | 'cast' | 'splash' | 'reelTick' | 'rustle' | 'found';
+export type LakeSound = 'hit' | 'pop' | 'bell' | 'coin' | 'cast' | 'splash' | 'reelTick' | 'rustle' | 'found' | 'bite';
 
 export interface LakesideHooks {
   api: Pick<GameAPI, 'getLakeside' | 'chopTree' | 'castAt' | 'fishStart' | 'fishStep' | 'fishStop'>;
@@ -485,7 +485,7 @@ export class LakesideScreen {
     let lost = false;
     for (const e of s.events) {
       if (e.t === 'bite') {
-        this.hooks.sound('bell');
+        this.hooks.sound('bite');
         // The bite look: a dunk, rings that grow, the "!" pops in.
         this.biteMs = 0;
         if (spot && !this.reduce) {

@@ -1,0 +1,37 @@
+tavern_to_suite arch spot 64,204 target 64,176 screen 47,321 on=true av 288,488
+  -> hotel av 272,48 toast=Doors lead to the tavern. Walk onto the doorway to step through.
+tavern_to_suite left+14 spot 64,204 target 18,188 screen -227,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_suite right+14 spot 64,204 target 110,188 screen -89,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_suite left+30 spot 64,204 target 2,188 screen -251,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_suite right+30 spot 64,204 target 126,188 screen -65,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_suite front spot 64,204 target 64,234 screen -158,267 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_garden arch spot 512,204 target 512,176 screen 514,180 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_garden left+14 spot 512,204 target 466,188 screen 445,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_garden right+14 spot 512,204 target 558,188 screen 583,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_garden left+30 spot 512,204 target 450,188 screen 421,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_garden right+30 spot 512,204 target 574,188 screen 607,198 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_garden front spot 512,204 target 512,234 screen 514,267 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar arch spot 288,12 target 288,-16 screen 178,-108 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar left+14 spot 288,12 target 242,-4 screen 109,-90 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar right+14 spot 288,12 target 334,-4 screen 247,-90 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar left+30 spot 288,12 target 226,-4 screen 85,-90 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar right+30 spot 288,12 target 350,-4 screen 271,-90 on=false av 288,488
+  OFFSCREEN (skipped)
+tavern_to_cellar front spot 288,12 target 288,42 screen 178,-21 on=false av 288,488
+  OFFSCREEN (skipped)
+errors []

@@ -67,6 +67,8 @@ export interface State {
   lookAround: boolean;
   walkHoldCell: string;
   shiftHeld: boolean;
+  /** R16: the floor point the first-steps guide points at in this room (set by guideWorld.ts each frame; null = none): the footstep trail and the camera peek. */
+  guideWorld?: Point | null;
 }
 
 export interface Late {

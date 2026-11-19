@@ -1,0 +1,10 @@
+where {"kind":"hotel","id":1,"lvl":1,"shape":"square","w":576,"h":384,"av":{"x":272,"y":48},"items":[]}
+cam {"sh":{"x":-16.224719101123597,"y":-436.3595505617978,"zoom":0.5855263157894737},"lock":false}
+side [["Catalog (C)",48,48],["Build (B)",48,48],["Dungeon: the key costs 10 gold",48,48],["Worlds: travel",48,48],["More",48,48],["Bag (I)",44,44]]
+more items ["|More","Packs|Packs: open card packs with gems","Workshop|Workshop: crafting and the Blacksmith","Book|Book: everything you found (J)","Skills|Skills: spend your skill points","Room|Room","Avatar|Avatar","Chat|Chat (Enter)","Settings|Settings","Quests|Quests: daily, events, achievements","Emote|Emote","Look around|Look around: drag to pan the room","Wave|Wave","Dance|Dance","Laugh|Laugh","Cheer|Cheer","Sleep|Sleep"]
+look on {"l":true,"sh":{"x":-16.224719101123597,"y":-436.3595505617978,"zoom":0.5855263157894737}}
+look drag before/after [{"x":-16.224719101123597,"y":-436.3595505617978,"ax":272,"ay":48},{"x":-16.224719101123597,"y":-436.3595505617978,"ax":272,"ay":48}]
+after walk {"l":true,"sh":{"x":-16.224719101123597,"y":-436.3595505617978,"zoom":0.5855263157894737},"ax":272,"ay":48}
+plain drag cam [{"x":-16.224719101123597,"y":-436.3595505617978},{"x":-16.224719101123597,"y":-436.3595505617978}]
+packs panel undefined
+errors []

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLOUD_LASTSYNC_KEY, CLOUD_SESSION_KEY, cloudConfig, createCloudSave, decideSync } from './cloudSave.ts';
+import { CLOUD_LASTSYNC_KEY, CLOUD_LASTSYNC_USER_KEY, CLOUD_SESSION_KEY, cloudConfig, createCloudSave, decideSync } from './cloudSave.ts';
 import { memoryStorage } from './saveStorage.ts';
 
 type Call = { url: string; method: string; auth: string | null; body: string | null };
@@ -145,6 +145,44 @@ describe('sync conflicts', () => {
     expect(JSON.parse(f.calls.find((x) => x.method === 'PUT')!.body!).savedAt).toBe(1501);
     expect(c.lastSyncedAt()).toBe(1501);
     expect(await c.resolve('local', null, 1)).toEqual({ ok: false, error: 'not_a_save' });
+  });
+
+  it('logging in as ANOTHER account forgets the sync time, so A\'s game is never pushed into B silently', async () => {
+    const storage = memoryStorage({ ...session, [CLOUD_LASTSYNC_KEY]: '1600', [CLOUD_LASTSYNC_USER_KEY]: 'tester' });
+    const f = fakeFetch({ ...answers, 'POST /api/login': { status: 200, body: { token: 'B', username: 'Other' } } });
+    const c = createCloudSave(cfg, storage, f.fn);
+    expect(await c.login('Other', 'correct horse')).toEqual({ ok: true });
+    expect(c.lastSyncedAt()).toBeNull();
+    // With A's sync time (1600) kept, local 1700 vs Other's cloud 1500 planned a silent UPLOAD of A's game into Other's account; now it asks.
+    expect(await c.syncNow(local(1700))).toMatchObject({ action: 'conflict' });
+    expect(f.calls.some((x) => x.method === 'PUT')).toBe(false);
+  });
+
+  it('logging in again as the SAME account keeps the sync time', async () => {
+    const storage = memoryStorage({ [CLOUD_LASTSYNC_KEY]: '1500', [CLOUD_LASTSYNC_USER_KEY]: 'tester' });
+    const f = fakeFetch({ ...answers, 'POST /api/login': { status: 200, body: { token: 'T', username: 'Tester' } } });
+    const c = createCloudSave(cfg, storage, f.fn);
+    expect(await c.login('tester', 'correct horse')).toEqual({ ok: true });
+    expect(c.lastSyncedAt()).toBe(1500);
+    expect(await c.syncNow(local(2000))).toEqual({ ok: true, action: 'uploaded' });
+    expect(storage.get(CLOUD_LASTSYNC_USER_KEY)).toBe('tester');
+  });
+
+  it('pushIfAhead uploads only when this device alone changed; never downloads or asks', async () => {
+    const storage = memoryStorage({ ...session, [CLOUD_LASTSYNC_KEY]: '1500' });
+    const f = fakeFetch(answers);
+    const c = createCloudSave(cfg, storage, f.fn);
+    expect(await c.pushIfAhead(local(2000))).toEqual({ ok: true, action: 'uploaded' });
+    expect(await c.pushIfAhead(local(1500))).toEqual({ ok: true, action: 'unchanged' });
+    expect(await c.pushIfAhead(null)).toEqual({ ok: true, action: 'unchanged' });
+    const behind = createCloudSave(cfg, memoryStorage({ ...session, [CLOUD_LASTSYNC_KEY]: '1000' }), fakeFetch(answers).fn);
+    expect(await behind.pushIfAhead(local(2000))).toEqual({ ok: true, action: 'behind' }); // both changed
+    expect(await behind.pushIfAhead(local(900))).toEqual({ ok: true, action: 'behind' }); // the cloud is newer
+    expect(f.calls.filter((x) => x.method === 'GET' && x.url.endsWith('/api/save'))).toHaveLength(0);
+    const race = createCloudSave(cfg, memoryStorage({ ...session, [CLOUD_LASTSYNC_KEY]: '1500' }), fakeFetch({ ...answers, 'PUT /api/save': { status: 409, body: { error: 'newer_on_server' } } }).fn);
+    expect(await race.pushIfAhead(local(2000))).toEqual({ ok: true, action: 'behind' });
+    const off = createCloudSave(cfg, memoryStorage({ ...session, [CLOUD_LASTSYNC_KEY]: '1500' }), fakeFetch({}).fn);
+    expect(await off.pushIfAhead(local(2000))).toEqual({ ok: false, error: 'network' });
   });
 
   it('a banned login reports banned; logout forgets the sync time', async () => {

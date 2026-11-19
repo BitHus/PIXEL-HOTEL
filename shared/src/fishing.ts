@@ -43,6 +43,7 @@ import { CATCH_TYPES, getCatchType, type CatchType } from './fish.ts';
 import type { GameState } from './gameState.ts';
 import { ownedRod } from './gear.ts';
 import { applyChange } from './ledger.ts';
+import { grantXp } from './xp.ts';
 import { gemDrop } from './gems.ts';
 import { RANKS, rollRank } from './ranks.ts';
 import { effective, type Bonuses } from './stats.ts';
@@ -367,5 +368,5 @@ export function bankCatch(state: GameState, s: FishSession, at: number, rng: Rng
   if (!next) return null;
   const biggest = { ...next.player.biggest };
   if (s.cm !== null && s.cm > (biggest[type.id] ?? 0)) biggest[type.id] = s.cm;
-  return grantEarnedHats({ ...next, player: { ...next.player, biggest } });
+  return grantXp(grantEarnedHats({ ...next, player: { ...next.player, biggest } }), { t: 'fish', rank: s.rank }, at);
 }

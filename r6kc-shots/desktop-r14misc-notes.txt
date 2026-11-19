@@ -1,0 +1,28 @@
+volume rows ["Music40|40","Effects35|35"]
+music after 0
+skills {"tabs":[],"soon":9}
+cam fail Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'toFixed')
+    at l (http://localhost:4263/assets/index-D2o7JNQC.js:369:792219)
+    at Object.u [as setCamera] (http://localhost:4263/assets/index-D2o7JNQC.js:369:792509)
+    at eval (eval at <anonymous> (eval at evaluate (:370:30)), <anonymous>:3:22)
+    at eval (eval at <anonymous> (eval at evaluate (:370:30)), <anonymous>:3:80)
+    at eval (eval at evaluate (:370:30), <anonymous>:1:55)
+    at UtilityScript.evaluate (<anonymous>:372:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+cam fail Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'toFixed')
+    at l (http://localhost:4263/assets/index-D2o7JNQC.js:369:792219)
+    at Object.u [as setCamera] (http://localhost:4263/assets/index-D2o7JNQC.js:369:792509)
+    at eval (eval at <anonymous> (eval at evaluate (:370:30)), <anonymous>:3:22)
+    at eval (eval at <anonymous> (eval at evaluate (:370:30)), <anonymous>:3:81)
+    at eval (eval at evaluate (:370:30), <anonymous>:1:55)
+    at UtilityScript.evaluate (<anonymous>:372:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+cam fail Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'toFixed')
+    at l (http://localhost:4263/assets/index-D2o7JNQC.js:369:792219)
+    at Object.u [as setCamera] (http://localhost:4263/assets/index-D2o7JNQC.js:369:792509)
+    at eval (eval at <anonymous> (eval at evaluate (:370:30)), <anonymous>:3:22)
+    at eval (eval at <anonymous> (eval at evaluate (:370:30)), <anonymous>:3:80)
+    at eval (eval at evaluate (:370:30), <anonymous>:1:55)
+    at UtilityScript.evaluate (<anonymous>:372:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+errors ["pageerror: Cannot read properties of undefined (reading 'toFixed')"]

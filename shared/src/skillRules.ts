@@ -18,7 +18,7 @@ import {
   DIG_LIGHT_BLOCKS,
   DUNGEON_BLOCK,
 } from './config.ts';
-import { effective, type Bonuses } from './stats.ts';
+import { effective, type Bonuses, type StatId } from './stats.ts';
 import { skillStats } from './skills.ts';
 import type { Player } from './types.ts';
 
@@ -82,5 +82,13 @@ export const hazardDamageOf = (base: number, b?: Bonuses): number => Math.max(1,
 /** Treasure sense (crypt): how many blocks away a closed chest shines through the dark (0 without the skill). */
 export const chestGlintBlocksOf = (b?: Bonuses): number => effective(0, 'chestGlintBlocks', b);
 
-/** Stats of the tree no rule reads yet (the panel marks their nodes "not active yet"): they wait for bait and the bag rework. */
-export const UNHOOKED_STATS: readonly string[] = ['baitSavePct', 'deepCast', 'keepBaitOnLoss', 'bagSlotsPlus'];
+/**
+ * SK-1: the stats a rule reads today (through a helper above, or fishing.ts / mineStep.ts / step.ts / run.ts directly). A node is `live` in skills.json only
+ * when every effect is one of these (skills.test checks it); the other StatIds wait for their hook batch (docs/PLAN-SKILLTREE.md 4.3, SK-3..5).
+ */
+export const HOOKED_STATS: readonly StatId[] = [
+  'roomWalkPct', 'trayPlus', 'seatsPlus', 'pourWindowPlus', 'batchPlus', 'tapCapPlus', 'caskSlotsPlus',
+  'maxHpPlus', 'runBagPlus', 'attackPlus', 'runSpeedPct', 'potionHealPct', 'enemyMissMs', 'chestGlintBlocks', 'lastStand',
+  'biteWaitPct', 'boxSizePct', 'tensionRisePct', 'strikeWindowMs', 'rankOddsPct',
+  'digSpeedPct', 'lightPlus', 'glintBlocks', 'hazardDmgPct', 'doubleStrikePct', 'mineBagPlus', 'oreBonusPct', 'gemChancePts',
+];

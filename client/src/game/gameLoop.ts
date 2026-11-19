@@ -1,12 +1,15 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { CAMERA_FOLLOW_EASE_MS, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, snapToStep, HOTEL_WALK_SPEED, roomSpeedOf, type Point } from '@pixel-hotel/shared';
+import { CAMERA_FOLLOW_EASE_MS, GUIDE_PEEK_DELAY_MS, GUIDE_PEEK_TAU_MS, clampCamera, easeCamera, guidePeekCamera, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, snapToStep, HOTEL_WALK_SPEED, roomSpeedOf, type Point } from '@pixel-hotel/shared';
 import { pixelStep } from '../render/pixelStep.ts';
 import { avatarMoving } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
 import { avatarDepthKey } from '../render/depthOrder.ts';
 import { createCatLife } from './catLife.ts';
+import { createGuideTrail } from './guideTrail.ts';
+import { trackFor } from '../audio/sequencer.ts';
+import type { TrackId } from '../audio/musicData.ts';
 import type { G16 } from './ctx.ts';
 
 export async function setupGameLoop(g: G16) {
@@ -31,6 +34,10 @@ export async function setupGameLoop(g: G16) {
   /** The avatars that stand or walk on the floor (their shadows). */
   const feet: Point[] = [];
   let lastStepBeat = 0;
+  let musicWas: TrackId | null | undefined;
+  const trail = createGuideTrail(g);
+  /** R16: how long the avatar has stood still (ms), for the guide camera peek. */
+  let stillMs = 0;
   let wasPaused = false;
   let wasMoving = false;
   let easeOff: Point | null = null;
@@ -47,6 +54,13 @@ export async function setupGameLoop(g: G16) {
       frameLineAt = performance.now();
       label.setFrameLine(frames.text());
     }
+    // AU-2: the music follows the place on screen (room kind, or the run's place: dungeon / mine); leaving or dying brings the room's track back. Crossfades inside Sound.
+    const musicNow = trackFor(dungeon.isActive ? dungeon.place : st.room.kind);
+    if (musicNow !== musicWas) {
+      musicWas = musicNow;
+      sound.setMusic(musicNow);
+    }
+    trail.update(performance.now());
     if (dungeon.isActive !== fx.paused) {
       fx.paused = dungeon.isActive;
       if (fx.paused) {
@@ -56,6 +70,7 @@ export async function setupGameLoop(g: G16) {
     }
     if (dungeon.isActive) {
       nameTag.update('', null);
+      g.assist.update(performance.now()); // blocked in the dungeon: hides the context button and highlights
       control.update(ticker.deltaMS);
       hold.tick();
       dungeon.frame(ticker.deltaMS);
@@ -98,6 +113,15 @@ export async function setupGameLoop(g: G16) {
       if (next !== st.camera && (next.x !== st.camera.x || next.y !== st.camera.y)) setCamera(next);
       if (!easeOff) lookReturn = false;
     } else easeOff = null;
+    // R16 CAMERA PEEK: standing still with a guide target outside the free area, the camera eases (never jumps) just far enough to show it, the avatar kept
+    // in view. It is not a pan: the next walk eases back to the lock through easeOff above (CAM-LOCK v2 unchanged while moving).
+    stillMs = moving ? 0 : stillMs + ticker.elapsedMS;
+    const peekAt = st.guideWorld ?? null;
+    if (peekAt && paused && !step && !easeOff && !lookReturn && !st.lookAround && !intro.active && !g.newIntro.running && !build.on && !hold.active && panels.open === null && stillMs >= GUIDE_PEEK_DELAY_MS) {
+      const peek = clampCamera(guidePeekCamera(st.camera, st.avatar, peekAt, g.freeW(), g.freeH()), app.screen.width, app.screen.height, st.bounds);
+      const next = easeCamera(st.camera, peek, ticker.elapsedMS, GUIDE_PEEK_TAU_MS);
+      if (next !== st.camera) setCamera(next);
+    }
     wasPaused = paused;
     wasMoving = moving;
     itemViews.props.setMealSpots(g.tableMess.steamSpots());
@@ -107,6 +131,8 @@ export async function setupGameLoop(g: G16) {
     guests.update(Math.min(ticker.elapsedMS, 500), clockMs);
     catLife.update(ticker.deltaMS, clockMs);
     pour.update(ticker.deltaMS);
+    // MISCLICK-PROOF: the highlights follow the camera; the phone context button follows the nearest usable thing.
+    g.assist.update(performance.now());
     fx.update(ticker.deltaMS);
     lakeside.update(ticker.deltaMS, clockMs);
     if (st.path.length === 0 && st.avatar.state !== 'walk') lakeside.arrived();

@@ -1,3 +1,4 @@
+import { eventXp } from './xpTest.ts';
 import { describe, expect, it } from 'vitest';
 import { barrels, brewCards, brewOf, brewReady, brewReadyInMs, collectBrew, returnOrphanBrews, startBrew } from './brewing.ts';
 import { kitchenRoomIds } from './workRooms.ts';
@@ -51,6 +52,7 @@ describe('brewing (step 9t)', () => {
     expect(got.state.tavern.brews).toEqual([]);
     expect(got.state.ledger.at(-1)).toMatchObject({ reason: 'brew', materials: { root_ale: 7 } });
     expect(got.state.player.seen.root_ale?.count).toBe(7);
+    expect(eventXp(s, got.state)).toBe(4); // SK-2: a brew collected
     // An empty barrel gives nothing.
     expect(collectBrew(got.state, uid, 2000)).toBeNull();
   });

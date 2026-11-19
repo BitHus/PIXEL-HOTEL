@@ -47,6 +47,8 @@ import { allRecipes, categoryWeights } from './spliceRule.ts';
 import { SEED_CATEGORIES, seedCategory } from './seedCategory.ts';
 import { allSeedIds, isSpliceable, isStarterSeed, seedGrows, seedRank } from './seeds.ts';
 import { packPool } from './packs.ts';
+import { biggestXpShare, focusedCommonFarmXp, hoursToLevel, mixedXpPerHour, xpBySource, XP_STAGES } from './balanceXp.ts';
+import { LEVEL_TOTAL_XP, MAX_LEVEL } from './levels.ts';
 
 const cheapestPack = Math.min(...PACK_TYPES.map((p) => p.gemPrice));
 
@@ -340,5 +342,25 @@ describe('SG2 splice gate: every pair of the general rule', () => {
   it('the gem yardsticks of test 5 are above zero', () => {
     expect(bestHarvestGemsPerCellMinute()).toBeGreaterThan(0);
     expect(gemsPerEvent('splice', 'common')).toBeGreaterThan(0);
+  });
+});
+
+// SK-2 (docs/PLAN-SKILLTREE.md 2.1, 2.2): xp from every loop and the level 30 curve.
+describe('XP: every loop gives xp, no loop dominates, the curve is a long goal', () => {
+  it('no xp source is more than 40% of a mixed hour, at every stage', () => {
+    for (const s of XP_STAGES) expect(biggestXpShare(s).share, s).toBeLessThanOrEqual(BALANCE_TARGETS.maxSourceShare);
+  });
+  it('every loop gives xp (tavern, crypt, farm, lake; the mine from level 3), punching blocks gives none', () => {
+    for (const s of XP_STAGES) for (const r of xpBySource(s).filter((x) => x.id !== 'splice' && (s !== 'new' || x.id !== 'mine'))) expect(r.mixed, `${s} ${r.id}`).toBeGreaterThan(0);
+  });
+  it('focused farming of 2-minute crops is at most 1.5x the mixed hour', () => {
+    for (const s of XP_STAGES) expect(focusedCommonFarmXp(s) / mixedXpPerHour(s), s).toBeLessThanOrEqual(1.5);
+  });
+  it('pace: level 2 within 15 minutes, level 12 within 12 hours, level 30 after 50 to 90 hours of mixed play (plan: about 67)', () => {
+    expect(hoursToLevel(2, LEVEL_TOTAL_XP) * 60).toBeLessThanOrEqual(15);
+    expect(hoursToLevel(12, LEVEL_TOTAL_XP)).toBeLessThanOrEqual(12);
+    const top = hoursToLevel(MAX_LEVEL, LEVEL_TOTAL_XP);
+    expect(top).toBeGreaterThanOrEqual(50);
+    expect(top).toBeLessThanOrEqual(90);
   });
 });

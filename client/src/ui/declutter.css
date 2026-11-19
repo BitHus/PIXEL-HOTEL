@@ -171,3 +171,7 @@
 :root[data-size='phone'] .toast.ui-hud {
   bottom: calc(var(--bottom-clear) + 12px);
 }
+
+/* RUN 13 #5: while the guide card is up (a tutorial step) the info panel and the OPEN sign stay readable: no idle fade (the tester saw ghostly gold at 40% on a phone). */
+.hud-faded:has(.first-ten:not([hidden])) .top-left,
+.hud-faded:has(.first-ten:not([hidden])) .side-buttons .open-sign { opacity: 1; }

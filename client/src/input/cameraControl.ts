@@ -25,6 +25,7 @@
 import type { Container, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
 import {
   HOLD_PLACE_START_MS,
+  INTERACT_SLIDE_TAP_MS,
   earlyWalkNext,
   LONG_PRESS_MS,
   TAP_MAX_MOVE_PX,
@@ -87,6 +88,14 @@ export interface CameraControlHooks {
   onHoldEnd?(): void;
   /** Any press or wheel on the room started (the camera intro stops). */
   onGestureStart?(): void;
+  /** MISCLICK-PROOF: the pointer of the current press moved (touch too; 'hover' is mouse only). */
+  onPressMove?(screen: Point): void;
+  /**
+   * MISCLICK-PROOF: the current press ended. 'tap' = it tapped (onPoint 'tap' ran); 'slide' = it moved past TAP_MAX_MOVE_PX with no hold, under
+   * INTERACT_SLIDE_TAP_MS, while the camera was locked (nothing panned): the app may still use what it was pressed on if the release is on it;
+   * 'other' = anything else (a hold, a pan, a long press, a second finger).
+   */
+  onPressEnd?(screen: Point, kind: 'tap' | 'slide' | 'other'): void;
 }
 
 /** Wheel deltaMode 1 (lines) and 2 (pages) in px. */
@@ -166,11 +175,13 @@ export function attachCameraControl(
   const cancelPress = (): void => {
     if (press?.drag === 'draw') hooks.onDraw?.('end', press.last);
     if (press?.hold || press?.early) hooks.onHoldEnd?.();
+    if (press) hooks.onPressEnd?.(press.last, 'other');
     press = null;
   };
 
   const movePress = (p: Point): void => {
     if (!press) return;
+    hooks.onPressMove?.(p);
     if (press.hold) {
       // Sliding while holding never pans: a line follows the pointer, a repeating hit moves on to
       // whatever the finger slides over (the room stays put).
@@ -205,8 +216,14 @@ export function attachCameraControl(
     const p = pt(e);
     movePress(p);
     if (press.hold || (press.early && !press.drag)) hooks.onHoldEnd?.();
+    const ms = performance.now() - press.downAt;
+    let kind: 'tap' | 'slide' | 'other' = 'other';
     if (press.drag === 'draw') hooks.onDraw?.('end', p);
-    else if (!press.drag && !press.long && !press.hold && performance.now() - press.downAt < TAP_MAX_MS) hooks.onPoint(p, 'tap', targetOf(e));
+    else if (!press.drag && !press.long && !press.hold && ms < TAP_MAX_MS) {
+      hooks.onPoint(p, 'tap', targetOf(e));
+      kind = 'tap';
+    } else if (press.drag === 'pan' && press.lockedAtDown && !press.hold && !press.early && ms < INTERACT_SLIDE_TAP_MS) kind = 'slide';
+    hooks.onPressEnd?.(p, kind);
     press = null;
   };
 

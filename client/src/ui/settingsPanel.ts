@@ -30,6 +30,9 @@ export interface SettingsHooks {
   onReduceEffects(on: boolean): void;
   /** ONBOARD-1: start the first-steps guide again. */
   onReplayGuide(): void;
+  /** MISCLICK-PROOF: the effective 'Big tap targets' state now, and its change. */
+  bigTaps?: boolean;
+  onBigTaps?(on: boolean): void;
 }
 
 export interface SettingsPanel {
@@ -161,12 +164,23 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   fxBtn.classList.toggle('on', reduceFx);
   const fxNote = el('p', 'panel-note', 'Calmer fights: no screen shake, freeze frames, sparks or bursts. Damage numbers and sounds stay.');
 
+  // MISCLICK-PROOF: 'Big tap targets' (on by default on touch): a wider finger radius and bigger boxes around guests, taps and machines.
+  let bigTaps = hooks.bigTaps ?? false;
+  const bigBtn = textButton(`Big tap targets: ${bigTaps ? 'on' : 'off'}`, () => {
+    bigTaps = !bigTaps;
+    bigBtn.textContent = `Big tap targets: ${bigTaps ? 'on' : 'off'}`;
+    bigBtn.classList.toggle('on', bigTaps);
+    hooks.onBigTaps?.(bigTaps);
+  });
+  bigBtn.classList.toggle('on', bigTaps);
+  const bigNote = el('p', 'panel-note', 'Easier to hit guests, taps and the stove with a finger.');
+
   const guideBtn = textButton('Replay the first steps', () => hooks.onReplayGuide());
   const guideNote = el('p', 'panel-note', 'Shows the step-by-step tavern guide again, with the pointers.');
   // Owner 19 Nov: no camera setting; the camera is always locked on you in play mode. Look around is a button in More.
 
   // The on/off buttons become peg-and-groove switches (skin.css .btn.switch).
-  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, debugBtn]) b.classList.add('switch');
+  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, bigBtn, debugBtn]) b.classList.add('switch');
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section settings-group');
     s.append(el('h3', 'ribbon', title), ...buttons);
@@ -178,6 +192,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'PocketBarrel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, musicRow, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, musicRow, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, bigBtn, bigNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

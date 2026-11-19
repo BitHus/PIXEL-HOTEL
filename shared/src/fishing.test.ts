@@ -1,3 +1,4 @@
+import { eventXp } from './xpTest.ts';
 import { describe, expect, it } from 'vitest';
 import {
   FISH_BAR,
@@ -389,6 +390,7 @@ describe('banking a catch', () => {
     let s = createNewPlayer(undefined, 0);
     const caught = (cm: number): FishSession => ({ ...session('common'), outcome: 'caught', phase: 'done', cm });
     s = bankCatch(s, caught(12), 100, () => 0.9999)!;
+    expect(s.player.xp).toBe(2 + 2); // SK-2: a common fish + its new Book entry
     expect(s.player.materials.mudfin).toBe(1);
     expect(s.player.seen.mudfin).toEqual({ count: 1, firstSeenAt: 100 });
     expect(s.player.biggest.mudfin).toBe(12);

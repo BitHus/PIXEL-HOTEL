@@ -8,6 +8,8 @@ import type { SaveStorage } from './saveStorage.ts';
 export const CLOUD_SESSION_KEY = 'pixel-hotel-cloud-session';
 /** The savedAt both sides had after the last successful sync on this device (a device setting, not part of the game save). */
 export const CLOUD_LASTSYNC_KEY = 'pixel-hotel-cloud-lastsync';
+/** The account (lower case) that CLOUD_LASTSYNC_KEY belongs to: a login as another account forgets the sync time, so A's game is never pushed into B's cloud save silently. */
+export const CLOUD_LASTSYNC_USER_KEY = 'pixel-hotel-cloud-lastsync-user';
 
 export interface CloudConfig {
   baseUrl: string;
@@ -20,6 +22,9 @@ export function cloudConfig(env: { VITE_CLOUD_SAVE?: string; VITE_SERVER_URL?: s
 }
 
 export type SyncAction = 'upload' | 'download' | 'none';
+
+/** What an automatic push did: 'behind' = the cloud changed too (or is newer), nothing was sent; the player chooses with Sync now. */
+export type PushResult = CloudResult<{ action: 'uploaded' | 'unchanged' | 'behind' }>;
 
 /** Newest savedAt wins. No cloud save yet = upload the local one; no local save = download; a tie changes nothing. */
 export function decideSync(localSavedAt: number | null, remoteSavedAt: number | null): SyncAction {
@@ -54,6 +59,8 @@ export interface CloudSave {
   resolve(choice: 'cloud' | 'local', localText: string | null, now: number): Promise<CloudResult<{ action: 'download' | 'kept'; text: string; savedAt: number }>>;
   /** Puts this device's save in the cloud (first login: import the local save). A newer cloud save refuses it. */
   uploadLocal(localText: string): Promise<CloudResult>;
+  /** The automatic save: uploads only when this device is the only side that changed (planSync 'upload'); never downloads, never asks, changes nothing else. */
+  pushIfAhead(localText: string | null): Promise<PushResult>;
 }
 
 interface Session {
@@ -110,6 +117,8 @@ export function createCloudSave(cfg: CloudConfig, storage: SaveStorage, fetchFn:
   };
   const writeLast = (at: number): void => {
     storage.set(CLOUD_LASTSYNC_KEY, String(at));
+    const user = readSession()?.username;
+    if (user) storage.set(CLOUD_LASTSYNC_USER_KEY, user.toLowerCase());
   };
   const savedAtOf = (text: string | null): number | null => {
     if (text === null) return null;
@@ -131,7 +140,13 @@ export function createCloudSave(cfg: CloudConfig, storage: SaveStorage, fetchFn:
   async function enter(path: string, username: string, body: object, okStatus: number): Promise<CloudResult> {
     const r = await call(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     if (!r || r.status !== okStatus || typeof r.body.token !== 'string') return { ok: false, error: errorOf(r) };
-    writeSession({ token: r.body.token, username: typeof r.body.username === 'string' ? r.body.username : username });
+    const name = typeof r.body.username === 'string' ? r.body.username : username;
+    // Another (or an unknown) account than the last sync on this device: forget that sync time, so the first sync asks instead of overwriting.
+    if (storage.get(CLOUD_LASTSYNC_USER_KEY) !== name.toLowerCase()) {
+      storage.remove(CLOUD_LASTSYNC_KEY);
+      storage.remove(CLOUD_LASTSYNC_USER_KEY);
+    }
+    writeSession({ token: r.body.token, username: name });
     return { ok: true };
   }
 
@@ -144,6 +159,7 @@ export function createCloudSave(cfg: CloudConfig, storage: SaveStorage, fetchFn:
       await call('/api/logout', { method: 'POST', auth: true });
       writeSession(null);
       storage.remove(CLOUD_LASTSYNC_KEY);
+      storage.remove(CLOUD_LASTSYNC_USER_KEY);
     },
     async resolve(choice, localText, now) {
       if (choice === 'cloud') {
@@ -171,6 +187,19 @@ export function createCloudSave(cfg: CloudConfig, storage: SaveStorage, fetchFn:
         return { ok: true };
       }
       return { ok: false, error: errorOf(r) };
+    },
+    async pushIfAhead(localText) {
+      const localAt = savedAtOf(localText);
+      if (localText === null || localAt === null) return { ok: true, action: 'unchanged' };
+      const meta = await call('/api/save/meta', { auth: true });
+      if (!meta || (meta.status !== 200 && meta.status !== 404)) return { ok: false, error: errorOf(meta) };
+      const remoteAt = meta.status === 200 && typeof meta.body.savedAt === 'number' ? meta.body.savedAt : null;
+      const plan = planSync(localAt, remoteAt, readLast());
+      if (plan === 'none') return { ok: true, action: 'unchanged' };
+      if (plan !== 'upload') return { ok: true, action: 'behind' };
+      const up = await this.uploadLocal(localText);
+      if (up.ok) return { ok: true, action: 'uploaded' };
+      return up.error === 'newer_on_server' ? { ok: true, action: 'behind' } : up;
     },
     async syncNow(localText) {
       const localAt = savedAtOf(localText);

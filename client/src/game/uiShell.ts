@@ -14,7 +14,7 @@ import { createInfoPanel, ROOM_NAMES } from '../ui/infoPanel.ts';
 import { createGainPopups } from '../ui/gainPopups.ts';
 import { createGemFly } from '../ui/gemFly.ts';
 import { createChatBubbles } from '../ui/chatBubbles.ts';
-import { createToast } from '../ui/toast.ts';
+import { createToast, toastKind, type Toast, type ToastAction } from '../ui/toast.ts';
 import { iconButton } from '../ui/dom.ts';
 import { createHintBox } from '../ui/hintBox.ts';
 import { createHudIdle } from '../ui/hudIdle.ts';
@@ -26,10 +26,18 @@ export async function setupUiShell(g: G3) {
   const { ui, prefs, blockers, app, uiRoot, api, sound, dpr, st, late } = g;
 
   // ---------- HTML UI (layout rule in CLAUDE.md) ----------
-  const toast = createToast(ui, () => {
+  const toastBase = createToast(ui, () => {
     const feet = worldToScreen({ x: st.avatar.x, y: st.avatar.y }, st.shown);
     return { x: feet.x, top: feet.y - 64 * st.shown.zoom, bottom: feet.y };
   });
+  // AU-2: a refused action (a crimson 'warn' toast) gives the soft error sound.
+  const toast: Toast = Object.assign(
+    (text: string, action?: ToastAction): void => {
+      if (toastKind(text).tone === 'warn') sound.play('error');
+      toastBase(text, action);
+    },
+    { clear: toastBase.clear },
+  );
   // Gain popups above the avatar's head (step BG3 B) and the blocks (step BG5).
   const popups = createGainPopups(ui, prefs.popups);
   // Gems flying from a punched block, a harvest or a felled tree to the avatar (step BG4; the wallet has them already).

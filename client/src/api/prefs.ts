@@ -28,9 +28,11 @@ export interface Prefs {
   // Owner 19 Nov: the old followCamera pref (Locked / Free look) is gone: the camera is always locked in play mode (Look around is a session toggle in More); a stored value is ignored.
   /** VG-1: keys of the one-time hint chips already shown (shared/src/hints.ts). */
   hintsSeen: string[];
+  /** MISCLICK-PROOF: the Settings toggle 'Big tap targets'; null = not chosen yet (on for touch, off for a mouse: shared bigTapsOn). */
+  bigTaps: boolean | null;
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, musicVolume: MUSIC_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, hintsSeen: [] };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, musicVolume: MUSIC_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, hintsSeen: [], bigTaps: null };
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -53,6 +55,7 @@ export function parsePrefs(text: string | null): Prefs {
     doorHintSeen: typeof o.doorHintSeen === 'boolean' ? o.doorHintSeen : DEFAULT_PREFS.doorHintSeen,
     reduceEffects: typeof o.reduceEffects === 'boolean' ? o.reduceEffects : DEFAULT_PREFS.reduceEffects,
     hintsSeen: Array.isArray(o.hintsSeen) ? o.hintsSeen.filter((k): k is string => typeof k === 'string').slice(0, 64) : [],
+    bigTaps: typeof o.bigTaps === 'boolean' ? o.bigTaps : null,
   };
 }
 

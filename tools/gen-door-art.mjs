@@ -76,6 +76,44 @@ function stoneFrame(g, rad = r) {
   g.rect(CX - r - 5, H - 4, 1, 4, C.out); g.rect(CX + r + 4, H - 4, 1, 4, C.out); g.rect(CX - r - 4, H - 4, 2 * r + 8, 1, C.out);
 }
 
+/** DOOR DEPTH (19 Nov): the opening is a hole through a THICK wall. A 5 px reveal ring inside the frame shows the wall thickness (left jamb face in shade, right jamb face lit by the top-left light, the top dark under the lintel), the interior sits recessed behind it with a cast shadow, and a two-part worn threshold step (lit top face, front face) projects at the foot. Painted AFTER the interior. */
+function depth(g) {
+  const RV = 5; // reveal thickness in px
+  for (let y = 0; y < H - 5; y++) for (let x = 0; x < W; x++) {
+    if (!inShape(x, y, r - 1) || inShape(x, y, r - RV)) continue;
+    const dx = x - CX + 0.5, dy = y - CY + 0.5;
+    const k = r - 1 - (y < CY ? Math.hypot(dx, dy) : Math.abs(dx)); // 0 at the outer lip .. RV-1 at the inner edge
+    const ang = y < CY ? Math.atan2(-dy, dx) : (dx < 0 ? Math.PI : 0); // 0 right, pi/2 top, pi left
+    const top = ang > Math.PI * 0.25 && ang < Math.PI * 0.75;
+    let c;
+    if (top) c = k < 1 ? C.slate : k < 3 ? C.dusk : C.night;
+    else if (Math.cos(ang) > 0) c = k < 1 ? C.white : k < 3 ? C.silver : C.steel;
+    else c = k < 1 ? C.steel : k < 3 ? C.slate : C.dusk;
+    if (!top && y >= CY && (y - CY) % 9 === 8) c = Math.cos(ang) > 0 ? C.steel : C.night;
+    g.set(x, y, c);
+  }
+  for (let y = 0; y < H - 5; y++) for (let x = 0; x < W; x++) {
+    if (!inShape(x, y, r - RV)) continue;
+    if (!inShape(x - 1, y, r - RV) || !inShape(x + 1, y, r - RV) || !inShape(x, y - 1, r - RV)) g.set(x, y, C.void);
+  }
+  for (let y = 0; y < H - 5; y++) for (let x = 0; x < W; x++) {
+    if (!inShape(x, y, r - RV - 1) || inShape(x, y, r - RV - 5)) continue;
+    const dx = x - CX + 0.5, dy = y - CY + 0.5;
+    const k = (r - RV - 1) - (y < CY ? Math.hypot(dx, dy) : Math.abs(dx));
+    const ang = y < CY ? Math.atan2(-dy, dx) : (dx < 0 ? Math.PI : 0);
+    if (!(ang > Math.PI * 0.2 && ang < Math.PI * 0.95)) continue;
+    const dens = k < 1 ? 1 : k < 2 ? 0.7 : k < 3 ? 0.45 : 0.2;
+    if ((x + y) % 2 === 0 && hash(x, y, 31) < dens) g.set(x, y, C.void);
+    else if (k < 1.5) g.set(x, y, C.night);
+  }
+  const sx = CX - r - 5, sw = 2 * r + 10;
+  g.rect(sx, H - 6, sw, 6, C.out);
+  g.rect(sx + 1, H - 5, sw - 2, 2, C.silver); g.rect(sx + 1, H - 5, sw - 2, 1, C.white);
+  g.rect(sx + 1, H - 3, sw - 2, 2, C.steel); g.rect(sx + 1, H - 2, sw - 2, 1, C.slate);
+  for (let x = sx + 3; x < sx + sw - 3; x++) { const h = hash(x, 41); if (h > 0.9) g.set(x, H - 4, C.steel); else if (h < 0.06) g.set(x, H - 3, C.dusk); }
+  for (let x = CX - r + RV - 1; x < CX + r - RV + 1; x++) if (inShape(x, H - 7, r - RV)) g.set(x, H - 7, C.night);
+}
+
 /** A wall lantern on an iron bracket at the right of the arch, lit. */
 function lantern(g, x, y) {
   g.rect(x - 7, y - 1, 8, 2, C.out); g.rect(x - 7, y, 7, 1, C.night); // bracket
@@ -269,9 +307,9 @@ function sign(g, x, y, kind) {
 
 // ----- build the sheets -----
 {
-  const g = new Img(W, H); stoneFrame(g); plankDoor(g); lantern(g, 88, 20); g.save(`${OUT}/door_cellar_down.png`);
-  const o = new Img(W, H); stoneFrame(o); openDoor(o); lantern(o, 88, 20); o.save(`${OUT}/door_cellar_down_open.png`);
-  const u = new Img(W, H); stoneFrame(u); upStairs(u); u.save(`${OUT}/door_cellar_up.png`);
+  const g = new Img(W, H); stoneFrame(g); plankDoor(g); depth(g); lantern(g, 88, 20); g.save(`${OUT}/door_cellar_down.png`);
+  const o = new Img(W, H); stoneFrame(o); openDoor(o); depth(o); lantern(o, 88, 20); o.save(`${OUT}/door_cellar_down_open.png`);
+  const u = new Img(W, H); stoneFrame(u); upStairs(u); depth(u); u.save(`${OUT}/door_cellar_up.png`);
   const s = new Img(64, 14);
   for (let y = 0; y < 14; y++) for (let x = 0; x < 64; x++) {
     const d = Math.hypot((x - 31.5) / 32, y / 13);
@@ -281,9 +319,9 @@ function sign(g, x, y, kind) {
 }
 
 {
-  const t = new Img(W, H); stoneFrame(t); tavernInside(t); sign(t, 85, 18, 'mug'); t.save(`${OUT}/door_tavern.png`);
-  const u = new Img(W, H); stoneFrame(u); suiteInside(u); sign(u, 85, 18, 'star'); u.save(`${OUT}/door_suite.png`);
-  const v = new Img(W, H); stoneFrame(v); gardenInside(v); vines(v); sign(v, 85, 18, 'leaf'); v.save(`${OUT}/door_garden.png`);
+  const t = new Img(W, H); stoneFrame(t); tavernInside(t); depth(t); sign(t, 85, 18, 'mug'); t.save(`${OUT}/door_tavern.png`);
+  const u = new Img(W, H); stoneFrame(u); suiteInside(u); depth(u); sign(u, 85, 18, 'star'); u.save(`${OUT}/door_suite.png`);
+  const v = new Img(W, H); stoneFrame(v); gardenInside(v); depth(v); vines(v); sign(v, 85, 18, 'leaf'); v.save(`${OUT}/door_garden.png`);
   const sg = new Img(64, 14);
   for (let y = 0; y < 14; y++) for (let x = 0; x < 64; x++) {
     const d = Math.hypot((x - 31.5) / 32, y / 13);

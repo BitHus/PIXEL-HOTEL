@@ -6,6 +6,7 @@
 import { getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { grantXp } from './xp.ts';
 import { inRooms, kitchenRoomIds } from './workRooms.ts';
 import { DRINK_TYPES, getDrinkType, isBaseDrinkId } from './materials.ts';
 import type { DrinkId, FurnitureItem, MaterialId } from './types.ts';
@@ -68,7 +69,7 @@ export function collectBrew(state: GameState, barrelUid: number, at: number): { 
   const mugs = getDrinkType(brew.drink).mugs;
   const got = applyChange(state, { reason: 'brew', materials: { [brew.drink]: mugs }, note: `collected ${brew.drink}` }, at);
   if (!got) return null;
-  return { state: withBrews(got, got.tavern.brews.filter((b) => b.barrelUid !== barrelUid)), drink: brew.drink, mugs };
+  return { state: grantXp(withBrews(got, got.tavern.brews.filter((b) => b.barrelUid !== barrelUid)), { t: 'brew' }, at), drink: brew.drink, mugs };
 }
 
 /**

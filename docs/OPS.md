@@ -51,8 +51,10 @@ ln -s /etc/nginx/sites-available/server.pocketbarrel.com /etc/nginx/sites-enable
 The cert files do not exist yet, so nginx -t fails on the 443 block. Get the cert first: temporarily comment the 443 server block, `nginx -t && systemctl reload nginx`, run `certbot --nginx -d server.pocketbarrel.com`, restore the block, then `nginx -t && systemctl reload nginx`. Check: `curl -s https://server.pocketbarrel.com/api/health`.
 Rate limits: 10 req/s per IP on /api (burst 20), 1 req/s on login and register (burst 5); the server has its own per-IP and per-name limits too. nginx overwrites X-Forwarded-For, which is why `PB_TRUST_PROXY=1` is safe.
 
+HEALTH PATH (checked live 19 Nov): `https://server.pocketbarrel.com/api/health` (200 `{ok,time,saveVersion}`). `/health`, `/` and anything on the root domain pocketbarrel.com answer nginx 404: that is expected, point an external pinger at /api/health.
+
 ## 6. Turn the cloud client on
-Build the client with `VITE_CLOUD_SAVE=1 VITE_SERVER_URL=https://server.pocketbarrel.com` (flag default stays off in the repo). `PB_ORIGINS` must be `https://pocketbarrel.com` (CORS).
+Build the client with `VITE_CLOUD_SAVE=1 VITE_SERVER_URL=https://server.pocketbarrel.com` (flag default stays off in the repo). `PB_ORIGINS` must be `https://pocketbarrel.com` (CORS). OPEN (19 Nov live check): https://www.pocketbarrel.com serves the game too (200, no redirect) but is NOT an allowed origin, so cloud calls from www fail as 'network'. Either redirect www -> apex in nginx (preferred: one origin = one local save) or set `PB_ORIGINS=https://pocketbarrel.com,https://www.pocketbarrel.com` and restart.
 
 ## 7. Backups
 REVIEW 6-9 (17 Nov): `/api/health` also returns `saveVersion`; deploy.sh compares it with the client SAVE_VERSION and warns on a mismatch (deploy the server with `DEPLOY_SERVER=1`). The server health check retries about 20 s; a failed FIRST deploy removes the `current` link, later ones roll back only to an existing previous release. The ops .sh files are mode 755 in git and the backup unit runs `bash` on the script. The backup refuses a missing or empty DB or one without the accounts table, uses umask 077 and rsync WITHOUT --delete (prune the remote yourself).

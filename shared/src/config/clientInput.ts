@@ -55,6 +55,16 @@ export const SHAKE_PX = 2;
 export const TAP_TOLERANCE_PX = { touch: 28, mouse: 20 } as const;
 /** A thing counts as at least this big for a tap (touch: a 44 px box; mouse: a bit smaller), screen px. */
 export const TAP_MIN_SIZE_PX = { touch: 44, mouse: 28 } as const;
+/** MISCLICK-PROOF (owner 19 Nov): the Settings toggle 'Big tap targets' (on by default on touch): a finger radius of 40 px and at least a 56 px box. */
+export const TAP_BIG_PX = { tolerance: 40, minSize: 56 } as const;
+/** Priority when targets overlap (higher first): ready/urgent (a guest with an order, a ready stove or barrel, the taps while a pour waits), machines, seats, other. */
+export const INTERACT_PRIORITY = { urgent: 3, machine: 2, seat: 1, other: 0 } as const;
+/** The E key and the phone CONTEXT BUTTON use the nearest usable thing within this many world px of the avatar's feet (2.5 cells). */
+export const INTERACT_REACH_PX = 80;
+/** The confirm ring shown after a pick, ms. */
+export const INTERACT_CONFIRM_MS = 150;
+/** Touch: a press on a usable thing that slid past TAP_MAX_MOVE_PX but is released still on it within this many ms is still a tap (sliding off cancels). */
+export const INTERACT_SLIDE_TAP_MS = 600;
 
 // ---------- Camera intro (step 5, section 4) ----------
 /** When a room opens: wait this long at the overview zoom... */
@@ -73,3 +83,19 @@ export const HUD_FADE_ALPHA = 0.25;
 export const GUIDE_IDLE_MS = 4000;
 /** How often the client re-checks the idle rules (ms). */
 export const HUD_IDLE_TICK_MS = 250;
+/** R16 GUIDE TRAIL: footstep dots from the avatar to the guide's world target, every this many world px along the path. */
+export const GUIDE_TRAIL_SPACING_PX = 12;
+/** The first dot sits this far from the avatar's feet (not under the avatar), and the last stops this far before the target. */
+export const GUIDE_TRAIL_SKIP_PX = 14;
+/** The dots fade out over the last this-many px before the target, and the whole trail fades as the remaining path drops under it (arrival). */
+export const GUIDE_TRAIL_FADE_PX = 40;
+/** The stepped pulse: one bright dot runs along the trail, one dot further every this many ms. */
+export const GUIDE_TRAIL_PULSE_MS = 140;
+/** A trail never shows more dots than this (a long path shows its first part). */
+export const GUIDE_TRAIL_MAX_DOTS = 40;
+/** R16 CAMERA PEEK: after standing still this long, the camera eases toward a guide target that is outside the free area. */
+export const GUIDE_PEEK_DELAY_MS = 900;
+/** The peek eases with this time constant (ms), out and back; never a jump. */
+export const GUIDE_PEEK_TAU_MS = 260;
+/** The peek keeps the target and the avatar at least this many screen px inside the free area. */
+export const GUIDE_PEEK_MARGIN_PX = 56;

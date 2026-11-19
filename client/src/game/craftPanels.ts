@@ -100,6 +100,7 @@ export async function setupCraftPanels(g: G7) {
   // MG-7: the skill tree (shared/src/skills.ts through GameAPI); a buy or respec refreshes the stat bonuses the client reads (st.skills).
   const skills = createSkillsPanel(ui, {
     buy: (id) => api.buySkill(id),
+    unlearn: (id) => api.unlearnSkill(id),
     respec: () => api.respecSkills(),
     gold: () => st.walletGold,
     changed: () => void late.refreshInventory(),

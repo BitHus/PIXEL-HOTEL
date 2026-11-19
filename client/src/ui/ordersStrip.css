@@ -151,3 +151,9 @@
   box-sizing: border-box;
 }
 .pour-bar-over.in-window .pour-bar-fill { background: #63c74d; }
+
+/* RUN 13 #4: on a phone the strip stays ONE row (it grew to two rows with Grab all and covered the avatar's legs): tighter gaps, no wrap, the row scrolls out of the way. */
+@media (max-width: 700px) {
+  .orders-strip { flex-wrap: nowrap; gap: 0 2px; padding: 0 2px; overflow: hidden; }
+  .orders-strip > * { flex: 0 1 auto; min-width: 0; }
+}

@@ -1,0 +1,12 @@
+avatar {"x":288,"y":488} shown {"x":-169.01234567901236,"y":-63.95061728395062,"zoom":1.0945945945945945} vp 1000x700
+stove-centre tap 430,221 from av 288,488 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"The stove cooks crops into dishes. Start a batch; tap the stove again to collect it."}
+stove-rightedge+12 tap 547,335 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+stove-rightedge+40 tap 575,335 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[293,138],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+barrel-centre tap 478,378 from av 293,138 -> {"panel":false,"pend":[false,false],"av":[293,138],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+barrel-leftedge-12 tap 448,378 from av 293,138 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+barrel-leftedge-40 tap 495,337 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+tapstand-centre tap 483,392 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+tapstand+14 tap 514,392 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[240,176],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+register-centre tap 395,392 from av 240,176 -> {"panel":false,"pend":[false,false],"av":[144,176],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+register-above-12 tap 500,362 from av 144,176 -> {"panel":false,"pend":[false,false],"av":[176,249],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+errors []

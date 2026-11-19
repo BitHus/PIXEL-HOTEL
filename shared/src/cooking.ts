@@ -12,6 +12,7 @@ import { inRooms, kitchenRoomIds } from './workRooms.ts';
 import { prepBonus } from './kitchen.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { grantXp } from './xp.ts';
 import { FOOD_TYPES, getFoodType, isFoodId, type FoodType } from './materials.ts';
 import type { FoodId, FurnitureItem, MaterialId } from './types.ts';
 
@@ -109,7 +110,7 @@ export function collectCook(state: GameState, stoveUid: number, at: number): { s
   if (!cook || !cookReady(cook, at) || !placedStove(state, stoveUid)) return null;
   const got = applyChange(state, { reason: 'cook', materials: { [cook.food]: cookYield(cook) }, note: `collected ${cookYield(cook)} x ${cook.food}` }, at);
   if (!got) return null;
-  return { state: withCooks(got, got.tavern.cooks.filter((c) => c.stoveUid !== stoveUid)), food: cook.food, qty: cookYield(cook) };
+  return { state: grantXp(withCooks(got, got.tavern.cooks.filter((c) => c.stoveUid !== stoveUid)), { t: 'cook', dishes: cookYield(cook) }, at), food: cook.food, qty: cookYield(cook) };
 }
 
 /**

@@ -1,3 +1,4 @@
+import { eventXp } from './xpTest.ts';
 import { describe, expect, it } from 'vitest';
 import {
   FOOD_TYPES, batchInputs, canCook, collectCook, cookMs, cookOf, cookReadyInMs, cookReady, maxBatchWith, returnOrphanCooks, startCook, stoves, tutorialCookSupplies,
@@ -122,6 +123,7 @@ describe('cooking in real time', () => {
     expect(got.state.player.materials.potato_stew).toBe(2);
     expect(got.state.tavern.cooks).toEqual([]);
     expect(got.state.ledger.at(-1)).toMatchObject({ reason: 'cook', materials: { potato_stew: 2 } });
+    expect(eventXp(cooking, got.state)).toBe(2); // SK-2: 1 xp per dish
     expect(got.state.player.seen.potato_stew?.count).toBe(2);
     expect(ledgerMaterials(got.state)).toEqual(got.state.player.materials);
     expect(ledgerGold(got.state)).toBe(got.state.player.wallet.gold);

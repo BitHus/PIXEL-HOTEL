@@ -46,7 +46,7 @@ describe('starting and banking a run (sections 9 and 10)', () => {
     expect(s.player.wallet.gold).toBe(90 + 55);
     expect(s.player.materials.bone).toBe(13);
     expect(s.items.filter((i) => i.typeId === 'wall_torch' && i.roomId === null)).toHaveLength(1);
-    expect(s.player).toMatchObject({ xp: 20, level: 2, potions: 1 });
+    expect(s.player).toMatchObject({ xp: 20 + 2 * 2, level: 2, potions: 1 }); // SK-2: bone and the wall torch are new Book entries (2 xp each)
     expect(s.ledger.at(-1)).toMatchObject({ reason: 'dungeon_bank', goldDelta: 55, materials: { bone: 13 } });
   });
 

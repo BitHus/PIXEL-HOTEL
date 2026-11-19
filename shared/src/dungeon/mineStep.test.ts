@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DIG_CAVEIN_DAMAGE, DIG_CAVEIN_TELL_MS, DIG_COLS, DIG_DEPTH_MAX, DIG_FILLER_DROP_CHANCE, DIG_GLINT_BLOCKS, DIG_LIGHT_BLOCKS, DUNGEON_BLOCK, PICKAXE_COOLDOWN_MS } from '../config.ts';
 import { seededRng } from '../rng.ts';
-import { chestGlintBlocksOf, digLightPxOf, glintBlocksOf, hazardDamageOf, UNHOOKED_STATS } from '../skillRules.ts';
+import { chestGlintBlocksOf, digLightPxOf, glintBlocksOf, hazardDamageOf, HOOKED_STATS } from '../skillRules.ts';
 import type { Bonuses } from '../stats.ts';
 import { blockCenter } from './grid.ts';
 import type { MineBlockId } from './mineBlocks.ts';
@@ -84,6 +84,7 @@ describe('digging a block', () => {
       let r = withKind(run(), 11, 10, kind);
       for (let k = 0; k < 40 && r.dig!.kinds[idx(11, 10)] !== ''; k++) r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], PICKAXE_COOLDOWN_MS, seededRng(k + 1));
       expect(mat(r.bag, item), kind).toBeGreaterThanOrEqual(1);
+      expect(r.xpGained, kind).toBe(kind === 'coal' || kind === 'copper' || kind === 'iron' ? mat(r.bag, item) : 10); // SK-2: 1 per ore, 10 per rare block
     }
   });
 
@@ -239,10 +240,10 @@ describe('what the mining skills show', () => {
     expect(digLightPxOf({ lightPlus: 2 })).toBe((DIG_LIGHT_BLOCKS + 2) * DUNGEON_BLOCK);
     expect(glintBlocksOf()).toBe(DIG_GLINT_BLOCKS);
     expect(glintBlocksOf({ glintBlocks: 6 })).toBe(DIG_GLINT_BLOCKS + 6);
-    expect(UNHOOKED_STATS).not.toContain('lightPlus');
-    expect(UNHOOKED_STATS).not.toContain('glintBlocks');
-    expect(UNHOOKED_STATS).not.toContain('hazardDmgPct');
-    expect(UNHOOKED_STATS).not.toContain('chestGlintBlocks');
+    expect(HOOKED_STATS).toContain('lightPlus');
+    expect(HOOKED_STATS).toContain('glintBlocks');
+    expect(HOOKED_STATS).toContain('hazardDmgPct');
+    expect(HOOKED_STATS).toContain('chestGlintBlocks');
   });
 
   it('a rare block glints only inside the radius, and not once it is dug', () => {

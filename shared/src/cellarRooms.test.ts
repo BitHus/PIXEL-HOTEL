@@ -152,8 +152,8 @@ describe('building the cellar (CEL-4)', () => {
 });
 
 describe('migration 36 -> 37 (the kitchen room is dissolved into the tavern)', () => {
-  it('SAVE_VERSION is 42; a version 36 save loses its kitchen room: stove and barrel stand in the tavern, nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(42);
+  it('SAVE_VERSION is 43; a version 36 save loses its kitchen room: stove and barrel stand in the tavern, nothing is lost', () => {
+    expect(SAVE_VERSION).toBe(43);
     const text = save36();
     const before = JSON.parse(text).state as GameState;
     const s = load(text);

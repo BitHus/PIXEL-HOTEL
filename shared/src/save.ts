@@ -19,6 +19,7 @@ import { retireRoundTables } from './retireRoundTable.ts';
 import { convertCounters } from './modularBar.ts';
 import { moveKitchenAbove } from './kitchenAbove.ts';
 import { applyChange, type Change } from './ledger.ts';
+import { migrateSkillsV2 } from './skills.ts';
 import type { LootRef, Player } from './types.ts';
 import type { GameState } from './gameState.ts';
 
@@ -355,6 +356,15 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     return { ...state, rooms };
   },
   // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  // 42 -> 43 (SK-1, docs/PLAN-SKILLTREE.md 4.4): the skill tree v2. Unknown ids dropped, ranks clamped, an invalid v2 build cleared (points are derived, nothing lost);
+  // every save with skills gets tree 2 and one free full reset (skills.ts migrateSkillsV2). No skills = nothing to change.
+  42: (state) => {
+    if (!isObject(state) || !isObject(state.player) || state.player.skills === undefined) return state;
+    const level = typeof state.player.level === 'number' ? state.player.level : 1;
+    const skills = migrateSkillsV2(state.player.skills, level);
+    const { skills: _old, ...player } = state.player;
+    return { ...state, player: skills ? { ...player, skills } : player };
+  },
   // 41 -> 42 (owner 19 Nov): the MODULAR BAR (counter and counter_ext become one-cell 'bar' pieces on the same cells, riders and bar guests follow: modularBar.ts
   // convertCounters), then the KITCHEN moves ABOVE the main floor behind the bar (the main floor moves down by the annex height, the old annex's pieces move into the new one,
   // door spots cleared, what does not fit goes to the bag: kitchenAbove.ts moveKitchenAbove; Room.annexAbove = true).

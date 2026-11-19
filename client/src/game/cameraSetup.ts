@@ -74,5 +74,5 @@ export async function setupCameraSetup(g: G4) {
     intro.start(st.camera, to);
   };
 
-  return { intro, redraw, setCamera, overviewZoom, fit, startIntro };
+  return { intro, redraw, setCamera, overviewZoom, fit, startIntro, freeW: usableWidth, freeH: freeHeight };
 }

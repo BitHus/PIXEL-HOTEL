@@ -3,15 +3,28 @@
 //
 // Stat ids ending in `Pct` are percentages of the base (base * (1 + bonus / 100)); the others add to the base (base + bonus).
 
-export type StatId =
+/** Every stat id (SK-1: the tree v2 stats too; a stat no rule reads yet only sits on `live: false` nodes, see skillRules.ts HOOKED_STATS). */
+export const STAT_IDS = [
   // tavern
-  | 'roomWalkPct' | 'trayPlus' | 'seatsPlus' | 'pourWindowPlus' | 'batchPlus' | 'tapCapPlus' | 'caskSlotsPlus' | 'bagSlotsPlus'
+  'roomWalkPct', 'trayPlus', 'seatsPlus', 'pourWindowPlus', 'batchPlus', 'tapCapPlus', 'caskSlotsPlus', 'bagSlotsPlus',
+  'guestPatiencePct', 'guestRatePct', 'pourFullPct', 'gemTipPct', 'secondOrderPct', 'autoCarryPerfect',
+  // kitchen
+  'cookMsPct', 'brewMsPct', 'brewYieldPlus', 'inputKeepPct', 'ripenMsPct', 'foodHealPct', 'tasteReservePts', 'twinBarrel', 'prepAnywhere', 'prepBonusPlus',
+  // farm
+  'growMsPct', 'seedBackPts', 'blockHitCdPct', 'harvestBonusPct', 'blockReachPlus', 'spliceMsPct', 'harvestGemPct', 'plantCapPlus', 'seedLore', 'areaHarvest', 'harvestBait',
   // dungeon
-  | 'maxHpPlus' | 'runBagPlus' | 'attackPlus' | 'runSpeedPct' | 'potionHealPct' | 'enemyMissMs' | 'chestGlintBlocks' | 'lastStand'
+  'maxHpPlus', 'runBagPlus', 'attackPlus', 'runSpeedPct', 'potionHealPct', 'enemyMissMs', 'chestGlintBlocks', 'lastStand',
+  'attackCdPct', 'maxHpPct', 'damageTakenPlus', 'heavyEvery',
   // fishing
-  | 'biteWaitPct' | 'boxSizePct' | 'tensionRisePct' | 'baitSavePct' | 'strikeWindowMs' | 'deepCast' | 'rankOddsPct' | 'keepBaitOnLoss'
+  'biteWaitPct', 'boxSizePct', 'tensionRisePct', 'baitSavePct', 'strikeWindowMs', 'deepCast', 'rankOddsPct', 'keepBaitOnLoss', 'castReachPlus', 'doubleCatchPct',
   // mining
-  | 'digSpeedPct' | 'lightPlus' | 'glintBlocks' | 'hazardDmgPct' | 'doubleStrikePct' | 'mineBagPlus' | 'oreBonusPct' | 'gemChancePts';
+  'digSpeedPct', 'lightPlus', 'glintBlocks', 'hazardDmgPct', 'doubleStrikePct', 'mineBagPlus', 'oreBonusPct', 'gemChancePts', 'caveTellMs', 'blastEvery', 'deepStart',
+  // home
+  'appealPlus', 'decorTypeCapPlus', 'questGemsPct', 'bookOutlines', 'offlineHoursPlus', 'lunchBoxPlus', 'catVisitPct', 'outdoorWalkPct', 'chopCdPct', 'treeRegrowPct',
+  'homebodyStars', 'giftChancePct', 'autoLoadTap',
+] as const;
+
+export type StatId = (typeof STAT_IDS)[number];
 
 /** Bonuses by stat id; a missing id is 0. */
 export type Bonuses = Partial<Record<StatId, number>>;

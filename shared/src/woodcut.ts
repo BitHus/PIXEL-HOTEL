@@ -16,6 +16,7 @@ import {
 import type { GameState } from './gameState.ts';
 import { ownedAxe } from './gear.ts';
 import { applyChange } from './ledger.ts';
+import { grantXp } from './xp.ts';
 import { TREE_COUNT } from './lakeLayout.ts';
 import { gemDrop } from './gems.ts';
 import { rollRank } from './ranks.ts';
@@ -106,5 +107,5 @@ export function chop(state: GameState, index: number, now: number, rng: Rng): { 
   const paid = applyChange(state, { reason: 'chop', materials: loot, ...(gems > 0 ? { gems } : {}), note: `felled tree ${index}` }, now);
   if (!paid) return null;
   const trees = lake.trees.map((t, i) => (i === index ? { hits: 0, felledAt: now } : t));
-  return { state: { ...paid, lakeside: { ...lake, trees, axeReadyAt: ready } }, result: { kind: 'felled', hits: 0, loot } };
+  return { state: grantXp({ ...paid, lakeside: { ...lake, trees, axeReadyAt: ready } }, { t: 'tree' }, now), result: { kind: 'felled', hits: 0, loot } };
 }

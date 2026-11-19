@@ -157,6 +157,7 @@ describe('guests: the order and serve chain (step 9t)', () => {
     expect(picked.item).toBe('root_ale');
     const served = deliverOrder(picked.state, rng, guest.id)!;
     expect(served).toMatchObject({ guestId: guest.id, item: 'root_ale' });
+    expect(served.state.player.xp - picked.state.player.xp).toBe(2); // SK-2: an order handed over (not a perfect pour)
     s = served.state;
     expect(s.tavern.tray).toEqual([]);
     expect(deliverOrder(s, rng, guest.id)).toBeNull();

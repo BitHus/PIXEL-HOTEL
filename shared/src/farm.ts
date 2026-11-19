@@ -13,6 +13,7 @@ import { getFurnitureType, type FurnitureLookup } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { gemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
+import { grantXp } from './xp.ts';
 import { CROP_TYPES, isSeedId } from './materials.ts';
 import { isFoodSeed, seedGrowMs, seedGrows, seedRank } from './seeds.ts';
 import { pairKey } from './spliceData.ts';
@@ -246,7 +247,10 @@ export function hitPlant(
   let player = paid.player;
   if (roll.clothing && !player.unlockedClothing.includes(roll.clothing)) player = { ...player, unlockedClothing: [...player.unlockedClothing, roll.clothing] };
   if (roll.recipe && !player.splicesFound.includes(roll.recipe)) player = { ...player, splicesFound: [...player.splicesFound, roll.recipe] };
-  return { ok: true, state: withRoom({ ...paid, player }, { ...room, plants }), roll, seed: plant.seed };
+  // SK-2: xp by the seed's rank, plus a bonus the first time a splice result seed is made.
+  let done = grantXp(withRoom({ ...paid, player }, { ...room, plants }), { t: 'harvest', rank: seedRank(plant.seed) }, at);
+  if (roll.result && state.player.seen[roll.result] === undefined) done = grantXp(done, { t: 'splice_first' }, at);
+  return { ok: true, state: done, roll, seed: plant.seed };
 }
 
 /** The plants of a room whose cells overlap a rectangle (the door zone after an upgrade). */

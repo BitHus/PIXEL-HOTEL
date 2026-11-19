@@ -1,0 +1,20 @@
+first {"on":false,"edge":false,"ptr":[0,0,0,0],"ring":[-20,-20,40,40],"vw":420,"vh":760,"card":"First stepsPinch with two fingers to zoom0/21×","cardBox":[0,0,0,0]}
+== zoom {"on":false,"edge":false,"ptr":[0,0,0,0],"ring":[-22,-22,44,44],"vw":420,"vh":760,"card":"Pinch with two fingers to zoom 0/21 ×","cardBox":[123,8,229,53]}
+== walk {"on":true,"edge":false,"ptr":[154,516,0,0],"ring":[132,494,44,44],"vw":420,"vh":760,"card":"Tap the floor to walk 1/21 ×","cardBox":[123,8,229,50]}
+== holdwalk {"on":true,"edge":false,"ptr":[154,516,0,0],"ring":[132,494,44,44],"vw":420,"vh":760,"card":"Press and hold the floor 2/21 ×","cardBox":[123,8,229,53]}
+== menu {"on":true,"edge":true,"ptr":[56,185,0,0],"ring":[0,0,0,0],"vw":420,"vh":760,"card":"Tap the register 3/21 ×","cardBox":[123,8,229,50]}
+== pour {"on":true,"edge":true,"ptr":[56,372,0,0],"ring":[0,0,0,0],"vw":420,"vh":760,"card":"Serve a drink: tap the guest 4/21 ×","cardBox":[123,8,229,53]}
+== serve {"on":true,"edge":true,"ptr":[56,372,0,0],"ring":[0,0,0,0],"vw":420,"vh":760,"card":"Bring the guest the mug 5/21 ×","cardBox":[123,8,229,53]}
+== coins {"on":true,"edge":false,"ptr":[154,120,0,0],"ring":[134,100,40,40],"vw":420,"vh":760,"card":"Start a brew at the barrel 6/21 ×","cardBox":[123,8,229,53]}
+== barrel {"on":true,"edge":false,"ptr":[154,120,0,0],"ring":[134,100,40,40],"vw":420,"vh":760,"card":"Start a brew at the barrel 7/21 ×","cardBox":[123,8,229,53]}
+== collect {"on":true,"edge":false,"ptr":[82,110,0,0],"ring":[62,89,40,40],"vw":420,"vh":760,"card":"Cook at the stove 8/21 ×","cardBox":[123,8,229,50]}
+== load {"on":true,"edge":false,"ptr":[58,171,0,0],"ring":[38,150,40,40],"vw":420,"vh":760,"card":"Load mugs on a tap 9/21 ×","cardBox":[123,8,229,50]}
+== cellar {"on":true,"edge":false,"ptr":[82,110,0,0],"ring":[62,89,40,40],"vw":420,"vh":760,"card":"Cook at the stove 10/21 ×","cardBox":[123,8,229,50]}
+== stove {"on":true,"edge":false,"ptr":[82,110,0,0],"ring":[62,89,40,40],"vw":420,"vh":760,"card":"Cook at the stove 11/21 ×","cardBox":[123,8,229,50]}
+== farm {"on":true,"edge":false,"ptr":[388,188,0,0],"ring":[366,166,44,44],"vw":420,"vh":760,"card":"Visit your farm (Worlds) 12/21 ×","cardBox":[123,8,229,53]}
+== plant {"on":true,"edge":false,"ptr":[388,32,0,0],"ring":[368,12,40,40],"vw":420,"vh":760,"card":"Plant turnip seeds 13/21 ×","cardBox":[123,8,229,50]}
+== harvest {"on":false,"edge":false,"ptr":[0,0,0,0],"ring":[-22,-22,44,44],"vw":420,"vh":760,"card":"Punch a full plant 14/21 ×","cardBox":[123,8,229,50]}
+== build {"on":true,"edge":false,"ptr":[388,84,0,0],"ring":[366,62,44,44],"vw":420,"vh":760,"card":"Tap Build 15/21 ×","cardBox":[123,8,229,50]}
+== wall {"on":true,"edge":false,"ptr":[388,32,0,0],"ring":[366,10,44,44],"vw":420,"vh":760,"card":"Hang a wall piece 16/21 ×","cardBox":[123,8,229,50]}
+== dungeon {"on":true,"edge":false,"ptr":[388,136,0,0],"ring":[368,115,40,40],"vw":420,"vh":760,"card":"Try the Dungeon 17/21 ×","cardBox":[123,8,229,50]}
+errors []

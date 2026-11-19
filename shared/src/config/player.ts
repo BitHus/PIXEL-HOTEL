@@ -31,7 +31,7 @@ export const BAG_SLOTS = 36;
 export const BAG_COLUMNS = 9;
 export const BAG_COLUMNS_PHONE = 6;
 /** Version of the save format. Bump it (and add a migration in save.ts) when GameState changes. */
-export const SAVE_VERSION = 42;
+export const SAVE_VERSION = 43;
 /**
  * CEL-1 (docs/PLAN-CELLAR.md; all PROPOSALS, the owner said use them): the cellar is built with gold at player level CELLAR_UNLOCK_LEVEL,
  * includes one free keg rack, upgrades cost CELLAR_UPGRADE_COST (level 2, 3), racks allowed per cellar level CELLAR_RACK_MAX_BY_LEVEL. Used from CEL-4.
@@ -41,15 +41,20 @@ export const CELLAR_UNLOCK_LEVEL = 2;
 export const CELLAR_UPGRADE_COST: readonly [number, number] = [400, 900];
 export const CELLAR_RACK_MAX_BY_LEVEL: readonly [number, number, number] = [2, 3, 3];
 /**
- * MG-1 skill points (docs/PLAN-MINIGAMES.md 4.1, owner 17 Nov: use the plan's numbers). One point per experience level from SKILL_FIRST_LEVEL, plus one per Book
- * reward taken (at most SKILL_BOOK_MAX). Earned by playing only, never bought; unspent points are derived (earned minus spent), never stored.
- * Respec: the first SKILL_RESPEC_FREE are free, then SKILL_RESPEC_GOLD gold (ledger 'respec'). A tier-N node needs (N - 1) * SKILL_TIER_STEP points spent in its branch.
+ * SK-1 skill points (docs/PLAN-SKILLTREE.md 2.3, all [OWNER] proposals). One point per experience level from SKILL_FIRST_LEVEL, plus one per Book reward taken (at most
+ * SKILL_BOOK_MAX), plus one per SKILL_ACHIEVE_PER_POINT achievements claimed (at most SKILL_ACHIEVE_MAX). Earned by playing only, never bought; unspent points are derived
+ * (earned minus spent), never stored. A node on ring r needs SKILL_RING_GATE[r - 1] points spent on the LOWER rings of its branch (bridges and the hub have no gate).
+ * Respec: undo of a rank bought since the panel opened is free; unlearning a leaf costs SKILL_UNLEARN_GOLD_PER_RING x its ring; a full respec: the first SKILL_RESPEC_FREE
+ * are free (and the one free reset of the SAVE 43 migration), then SKILL_RESPEC_GOLD_PER_LEVEL x the player level. All gold through the ledger ('respec').
  */
 export const SKILL_FIRST_LEVEL = 2;
 export const SKILL_BOOK_MAX = 4;
+export const SKILL_ACHIEVE_PER_POINT = 5;
+export const SKILL_ACHIEVE_MAX = 5;
+export const SKILL_RING_GATE: readonly number[] = [0, 3, 7, 10, 14];
 export const SKILL_RESPEC_FREE = 3;
-export const SKILL_RESPEC_GOLD = 100;
-export const SKILL_TIER_STEP = 2;
+export const SKILL_RESPEC_GOLD_PER_LEVEL = 25;
+export const SKILL_UNLEARN_GOLD_PER_RING = 10;
 /** The ledger is folded into per-reason counters (GameState.quests.folded) when it passes LEDGER_TRIM_AT entries: the newest LEDGER_KEEP stay. */
 export const LEDGER_KEEP = 2000;
 export const LEDGER_TRIM_AT = 2500;

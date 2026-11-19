@@ -16,6 +16,7 @@
 // Guests use the customers' nav grid (the staff zone behind the bar is blocked for them).
 
 import { walkAvatar, type Avatar } from './avatar.ts';
+import { grantXp } from './xp.ts';
 import {
   BAR_GUESTS_ENABLED,
   BAR_PATIENCE_MS,
@@ -225,7 +226,9 @@ export function deliverOrder(state: GameState, rng: Rng, guestId: number): { sta
   const hold = taken.mug;
   const tip = pourTip(hold.perfect === true, guest.order?.price ?? 0);
   const eating: Guest = { ...guest, ...(tip > 0 && guest.order ? { order: { ...guest.order, coins: guest.order.coins + tip } } : {}), phase: 'eat', waitMs: between(rng, GUEST_EAT_MIN_MS, GUEST_EAT_MAX_MS), sipInMs: between(rng, GUEST_SIP_MIN_MS, GUEST_SIP_MAX_MS) };
-  return { state: withTavern(state, { tray: taken.tray, guests: state.tavern.guests.map((g) => (g.id === guest.id ? eating : g)) }), guestId: guest.id, item: hold.item };
+  const served = withTavern(state, { tray: taken.tray, guests: state.tavern.guests.map((g) => (g.id === guest.id ? eating : g)) });
+  // SK-2: xp for every order handed over (a perfect pour adds a little).
+  return { state: grantXp(served, { t: 'order', perfect: hold.perfect === true }, 0), guestId: guest.id, item: hold.item };
 }
 
 /**

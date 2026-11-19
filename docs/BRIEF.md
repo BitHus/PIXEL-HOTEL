@@ -188,6 +188,18 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   movement: down, up, left or right.
 - Paths are computed by the rules in shared/ and handled as lists of points. Clients animate
   them locally.
+- MISCLICK-PROOF INTERACTION (owner 19 Nov; same text as the CLAUDE.md INPUT rule): taps keep the
+  tap forgiveness (shared/src/tapPick.ts) and add PRIORITY when things overlap (INTERACT_PRIORITY:
+  ready/urgent 3 = a guest with an order, a ready stove or barrel, the taps while a pour waits;
+  machines 2; seats 1; other 0; a real hit still beats a near miss, an urgent hit beats the exact
+  sprite under it). PC: hover shows the pick (corner brackets, pointer cursor, action tag); E (or
+  Space when no pour waits) uses the nearest usable thing within INTERACT_REACH_PX (80) of the
+  avatar or the Tab / Shift+Tab highlighted one; E held pours. Phone: a round CONTEXT BUTTON above
+  the hotbar shows the nearest thing's action (Pour (hold), Serve, Collect, Cook, Brew, Taps, Menu,
+  Sit, Use, Kegs) and one press does it. Touch: a press highlights its target; sliding off cancels;
+  a short slide (under INTERACT_SLIDE_TAP_MS 600) released on it still uses it. A 150 ms confirm
+  ring after every pick; a walk tap shows a fading ring on the goal cell. Settings 'Big tap
+  targets' (default on for touch): 40 px finger radius, 56 px box (TAP_BIG_PX).
 
 7. FURNITURE
 FurnitureType: { id, name, category, theme, placeIn: 'hotel'|'shop'|'both', slots (shelves:
@@ -420,6 +432,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   (tabs Materials, Furniture, Food and crops, Enemies). Never seen = a grey silhouette and
   "???". Filling 25 / 50 / 75 / 100% of a tab gives gold (and later a hat, step 9g).
 - CHANGED 18 Nov (owner, MG-2): the level cap is 12; the total xp for levels 9 to 12 is 620 / 830 / 1090 / 1400 (hp and attack rules unchanged). MG-1 skill points: shared/src/skills.ts, data shared/data/skills.json (32 nodes), 1 point per level from 2 plus 1 per Book reward taken (max 4), derived, respec 3 free then 100 gold, GameAPI getSkills / buySkill / respecSkills; no UI or rule reads the stats yet (docs/PLAN-MINIGAMES.md).
+- CHANGED 19 Nov (manager accepted docs/PLAN-SKILLTREE.md, numbers [OWNER] proposals; SK-1 + SK-2, SAVE 43): the level cap is 30 (levels.json; 1 to 12 unchanged, then 1740, 2120, 2540, 3010, 3530, 4110, 4750, 5460, 6250, 7130, 8110, 9200, 10410, 11750, 13240, 14890, 16720, 18750); after level 12 a level gives only +1 max hp and no attack. Xp comes from every loop (shared/data/xp.json: order 2 (+1 perfect), brew 4, dish 1, harvest 1/3/8/20, first splice 15, fish 2/5/12/30, tree 2, ore 1, rare block 10, mine exit 5, floor exit 5, new Book entry 2, quest/achievement 10, blocks 0). The skill tree is v2: one graph of 92 nodes (hub, 7 branches tavern/kitchen/farm/fishing/mining/dungeon/home, rings 1..5, keystone pairs, capstones at level 20, 7 bridges), PoE-style buy rule (linked + ring gate [0,3,7,10,14] on the inner rings + level + choice + live), points 1 per level from 2 + Book (max 4) + 1 per 5 achievements (max 5) = 38, undo free, leaf unlearn 10 gold x ring, respec free reset (SAVE 43) then 3 free then 25 gold x level; only nodes whose stat a rule reads are live (shared/src/skillRules.ts HOOKED_STATS); GameAPI adds unlearnSkill.
 - XP and levels: levels 1 to 8, thresholds in shared/data/levels.json (total xp for level 2
   to 8: 15, 40, 80, 140, 220, 320, 450). Every level gives +3 max hp, and every even level
   gives +1 attack (added to both ends of the damage range). Xp counts the moment an enemy

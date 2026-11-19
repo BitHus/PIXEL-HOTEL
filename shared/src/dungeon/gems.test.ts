@@ -85,6 +85,7 @@ describe('gem pickups', () => {
   it('a pile the player left behind is gone with the floor', () => {
     let r: DungeonRun = { ...withPile(), status: 'exit_choice' };
     r = step(r, [{ t: 'choose_exit', choice: 'deeper' }], 0, low);
+    expect(r.xpGained).toBe(5); // SK-2: an exit reached
     expect(r.pickups).toEqual([]);
     expect(r.bag.gems).toBe(0);
   });

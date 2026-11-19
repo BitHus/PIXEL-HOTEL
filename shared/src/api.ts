@@ -495,12 +495,14 @@ export interface GameAPI {
   bookOpened(): Promise<void>;
   /** Takes a Book reward that is ready: the gold and the gems (step BG4), or null if it is not ready. */
   claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null>;
-  // ---------- MG-1: the skill tree (shared/src/skills.ts; a separate point pool, no UI yet) ----------
+  // ---------- SK-1: the skill tree v2 (shared/src/skills.ts; one linked graph, a separate point pool) ----------
   /** The tree with the player's ranks, the points (earned, spent, free) and why a node is locked. */
   getSkills(): Promise<SkillsView>;
   /** Buys one rank of a node (null when it cannot: unknown, maxed, locked, too few points). */
   buySkill(id: string): Promise<SkillsView | null>;
-  /** Takes every rank back: the first 3 are free, then 100 gold (ledger 'respec'). Null without ranks or gold. */
+  /** Takes one rank of a leaf back: free when it was bought since the Skills panel opened (getSkills), else 10 gold x its ring (ledger 'respec'). Null when refused. */
+  unlearnSkill(id: string): Promise<SkillsView | null>;
+  /** Takes every rank back: the migration's free reset, then 3 free, then 25 gold x level (ledger 'respec'). Null without ranks or gold. */
   respecSkills(): Promise<SkillsView | null>;
   // ---------- TUT-2 part 3: daily quests, event quests, achievements (shared/src/questBoard.ts) ----------
   /** The quest board for the local day (tzOffsetMin = Date.getTimezoneOffset()). */

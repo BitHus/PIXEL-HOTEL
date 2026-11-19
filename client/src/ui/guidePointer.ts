@@ -4,6 +4,13 @@
 import type { Point } from '@pixel-hotel/shared';
 import { el } from './dom.ts';
 import './guide.css';
+import './highlight.css';
+
+/** Ring size around a target box: the box plus 8 px, at least 44 (touch size), at most 120 so a wide panel card stays a frame, not a wall. */
+export function ringSize(w: number, h: number): { w: number; h: number } {
+  const s = (n: number): number => Math.round(Math.min(120, Math.max(44, n + 8)) / 2) * 2;
+  return { w: s(w), h: s(h) };
+}
 
 /** Distance (css px) the edge arrow keeps from the screen edge, and extra room for the top card and the bottom hotbar. */
 const EDGE_MARGIN = 56;
@@ -21,12 +28,11 @@ export interface GuidePointer {
 export function createGuidePointer(parent: HTMLElement, calm: () => boolean): GuidePointer {
   const root = el('div', 'guide-pointer');
   root.setAttribute('aria-hidden', 'true');
-  const ring = el('div', 'guide-ring');
-  // Crisp pixel ring: a stepped octagon outline (gold with a dark edge), no blur, no glow.
-  ring.innerHTML = '<svg viewBox="-1 -1 46 46" width="44" height="44" shape-rendering="crispEdges" aria-hidden="true"><path fill-rule="evenodd" d="M12 0H32V4H40V12H44V32H40V40H32V44H12V40H4V32H0V12H4V4H12ZM12 4H32V8H36V12H40V32H36V36H32V40H12V36H8V32H4V12H8V8H12Z" fill="#fee761" stroke="#3e2731" stroke-width="1"/></svg>';
+  // R16: the ring is the shared highlight (highlight.css): four hollow cream corner brackets, sized to the target, 2 step breathing.
+  const ring = el('div', 'guide-ring pk-hl pk-hl-pulse');
   const hand = el('div', 'guide-hand');
-  // A1c: the arrow is a small inline SVG (outline + fill), not CSS border triangles: those collapsed into a filled yellow block when another rule touched box-sizing or size.
-  hand.innerHTML = '<svg viewBox="-1 -1 17 20" width="16" height="20" shape-rendering="crispEdges" aria-hidden="true"><path d="M4 0H11V8H15V10H13V12H11V14H10V16H9V18H6V16H5V14H4V12H2V10H0V8H4Z" fill="#fee761" stroke="#3e2731" stroke-width="2" stroke-linejoin="miter"/><rect x="8" y="1" width="2" height="8" fill="#feae34"/></svg>';
+  // A1c: the arrow is a small inline SVG (outline + fill), not CSS border triangles. R16: cream fill, tan shade on the right, stepped tip; no yellow.
+  hand.innerHTML = '<svg viewBox="-1 -1 17 20" width="16" height="20" shape-rendering="crispEdges" aria-hidden="true"><path d="M4 0H11V8H15V10H13V12H11V14H10V16H9V18H6V16H5V14H4V12H2V10H0V8H4Z" fill="#ead4aa" stroke="#181425" stroke-width="2" stroke-linejoin="miter"/><rect x="8" y="1" width="3" height="8" fill="#e4a672"/></svg>';
   root.append(ring, hand);
   parent.appendChild(root);
   let shown = false;
@@ -35,7 +41,9 @@ export function createGuidePointer(parent: HTMLElement, calm: () => boolean): Gu
   let lrot = Number.NaN;
   let edge = false;
   let scrolled: HTMLElement | null = null;
-  const set = (p: Point | null): void => {
+  let lsize = '';
+  let flip = false;
+  const set = (p: Point | null, size?: { w: number; h: number }): void => {
     if (p === null || !Number.isFinite(p.x) || !Number.isFinite(p.y)) {
       if (shown) {
         root.classList.remove('on');
@@ -74,6 +82,21 @@ export function createGuidePointer(parent: HTMLElement, calm: () => boolean): Gu
       lx = x;
       ly = y;
     }
+    const sz = size ?? { w: 44, h: 44 };
+    const key = `${sz.w}x${sz.h}`;
+    if (key !== lsize) {
+      root.style.setProperty('--hl-w', `${sz.w}px`);
+      root.style.setProperty('--hl-h', `${sz.h}px`);
+      ring.style.setProperty('--hl-w', `${sz.w}px`);
+      ring.style.setProperty('--hl-h', `${sz.h}px`);
+      lsize = key;
+    }
+    // Near the top edge the arrow would leave the screen: it flips under the ring and points up.
+    const wantFlip = !off && y < sz.h / 2 + 40;
+    if (wantFlip !== flip) {
+      root.classList.toggle('flip', wantFlip);
+      flip = wantFlip;
+    }
     root.classList.toggle('calm', calm());
     if (!shown) {
       root.classList.add('on');
@@ -95,7 +118,10 @@ export function createGuidePointer(parent: HTMLElement, calm: () => boolean): Gu
       // A1d: the exact centre of the button's own box (the old +8 px pushed the ring off it), measured against the layer's inner box (border and CSS scale included).
       const sx = parent.offsetWidth > 0 ? o.width / parent.offsetWidth : 1;
       const sy = parent.offsetHeight > 0 ? o.height / parent.offsetHeight : 1;
-      set({ x: (r.left - o.left - parent.clientLeft * sx + r.width / 2) / (sx || 1), y: (r.top - o.top - parent.clientTop * sy + r.height / 2) / (sy || 1) });
+      set(
+        { x: (r.left - o.left - parent.clientLeft * sx + r.width / 2) / (sx || 1), y: (r.top - o.top - parent.clientTop * sy + r.height / 2) / (sy || 1) },
+        ringSize(r.width / (sx || 1), r.height / (sy || 1)),
+      );
     },
     get visible() {
       return shown;

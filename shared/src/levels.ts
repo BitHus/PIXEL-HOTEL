@@ -3,7 +3,7 @@
 // away, so a failed run still levels the player.
 
 import levelData from '../data/levels.json';
-import { ATTACK_PER_EVEN_LEVEL, HP_PER_LEVEL, PLAYER_BASE_HP } from './config.ts';
+import { ATTACK_PER_EVEN_LEVEL, HP_PER_LEVEL, HP_PER_LEVEL_LATE, LEVEL_STATS_FULL_UNTIL, PLAYER_BASE_HP } from './config.ts';
 
 export const MAX_LEVEL: number = levelData.maxLevel;
 export const LEVEL_TOTAL_XP: readonly number[] = levelData.totalXp;
@@ -26,12 +26,13 @@ export function xpForNextLevel(level: number): number | null {
   return level >= MAX_LEVEL ? null : (LEVEL_TOTAL_XP[level] ?? null);
 }
 
-/** Max hp at a level: +HP_PER_LEVEL for every level after 1. */
+/** Max hp at a level: +HP_PER_LEVEL for every level after 1 up to LEVEL_STATS_FULL_UNTIL, then +HP_PER_LEVEL_LATE per level (SK-2). */
 export function maxHpAt(level: number): number {
-  return PLAYER_BASE_HP + HP_PER_LEVEL * (level - 1);
+  const full = Math.min(level, LEVEL_STATS_FULL_UNTIL);
+  return PLAYER_BASE_HP + HP_PER_LEVEL * (full - 1) + HP_PER_LEVEL_LATE * Math.max(0, level - LEVEL_STATS_FULL_UNTIL);
 }
 
-/** Attack bonus at a level: +1 on every even level (added to both ends of the damage range). */
+/** Attack bonus at a level: +1 on every even level up to LEVEL_STATS_FULL_UNTIL, nothing after (added to both ends of the damage range). */
 export function attackBonusAt(level: number): number {
-  return ATTACK_PER_EVEN_LEVEL * Math.floor(level / 2);
+  return ATTACK_PER_EVEN_LEVEL * Math.floor(Math.min(level, LEVEL_STATS_FULL_UNTIL) / 2);
 }

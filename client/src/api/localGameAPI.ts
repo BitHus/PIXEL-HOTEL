@@ -55,6 +55,8 @@ export interface LocalSaves {
 
 export class LocalGameAPI implements GameAPI, LocalSaves {
   state: GameState;
+  /** SK-1: node ids bought since the Skills panel opened (one per rank): a free undo (progressApi.unlearnSkill). Session only, never saved. */
+  skillUndo: string[] = [];
   walkState: WalkState;
   grid: NavGrid;
   debugRects: Rect[] = [];
@@ -310,6 +312,7 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async claimBookReward(tab: BookTab, percent: number): Promise<BookClaim | null> { return progressApi.claimBookReward(this, tab, percent); }
   async getSkills(): Promise<SkillsView> { return progressApi.getSkills(this); }
   async buySkill(id: string): Promise<SkillsView | null> { return progressApi.buySkill(this, id); }
+  async unlearnSkill(id: string): Promise<SkillsView | null> { return progressApi.unlearnSkill(this, id); }
   async respecSkills(): Promise<SkillsView | null> { return progressApi.respecSkills(this); }
   async getQuestBoard(tzOffsetMin: number): Promise<QuestBoard> { return progressApi.getQuestBoard(this, tzOffsetMin); }
   async claimQuest(claimId: string, tzOffsetMin: number): Promise<{ gold: number } | null> { return progressApi.claimQuest(this, claimId, tzOffsetMin); }

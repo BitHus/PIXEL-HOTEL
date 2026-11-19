@@ -7,6 +7,7 @@ import questData from '../data/quests.json';
 import { HINTS } from './config.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { grantXp } from './xp.ts';
 import { entryDead, entryMade } from './ledgerFold.ts';
 
 export type QuestMeasure = 'count' | 'made';
@@ -232,5 +233,6 @@ export function claimQuest(state: GameState, claimId: string, day: DayInfo, at: 
     const m = /^daily:(d{4}-d{2}-d{2}):/.exec(id);
     return !m || dayIndex(m[1]!) > today - 2;
   };
-  return { ...paid, quests: { ...paid.quests, claimed: [...claimedOf(paid).filter(keep), claimId] } };
+  // SK-2: xp for every quest or achievement reward taken.
+  return grantXp({ ...paid, quests: { ...paid.quests, claimed: [...claimedOf(paid).filter(keep), claimId] } }, { t: 'claim' }, at);
 }

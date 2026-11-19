@@ -1,3 +1,4 @@
+import { eventXp } from './xpTest.ts';
 import { describe, expect, it } from 'vitest';
 import { BLOCK_HIT_COOLDOWN_MS, BUILD_CELL, FARM_START_SOIL, SEED_BACK_CHANCE, SEED_GROW_MS, SEED_YIELD, SOIL_STYLE } from './config.ts';
 import { blockProblem, placeBlock, type BlockContext } from './blocks.ts';
@@ -220,6 +221,7 @@ describe('harvest by punching', () => {
     expect(r.state.player.materials.turnip).toBe(3);
     expect(r.state.player.materials.turnip_seed).toBe(4); // 5 - 1 planted, none back
     expect(r.state.ledger.at(-1)).toMatchObject({ reason: 'harvest' });
+    expect(eventXp(s, r.state)).toBe(1); // SK-2: a common plant harvested
     ledgerAddsUp(r.state);
     // The cell takes a new seed.
     expect(plantSeed(r.state, farmId(s), SOIL.c, SOIL.r, 'turnip_seed', ripeAt + 1, free)).toMatchObject({ ok: true });

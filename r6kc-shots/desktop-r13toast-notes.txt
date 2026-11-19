@@ -1,0 +1,3 @@
+tap 500,100 element CANVAS. av 288,488 -> 332,171
+tap 500,100 element CANVAS. av 335,154 -> 336,16
+tap 450,90 element CANVAS. av 336,16 -> 304,16

@@ -1,0 +1,17 @@
+{
+  "_help": "SK-2 (docs/PLAN-SKILLTREE.md 2.1, every number an [OWNER] proposal): xp per finished thing in every loop, read by shared/src/xp.ts xpFor. Crypt kills keep their xp in config ENEMIES / MIMIC_XP. Punching and placing blocks give 0 (exploit ceiling). Xp is never lost.",
+  "order": 2,
+  "perfectPour": 1,
+  "brew": 4,
+  "cookPerDish": 1,
+  "harvest": { "common": 1, "rare": 3, "ultra_rare": 8, "legendary": 20 },
+  "spliceFirst": 15,
+  "fish": { "common": 2, "rare": 5, "ultra_rare": 12, "legendary": 30 },
+  "tree": 2,
+  "ore": 1,
+  "rareBlock": 10,
+  "mineExit": 5,
+  "floorExit": 5,
+  "bookEntry": 2,
+  "claim": 10
+}

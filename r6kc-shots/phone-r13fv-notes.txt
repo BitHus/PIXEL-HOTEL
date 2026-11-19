@@ -1,0 +1,12 @@
+avatar {"x":288,"y":488} shown {"x":-16.224719101123597,"y":-372.314606741573,"zoom":0.5855263157894737} vp 420x760
+stove-centre tap 141,299 from av 288,488 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"The stove cooks crops into dishes. Start a batch; tap the stove again to collect it."}
+stove-rightedge+12 tap 241,372 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+stove-rightedge+40 tap 269,372 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[324,138],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+barrel-centre tap 179,395 from av 324,138 -> {"panel":false,"pend":[false,false],"av":[324,138],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+barrel-leftedge-12 tap 158,395 from av 324,138 -> {"panel":false,"pend":[false,false],"av":[224,176],"toast":"The barrel turns crops into mugs of drink. Pick a drink, start it, and collect it when it is ready."}
+barrel-leftedge-40 tap 189,373 from av 224,176 -> {"panel":false,"pend":[false,false],"av":[188,140],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+tapstand-centre tap 222,423 from av 188,140 -> {"panel":false,"pend":[false,false],"av":[188,140],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+tapstand+14 tap 245,423 from av 188,140 -> {"panel":false,"pend":[false,false],"av":[240,176],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+register-centre tap 154,402 from av 240,176 -> {"panel":false,"pend":[false,false],"av":[144,176],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+register-above-12 tap 210,381 from av 144,176 -> {"panel":false,"pend":[false,false],"av":[180,250],"toast":"Drinks are poured from the taps. Load mugs on one so guests can order them."}
+errors []

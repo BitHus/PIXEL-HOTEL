@@ -6,6 +6,8 @@ import { getFurnitureType } from './furniture.ts';
 import { LEDGER_KEEP, LEDGER_TRIM_AT } from './config.ts';
 import { foldLedger } from './ledgerFold.ts';
 import { addSeen } from './seen.ts';
+import { addXp } from './levels.ts';
+import { xpFor } from './xp.ts';
 import type { FurnitureItem, LedgerReason, MaterialId } from './types.ts';
 
 export interface Change {
@@ -36,6 +38,8 @@ export interface Change {
 
 /** Changes with these reasons only move things the player already has (off a shop slot, step S1): no finds. */
 const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf', 'shop_closed', 'tavern_order', 'tap', 'cask_fill'];
+/** SK-2: finds of these reasons give no Book-entry xp (the start kit, debug grants). */
+const NO_XP_REASONS: readonly LedgerReason[] = ['start', 'debug'];
 
 /**
  * Applies a change and writes it to the ledger. Null if gold or a material would go below 0, or a
@@ -121,9 +125,12 @@ export function applyChange(state: GameState, change: Change, at: number): GameS
     for (const item of added) seen = addSeen(seen, item.typeId, 1, at);
     for (const [id, n] of Object.entries(clothingDelta)) if (n > 0) seen = addSeen(seen, id, n, at);
   }
+  // SK-2: xp for every NEW Book entry (an id seen for the first time); not for the start kit or debug grants.
+  const newFinds = seen === p.seen || NO_XP_REASONS.includes(change.reason) ? 0 : Object.keys(seen).filter((id) => p.seen[id] === undefined).length;
+  const leveled = newFinds > 0 ? addXp(p, xpFor({ t: 'book_entry', count: newFinds })) : p;
   const next: GameState = {
     ...state,
-    player: { ...p, wallet: { gold, gems }, materials, seen, unlockedClothing, clothingSpares: spares },
+    player: { ...leveled, wallet: { gold, gems }, materials, seen, unlockedClothing, clothingSpares: spares },
     items: [...state.items.filter((i) => !remove.has(i.uid)), ...returned, ...added],
     nextUid,
     ledger: [...state.ledger, entry],

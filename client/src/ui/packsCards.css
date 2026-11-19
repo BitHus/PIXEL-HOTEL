@@ -45,3 +45,13 @@
   text-transform: uppercase;
   color: var(--ui-muted, #8b9bb4);
 }
+
+/* RUN 13 #6: the pixel font has no bold, so the faux bold smeared the C of "Common" into an O ("Oommon"): the odds label stays regular weight. */
+.pack-odds-label,
+.pack-odds-label .pack-rank { font-weight: 400; letter-spacing: 0.5px; }
+
+/* RUN 13 #1: seven catalog tabs (the open one with its name) were wider than the panel and ran under the first disc of the right column: on a desktop
+   the closed tabs shrink to icon width so the whole row (Packs with its gem badge) ends inside the panel, left of the column. */
+.catalog-panel .panel-tabs { max-width: 100%; box-sizing: border-box; padding-right: 6px; gap: 2px; }
+.catalog-panel .panel-tabs .tab-btn { flex: 0 1 auto; min-width: 36px; padding-left: 6px; padding-right: 6px; }
+.catalog-panel .panel-tabs .tab-btn.on { padding-left: 8px; padding-right: 8px; }

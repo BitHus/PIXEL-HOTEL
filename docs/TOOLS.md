@@ -12,7 +12,7 @@ Updated 19 Nov 2026.
 ## Owner decisions (18-19 Nov) every worker must know
 - Look: PixelLab chunky glossy style, top-down. New pixel-art UI is coming (proof set in art-src/pixellab/ui, wiring by the ui worker).
 - UI must be CALM (docs/PLAN-UI-DECLUTTER.md): 4 side buttons (Catalog, Build, Dungeon, More); the HOTBAR and Bag stay full size and NEVER fade or hide (gameplay); everything the player uses mid-play stays in view.
-- Kitchen = open annex of the tavern; cellar = separate room; dig mine without lantern; trader removed; level cap 12.
+- Kitchen = open annex of the tavern; cellar = separate room; dig mine without lantern; trader removed; level cap 30 (12 until SK-2, 20 Nov).
 - Model rule: workers are sonnet or opus only. Fewest tokens, quality kept.
 - Owner permission (durable): merge, push and deploy after every green batch.
 

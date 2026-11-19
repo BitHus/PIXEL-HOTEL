@@ -1,3 +1,4 @@
+import { eventXp } from './xpTest.ts';
 import { describe, expect, it } from 'vitest';
 import { applyChange } from './ledger.ts';
 import { MIGRATIONS } from './save.ts';
@@ -58,6 +59,7 @@ describe('events and claims', () => {
     const paid = claimQuest(s, row().claimId, day, day.startMs + 9000)!;
     expect(paid.player.wallet.gold).toBe(gold + pick.gold);
     expect(paid.ledger.at(-1)).toMatchObject({ reason: 'quest', goldDelta: pick.gold });
+    expect(eventXp(s, paid)).toBe(10); // SK-2: a reward taken
     s = paid;
     expect(row()).toMatchObject({ claimed: true, ready: false });
     expect(claimQuest(s, row().claimId, day, 9)).toBeNull();

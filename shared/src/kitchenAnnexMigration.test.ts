@@ -35,8 +35,8 @@ function save38(shape = 'square_shop', mutate: (s: GameState) => GameState = (s)
 }
 
 describe('migration 38 -> 39 (the kitchen annex)', () => {
-  it('SAVE_VERSION is 42; the tavern grows by the annex and the old kitchen machines move inside it, nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(42);
+  it('SAVE_VERSION is 43; the tavern grows by the annex and the old kitchen machines move inside it, nothing is lost', () => {
+    expect(SAVE_VERSION).toBe(43);
     const text = save38();
     const before = JSON.parse(text).state as GameState;
     const r = readSave(text);

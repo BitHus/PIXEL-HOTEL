@@ -34,6 +34,14 @@ import {
   BLOCK_DROPS,
   BLOCK_TYPES,
   BALANCE_TARGETS,
+  XP_STAGES,
+  XP_STAGE_NAMES,
+  XP_HOUR_TARGET,
+  xpBySource,
+  biggestXpShare,
+  mixedXpPerHour,
+  hoursToLevel,
+  LEVEL_TOTAL_XP,
   PACK_TYPES,
   RANK_NAMES,
   SEED_BACK_CHANCE,
@@ -319,3 +327,13 @@ for (const d of DRINK_TYPES) {
 }
 console.log(`A keg rack has ${CASK_SLOTS} slots; ${Math.round(TASTE_AGED_CHANCE * 100)}% of guests have a taste for aged drinks (they take an aged one when a tap has it; the rest pick any drink). Targets: aged x1.4 to x1.7, vintage x2.5 to x3 of fresh (both met above: the ripening price comes with the wait).`);
 console.log('NOTE for balance: if EVERY mug of a barrel were aged the drink gold would rise by x1.6 (x3 vintage); the S3/T1 tables above assume fresh mugs. A rack ties up mugs for 30 min to 8 h, so it is a way to trade waiting for gold, not a free source; guests order about 150 items per hour at appeal 10, a barrel makes about 52 root ale mugs per hour.');
+
+// SK-2 (docs/PLAN-SKILLTREE.md 2.1, 2.2): xp per hour by source and the hours to each level (levels.json, cap 30).
+console.log('\n=== XP. Xp per hour by source (focused / mixed) and the level pace ===');
+console.log(pad('stage', 22) + xpBySource('new').map((r) => pad(r.id, 14)).join('') + pad('mixed xp/h', 12) + pad('target', 8) + 'biggest share');
+for (const s of XP_STAGES) {
+  const rows = xpBySource(s);
+  const big = biggestXpShare(s);
+  console.log(pad(XP_STAGE_NAMES[s], 22) + rows.map((r) => pad(`${f1(r.focused)}/${f1(r.mixed)}`, 14)).join('') + pad(f1(mixedXpPerHour(s)), 12) + pad(XP_HOUR_TARGET[s], 8) + `${big.id} ${Math.round(big.share * 100)}% (cap ${Math.round(BALANCE_TARGETS.maxSourceShare * 100)}%)`);
+}
+console.log('Hours of mixed play to a level: ' + [2, 3, 5, 8, 12, 15, 20, 25, 30].map((l) => `${l}: ${hoursToLevel(l, LEVEL_TOTAL_XP).toFixed(1)} h`).join(', '));

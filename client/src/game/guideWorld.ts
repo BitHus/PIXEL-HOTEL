@@ -55,9 +55,12 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     };
   };
 
+  /** R16: the floor point of this frame's world target (trail + camera peek), set by the helpers below and published as st.guideWorld. */
+  let tw: Point | null = null;
   const itemScreen = (typeId: string): Point | null => {
-    const it = st.items.find((i) => i.typeId === typeId);
+    const it = st.items.find((i) => i.typeId === typeId && i.roomId === st.room.id) ?? st.items.find((i) => i.typeId === typeId);
     if (!it) return null;
+    tw = { x: it.x, y: it.y };
     const bar = it.onItemUid === null ? undefined : st.items.find((i) => i.uid === it.onItemUid);
     const lift = bar ? surfaceHeight(getFurnitureType(bar.typeId)) : 0;
     return worldToScreen({ x: it.x, y: it.y - lift - getFurnitureType(typeId).height / 2 }, st.shown);
@@ -66,6 +69,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     const t = st.tavern;
     const ids = new Set(guestsTrayCanServe(t));
     const pick = t.guests.find((x) => ids.has(x.id)) ?? (serve ? undefined : t.guests.find((x) => (x.seated || x.kind2 === 'bar') && x.order !== null));
+    if (pick) tw = { x: pick.x, y: pick.y };
     return pick ? worldToScreen({ x: pick.x, y: pick.y - AVATAR_H / 2 }, st.shown) : null;
   };
   // The walk step points at a free, open cell a few cells away toward the middle of the room (cached per avatar cell and item count).
@@ -78,21 +82,25 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
       const w = guideFloorSpot(buildNavGrid(st.room, roomBlockers(st.room, st.items)), st.avatar, { x: st.room.w / 2, y: st.room.h / 2 });
       spotWorld = w;
     }
+    if (spotWorld) tw = spotWorld;
     return spotWorld && worldToScreen(spotWorld, st.shown);
   };
   const ripePlantScreen = (): Point | null => {
     const now = Date.now();
     const ripe = plantList(st.room).find((p) => growthStage(p.plant, now) === 'full');
+    if (ripe) tw = { x: ripe.c * BUILD_CELL + BUILD_CELL / 2, y: ripe.r * BUILD_CELL + BUILD_CELL / 2 };
     return ripe ? worldToScreen({ x: ripe.c * BUILD_CELL + BUILD_CELL / 2, y: ripe.r * BUILD_CELL + BUILD_CELL / 2 }, st.shown) : null;
   };
   const waterScreen = (): Point | null => {
     const ws = waterRects();
     const w = ws[Math.floor(ws.length / 2)];
+    if (w) tw = { x: w.x + w.w / 2, y: w.y + w.h / 2 };
     return w ? worldToScreen({ x: w.x + w.w / 2, y: w.y + w.h / 2 }, st.shown) : null;
   };
   /** CEL-3: the pointer on an Inn door of the room on screen (null when it has no such door). */
   const doorScreen = (id: string): Point | null => {
     const d = innDoorSpots(st.room).find((x) => x.id === id);
+    if (d) tw = { x: d.spot.x + d.spot.w / 2, y: d.spot.y + d.spot.h / 2 };
     return d ? worldToScreen({ x: d.spot.x + d.spot.w / 2, y: d.spot.y + 12 }, st.shown) : null;
   };
   /** CEL-3: the door that leads to the thing the pointer wants, when it stands in another room of the tavern area (null = it is here or no routing). */
@@ -152,6 +160,7 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
         break;
       case 'coins': {
         const m = st.tavern.mess.find((x) => x.coins > 0);
+        if (m) tw = { x: m.x, y: m.y };
         pointer.place(m ? worldToScreen({ x: m.x, y: m.y - 4 }, st.shown) : null);
         break;
       }
@@ -200,6 +209,11 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
   const frame = (): void => {
     raf = requestAnimationFrame(frame);
     dotFrame();
+    tw = null;
+    worldFrame();
+    st.guideWorld = tw; // R16: only a world target of the step on screen; a panel, a UI button or no step = null
+  };
+  const worldFrame = (): void => {
     const goal = h.guide.goal();
     const tavernTarget = (k: GuideTarget['kind']): boolean => k !== 'ui' && k !== 'none';
     if (goal === null || dungeon.isActive) return pointer.place(null);

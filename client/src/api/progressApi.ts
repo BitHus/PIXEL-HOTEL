@@ -12,9 +12,11 @@ import {
   MINE_UNLOCK_LEVEL,
   claimBookReward,
   claimQuest,
+  achievementsClaimed,
   buySkill,
   respecSkills,
   skillsView,
+  unlearnSkill,
   type SkillsView,
   dayInfo,
   questBoard,
@@ -42,22 +44,42 @@ export const progressApi = {
     return { gold, gems, gains: gems > 0 ? [{ itemId: GEMS_GAIN_ID, count: gems, rank: 'common' }] : [] };
   },
 
+  // SK-1: opening the panel (getSkills) starts a new undo list: ranks bought since then come back for free (h.skillUndo, one entry per rank).
   async getSkills(h: LocalGameAPI): Promise<SkillsView> {
-    return skillsView(h.state.player);
+    h.skillUndo = [];
+    return progressApi.skillsNow(h);
+  },
+
+  skillsNow(h: LocalGameAPI): SkillsView {
+    return skillsView(h.state.player, { achieved: achievementsClaimed(h.state), undo: h.skillUndo });
   },
 
   async buySkill(h: LocalGameAPI, id: string): Promise<SkillsView | null> {
     const next = buySkill(h.state, id);
     if (!next) return null;
     h.commit(next);
-    return skillsView(h.state.player);
+    h.skillUndo = [...h.skillUndo, id];
+    return progressApi.skillsNow(h);
+  },
+
+  async unlearnSkill(h: LocalGameAPI, id: string): Promise<SkillsView | null> {
+    const undo = h.skillUndo.includes(id);
+    const next = unlearnSkill(h.state, id, h.now(), undo);
+    if (!next) return null;
+    h.commit(next);
+    if (undo) {
+      const i = h.skillUndo.lastIndexOf(id);
+      h.skillUndo = [...h.skillUndo.slice(0, i), ...h.skillUndo.slice(i + 1)];
+    }
+    return progressApi.skillsNow(h);
   },
 
   async respecSkills(h: LocalGameAPI): Promise<SkillsView | null> {
     const next = respecSkills(h.state, h.now());
     if (!next) return null;
     h.commit(next);
-    return skillsView(h.state.player);
+    h.skillUndo = [];
+    return progressApi.skillsNow(h);
   },
 
   async getQuestBoard(h: LocalGameAPI, tzOffsetMin: number): Promise<QuestBoard> {

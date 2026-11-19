@@ -2,7 +2,7 @@
 // beats a near miss; a tap far from everything picks nothing (the caller walks, as before). Works in any one coordinate space (screen px for items and
 // guests, world px for the dungeon). Rendering and the client only feed rectangles; no rule of the game lives here.
 
-import { TAP_MIN_SIZE_PX, TAP_TOLERANCE_PX } from './config.ts';
+import { TAP_BIG_PX, TAP_MIN_SIZE_PX, TAP_TOLERANCE_PX } from './config.ts';
 import type { Point, Rect } from './types.ts';
 
 /** Something a tap can pick: its drawn bounds, and its depth (a bigger y is in front). */
@@ -13,6 +13,8 @@ export interface TapTarget<T = unknown> {
   bounds: Rect;
   /** Depth: the foot y; the one in front (bigger) wins ties. */
   depth: number;
+  /** MISCLICK-PROOF: when targets overlap (both hit, or both near misses) the higher priority wins (INTERACT_PRIORITY). Missing = 0. */
+  priority?: number;
 }
 
 export interface TapPick<T> {
@@ -31,6 +33,12 @@ export function tapTolerance(touch: boolean): number {
 /** The smallest a target counts as: on a phone at least a 44 px touch box. */
 export function tapMinSize(touch: boolean): number {
   return touch ? TAP_MIN_SIZE_PX.touch : TAP_MIN_SIZE_PX.mouse;
+}
+
+/** The pick options for the input kind; `big` = the Settings toggle 'Big tap targets' (a 40 px finger radius, at least a 56 px box). */
+export function tapOptions(touch: boolean, big: boolean): { tolerance: number; minSize: number } {
+  if (big) return { tolerance: Math.max(tapTolerance(touch), TAP_BIG_PX.tolerance), minSize: Math.max(tapMinSize(touch), TAP_BIG_PX.minSize) };
+  return { tolerance: tapTolerance(touch), minSize: tapMinSize(touch) };
 }
 
 /** The bounds grown (around their centre) to at least `min` px in each direction. */
@@ -56,7 +64,7 @@ const inside = (p: Point, r: Rect): boolean => p.x >= r.x && p.x <= r.x + r.w &&
 
 /**
  * Picks the target for a tap at `p`.
- * 1. A real hit (inside the drawn bounds, grown to `minSize`) beats every near miss. Among real hits: the nearest visual centre, then the one in front.
+ * 1. A real hit (inside the drawn bounds, grown to `minSize`) beats every near miss. Among real hits: the higher priority, then the nearest visual centre, then the one in front.
  * 2. Else the nearest visual centre among the targets whose (grown) bounds are within `tolerance` of the point; ties go to the one in front.
  * 3. Else null: the tap picks nothing (the caller walks).
  */
@@ -64,6 +72,9 @@ export function pickTap<T>(p: Point, targets: readonly TapTarget<T>[], opts: { t
   let best: TapPick<T> | null = null;
   const better = (a: TapPick<T>, b: TapPick<T>): boolean => {
     if (a.hit !== b.hit) return a.hit;
+    const pa = a.target.priority ?? 0;
+    const pb = b.target.priority ?? 0;
+    if (pa !== pb) return pa > pb;
     if (Math.abs(a.distance - b.distance) > 1) return a.distance < b.distance;
     return a.target.depth > b.target.depth;
   };

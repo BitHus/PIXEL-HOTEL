@@ -1,0 +1,17 @@
+goTo tavern_to_cellar try 0 inside=false tap 500,70 av {"x":288,"y":335}
+goTo tavern_to_cellar try 1 inside=false tap 500,70 av {"x":288,"y":335}
+goTo tavern_to_cellar try 2 inside=false tap 500,70 av {"x":288,"y":335}
+goTo tavern_to_cellar try 3 inside=false tap 500,70 av {"x":304,"y":240}
+goTo tavern_to_cellar try 4 inside=false tap 476,70 av {"x":296,"y":148}
+goTo tavern_to_cellar try 5 inside=false tap 488,147 av {"x":304,"y":16}
+dialog "✗\nBuild this?\nThe cellar\nThere is no cellar behind this door yet. Build one: a cool room under the tavern with a keg rack, where mugs you leave ripen and sell for more. Up to 2 racks at first.\n300\nYou"
+after confirm {"kind":"shop","av":{"x":304,"y":16}}
+goTo tavern_to_cellar try 0 inside=true tap 452,338 av {"x":48,"y":48}
+room now cellar {"x":48,"y":48}
+cellar walk tap 300,420: 48,48 -> 54,91
+cellar walk tap 750,525: 54,91 -> 147,132
+cellar walk tap 300,280: 147,132 -> 73,82
+cellar walk tap 600,434: 73,82 -> 73,82
+cellar walk tap 450,560: 73,82 -> 73,82
+cellar walk tap 800,315: 73,82 -> 184,45
+errors []
