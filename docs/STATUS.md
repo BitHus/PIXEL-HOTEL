@@ -28,7 +28,7 @@ Updated 2026-11-19 (manager). LIVE site = main at 85c9ab9 (see Right now). Start
 5. NEXT ROUND: depth for the mine, dungeon and fishing (the weak links), then avatar style lock.
 
 ## OWNER DECISION 19 Nov: ONLINE SCOPE
-Online (visiting, sharing, later live avatars) is only for the HOTEL ROOM (suite), the GARDEN and PUBLIC spaces. The TAVERN (and its kitchen/cellar), farm, mine and dungeon stay private/solo. Server share/visit must refuse any other room kind; the Rooms board lists only these. OPEN: what exactly are the public spaces (shared lobby with live avatars? a plaza?) and is the garden the farm or a separate room.
+Online (visiting, sharing, later live avatars) is only for the HOTEL ROOM (suite), the GARDEN and PUBLIC spaces. The TAVERN (and its kitchen/cellar), farm, mine and dungeon stay private/solo. Server share/visit must refuse any other room kind; the Rooms board lists only these. DECIDED 20 Nov (owner): the public space is ONE SHARED LOBBY with live avatars; rooms are visited BY NAME (search by player/room name; replaces visit codes); www.pocketbarrel.com redirects (301) to the apex (done on the VPS, backup /root/nginx-default.bak). OPEN: is the garden the farm or a separate room (assumed: separate hotel-side room).
 
 ## QUEUED OWNER FIXES (19 Nov)
 - OPEN/CLOSED sign: should HANG from the top edge on its chains; now it floats under a button (ui worker, desktop + phone, skin.css sign). Owner idea: or LONGER ropes that run up behind the top HUD, so it clearly hangs from the top; the sign hangs BELOW the info panel, ropes behind it (owner clarification).
