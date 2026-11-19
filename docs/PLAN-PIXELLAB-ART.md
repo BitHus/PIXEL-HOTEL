@@ -17,3 +17,4 @@ LEDGER batch 5 (19 Nov, artist): 26 downs x 5 = 130 + 9 expansions x 10 = 90 (bo
 OWNER 19 Nov: cap raised by 500 generations: stop at about 1500 generations_used (not exact). The owner says 'go' for the rest of the cycle.
 LEDGER stove range (19 Nov, artist): 5 generations (stove_range 96x80 -> fit to 64x69); generations_used 930 of cap ~1500. Outline fix was pixel edits only (0 gens).
 LEDGER seats/rug/plant/scarecrow (19 Nov, artist): ~101 gens (bone_chair 5+10 expand, sunken_throne 5, bench 5+5+15 expand, plant 5+5, rug 5+5+6+6+6, scarecrow 5+6); generations_used about 1031 of cap ~1500. fit tool no longer scales; raw sources art-src/pixellab/v2, old sprites art-src/pixellab/old19.
+LEDGER modular bar (19 Nov, artist): 10 generations (2 sources 5 each; pieces composed by tools/gen-bar-art.mjs, 0 more). Only straight_src used.
