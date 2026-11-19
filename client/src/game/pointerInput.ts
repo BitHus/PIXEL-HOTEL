@@ -1,12 +1,11 @@
 // Pointer input: camera control, taps, drags (R1 split of main.ts: part 16 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween, isUsable, tapTolerance, type FurnitureItem, type Point } from '@pixel-hotel/shared';
+import { playCameraLocked, blockInCell, plantInCell, cellOf, getFurnitureType, screenToWorld, hasSeats, cellsBetween, isUsable, tapTolerance, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import { createItemUse } from './itemUse.ts';
 import { attachCameraControl } from '../input/cameraControl.ts';
 import type { G15 } from './ctx.ts';
 import { walkDoorGoal } from './doorGoal.ts';
-import { avatarMoving } from './followCam.ts';
 import { createTapForgive, isTouchInput } from './tapForgive.ts';
 
 export async function setupPointerInput(g: G15) {
@@ -57,7 +56,8 @@ export async function setupPointerInput(g: G15) {
     setCamera: (cam, snap) => (dungeon.isActive ? dungeon.setCamera(cam) : setCamera(cam, snap)),
     getOverviewZoom: overviewZoom,
     getDevicePixelRatio: dpr,
-    isCameraLocked: () => prefs.followCamera && !dungeon.isActive && !build.on && !paint.active && !placer.active && avatarMoving(st.avatar, st.path.length),
+    // CAM-LOCK v2 (owner 19 Nov): always locked in play mode; only Look around (More) or build mode lets a drag pan.
+    isCameraLocked: () => playCameraLocked({ dungeon: dungeon.isActive, build: build.on, paint: paint.active, placing: placer.active, lookAround: st.lookAround }),
     onGestureStart: () => {
       intro.cancel();
     },
@@ -108,7 +108,7 @@ export async function setupPointerInput(g: G15) {
         return true;
       }
       if (st.selectedBlock !== null || holdBusyElsewhere() || lakeside.fishing || menu.uid !== null) return false;
-      if (hold.active) return false;
+      if (hold.active || st.lookAround) return false; // Look around: a drag never walks
       // OA-1: on press only free floor starts a walk at once (a press on an item or a build/placing state waits for its tap).
       if (early && (roomItem(itemViews.uidOf(target ?? null)) || placer.active)) return false;
       st.walkHold = true;

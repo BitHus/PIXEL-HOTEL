@@ -23,7 +23,10 @@ describe('inn doors (B1 stub)', () => {
   it('doorSpriteId is id driven and matches the shared clearance rule', () => {
     expect(doorSpriteId('tavern_to_cellar')).toBe('door_cellar_down');
     expect(doorSpriteId('cellar_to_tavern')).toBe('door_cellar_up');
-    expect(doorSpriteId('tavern_to_suite')).toBeNull();
+    expect(doorSpriteId('tavern_to_suite')).toBe('door_suite');
+    expect(doorSpriteId('tavern_to_garden')).toBe('door_garden');
+    expect(doorSpriteId('suite_to_tavern')).toBe('door_tavern');
+    expect(doorSpriteId('garden_to_tavern')).toBe('door_tavern');
     for (const id of ['tavern_to_cellar', 'cellar_to_tavern', 'tavern_to_suite', 'garden_gate']) expect(doorSpriteId(id) !== null).toBe(innDoorHasSprite(id));
   });
   it('doorOpenNear opens within 64 px in front of the door only', () => {
@@ -34,6 +37,7 @@ describe('inn doors (B1 stub)', () => {
     expect(doorOpenNear(100, 64, { x: 100, y: 40 })).toBe(false);
   });
   it('doorSpill is null without a spill picture or for doors without one', () => {
-    expect(doorSpill({ id: 'tavern_to_suite', x: 0, y: 0, w: 64 })).toBeNull();
+    expect(doorSpill({ id: 'garden_gate', x: 0, y: 0, w: 64 })).toBeNull();
+    expect(doorSpill({ id: 'cellar_to_tavern', x: 0, y: 0, w: 64 })).toBeNull();
   });
 });

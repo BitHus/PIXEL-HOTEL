@@ -14,7 +14,7 @@ export async function setupGameLoop(g: G16) {
     app, fit, dungeon, control, hold, panels, build, intro, setCamera, seating, roomItem, itemViews,
     guests, lakeside, roomFloats, placer, sprite, sound, atmosphere, view, blockViews, plantViews,
     doBlock, placeBar, menu, orders, bubbles, emote, nameTag, popups, gemFly, splashGone, openRoom,
-    label, prefs, playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
+    label, playNewGameIntro, stoveArrived, barrelArrived, caskArrived, pour, fx, api, setDungeonMode, notice, toast, st, late,
   } = g;
 
   fx.onSparkle = (at) => itemViews.props.ding(at);
@@ -35,6 +35,9 @@ export async function setupGameLoop(g: G16) {
   let wasMoving = false;
   let easeOff: Point | null = null;
   let easeMs = 0;
+  let lookWas = false;
+  let lookReturn = false;
+  let lookRoom = st.room.id;
   // Frame times for the Debug line (real elapsed ms per frame, not the capped delta).
   const frames = new FrameStats(120);
   let frameLineAt = 0;
@@ -69,10 +72,17 @@ export async function setupGameLoop(g: G16) {
     if (st.path.length === 0 && seating.goal !== null) st.avatar = seating.arrive(st.avatar, roomItem(seating.goal.uid));
     st.avatar = seating.update(st.avatar, ticker.deltaMS);
     // CAM-LOCK (hybrid): while the avatar MOVES (tap-walk, hold-walk, steer) the camera is locked: the avatar sits exactly in the middle, every frame, in every room
-    // (Settings: Camera locked while walking, default). Standing still the player may pan to look around; when walking starts again the camera eases back (CAMERA_FOLLOW_EASE_MS) and locks.
+    // Owner 19 Nov: no free look by dragging; Look around (More) is the only way to pan. Walking starts again: the camera eases back (CAMERA_FOLLOW_EASE_MS) and locks.
     const moving = avatarMoving(st.avatar, st.path.length);
+    // CAM-LOCK v2: Look around ends when the avatar walks or the room changes; then the camera eases back to the lock (never a jump).
+    const roomChanged = st.room.id !== lookRoom;
+    if (st.lookAround && (moving || roomChanged)) late.setLookAround(false);
+    if (roomChanged) lookWas = false; // the new room's first view is not eased away
+    lookRoom = st.room.id;
+    if (lookWas && !st.lookAround) lookReturn = true;
+    lookWas = st.lookAround;
     const paused = !moving && !wasMoving; // the frame the avatar arrives is still locked (the last step is followed)
-    if (!step && prefs.followCamera && !intro.active && !build.on && (moving || wasMoving || easeOff)) {
+    if (!step && !st.lookAround && !intro.active && !build.on && (moving || wasMoving || easeOff || lookReturn)) {
       const lock = followLock(st.camera, { x: st.avatar.x, y: st.avatar.y - 24 }, app.screen.width, app.screen.height, st.bounds);
       if (wasPaused && !easeOff && (lock.x !== st.camera.x || lock.y !== st.camera.y)) {
         easeOff = { x: st.camera.x - lock.x, y: st.camera.y - lock.y };
@@ -86,6 +96,7 @@ export async function setupGameLoop(g: G16) {
         if (k <= 0) easeOff = null;
       }
       if (next !== st.camera && (next.x !== st.camera.x || next.y !== st.camera.y)) setCamera(next);
+      if (!easeOff) lookReturn = false;
     } else easeOff = null;
     wasPaused = paused;
     wasMoving = moving;

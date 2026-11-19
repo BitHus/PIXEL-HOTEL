@@ -487,7 +487,7 @@ describe('20 -> 21 (step K1: cooking moves to a stove in the tavern)', () => {
     if (!r.ok) return;
     const stoves = r.state.items.filter((i) => i.typeId === 'stove');
     expect(stoves).toHaveLength(1);
-    expect(stoves[0]).toMatchObject({ roomId: r.state.tavern.roomId, x: 144, y: 384, facing: 'down' }); // the start spot is inside the kitchen annex since save 39
+    expect(stoves[0]).toMatchObject({ roomId: r.state.tavern.roomId, x: 160, y: 384, facing: 'down' }); // the start spot is inside the kitchen annex since save 39
     expect(r.state.tavern.cooks).toEqual([]);
     expect(r.state.ledger.at(-1)).toMatchObject({ reason: 'tavern_gift', note: 'cooking moved to the tavern' });
     expect(r.state.player.seen.stove?.count).toBe(1);
@@ -675,8 +675,8 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const load = (state: unknown) => readSave(JSON.stringify({ version: 23, savedAt: 9, state }));
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
-  it('SAVE_VERSION is 40 (38 -> 39 the kitchen is an attached annex, 37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(40);
+  it('SAVE_VERSION is 41 (38 -> 39 the kitchen is an attached annex, 37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
+    expect(SAVE_VERSION).toBe(41);
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');
     expect(typeof MIGRATIONS[25]).toBe('function');

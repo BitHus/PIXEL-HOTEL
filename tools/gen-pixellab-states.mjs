@@ -15,24 +15,23 @@ const copy = (src) => { const p = mk(src.width, src.height); src.data.copy(p.dat
 const save = (n, p) => fs.writeFileSync(`${dir}${n}.png`, PNG.sync.write(p));
 const C = { dark: hex('181425'), brown: hex('3e2731'), steel: hex('3a4466'), red: hex('a22633'), orange: hex('f77622'), rust: hex('be4a2f'), amber: hex('feae34'), yellow: hex('fee761'), white: hex('ffffff'), cream: hex('ead4aa'), pale: hex('c0cbdc'), grey: hex('8b9bb4'), skin: hex('e8b796') };
 
-// STOVE
+// STOVE (19 Nov: 2 x 1 range, 64 px wide, two oven windows: left x 11-24, right x 36-49, y 44-57; flame bottom-centre png (17,53) and (42,53), smoke point (48,1))
 const stove = rd('stove');
+const WIN = [[12, 23], [36, 48]], WY = [44, 56];
 const isFire = (c) => c && ['a22633', 'f77622', 'be4a2f'].includes(hx(c));
-const isHot = (c) => c && ['a22633', 'f77622', 'be4a2f', 'feae34', 'fee761'].includes(hx(c));
+const isHot = (c) => c && ['a22633', 'e43b44', 'f77622', 'be4a2f', 'feae34', 'fee761', 'ead4aa'].includes(hx(c));
+const inWin = (x, y) => y >= WY[0] && y <= WY[1] && WIN.some(([a, b]) => x >= a && x <= b);
 const cold = copy(stove);
-for (let y = 41; y <= 50; y++) for (let x = 10; x <= 22; x++) if (isHot(get(cold, x, y))) put(cold, x, y, (x + y) % 4 === 0 ? C.brown : C.dark);
+for (let y = WY[0]; y <= WY[1]; y++) for (let x = 0; x < 64; x++) if (inWin(x, y) && isHot(get(cold, x, y))) put(cold, x, y, (x + y) % 4 === 0 ? C.brown : C.dark);
 save('stove_cold', cold);
 const PAD = 6; // top padding for steam
-const ready = mk(64, stove.height + PAD);
+const ready = mk(128, stove.height + PAD);
 for (let f = 0; f < 2; f++) {
-  const fr = mk(32, stove.height + PAD); blit(fr, stove, 0, PAD);
-  for (let y = 41 + PAD; y <= 50 + PAD; y++) for (let x = 10; x <= 22; x++) { const c = get(fr, x, y); if (isFire(c)) put(fr, x, y, hx(c) === 'f77622' ? (f ? C.yellow : C.amber) : hx(c) === 'a22633' ? C.orange : C.amber); }
-  // steam puffs over the chimney (chimney top is at x 19-21), alternate frames
-  const sx = 16; const puffs = f ? [[sx, 3], [sx + 1, 1], [sx - 1, 0]] : [[sx - 1, 3], [sx, 2], [sx + 1, 0]];
+  const fr = mk(64, stove.height + PAD); blit(fr, stove, 0, PAD);
+  for (let y = WY[0] + PAD; y <= WY[1] + PAD; y++) for (let x = 0; x < 64; x++) { if (!inWin(x, y - PAD)) continue; const c = get(fr, x, y); if (isFire(c)) put(fr, x, y, hx(c) === 'f77622' ? (f ? C.yellow : C.amber) : hx(c) === 'a22633' ? C.orange : C.amber); }
+  const sx = 48; const puffs = f ? [[sx, 3], [sx + 1, 1], [sx - 1, 0]] : [[sx - 1, 3], [sx, 2], [sx + 1, 0]];
   for (const [px, py] of puffs) put(fr, px, py, py > 1 ? C.white : C.pale);
-  // a warm rim light on the firebox arch = "done"
-  for (let x = 12; x <= 20; x++) put(fr, x, 40 + PAD, f ? C.amber : C.rust);
-  blit(ready, fr, f * 32, 0);
+  blit(ready, fr, f * 64, 0);
 }
 save('stove_ready', ready);
 // flame overlay: 3 frames 14 x 9, flame centred at the bottom (spec frameW 14)

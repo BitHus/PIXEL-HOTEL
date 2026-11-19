@@ -58,7 +58,7 @@ export async function openSide(page: Page, title: string): Promise<void> {
   await b.dispatchEvent('click');
 }
 
-/** DECLUTTER: opens the More grid (Quests, Worlds, Emote, Room, Book, Skills, Avatar, Chat, Settings live in it); no-op when open. */
+/** DECLUTTER: opens the More grid (Quests, Emote, Room, Book, Skills, Avatar, Chat, Settings live in it); no-op when open. */
 export async function openMoreMenu(page: Page): Promise<void> {
   if (!(await page.locator('.more-menu.open').count())) await page.locator('button.more-btn').dispatchEvent('click');
 }

@@ -1,0 +1,6 @@
+guest order false
+cast at 0.85,0.28
+cast true
+phase text: Waiting for a bite...
+phase text: Bite! Tap now!
+errors []

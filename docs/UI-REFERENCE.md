@@ -59,6 +59,7 @@ screenshots of it in the repo.
   button that opens a small grid of icons with labels; a tap elsewhere closes it. On a wide
   screen (900 px and up) all buttons stand in the column and there is no More button. New
   screens get a button here (in the More grid unless they are needed all the time).
+- **Look around (owner 19 Nov).** A toggle in the More grid (eye icon, label Look around, room-only; lit while on). The camera is always locked on the avatar in play mode and a drag never pans; while Look around is on a one-finger drag pans the room (clamped) and no drag walks. Walking, a room change or tapping it again turns it off and the camera eases back. No camera option in Settings.
 - **Quest button** (after step 8): at the top of the right-edge column, a scroll icon. It is
   there only while a quest (first-run hint) is going. It is selected while the quest shows and
   blinks warm when the quest card is closed, so the player always knows where to find it. A tap
@@ -335,7 +336,7 @@ From the Travellers Rest reference screenshots the owner liked:
 - Copying another game's sprites, frames, icons or exact layout.
 
 ## Declutter rule (18 Nov)
-Side column on every size: Catalog, Build, Dungeon, More; all else in the More grid (extras with data-more-label). Info panel: gold, gems, 3 px xp bar. The hotbar is never hidden or faded. See docs/PLAN-UI-DECLUTTER.md.
+Side column on every size: Catalog, Build, Dungeon, Worlds, More (owner 19 Nov: Worlds is always visible, never in More; sideButtons.ts COLUMN_LABELS); all else in the More grid (extras with data-more-label). The OPEN/CLOSED sign hangs from the top screen edge on a rope (declutter.css section 6, .top-left::before runs up behind the info panel); the board sits under the info panel on desktop and phone. Info panel: gold, gems, 3 px xp bar. The hotbar is never hidden or faded. See docs/PLAN-UI-DECLUTTER.md.
 
 ## Close button (19 Nov)
 One close style for every panel: the round dark-disc X art (ui/close.css), 45 px hit box, no text glyph. Keep titles clear of the top-right 40 px.

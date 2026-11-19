@@ -46,7 +46,8 @@ test('r10 decluttered HUD', async ({ page }) => {
   await openMoreMenu(page); await page.waitForTimeout(300); await S(page, '03-more-grid');
   const items = await page.locator('.more-menu button').evaluateAll((els) => els.map((e) => (e as HTMLElement).title.split(/[:(]/)[0]));
   k.note('More items ' + JSON.stringify(items));
-  for (const t of ['Quests', 'Worlds', 'Emote', 'Room', 'Book', 'Skills', 'Avatar', 'Chat', 'Settings']) expect(items.some((x) => x.startsWith(t)), t + ' in More').toBe(true);
+  expect(await page.locator('.side-buttons > button[title^="Worlds"]').isVisible(), 'Worlds is its own side button').toBe(true);
+  for (const t of ['Quests', 'Emote', 'Room', 'Book', 'Skills', 'Avatar', 'Chat', 'Settings']) expect(items.some((x) => x.startsWith(t)), t + ' in More').toBe(true);
   await page.keyboard.press('Escape');
   // Room panel through More
   await openMore(page, 'Room'); await page.waitForTimeout(500); await S(page, '04-room-panel');

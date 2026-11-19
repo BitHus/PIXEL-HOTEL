@@ -69,10 +69,13 @@ function drawGarden(g: Graphics, w: number): void {
   g.rect(w / 2 - 14, -H / 2, 3, 3).fill(PALETTE[11]); // latch
 }
 
-/** The door PNG (sprites/doors, 96 x 64, anchor bottom centre) of a door id, or null for the code looks. Id-driven. */
+/** The door PNG (sprites/doors, 96 x 64, anchor bottom centre) of a door id (the picture shows where it leads), or null for the code looks. Id-driven. */
 export function doorSpriteId(id: string): string | null {
   if (id === 'tavern_to_cellar') return 'door_cellar_down';
   if (id === 'cellar_to_tavern') return 'door_cellar_up';
+  if (id === 'suite_to_tavern' || id === 'garden_to_tavern') return 'door_tavern';
+  if (id === 'tavern_to_suite') return 'door_suite';
+  if (id === 'tavern_to_garden') return 'door_garden';
   return null;
 }
 
@@ -92,11 +95,11 @@ export function setDoorOpen(door: Container, open: boolean): void {
   if (t && sp.texture !== t) sp.texture = t;
 }
 
-/** The soft floor spill of light in front of a cellar door (64 x 14, anchor top centre), or null. */
+/** The soft floor spill of light in front of a door (64 x 14, anchor top centre; green for the garden), or null (cellar up door and code looks). */
 export function doorSpill(door: InnDoor): Sprite | null {
   const id = doorSpriteId(door.id);
-  if (id !== 'door_cellar_down') return null;
-  const t = spriteTexture('doors', 'door_spill');
+  if (!id || id === 'door_cellar_up') return null;
+  const t = spriteTexture('doors', id === 'door_garden' ? 'door_spill_garden' : 'door_spill');
   if (!t) return null;
   const s = new Sprite(t);
   s.position.set(door.x - 32, door.y);

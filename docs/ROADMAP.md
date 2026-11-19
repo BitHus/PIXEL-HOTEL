@@ -11,6 +11,7 @@
 
 18 NOV (artist MG-15 part 1): [x] dig mine block tiles, cracks, glint, cave-in states, exit tile, rock beetle PNGs + digArt.ts wiring. Open: skill/gear icons, exit and beetle hooks.
 18 NOV (coder MG-7): [x] skill stats hooked into the rules (skillRules.ts, tests) and the Skills panel (More > Skills, tabs, tier locks, Learn/Respec ask first). Open: unhooked stats (see NEWS), dot on the button, art for skill icons (MG-15).
+19 NOV (coder): [x] CAM-LOCK v2: always locked in play mode, Look around toggle in More, Settings camera option removed, first view centred in the free area (phone bug RUN 10 item 5; not seen in a browser on a phone).
 18 NOV (coder): [x] kitchen is a walled tavern area (SAVE 37), CEL 3 racks 2/3/3, trader removed (guests + dungeon only), MG-1 skill rules + API (SAVE 38) and MG-2 level cap 12 (UI and rule hooks MG-7/8/9 still open), tap forgiveness, tutorial from 0 with zoom/tap/hold steps. [x] RUN 6 UI fixes (keg rack text, first-steps card off doors, fi ligature, bubbles vs button column); open: kitchen barrel under the phone button column (camera/layout hook).
 19 NOV (artist): [x] PixelLab UI proof set (panels, buttons, tab, sign, bar, 10 icons) in art-src/pixellab/ui, not wired; wiring = ui worker after owner OK.
 19 NOV (ui): [x] title screen reworked (Continue pill, save line, still-life) + dark panel frame wired into panelShell panels (border-image); [ ] tabs, round buttons, bar, parchment still unwired.

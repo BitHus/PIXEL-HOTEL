@@ -2,7 +2,7 @@
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
 import {
-  INTRO_DEVICE_PX_PER_ART_PX, cameraAt, centerCamera, clampCamera, containCamera, fitZoom, introZoom, snapCamera,
+  INTRO_DEVICE_PX_PER_ART_PX, centerCamera, clampCamera, firstViewCamera, fitZoom, getFurnitureType, introZoom, snapCamera,
   worldToScreen, type Camera,
 } from '@pixel-hotel/shared';
 import { CameraIntro } from '../input/cameraIntro.ts';
@@ -18,6 +18,8 @@ export async function setupCameraSetup(g: G4) {
   st.shown = st.camera;
   /** World point marked by the cross (under the mouse, or the last tap). */
   st.marked = null;
+  /** CAM-LOCK v2: Look around is off at the start of every session. */
+  st.lookAround = false;
   const intro = new CameraIntro();
 
   const redraw = (): void => {
@@ -50,20 +52,25 @@ export async function setupCameraSetup(g: G4) {
     const w = app.screen.width;
     return w < 700 ? Math.max(w / 2, w - probe.offsetWidth) : w;
   };
-  const overviewZoom = (): number => fitZoom(usableWidth(), app.screen.height, st.bounds);
+  /** The free height: above the hotbar (and its bag button), so the first view is centred where the player can see and tap. */
+  const freeHeight = (): number => {
+    const top = document.querySelector('.hotbar')?.getBoundingClientRect().top ?? 0;
+    const h = app.screen.height;
+    return top > h / 2 && top < h ? top : h;
+  };
+  const overviewZoom = (): number => fitZoom(usableWidth(), freeHeight(), st.bounds);
   const fit = (): void => {
     intro.cancel();
-    const h = app.screen.height;
-    setCamera(centerCamera(usableWidth(), h, st.bounds, overviewZoom()));
+    setCamera(centerCamera(usableWidth(), freeHeight(), st.bounds, overviewZoom()));
   };
   /** The room intro: overview first, then a zoom in on the avatar (section 4). */
   const startIntro = (): void => {
     fit();
-    const w = app.screen.width;
-    const h = app.screen.height;
     const zoom = introZoom(overviewZoom(), dpr(), INTRO_DEVICE_PX_PER_ART_PX);
     if (zoom <= st.camera.zoom + 1e-6) return;
-    const to = snapCamera(containCamera(cameraAt(st.avatar, zoom, w, h), w, h, st.bounds), dpr());
+    // The settled view keeps the room's furniture (bar, table, stove) centred in the FREE area (left of the button column, above the hotbar) until the first walk.
+    const spots = st.items.filter((i) => i.onItemUid === null && !getFurnitureType(i.typeId).wall).map((i) => ({ x: i.x, y: i.y - 16 }));
+    const to = snapCamera(firstViewCamera(zoom, st.avatar, spots, usableWidth(), freeHeight(), st.bounds), dpr());
     intro.start(st.camera, to);
   };
 

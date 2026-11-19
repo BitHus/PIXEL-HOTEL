@@ -32,8 +32,8 @@ function save38(shape = 'square_shop', mutate: (s: GameState) => GameState = (s)
 }
 
 describe('migration 38 -> 39 (the kitchen annex)', () => {
-  it('SAVE_VERSION is 40; the tavern grows by the annex and the old kitchen machines move inside it, nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(40);
+  it('SAVE_VERSION is 41; the tavern grows by the annex and the old kitchen machines move inside it, nothing is lost', () => {
+    expect(SAVE_VERSION).toBe(41);
     const text = save38();
     const before = JSON.parse(text).state as GameState;
     const r = readSave(text);
@@ -117,7 +117,8 @@ describe('migration 39 -> 40 (the kitchen is open and bigger)', () => {
     const room = r.state.rooms.find((x) => x.id === r.state.tavern.roomId)!;
     expect(room.h).toBe(480);
     expect(room.w).toBe(576);
-    expect(r.state.items).toEqual(before.items);
+    // 40 -> 41: the stove grows from one cell to two (its cell stays, it grows to the right: anchor +16); everything else stays put.
+    expect(r.state.items).toEqual(before.items.map((i) => (i.typeId === 'stove' ? { ...i, x: i.x + 16 } : i)));
     expect(roomAtLevel(room, room.level)).toEqual(room);
   });
 

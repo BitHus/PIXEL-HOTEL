@@ -14,6 +14,8 @@ import { el } from './dom.ts';
 // NPC chatter (guests, staff: negative avatar ids) is small and local: a compact pill, at most NPC_VISIBLE_MAX shown at once (nearest to the
 // screen centre first), only for heads on screen, one line per NPC, long lines cut. The player's own bubble is unchanged.
 const NPC_VISIBLE_MAX = 3;
+// RUN 11 (6): at most this many bubbles show over one avatar (the newest); older ones stay hidden until they expire, so the name tag stays readable.
+const VISIBLE_PER_AVATAR = 2;
 const NPC_TEXT_MAX = 44;
 const NPC_BASE_MS = 2500;
 const NPC_MARGIN_PX = 24;
@@ -106,10 +108,13 @@ export function createChatBubbles(parent: HTMLElement): ChatBubbles {
       const nearIds = pickNearest(cands.map((o) => ({ key: o.b.avatarId, x: o.h.x, y: o.h.y })), cx, cy, NPC_VISIBLE_MAX, prevNear);
       prevNear = nearIds;
       const near = new Set(cands.filter((o) => nearIds.has(o.b.avatarId)).map((o) => o.b));
+      const perAvatar = new Map<number, number>();
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i]!;
         const head = heads.get(b.avatarId);
-        b.el.hidden = !head || (b.npc && !near.has(b));
+        const nth = (perAvatar.get(b.avatarId) ?? 0) + 1;
+        perAvatar.set(b.avatarId, nth);
+        b.el.hidden = !head || (b.npc && !near.has(b)) || nth > VISIBLE_PER_AVATAR;
         if (b.el.hidden || !head) continue;
         shown.push(b);
         input.push({ avatarId: b.avatarId, headX: head.x, headY: head.y, w: b.el.offsetWidth, h: b.el.offsetHeight });

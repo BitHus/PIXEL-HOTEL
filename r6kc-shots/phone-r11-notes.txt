@@ -18,3 +18,5 @@ Quests X {"x":291.171875,"y":113,"width":45,"height":45}
 hitbox stove (css px from sprite centre, -1 = never, zoom 0.59) R:28 L:70 U:28 D:28
 hitbox brewing_barrel (css px from sprite centre, -1 = never, zoom 0.59) R:70 L:42 U:70 D:42
 hitbox register (css px from sprite centre, -1 = never, zoom 0.59) R:42 L:42 U:70 D:28
+hitbox tap_stand (css px from sprite centre, -1 = never, zoom 0.59) R:28 L:56 U:70 D:28
+errors []

@@ -47,7 +47,7 @@ export function createFishBar(parent: HTMLElement, hooks: FishBarHooks): FishBar
   const root = el('div', 'ui-panel fish-bar');
   root.hidden = true;
   const text = el('div', 'fish-text', TEXT.wait);
-  const stop = textButton('✗', () => hooks.onStop(), 'small fish-stop');
+  const stop = textButton('', () => hooks.onStop(), 'panel-close fish-stop');
   stop.title = 'Stop fishing';
   stop.setAttribute('aria-label', 'Stop fishing');
   const head = el('div', 'fish-head');

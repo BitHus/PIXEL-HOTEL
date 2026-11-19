@@ -171,7 +171,8 @@ export function moveKitchenToAnnex(state: GameState): GameState {
   const stood = (i: FurnitureItem): boolean => {
     const t = getFurnitureType(i.typeId);
     if (i.roomId !== tavern.id || i.onItemUid !== null || t.wall || isBarPiece(t)) return false;
-    const fp = footprintRect(i, t);
+    // The stove was ONE cell in those saves (it is 2 x 1 since save 41): judge it by its old footprint.
+    const fp = i.typeId === 'stove' ? { x: i.x - BUILD_CELL / 2, y: i.y - BUILD_CELL, w: BUILD_CELL, h: BUILD_CELL } : footprintRect(i, t);
     return fp.x >= was.x && fp.y >= was.y && fp.x + fp.w <= was.x + was.w && fp.y + fp.h <= was.y + was.h;
   };
   const want = { x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 };

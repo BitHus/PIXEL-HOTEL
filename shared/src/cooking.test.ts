@@ -58,9 +58,9 @@ describe('the recipes (section 10b, step K1)', () => {
 });
 
 describe('the stove', () => {
-  it('is a tavern furniture in the catalog: a cell, a light, common, placeIn shop', () => {
+  it('is a tavern furniture in the catalog: two cells, a light, common, placeIn shop', () => {
     const t = getFurnitureType('stove');
-    expect(t).toMatchObject({ cooks: true, w: 32, d: 32, placeIn: 'shop', rank: 'common', inCatalog: true, blocks: true });
+    expect(t).toMatchObject({ cooks: true, w: 64, d: 32, placeIn: 'shop', rank: 'common', inCatalog: true, blocks: true });
     expect(t.light?.radius).toBeGreaterThan(0);
     expect(t.icon.shape).toBe('stove');
   });

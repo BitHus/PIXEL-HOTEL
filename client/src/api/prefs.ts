@@ -20,13 +20,12 @@ export interface Prefs {
   doorHintSeen: boolean;
   /** Reduce effects (outdoors rework C11): no hit-stop, shake, particles, squash or other juice; damage numbers and sounds stay. */
   reduceEffects: boolean;
-  /** COD-1 (a): the camera glides after the avatar in the tavern (default on). */
-  followCamera: boolean;
+  // Owner 19 Nov: the old followCamera pref (Locked / Free look) is gone: the camera is always locked in play mode (Look around is a session toggle in More); a stored value is ignored.
   /** VG-1: keys of the one-time hint chips already shown (shared/src/hints.ts). */
   hintsSeen: string[];
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, followCamera: true, hintsSeen: [] };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, hintsSeen: [] };
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -47,7 +46,6 @@ export function parsePrefs(text: string | null): Prefs {
     nameTags: typeof o.nameTags === 'boolean' ? o.nameTags : DEFAULT_PREFS.nameTags,
     doorHintSeen: typeof o.doorHintSeen === 'boolean' ? o.doorHintSeen : DEFAULT_PREFS.doorHintSeen,
     reduceEffects: typeof o.reduceEffects === 'boolean' ? o.reduceEffects : DEFAULT_PREFS.reduceEffects,
-    followCamera: typeof o.followCamera === 'boolean' ? o.followCamera : DEFAULT_PREFS.followCamera,
     hintsSeen: Array.isArray(o.hintsSeen) ? o.hintsSeen.filter((k): k is string => typeof k === 'string').slice(0, 64) : [],
   };
 }

@@ -1830,7 +1830,8 @@ client/src/ui/runBar.ts + runHud.css: bottom pill = bag pill (used/12, drawer wi
 ## RUN 8 UI fixes (coder, 18 Nov)
 - panelShell.ts: .panel-strip is now the last child of .panel-frame (footer inside the Lantern Dark frame; lantern.css `.panel-frame > .panel-strip`). Bag Sort/Stack and Skills Respec use it.
 - skillsPanel.ts NODE_ICON maps each skill node id to an existing pixelIcons name (branch icon fallback). Panels with class tabs-named show all tab names (Bar: Serve/Menu).
-- Phone: pour bar 110 px (skin.css), OPEN sign 30 px high without icon (lantern.css), .first-ten pointer-events none except Skip, phone panel-tabs tighter with a right fade.
+- 19 Nov: the OPEN sign board is in the top-left column under the info panel on every size (the phone fixed position is gone); its rope is `.top-left:has(> .open-sign:not([hidden]))::before` from the viewport top (safe-area aware), --sign-w/--sign-h on .top-left size the board and the rope. Worlds is a column button (sideButtons.ts COLUMN_LABELS).
+- Phone: pour bar 110 px (skin.css), OPEN sign 30 px high without icon (lantern.css, now declutter.css 28 px), .first-ten pointer-events none except Skip, phone panel-tabs tighter with a right fade.
 
 ## Furniture thumbnails from sprites (RUN9-ICONS, 18 Nov)
 ui/itemIcon.ts furnitureIconUrl: the furniture sprite (down) is drawn to a canvas, trimmed to its opaque box (render/iconTrim.ts trimBounds) and fitted in 32x32 (fitInSlot: whole-number growth up to 2x, nearest-neighbour shrink, centred), cached per type as a data URL; no complete sprite falls back to icons/<id>.png, then the code icon. Rank border is CSS, untouched.
@@ -1872,3 +1873,20 @@ client/src/ui/panelArt.css (last panel skin, imported in layout.ts): `:is(.panel
 - Strip (ui/ordersStrip.ts + ordersStripLogic.ts): chip badge B/T (text placeholder, data-where), 'pouring' state (pouringId = pourFor.guestId), Grab all (2+ idle orders of one item) and Serve all (2+ ready), tray icon tap = bestGuestForTrayItem; CSS hooks in ordersStrip.css (artist may restyle).
 - Balance TF-9: guestGoldPerHour(stage, prep, barShare) uses BAR_STAY_S (shorter stay = seats turn over faster, a ceiling) + speed tip; BAR_SHARE_ASSUMED 0.3; test in balance.test.ts; `npm run simulate [-- --bar-share=0.4]` prints it. Result: guest share of the best-kitchen mixed hour stays 78-80% (cap 85%); supply (mugs) is the limit so gold barely moves (+1 to 1.2%).
 - Tests of table guests: tavernTest.ts tavernWorld sets barGuests false; LocalGameAPI.barGuests = false in tapsAPI/tavernAPI tests.
+
+## Stove range art and outline fix (19 Nov, artist)
+- stove: PixelLab 96x80 (art-src/pixellab/stove.png) fitted to 64x69; windows left x 12-23 / right x 36-48, y 44-56; strips rebuilt by tools/gen-pixellab-states.mjs (WIN/WY constants at the STOVE block). Run outline-fix BEFORE gen-pixellab-states (states copy the body).
+- Outline rule for PixelLab furniture: ring-1 outline colour 3e2731, 1 px; tools/outline-fix.mjs <ids> (idempotent: a fixed sprite has no 181425 ring left), tools/outline-audit.mjs prints black % and 2 px %. New PixelLab pieces: run outline-fix after pixellab-fit. Proportions: table 64x48, chair 32x48, bench 64x33 judged believable vs the 54 px avatar (not changed).
+
+## Stove 2 x 1 (19 Nov, coder)
+- furniture.json stove w 64 d 32 (facings down only; standPoint dy 24 unchanged). Anchor x sits on the cell line: start spots shopStart.stove x = 160 (square_shop, l_shape, wide_hall), 96 (long), 128 (plus), all inside the annex; config TAVERN_START_ITEMS stove x 160.
+- SAVE 41 widenStoves (shared/src/stoveWide.ts, test stoveWide.test.ts): a valid pose is kept; else old cell grows right (+16), else left (-16), preferring the annex when it stood there; else nearest free cell; else bag. cellarRooms.moveKitchenToAnnex uses the old 1-cell footprint for stoves.
+- Prep tables (64 wide) beside the stove: left at stove.x - 64. prepTablesFor/edgeAdjacent unchanged (shared edge works for any width).
+- Render: propAnimSpecs STOVE_FLAME_PNG [[17,53],[42,53]] (two oven windows, strip frameW 14), STOVE_SMOKE_PNG [48,1]; code fallback boxes widened x2 in furniture.json.
+
+## DOORS redo (19 Nov, artist)
+Owner: 'the cellar door is nice but the other doors are like the wallpaper'. tools/gen-door-art.mjs (deterministic, Endesga 32) now also writes door_tavern, door_suite, door_garden (96x64, anchor bottom centre = foot of the wall band) and door_spill_garden (64x14). Same stone arch + 2 px outline as the cellar door; the picture shows the DESTINATION (tavern: barrel, table, mug, hearth glow, mug sign; suite: bed, bedside lamp, moon window, star sign; garden: green daylight, path, vines, leaf sign). innDoors.ts doorSpriteId maps the six ids; doorSpill gives warm spill (green for the garden); the code-drawn looks stay as the fallback. shared innDoorHasSprite = all six ids. Checked on bare, brick, plaster, wood_panels, hedge (sheets in Desktop/PocketBarrel-styletest/doors). Only the cellar down door has an open picture.
+
+## CAM-LOCK v2 (19 Nov, coder)
+- shared/src/cameraFollow.ts: playCameraLocked(state) (locked unless dungeon, build, paint, placing or lookAround), freeAreaCamera, firstViewCamera (furniture mean in the free area, avatar kept on screen). client/src/game/cameraSetup.ts freeHeight() = top of .hotbar; startIntro uses firstViewCamera over usableWidth() x freeHeight(). pointerInput isCameraLocked = playCameraLocked; onWalkHold is false in Look around. gameLoop: lockWas/lookReturn ease back (CAMERA_FOLLOW_EASE_MS) when Look around ends; it ends on walking or a room change. uiShell: lookButton (data-more-label 'Look around', icon 'look') + late.setLookAround.
+- Cellar walking bug (owner 19 Nov): not reproduced. client/src/api/cellarWalkAPI.test.ts: new game, level 2, build cellar, door in, tap-walk and every free cell reachable at cellar levels 1 to 3, and enterRoom by map. e2e/cellarwalk.spec.ts: real browser (desktop mouse), walks fine, also after a reload inside the cellar. tavernLife 'walk' event is now ignored when the avatar is not in the tavern.

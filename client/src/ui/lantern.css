@@ -1150,24 +1150,7 @@
     max-height: 2.9em;
   }
 
-  /* Phone: the OPEN / CLOSED board hangs at the right edge right under the button column (the left was over the bar, the avatar's name and the door). Panels cover it. */
-  .btn.open-sign.room-only {
-    position: fixed;
-    left: auto;
-    right: calc(var(--edge) + env(safe-area-inset-right));
-    top: calc(var(--edge) + env(safe-area-inset-top) + 5 * 64px + 14px);
-    bottom: auto;
-    margin-top: 0;
-    z-index: 0;
-    /* RUN 8 #2: smaller on a phone so it no longer hides the tavern's right edge and the arch. */
-    min-height: 30px !important;
-    min-width: 0 !important;
-    height: 30px !important;
-    padding: 0 6px 0 4px !important;
-    font-size: 10px !important;
-    max-width: 64px;
-  }
-  .btn.open-sign.room-only > .pixel-icon { display: none; }
+  /* 19 Nov: the OPEN / CLOSED board hangs from the top edge on a rope under the info panel, desktop and phone (declutter.css section 6). */
 }
 
 /* The tavern's order rail and the goal card never draw over the dungeon or the fish bar. */

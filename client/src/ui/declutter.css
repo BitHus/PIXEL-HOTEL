@@ -1,13 +1,13 @@
 /* DECLUTTER (owner 18 Nov, docs/PLAN-UI-DECLUTTER.md): fewer permanent things on screen. Loaded after lantern.css (layout.ts).
-   Column = Catalog, Build, Dungeon, More; info = gold + gems + a 3 px xp bar; the HUD fades when idle; the guide card is one line.
+   Column = Catalog, Build, Dungeon, Worlds, More; info = gold + gems + a 3 px xp bar; the HUD fades when idle; the guide card is one line.
    Touch targets stay at least 44 px; motion is a plain opacity change and is off under prefers-reduced-motion. */
 
 /* ---------- 1. side column: the More grid on every screen size ---------- */
 .side-buttons .more-menu .more-item { flex: none; }
 .more-btn .new-dot { display: none; }
 
-/* ---------- 9. ONE badge: a red dot on More when anything inside it is new (Book, Skills, Quests glow, tavern orders on Worlds) ---------- */
-.side-buttons:has(.more-menu .new-dot:not([hidden]), .more-menu .map-badge:not([hidden])) .more-btn::before {
+/* ---------- 9. ONE badge: a red dot on More when anything inside it is new (Book, Skills, Quests glow). Worlds is its own column button again (owner 19 Nov) and carries its own small dot (.map-badge, skin.css) ---------- */
+.side-buttons:has(.more-menu .new-dot:not([hidden])) .more-btn::before {
   content: '';
   position: absolute;
   top: -2px;
@@ -44,10 +44,30 @@
 }
 .info-panel.in-run .info-xp { display: none; }
 
-/* ---------- 6. OPEN sign: smaller; on a phone 60 x 28 at the font's own pixel size (no scaling, so the pixel text stays sharp), hidden under panels ---------- */
-.btn.open-sign.room-only { width: 70px; }
+/* ---------- 6. OPEN sign (owner 19 Nov): a board that HANGS FROM THE TOP EDGE of the screen on two chains. The board stays in the top-left column right under the
+   info panel (desktop and phone); the chains are a pseudo-element of that column (.top-left::before) that starts at the very top of the viewport (safe-area inset
+   included), runs up BEHIND the info panel and ends where the board's own short chain segment begins. The rope is still; the board swings (pivot = the rope's end),
+   flickers and flips (300 ms) as before. On a phone the board is 60 x 28 at the font's own pixel size (no scaling), hidden (with its rope) under panels. ---------- */
+.top-left { --sign-w: 70px; --sign-h: 44px; }
+.top-left > .info-panel { position: relative; z-index: 1; }
+.btn.open-sign.room-only { width: var(--sign-w); height: var(--sign-h); z-index: 1; }
+.top-left:has(> .open-sign:not([hidden]))::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: calc(-1 * (var(--edge) + env(safe-area-inset-top)));
+  bottom: calc(var(--sign-h) + 9px);
+  left: calc(var(--sign-w) * 0.14);
+  width: calc(var(--sign-w) * 0.72);
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(180deg, #8b9bb4 0 2px, #3a4466 2px 3px) left / 2px 100% no-repeat,
+    repeating-linear-gradient(180deg, #8b9bb4 0 2px, #3a4466 2px 3px) right / 2px 100% no-repeat;
+}
+:root[data-size='phone'] .top-left { --sign-w: 60px; --sign-h: 28px; }
 :root[data-size='phone'] .btn.open-sign.room-only {
-  top: calc(var(--edge) + env(safe-area-inset-top) + 4 * (var(--side-btn) + 4px) + 12px);
+  position: relative;
+  margin-top: 10px;
   width: 60px !important;
   min-width: 60px !important;
   max-width: 60px;
@@ -60,6 +80,7 @@
   justify-content: center;
 }
 :root[data-size='phone'] #ui:has(.panel:not([hidden]):not(.panel-leaving)) .btn.open-sign.room-only { display: none; }
+:root[data-size='phone'] #ui:has(.panel:not([hidden]):not(.panel-leaving)) .top-left::before { display: none; }
 
 /* ---------- 5. first-steps card: one line plus the dots, a small x to skip ---------- */
 .first-ten .first-ten-head,

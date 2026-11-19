@@ -87,11 +87,20 @@ export async function setupUiShell(g: G3) {
   mapButton.dataset.moreLabel = 'Worlds';
   emote.button.dataset.moreLabel = 'Emote';
   // ON-5: the Account button stands in More only when the cloud build flag is on (the panel is added in settingsPanels.ts).
+  // CAM-LOCK v2 (owner 19 Nov): the camera is always locked on the avatar; this toggle in More lets a one-finger drag pan the room (walking turns it off).
+  const lookButton = iconButton('look', 'Look around: drag to pan the room', () => late.setLookAround(!st.lookAround), 'room-only');
+  lookButton.dataset.moreLabel = 'Look around';
+  late.setLookAround = (on) => {
+    if (on === st.lookAround) return;
+    st.lookAround = on;
+    lookButton.classList.toggle('on', on);
+    if (on) toast('Look around: drag to pan. Walk, or tap Look around again, to come back.');
+  };
   const accountButton = iconButton('heart', 'Account: keep your game in the cloud', () => panels.toggle('account'), 'room-only');
   accountButton.dataset.moreLabel = 'Account';
   panels.onChange(() => accountButton.classList.toggle('on', panels.open === 'account'));
   const cloudOn = cloudConfig(import.meta.env as { VITE_CLOUD_SAVE?: string; VITE_SERVER_URL?: string }) !== null;
-  const side = createSideButtons(ui, panels, [build.button, dungeonButton, questButton, mapButton, emote.button, ...(cloudOn ? [accountButton] : [])]);
+  const side = createSideButtons(ui, panels, [build.button, dungeonButton, questButton, mapButton, emote.button, lookButton, ...(cloudOn ? [accountButton] : [])]);
   panels.onChange(() => mapButton.classList.toggle('on', panels.open === 'travel'));
   panels.onChange(() => questButton.classList.toggle('on', panels.open === 'quests'));
   panels.onChange(() => hint.setCovered(panels.open !== null));

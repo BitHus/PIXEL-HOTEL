@@ -94,9 +94,9 @@
   background: var(--candle, #fee761);
   border: 2px solid var(--outline, #3e2731);
   border-radius: 4px;
-  margin: -26px 0 0 0;
+  margin: -38px 0 0 0;
   translate: -50% 0;
 }
 .hint-chip.on { opacity: 1; animation: hint-bob 900ms ease-in-out infinite; }
 .hint-chip.calm { animation: none; }
-@keyframes hint-bob { 0%, 100% { margin-top: -26px; } 50% { margin-top: -31px; } }
+@keyframes hint-bob { 0%, 100% { margin-top: -38px; } 50% { margin-top: -43px; } }

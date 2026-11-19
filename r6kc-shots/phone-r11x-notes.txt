@@ -1,0 +1,10 @@
+geometry {"vp":[420,760],"btns":[{"t":"Catalog (C)","box":[364,8,48,48],"vis":true},{"t":"Build (B)","box":[364,60,48,48],"vis":true},{"t":"Dungeon: the key costs 10 gold","box":[364,112,48,48],"vis":true},{"t":"Worlds: travel","box":[364,163,48,48],"vis":true}],"sign":[8,55,61,30],"tl":[8,8,93,76],"info":[8,8,93,34]}
+guest fields {"id":-1,"x":144,"y":272,"kind":"chatty","phase":"order","state":null,"order":{"item":"root_ale","price":9,"coins":9}}
+bar guest {"id":-3,"x":288,"y":304,"kind":"hurried","phase":"to_bar","state":null,"order":null}
+bar guest {"id":-3,"x":16,"y":215,"kind":"hurried","phase":"to_bar","state":null,"order":null}
+bar guest {"id":-3,"x":112,"y":272,"kind":"hurried","phase":"bar_wait","state":null,"order":null}
+bar guest {"id":-3,"x":112,"y":272,"kind":"hurried","phase":"bar_wait","state":null,"order":null}
+bar guest {"id":-4,"x":80,"y":272,"kind":"browser","phase":"bar_wait","state":null,"order":null}
+seen bar guest true
+buttons ["Grab all","Serve all"]
+errors []

@@ -64,7 +64,7 @@ describe('furniture sprite files', () => {
       const { w, h, header } = sizeOf('furniture', file);
       expect(header).toEqual(PNG_SIGNATURE);
       const fp = footprintSize(type, name!.variant as Facing);
-      expect(w, 'width = footprint width').toBe(fp.w);
+      expect(w, 'width >= footprint width (ART RULE 19 Nov: wider is fine, never squeezed)').toBeGreaterThanOrEqual(fp.w);
       expect(h, 'height').toBeGreaterThanOrEqual(fp.d);
       // Footprint depth + the piece's height + at most 8 px of overhang.
       expect(h, 'height').toBeLessThanOrEqual(fp.d + type.height + 8);
@@ -106,7 +106,7 @@ describe('icon, block, floor, wall and plant sprite files', () => {
 });
 
 describe('door sprite files (sprites/doors)', () => {
-  const SIZES: Record<string, [number, number]> = { door_cellar_down: [96, 64], door_cellar_down_open: [96, 64], door_cellar_up: [96, 64], door_spill: [64, 14] };
+  const SIZES: Record<string, [number, number]> = { door_cellar_down: [96, 64], door_cellar_down_open: [96, 64], door_cellar_up: [96, 64], door_spill: [64, 14], door_spill_garden: [64, 14], door_tavern: [96, 64], door_suite: [96, 64], door_garden: [96, 64] };
   for (const file of filesOf('doors')) {
     it(`doors/${file} has a PNG header and a known size`, () => {
       const ref = parseSpritePath(`doors/${file}`);

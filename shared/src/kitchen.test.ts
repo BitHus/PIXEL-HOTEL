@@ -175,9 +175,9 @@ describe('prep tables add dishes to a batch (step T1)', () => {
   it('at most PREP_BONUS.max extra dishes however many tables stand there', () => {
     let s = crops(fresh());
     // A second stove deep in the level 3 annex (inside rows 15..18, x 0..224) with tables on all four sides.
-    s = withItem(s, 90, 'stove', 112, 544);
+    s = withItem(s, 90, 'stove', 128, 544);
     s = addTable(s, 80, 64, 544); // west
-    s = addTable(s, 81, 160, 544); // east
+    s = addTable(s, 81, 192, 544); // east
     s = addTable(s, 82, 128, 512); // north
     s = addTable(s, 83, 128, 576); // south
     const room3 = roomAtLevel(roomOf(s), 3);

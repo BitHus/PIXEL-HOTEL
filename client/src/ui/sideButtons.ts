@@ -25,6 +25,10 @@ const BUTTONS: [PanelName, IconName, string, string | null][] = [
   ['settings', 'gear', 'Settings', 'Settings'],
 ];
 
+/** OWNER 19 Nov: Worlds always stands in the column (never in the More grid), even though it carries a data-more-label for older callers. */
+const COLUMN_LABELS = new Set(['Worlds']);
+const inColumn = (x: HTMLElement): boolean => !x.dataset.moreLabel || COLUMN_LABELS.has(x.dataset.moreLabel);
+
 /**
  * The right-edge column. Later steps add their buttons here (see CLAUDE.md, UI layout rule).
  * `extra` buttons (Build, Dungeon) go right after the Catalog button. `bag` is the Bag button for the hotbar.
@@ -54,16 +58,16 @@ export function createSideButtons(parent: HTMLElement, panels: Panels, extra: re
       b.classList.add('hotbar-bag');
     } else if (label === null) {
       col.appendChild(b);
-      col.append(...extra.filter((x) => !x.dataset.moreLabel));
+      col.append(...extra.filter(inColumn));
     } else {
       b.classList.add('more-item');
       b.appendChild(el('span', 'more-label', label));
       menu.appendChild(b);
     }
   }
-  // DECLUTTER: extras with a data-more-label (Quests, Worlds, Emote) stand in the More grid; the column keeps Catalog, Build, Dungeon, More on every screen size.
+  // DECLUTTER: extras with a data-more-label (Quests, Emote, Account) stand in the More grid; the column keeps Catalog, Build, Dungeon, Worlds, More on every screen size.
   for (const x of extra) {
-    if (!x.dataset.moreLabel) continue;
+    if (inColumn(x)) continue;
     x.classList.add('more-item');
     x.appendChild(el('span', 'more-label', x.dataset.moreLabel));
     x.addEventListener('click', () => setMenu(false));

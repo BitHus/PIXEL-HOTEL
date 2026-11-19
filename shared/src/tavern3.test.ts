@@ -54,10 +54,10 @@ describe('N1 tavern3 furniture', () => {
     const hotel = createRoom(1, 'hotel', 1, 1);
     for (const id of NEW.filter((x) => T(x).wall)) {
       const room = T(id).placeIn === 'hotel' ? hotel : shop;
-      expect(canPlace(room, [], T(id), 130, 0, 'down'), id).toBe(true);
+      expect(canPlace(room, [], T(id), 200, 0, 'down'), id).toBe(true);
     }
-    expect(canPlace(hotel, [], T('window_curtains'), 130, 0, 'down')).toBe(true);
-    expect(canPlace(hotel, [], T('dartboard'), 130, 0, 'down')).toBe(false); // tavern only
+    expect(canPlace(hotel, [], T('window_curtains'), 200, 0, 'down')).toBe(true);
+    expect(canPlace(hotel, [], T('dartboard'), 200, 0, 'down')).toBe(false); // tavern only
     const at = (typeId: string, x: number, y: number): FurnitureItem => ({ uid: 1, typeId, ownerId: 1, roomId: 2, x, y, facing: 'down', onItemUid: null });
     expect(canPlace(hotel, [], T('writing_desk'), 160, 160, 'down')).toBe(true);
     expect(canPlace(shop, [at('barrel_table', 144, 160)], T('barrel_table'), 144, 160, 'down')).toBe(false); // overlap

@@ -36,8 +36,8 @@ describe('medieval furniture', () => {
   it('can be placed in a fitting room', () => {
     const shop = createRoom(2, 'shop', 1, 1);
     const hotel = createRoom(1, 'hotel', 1, 1);
-    expect(canPlace(shop, [], T('iron_chandelier'), 130, 0, 'down')).toBe(true);
-    expect(canPlace(hotel, [], T('iron_chandelier'), 130, 0, 'down')).toBe(false);
+    expect(canPlace(shop, [], T('iron_chandelier'), 200, 0, 'down')).toBe(true);
+    expect(canPlace(hotel, [], T('iron_chandelier'), 200, 0, 'down')).toBe(false);
     expect(canPlace(hotel, [], T('anvil'), 144, 160, 'down')).toBe(true);
     expect(canPlace(hotel, [], T('weapon_rack'), 160, 160, 'down')).toBe(true);
   });

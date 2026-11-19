@@ -1,9 +1,10 @@
 // TF-7: the pure choices of the orders strip (which buttons show, which guest a tray icon serves). No DOM here.
 
-import type { MaterialId, OrderChip } from '@pixel-hotel/shared';
+import { TRAY_MAX, type MaterialId, type OrderChip } from '@pixel-hotel/shared';
 
-/** Grab all shows when 2 or more orders that nobody works on share one item. */
-export function showGrabAll(chips: readonly OrderChip[]): boolean {
+/** Grab all shows when 2 or more orders that nobody works on share one item AND the tray has room for a mug (trayFree, default: unknown = free). */
+export function showGrabAll(chips: readonly OrderChip[], trayFree = TRAY_MAX): boolean {
+  if (trayFree <= 0) return false;
   const n = new Map<MaterialId, number>();
   for (const c of chips) if (c.state === 'waiting') n.set(c.item, (n.get(c.item) ?? 0) + 1);
   return [...n.values()].some((v) => v >= 2);

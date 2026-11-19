@@ -2776,7 +2776,7 @@
   position: absolute;
   z-index: 4;
   left: 50%;
-  bottom: calc(var(--bar-h) + var(--edge) + 8px + env(safe-area-inset-bottom));
+  bottom: calc(var(--bar-h) + var(--edge) + 38px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   width: min(380px, calc(100vw - 2 * var(--edge) - var(--side-col)));
   box-sizing: border-box;
@@ -2791,10 +2791,11 @@
 
 /* A toast stays clear of the bar while fishing. */
 .fishing .toast {
-  bottom: calc(var(--bar-h) + var(--edge) + 190px + env(safe-area-inset-bottom));
+  bottom: calc(var(--bar-h) + var(--edge) + 220px + env(safe-area-inset-bottom));
 }
 
 .fish-head {
+  padding-right: 40px; /* room for the round close disc (.panel-close, absolute) */
   display: flex;
   align-items: center;
   justify-content: space-between;

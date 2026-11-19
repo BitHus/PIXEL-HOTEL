@@ -85,7 +85,8 @@ export async function setupTavernLife(g: G9) {
     const brewReady = [...ready].some((k) => k[0] === 'b');
     const waiting: FirstTenStep[] = guideWorld ? guideWaiting(guide.state, guideWorld.context(brewReady)) : [];
     // The tutorial card shows in every room (farm, mine, lakeside steps) except inside a dungeon run.
-    guide.refresh(waiting, !g.dungeon.isActive);
+    // RUN 10 #9: outside the tavern the card shows only while no step is done yet (it must not cover the top-left of every room).
+    guide.refresh(waiting, !g.dungeon.isActive && (st.room.kind === 'shop' || guide.state.done.length === 0));
     // The stove step needs something to cook: the first brew used the starter crops, so top up once when it becomes the goal.
     if (!stoveSupplyAsked && firstTenGoal(guide.state, waiting) === 'stove') {
       stoveSupplyAsked = true;
@@ -647,6 +648,7 @@ export async function setupTavernLife(g: G9) {
         void refreshTavern();
         break;
       case 'walk':
+        if (!on) break; // a tavern errand path never moves the avatar while it is in another room (cellar, garden)
         follow(e.path);
         st.goal = null;
         break;

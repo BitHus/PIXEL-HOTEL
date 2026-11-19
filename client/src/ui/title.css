@@ -189,8 +189,10 @@
   min-height: 66px;
   padding: 0;
   font-size: 28px;
+  letter-spacing: 2px; /* RUN 11: with the old 2 px side shadows the C of Continue closed up and read as an O; spacing + a one-sided shadow keeps its opening */
+  font-weight: 400;
   color: #fee761;
-  text-shadow: 0 3px 0 #181425, 2px 3px 0 #181425, -2px 3px 0 #181425, 0 -1px 0 #181425;
+  text-shadow: 0 3px 0 #181425;
   border: 16px solid transparent;
   border-radius: 0;
   background: none;
@@ -289,6 +291,13 @@
   text-shadow: 0 2px 0 #181425;
 }
 
+/* RUN 11 (8): the sofa (right edge about 512 px) reached under the centred menu and its Settings link below 1360 px wide: it only shows on wide screens. */
+@media (max-width: 1360px) {
+  .life-c {
+    display: none;
+  }
+}
+
 /* Phone: the logo stays 256 (1x), the still-life steps down to 2x and drops the sofa. */
 @media (max-width: 560px) {
   .title-screen {
@@ -302,11 +311,30 @@
   .life-c {
     display: none;
   }
+  /* the still-life sits in its own strip under the Settings link, never behind it */
+  .title-screen {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+  .title-life img {
+    max-height: 80px;
+    object-fit: contain;
+    object-position: bottom;
+  }
   .life-b {
     left: calc(var(--edge) + 4px);
   }
   .life-d {
     right: calc(var(--edge) + 32px * var(--s) + 8px);
+  }
+}
+
+/* Short phones: not enough height for menu plus still-life, so the still-life goes (nothing is clipped). */
+@media (max-width: 560px) and (max-height: 700px) {
+  .title-life {
+    display: none;
+  }
+  .title-screen {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
   }
 }
 
@@ -400,4 +428,10 @@
 .title-screen .title-btn.primary:focus-visible {
   outline: 0;
   filter: brightness(1.15) drop-shadow(0 0 6px #feae34);
+}
+
+/* RUN 10 #11: Continue without a save is clearly off (grey, flat); New game then takes the bright primary look (titleScreen.ts). */
+.title-screen .title-btn.primary:disabled {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.6;
 }

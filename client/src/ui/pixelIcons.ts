@@ -503,6 +503,23 @@ const BASE_ICONS = {
     ],
     colors: { o: O, a: PALETTE[8], b: PALETTE[19] },
   },
+  look: {
+    rows: [
+      '............',
+      '............',
+      '...oooooo...',
+      '.ooaaaaaaoo.',
+      'oaaabbbbaaao',
+      'oaabbooobbao',
+      'oaabbooobbao',
+      'oaaabbbbaaao',
+      '.ooaaaaaaoo.',
+      '...oooooo...',
+      '............',
+      '............',
+    ],
+    colors: { o: O, a: PALETTE[26], b: PALETTE[10] },
+  },
   more: {
     rows: [
       '............',

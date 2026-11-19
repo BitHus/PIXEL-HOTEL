@@ -13,6 +13,7 @@ import { emptyLakeside } from './woodcut.ts';
 import { createRoom } from './room.ts';
 import { isSeedId } from './materials.ts';
 import { clearDoorSpots } from './innDoorClear.ts';
+import { widenStoves } from './stoveWide.ts';
 import { addCellarForRacks, dissolveKitchenRoom, growKitchenAnnex, moveKitchenToAnnex } from './cellarRooms.ts';
 import { retireRoundTables } from './retireRoundTable.ts';
 import { applyChange, type Change } from './ledger.ts';
@@ -352,6 +353,11 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     return { ...state, rooms };
   },
   // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  // 40 -> 41 (owner 19 Nov, the stove is a 2 x 1 cell kitchen range): every stove keeps its cell and grows over the free neighbour (right, left), else the nearest free spot, else the bag (widenStoves).
+  40: (state) => {
+    if (!isObject(state) || !Array.isArray(state.rooms) || !Array.isArray(state.items)) return state;
+    return widenStoves(state as unknown as GameState);
+  },
   // 39 -> 40 (owner 18 Nov, the kitchen annex is OPEN (no partition, no doorway) and bigger): the tavern's saved size follows the new annex; floor pieces keep their place (growKitchenAnnex).
   39: (state) => {
     if (!isObject(state) || !Array.isArray(state.rooms) || !Array.isArray(state.items) || !isObject(state.tavern)) return state;

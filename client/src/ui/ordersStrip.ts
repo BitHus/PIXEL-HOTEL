@@ -57,7 +57,7 @@ export function createOrdersStrip(
   const moreEl = el('span', 'orders-more');
   moreEl.hidden = true;
   root.append(chipsEl, moreEl, grabBtn, serveBtn, trayEl);
-  const CHIP_CAP: Record<string, number> = { phone: 3, tablet: 5, desktop: 7 };
+  const CHIP_CAP: Record<string, number> = { phone: 4, tablet: 5, desktop: 6 };
   const shown = new Map<number, { button: HTMLButtonElement; img: HTMLImageElement; bar: HTMLElement; badge: HTMLElement; item: MaterialId }>();
   let trayKey = '';
   let lastChips: readonly OrderChip[] = [];
@@ -73,7 +73,7 @@ export function createOrdersStrip(
     sync(allChips, tray) {
       lastChips = allChips;
       root.hidden = allChips.length === 0 && tray.length === 0;
-      grabBtn.hidden = !showGrabAll(allChips);
+      grabBtn.hidden = !showGrabAll(allChips, TRAY_MAX - tray.length);
       serveBtn.hidden = !showServeAll(allChips);
       setH();
       // OA-11: the chips that fit (the least patient first); the rest is a +N badge.

@@ -279,7 +279,8 @@ describe('door sprite clearance', () => {
     expect(innDoorHasSprite('tavern_to_cellar')).toBe(true);
     expect(innDoorHasSprite('cellar_to_tavern')).toBe(true);
     expect(innDoorHasSprite('tavern_to_kitchen')).toBe(false); // the kitchen has no door (open annex)
-    expect(innDoorHasSprite('tavern_to_suite')).toBe(false);
+    expect(innDoorHasSprite('tavern_to_suite')).toBe(true); // 19 Nov: every inn door has a stone-arch sprite
+    expect(innDoorHasSprite('garden_gate')).toBe(false);
   });
   it('widens a sprite door by 16 px per side for new placements only', () => {
     const plain = innDoorwayRects(tavern);
@@ -288,7 +289,7 @@ describe('door sprite clearance', () => {
     expect(plain[i]).toEqual(cellar.doorway);
     expect(wide[i]).toEqual({ ...cellar.doorway, x: cellar.doorway.x - 16, w: cellar.doorway.w + 32 });
     const j = innDoorSpots(tavern).findIndex((d) => d.id === suite.id);
-    expect(wide[j]).toEqual(suite.doorway);
+    expect(wide[j]).toEqual({ ...suite.doorway, x: suite.doorway.x - 16, w: suite.doorway.w + 32 });
   });
   it('refuses a wall item beside the arch frame (inside the 16 px) but takes one clear of it', () => {
     const torch = getFurnitureType('wall_torch');

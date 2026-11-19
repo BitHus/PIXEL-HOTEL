@@ -1,0 +1,12 @@
+items [{"uid":1,"t":"counter","x":80,"y":256,"f":"down"},{"uid":2,"t":"table","x":192,"y":288,"f":"down"},{"uid":3,"t":"bar_stool","x":144,"y":288,"f":"right"},{"uid":4,"t":"bar_stool","x":240,"y":288,"f":"left"},{"uid":5,"t":"bar_stool","x":208,"y":320,"f":"up"},{"uid":6,"t":"brewing_barrel","x":48,"y":384,"f":"down"},{"uid":7,"t":"stove","x":160,"y":384,"f":"down"},{"uid":8,"t":"register","x":48,"y":256,"f":"down"},{"uid":9,"t":"tap_stand","x":80,"y":256,"f":"down"},{"uid":10,"t":"long_table","x":224,"y":128,"f":"down"},{"uid":11,"t":"chair","x":144,"y":128,"f":"right"},{"uid":12,"t":"chair","x":304,"y":128,"f":"left"},{"uid":13,"t":"chair","x":208,"y":96,"f":"down"},{"uid":14,"t":"chair","x":240,"y":160,"f":"up"},{"uid":15,"t":"bar_stool","x":272,"y":160,"f":"up"},{"uid":16,"t":"bar_stool","x":176,"y":96,"f":"down"},{"uid":17,"t":"table","x":224,"y":224,"f":"down"},{"uid":18,"t":"bench","x":224,"y":256,"f":"up"},{"uid":19,"t":"sofa","x":80,"y":128,"f":"down"},{"uid":20,"t":"bar_stool","x":80,"y":288,"f":"up"},{"uid":21,"t":"bar_stool","x":112,"y":288,"f":"up"}]
+sit chair uid11 item(144,128,right) -> avatar {"x":146,"y":112,"f":"right","zoom":4}
+sit chair uid12 item(304,128,left) -> avatar {"x":302,"y":112,"f":"left","zoom":4}
+sit chair uid13 item(208,96,down) -> avatar {"x":240,"y":80,"f":"left","zoom":4}
+sit chair uid14 item(240,160,up) -> avatar {"x":240,"y":142,"f":"up","zoom":4}
+sit bar_stool uid15 item(272,160,up) -> avatar {"x":272,"y":144,"f":"up","zoom":4}
+sit bar_stool uid16 item(176,96,down) -> avatar {"x":144,"y":80,"f":"down","zoom":4}
+sit bench uid18 item(224,256,up) -> avatar {"x":176,"y":240,"f":"right","zoom":4}
+sit sofa uid19 item(80,128,down) -> avatar {"x":100,"y":114,"f":"down","zoom":4}
+sit bar_stool uid20 item(80,288,up) -> avatar {"x":80,"y":272,"f":"up","zoom":4}
+sit bar_stool uid21 item(112,288,up) -> avatar {"x":112,"y":272,"f":"up","zoom":4}
+errors []

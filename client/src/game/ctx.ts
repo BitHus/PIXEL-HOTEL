@@ -63,6 +63,8 @@ export interface State {
   /** The emote being played (step 9g-1; performance.now() times), or none. Cancelled when the avatar moves or sits. */
   emote?: { kind: EmoteKind; startedAt: number; endsAt: number } | null;
   walkHold: boolean;
+  /** CAM-LOCK v2 (owner 19 Nov): the 'Look around' toggle in More. While on, a one-finger drag pans the room and no drag walks; walking turns it off. */
+  lookAround: boolean;
   walkHoldCell: string;
   shiftHeld: boolean;
 }
@@ -97,6 +99,8 @@ export interface Late {
   guestFeet: () => { id: number; x: number; y: number }[];
   /** CAT HOOK: a tap at a world point; true when it hit the cat (set by gameLoop). */
   catTap: (p: Point) => boolean;
+  /** CAM-LOCK v2: turns the Look around toggle on or off (set by uiShell; gameLoop turns it off when the avatar walks). */
+  setLookAround: (on: boolean) => void;
 }
 
 /** What main.ts starts with. */

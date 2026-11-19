@@ -2785,19 +2785,6 @@
   top: calc(var(--edge) + var(--orders-h, 0px) + env(safe-area-inset-top));
 }
 
-@media (max-width: 700px) {
-  #ui .orders-strip {
-    top: calc(var(--edge) + env(safe-area-inset-top));
-    left: calc(var(--edge) + var(--info-w, 150px) + 6px + env(safe-area-inset-left));
-    right: calc(var(--side-col) + 4px + env(safe-area-inset-right));
-    transform: none;
-    max-width: calc(100vw - 2 * var(--edge) - var(--info-w, 150px) - var(--side-col) - 10px);
-    width: fit-content;
-    padding: 0 2px;
-    justify-content: flex-start;
-  }
-}
-
 /* Toasts never sit on an open panel: with a panel open the toast moves to the bottom-left corner (left of the hotbar, the panels are on the right). On a phone it moves to the top band instead. */
 #ui:has(.panel:not([hidden]):not(.panel-leaving)) .toast {
   bottom: calc(var(--edge) + env(safe-area-inset-bottom));
@@ -3217,32 +3204,38 @@ body,
 .btn.open-sign.room-only { width: 84px; justify-content: center; }
 
 /* ======================================================================
-   ORDERS RAIL (owner): the orders strip is now a small wooden ticket rail at the LEFT edge, bottom-anchored (desktop: vertical, under the sign and the
-   first-steps card, clear of the right button column and the hotbar; phone: a short horizontal rail above the toast zone, left aligned).
-   Each order is a big round ticket: the drink or dish icon (32 px) in a plate, the patience as a coloured ring rim (conic, --p set in ordersStrip.ts).
+   ORDERS ROW (RUN 11, owner 19 Nov): the orders strip sits at the BOTTOM CENTRE just above the hotbar (thumb reach): ONE compact horizontal row of
+   round tickets (44 px touch each, the drink or dish icon in a plate, the patience as a coloured ring rim, conic, --p set in ordersStrip.ts).
+   Never a wide bar: ordersStrip.ts caps the chips (4 phone / 5 tablet / 6 desktop) and the rest is a +N badge; the row scrolls sideways if tray and
+   buttons still do not fit. Toasts sit above it (rule below); open panels cover it (z-index 0, see the :has rule near the end).
    ====================================================================== */
 #ui .orders-strip,
 #ui .orders-strip[class] {
   top: auto;
   right: auto;
-  left: calc(var(--edge) + env(safe-area-inset-left));
-  bottom: calc(var(--bottom-clear) + 56px);
-  transform: none;
-  max-width: calc(100vw - var(--side-col) - 2 * var(--edge));
+  left: 50%;
+  bottom: calc(var(--bottom-clear) + 30px);
+  transform: translateX(-50%);
+  max-width: calc(100vw - 2 * var(--edge) - 2 * var(--side-col));
+  max-height: none;
   width: max-content;
-  flex-direction: column;
+  flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px), var(--wood);
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 2px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgba(24, 20, 37, 0.78);
   border: var(--px) solid var(--outline);
-  border-radius: 0;
-  box-shadow: inset 0 -3px 0 var(--wood-dk), var(--shadow);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
 }
-.orders-strip .orders-chips { flex-direction: column; gap: 2px; }
-.orders-strip .orders-tray { border-left: 0; border-top: 1px solid var(--wood-light); padding: 4px 0 0; flex-direction: column; }
-.orders-strip .orders-chip { width: 48px; height: 48px; }
+.orders-strip::-webkit-scrollbar { display: none; }
+.orders-strip .orders-chips { flex-direction: row; gap: 0; }
+.orders-strip .orders-tray { border-top: 0; border-left: 1px solid var(--wood-light); padding: 0 0 0 4px; flex-direction: row; }
+.orders-strip .orders-chip { width: 44px; height: 44px; flex: 0 0 44px; }
 .orders-strip .orders-chip::before {
   inset: 2px;
   border: 0;
@@ -3258,31 +3251,42 @@ body,
   background: var(--slot-bg);
   box-shadow: inset 0 0 0 1px var(--outline);
 }
-.orders-strip .orders-chip img { position: relative; z-index: 1; width: 32px; height: 32px; }
+.orders-strip .orders-chip img { position: relative; z-index: 1; width: 28px; height: 28px; }
 .orders-strip .orders-patience { display: none; }
+/* B / T badge: a small dark disc with a 10 px letter at the chip's lower right, above the plate. */
+.orders-strip .orders-where {
+  z-index: 2;
+  top: auto;
+  right: 0;
+  bottom: 0;
+  min-width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--cream);
+  background: var(--outline);
+  border: 1px solid var(--warm);
+  border-radius: 7px;
+}
 .orders-strip .orders-chip.urgent { --ring: var(--no); animation: orders-shake 0.5s steps(2) infinite; }
 .orders-strip .orders-chip[data-state='queued'] { --ring: var(--candle); opacity: 1; }
 .orders-strip .orders-chip[data-state='queued']::before { border-color: transparent; }
 .orders-strip .orders-chip[data-state='ready'] { --ring: #63c74d; animation: none; }
 .orders-strip .orders-chip[data-state='ready']::before { background: conic-gradient(#63c74d 100%, #63c74d 0); border: 0; }
-/* ready aura (same idea as the order markers): a pulsing halo behind the ticket */
+/* ready glow: a pulsing halo behind the ticket */
 .orders-strip .orders-chip[data-state='ready'] img { animation: orders-bob 0.9s ease-in-out infinite alternate; }
 @keyframes orders-bob { to { transform: translateY(-2px) scale(1.06); } }
 .orders-strip .orders-chip[data-state='ready'] { filter: drop-shadow(0 0 4px rgba(99, 199, 77, 0.85)); }
-.orders-strip .orders-more { color: var(--butter); padding: 0; font-weight: 700; }
-.orders-strip .orders-tray-icons { flex-direction: column; align-items: center; }
-.orders-strip .orders-tray-icons img { width: 32px; height: 32px; }
-@media (max-width: 700px) {
-  #ui .orders-strip,
-  #ui .orders-strip[class] {
-    flex-direction: row;
-    padding: 4px 6px;
-    max-width: calc(100vw - var(--side-col) - 2 * var(--edge));
-    justify-content: flex-start;
-  }
-  .orders-strip .orders-chips { flex-direction: row; }
-  .orders-strip .orders-tray { flex-direction: row; border-top: 0; border-left: 1px solid var(--wood-light); padding: 0 0 0 4px; }
-  .orders-strip .orders-tray-icons { flex-direction: row; }
+.orders-strip .orders-more { color: var(--butter); padding: 0; font-weight: 700; flex: none; }
+.orders-strip .orders-bulk, .orders-strip .orders-putback { flex: none; white-space: nowrap; }
+.orders-strip .orders-tray-icons { flex-direction: row; align-items: center; }
+.orders-strip .orders-tray-icons img { width: 28px; height: 28px; }
+/* Toasts sit above the orders row while it shows. */
+#ui:has(.orders-strip:not([hidden])):not(:has(.panel:not([hidden]):not(.panel-leaving))) .toast {
+  bottom: calc(var(--bottom-clear) + 30px + 52px);
 }
 @media (prefers-reduced-motion: reduce) {
   .orders-strip .orders-chip img, .orders-strip .orders-chip.urgent { animation: none !important; }
@@ -3332,3 +3336,36 @@ body,
   text-shadow: var(--ui-hud-text-shadow);
   pointer-events: auto;
 }
+
+/* ======================================================================
+   RUN 10 fixes (ui, 19 Nov)
+   ====================================================================== */
+/* #2 the pour bar is a compact gauge over the mug on phone too (110 css px is ~220 device px at dpr 2: the tester measured device px); smaller still and lifted off the avatar. */
+@media (max-width: 680px), (pointer: coarse) {
+  .pour-bar.pour-bar-over {
+    width: 96px;
+    height: 14px !important;
+    margin-top: -6px !important;
+  }
+  .pour-bar-over .pour-bar-mark {
+    top: -3px !important;
+    bottom: -3px !important;
+  }
+}
+@media (min-width: 681px) and (pointer: fine) {
+  .pour-bar.pour-bar-over { width: 110px; height: 12px !important; margin-top: -6px !important; }
+}
+
+/* #4 the orders chips sit BEHIND an open panel (panels are z-index 1). */
+#ui:has(.panel:not([hidden])) .orders-strip { z-index: 0; }
+
+/* #6 catalog: phone tab row fits (icon tabs share the width, the open one keeps its name), no fade mask; the "Not here" tag is a line under the price, not over the thumbnail. */
+@media (max-width: 680px) {
+  :root[data-size='phone'] #ui .panel-tabs { -webkit-mask-image: none; mask-image: none; padding-right: 48px; gap: 1px; }
+  :root[data-size='phone'] #ui .panel-tabs .tab-btn:not(.on) { flex: 1 1 0; min-width: 34px; padding: 0 2px 4px; }
+}
+.shop-card .shop-card-tag.plate { position: static; order: 9; margin-top: 2px; }
+
+/* #7 Room and Settings have no tab row: give them the same top offset as the tabbed panels (Book, Skills) so the title row and the X are on screen. */
+.panel.room-panel,
+.panel.settings-panel { padding-top: 39px; }

@@ -10,6 +10,7 @@ describe('orders strip logic', () => {
     expect(showGrabAll([chip(1, 'root_ale', 'waiting')])).toBe(false);
     expect(showGrabAll([chip(1, 'root_ale', 'waiting'), chip(2, 'root_ale', 'waiting', 'bar')])).toBe(true);
     expect(showGrabAll([chip(1, 'root_ale', 'queued'), chip(2, 'root_ale', 'waiting')])).toBe(false);
+    expect(showGrabAll([chip(1, 'root_ale', 'waiting'), chip(2, 'root_ale', 'waiting')], 0)).toBe(false);
   });
   it('Serve all needs 2 ready orders', () => {
     expect(showServeAll([chip(1, 'a', 'ready')])).toBe(false);

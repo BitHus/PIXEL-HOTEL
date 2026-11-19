@@ -273,6 +273,10 @@ export interface PropSpec {
   register?: boolean;
 }
 
+/** Stove (2 x 1 cells, png 64 wide): bottom-centre png pixel of each oven-window flame (left, right) and the chimney smoke point. Fitted to the artist's 64x69 art (19 Nov). */
+export const STOVE_FLAME_PNG: readonly (readonly [number, number])[] = [[17, 53], [42, 53]];
+export const STOVE_SMOKE_PNG: readonly [number, number] = [48, 1];
+
 export const PROP_ANIMS: Readonly<Record<string, PropSpec>> = {
   // Lamps and lanterns: a small flame on the light's own flicker.
   lamp: { flames: [{ kind: 'tiny', at: { code: 'top' } }] },
@@ -308,8 +312,9 @@ export const PROP_ANIMS: Readonly<Record<string, PropSpec>> = {
   shell_lamp: { glints: [{ at: { code: [0, -26] }, periodMs: 3600 }] },
   // Hearth and kitchen.
   stove: {
-    flames: [{ kind: 'stove_window', at: { png: [16, 46], code: [0, -8] }, flicker: 1, strip: { tag: 'fire', frameW: 14 } }],
-    emits: [{ kind: 'smoke', at: { png: [21, 1], code: [0, -62] }, everyMs: 1100 }],
+    // 19 Nov: the stove is a 2 x 1 range (64 px wide png): two oven windows = two flames. The png coords are fitted to the 64x69 art (STOVE_FLAME_PNG, STOVE_SMOKE_PNG).
+    flames: STOVE_FLAME_PNG.map((png, i) => ({ kind: 'stove_window' as const, at: { png, code: [i === 0 ? -16 : 16, -8] as [number, number] }, flicker: 1, strip: { tag: 'fire', frameW: 14 } })),
+    emits: [{ kind: 'smoke', at: { png: STOVE_SMOKE_PNG, code: [10, -62] }, everyMs: 1100 }],
   },
   stone_fireplace: {
     flames: [{ kind: 'fire_big', at: { code: [0, -9] }, flicker: 1 }],

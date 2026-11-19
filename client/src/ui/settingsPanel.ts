@@ -16,7 +16,7 @@ export interface SettingsHooks {
   newGame(): void;
   onDebug(on: boolean): void;
   /** The device settings as stored (atmosphere step), and what happens when they change. */
-  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean; reduceEffects: boolean; followCamera: boolean };
+  prefs: { sound: boolean; volume: number; lighting: boolean; cellGrid: boolean; popups: boolean; nameTags: boolean; reduceEffects: boolean };
   onSound(on: boolean): void;
   onVolume(volume: number): void;
   onLighting(on: boolean): void;
@@ -25,8 +25,6 @@ export interface SettingsHooks {
   onNameTags(on: boolean): void;
   /** Reduce effects (outdoors rework C11): a device pref read by the dungeon screen each frame. */
   onReduceEffects(on: boolean): void;
-  /** CAM-LOCK: true = camera locked on the avatar while it walks (old followCamera), false = free look. */
-  onFollowCamera(on: boolean): void;
   /** ONBOARD-1: start the first-steps guide again. */
   onReplayGuide(): void;
 }
@@ -145,20 +143,12 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   fxBtn.classList.toggle('on', reduceFx);
   const fxNote = el('p', 'panel-note', 'Calmer fights: no screen shake, freeze frames, sparks or bursts. Damage numbers and sounds stay.');
 
-  let follow = hooks.prefs.followCamera;
-  const followBtn = textButton(`Camera: ${follow ? 'Locked while walking' : 'Free look'}`, () => {
-    follow = !follow;
-    followBtn.textContent = `Camera: ${follow ? 'Locked while walking' : 'Free look'}`;
-    followBtn.classList.toggle('on', follow);
-    hooks.onFollowCamera(follow);
-  });
-  followBtn.classList.toggle('on', follow);
   const guideBtn = textButton('Replay the first steps', () => hooks.onReplayGuide());
   const guideNote = el('p', 'panel-note', 'Shows the step-by-step tavern guide again, with the pointers.');
-  const followNote = el('p', 'panel-note', 'Locked: while you walk you stay exactly in the middle of the screen. Standing still, drag to look around; walking again brings the camera back. Free look: the camera stays where you put it.');
+  // Owner 19 Nov: no camera setting; the camera is always locked on you in play mode. Look around is a button in More.
 
   // The on/off buttons become peg-and-groove switches (skin.css .btn.switch).
-  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, followBtn, debugBtn]) b.classList.add('switch');
+  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, debugBtn]) b.classList.add('switch');
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section settings-group');
     s.append(el('h3', 'ribbon', title), ...buttons);
@@ -170,6 +160,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'PocketBarrel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, followBtn, followNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

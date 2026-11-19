@@ -1,0 +1,8 @@
+attempt 0 cast true
+text Waiting for a bite...
+attempt 1 cast false
+attempt 2 cast false
+attempt 3 cast false
+attempt 4 cast false
+attempt 5 cast false
+errors []

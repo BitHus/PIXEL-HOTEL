@@ -72,7 +72,7 @@ export function runTitleScreen(root: HTMLElement, peek: SavePeek, storage: SaveS
       note.textContent = continueNote(peek);
       note.classList.toggle('off', !peek.canContinue);
       const when = el('p', 'title-note when', peek.canContinue && peek.savedAt ? `Saved ${savedAgo(peek.savedAt, Date.now())}` : '');
-      const fresh = textButton('New game', () => (peek.exists ? showSure() : finish('new')), 'title-btn');
+      const fresh = textButton('New game', () => (peek.exists ? showSure() : finish('new')), peek.canContinue ? 'title-btn' : 'title-btn primary');
       const sets = textButton('Settings', showSettings, 'title-link');
       menu.replaceChildren(cont, note, when, fresh, sets);
       (peek.canContinue ? cont : fresh).focus();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { followLock, followStep, followTarget, lockTarget } from './cameraFollow.ts';
+import { followLock, followStep, followTarget, firstViewCamera, freeAreaCamera, lockTarget, playCameraLocked } from './cameraFollow.ts';
 import { cameraAt, cameraCenter } from './view.ts';
 
 const ROOM = { x: 0, y: 0, w: 800, h: 600 };
@@ -76,5 +76,52 @@ describe('lockTarget (CAM-LOCK)', () => {
     const small = { x: 0, y: 0, w: 100, h: 100 };
     const t = lockTarget({ x: 0, y: 0, zoom: 2 }, { x: 10, y: 20 }, W, H, small);
     expect(cameraCenter(t, W, H)).toEqual({ x: 10, y: 20 });
+  });
+});
+
+describe('CAM-LOCK v2 (owner 19 Nov): always locked in play, Look around unlocks', () => {
+  const play = { dungeon: false, build: false, paint: false, placing: false, lookAround: false };
+  it('is locked in play mode, also standing still', () => {
+    expect(playCameraLocked(play)).toBe(true);
+  });
+  it('a drag may pan only with Look around on, or in build mode, painting, placing or the dungeon', () => {
+    expect(playCameraLocked({ ...play, lookAround: true })).toBe(false);
+    expect(playCameraLocked({ ...play, build: true })).toBe(false);
+    expect(playCameraLocked({ ...play, paint: true })).toBe(false);
+    expect(playCameraLocked({ ...play, placing: true })).toBe(false);
+    expect(playCameraLocked({ ...play, dungeon: true })).toBe(false);
+  });
+});
+
+describe('freeAreaCamera (first view)', () => {
+  const rect = { x: 0, y: 0, w: 400, h: 300 };
+  it('centres a room that fits the free area, not the whole screen', () => {
+    // screen 390 x 800, free area 330 x 640 (button column and hotbar removed): zoom 0.5 shows the room (200 x 150) inside it
+    const cam = freeAreaCamera(0.5, { x: 100, y: 100 }, 330, 640, rect);
+    expect(cam.zoom).toBe(0.5);
+    const shownW = 330 / 0.5;
+    expect(cam.x + shownW / 2).toBeCloseTo(200); // the room's middle is the middle of the free area
+  });
+  it('keeps the focus inside a room bigger than the free area, clamped to its walls', () => {
+    const cam = freeAreaCamera(2, { x: 20, y: 20 }, 300, 300, rect);
+    expect(cam.x).toBe(0);
+    expect(cam.y).toBe(0);
+  });
+});
+
+describe('firstViewCamera', () => {
+  const rect = { x: 0, y: 0, w: 600, h: 400 };
+  it('centres the furniture cluster in the free area when the avatar stays on screen', () => {
+    const cam = firstViewCamera(2, { x: 300, y: 250 }, [{ x: 280, y: 200 }, { x: 320, y: 220 }], 300, 400, rect);
+    expect(cam.x + 300 / 2 / 2).toBeCloseTo(300); // cluster mean x = 300 in the middle
+  });
+  it('falls back to the avatar when the cluster view would hide it', () => {
+    const cam = firstViewCamera(3, { x: 300, y: 390 }, [{ x: 300, y: 60 }], 300, 300, rect);
+    const sy = (390 - cam.y) * 3;
+    expect(sy).toBeGreaterThanOrEqual(24);
+    expect(sy).toBeLessThanOrEqual(300 - 24);
+  });
+  it('no spots = the avatar', () => {
+    expect(firstViewCamera(2, { x: 300, y: 200 }, [], 300, 300, rect)).toEqual(freeAreaCamera(2, { x: 300, y: 200 }, 300, 300, rect));
   });
 });

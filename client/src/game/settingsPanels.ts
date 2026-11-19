@@ -87,10 +87,6 @@ late.avatarPanel = avatarPanel;
       late.replayGuide();
       panels.close();
     },
-    onFollowCamera: (on) => {
-      prefs.followCamera = on;
-      savePrefs(storage, prefs);
-    },
     onReduceEffects: (on) => {
       prefs.reduceEffects = on;
       savePrefs(storage, prefs);

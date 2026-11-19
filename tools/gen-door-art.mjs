@@ -171,6 +171,102 @@ function upStairs(g) {
   g.rect(CX - 9, 10, 18, 3, C.white);
 }
 
+
+/** Fill the opening (inside r) with a function (x,y) -> colour or null. Leaves the dark rim line. */
+function fillOpening(g, fn) {
+  for (let y = 0; y < H - 3; y++) for (let x = 0; x < W; x++) if (inShape(x, y, r - 1)) { const c = fn(x, y); if (c) g.set(x, y, c); }
+}
+const dith = (x, y, d) => d > 0 && (x + y) % 2 === 0 && hash(x, y, 11) < d;
+
+/** Wooden floor with perspective planks in the opening, from y0 down. tones far -> near */
+function planks(g, y0, tones) {
+  fillOpening(g, (x, y) => {
+    if (y < y0) return null;
+    const t = Math.min(tones.length - 1, Math.floor((y - y0) / ((H - 3 - y0) / tones.length)));
+    const seam = (x - CX + 40) % 9 === 0 && ((y - y0) % 4 !== 0);
+    return seam ? C.walnut : tones[t];
+  });
+}
+
+/** TAVERN door look: warm glimpse of the common room: barrel, a table with a mug, hearth glow. */
+function tavernInside(g) {
+  fillOpening(g, () => C.void);
+  fillOpening(g, (x, y) => (y < 42 ? (dith(x, y, 0.9 * (1 - Math.hypot((x - CX) / 22, (y - 34) / 24))) ? C.rust : C.night) : null));
+  planks(g, 42, [C.walnut, C.oak, C.clay, C.sand, C.cream]);
+  g.rect(CX - 4, 24, 9, 8, C.out); g.rect(CX - 3, 25, 7, 6, C.rust); g.rect(CX - 2, 27, 5, 4, C.orange); g.rect(CX - 1, 29, 3, 2, C.gold);
+  const bx = CX - 17, by = 36;
+  g.rect(bx - 1, by - 1, 14, 17, C.out);
+  g.rect(bx, by, 12, 15, C.oak); g.rect(bx, by, 3, 15, C.clay); g.rect(bx + 10, by, 2, 15, C.walnut);
+  for (const hy of [3, 11]) { g.rect(bx, by + hy, 12, 2, C.night); g.rect(bx, by + hy, 12, 1, C.steel); }
+  g.rect(bx + 3, by + 6, 5, 3, C.walnut); g.set(bx + 5, by + 7, C.gold);
+  const tx = CX + 4;
+  g.rect(tx - 1, 40, 16, 4, C.out); g.rect(tx, 40, 14, 3, C.clay); g.rect(tx, 40, 14, 1, C.sand); g.rect(tx, 43, 14, 1, C.walnut);
+  g.rect(tx + 1, 44, 2, 10, C.out); g.rect(tx + 11, 44, 2, 10, C.out); g.rect(tx + 1, 44, 1, 9, C.oak); g.rect(tx + 11, 44, 1, 9, C.oak);
+  g.rect(tx + 4, 34, 6, 7, C.out); g.rect(tx + 5, 35, 4, 5, C.gold); g.rect(tx + 5, 35, 4, 2, C.white); g.rect(tx + 10, 36, 2, 3, C.out);
+}
+
+/** SUITE door look: a cosy bedroom glimpse: bed with red blanket, bedside lamp, moonlit window. */
+function suiteInside(g) {
+  fillOpening(g, () => C.night);
+  fillOpening(g, (x, y) => (y < 44 && dith(x, y, 0.85 * (1 - Math.hypot((x - CX - 10) / 24, (y - 34) / 20))) ? C.rust : null));
+  g.rect(CX - 12, 14, 11, 12, C.out); g.rect(CX - 11, 15, 9, 10, C.dusk); g.rect(CX - 7, 15, 1, 10, C.out); g.rect(CX - 11, 19, 9, 1, C.out);
+  g.rect(CX - 10, 16, 2, 2, C.silver); g.set(CX - 4, 22, C.white);
+  planks(g, 46, [C.walnut, C.oak, C.clay, C.sand, C.cream]);
+  const bx = CX - 18, by = 34;
+  g.rect(bx - 1, by - 1, 33, 17, C.out);
+  g.rect(bx, by, 5, 16, C.walnut); g.rect(bx, by, 1, 16, C.oak);
+  g.rect(bx + 5, by + 6, 26, 9, C.crimson); g.rect(bx + 5, by + 6, 26, 2, C.red); g.rect(bx + 5, by + 14, 26, 1, C.out);
+  g.rect(bx + 6, by + 3, 9, 4, C.cream); g.rect(bx + 6, by + 3, 9, 1, C.white); g.rect(bx + 14, by + 4, 1, 3, C.sand);
+  for (let i = 8; i < 28; i += 6) g.rect(bx + i, by + 9, 1, 5, C.rust);
+  g.rect(bx + 28, by + 8, 3, 8, C.walnut);
+  const lx = CX + 18;
+  g.rect(lx - 1, 36, 8, 10, C.out); g.rect(lx, 37, 6, 3, C.walnut); g.rect(lx, 40, 6, 5, C.oak);
+  g.rect(lx - 1, 28, 8, 8, C.out); g.rect(lx, 29, 6, 6, C.gold); g.rect(lx + 1, 30, 4, 4, C.butter); g.rect(lx + 2, 31, 2, 2, C.white);
+}
+
+/** GARDEN door look: bright green daylight, far hedges, a sand path into the garden, flowers. */
+function gardenInside(g) {
+  fillOpening(g, (x, y) => (y < 22 ? C.butter : y < 28 ? C.lime : y < 34 ? C.green : C.forest));
+  fillOpening(g, (x, y) => (y < 22 && dith(x, y, 0.5) ? C.white : null));
+  for (const [bx, w, h] of [[CX - 22, 14, 10], [CX + 8, 16, 12], [CX - 8, 12, 6]]) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const d = Math.hypot((x - w / 2) / (w / 2), (y - h) / h); if (d < 1) g.set(bx + x, 34 - h + y + 6, y < 3 ? C.lime : y < 6 ? C.green : C.forest); }
+  }
+  fillOpening(g, (x, y) => {
+    if (y < 34) return null;
+    const half = 3 + (y - 34) * 0.95;
+    if (Math.abs(x - CX + 0.5) < half) return (y % 7 < 2) ? C.cream : C.sand;
+    return hash(x, y, 5) > 0.8 ? C.lime : (y < 46 ? C.green : C.forest);
+  });
+  for (const [fx, fy, c] of [[CX - 16, 44, C.pink], [CX - 20, 52, C.butter], [CX + 16, 46, C.white], [CX + 20, 54, C.pink], [CX - 10, 36, C.white], [CX + 12, 37, C.butter]]) { g.set(fx, fy, c); g.set(fx - 1, fy + 1, C.lime); g.set(fx + 1, fy + 1, C.lime); }
+}
+
+/** Leaves and vines climbing over the stone frame (garden only), deterministic. */
+function vines(g) {
+  const leaf = (x, y, big) => {
+    g.rect(x, y, big ? 4 : 3, big ? 3 : 2, C.out); g.rect(x + 1, y, big ? 2 : 1, big ? 2 : 1, C.lime); g.set(x + (big ? 2 : 1), y + 1, C.green);
+    if (big) g.set(x + 1, y + 1, C.green);
+  };
+  for (let y = 6; y < 58; y += 1) { const x = 10 + Math.round(2 * Math.sin(y / 6)); g.set(x, y, C.forest); g.set(x + 1, y, C.green); }
+  for (const [x, y] of [[8, 12], [11, 20], [7, 29], [12, 38], [8, 47], [13, 54], [20, 7], [30, 3], [60, 4], [72, 8]]) leaf(x, y, true);
+  for (const [x, y] of [[14, 15], [9, 33], [13, 44], [24, 4], [66, 5], ]) leaf(x, y, false);
+  for (let y = 0; y < 34; y++) for (let x = 0; x < 50; x++) { const c = g.get(x, y); if ((c === C.silver || c === C.steel) && hash(x, y, 21) > 0.82) g.set(x, y, C.green); }
+}
+
+/** A hanging wall sign on an iron bracket right of the arch (x = left of the board). kind 'mug' | 'star' | 'leaf'. 11 x 14 board. */
+function sign(g, x, y, kind) {
+  const body = { mug: C.oak, star: C.dusk, leaf: C.forest }[kind], hi = { mug: C.clay, star: C.steel, leaf: C.green }[kind];
+  g.rect(x - 4, y - 1, 11, 2, C.out); g.rect(x - 4, y, 10, 1, C.night);
+  g.rect(x + 1, y + 1, 1, 3, C.out); g.rect(x + 8, y + 1, 1, 3, C.out);
+  g.rect(x, y + 4, 11, 14, C.out); g.rect(x + 1, y + 5, 9, 12, body); g.rect(x + 1, y + 5, 9, 1, hi); g.rect(x + 1, y + 5, 1, 12, hi);
+  if (kind === 'mug') {
+    g.rect(x + 2, y + 8, 5, 7, C.out); g.rect(x + 3, y + 9, 3, 5, C.gold); g.rect(x + 3, y + 8, 3, 2, C.white); g.rect(x + 7, y + 10, 2, 3, C.out); g.set(x + 7, y + 11, C.cream);
+  } else if (kind === 'star') {
+    g.rect(x + 5, y + 8, 2, 7, C.butter); g.rect(x + 3, y + 10, 6, 2, C.butter); g.set(x + 5, y + 10, C.white);
+  } else {
+    g.rect(x + 3, y + 7, 5, 6, C.lime); g.rect(x + 4, y + 6, 3, 1, C.lime); g.rect(x + 5, y + 13, 1, 3, C.out); g.rect(x + 4, y + 8, 1, 3, C.green); g.set(x + 6, y + 9, C.butter);
+  }
+}
+
 // ----- build the sheets -----
 {
   const g = new Img(W, H); stoneFrame(g); plankDoor(g); lantern(g, 88, 20); g.save(`${OUT}/door_cellar_down.png`);
@@ -182,5 +278,17 @@ function upStairs(g) {
     if (d < 1 && ((x + y) % 2 === 0) && hash(x, y, 8) < 1.1 * (1 - d)) s.set(x, y, d < 0.45 ? C.gold : d < 0.75 ? C.orange : C.rust);
   }
   s.save(`${OUT}/door_spill.png`);
+}
+
+{
+  const t = new Img(W, H); stoneFrame(t); tavernInside(t); sign(t, 85, 18, 'mug'); t.save(`${OUT}/door_tavern.png`);
+  const u = new Img(W, H); stoneFrame(u); suiteInside(u); sign(u, 85, 18, 'star'); u.save(`${OUT}/door_suite.png`);
+  const v = new Img(W, H); stoneFrame(v); gardenInside(v); vines(v); sign(v, 85, 18, 'leaf'); v.save(`${OUT}/door_garden.png`);
+  const sg = new Img(64, 14);
+  for (let y = 0; y < 14; y++) for (let x = 0; x < 64; x++) {
+    const d = Math.hypot((x - 31.5) / 32, y / 13);
+    if (d < 1 && ((x + y) % 2 === 0) && hash(x, y, 8) < 1.1 * (1 - d)) sg.set(x, y, d < 0.45 ? C.butter : d < 0.75 ? C.lime : C.green);
+  }
+  sg.save(`${OUT}/door_spill_garden.png`);
 }
 console.log('doors written');

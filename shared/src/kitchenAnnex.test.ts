@@ -94,7 +94,8 @@ describe('the open kitchen annex', () => {
       const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: sh.id }, 0);
       const room = s.rooms.find((r) => r.id === s.player.shopRoomId)!;
       const stove = s.items.find((i) => i.typeId === 'stove')!;
-      expect(canPlace(room, s.items, getFurnitureType('prep_table'), stove.x - 48, stove.y, 'down'), sh.id).toBe(true);
+      const spots = [[stove.x - 64, stove.y], [stove.x + 64, stove.y], [stove.x, stove.y + 32], [stove.x, stove.y - 32]] as const;
+      expect(spots.some(([x, y]) => canPlace(room, s.items, getFurnitureType('prep_table'), x, y, 'down')), sh.id).toBe(true);
     }
   });
 });

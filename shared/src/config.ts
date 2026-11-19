@@ -26,7 +26,7 @@ export const TAVERN_START_ITEMS = [
   { key: 'stool_right', typeId: 'bar_stool', x: 240, y: 288, facing: 'left' },
   { key: 'stool_front', typeId: 'bar_stool', x: 208, y: 320, facing: 'up' },
   { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 48, y: 384, facing: 'down' },
-  { key: 'stove', typeId: 'stove', x: 144, y: 384, facing: 'down' },
+  { key: 'stove', typeId: 'stove', x: 160, y: 384, facing: 'down' },
 ] as const;
 /**
  * What stands ON the bar in a new tavern (step T1): the register and a tap stand, side by side, as dx from the bar's anchor (px, bar facing down).

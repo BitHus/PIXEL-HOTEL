@@ -72,7 +72,7 @@ describe('a new game', () => {
     const room = tavernOf(s);
     const stove = s.items.find((i) => i.typeId === 'stove')!;
     expect(kitchenZone(room)).toEqual(roomAnnex(room));
-    const table: FurnitureItem = { uid: 90, typeId: 'prep_table', ownerId: 1, roomId: room.id, x: stove.x - 48, y: stove.y, facing: 'down', onItemUid: null };
+    const table: FurnitureItem = { uid: 90, typeId: 'prep_table', ownerId: 1, roomId: room.id, x: stove.x - 64, y: stove.y, facing: 'down', onItemUid: null };
     expect(canPlace(room, s.items, getFurnitureType('prep_table'), table.x, table.y, 'down')).toBe(true);
     expect(prepBonus([...s.items, table], room, stove.uid)).toBe(1);
   });
@@ -152,8 +152,8 @@ describe('building the cellar (CEL-4)', () => {
 });
 
 describe('migration 36 -> 37 (the kitchen room is dissolved into the tavern)', () => {
-  it('SAVE_VERSION is 40; a version 36 save loses its kitchen room: stove and barrel stand in the tavern, nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(40);
+  it('SAVE_VERSION is 41; a version 36 save loses its kitchen room: stove and barrel stand in the tavern, nothing is lost', () => {
+    expect(SAVE_VERSION).toBe(41);
     const text = save36();
     const before = JSON.parse(text).state as GameState;
     const s = load(text);
