@@ -36,7 +36,7 @@ export * from './seen.ts';
 export * from './fish.ts';
 export * from './lakeLayout.ts';
 export * from './woodcut.ts';
-export { bankCatch, catchesOfRank, fishDone, fishInBox, fishStep, newFishSession, rollCatch } from './fishing.ts';
+export { bankCatch, catchesOfRank, fishDone, fishInBox, fishPowerOf, fishStep, fishTopSpeed, newFishSession, rollCatch, type FishMood } from './fishing.ts';
 export type { FishEvent, FishInput, FishOutcome, FishPhase, FishSession } from './fishing.ts';
 export * from './book.ts';
 export * from './npcNav.ts';

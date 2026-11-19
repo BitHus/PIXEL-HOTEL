@@ -98,19 +98,25 @@ export const FISH_BOX_BOUNCE = 0.25;
 /** The width of the catch box with the basic rod, bar units (a better rod adds boxBonus and makes it fall slower: gravityScale). */
 export const FISH_BOX_BASE = 26;
 /**
- * By rank (the rarer, the harder): how fast the fish swims (units/s), how long it keeps one
- * direction (ms, min and max), the chance that it darts (suddenly 2.4 x as fast) at a new
- * direction, how fast the catch bar fills while the fish is in the box and how fast it drains
- * while it is out (per second).
+ * FISH-2 (owner 19 Nov: no more one tempo; a big or rare fish is really hard without upgrades).
+ * The fish swims in SEGMENTS; each new segment is one of three moods, rolled by rank:
+ *   swim  : to a new target at speed x 0.75..1 (the segment lasts turnMin..turnMax ms or until it arrives),
+ *   burst : a sudden dash at speed x burstMul (chance `burst`),
+ *   pause : it hovers in place for pauseMin..pauseMax ms (chance `pause`), then sets off again.
+ * While moving it may JINK (reverse at once, chance `jink` per second). gain / drain: how fast the
+ * catch bar fills while the fish is in the box and drains while it is out (per second).
+ * Common: slow, calm, long pauses, no bursts. Legendary: fast, short pauses, many bursts and jinks.
  */
 export const FISH_REEL = {
-  common: { speed: 16, turnMin: 1600, turnMax: 3000, dart: 0, gain: 22, drain: 9 },
-  rare: { speed: 24, turnMin: 1300, turnMax: 2500, dart: 0.08, gain: 20, drain: 12 },
-  ultra_rare: { speed: 31, turnMin: 1000, turnMax: 2100, dart: 0.15, gain: 19, drain: 14 },
-  legendary: { speed: 38, turnMin: 800, turnMax: 1700, dart: 0.25, gain: 17, drain: 17 },
+  common: { speed: 16, turnMin: 1600, turnMax: 3000, burst: 0, burstMul: 1, pause: 0.3, pauseMin: 600, pauseMax: 1400, jink: 0, gain: 22, drain: 8 },
+  rare: { speed: 23, turnMin: 1100, turnMax: 2200, burst: 0.15, burstMul: 2, pause: 0.25, pauseMin: 400, pauseMax: 1000, jink: 0.12, gain: 20, drain: 10 },
+  ultra_rare: { speed: 32, turnMin: 800, turnMax: 1600, burst: 0.25, burstMul: 2.4, pause: 0.2, pauseMin: 300, pauseMax: 800, jink: 0.35, gain: 17, drain: 17 },
+  legendary: { speed: 44, turnMin: 500, turnMax: 1100, burst: 0.4, burstMul: 3, pause: 0.12, pauseMin: 200, pauseMax: 500, jink: 0.7, gain: 14, drain: 24 },
 } as const;
 /** FISH-1: how fast the fish speeds up and slows down while it swims (units/s^2, by rank): it turns smoothly, never at once. */
-export const FISH_SWIM_ACCEL = { common: 70, rare: 120, ultra_rare: 220, legendary: 400 } as const;
+export const FISH_SWIM_ACCEL = { common: 70, rare: 130, ultra_rare: 240, legendary: 420 } as const;
+/** FISH-2: a fish at the top of its size range (fish.json minCm..maxCm) is this much stronger (speed and drain x 1 + this); the smallest x 1. Things have no size (x 1). */
+export const FISH_SIZE_POWER = 0.2;
 /** FISH-1: in the last FISH_NIBBLE_MS before the bite the fish nibbles 2 to 3 times (a gap of min to max ms between nibbles; a nibble pulse lasts FISH_NIBBLE_PULSE_MS). */
 export const FISH_NIBBLE_MS = 1800;
 export const FISH_NIBBLE_GAP_MIN_MS = 350;

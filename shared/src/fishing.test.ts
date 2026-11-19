@@ -10,6 +10,7 @@ import {
   FISH_REEL_FULL,
   FISH_REEL_MAX_MS,
   FISH_REEL_START,
+  FISH_SIZE_POWER,
   FISH_SWIM_ACCEL,
   FISH_TAP_KICK,
   FISH_THRUST,
@@ -19,7 +20,8 @@ import {
   RANK_WEIGHTS,
 } from './config.ts';
 import { CATCH_TYPES, FISH_TYPES, THING_TYPES, getCatchType } from './fish.ts';
-import { bankCatch, fishDone, fishInBox, newFishSession, rollCatch, step, swimStep, type FishInput, type FishSession } from './fishing.ts';
+import { bankCatch, fishInBox, fishPowerOf, fishTopSpeed, newFishSession, rollCatch, step, swimStep, type FishSession, type FishSwim } from './fishing.ts';
+import { FISH_BOTS, FISH_SKILLS_MAX, botPlay, botSession, botWinRate } from './fishingSim.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { RANKS } from './ranks.ts';
 import { seededRng } from './rng.ts';
@@ -35,33 +37,6 @@ function reel(over: Partial<FishSession> = {}, rank: Rank = 'common', gear: stri
   return { ...session(rank, 1, gear), phase: 'reel', fill: 50, fishPos: 50, fishTarget: 50, fishTurnMs: 5000, boxPos: 50, boxVel: 0, ...over };
 }
 
-/**
- * A player: at the bite it taps to hook, in the reel it holds the box under the fish. It looks
- * at the bar every `everyMs` (its reaction time) and aims a little ahead (`lead`, seconds).
- */
-function play(s: FishSession, everyMs: number, lead: number, rng = seededRng(9), maxMs = 70_000): FishSession {
-  let since = 0;
-  let held = false;
-  let first = true;
-  for (let t = 0; t < maxMs && !fishDone(s); t += FISH_TICK_MS) {
-    const inputs: FishInput[] = [];
-    if (first && s.phase === 'bite') {
-      inputs.push({ t: 'tap' });
-      first = false;
-    }
-    since += FISH_TICK_MS;
-    if (s.phase === 'reel' && since >= everyMs) {
-      since = 0;
-      const want = s.boxPos + s.boxVel * lead < s.fishPos;
-      if (want !== held) {
-        held = want;
-        inputs.push({ t: want ? 'press' : 'release' });
-      }
-    }
-    s = step(s, inputs, FISH_TICK_MS, rng);
-  }
-  return s;
-}
 
 describe('the catches (shared/data/fish.json)', () => {
   it('has 12 fish over the four ranks (5, 4, 2, 1) and 6 fished-up things, each with a rank and a value', () => {
@@ -256,7 +231,7 @@ describe('the fishing session step(session, inputs, dtMs, rng)', () => {
         seen.add(Math.round(s.fishTarget));
       }
       // It never swims faster than a dart of its rank.
-      expect(maxStep).toBeLessThanOrEqual(FISH_REEL[rank].speed * 2.4 * (FISH_TICK_MS / 1000) + 1e-9);
+      expect(maxStep).toBeLessThanOrEqual(fishTopSpeed(rank, 1 + FISH_SIZE_POWER) * (FISH_TICK_MS / 1000) + 1e-9);
       expect(seen.size).toBeGreaterThan(10);
     }
     // The rarer the faster.
@@ -275,7 +250,7 @@ describe('the fishing session step(session, inputs, dtMs, rng)', () => {
     let out = reel({ fill: 50, boxPos: 13, fishPos: 90, fishTarget: 90, fishTurnMs: 99999 });
     expect(fishInBox(out)).toBe(false);
     out = step(out, [], FISH_TICK_MS, rng);
-    expect(out.fill).toBeCloseTo(50 - FISH_REEL.common.drain * 0.05, 6);
+    expect(out.fill).toBeCloseTo(50 - FISH_REEL.common.drain * (out.fishPower ?? 1) * 0.05, 6);
     // Full: caught.
     let c = reel({ fill: FISH_REEL_FULL - 0.5, boxPos: 50, fishPos: 50, fishTarget: 50, fishTurnMs: 99999 });
     c = step(c, [], 200, rng);
@@ -347,41 +322,109 @@ describe('rods: a better rod makes the box bigger and let it fall slower (upgrad
   });
 });
 
-describe('the strength by rank: common is easy, legendary is hard (a player that reacts every 100 ms)', () => {
-  /** The share of 60 hooked fish of a rank that a player lands. */
-  const rate = (rank: Rank, everyMs: number, lead: number, gear: string[] = []): number => {
-    let caught = 0;
-    const N = 60;
-    for (let seed = 1; seed <= N; seed++) {
-      const s = { ...session(rank, seed, gear), phase: 'bite' as const, biteMs: FISH_BITE_MS[rank] };
-      if (play(s, everyMs, lead, seededRng(seed * 7)).outcome === 'caught') caught++;
+describe('FISH-2 the strength by rank and rod (bots of shared/src/fishingSim.ts; numbers in NOTES FISHING BALANCE)', () => {
+  const { casual, average, sharp } = FISH_BOTS;
+  const MITHRIL = ['mithril_rod'];
+  const COPPER = ['copper_reel_rod'];
+
+  it('common stays easy: every player lands every common fish with the basic rod', () => {
+    for (const bot of [casual, average, sharp]) expect(botWinRate('common', bot)).toBe(1);
+  });
+
+  it('basic rod: rare is fair, ultra rare is hard, a legendary is near impossible even for a sharp player', () => {
+    expect(botWinRate('rare', casual)).toBeGreaterThan(0.65);
+    expect(botWinRate('rare', average)).toBeGreaterThan(0.9);
+    const ultra = botWinRate('ultra_rare', average);
+    expect(ultra).toBeGreaterThan(0.15);
+    expect(ultra).toBeLessThan(0.6);
+    expect(botWinRate('ultra_rare', casual)).toBeLessThan(0.15);
+    expect(botWinRate('legendary', average)).toBeLessThan(0.05);
+    expect(botWinRate('legendary', sharp)).toBeLessThan(0.1);
+  });
+
+  it('for every player and rod the rarer rank is never easier', () => {
+    for (const bot of [casual, average, sharp]) {
+      for (const gear of [[], COPPER, MITHRIL]) {
+        const r = RANKS.map((rank) => botWinRate(rank, bot, gear, undefined, 40));
+        for (let i = 1; i < r.length; i++) expect(r[i]!).toBeLessThanOrEqual(r[i - 1]! + 0.001);
+      }
     }
-    return caught / N;
+  });
+
+  it('upgrades make a legendary fair: copper < mithril < mithril with the fishing skills', () => {
+    const copper = botWinRate('legendary', sharp, COPPER);
+    const mithril = botWinRate('legendary', sharp, MITHRIL);
+    expect(copper).toBeGreaterThan(0.05);
+    expect(copper).toBeLessThan(0.4);
+    expect(mithril).toBeGreaterThan(copper + 0.2);
+    expect(mithril).toBeLessThan(0.85);
+    const full = botWinRate('legendary', average, MITHRIL, FISH_SKILLS_MAX);
+    expect(full).toBeGreaterThan(0.5);
+    expect(full).toBeLessThan(0.95);
+    expect(full).toBeGreaterThan(botWinRate('legendary', average, MITHRIL) + 0.3);
+    // Ultra rare: the mithril rod lifts an average player a lot.
+    expect(botWinRate('ultra_rare', average, MITHRIL)).toBeGreaterThan(botWinRate('ultra_rare', average) + 0.3);
+  });
+
+  it('a big fish fights harder than a small one of the same kind (fishPowerOf)', () => {
+    const type = getCatchType('moonscale_eel');
+    expect(fishPowerOf(type, type.minCm!)).toBe(1);
+    expect(fishPowerOf(type, type.maxCm!)).toBeCloseTo(1 + FISH_SIZE_POWER, 9);
+    expect(fishPowerOf(getCatchType('pearl'), null)).toBe(1);
+    // The same sessions, once as the smallest and once as the biggest of its kind.
+    const rate = (power: number): number => {
+      let caught = 0;
+      for (let seed = 1; seed <= 80; seed++) if (botPlay({ ...botSession('ultra_rare', seed, MITHRIL), fishPower: power }, average, seed * 7 + 3).outcome === 'caught') caught++;
+      return caught / 80;
+    };
+    expect(rate(1 + FISH_SIZE_POWER)).toBeLessThan(rate(1) - 0.05);
+  });
+});
+
+describe('FISH-2 the swim tempo varies: swims, bursts and pauses by rank', () => {
+  /** The moods and the speeds a fish shows over 60 s. */
+  const watch = (rank: Rank, seed = 21): { moods: Record<'swim' | 'burst' | 'pause', number>; jinks: number; speeds: number[] } => {
+    let f: FishSwim = { fishPos: 50, fishTarget: 50, fishTurnMs: 0, fishSpeedMul: 1, fishVel: 0, fishFace: 'right', fishMood: 'swim' };
+    const rng = seededRng(seed);
+    const moods: Record<'swim' | 'burst' | 'pause', number> = { swim: 0, burst: 0, pause: 0 };
+    const speeds: number[] = [];
+    let jinks = 0;
+    for (let i = 0; i < 1200; i++) {
+      const n = swimStep(f, rank, rng, FISH_TICK_MS);
+      if (n.fishTurnMs !== f.fishTurnMs - FISH_TICK_MS) moods[n.fishMood ?? 'swim']++;
+      else if (n.fishTarget !== f.fishTarget) jinks++;
+      speeds.push(Math.abs(n.fishVel));
+      f = n;
+    }
+    return { moods, jinks, speeds };
   };
 
-  it('common: even a slow player (reacting every 0.4 s) lands every one', () => {
-    expect(rate('common', 400, 0)).toBe(1);
+  it('common fish pause and never burst or jink; legendary fish burst, jink and pause less', () => {
+    const c = watch('common');
+    expect(c.moods.pause).toBeGreaterThan(2);
+    expect(c.moods.burst).toBe(0);
+    expect(c.jinks).toBe(0);
+    const l = watch('legendary');
+    expect(l.moods.burst).toBeGreaterThan(5);
+    expect(l.jinks).toBeGreaterThan(5);
+    expect(l.moods.pause / (l.moods.swim + l.moods.burst + l.moods.pause)).toBeLessThan(c.moods.pause / (c.moods.swim + c.moods.pause));
   });
 
-  it('the harder the rank the fewer are landed with the basic rod', () => {
-    const r = RANKS.map((rank) => rate(rank, 250, 0.1));
-    for (let i = 1; i < r.length; i++) expect(r[i]!).toBeLessThan(r[i - 1]! + 0.001);
-    expect(r[0]!).toBe(1);
-    expect(r[1]!).toBeGreaterThan(0.85);
-    expect(r[3]!).toBeLessThan(0.3);
-    // A sharp player (reacting every 0.1 s) can land a legendary, but not every time.
-    const pro = rate('legendary', 100, 0.15);
-    expect(pro).toBeGreaterThan(0.2);
-    expect(pro).toBeLessThan(0.75);
+  it('no single tempo: the speed spreads from a hover to a dash (rare and up reach beyond their cruise speed)', () => {
+    for (const rank of RANKS) {
+      const { speeds } = watch(rank);
+      expect(speeds.filter((v) => v < 1).length).toBeGreaterThan(20); // hovers (pauses, turns)
+      if (rank !== 'common') expect(Math.max(...speeds)).toBeGreaterThan(FISH_REEL[rank].speed * 1.3); // bursts
+    }
   });
 
-  it('upgrades help: a better rod lands more of the hardest fish', () => {
-    const basic = rate('legendary', 250, 0.1);
-    const copper = rate('legendary', 250, 0.1, ['copper_reel_rod']);
-    const mithril = rate('legendary', 250, 0.1, ['mithril_rod']);
-    expect(copper).toBeGreaterThan(basic + 0.1);
-    expect(mithril).toBeGreaterThan(copper + 0.2);
-    expect(rate('ultra_rare', 400, 0, ['mithril_rod'])).toBeGreaterThan(rate('ultra_rare', 400, 0) + 0.2);
+  it('a pause holds the fish nearly still, then it always sets off again', () => {
+    let f: FishSwim = { fishPos: 40, fishTarget: 40, fishTurnMs: 800, fishSpeedMul: 0, fishVel: 0, fishFace: 'right', fishMood: 'pause' };
+    const rng = seededRng(2);
+    for (let i = 0; i < 15; i++) f = swimStep(f, 'common', rng, FISH_TICK_MS);
+    expect(f.fishPos).toBeCloseTo(40, 6);
+    for (let i = 0; i < 2; i++) f = swimStep(f, 'common', rng, FISH_TICK_MS);
+    expect(f.fishMood).not.toBe('pause');
   });
 });
 
@@ -441,7 +484,7 @@ describe('FISH-1 fish movement path', () => {
         g = swimStep(g, rank, rng2, FISH_TICK_MS);
         expect(f.fishPos).toBeGreaterThanOrEqual(0);
         expect(f.fishPos).toBeLessThanOrEqual(FISH_BAR);
-        expect(Math.abs(f.fishVel)).toBeLessThanOrEqual(FISH_REEL[rank].speed * 2.4 + 1e-9);
+        expect(Math.abs(f.fishVel)).toBeLessThanOrEqual(fishTopSpeed(rank) + 1e-9);
       }
       expect(f).toEqual(g);
     }
@@ -454,7 +497,7 @@ describe('FISH-1 fish movement path', () => {
       let turns = 0;
       for (let i = 0; i < 2000; i++) {
         const n = swimStep(f, rank, rng, FISH_TICK_MS);
-        const maxJump = (FISH_SWIM_ACCEL[rank] * 2.4 * FISH_TICK_MS) / 1000 + 1e-9;
+        const maxJump = (FISH_SWIM_ACCEL[rank] * Math.max(1, FISH_REEL[rank].burstMul) * FISH_TICK_MS) / 1000 + 1e-9;
         expect(Math.abs(n.fishVel - f.fishVel)).toBeLessThanOrEqual(maxJump);
         if (n.fishFace !== f.fishFace) turns++;
         f = n;
