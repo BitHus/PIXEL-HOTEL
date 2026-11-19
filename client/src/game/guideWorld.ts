@@ -227,8 +227,9 @@ export function startGuideWorld(g: G9, h: GuideWorldHooks): GuideWorldApi {
     const via = routeDoor(t);
     if (via !== null) return pointer.place(doorScreen(via));
     // Steps with no tap target of their own: harvest points at a ripe plant on the farm, fish at the water of the lakeside.
-    if (goal === 'harvest' && st.room.kind === 'farm') return pointer.place(ripePlantScreen());
-    if (goal === 'fish' && st.room.kind === 'lakeside') return pointer.place(waterScreen());
+    // RUN 13 #3: a ripe plant in THIS room (the tavern too: plants grow on its blocks) is the target wherever it stands; with none here the way to the farm is the Worlds button.
+    if (goal === 'harvest') return ripePlantScreen() !== null ? pointer.place(ripePlantScreen()) : st.room.kind === 'farm' ? pointer.place(null) : pointer.placeOn(uiButton('Worlds'));
+    if (goal === 'fish') return st.room.kind === 'lakeside' ? pointer.place(waterScreen()) : pointer.placeOn(uiButton('Worlds'));
     resolve(t);
   };
   raf = requestAnimationFrame(frame);

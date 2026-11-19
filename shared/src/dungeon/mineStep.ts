@@ -14,7 +14,7 @@ import {
 import { findPath, type NavGrid } from '../nav.ts';
 import { rngInt } from '../rng.ts';
 import { xpFor } from '../xp.ts';
-import { glintBlocksOf, hazardDamageOf, oreQtyOf, pickCooldownOf, rockGemChanceOf, chestGlintBlocksOf } from '../skillRules.ts';
+import { blastNow, caveTellMsOf, glintBlocksOf, hazardDamageOf, oreQtyOf, pickCooldownOf, rockGemChanceOf, chestGlintBlocksOf } from '../skillRules.ts';
 import type { Rank, Rng } from '../types.ts';
 import { blockAt, blockCenter, isFloorBlock } from './grid.ts';
 import type { Loot } from './loot.ts';
@@ -97,6 +97,35 @@ export function digAfterWalk(r: DungeonRun, now: number, rng: Rng, hooks: DigHoo
   if (p.pendingDig && now >= p.pickReadyAt) swing(r, p.targetDig, now, rng, hooks);
 }
 
+/** Blaster: the stone and dirt blocks around a cell turn to floor at once (nothing drops). */
+function blast(r: DungeonRun, cell: number): void {
+  const d = r.dig!;
+  const c0 = cell % DIG_COLS;
+  const r0 = Math.floor(cell / DIG_COLS);
+  const blocks: DungeonBlock[] = r.map.blocks.slice();
+  const kinds = d.kinds.slice();
+  let any = false;
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const c = c0 + dc;
+      const rr = r0 + dr;
+      if ((dc === 0 && dr === 0) || c < 0 || c >= DIG_COLS || rr < 0) continue;
+      const i = rr * DIG_COLS + c;
+      const k = kinds[i];
+      if (k !== 'stone' && k !== 'dirt') continue;
+      kinds[i] = '';
+      blocks[i] = 'floor';
+      delete d.hits[i];
+      any = true;
+      r.events.push({ t: 'dig_broken', cell: i, kind: k });
+    }
+  }
+  if (!any) return;
+  d.kinds = kinds;
+  r.map = { ...r.map, blocks };
+  d.rev += 1;
+}
+
 function swing(r: DungeonRun, cell: number, now: number, rng: Rng, hooks: DigHooks): void {
   const d = r.dig!;
   const p = r.player;
@@ -109,6 +138,9 @@ function swing(r: DungeonRun, cell: number, now: number, rng: Rng, hooks: DigHoo
     p.targetDig = null;
     return;
   }
+  // Blaster: every Nth swing also breaks the loose stone and dirt in the 3 x 3 around (no ore from those).
+  d.swings = (d.swings ?? 0) + 1;
+  if (blastNow(d.swings, p.skill)) blast(r, cell);
   const strong = (p.skill?.doubleStrikePct ?? 0) > 0 && rng() < (p.skill?.doubleStrikePct ?? 0) / 100; // Double strike
   const total = (d.hits[cell] ?? 0) + p.hitsPerSwing * (strong ? 2 : 1);
   d.rev += 1;
@@ -150,7 +182,7 @@ export function digHazardTick(r: DungeonRun): void {
     const on = here.c === h.c && here.r === h.r;
     if (h.state === 'armed' && on) {
       h.state = 'cracking';
-      h.crackMs = DIG_CAVEIN_TELL_MS;
+      h.crackMs = caveTellMsOf(p.skill); // Sure footing
       d.rev += 1;
       r.events.push({ t: 'cave_crack', cell: h.r * DIG_COLS + h.c });
     } else if (h.state === 'cracking') {

@@ -152,8 +152,8 @@ describe('buying (the PoE-style rule)', () => {
   it('refuses unknown, maxed, coming-soon, no points; never mutates the old state', () => {
     const s = at(2);
     expect(skillProblem(s.player, 'nope')).toBe('unknown');
-    expect(skillProblem(s.player, 'quick_simmer')).toBe('soon'); // live: false
-    expect(buySkill(s, 'quick_simmer')).toBeNull();
+    expect(skillProblem(s.player, 'cat_friend')).toBe('soon'); // live: false
+    expect(buySkill(s, 'cat_friend')).toBeNull();
     const one = buyAll(s, ['steady_hands']);
     expect(skillProblem(one.player, 'steady_hands')).toBe('maxed');
     expect(skillProblem(one.player, 'quick_feet')).toBe('points');
@@ -247,7 +247,7 @@ describe('the view for the panel', () => {
     expect(v.branchSpent).toMatchObject({ tavern: 1, kitchen: 0 });
     expect(v.nodes.find((n) => n.id === 'steady_hands')).toMatchObject({ rank: 1, problem: 'maxed', unlearn: null, unlearnCost: 0, undo: true });
     expect(v.nodes.find((n) => n.id === 'keen_eye')).toMatchObject({ problem: 'ring', ringGate: 3, ringSpent: 1, nextCost: 1 });
-    expect(v.nodes.find((n) => n.id === 'quick_simmer')!.problem).toBe('soon');
+    expect(v.nodes.find((n) => n.id === 'cat_friend')!.problem).toBe('soon');
   });
 });
 

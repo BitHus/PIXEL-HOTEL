@@ -7,6 +7,7 @@ import { createSettingsPanel } from '../ui/settingsPanel.ts';
 import { typing } from '../ui/dom.ts';
 import { savePrefs } from '../api/prefs.ts';
 import { cloudConfig, createCloudSave } from '../api/cloudSave.ts';
+import { createCloudAutoSync } from '../api/cloudAutoSync.ts';
 import { createAccountPanel } from '../ui/accountPanel.ts';
 import { bigTapsOn, saveKey } from '@pixel-hotel/shared';
 import { isTouchInput } from './tapForgive.ts';
@@ -126,7 +127,26 @@ late.avatarPanel = avatarPanel;
   panels.add('settings', settings.el);
   // ON-5: the Account panel (opened from More) exists only with the cloud flag; its button is made in uiShell.ts.
   if (cloudCfg) {
-    const account = createAccountPanel(ui, { cloud: createCloudSave(cloudCfg, storage), localSaveText: () => storage.get(saveKey()), importCloudSave: importSaveText, now: () => Date.now() });
+    const cloud = createCloudSave(cloudCfg, storage);
+    // ON-6: automatic cloud save (flag only): a throttled push after each local save, and a flush when the tab hides or closes. It only ever pushes (cloudAutoSync.ts).
+    const auto = createCloudAutoSync({
+      cloud,
+      localText: () => storage.get(saveKey()),
+      setTimer: (fn, ms) => window.setTimeout(fn, ms),
+      clearTimer: (h) => window.clearTimeout(h as number),
+      onBehind: () => toast('The cloud has a newer save: open Account and choose Sync now.'),
+    });
+    const rawSet = storage.set.bind(storage);
+    storage.set = (key, value) => {
+      const ok = rawSet(key, value);
+      if (ok && key === saveKey()) auto.changed();
+      return ok;
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') void auto.flush();
+    });
+    window.addEventListener('pagehide', () => void auto.flush());
+    const account = createAccountPanel(ui, { cloud, localSaveText: () => storage.get(saveKey()), importCloudSave: importSaveText, now: () => Date.now() });
     panels.add('account', account.el, () => account.refresh());
   }
   cross.visible = false;

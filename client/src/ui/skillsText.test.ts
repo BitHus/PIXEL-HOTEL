@@ -26,7 +26,7 @@ describe('skills panel text', () => {
     const v2 = view(9, { steady_hands: 1 });
     expect(lockText(v2, node(v2, 'keen_eye'))).toBe('Spend 2 more points on the inner rings of Tavern (1 of 3).');
     expect(lockText(view(2, { quick_feet: 1 }), node(view(2, { quick_feet: 1 }), 'steady_hands'))).toBe('Needs 1 point; you have 0.');
-    expect(lockText(v, node(v, 'quick_simmer'))).toMatch(/^Coming soon/);
+    expect(lockText(v, node(v, 'cat_friend'))).toMatch(/^Coming soon/);
   });
   it('marks nodes no rule reads yet, prints the respec cost and the unlearn button', () => {
     expect(notActiveYet(node(view(2), 'bait_saver'))).toBe(true);

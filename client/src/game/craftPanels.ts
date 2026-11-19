@@ -101,7 +101,12 @@ export async function setupCraftPanels(g: G7) {
   const skills = createSkillsPanel(ui, {
     buy: (id) => api.buySkill(id),
     unlearn: (id) => api.unlearnSkill(id),
-    respec: () => api.respecSkills(),
+    respec: async () => {
+      const before = await api.getSkills();
+      const v = await api.respecSkills();
+      if (v && before) toast(before.respecCost === 0 ? `Skills reset for free (${v.respecFree} free left). Spend your ${v.free} points again.` : `Skills reset. Spend your ${v.free} points again.`);
+      return v;
+    },
     gold: () => st.walletGold,
     changed: () => void late.refreshInventory(),
   });

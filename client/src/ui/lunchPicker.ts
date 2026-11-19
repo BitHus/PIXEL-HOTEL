@@ -13,7 +13,8 @@ export interface LunchPicker {
   chosen(): FoodId[];
 }
 
-export function createLunchPicker(materials: Partial<Record<MaterialId, number>>): LunchPicker {
+/** `max` = the box size (Pack lunch adds one: lunchBoxMaxOf(skills)). */
+export function createLunchPicker(materials: Partial<Record<MaterialId, number>>, max: number = LUNCH_BOX_MAX): LunchPicker {
   const root = el('div', 'lunch-picker');
   const chosen: FoodId[] = [];
   const icon = (id: FoodId, count: number | null, onTap: () => void): HTMLElement => {
@@ -35,7 +36,7 @@ export function createLunchPicker(materials: Partial<Record<MaterialId, number>>
       return;
     }
     const box = el('div', 'lunch-box');
-    for (let i = 0; i < LUNCH_BOX_MAX; i++) {
+    for (let i = 0; i < max; i++) {
       const id = chosen[i];
       if (id) box.append(icon(id, null, () => (chosen.splice(i, 1), draw())));
       else box.append(el('div', 'slot empty'));
@@ -46,12 +47,12 @@ export function createLunchPicker(materials: Partial<Record<MaterialId, number>>
       if (n <= 0) continue;
       left.append(
         icon(f.id, n, () => {
-          if (chosen.length < LUNCH_BOX_MAX) chosen.push(f.id);
+          if (chosen.length < max) chosen.push(f.id);
           draw();
         }),
       );
     }
-    root.replaceChildren(el('div', 'catalog-name', `Lunch box (${chosen.length}/${LUNCH_BOX_MAX}): tap food to take it`), box, left);
+    root.replaceChildren(el('div', 'catalog-name', `Lunch box (${chosen.length}/${max}): tap food to take it`), box, left);
   };
   draw();
   return { el: root, chosen: () => [...chosen] };

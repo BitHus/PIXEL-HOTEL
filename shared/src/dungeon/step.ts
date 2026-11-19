@@ -59,7 +59,7 @@ import { blockAt, dungeonNavGrid, onFloor } from './grid.ts';
 import { getLootTable, rollLoot, type EnemyTableId, type Loot } from './loot.ts';
 import { emptyRunBag, type DungeonInput, type DungeonRun, type Enemy, type ExitChoice, type FoodBuff, type Rock, type RunBag, type RunPlayer } from './run.ts';
 import { addToBag, bagLoot } from './runBag.ts';
-import { enemyWindupOf, oreQtyOf, pickCooldownOf, potionHealOf, rockGemChanceOf, runSpeedOf } from '../skillRules.ts';
+import { damageTakenOf, enemyWindupOf, foodHealOf, heavyHitOf, maxHpScaled, oreQtyOf, pickCooldownOf, potionHealOf, rockGemChanceOf, runSpeedOf } from '../skillRules.ts';
 
 const TICK = DUNGEON_TICK_MS;
 /** A mimic's enemy id: this plus the chest id. */
@@ -201,7 +201,7 @@ function applyInput(r: DungeonRun, input: DungeonInput, rng: Rng): void {
  *  not taken yet on this run. Null = it would do nothing now. */
 function foodUse(p: RunPlayer, id: FoodId, now: number): { heal: number; buff: FoodBuff | null } | null {
   const e = getFoodType(id).effect;
-  if (e.kind === 'heal') return p.hp < p.maxHp && now >= p.potionReadyAt ? { heal: Math.min(e.amount, p.maxHp - p.hp), buff: null } : null;
+  if (e.kind === 'heal') return p.hp < p.maxHp && now >= p.potionReadyAt ? { heal: Math.min(foodHealOf(e.amount, p.skill), p.maxHp - p.hp), buff: null } : null;
   return p.buffs.includes(e.kind) ? null : { heal: 0, buff: e.kind };
 }
 
@@ -254,7 +254,8 @@ function digHooks(r: DungeonRun, rng: Rng): DigHooks {
 
 function hit(r: DungeonRun, e: Enemy, now: number, rng: Rng): void {
   const p = r.player;
-  const damage = rngInt(rng, p.attackMin, p.attackMax);
+  p.hitCount = (p.hitCount ?? 0) + 1;
+  const damage = rngInt(rng, p.attackMin, p.attackMax) * (heavyHitOf(p.hitCount, p.skill) ? 2 : 1); // Bone breaker
   e.hp -= damage;
   p.attackReadyAt = now + p.attackCooldownMs;
   p.pendingHit = false;
@@ -372,7 +373,7 @@ function gainRunXp(r: DungeonRun, xp: number): void {
     // Level up: new stats and a full heal.
     const bonus = attackBonusAt(level) - attackBonusAt(p.level);
     // The new level's hp on top of what food added (pumpkin pie).
-    p.maxHp += maxHpAt(level) - maxHpAt(p.level);
+    p.maxHp += maxHpScaled(maxHpAt(level), p.skill) - maxHpScaled(maxHpAt(p.level), p.skill);
     p.level = level;
     p.hp = p.maxHp;
     p.attackMin += bonus;
@@ -577,7 +578,7 @@ function enemyTick(r: DungeonRun, e: Enemy, grid: NavGrid, rng: Rng): void {
     e.windupMs = Math.max(0, e.windupMs - TICK);
     if (e.windupMs > 0) return;
     if (d <= ENEMY_MISS_RANGE) {
-      const damage = Math.max(p.minDamage, rngInt(rng, stats.hitMin, stats.hitMax) - p.damageReduction);
+      const damage = damageTakenOf(Math.max(p.minDamage, rngInt(rng, stats.hitMin, stats.hitMax) - p.damageReduction), p.minDamage, p.skill);
       p.hp -= damage;
       // Last stand: the first lethal hit of a run leaves 1 hp instead.
       if (p.hp <= 0 && (p.skill?.lastStand ?? 0) > 0 && !p.lastStandUsed) {

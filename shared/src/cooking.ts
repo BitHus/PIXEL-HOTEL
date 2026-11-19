@@ -5,7 +5,8 @@
 // game is closed and survives a save and reload. Nothing is collected by itself: the player taps the stove.
 // Inputs out and dishes in go through applyChange (ledger reason 'cook'), exactly once each.
 
-import { bonusesOf, stoveBatchMaxOf } from './skillRules.ts';
+import { bonusesOf, cookMsScaled, inputsKept, stoveBatchMaxOf } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
 import { COOK_MS, STOVE_BATCH_MAX } from './config.ts';
 import { getFurnitureType } from './furniture.ts';
 import { inRooms, kitchenRoomIds } from './workRooms.ts';
@@ -29,8 +30,8 @@ export interface Cook {
 }
 
 /** How long one batch of a recipe takes, ms: its own cookMs, else the default for its rank. */
-export function cookMs(food: FoodType): number {
-  return food.cookMs ?? COOK_MS[food.rank];
+export function cookMs(food: FoodType, b?: Bonuses): number {
+  return cookMsScaled(food.cookMs ?? COOK_MS[food.rank], b); // Quick simmer / Hot stove
 }
 
 export function cookOf(cooks: readonly Cook[], stoveUid: number): Cook | undefined {
@@ -88,15 +89,19 @@ export function maxBatchWith(materials: Partial<Record<MaterialId, number>>, foo
  * stove, it is in use, the recipe is unknown, qty is not a whole number from 1 to STOVE_BATCH_MAX, or the inputs
  * are short.
  */
-export function startCook(state: GameState, stoveUid: number, food: string, qty: number, at: number): GameState | null {
+export function startCook(state: GameState, stoveUid: number, food: string, qty: number, at: number, rng?: () => number): GameState | null {
   if (!isFoodId(food) || !Number.isInteger(qty) || qty < 1 || qty > stoveBatchMaxOf(bonusesOf(state.player))) return null;
   if (!placedStove(state, stoveUid) || cookOf(state.tavern.cooks, stoveUid)) return null;
   const type = getFoodType(food);
   const used: Partial<Record<MaterialId, number>> = {};
   for (const [id, n] of Object.entries(batchInputs(type, qty)) as [MaterialId, number][]) used[id] = -n;
+  // Thrifty cook: a unit of the inputs is kept with the skill's chance (only with an rng and the skill).
+  const b = bonusesOf(state.player);
+  const kept = rng ? inputsKept(batchInputs(type, qty), b, rng) : {};
+  for (const [id, n] of Object.entries(kept)) used[id as MaterialId] = (used[id as MaterialId] ?? 0) + n;
   const paid = applyChange(state, { reason: 'cook', materials: used, note: `cooking ${qty} x ${food}` }, at);
-  const bonus = prepBonus(state.items, state.rooms.find((r) => r.id === state.items.find((i) => i.uid === stoveUid)?.roomId), stoveUid);
-  return paid && withCooks(paid, [...paid.tavern.cooks, { stoveUid, food, qty, ...(bonus > 0 ? { bonus } : {}), readyAt: at + cookMs(type) }]);
+  const bonus = prepBonus(state.items, state.rooms.find((r) => r.id === state.items.find((i) => i.uid === stoveUid)?.roomId), stoveUid, b);
+  return paid && withCooks(paid, [...paid.tavern.cooks, { stoveUid, food, qty, ...(bonus > 0 ? { bonus } : {}), readyAt: at + cookMs(type, b) }]);
 }
 
 /** The dishes a batch gives: the count put in plus the prep bonus (step T1). */

@@ -22,13 +22,13 @@ export function speedTip(patienceMs: number, price: number): number {
  * The player hands ONE mug of the tray to the bar guest `guestId`: they start drinking on the spot. The mug is one of the guest's own item (a perfect one first,
  * as for tables); the coins they leave grow by the perfect-pour tip and the speed tip. Null when that guest is not a bar guest with an open order, or the tray has no mug of it.
  */
-export function handOver(state: GameState, rng: Rng, guestId: number): { state: GameState; guestId: number; item: MaterialId; tip: number } | null {
+export function handOver(state: GameState, rng: Rng, guestId: number): { state: GameState; guestId: number; item: MaterialId; tip: number; perfect: boolean } | null {
   const guest = state.tavern.guests.find((g) => g.id === guestId && g.kind2 === 'bar' && g.phase === 'order');
   const taken = guest?.order ? takeMug(state.tavern.tray, guest.order.item) : null;
   if (!guest || !guest.order || !taken) return null;
   const tip = pourTip(taken.mug.perfect === true, guest.order.price) + speedTip(guest.patienceMs, guest.order.price);
   const drinking: Guest = { ...guest, order: { ...guest.order, coins: guest.order.coins + tip }, phase: 'bar_drink', waitMs: between(rng, BAR_DRINK_MIN_MS, BAR_DRINK_MAX_MS), sipInMs: between(rng, GUEST_SIP_MIN_MS, GUEST_SIP_MAX_MS) };
-  return { state: { ...state, tavern: { ...state.tavern, tray: taken.tray, guests: state.tavern.guests.map((g) => (g.id === guest.id ? drinking : g)) } }, guestId: guest.id, item: taken.mug.item, tip };
+  return { state: { ...state, tavern: { ...state.tavern, tray: taken.tray, guests: state.tavern.guests.map((g) => (g.id === guest.id ? drinking : g)) } }, guestId: guest.id, item: taken.mug.item, tip, perfect: taken.mug.perfect === true };
 }
 
 /**

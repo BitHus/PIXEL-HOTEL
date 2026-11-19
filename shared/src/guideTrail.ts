@@ -83,7 +83,10 @@ export function guidePeekCamera(lock: Camera, avatar: Point, target: Point, free
     // Smallest move that brings the target in, then kept within what still shows the avatar.
     const want = Math.min(Math.max(cam, t - span + m), t - m);
     if (want === cam) return cam;
-    return Math.min(Math.max(want, a - span + m), a - m);
+    const keep = Math.min(Math.max(want, a - span + m), a - m);
+    // RUN 14 #3: when target and avatar cannot both fit (the avatar already stands at the edge, the target is more than a screen away) the target wins:
+    // the avatar may leave the free area, because tapping the target walks it there and the next walk locks the camera on it again.
+    return t - m >= keep && t - span + m <= keep ? keep : want;
   };
   const x = axis(lock.x, avatar.x, target.x, freeW);
   const y = axis(lock.y, avatar.y, target.y, freeH);

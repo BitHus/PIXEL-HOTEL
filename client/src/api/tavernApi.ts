@@ -2,6 +2,9 @@
 // instance first and does what the class method of the same name did (R1 split: no change in behaviour).
 
 import {
+  TALK_CHANCE,
+  sayFrom,
+  talkChance,
   gain,
   gainsSince,
   deliverOrder,
@@ -175,7 +178,7 @@ export const tavernApi = {
 
   async startBrew(h: LocalGameAPI, barrelUid: number, drink: DrinkId): Promise<boolean> {
     if (!h.inWork()) return false;
-    const next = startBrew(h.state, barrelUid, drink, h.now());
+    const next = startBrew(h.state, barrelUid, drink, h.now(), h.rng);
     if (!next) return false;
     h.commit(next);
     return true;
@@ -225,7 +228,7 @@ export const tavernApi = {
 
   async startCook(h: LocalGameAPI, stoveUid: number, food: FoodId, qty: number): Promise<boolean> {
     if (!h.inWork()) return false;
-    const next = startCook(h.state, stoveUid, food, qty, h.now());
+    const next = startCook(h.state, stoveUid, food, qty, h.now(), h.rng);
     if (!next) return false;
     h.commit(next);
     return true;
@@ -452,6 +455,7 @@ export const tavernApi = {
       if (d && spot) {
         h.commit(d.state);
         h.emitTavern({ t: 'served', guestId: d.guestId, item: d.item, spot });
+        tavernApi.deliverySays(h, d);
       }
       h.emitTavern({ t: 'tray', mugs: h.state.tavern.tray.map((m) => ({ ...m })) });
       tavernApi.nextAfterDelivery(h);
@@ -463,6 +467,7 @@ export const tavernApi = {
       if (d && spot) {
         h.commit(d.state);
         h.emitTavern({ t: 'served', guestId: d.guestId, item: d.item, spot });
+        tavernApi.deliverySays(h, d);
       }
       h.emitTavern({ t: 'tray', mugs: h.state.tavern.tray.map((m) => ({ ...m })) });
       tavernApi.nextAfterDelivery(h);
@@ -481,6 +486,27 @@ export const tavernApi = {
         h.commit(next);
         h.emitTavern({ t: 'cleared', messId: task.messId, spot });
       }
+    }
+  },
+
+  /**
+   * 3g NPC TALK: what is said when an order is put down: the guest who got a perfect pour (or a tip) brags, and now and then the waiter (the
+   * player's avatar) calls "Order up!". Chances in config TALK_CHANCE, no repeat per moment (TavernState.lastLines); the rng is the API's.
+   */
+  deliverySays(h: LocalGameAPI, d: { guestId: number; perfect: boolean; tip: number }): void {
+    const guest = h.state.tavern.guests.find((g) => g.id === d.guestId);
+    if (guest) {
+      const moment = d.perfect && (d.tip <= 0 || h.rng() < 0.6) ? 'perfect_pour' : d.tip > 0 ? 'tip' : null;
+      const r = moment ? sayFrom(h.state, moment, talkChance(moment === 'tip' ? 'tip' : 'perfect', guest.kind), h.rng) : null;
+      if (r) {
+        h.commit(r.state);
+        h.emitTavern({ t: 'say', guestId: d.guestId, text: r.text });
+      }
+    }
+    const staff = sayFrom(h.state, 'staff', TALK_CHANCE.staff, h.rng);
+    if (staff) {
+      h.commit(staff.state);
+      h.emitTavern({ t: 'say', guestId: h.state.player.id, text: staff.text });
     }
   },
 

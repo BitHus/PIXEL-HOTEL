@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NPC_LINE_MAX, TALK_CHANCE } from './config.ts';
-import { NPC_LINES, NPC_MOMENTS, maybeSay, pickLine, reactionMoment, talkChance } from './npcTalk.ts';
+import { refillTaps, runTavern, serveAll, tidy, legacyStart, withAle } from './tavernTest.ts';
+import { GAG_MOMENTS, NPC_LINES, NPC_MOMENTS, maybeSay, pickLine, reactionMoment, sayFrom, talkChance, type NpcMoment } from './npcTalk.ts';
 import { seededRng } from './rng.ts';
 
 describe('npc lines', () => {
@@ -57,5 +58,45 @@ describe('npc lines', () => {
     expect(NPC_LINES.thanks).toContain(r!.text);
     expect(r!.lastLines.thanks).not.toBe(2);
     expect(r!.text).toBe(NPC_LINES.thanks[r!.lastLines.thanks!]);
+  });
+});
+
+describe('3g npc talk hooks', () => {
+  it('has every hooked moment with short, unique lines', () => {
+    for (const m of ['arrive', 'arrive_group', 'perfect_pour', 'tip', 'eating', 'leave_happy', 'leave_unhappy', 'busy', 'quiet', 'bar_guest', 'staff', 'group_chat', ...GAG_MOMENTS] as const) {
+      expect(NPC_MOMENTS).toContain(m);
+      expect(NPC_LINES[m].length).toBeGreaterThanOrEqual(6);
+      for (const l of NPC_LINES[m]) expect(l.length).toBeLessThanOrEqual(NPC_LINE_MAX);
+      expect(new Set(NPC_LINES[m]).size).toBe(NPC_LINES[m].length);
+    }
+  });
+
+  it('a simulated tavern evening says lines from the new moments, all short and from the data', () => {
+    const heard = new Map<string, number>();
+    let s = refillTaps(withAle(), 0);
+    const rng = seededRng(11);
+    s = runTavern(s, 0, 6 * 60 * 60_000, rng, true, (st, events, t) => {
+      for (const e of events) if (e.t === 'say') heard.set(e.text, (heard.get(e.text) ?? 0) + 1);
+      return tidy(refillTaps(serveAll(st, rng), t), t);
+    });
+    const inMoment = (m: NpcMoment): boolean => NPC_LINES[m].some((l) => heard.has(l));
+    for (const l of heard.keys()) expect(l.length).toBeLessThanOrEqual(NPC_LINE_MAX);
+    for (const m of ['arrive', 'leave_happy', 'eating'] as const) expect(inMoment(m), m).toBe(true);
+    expect(inMoment('busy') || inMoment('quiet') || inMoment('group_chat') || GAG_MOMENTS.some(inMoment)).toBe(true);
+    expect(s.tavern.lastLines.arrive).toBeDefined();
+  });
+
+  it('sayFrom keeps the no-repeat memory in the tavern state and stays quiet at chance 0', () => {
+    let s = legacyStart();
+    expect(sayFrom(s, 'staff', 0, seededRng(1))).toBeNull();
+    const rng = seededRng(5);
+    let last: number | undefined;
+    for (let i = 0; i < 100; i++) {
+      const r = sayFrom(s, 'perfect_pour', 1, rng);
+      expect(r).not.toBeNull();
+      expect(r!.state.tavern.lastLines.perfect_pour).not.toBe(last);
+      last = r!.state.tavern.lastLines.perfect_pour;
+      s = r!.state;
+    }
   });
 });

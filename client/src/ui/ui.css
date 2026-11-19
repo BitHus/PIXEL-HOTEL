@@ -33,6 +33,15 @@
   unicode-range: U+0030-0039;
   size-adjust: 118%;
 }
+/* RUN 14 #4: Pixelify's capital C reads as an O at 1x ("Oommon", "OHANCE"): the capital C also comes from Jersey 15 (same file, only U+0043). */
+@font-face {
+  font-family: 'Pixel Caps';
+  src: url('../fonts/jersey-15-latin-400-normal.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0043;
+  size-adjust: 118%;
+}
 
 :root {
   /* Endesga 32 colours (palette.ts is the source of truth for game art). */
@@ -60,7 +69,7 @@
   --info-h: 48px;
   --bar-h: 62px;
   --bottom-clear: calc(var(--bar-h) + var(--edge) + 6px + env(safe-area-inset-bottom));
-  --font: 'Pixel Digits', 'Pixelify Sans', monospace;
+  --font: 'Pixel Digits', 'Pixel Caps', 'Pixelify Sans', monospace;
   --shadow: 0 2px 0 rgba(24, 20, 37, 0.55);
   /* The frames as 9-slice pixel art (drawn here, palette colours only). */
   --frame-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%233e2731'/%3E%3Crect x='1' y='1' width='14' height='14' fill='%23733e39'/%3E%3Crect x='1' y='1' width='14' height='1' fill='%23b86f50'/%3E%3Crect x='1' y='1' width='1' height='14' fill='%23b86f50'/%3E%3Crect x='4' y='4' width='8' height='8' fill='%23e4a672'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%23ead4aa'/%3E%3Crect x='2' y='2' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='12' y='2' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='2' y='12' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='12' y='12' width='2' height='2' fill='%23e4a672'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23c28569'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23c28569'/%3E%3Crect x='3' y='13' width='1' height='1' fill='%23c28569'/%3E%3Crect x='13' y='13' width='1' height='1' fill='%23c28569'/%3E%3C/svg%3E");

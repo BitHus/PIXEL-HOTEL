@@ -157,3 +157,13 @@
   .orders-strip { flex-wrap: nowrap; gap: 0 2px; padding: 0 2px; overflow: hidden; }
   .orders-strip > * { flex: 0 1 auto; min-width: 0; }
 }
+
+/* RUN 14 #1 (phone): the row no longer sits in the bottom CENTRE, where the avatar stands in the first view and after a walk to the bar (it covered torso and legs).
+   It hugs the LEFT edge just above the hotbar and stops short of the middle (the avatar column); more chips scroll sideways inside that width. */
+:root[data-size='phone'] #ui .orders-strip[class] {
+  left: var(--edge);
+  transform: none;
+  bottom: calc(var(--bottom-clear) + 6px);
+  max-width: calc(50vw - var(--edge));
+  justify-content: flex-start;
+}

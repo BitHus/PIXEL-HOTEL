@@ -47,6 +47,7 @@ import { grantXp } from './xp.ts';
 import { gemDrop } from './gems.ts';
 import { RANKS, rollRank } from './ranks.ts';
 import { effective, type Bonuses } from './stats.ts';
+import { bonusesOf } from './skillRules.ts';
 import { rngInt } from './rng.ts';
 import type { MaterialId, Rank, Rng } from './types.ts';
 
@@ -364,7 +365,9 @@ export function bankCatch(state: GameState, s: FishSession, at: number, rng: Rng
   const type = getCatchType(s.catchId);
   // Gems (step BG4): by the rank of the catch.
   const gems = gemDrop('fish', s.rank, rng);
-  const next = applyChange(state, { reason: 'fish', materials: { [type.id]: 1 } as Partial<Record<MaterialId, number>>, ...(gems > 0 ? { gems } : {}), note: `caught ${type.id}${s.cm ? ` ${s.cm} cm` : ''}` }, at);
+  // Double hook: sometimes a second fish of the same kind is on the line (rng only used with the skill).
+  const dbl = (state.player.skills ? bonusesOf(state.player).doubleCatchPct ?? 0 : 0) > 0 && rng() < (bonusesOf(state.player).doubleCatchPct ?? 0) / 100;
+  const next = applyChange(state, { reason: 'fish', materials: { [type.id]: dbl ? 2 : 1 } as Partial<Record<MaterialId, number>>, ...(gems > 0 ? { gems } : {}), note: `caught ${type.id}${s.cm ? ` ${s.cm} cm` : ''}` }, at);
   if (!next) return null;
   const biggest = { ...next.player.biggest };
   if (s.cm !== null && s.cm > (biggest[type.id] ?? 0)) biggest[type.id] = s.cm;

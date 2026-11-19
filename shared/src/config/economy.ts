@@ -64,6 +64,19 @@ export const TALK_CHANCE = {
   leave: 0.3,
   /** Guests at a table (step 9t). */
   table: 0.55,
+  /** 3g: a guest stepping in (alone, or the leader of a group), a bar guest settling at the bar. */
+  arrive: 0.35,
+  bar: 0.4,
+  /** 3g: a bite or sip while eating. */
+  eating: 0.12,
+  /** 3g: a perfect pour or a tip, said by the guest who gets it. */
+  perfect: 0.6,
+  tip: 0.5,
+  /** 3g: the waiter's line when an order is put down (said over the player's avatar). */
+  staff: 0.2,
+  /** 3g: at a table talk moment: busy / quiet / group chat, and a low-chance gag or joke. */
+  ambient: 0.2,
+  gag: 0.06,
 } as const;
 export const CHATTY_TALK = 2;
 export const HURRIED_TALK = 0.5;

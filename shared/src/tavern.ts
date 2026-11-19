@@ -14,8 +14,9 @@
 //   plate on the spot (a Mess) and goes. Coins are only ever collected by the player (ledger
 //   'tavern'); a spot with coins or a dish on it takes no new guest.
 
-import { bonusesOf, trayMaxOf } from './skillRules.ts';
-import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TASTE_AGED_CHANCE, TASTE_RESERVE_CHANCE } from './config.ts';
+import { bonusesOf, tasteReserveOf, trayMaxOf } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
+import { CUSTOMER_FIRST_ID, GUEST_TABLE_NEAR_PX, FIRST_GUEST_DELAY_MS, GUEST_BASE_INTERVAL_MS, CUSTOMER_APPEAL_BASE, MENU_HISTORY_LENGTH, SERVE_QUEUE_MAX, TASTE_AGED_CHANCE } from './config.ts';
 import type { AvatarLook } from './avatar.ts';
 import type { Brew } from './brewing.ts';
 import type { Cask } from './casks.ts';
@@ -250,10 +251,10 @@ export function menuOffers(state: GameState, guests: readonly Guest[] = state.ta
  * The taste trait (step K2): with TASTE_AGED_CHANCE a guest only looks at the aged and vintage drinks when the taps have any (the price rule then works on their
  * higher value: tolerance x valueMult). The rng is only used when there is something aged to look at, so a tavern without ripened drinks plays exactly as before.
  */
-export function tasteOffers(offers: readonly MenuOffer[], rng: Rng): readonly MenuOffer[] {
+export function tasteOffers(offers: readonly MenuOffer[], rng: Rng, b?: Bonuses): readonly MenuOffer[] {
   // CEL-7: with TASTE_RESERVE_CHANCE a guest looks only at RESERVE drinks when a tap has one (the rng is only used then, so seeds without reserve stay the same).
   const reserve = offers.filter((o) => isDrinkId(o.id) && getDrinkType(o.id).tier === 'reserve');
-  if (reserve.length > 0 && rng() < TASTE_RESERVE_CHANCE) return reserve;
+  if (reserve.length > 0 && rng() < tasteReserveOf(b)) return reserve;
   const aged = offers.filter((o) => isDrinkId(o.id) && getDrinkType(o.id).tier !== undefined);
   return aged.length > 0 && rng() < TASTE_AGED_CHANCE ? aged : offers;
 }

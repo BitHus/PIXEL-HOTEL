@@ -7,6 +7,8 @@ import { getFurnitureType } from './furniture.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
 import { grantXp } from './xp.ts';
+import { bonusesOf, brewMsScaled, brewMugsOf, inputsKept } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
 import { inRooms, kitchenRoomIds } from './workRooms.ts';
 import { DRINK_TYPES, getDrinkType, isBaseDrinkId } from './materials.ts';
 import type { DrinkId, FurnitureItem, MaterialId } from './types.ts';
@@ -19,8 +21,8 @@ export interface Brew {
 }
 
 /** How long a drink takes, ms. */
-export function brewMs(drink: DrinkId): number {
-  return getDrinkType(drink).minutes * 60_000;
+export function brewMs(drink: DrinkId, b?: Bonuses): number {
+  return brewMsScaled(getDrinkType(drink).minutes * 60_000, b); // Brew sense
 }
 
 export function brewOf(brews: readonly Brew[], barrelUid: number): Brew | undefined {
@@ -53,20 +55,24 @@ function withBrews(state: GameState, brews: Brew[]): GameState {
  * Starts a brew in an empty barrel that stands in the tavern: the crops leave the bag. Null if it
  * is not such a barrel, it is in use, it is not a drink, or the crops are short.
  */
-export function startBrew(state: GameState, barrelUid: number, drink: string, at: number): GameState | null {
+export function startBrew(state: GameState, barrelUid: number, drink: string, at: number, rng?: () => number): GameState | null {
   if (!isBaseDrinkId(drink) || !placedBarrel(state, barrelUid) || brewOf(state.tavern.brews, barrelUid)) return null;
   const type = getDrinkType(drink);
   const used: Partial<Record<MaterialId, number>> = {};
   for (const [id, n] of Object.entries(type.inputs) as [MaterialId, number][]) used[id] = -n;
+  // Thrifty cook: a unit of the crops is kept with the skill's chance (only with an rng and the skill).
+  const b = bonusesOf(state.player);
+  const kept = rng ? inputsKept(type.inputs, b, rng) : {};
+  for (const [id, n] of Object.entries(kept)) used[id as MaterialId] = (used[id as MaterialId] ?? 0) + n;
   const paid = applyChange(state, { reason: 'brew', materials: used, note: `brewing ${drink}` }, at);
-  return paid && withBrews(paid, [...paid.tavern.brews, { barrelUid, drink, readyAt: at + brewMs(drink) }]);
+  return paid && withBrews(paid, [...paid.tavern.brews, { barrelUid, drink, readyAt: at + brewMs(drink, b) }]);
 }
 
 /** Collects the mugs of a ready brew into the bag; the barrel is empty again. Null if not ready. */
 export function collectBrew(state: GameState, barrelUid: number, at: number): { state: GameState; drink: DrinkId; mugs: number } | null {
   const brew = brewOf(state.tavern.brews, barrelUid);
   if (!brew || !brewReady(brew, at) || !placedBarrel(state, barrelUid)) return null;
-  const mugs = getDrinkType(brew.drink).mugs;
+  const mugs = brewMugsOf(getDrinkType(brew.drink).mugs, bonusesOf(state.player)); // Extra mug
   const got = applyChange(state, { reason: 'brew', materials: { [brew.drink]: mugs }, note: `collected ${brew.drink}` }, at);
   if (!got) return null;
   return { state: grantXp(withBrews(got, got.tavern.brews.filter((b) => b.barrelUid !== barrelUid)), { t: 'brew' }, at), drink: brew.drink, mugs };

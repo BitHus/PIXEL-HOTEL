@@ -67,13 +67,26 @@ describe('guidePeekCamera', () => {
     expect((avatar.x - cam.x) * 2).toBeGreaterThanOrEqual(40);
   });
 
-  it('never pushes the avatar out of the free area (property)', () => {
+  it('lets the target win when it and the avatar cannot both fit (RUN 14 #3: the camera must move)', () => {
+    const cam0 = { x: 121, y: 291, zoom: 3 }; // the avatar stands at the bottom edge of the free area, the target is above the view
+    const cam = guidePeekCamera(cam0, { x: 288, y: 488 }, { x: 144, y: 224 }, 1000, 640);
+    expect(cam.y).toBeLessThan(cam0.y - 50);
+    const sy = (224 - cam.y) * 3;
+    expect(sy).toBeGreaterThanOrEqual(56 - 1e-6);
+    expect(sy).toBeLessThanOrEqual(640 - 56);
+  });
+
+  it('keeps the target or the avatar in the free area, never neither (property)', () => {
     fc.assert(
       fc.property(fc.integer({ min: -2000, max: 2000 }), fc.integer({ min: -2000, max: 2000 }), (tx, ty) => {
         const cam = guidePeekCamera(lock, avatar, { x: tx, y: ty }, 400, 300, 40);
         const sx = (avatar.x - cam.x) * 2;
         const sy = (avatar.y - cam.y) * 2;
-        return sx >= 40 - 1e-9 && sx <= 360 + 1e-9 && sy >= 40 - 1e-9 && sy <= 260 + 1e-9;
+        const tx2 = (tx - cam.x) * 2;
+        const ty2 = (ty - cam.y) * 2;
+        const avatarIn = sx >= 40 - 1e-9 && sx <= 360 + 1e-9 && sy >= 40 - 1e-9 && sy <= 260 + 1e-9;
+        const targetIn = tx2 >= 40 - 1e-9 && tx2 <= 360 + 1e-9 && ty2 >= 40 - 1e-9 && ty2 <= 260 + 1e-9;
+        return avatarIn || targetIn;
       }),
     );
   });

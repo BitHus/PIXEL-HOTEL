@@ -17,7 +17,7 @@ import {
 } from '../config.ts';
 import { ownedArmor, ownedPickaxe, ownedWeapon } from '../gear.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
-import { runBagSlotsOf } from '../skillRules.ts';
+import { attackCooldownOf, maxHpScaled, runBagSlotsOf } from '../skillRules.ts';
 import { effective, type Bonuses } from '../stats.ts';
 import type { Rank, FoodId, GearId, MaterialId, Point } from '../types.ts';
 import { generateFloor, generateMine, type FloorPlan } from './generate.ts';
@@ -112,6 +112,8 @@ export interface DigState {
   rare: number[];
   /** Counts every change of kinds, hits or hazards (the view redraws when it moves). */
   rev: number;
+  /** Blaster: the swings made this visit (every Nth also breaks the stone and dirt around). */
+  swings?: number;
 }
 
 export interface Enemy {
@@ -222,6 +224,8 @@ export interface RunPlayer {
   skill?: Bonuses;
   bagSlots?: number;
   lastStandUsed?: boolean;
+  /** Bone breaker: the hits made this run (every Nth counts double). */
+  hitCount?: number;
   /** False while still standing on the exit after choosing 'stay'. */
   exitArmed: boolean;
 }
@@ -325,7 +329,7 @@ export function combatStats(level: number, gear: readonly GearId[], skill?: Bonu
   const armor = ownedArmor(gear);
   const bonus = attackBonusAt(level);
   return {
-    maxHp: effective(maxHpAt(level), 'maxHpPlus', skill),
+    maxHp: maxHpScaled(maxHpAt(level), skill), // flat (Tough) then percent (Guardian / Brawler)
     attackMin: (weapon?.attackMin ?? PLAYER_BASE_ATTACK_MIN) + bonus + (skill?.attackPlus ?? 0),
     attackMax: (weapon?.attackMax ?? PLAYER_BASE_ATTACK_MAX) + bonus + (skill?.attackPlus ?? 0),
     damageReduction: armor?.damageReduction ?? 0,
@@ -396,7 +400,7 @@ function runFrom(o: NewRunOptions, plan: FloorPlan, round: DungeonRoundId, place
       potions: o.potions,
       food: [...(o.food ?? [])],
       buffs: [],
-      attackCooldownMs: PLAYER_ATTACK_COOLDOWN_MS,
+      attackCooldownMs: attackCooldownOf(o.skills), // Quick strike
       targetRockId: null,
       pendingSwing: false,
       pickReadyAt: 0,

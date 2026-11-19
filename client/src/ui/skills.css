@@ -39,3 +39,15 @@
 .skill-card .btn { min-width: 44px; min-height: 44px; }
 .skills-strip { display: flex; align-items: center; gap: 8px; padding: 4px 6px; font-family: var(--font); color: var(--text); }
 .skills-strip .btn { min-height: 44px; }
+
+/* RUN 14 #2: all 7 branch tabs stay inside the panel (icons only, the open branch is named in the head line); a narrower panel scrolls the row. */
+.skills-panel .panel-tabs { max-width: 100%; box-sizing: border-box; padding-left: 6px; padding-right: 6px; gap: 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-mask-image: none; mask-image: none; }
+.skills-panel .panel-tabs::-webkit-scrollbar { display: none; }
+.skills-panel .panel-tabs .tab-btn { flex: 0 0 auto; min-width: 40px; padding: 0 4px 4px; }
+.skills-panel .panel-tabs .tab-btn.on { padding: 0 4px 4px; }
+.skills-panel .panel-tabs .tab-btn .tab-name, :root[data-size='phone'] .skills-panel .panel-tabs .tab-btn.on .tab-name { display: none; }
+.skills-branch { font-weight: bold; color: var(--ui-accent, var(--warm)); }
+/* SK-7: staged skill art, 32 x 32 shown at 32 css px (whole pixels, nearest neighbour). */
+.skill-emblem { width: 32px; height: 32px; display: block; image-rendering: pixelated; pointer-events: none; }
+.skills-panel .panel-tabs .tab-btn .skill-emblem { opacity: 0.8; }
+.skills-panel .panel-tabs .tab-btn.on .skill-emblem { opacity: 1; }

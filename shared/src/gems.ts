@@ -3,16 +3,18 @@
 // Pure: the rng is passed in.
 
 import { BLOCK_DROPS, GEMS, GEM_RANK_MULT, GEM_TIERS, TAVERN_GEM_CHANCE_MULT } from './config.ts';
+import { gemTipChanceOf, harvestGemChanceOf, questGemsOf } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
 import type { Rank, Rng } from './types.ts';
 
 export type GemSource = keyof typeof GEMS;
 
 /** The gems one thing drops: nothing most of the time, else min to max times the rank bonus. */
-export function gemDrop(source: GemSource, rank: Rank, rng: Rng): number {
+export function gemDrop(source: GemSource, rank: Rank, rng: Rng, b?: Bonuses): number {
   const g = GEMS[source];
-  if (rng() >= g.chance) return 0;
+  if (rng() >= (source === 'harvest' ? harvestGemChanceOf(g.chance, b) : g.chance)) return 0; // Lucky sprout: the harvest chance
   const n = g.min + Math.floor(rng() * (g.max - g.min + 1));
-  return n * GEM_RANK_MULT[rank];
+  return source === 'quest' ? questGemsOf(n * GEM_RANK_MULT[rank], b, rng) : n * GEM_RANK_MULT[rank]; // Quest hand
 }
 
 /** One gem piece as it falls out of a block: its value (1, 5, 10) and the colours of its icon. */
@@ -42,8 +44,8 @@ export function blockGemDrop(rank: Rank, rng: Rng): number {
 }
 
 /** The chance (0 to 1) that a happy guest who ordered something of this rank leaves a gem. */
-export function tavernGemChance(rank: Rank): number {
-  return Math.min(1, GEMS.tavern.chance * TAVERN_GEM_CHANCE_MULT[rank]);
+export function tavernGemChance(rank: Rank, b?: Bonuses): number {
+  return gemTipChanceOf(Math.min(1, GEMS.tavern.chance * TAVERN_GEM_CHANCE_MULT[rank]), b);
 }
 
 /** Expected gems of one happy guest's tip for an order of this rank (the closed form of tavernGemDrop). */
@@ -52,7 +54,7 @@ export function tavernTipGems(rank: Rank): number {
 }
 
 /** The gems a happy tavern guest leaves with the coins (step S3): nothing most of the time, else min to max. Pure: the rng is passed in. */
-export function tavernGemDrop(rank: Rank, rng: Rng): number {
-  if (rng() >= tavernGemChance(rank)) return 0;
+export function tavernGemDrop(rank: Rank, rng: Rng, b?: Bonuses): number {
+  if (rng() >= tavernGemChance(rank, b)) return 0;
   return GEMS.tavern.min + Math.floor(rng() * (GEMS.tavern.max - GEMS.tavern.min + 1));
 }

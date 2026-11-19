@@ -7,6 +7,8 @@ import {
   buySeeds,
   buyBlocks,
   approachSpot,
+  blockReachOf,
+  bonusesOf,
   placeBlock,
   hitBlock,
   hitPlant,
@@ -35,7 +37,7 @@ export const blocksFarmApi = {
   async placeBlock(h: LocalGameAPI, c: number, r: number, blockId: string): Promise<BlockResult> {
     const room = h.room();
     const me = h.avatarNow();
-    const res = placeBlock(h.state, room.id, c, r, blockId, h.now(), { standing: h.standingPoints(), from: me });
+    const res = placeBlock(h.state, room.id, c, r, blockId, h.now(), { standing: h.standingPoints(), from: me, reach: blockReachOf(bonusesOf(h.state.player)) });
     if (!res.ok) return res.problem === 'reach' ? h.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
     h.commitBlocks(res.state);
     return { kind: 'placed', room: h.roomById(room.id)!, c, r, gains: [] };
@@ -66,7 +68,7 @@ export const blocksFarmApi = {
   async plantSeed(h: LocalGameAPI, c: number, r: number, seed: SeedId): Promise<BlockResult> {
     const room = h.room();
     const me = h.avatarNow();
-    const res = plantSeed(h.state, room.id, c, r, seed, h.now(), { standing: h.standingPoints(), from: me });
+    const res = plantSeed(h.state, room.id, c, r, seed, h.now(), { standing: h.standingPoints(), from: me, reach: blockReachOf(bonusesOf(h.state.player)) });
     if (!res.ok) return res.problem === 'reach' ? h.walkCloser(me, c, r) : { kind: 'refused', problem: res.problem };
     // The farm quest: plant your first seed (any seed counts).
     h.commitBlocks(h.hintDone(res.state, FARM_HINT));
@@ -98,7 +100,7 @@ export const blocksFarmApi = {
     const me = h.avatarNow();
     const res = spliceSeed(h.state, room.id, c, r, seed, h.now());
     if (!res.ok) return { kind: 'refused', problem: res.problem };
-    if (!inReach(me, c, r)) return h.walkCloser(me, c, r);
+    if (!inReach(me, c, r, blockReachOf(bonusesOf(h.state.player)))) return h.walkCloser(me, c, r);
     h.commitBlocks(h.hintDone(res.state, SPLICE_HINT));
     return { kind: 'spliced', room: h.roomById(room.id)!, c, r, gains: [] };
   },
@@ -126,7 +128,7 @@ export const blocksFarmApi = {
 
   /** A block cell is out of reach: walk to a spot near it; the client asks again on arrival. */
   walkCloser(h: LocalGameAPI, me: Avatar, c: number, r: number): BlockResult {
-    const spot = approachSpot(h.grid, me, c, r);
+    const spot = approachSpot(h.grid, me, c, r, blockReachOf(bonusesOf(h.state.player)));
     const path = spot && findPath(h.grid, me, spot);
     if (!path) return { kind: 'refused', problem: 'reach' };
     h.walkState = { avatar: { ...me, state: path.length > 1 ? 'walk' : 'idle' }, path: path.slice(1), at: h.now(), sitOn: null, seated: null };

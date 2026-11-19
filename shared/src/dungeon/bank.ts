@@ -6,14 +6,14 @@
 // 'lunch_box'); finishRun gives back the food not eaten (after death the box is lost: step.ts empties it).
 
 import { addSeen, enemyKey } from '../seen.ts';
-import { DUNGEON_KEY_COST, LUNCH_BOX_MAX, MINE_UNLOCK_LEVEL } from '../config.ts';
+import { DUNGEON_KEY_COST, MINE_UNLOCK_LEVEL } from '../config.ts';
 import { isFoodId } from '../materials.ts';
 import type { GameState } from '../gameState.ts';
 import { addXp } from '../levels.ts';
 import { applyChange } from '../ledger.ts';
 import { grantEarnedHats } from '../hats.ts';
 import type { FoodId, MaterialId } from '../types.ts';
-import { bonusesOf } from '../skillRules.ts';
+import { bonusesOf, lunchBoxMaxOf } from '../skillRules.ts';
 import { newDigRun, newRun, type DungeonRoundId, type DungeonRun } from './run.ts';
 
 /** True if the next run is free (the player has less gold than the key costs). */
@@ -29,7 +29,7 @@ export function packLunch(state: GameState, lunch: readonly string[]): FoodId[] 
   const left = { ...state.player.materials };
   const out: FoodId[] = [];
   for (const id of lunch) {
-    if (out.length >= LUNCH_BOX_MAX || !isFoodId(id) || (left[id] ?? 0) <= 0) continue;
+    if (out.length >= lunchBoxMaxOf(bonusesOf(state.player)) || !isFoodId(id) || (left[id] ?? 0) <= 0) continue;
     left[id] = (left[id] ?? 0) - 1;
     out.push(id);
   }

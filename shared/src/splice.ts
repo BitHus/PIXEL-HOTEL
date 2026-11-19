@@ -2,7 +2,8 @@
 // else the general rule of spliceRule.ts decides (a pure hash of the pair, no random failure). Only the same seed twice, a legendary seed or a
 // noSplice seed does nothing, and then both seeds stay in the bag. Pure; no rng.
 
-import { SPLICE_BONUS_MS } from './config.ts';
+import { spliceBonusMsOf } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
 import { seedGrowMs, seedRank } from './seeds.ts';
 import { spliceResult } from './spliceRule.ts';
 import type { Plant } from './room.ts';
@@ -32,9 +33,9 @@ export function splice(a: SeedId, b: SeedId): SeedId | null {
  * How long a spliced cell grows: the longest of the two seeds' grow times and the grow time of the RESULT's rank (so a rank-up cannot skip
  * time), plus SPLICE_BONUS_MS. A pair that makes nothing: the longer of the two plus the bonus.
  */
-export function spliceGrowMs(a: SeedId, b: SeedId): number {
+export function spliceGrowMs(a: SeedId, b: SeedId, skills?: Bonuses): number {
   const result = spliceResult(a, b);
-  return Math.max(seedGrowMs(a), seedGrowMs(b), result ? seedGrowMs(result) : 0) + SPLICE_BONUS_MS;
+  return Math.max(seedGrowMs(a), seedGrowMs(b), result ? seedGrowMs(result) : 0) + spliceBonusMsOf(skills); // Quick splice shortens the extra time only
 }
 
 /** True if this seed can be the result of a splice. */

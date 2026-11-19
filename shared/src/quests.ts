@@ -3,6 +3,7 @@
 
 import { gemDrop } from './gems.ts';
 import { applyChange } from './ledger.ts';
+import { bonusesOf } from './skillRules.ts';
 import type { GameState } from './gameState.ts';
 import type { Rng } from './types.ts';
 
@@ -12,7 +13,7 @@ import type { Rng } from './types.ts';
  */
 export function completeQuest(state: GameState, index: number, at: number, rng: Rng): GameState {
   if (state.hintsDone !== index) return state;
-  const gems = gemDrop('quest', 'common', rng);
+  const gems = gemDrop('quest', 'common', rng, bonusesOf(state.player));
   const paid = gems > 0 ? applyChange(state, { reason: 'quest', gems, note: `quest ${index}` }, at) ?? state : state;
   return { ...paid, hintsDone: index + 1 };
 }

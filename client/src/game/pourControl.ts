@@ -4,7 +4,7 @@
 // Robust: release always ends it (pointer up/cancel from cameraControl, window pointerup, blur, visibility change, a panel opening, a hold past POUR_HOLD_CAP_MS,
 // the guest leaving or the tap emptying: cancel()). The mug is never lost: the API call happens once, on the release.
 
-import { POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_PERFECT_RANGE, pickPourTap, pourFill, pourHeldClamp, type PourPick, type Point } from '@pixel-hotel/shared';
+import { POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_PERFECT_RANGE, pickPourTap, pourFill, pourHeldClamp, type Bonuses, type PourPick, type Point } from '@pixel-hotel/shared';
 
 const GLUG_EVERY_MS = 110;
 /** A press this close to a stand's centre (CSS px, at least) belongs to it; scaled up with the zoom. */
@@ -33,6 +33,8 @@ export interface PourControlHooks {
   glug: (pitch: number) => void;
   toast: (text: string) => void;
   now?: () => number;
+  /** Smooth pour: the skill bonuses (shorter time to a full mug). */
+  skills?: () => Bonuses | undefined;
 }
 
 export function createPourControl(h: PourControlHooks) {
@@ -54,10 +56,10 @@ export function createPourControl(h: PourControlHooks) {
     if (!press) return;
     raf = requestAnimationFrame(loop);
     const ms = now() - press.startedAt;
-    h.onFill(pourFill(ms), ms);
-    if (now() - press.lastGlug >= GLUG_EVERY_MS && pourFill(ms) < POUR_MAX_FILL) {
+    h.onFill(pourFill(ms, h.skills?.()), ms);
+    if (now() - press.lastGlug >= GLUG_EVERY_MS && pourFill(ms, h.skills?.()) < POUR_MAX_FILL) {
       press.lastGlug = now();
-      h.glug(Math.min(1, pourFill(ms) / POUR_PERFECT_RANGE[1]));
+      h.glug(Math.min(1, pourFill(ms, h.skills?.()) / POUR_PERFECT_RANGE[1]));
     }
     if (ms >= POUR_HOLD_CAP_MS) end(); // the safety cap: a stuck press ends by itself
   };

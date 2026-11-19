@@ -1,7 +1,7 @@
 // The frame loop and the start of play (R1 split of main.ts: part 17 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { CAMERA_FOLLOW_EASE_MS, GUIDE_PEEK_DELAY_MS, GUIDE_PEEK_TAU_MS, clampCamera, easeCamera, guidePeekCamera, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, snapToStep, HOTEL_WALK_SPEED, roomSpeedOf, type Point } from '@pixel-hotel/shared';
+import { CAMERA_FOLLOW_EASE_MS, GUIDE_PEEK_DELAY_MS, GUIDE_PEEK_TAU_MS, clampCamera, easeCamera, guidePeekCamera, AVATAR_H, BUILD_CELL, FrameStats, WALK_BOB_MS, easeLift, followLock, levelAtPoint, liftPxOfLevel, walkAvatar, worldToScreen, snapToStep, HOTEL_WALK_SPEED, walkSpeedIn, type Point } from '@pixel-hotel/shared';
 import { pixelStep } from '../render/pixelStep.ts';
 import { avatarMoving } from './followCam.ts';
 import { emotePose } from '../render/emoteAnim.ts';
@@ -82,7 +82,7 @@ export async function setupGameLoop(g: G16) {
     if (step) setCamera(step.camera, step.done);
     control.update(ticker.deltaMS);
     clockMs += ticker.deltaMS;
-    if (!seating.busy) ({ avatar: st.avatar, path: st.path } = walkAvatar(st.avatar, st.path, ticker.deltaMS, roomSpeedOf(HOTEL_WALK_SPEED, st.skills)));
+    if (!seating.busy) ({ avatar: st.avatar, path: st.path } = walkAvatar(st.avatar, st.path, ticker.deltaMS, walkSpeedIn(HOTEL_WALK_SPEED, st.room.kind, st.skills)));
     // Arrived at the seat's approach point: take the pose and slide onto the seat.
     if (st.path.length === 0 && seating.goal !== null) st.avatar = seating.arrive(st.avatar, roomItem(seating.goal.uid));
     st.avatar = seating.update(st.avatar, ticker.deltaMS);

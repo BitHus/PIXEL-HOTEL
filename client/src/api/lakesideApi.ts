@@ -14,6 +14,7 @@ import {
   bobberPoint,
   newFishSession,
   bonusesOf,
+  treeRegrowMsOf,
   regrowInMs,
   treeAnchor,
   findPath,
@@ -100,10 +101,11 @@ export const lakesideApi = {
 
   lakesideView(h: LocalGameAPI): LakesideView {
     const now = h.now();
-    const lake = growTrees(h.state.lakeside, now);
+    const regrow = treeRegrowMsOf(bonusesOf(h.state.player)); // Wanderer
+    const lake = growTrees(h.state.lakeside, now, regrow);
     return {
       roomId: lake.roomId,
-      trees: lake.trees.map((t) => ({ hits: t.hits, regrowInMs: isStump(t, now) ? regrowInMs(t, now) : null })),
+      trees: lake.trees.map((t) => ({ hits: t.hits, regrowInMs: isStump(t, now, regrow) ? regrowInMs(t, now, regrow) : null })),
       at: now,
     };
   },

@@ -8,6 +8,7 @@ import { confirmBuy } from './confirmBuy.ts';
 import { el, textButton } from './dom.ts';
 import { iconBox, panelShell, tabBar } from './panelShell.ts';
 import { pixelIcon, type IconName } from './pixelIcons.ts';
+import { skillIconUrl } from './skillIcons.ts';
 import { BRANCH_NAMES, lockText, nodeSummary, notActiveYet, respecText, unlearnText } from './skillsText.ts';
 import './skills.css';
 
@@ -53,6 +54,18 @@ export function createSkillsPanel(parent: HTMLElement, hooks: SkillsHooks): Skil
   const mark = tabBar(shell.tabs, SKILL_BRANCHES.map((b) => [b, BRANCH_ICON[b], BRANCH_NAMES[b]] as const), (b) => {
     tab = b;
     draw();
+  });
+
+  // Branch tabs: the staged emblem (32 x 32, whole pixels) replaces the code icon; a missing picture keeps the fallback.
+  SKILL_BRANCHES.forEach((b, i) => {
+    const url = skillIconUrl(`branch_${b}`);
+    const btn = shell.tabs.children[i];
+    if (!url || !btn) return;
+    const img = el('img', 'skill-emblem');
+    img.src = url;
+    img.alt = '';
+    img.draggable = false;
+    btn.firstElementChild?.replaceWith(img);
   });
 
   const apply = (next: SkillsView | null): void => {
@@ -140,7 +153,8 @@ export function createSkillsPanel(parent: HTMLElement, hooks: SkillsHooks): Skil
       b.disabled = busy || (!n.undo && hooks.gold() < n.unlearnCost);
       action.append(b);
     }
-    root.append(iconBox(pixelIcon(NODE_ICON[n.id] ?? (n.branch === 'bridge' || n.branch === 'hub' ? BRANCH_ICON[tab] : BRANCH_ICON[n.branch]))), info, action);
+    const art = skillIconUrl(n.icon);
+    root.append(iconBox(art ?? pixelIcon(NODE_ICON[n.id] ?? (n.branch === 'bridge' || n.branch === 'hub' ? BRANCH_ICON[tab] : BRANCH_ICON[n.branch]))), info, action);
     return root;
   };
 
@@ -154,6 +168,7 @@ export function createSkillsPanel(parent: HTMLElement, hooks: SkillsHooks): Skil
     }
     const v = view;
     head.replaceChildren(
+      el('span', 'skills-branch', BRANCH_NAMES[tab]),
       el('span', 'skills-points', `Skill points: ${v.free} free`),
       el('span', 'skills-spent', `${v.spent} spent of ${v.earned} earned (1 per level from 2, +1 per Book reward up to 4, +1 per 5 achievements up to 5)`),
     );

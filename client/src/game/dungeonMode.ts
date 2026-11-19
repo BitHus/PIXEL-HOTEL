@@ -1,7 +1,7 @@
 // Entering the dungeon and the mine (R1 split of main.ts: part 13 of 17; the code is unchanged, only moved).
 // It runs once, in order, from start() in main.ts; what later parts need is returned.
 
-import { MINE_UNLOCK_LEVEL, type FoodId, DUNGEON_KEY_COST } from '@pixel-hotel/shared';
+import { MINE_UNLOCK_LEVEL, type FoodId, DUNGEON_KEY_COST, bonusesOf, lunchBoxMaxOf } from '@pixel-hotel/shared';
 import { confirmBuy } from '../ui/confirmBuy.ts';
 import { createLunchPicker } from '../ui/lunchPicker.ts';
 import type { G12 } from './ctx.ts';
@@ -44,7 +44,7 @@ export async function setupDungeonMode(g: G12) {
     const free = p.wallet.gold < DUNGEON_KEY_COST;
     const detail = free ? 'A free run, because you have less than 10 gold. Fight, open chests, bring the loot home.' : 'The key costs 10 gold. Fight, open chests, bring the loot home.';
     // Step 9b: pick up to 3 food items for the lunch box.
-    const lunch = createLunchPicker(p.materials);
+    const lunch = createLunchPicker(p.materials, lunchBoxMaxOf(bonusesOf(p)));
     if (!(await confirmBuy(uiRoot, { name: 'The crypt', detail, price: free ? null : DUNGEON_KEY_COST, yes: 'Enter', extra: lunch.el }))) return;
     const run = await api.dungeonStart(lunch.chosen() as FoodId[]);
     if (!run) return;

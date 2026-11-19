@@ -144,6 +144,7 @@ export async function setupTavernLife(g: G9) {
     if (stopFx || pour.phase !== 'done') pour.stop();
   };
   const pourControl = createPourControl({
+    skills: () => st.skills,
     stands: () => (pourFor ? tapStands(st.items, st.tavern.roomId).flatMap((s) => {
       const i = standInfo(s.uid);
       return i ? [{ standUid: s.uid, screen: worldToScreen({ x: s.x, y: i.floorY - 14 }, st.shown), zoom: st.shown.zoom }] : [];

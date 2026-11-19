@@ -7,7 +7,6 @@
 // Pure: the time and the rng are passed in. The loot goes through applyChange (ledger 'chop').
 
 import {
-  AXE_COOLDOWN_MS,
   TREE_HITS,
   TREE_REGROW_MS,
   TREE_WOOD_MAX,
@@ -17,6 +16,7 @@ import type { GameState } from './gameState.ts';
 import { ownedAxe } from './gear.ts';
 import { applyChange } from './ledger.ts';
 import { grantXp } from './xp.ts';
+import { bonusesOf, chopCooldownOf, treeRegrowMsOf } from './skillRules.ts';
 import { TREE_COUNT } from './lakeLayout.ts';
 import { gemDrop } from './gems.ts';
 import { rollRank } from './ranks.ts';
@@ -42,19 +42,19 @@ export function emptyLakeside(roomId: number): LakesideState {
 }
 
 /** True while a felled tree is a stump (it grows back TREE_REGROW_MS after it fell). */
-export function isStump(tree: TreeState, now: number): boolean {
-  return tree.felledAt !== null && now - tree.felledAt < TREE_REGROW_MS;
+export function isStump(tree: TreeState, now: number, regrowMs: number = TREE_REGROW_MS): boolean {
+  return tree.felledAt !== null && now - tree.felledAt < regrowMs;
 }
 
 /** ms until a stump is a tree again, or null for a standing tree. */
-export function regrowInMs(tree: TreeState, now: number): number | null {
-  return isStump(tree, now) ? tree.felledAt! + TREE_REGROW_MS - now : null;
+export function regrowInMs(tree: TreeState, now: number, regrowMs: number = TREE_REGROW_MS): number | null {
+  return isStump(tree, now, regrowMs) ? tree.felledAt! + regrowMs - now : null;
 }
 
 /** The trees as they are at `now`: a stump whose time is up is a whole tree again. */
-export function growTrees(lake: LakesideState, now: number): LakesideState {
-  if (!lake.trees.some((t) => t.felledAt !== null && !isStump(t, now))) return lake;
-  return { ...lake, trees: lake.trees.map((t) => (t.felledAt !== null && !isStump(t, now) ? { hits: 0, felledAt: null } : t)) };
+export function growTrees(lake: LakesideState, now: number, regrowMs: number = TREE_REGROW_MS): LakesideState {
+  if (!lake.trees.some((t) => t.felledAt !== null && !isStump(t, now, regrowMs))) return lake;
+  return { ...lake, trees: lake.trees.map((t) => (t.felledAt !== null && !isStump(t, now, regrowMs) ? { hits: 0, felledAt: null } : t)) };
 }
 
 /** What a rank gives besides wood: resin (rare), amber (ultra_rare), a golden acorn (legendary), nothing for common. */
@@ -91,12 +91,14 @@ export interface ChopResult {
 export function chop(state: GameState, index: number, now: number, rng: Rng): { state: GameState; result: ChopResult } | null {
   const lake0 = state.lakeside;
   if (index < 0 || index >= TREE_COUNT || !lake0.trees[index]) return null;
-  const lake = growTrees(lake0, now);
+  const skills = bonusesOf(state.player);
+  const regrow = treeRegrowMsOf(skills); // Wanderer
+  const lake = growTrees(lake0, now, regrow);
   const tree = lake.trees[index]!;
-  if (isStump(tree, now)) return { state: { ...state, lakeside: lake }, result: { kind: 'regrowing', hits: 0 } };
+  if (isStump(tree, now, regrow)) return { state: { ...state, lakeside: lake }, result: { kind: 'regrowing', hits: 0 } };
   if (now < lake.axeReadyAt) return { state: { ...state, lakeside: lake }, result: { kind: 'cooldown', hits: tree.hits } };
   const hits = tree.hits + (ownedAxe(state.player.gear)?.hitsPerSwing ?? 1);
-  const ready = now + AXE_COOLDOWN_MS;
+  const ready = now + chopCooldownOf(skills); // Wanderer feet
   if (hits < TREE_HITS) {
     const trees = lake.trees.map((t, i) => (i === index ? { ...t, hits } : t));
     return { state: { ...state, lakeside: { ...lake, trees, axeReadyAt: ready } }, result: { kind: 'hit', hits } };

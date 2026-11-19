@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DIG_CAVEIN_DAMAGE, DIG_CAVEIN_TELL_MS, DIG_COLS, DIG_DEPTH_MAX, DIG_FILLER_DROP_CHANCE, DIG_GLINT_BLOCKS, DIG_LIGHT_BLOCKS, DUNGEON_BLOCK, PICKAXE_COOLDOWN_MS } from '../config.ts';
 import { seededRng } from '../rng.ts';
-import { chestGlintBlocksOf, digLightPxOf, glintBlocksOf, hazardDamageOf, HOOKED_STATS } from '../skillRules.ts';
+import { caveTellMsOf, chestGlintBlocksOf, digLightPxOf, glintBlocksOf, hazardDamageOf, HOOKED_STATS } from '../skillRules.ts';
 import type { Bonuses } from '../stats.ts';
 import { blockCenter } from './grid.ts';
 import type { MineBlockId } from './mineBlocks.ts';
@@ -288,5 +288,38 @@ describe('the dig mine as a visit', () => {
     const home = finishRun(started.state, r, 5)!;
     expect(home.player.materials.coal).toBe(4);
     expect(home.ledger.at(-1)).toMatchObject({ reason: 'mine_bank' });
+  });
+});
+
+describe('SK-5 Blaster and Sure footing', () => {
+  it('Blaster: the 3rd swing (blastEvery 3) also breaks the stone and dirt around, not ore, no drops', () => {
+    let r = run({ blastEvery: 3 });
+    r = withKind(r, 11, 10, 'coal'); // target: 4+ hits would be too slow, so use dirt as the target and keep the ore beside it
+    r = withKind(r, 11, 10, 'dirt');
+    r = withKind(r, 12, 9, 'stone');
+    r = withKind(r, 12, 11, 'coal');
+    const s = seededRng(1);
+    for (let k = 0; k < 2; k++) {
+      if (k > 0) r = step(r, [], PICKAXE_COOLDOWN_MS, s);
+      r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], 0, s);
+      if (r.dig!.kinds[idx(11, 10)] === '') r = withKind(r, 11, 10, 'dirt'); // keep the target standing for the count
+    }
+    expect(r.dig!.swings).toBe(2);
+    expect(r.dig!.kinds[idx(12, 9)]).toBe('stone'); // 2 swings: no blast yet
+    r = step(r, [], PICKAXE_COOLDOWN_MS, s);
+    r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], 0, s);
+    expect(r.dig!.kinds[idx(12, 9)]).toBe(''); // 3rd swing: the stone beside the target went
+    expect(r.dig!.kinds[idx(12, 11)]).toBe('coal'); // ore stays
+  });
+
+  it('Sure footing: a cave-in tile cracks for longer before it hurts', () => {
+    expect(DIG_CAVEIN_TELL_MS + 300).toBe(caveTellMsOf({ caveTellMs: 300 }));
+    const r = run({ caveTellMs: 300 });
+    const here = { c: 10, r: 10 };
+    const hz = { c: here.c, r: here.r, state: 'armed' as const, crackMs: 0 };
+    const withHazard: DungeonRun = { ...r, dig: { ...r.dig!, hazards: [hz as never] } };
+    const out = step(withHazard, [], 100, seededRng(2));
+    expect(out.dig!.hazards[0]!.state).toBe('cracking');
+    expect(out.dig!.hazards[0]!.crackMs).toBe(DIG_CAVEIN_TELL_MS + 300);
   });
 });

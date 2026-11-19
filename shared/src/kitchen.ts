@@ -8,6 +8,8 @@
 //   zone works as before, without the bonus.
 
 import { PREP_BONUS } from './config.ts';
+import { prepAnywhereOf, prepBonusMaxOf } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
 import { footprintRect, getFurnitureType } from './furniture.ts';
 import { roomAnnex, type Room } from './room.ts';
 import type { FurnitureItem, Rect } from './types.ts';
@@ -36,8 +38,9 @@ function floorOf(items: readonly FurnitureItem[], roomId: number): FurnitureItem
 }
 
 /** The prep tables that count for a stove: inside the zone, next to the stove, the stove inside the zone too. */
-export function prepTablesFor(items: readonly FurnitureItem[], room: Room, stoveUid: number): FurnitureItem[] {
-  const zone = kitchenZone(room);
+export function prepTablesFor(items: readonly FurnitureItem[], room: Room, stoveUid: number, b?: Bonuses): FurnitureItem[] {
+  // Master kitchen (prepAnywhere): the zone is the whole room.
+  const zone = prepAnywhereOf(b) ? { x: -1e9, y: -1e9, w: 2e9, h: 2e9 } : kitchenZone(room);
   const stove = floorOf(items, room.id).find((i) => i.uid === stoveUid);
   if (!zone || !stove) return [];
   const sr = footprintRect(stove, getFurnitureType(stove.typeId));
@@ -51,7 +54,7 @@ export function prepTablesFor(items: readonly FurnitureItem[], room: Room, stove
 }
 
 /** Extra dishes per batch on this stove: PREP_BONUS.perTable per counted prep table, at most PREP_BONUS.max. */
-export function prepBonus(items: readonly FurnitureItem[], room: Room | undefined, stoveUid: number): number {
+export function prepBonus(items: readonly FurnitureItem[], room: Room | undefined, stoveUid: number, b?: Bonuses): number {
   if (!room) return 0;
-  return Math.min(PREP_BONUS.max, prepTablesFor(items, room, stoveUid).length * PREP_BONUS.perTable);
+  return Math.min(prepBonusMaxOf(b), prepTablesFor(items, room, stoveUid, b).length * PREP_BONUS.perTable);
 }

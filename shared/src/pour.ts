@@ -1,19 +1,19 @@
 // Hands-on pouring (step G2): hold the tap to fill the mug, release near full for a perfect pour. Pure rules; the drink is never lost.
 
-import { POUR_FULL_MS, POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_TIP_RATE } from './config.ts';
-import { pourRangeOf } from './skillRules.ts';
+import { POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_TIP_RATE } from './config.ts';
+import { pourFullMsOf, pourRangeOf } from './skillRules.ts';
 import type { Bonuses } from './stats.ts';
 
 /** The fill of the mug after `heldMs` of holding: 0..POUR_MAX_FILL, 1 = full. */
-export function pourFill(heldMs: number): number {
+export function pourFill(heldMs: number, bonuses?: Bonuses): number {
   if (!Number.isFinite(heldMs) || heldMs <= 0) return 0;
-  return Math.min(POUR_MAX_FILL, heldMs / POUR_FULL_MS);
+  return Math.min(POUR_MAX_FILL, heldMs / pourFullMsOf(bonuses));
 }
 
 export type PourGrade = 'under' | 'perfect' | 'over';
 
 export function pourGrade(heldMs: number, bonuses?: Bonuses): PourGrade {
-  const f = pourFill(heldMs);
+  const f = pourFill(heldMs, bonuses);
   const [lo, hi] = pourRangeOf(bonuses);
   return f < lo ? 'under' : f > hi ? 'over' : 'perfect';
 }

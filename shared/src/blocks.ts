@@ -9,8 +9,9 @@
 // ledger.applyChange. Only the room's owner changes the room.
 
 import { innDoorSpotRects } from './innDoors.ts';
+import { blockHitCooldownOf, blockReachOf, bonusesOf } from './skillRules.ts';
 import { kitchenZone } from './kitchen.ts';
-import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_HIT_COOLDOWN_MS, BLOCK_DROPS, BLOCK_REACH, BLOCK_STACK_MAX, BUILD_CELL } from './config.ts';
+import { GUEST_SEAT_REACH_PX, BLOCK_CRACK_STAGES, BLOCK_HEAL_MS, BLOCK_DROPS, BLOCK_REACH, BLOCK_STACK_MAX, BUILD_CELL } from './config.ts';
 import { getBlockType, isBlockId, type BlockCell, type BlockLookup, type BlockType } from './blockTypes.ts';
 import { footprintRect, getFurnitureType, behindPoint, behindReachable, doorPoint, doorReachesMiddle, roomBlockers, type FurnitureLookup } from './furniture.ts';
 import { fixedBlockers } from './farmLayout.ts';
@@ -58,12 +59,14 @@ export interface BlockContext {
   standing: readonly Point[];
   /** The acting avatar's position; null = no reach limit (tests, the server's own checks). */
   from: Point | null;
+  /** Long arms: the reach in cells (BLOCK_REACH when absent). */
+  reach?: number;
 }
 
 /** True if the cell's centre is within BLOCK_REACH cells of the avatar. */
-export function inReach(from: Point, c: number, r: number): boolean {
+export function inReach(from: Point, c: number, r: number, reach: number = BLOCK_REACH): boolean {
   const mid = cellRectOf(c, r);
-  return Math.hypot(mid.x + BUILD_CELL / 2 - from.x, mid.y + BUILD_CELL / 2 - from.y) <= BLOCK_REACH * BUILD_CELL;
+  return Math.hypot(mid.x + BUILD_CELL / 2 - from.x, mid.y + BUILD_CELL / 2 - from.y) <= reach * BUILD_CELL;
 }
 
 /** Floor furniture (not wall items, not riders on a surface) of the room. */
@@ -124,7 +127,7 @@ export function cellProblem(
     const after = reachableSeatKeys(room, items, blockers);
     if ([...before].some((k) => !after.has(k))) return 'seat_blocked';
   }
-  if (ctx.from && !inReach(ctx.from, c, r)) return 'reach';
+  if (ctx.from && !inReach(ctx.from, c, r, ctx.reach)) return 'reach';
   return null;
 }
 
@@ -265,8 +268,8 @@ export function hitBlock(
   const cell = blockInCell(room, c, r);
   if (!cell) return { ok: false, problem: 'no_block' };
   if (plantInCell(room, c, r)) return { ok: false, problem: 'planted' }; // the host never vanishes under a plant (step SG4)
-  if (from && !inReach(from, c, r)) return { ok: false, problem: 'reach' };
-  if (at - lastHitAt < BLOCK_HIT_COOLDOWN_MS) return { ok: false, problem: 'cooldown' };
+  if (from && !inReach(from, c, r, blockReachOf(bonusesOf(state.player)))) return { ok: false, problem: 'reach' };
+  if (at - lastHitAt < blockHitCooldownOf(bonusesOf(state.player))) return { ok: false, problem: 'cooldown' };
   const type = lookup(cell.id);
   const hits = hitsNow(cell, at) + 1;
   const key = blockKey(c, r);
@@ -300,7 +303,7 @@ export function blocksOverlapping(room: Room, rect: { x: number; y: number; w: n
  * avatar (reachable, not the target itself) that is at most BLOCK_REACH - 1 cells from the target,
  * so it is well inside the reach on arrival. Null if there is none.
  */
-export function approachSpot(grid: NavGrid, from: Point, c: number, r: number): Point | null {
+export function approachSpot(grid: NavGrid, from: Point, c: number, r: number, maxReach: number = BLOCK_REACH): Point | null {
   const start = nearestFreeCell(grid, from);
   if (start === null) return null;
   const reach = reachableCells(grid, start);
@@ -313,7 +316,7 @@ export function approachSpot(grid: NavGrid, from: Point, c: number, r: number): 
     const row = (i - col) / grid.cols;
     if ((col === c && row === r) || !isCellFree(grid, col, row)) continue;
     const mid = cellCenter(grid, col, row);
-    if (Math.hypot(mid.x - target.x, mid.y - target.y) > (BLOCK_REACH - 1) * grid.cell) continue;
+    if (Math.hypot(mid.x - target.x, mid.y - target.y) > (maxReach - 1) * grid.cell) continue;
     const d = Math.hypot(mid.x - from.x, mid.y - from.y);
     if (d < bestD) {
       bestD = d;

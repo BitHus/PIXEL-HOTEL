@@ -36,6 +36,12 @@ export interface HoldDeps {
   hit(target: HoldTarget): Promise<HoldResult>;
 }
 
+/** Strong fist: the block hit cooldown in play (the skill's value; set when the skills change). */
+let blockHitCd = BLOCK_HIT_COOLDOWN_MS;
+export function setBlockHitCooldown(ms: number): void {
+  blockHitCd = ms;
+}
+
 export function holdCooldown(target: HoldTarget): number {
   switch (target.kind) {
     case 'rock':
@@ -45,7 +51,7 @@ export function holdCooldown(target: HoldTarget): number {
     case 'line':
       return HOLD_PLACE_MS;
     default:
-      return BLOCK_HIT_COOLDOWN_MS;
+      return blockHitCd;
   }
 }
 

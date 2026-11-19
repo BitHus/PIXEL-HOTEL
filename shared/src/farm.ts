@@ -6,7 +6,9 @@
 // (SEED_YIELD blocks or crops by rank, a chance for the seed back, a chance for gems); an unripe plant is
 // never harmed. Everything that changes the bag or the wallet goes through ledger.applyChange. Pure.
 
-import { BUILD_CELL, PLANT_ROOMS, PLANTS_ROOM_CAP, PLANT_SPROUT_SHARE, SEED_BACK_CHANCE, SEED_YIELD, SPLICE_BONUS_CHANCE, SOIL_STYLE, BLOCK_HIT_COOLDOWN_MS } from './config.ts';
+import { BUILD_CELL, PLANT_ROOMS, PLANT_SPROUT_SHARE, SEED_YIELD, SPLICE_BONUS_CHANCE, SOIL_STYLE } from './config.ts';
+import { blockReachOf, bonusesOf, growMsScaled, harvestQtyOf, blockHitCooldownOf, plantCapOf, seedBackChanceOf } from './skillRules.ts';
+import type { Bonuses } from './stats.ts';
 import { cellProblem, inReach, roomOf, withRoom, type BlockContext, type BlockProblem } from './blocks.ts';
 import { getBlockType } from './blockTypes.ts';
 import { getFurnitureType, type FurnitureLookup } from './furniture.ts';
@@ -80,6 +82,7 @@ export function plantProblem(
   ctx: BlockContext,
   types: FurnitureLookup = getFurnitureType,
   seed?: SeedId,
+  skills?: Bonuses,
 ): BlockProblem | null {
   if (room.kind === 'lakeside') return 'not_buildable';
   if (!PLANT_ROOMS.includes(room.kind as (typeof PLANT_ROOMS)[number])) return 'wrong_room';
@@ -88,7 +91,7 @@ export function plantProblem(
   if (host && seed !== undefined && isFoodSeed(seed) && !getBlockType(host.id).soilHost) return 'needs_soil';
   const problem = cellProblem(room, items, PLANT_ROOMS, c, r, ctx, types, true);
   if (problem) return problem;
-  if (plantList(room).length >= PLANTS_ROOM_CAP[room.kind as keyof typeof PLANTS_ROOM_CAP]) return 'too_many_plants';
+  if (plantList(room).length >= plantCapOf(room.kind as 'farm' | 'hotel' | 'shop', skills)) return 'too_many_plants';
   return null;
 }
 
@@ -109,11 +112,11 @@ export function plantSeed(
   if (!room || room.ownerId !== state.player.id) return { ok: false, problem: 'not_owner' };
   if (!Number.isInteger(c) || !Number.isInteger(r) || !isSeedId(seed)) return { ok: false, problem: 'floor' };
   if ((state.player.materials[seed] ?? 0) < 1) return { ok: false, problem: 'empty' };
-  const problem = plantProblem(room, state.items, c, r, ctx, types, seed);
+  const problem = plantProblem(room, state.items, c, r, ctx, types, seed, bonusesOf(state.player));
   if (problem) return { ok: false, problem };
   const paid = applyChange(state, { reason: 'plant', materials: { [seed]: -1 }, note: `${seed}@${blockKey(c, r)}` }, at);
   if (!paid) return { ok: false, problem: 'empty' };
-  const plant: Plant = { seed, plantedAt: at, readyAt: at + seedGrowMs(seed) };
+  const plant: Plant = { seed, plantedAt: at, readyAt: at + growMsScaled(seedGrowMs(seed), bonusesOf(state.player)) }; // Green thumb
   return { ok: true, state: withRoom(paid, { ...room, plants: { ...room.plants, [blockKey(c, r)]: plant } }) };
 }
 
@@ -140,7 +143,7 @@ export function spliceSeed(state: GameState, roomId: number, c: number, r: numbe
   if (!recipe) return { ok: false, problem: 'nothing_happens' };
   const paid = applyChange(state, { reason: 'splice', materials: { [seed]: -1 }, note: `${plant.seed}+${seed}@${blockKey(c, r)}` }, at);
   if (!paid) return { ok: false, problem: 'empty' };
-  const spliced: Plant = { seed: plant.seed, with: seed, plantedAt: at, readyAt: at + spliceGrowMs(plant.seed, seed) };
+  const spliced: Plant = { seed: plant.seed, with: seed, plantedAt: at, readyAt: at + spliceGrowMs(plant.seed, seed, bonusesOf(state.player)) };
   return { ok: true, state: withRoom(paid, { ...room, plants: { ...room.plants, [blockKey(c, r)]: spliced } }) };
 }
 
@@ -168,7 +171,7 @@ export interface HarvestRoll {
  * (SPLICE_BONUS_CHANCE) of one block or crop of either seed (rolls: the chance, which of the two), and gems
  * (source 'splice', the result's rank). Clothes already unlocked always give the seed back (nothing is wasted).
  */
-export function harvestPlant(plant: Plant, rng: Rng, unlockedClothing: readonly string[] = []): HarvestRoll {
+export function harvestPlant(plant: Plant, rng: Rng, unlockedClothing: readonly string[] = [], skills?: Bonuses): HarvestRoll {
   if (plant.with) {
     const result = recipeFor(plant.seed, plant.with)?.result ?? null;
     let item: MaterialId | null = null;
@@ -182,8 +185,8 @@ export function harvestPlant(plant: Plant, rng: Rng, unlockedClothing: readonly 
   const rank = seedRank(plant.seed);
   const grows = seedGrows(plant.seed);
   const y = SEED_YIELD[rank];
-  const qty = grows.kind === 'material' ? rngInt(rng, y.min, y.max) : 1;
-  let seedBack = rng() < SEED_BACK_CHANCE;
+  const qty = grows.kind === 'material' ? harvestQtyOf(rngInt(rng, y.min, y.max), skills, rng) : 1; // Bountiful
+  let seedBack = rng() < seedBackChanceOf(skills); // Seed keeper
   if (grows.kind === 'clothing' && unlockedClothing.includes(grows.id)) seedBack = true;
   return {
     item: grows.kind === 'material' ? grows.id : null,
@@ -191,7 +194,7 @@ export function harvestPlant(plant: Plant, rng: Rng, unlockedClothing: readonly 
     furniture: grows.kind === 'furniture' ? grows.id : null,
     clothing: grows.kind === 'clothing' ? grows.id : null,
     seedBack,
-    gems: gemDrop('harvest', rank, rng),
+    gems: gemDrop('harvest', rank, rng, skills),
     result: null,
     recipe: null,
   };
@@ -222,10 +225,10 @@ export function hitPlant(
   if (!room || room.ownerId !== state.player.id) return { ok: false, problem: 'not_owner' };
   const plant = plantInCell(room, c, r);
   if (!plant) return { ok: false, problem: 'no_plant' };
-  if (from && !inReach(from, c, r)) return { ok: false, problem: 'reach' };
+  if (from && !inReach(from, c, r, blockReachOf(bonusesOf(state.player)))) return { ok: false, problem: 'reach' };
   if (!isRipe(plant, at)) return { ok: false, problem: 'unripe', leftMs: readyInMs(plant, at) };
-  if (at - lastHitAt < BLOCK_HIT_COOLDOWN_MS) return { ok: false, problem: 'cooldown' };
-  const roll = harvestPlant(plant, rng, state.player.unlockedClothing);
+  if (at - lastHitAt < blockHitCooldownOf(bonusesOf(state.player))) return { ok: false, problem: 'cooldown' };
+  const roll = harvestPlant(plant, rng, state.player.unlockedClothing, bonusesOf(state.player));
   const materials: Partial<Record<MaterialId, number>> = {};
   if (roll.item && roll.qty > 0) materials[roll.item] = roll.qty;
   if (roll.result) materials[roll.result] = (materials[roll.result] ?? 0) + 1;

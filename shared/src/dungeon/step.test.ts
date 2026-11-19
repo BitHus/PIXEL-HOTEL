@@ -326,3 +326,38 @@ describe('step: a full random run', () => {
 });
 
 void B;
+
+describe('SK-5 dungeon skills in the fight', () => {
+  it('Bone breaker: every 3rd hit (heavyEvery 3) does double damage', () => {
+    const rng = seededRng(5);
+    const e = enemyAt(1, start.x + 30, start.y, 'slime', 9999);
+    let r = testRun({ at: start, enemies: [e] });
+    r = { ...r, player: { ...r.player, skill: { heavyEvery: 3 }, attackMin: 4, attackMax: 4 } };
+    const damages: number[] = [];
+    for (let k = 0; k < 6; k++) {
+      r = step(r, [{ t: 'click_enemy', id: 1 }], 0, rng);
+      for (const ev of r.events) if (ev.t === 'hit') damages.push(ev.damage);
+      r = step(r, [], 400, rng);
+      r = { ...r, enemies: r.enemies.map((x) => ({ ...x, hp: 9999, windupMs: 0, cooldownMs: 9999 })) };
+    }
+    expect(damages).toEqual([4, 4, 8, 4, 4, 8]);
+  });
+
+  it('Guardian: each enemy hit does one less (never under the armor minimum)', () => {
+    const play = (skill?: { damageTakenPlus: number }) => {
+      let r = testRun({ at: start, enemies: [enemyAt(1, start.x + 30, start.y)] });
+      if (skill) r = { ...r, player: { ...r.player, skill } };
+      r = step(r, [], 100, seededRng(1));
+      r = step(r, [], 300, seededRng(1));
+      return 30 - r.player.hp;
+    };
+    expect(play({ damageTakenPlus: -1 })).toBe(Math.max(1, play() - 1));
+  });
+
+  it('Quick strike and Guardian reach a new run: shorter cooldown, more hp', () => {
+    const r = newRun({ seed: 1, xp: 0, gear: [], potions: 0, skills: { attackCdPct: -16, maxHpPct: 15 } });
+    expect(r.player.attackCooldownMs).toBe(294);
+    expect(r.player.maxHp).toBe(Math.round(30 * 1.15));
+    expect(r.player.hp).toBe(r.player.maxHp);
+  });
+});

@@ -44,8 +44,8 @@ describe('the recipes (section 10b, step K1)', () => {
   it('the first dish is ready within 30 s, the stew in 1 min, nothing takes more than 5 min', () => {
     expect(cookMs(food('roasted_turnip'))).toBe(20 * SEC);
     expect(cookMs(food('potato_stew'))).toBe(60 * SEC);
-    expect(Math.min(...FOOD_TYPES.map(cookMs))).toBeLessThanOrEqual(30 * SEC);
-    expect(Math.max(...FOOD_TYPES.map(cookMs))).toBeLessThanOrEqual(5 * 60 * SEC);
+    expect(Math.min(...FOOD_TYPES.map((f) => cookMs(f)))).toBeLessThanOrEqual(30 * SEC);
+    expect(Math.max(...FOOD_TYPES.map((f) => cookMs(f)))).toBeLessThanOrEqual(5 * 60 * SEC);
     // Rarer dishes take longer (the common ones are the quick ones).
     expect(cookMs(food('eel_pie'))).toBeGreaterThan(cookMs(food('potato_stew')));
     expect(STOVE_BATCH_MAX).toBe(4);

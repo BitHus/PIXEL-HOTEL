@@ -5,6 +5,7 @@
 
 import linesData from '../data/npcLines.json';
 import { CHATTY_TALK, HURRIED_TALK, TALK_CHANCE } from './config.ts';
+import type { GameState } from './gameState.ts';
 import type { Reaction, Rng } from './types.ts';
 
 export type NpcMoment = keyof typeof linesData;
@@ -49,4 +50,16 @@ export function maybeSay(
   if (rng() >= chance) return null;
   const i = pickLine(moment, rng, lastLines[moment]);
   return { text: NPC_LINES[moment][i] ?? '', lastLines: { ...lastLines, [moment]: i } };
+}
+
+/** The ambient moments a guest at a table may talk about: the crowd, the group, or a low-chance gag (3g). */
+export const GAG_MOMENTS = ['gag_water', 'gag_cat', 'gag_barrel', 'gag_regular', 'rare_joke'] as const satisfies readonly NpcMoment[];
+
+/**
+ * Like maybeSay, but on a GameState: keeps the no-repeat memory in TavernState.lastLines. Null = silent (the state is not changed).
+ */
+export function sayFrom(state: GameState, moment: NpcMoment, chance: number, rng: Rng): { state: GameState; text: string } | null {
+  const r = maybeSay(state.tavern.lastLines, moment, chance, rng);
+  if (!r) return null;
+  return { state: { ...state, tavern: { ...state.tavern, lastLines: r.lastLines } }, text: r.text };
 }

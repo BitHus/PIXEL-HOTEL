@@ -3,8 +3,9 @@
 
 import {
   countInInventory, fitsRoomKind, isMaterialId, isBlockId, getBlockType, getFurnitureType, getMaterialType, isSeedId, PLANT_ROOMS, SEED_HINT,
-  type SeedId, bonusesOf, pointsFree, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries,
+  type SeedId, bonusesOf, blockHitCooldownOf, pointsFree, roomScore, DUNGEON_KEY_COST, LEVEL_TOTAL_XP, xpForNextLevel, newEntries,
 } from '@pixel-hotel/shared';
+import { setBlockHitCooldown } from '../input/holdControl.ts';
 import { createHotbar } from '../ui/hotbar.ts';
 import { createBagPanel } from '../ui/bagPanel.ts';
 import { watchLayout } from '../ui/layoutVars.ts';
@@ -167,9 +168,17 @@ late.hotbar = hotbar;
     return out;
   };
 
+  /** The level the player had at the last refresh (0 = not read yet): a rise shows the level-up toast. */
+  let levelSeen = 0;
   async function refreshInventory(): Promise<void> {
     st.inventory = await api.getInventory();
     const p = await api.getPlayer();
+    // Level-up toast (SK-2: xp comes from every loop, so the one place that sees every change is here). Not in a run: the run screens show their own.
+    if (levelSeen > 0 && p.level > levelSeen && !dungeon.isActive && !newIntro.running) {
+      const free = pointsFree(p);
+      toast(free > 0 ? `Level ${p.level}! You have ${free} skill point${free === 1 ? '' : 's'} to spend.` : `Level ${p.level}!`);
+    }
+    levelSeen = p.level;
     st.tavern = { ...st.tavern, appeal: (await api.getTavern()).appeal };
     if (!newIntro.running) {
       info.setGold(p.wallet.gold);
@@ -192,6 +201,7 @@ late.hotbar = hotbar;
     dungeonButton.title = free ? 'Dungeon: a free run (you have less than 10 gold)' : `Dungeon: the key costs ${DUNGEON_KEY_COST} gold`;
     st.walletGold = p.wallet.gold;
     st.skills = bonusesOf(p);
+    setBlockHitCooldown(blockHitCooldownOf(st.skills)); // Strong fist
     side.setSkillsDot(pointsFree(p) > 0);
     st.unlockedStyles = p.unlockedStyles;
     paintBar.update(paint.brush, paintableStyles(), prefs.cellGrid);
