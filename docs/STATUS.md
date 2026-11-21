@@ -1,5 +1,8 @@
 # STATUS: where we are in the roadmap (the manager rewrites this after EVERY batch; read it first)
 
+Updated 2026-11-21 (manager). LIVE = main 3722d04 (food stash SAVE 44, whole-screen pour, new start layout, punch toggle, ground drops+rarity, dig feel, bobber dip, register art, richer music, UI fixes; tester RUN 16 SHIP). Server still SAVE 43 (cloud flag off; DEPLOY_SERVER=1 needs owner OK).
+OWNER BATCH 21 Nov: OB-1..OB-9 in docs/ROADMAP.md, design in docs/PLAN-OB-REWORK.md (J1,J3,J4,J10 + J2 first slice done; next J5 caves, J6 portal exit, J7 lasers/mobs, J8 events, J9 gems, J11 catch popup, J12 pier/boat). OWNER OPEN: POUR_FULL_MS 1000, DROP_MAGNET_PX 64, dig/bite numbers, floor art probe (<=31 gens, owner said spend only if it works), music by ear, register art, name-plate vs chips fix queued.
+
 Updated 2026-11-19 (manager). LIVE site = main at 85c9ab9 (see Right now). Startup file: C:/Users/ajren/pixel-hotel-team/MANAGER-START.md (has a 19 Nov update). Owner list: docs/OWNER-AGENDA-17NOV.md.
 
 ## Right now (workers) - 20 Nov, wrap-up at 99% weekly usage
