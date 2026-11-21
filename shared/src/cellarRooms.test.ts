@@ -72,8 +72,10 @@ describe('a new game', () => {
     const room = tavernOf(s);
     const stove = s.items.find((i) => i.typeId === 'stove')!;
     expect(kitchenZone(room)).toEqual(roomAnnex(room));
-    const table: FurnitureItem = { uid: 90, typeId: 'prep_table', ownerId: 1, roomId: room.id, x: stove.x - 64, y: stove.y, facing: 'down', onItemUid: null };
-    expect(canPlace(room, s.items, getFurnitureType('prep_table'), table.x, table.y, 'down')).toBe(true);
+    // OB-2: the start stove moved (the hatch stands at its left), so the first free cell-adjacent spot is used.
+    const spot = ([[stove.x - 64, stove.y], [stove.x + 64, stove.y], [stove.x, stove.y + 32], [stove.x, stove.y - 32]] as const).find(([x, y]) => canPlace(room, s.items, getFurnitureType('prep_table'), x, y, 'down'));
+    expect(spot).toBeDefined();
+    const table: FurnitureItem = { uid: 90, typeId: 'prep_table', ownerId: 1, roomId: room.id, x: spot![0], y: spot![1], facing: 'down', onItemUid: null };
     expect(prepBonus([...s.items, table], room, stove.uid)).toBe(1);
   });
 });
@@ -153,7 +155,7 @@ describe('building the cellar (CEL-4)', () => {
 
 describe('migration 36 -> 37 (the kitchen room is dissolved into the tavern)', () => {
   it('SAVE_VERSION is 43; a version 36 save loses its kitchen room: stove and barrel stand in the tavern, nothing is lost', () => {
-    expect(SAVE_VERSION).toBe(43);
+    expect(SAVE_VERSION).toBe(44);
     const text = save36();
     const before = JSON.parse(text).state as GameState;
     const s = load(text);

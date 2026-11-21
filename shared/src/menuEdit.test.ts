@@ -4,6 +4,7 @@ import { EMPTY_MENU_HELP, menuIsEmpty, priceCeiling, priceHint, priceStep, stepM
 import { createNewPlayer } from './newPlayer.ts';
 import { menuEntry, menuOffers, menuRows } from './tavern.ts';
 import { loadTap, unloadTap } from './taps.ts';
+import { addToStash } from './stash.ts';
 import type { GameState } from './gameState.ts';
 
 const fresh = (): GameState => createNewPlayer(undefined, 1000);
@@ -26,6 +27,8 @@ describe('the Menu panel rules (step 9t C)', () => {
     s = toggleMenu(s, 'roasted_turnip')!;
     s = toggleMenu(s, 'root_ale')!;
     expect([on('root_ale'), on('roasted_turnip')]).toEqual([false, true]);
+    expect(menuOffers(s).map((o) => o.id)).toEqual([]); // 3e: on, but no plate in the food stash yet
+    s = addToStash(s, 'roasted_turnip', 1000)!.state;
     expect(menuOffers(s).map((o) => o.id)).toEqual(['roasted_turnip']);
     expect(toggleMenu(s, 'turnip')).toBeNull(); // a crop is not servable
   });

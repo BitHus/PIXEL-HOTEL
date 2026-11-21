@@ -7,7 +7,7 @@ import {
   brewOf, brewReady, getDrinkType, type DrinkId, stepPrice, TAVERN_INTRO_OLD, type MenuRowView, type MaterialId,
   getMaterialType, isDrinkId, prepBonus, tapStands, registerPoint, worldToScreen, pourTip,
   guestsTrayCanServe, ordersStrip as ordersStripData, nothingOrderable, caskSlotsOf, tapCapOf,
-  BAR_GUESTS_ENABLED, BUILD_CELL, barSpots, barTopPoint, buildNavGrid, guestZones, npcGrid, roomBlockers,
+  BAR_GUESTS_ENABLED, BUILD_CELL, stashPieces, type FoodId, barSpots, barTopPoint, buildNavGrid, guestZones, npcGrid, roomBlockers,
 } from '@pixel-hotel/shared';
 import { createPourControl } from './pourControl.ts';
 import { el, iconButton } from '../ui/dom.ts';
@@ -15,6 +15,7 @@ import { createBrewingPanel } from '../ui/brewingPanel.ts';
 import { createMenuPanel } from '../ui/menuPanel.ts';
 import { createCaskPanel } from '../ui/caskPanel.ts';
 import { createTapsPanel, TAP_EMPTY_TEXT } from '../ui/tapsPanel.ts';
+import { createStashPanel, STASH_EMPTY_TEXT } from '../ui/stashPanel.ts';
 import { PourFx } from '../render/pourFx.ts';
 import { TavernFx } from '../render/tavernFx.ts';
 import { surfaceHeight } from '../render/furnitureArt.ts';
@@ -27,9 +28,9 @@ import { createCookingPanel, cookTimeText } from '../ui/cookingPanel.ts';
 import { GuestViews, type Walker } from '../render/guestViews.ts';
 import { TableMess, type Meal } from '../render/tableMess.ts';
 import { BarSpotMarkers, barMarkersWanted } from '../render/barSpotMarkers.ts';
+import { LowStockMarks } from '../render/lowStockMarks.ts';
 import { createOrderBubbles, type OrderMark } from '../ui/orderBubbles.ts';
 import { createOrdersStrip } from '../ui/ordersStrip.ts';
-import { createPourBar, pourBarShouldShow } from '../ui/pourBar.ts';
 import { drawTray } from '../render/trayArt.ts';
 import { pixelIcon } from '../ui/pixelIcons.ts';
 import type { G9 } from './ctx.ts';
@@ -113,16 +114,13 @@ export async function setupTavernLife(g: G9) {
   };
   const hint = document.createElement('div');
   hint.className = 'pour-hint';
-  hint.textContent = 'Hold the tap';
+  hint.textContent = 'Hold anywhere to pour';
   hint.style.cssText = 'position:absolute;z-index:30;display:none;transform:translate(-50%,-100%);pointer-events:none;user-select:none;padding:4px 10px;font-family:var(--font);font-size:14px;font-weight:700;background:#3e2731;color:#fee761;border:2px solid #f6ca9f;white-space:nowrap';
   uiRoot.appendChild(hint);
-  // COD-1 (e): the pour bar over the mug (fills while the stand is held, green = the perfect window).
-  const pourBar = createPourBar(uiRoot);
+  // OB-1: ONE progress bar only = the world gauge next to the mug (render/pourFx.ts); the HTML pour bar (ui/pourBar.ts) is no longer mounted.
   let hintRaf = 0;
   const hintLoop = (): void => {
-    // The bar sits right over the mug (mug top = floorY - 17, PourFx MUG_FRAME): 4 world px above it, not at the avatar head.
     const info = pourFor ? standInfo(pourFor.standUid) : null;
-    if (info && pourBar.visible) pourBar.place(worldToScreen({ x: info.stand.x, y: info.floorY - 21 }, st.shown));
     if (!info || pourControl.pressing || hintDone()) {
       hint.style.display = 'none';
     } else {
@@ -136,7 +134,6 @@ export async function setupTavernLife(g: G9) {
   const endWait = (stopFx: boolean): void => {
     pourControl.cancel();
     pourFor = null;
-    pourBar.hide();
     hint.style.display = 'none';
     cancelAnimationFrame(hintRaf);
     hintRaf = 0;
@@ -162,11 +159,11 @@ export async function setupTavernLife(g: G9) {
       const i = pourFor ? standInfo(pourFor.standUid) : null;
       if (!i || !pourFor) return;
       pour.setFill(f);
-      pourBar.setFill(f);
       fx.pourSplash({ x: i.stand.x, y: i.floorY - 10 }, i.floorY, getDrinkType(pourFor.item as DrinkId).color, 160);
     },
     glug: (pitch) => sound.play('pourTick', 'common', pitch),
     toast,
+    onTapAway: () => toast('Hold to pour.'),
     onEnd: (ms, pick) => {
       pour.release();
       fx.stopPour();
@@ -182,6 +179,7 @@ export async function setupTavernLife(g: G9) {
   const guests = new GuestViews(view);
   const tableMess = new TableMess(view);
   const barMarkers = new BarSpotMarkers(view);
+  const lowMarks = new LowStockMarks(view);
   /** A guest as a walker: they only sit once they have reached their seat, and look at the table. */
   const walkers = (list: readonly Guest[]): Walker[] =>
     list.map((g) => ({ id: g.id, look: g.look, x: g.x, y: g.y, facing: g.facing, path: g.path, speed: g.speed, seat: g.seated && g.seat ? { uid: g.seat.uid } : null, sitFacing: g.facing, eating: g.phase === 'eat', barPose: g.kind2 !== 'bar' ? null : g.phase === 'bar_drink' ? 'drink' : g.phase === 'bar_wait' || g.phase === 'order' ? 'lean' : null }));
@@ -284,6 +282,14 @@ export async function setupTavernLife(g: G9) {
     const standList = tapStands(st.items, st.tavern.roomId).flatMap((s) => { const i = standInfo(s.uid); return i ? [{ stand: i.stand, bar: i.bar }] : []; });
     pour.syncRest(standList);
     pour.syncTapStates(standList, st.tavern.taps); // OA-5b: dry / wet per tap slot
+    // 3e: a small dot over a stand or the hatch that runs low (butter) or ran dry (red).
+    lowMarks.set(on ? (st.tavern.lowStock ?? []).flatMap((m) => {
+      const item = st.items.find((i) => i.uid === m.uid);
+      if (!item) return [];
+      const i = m.kind === 'tap' ? standInfo(item.uid) : null;
+      const lift = i ? item.y - i.floorY + 50 : (getFurnitureType(item.typeId).height ?? 32) + 6;
+      return [{ item, level: m.level, lift }];
+    }) : []);
   };
   st.onItemsSynced = syncTavern;
   /** What the avatar's hands show now (the tray), so a save that loads with mugs on the tray shows them too. */
@@ -301,6 +307,7 @@ export async function setupTavernLife(g: G9) {
     refreshCooks();
     brewing.setBrews(st.tavern.brews);
     refreshTaps();
+    refreshStash();
     refreshCasks();
     maybeIntro();
     if (panels.open === 'menu') void refreshMenu();
@@ -489,11 +496,55 @@ export async function setupTavernLife(g: G9) {
         await late.refreshInventory();
       });
     },
+    refillAll: () => {
+      void api.refillAll('taps').then(async (n) => {
+        sound.play(n > 0 ? 'pop' : 'click');
+        toast(n > 0 ? `Refilled: ${n} mug${n === 1 ? '' : 's'} on the taps.` : 'Nothing to refill: brew more first.');
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
   });
   panels.add('taps', tapsPanel.el);
   const refreshTaps = (): void => {
     tapsPanel.update(tapStands(st.items, st.tavern.roomId).map((i) => i.uid), st.tavern.taps, st.inventory.materials, tapCapOf(st.skills));
     if (panels.open === 'menu') void refreshMenu();
+  };
+  // ---------- 3e FOOD STASH: tap the serving hatch; one click moves a dish each way ----------
+  const stashPanel = createStashPanel(ui, {
+    put: (dish) => {
+      void api.addToStash(dish as FoodId).then(async (n) => {
+        sound.play(n > 0 ? 'pop' : 'click');
+        toast(n > 0 ? `${n} x ${getMaterialType(dish).name} in the food stash. Guests can order it now.` : 'The food stash has no room for that.');
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
+    take: (pieceUid, slot) => {
+      void api.unloadStash(pieceUid, slot, 'all').then(async (ok) => {
+        sound.play(ok ? 'pop' : 'click');
+        if (ok) toast('The plates are back in your bag.');
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
+    refillAll: () => {
+      void api.refillAll('stash').then(async (n) => {
+        sound.play(n > 0 ? 'pop' : 'click');
+        toast(n > 0 ? `Refilled: ${n} plate${n === 1 ? '' : 's'} into the food stash.` : 'Nothing to refill: cook more dishes first.');
+        await refreshTavern();
+        await late.refreshInventory();
+      });
+    },
+  });
+  panels.add('stash', stashPanel.el);
+  function refreshStash(): void {
+    stashPanel.update(stashPieces(st.items, st.tavern.roomId).map((i) => i.uid), st.tavern.stash ?? [], st.tavern.lastLoaded, st.inventory.materials);
+  }
+  /** A tap on the serving hatch: the Food stash panel opens. */
+  const stashTap = (): void => {
+    refreshStash();
+    panels.show('stash');
   };
   /** A tap on a tap stand: the Taps panel opens. */
   const standTap = (): void => {
@@ -599,6 +650,10 @@ export async function setupTavernLife(g: G9) {
       standTap();
       return true;
     }
+    if (hit && getFurnitureType(hit.typeId).stash) {
+      stashTap();
+      return true;
+    }
     const gid = guests.at(world);
     const guest = gid === null ? undefined : st.tavern.guests.find((g) => g.id === gid);
     if (guest?.phase === 'order' && guest.order) {
@@ -661,7 +716,6 @@ export async function setupTavernLife(g: G9) {
         if (more && isDrinkId(e.mugs[e.mugs.length - 1]!.item)) sound.play('clink');
         if (more && pourFor) {
           pourFor = null;
-          pourBar.hide();
           pourControl.done();
         }
         st.tavern = { ...st.tavern, tray: e.mugs };
@@ -708,7 +762,6 @@ export async function setupTavernLife(g: G9) {
         pourControl.wait(e.standUid, e.item);
         // Serving started from the bar's panel: close it so the Hold the tap prompt does not sit on top of the Serve menu. Nothing reopens it.
         if (panels.open === 'menu') panels.close();
-        if (pourBarShouldShow({ waiting: true, panelOpen: panels.open !== null, released: false })) pourBar.show();
         const i = standInfo(e.standUid);
         if (i) {
           pour.wait(i.stand, i.bar, e.item);
@@ -746,6 +799,15 @@ export async function setupTavernLife(g: G9) {
       case 'tap_empty':
         endWait(true);
         if (on) toast(`${TAP_EMPTY_TEXT}: ${getMaterialType(e.item).name} is not on a tap. The order waits.`);
+        void refreshTavern();
+        break;
+      case 'stash_empty':
+        if (on) toast(`${STASH_EMPTY_TEXT} ${getMaterialType(e.item).name}. Put some in at the serving hatch; the order waits.`);
+        void refreshTavern();
+        break;
+      case 'ran_dry':
+        // 3e REFILL LOOP: the serve took the last mug or plate of that slot.
+        if (on) toast(e.kind === 'tap' ? `Tap ${e.n} is empty: refill it with ${getMaterialType(e.item).name}.` : `Food stash slot ${e.n} is empty: refill it at the serving hatch.`);
         void refreshTavern();
         break;
       case 'collected': {

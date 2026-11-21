@@ -58,7 +58,6 @@ import { kitchenZone } from './kitchen.ts';
 import { guestZones, npcGrid, npcPath } from './npcNav.ts';
 import { doorPoint } from './furniture.ts';
 import type { GameState } from './gameState.ts';
-import { applyChange } from './ledger.ts';
 import { tavernGemDrop } from './gems.ts';
 import { getMaterialType, isDrinkId } from './materials.ts';
 import type { NavGrid } from './nav.ts';
@@ -177,21 +176,20 @@ function reachable(g: NavGrid, door: Point, seats: readonly TavernSeat[]): Taver
 }
 
 /**
- * Takes the guest's order out of the bag (ledger 'tavern_order'). Null when the bag has none. A DRINK is not taken here (step T1): it
- * stays on its tap until the avatar pours it; the open order counts as spoken for (taps.ts stockFor), menuOffers already checked it.
+ * An order takes nothing yet: a DRINK stays on its tap until the avatar pours it (step T1) and a DISH stays in the food stash until the avatar
+ * fetches it (3e); the open order counts as spoken for (taps.ts stockFor, stash.ts stashStockFor), menuOffers already checked it.
+ * (Kept as a step so the order flow reads the same; the ledger reason 'tavern_order' is only used by old saves and the migration.)
  */
-function reserve(state: GameState, item: MaterialId, at: number): GameState | null {
-  if (isDrinkId(item)) return state;
-  return applyChange(state, { reason: 'tavern_order', materials: { [item]: -1 }, note: `ordered: ${item}` }, at);
+function reserve(state: GameState, _item: MaterialId, _at: number): GameState | null {
+  return state;
 }
 
 /** A guest leaves unserved: the order goes back to the bag and out of the player's queue (a mug on the tray stays: any guest wanting it can have it). */
 function giveBack(state: GameState, g: Guest, at: number): GameState {
   if (!g.order) return state;
-  // A drink was never taken from the bag (it is poured from the tap when served): only the queue and the hands are cleared.
-  const back = isDrinkId(g.order.item) ? state : applyChange(state, { reason: 'tavern_order', materials: { [g.order.item]: 1 }, note: `not served: ${g.order.item}` }, at) ?? state;
-  const t = back.tavern;
-  return withTavern(back, { serveQueue: t.serveQueue.filter((id) => id !== g.id) });
+  // Nothing was taken for the order (a drink is poured from the tap, a dish fetched from the stash, 3e): only the queue is cleared.
+  void at;
+  return withTavern(state, { serveQueue: state.tavern.serveQueue.filter((id) => id !== g.id) });
 }
 
 /**

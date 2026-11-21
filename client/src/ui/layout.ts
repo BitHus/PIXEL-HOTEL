@@ -14,6 +14,8 @@ import './close.css'; // panel close X (last of the panel rules)
 import './declutter.css'; // DECLUTTER pass (docs/PLAN-UI-DECLUTTER.md) loads after Lantern Dark
 import './packsCards.css'; // Packs button, tab badge and pack cards (19 Nov)
 import './guideCard.css'; // tutorial card, hint chip and pointer restyle (19 Nov, after declutter's rules it overrides)
+import './ob3.css'; // OB-3: opaque compact toast card, less text on a phone (21 Nov, last so it wins)
+import './stashPanel.css'; // RUN 16: stash panel grid, toast-top fix
 
 export type SizeClass = 'phone' | 'tablet' | 'desktop';
 

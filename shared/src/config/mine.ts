@@ -71,6 +71,19 @@ export const DIG_CAVEIN_DAMAGE = 4;
 export const DIG_FILLER_DROP_CHANCE = 0.15;
 /** The player digs a block whose middle is this close (px; one block + a bit, so a block next to the standing block counts). */
 export const DIG_REACH_PX = 52;
+/** J4 hold rhythm: a dig tap (or a held dig) this many ms or less before the pickaxe is ready is QUEUED and lands the first tick it is
+ *  ready (an earlier tap is still ignored), so holding gives an even beat and sliding to the next block keeps it. */
+export const DIG_QUEUE_MS = 150;
+/** J4 dig feel (client look only, no rule reads these): the hit flash, chips per hit, and the screen shake by trauma (px = max * trauma^2). */
+export const DIG_FLASH_MS = 80;
+export const DIG_CHIPS_MIN = 3;
+export const DIG_CHIPS_MAX = 5;
+export const DIG_SHAKE_MAX_PX = 3;
+/** Trauma 0..1 per event: a plain hit 0 (no shake on a repeated action), a filler break, an ore break, a rare block break, a cave-in. */
+export const DIG_TRAUMA = { hit: 0, filler: 0.4, ore: 0.75, rare: 1, cavein: 0.85 } as const;
+export const DIG_SHAKE_MS = { filler: 0, ore: 90, rare: 150, cavein: 150 } as const;
+/** Hit stop only on a rare block break (ms). */
+export const DIG_HITSTOP_RARE_MS = 40;
 /** How far the lantern shows the cave around the player (blocks) before light skills, and how far a rare block glints before ore-sense skills. */
 export const DIG_LIGHT_BLOCKS = 7;
 export const DIG_GLINT_BLOCKS = 3;

@@ -2,12 +2,14 @@
 // step(session, inputs, dtMs, rng), in fixed FISH_TICK_MS ticks (like the dungeon), so it is
 // deterministic and the server can run the same code later.
 //
-//   cast -> 'wait': the bobber floats 2 to 8 s (rng), the fish nibbles 2 to 3 times just before, then it dips and a "!" shows
-//   -> 'bite': the "!" stays for the rank's window (700 ms for common, shorter for rarer fish): tap in time to hook
+//   cast -> 'wait': the bobber floats 2 to 8 s (rng), the fish nibbles 2 to 3 times just before (J10: a tap or press while it still
+//      floats is 'early': the line comes up, nothing lost, and a new cast waits FISH_EARLY_LOCK_MS: fast tapping never hooks)
+//   -> 'bite' (J10 BOBBER DIP): the bobber is UNDER the water for the rank's window (700 ms for common, shorter for rarer fish):
+//      tap BEFORE it comes back up to hook; after it = 'missed'
 //   -> 'reel': a bar with a fish swimming back and forth and a green catch box (like Stardew
 //      Valley's): holding (or tapping) pushes the box right, it falls back left by itself; keep the
 //      box on the fish to fill the catch bar, lose the fish and it drains
-//   -> 'done' (outcome 'caught' | 'escaped' | 'missed' | 'cancelled').
+//   -> 'done' (outcome 'caught' | 'escaped' | 'missed' | 'early' | 'cancelled').
 //
 // The catch (a fish or a fished-up thing) is rolled when the line is cast: its rank sets the
 // strength (config FISH_BITE_MS, FISH_REEL), RANK_WEIGHTS the odds, and a better rod shifts the odds
@@ -23,6 +25,7 @@ import {
   FISH_BOX_BOUNCE,
   FISH_BOX_DRAG,
   FISH_BOX_MAX_SPEED,
+  FISH_EARLY_LOCK_MS,
   FISH_GRAVITY,
   FISH_REEL,
   FISH_REEL_FULL,
@@ -53,7 +56,7 @@ import { rngInt } from './rng.ts';
 import type { MaterialId, Rank, Rng } from './types.ts';
 
 export type FishPhase = 'wait' | 'bite' | 'reel' | 'done';
-export type FishOutcome = 'caught' | 'escaped' | 'missed' | 'cancelled';
+export type FishOutcome = 'caught' | 'escaped' | 'missed' | 'early' | 'cancelled';
 /** FISH-2: what the fish is doing in the reel (rules: FISH_REEL; the art may show a burst or a hover). */
 export type FishMood = 'swim' | 'burst' | 'pause';
 
@@ -67,6 +70,8 @@ export type FishEvent =
   | { t: 'caught'; id: string; rank: Rank; cm: number | null }
   | { t: 'escaped' }
   | { t: 'missed' }
+  /** J10: tapped while the bobber still floated: the line comes up. */
+  | { t: 'early' }
   | { t: 'cancelled' };
 
 export interface FishSession {
@@ -234,9 +239,9 @@ function applyInput(s: FishSession, input: FishInput): void {
   } else if (s.phase === 'reel') {
     if (input.t === 'press') s.held = true;
     else s.boxVel = Math.min(FISH_BOX_MAX_SPEED, s.boxVel + FISH_TAP_KICK);
-  } else if (input.t === 'press') {
-    // While the bobber floats a hold does nothing (but it is remembered, like a held finger).
-    s.held = true;
+  } else if (s.phase === 'wait') {
+    // J10: a tap or press while the bobber still floats (nibbles included) pulls the line up: 'early' (nothing lost).
+    finish(s, 'early', { t: 'early' });
   }
 }
 
@@ -386,6 +391,19 @@ export function step(session: FishSession, inputs: readonly FishInput[], dtMs: n
   }
   s.carryMs = fishDone(s) ? 0 : left;
   return s;
+}
+
+/** J10: the bobber for the art: floating, nibbling (a small dip, NOT the bite), UNDER the water during the bite (`underFrac` 1 = just
+ *  went under, 0 = coming back up), thrashing in the reel, or gone. */
+export function bobberState(s: Pick<FishSession, 'phase' | 'nibbleMs' | 'biteMs' | 'rank' | 'strikeBonusMs'>): { look: 'float' | 'nibble' | 'under' | 'reel' | 'none'; underFrac: number } {
+  if (s.phase === 'wait') return { look: s.nibbleMs > 0 ? 'nibble' : 'float', underFrac: 0 };
+  if (s.phase === 'bite') return { look: 'under', underFrac: Math.max(0, Math.min(1, s.biteMs / (FISH_BITE_MS[s.rank] + (s.strikeBonusMs ?? 0)))) };
+  return { look: s.phase === 'reel' ? 'reel' : 'none', underFrac: 0 };
+}
+
+/** J10: true when a new cast may start: no early pull-up in the last FISH_EARLY_LOCK_MS (`earlyAt` = when it was, null = none). */
+export function fishRecastReady(earlyAt: number | null, now: number): boolean {
+  return earlyAt === null || now - earlyAt >= FISH_EARLY_LOCK_MS;
 }
 
 /** The name outside this file (the dungeon has its own step). */

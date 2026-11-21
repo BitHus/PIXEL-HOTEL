@@ -1,5 +1,5 @@
 // The fishing bar (step 9f, docs/UI-REFERENCE.md "Lakeside"): a framed bar above the hotbar while the
-// line is out. It says what the bobber is doing ("Waiting for a bite...", "Bite! Tap now!", "Keep
+// line is out. It says what the bobber is doing ("Wait until the bobber goes under...", "Under! Tap now!", "Keep
 // the box on the fish!"). In the reel it is a Stardew-style bar: a fish icon swims back and forth
 // along a track and a green catch box follows it; HOLD pushes the box to the right and it falls
 // back to the left by itself. Under the track a catch bar fills while the fish is in the box (its
@@ -37,8 +37,8 @@ export interface FishBar {
 }
 
 const TEXT: Record<FishPhase, string> = {
-  wait: 'Waiting for a bite...',
-  bite: 'Bite! Tap now!',
+  wait: 'Wait until the bobber goes under...',
+  bite: 'Under! Tap now!',
   reel: 'Keep the box on the fish!',
   done: '',
 };

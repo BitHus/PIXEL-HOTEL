@@ -95,7 +95,11 @@ describe('the menu through the GameAPI (step 9t C)', () => {
     await api.collectBrew(barrelOf(api).uid);
     let rows = await api.getMenu();
     expect(rows.find((r) => r.id === 'root_ale')).toMatchObject({ on: true, stock: 7, price: 9 });
-    expect(rows.find((r) => r.id === 'roasted_turnip')).toMatchObject({ on: true, stock: 2 }); // the early dish is on in a new game (S3)
+    expect(rows.find((r) => r.id === 'roasted_turnip')).toMatchObject({ on: true, stock: 0 }); // the early dish is on in a new game (S3); 3e: the stock is the food stash
+    expect(await api.addToStash('roasted_turnip')).toBe(2); // one click: both plates into the serving hatch
+    rows = await api.getMenu();
+    expect(rows.find((r) => r.id === 'roasted_turnip')).toMatchObject({ on: true, stock: 2 });
+    expect((await api.getTavern()).stash).toEqual([expect.objectContaining({ dish: 'roasted_turnip', plates: 2, slot: 0 })]);
     rows = (await api.setMenuEntry('roasted_turnip', { on: false }))!;
     expect(rows.find((r) => r.id === 'roasted_turnip')?.on).toBe(false);
     rows = (await api.setMenuEntry('roasted_turnip', { on: true }))!;
@@ -115,7 +119,9 @@ describe('the menu through the GameAPI (step 9t C)', () => {
     t += 60_000;
     expect((await api.collectCook(stove.uid))?.qty).toBe(2);
     const row = (await api.getMenu()).find((r) => r.id === 'roasted_turnip')!;
-    expect(row).toMatchObject({ on: true, stock: 2 }); // on from the start (S3)
+    expect(row).toMatchObject({ on: true, stock: 0 }); // on from the start (S3); cooked into the bag, not yet in the food stash (3e)
+    expect(await api.addToStash('roasted_turnip')).toBe(2);
+    expect((await api.getMenu()).find((r) => r.id === 'roasted_turnip')).toMatchObject({ on: true, stock: 2 });
     const off = (await api.setMenuEntry('roasted_turnip', { on: false }))!;
     expect(off.find((r) => r.id === 'roasted_turnip')?.on).toBe(false);
     const on = (await api.setMenuEntry('roasted_turnip', { on: true }))!;

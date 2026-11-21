@@ -1,0 +1,46 @@
+/* RUN 16 #2: the Food stash panel (ui/stashPanel.ts). The 4 slots sit in a 2 x 2 grid (compact: icon left, name over count), every slot and every bag
+   dish is at least 44 px tall, the bag list is a full-width row list with a gap between name and count, and the list scrolls inside the panel. */
+.stash-panel .catalog-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+.stash-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.stash-slots .stash-slot.tap-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 0;
+  min-height: 48px;
+  padding: 4px 6px;
+  text-align: left;
+  font-family: var(--font);
+}
+.stash-slot > :first-child { grid-row: 1 / span 2; width: 36px; height: 36px; }
+.stash-slot .stash-name { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm, 13px); }
+.stash-slot .stash-count { grid-column: 2; font-size: var(--fs-xs, 11px); color: var(--ui-accent, #fee761); }
+.stash-slot.low .stash-count { color: #f6757a; }
+.stash-refill { min-height: 44px; }
+.stash-bag-head { margin-top: 2px; }
+.stash-bag { display: flex; flex-direction: column; gap: 4px; }
+.stash-dish {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  text-align: left;
+  font-family: var(--font);
+}
+.stash-dish .stash-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stash-dish .stash-count { flex: none; margin-left: 8px; color: var(--ui-accent, #fee761); }
+
+/* RUN 16 #2: the first welcome toast that moves to the top band (toast-top) stays in the LEFT column on a wide screen, under the first-steps card, so it
+   never covers the annex kitchen (barrel, hatch, stove) in the start view. 300 px wide, centred on the card's column. */
+@media (min-width: 681px) {
+  :root .toast.toast.ui-hud.toast-top { left: calc(var(--edge, 8px) + 150px); max-width: 300px; }
+}
+/* RUN 16 #4 (huge empty box): the orders-strip rule that lifts a toast (bottom: ...) is more specific than .toast-top (bottom: auto), so a toast-top toast
+   got top AND bottom set and an absolute box with height:auto then stretches between them (the 220 x 610 box seen while zooming). Keep bottom auto and cap the height. */
+#ui:has(.orders-strip:not([hidden])):not(:has(.panel:not([hidden]):not(.panel-leaving))) .toast.toast-top { bottom: auto; }
+:root .toast.toast.ui-hud { max-height: 5.5em; height: auto; }

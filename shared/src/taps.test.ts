@@ -9,9 +9,10 @@ import { createNewPlayer } from './newPlayer.ts';
 import { seededRng } from './rng.ts';
 import { loadRoom, loadTap, mugsOnTaps, returnOrphanTaps, stockFor, tapCards, tapFor, unloadTap, tapStands, pourPoint, barOf, type Tap } from './taps.ts';
 import { menuOffers, menuRows, nextOrder, openOrders, pourOrder, requestServe, serveStops } from './tavern.ts';
-import { runTavern, serveAll, tavernWorld, withAle, withLongTable } from './tavernTest.ts';
+import { runTavern, serveAll, tavernWorld, withAle, withHatch, withLongTable } from './tavernTest.ts';
 import { ledgerMaterials } from './testState.ts';
 import { SHOP_TICK_MS } from './config.ts';
+import { addToStash } from './stash.ts';
 
 const MIN = 60_000;
 // The old counter tavern (save 41 layout): the rules of the taps are the same on a bar piece (tested in modularBar.test.ts).
@@ -147,9 +148,10 @@ describe('a drink is on the menu only while it is on a tap with a mug', () => {
     expect(menuRows(s).find((r) => r.id === 'carrot_cider')).toMatchObject({ stock: 3, on: true });
   });
 
-  it('dishes still come from the bag: a dish in the bag is offered without any tap', () => {
+  it('3e: a dish needs no tap but a plate in the food stash: in the bag only it is not offered, in the stash it is', () => {
     const s = withBag(fresh(), { roasted_turnip: 2 });
-    expect(menuOffers(s).find((o) => o.id === 'roasted_turnip')).toMatchObject({ stock: 2 });
+    expect(menuOffers(s).find((o) => o.id === 'roasted_turnip')).toBeUndefined();
+    expect(menuOffers(addToStash(withHatch(s), 'roasted_turnip', 0)!.state).find((o) => o.id === 'roasted_turnip')).toMatchObject({ stock: 2 });
   });
 
   it('an order only reserves a mug: stock for new orders is mugs minus open orders, the tap keeps its count until the pour', () => {

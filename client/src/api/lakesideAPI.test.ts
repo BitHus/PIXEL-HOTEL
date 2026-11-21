@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AXE_COOLDOWN_MS,
   FISH_BITE_MS,
+  FISH_EARLY_LOCK_MS,
   FISH_TICK_MS,
   TREE_HITS,
   TREE_REGROW_MS,
@@ -178,6 +179,21 @@ describe('fishing through the GameAPI', () => {
     const after = await api.getPlayer();
     expect(after.materials).toEqual(before.materials);
     expect(after.wallet.gold).toBe(before.wallet.gold);
+  });
+
+  it('J10: a tap while the bobber floats is early (nothing caught), and the next cast waits FISH_EARLY_LOCK_MS', async () => {
+    t = 1000;
+    const { api } = open(fresh(), 5);
+    await api.enterRoom((await api.getPlayer()).lakesideRoomId);
+    const before = await api.getPlayer();
+    expect(await api.fishStart()).not.toBeNull();
+    const u = (await api.fishStep([{ t: 'tap' }], 0))!;
+    expect(u.session.outcome).toBe('early');
+    expect(u.caught).toBeNull();
+    expect((await api.getPlayer()).materials).toEqual(before.materials);
+    expect(await api.fishStart()).toBeNull();
+    t += FISH_EARLY_LOCK_MS;
+    expect(await api.fishStart()).not.toBeNull();
   });
 
   it('the rod from the forge is used for the cast, fish go on the shop table (food) and into the pot', async () => {

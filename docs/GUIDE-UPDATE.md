@@ -34,6 +34,8 @@ The first-steps guide is data. When a feature in the first ten minutes changes, 
 `npx vitest run shared/src/firstTen.test.ts`, then `npx playwright test e2e/guide.spec.ts` (card text, pointer on the register, no console errors). Settings > "Replay the first steps" starts the guide again.
 
 ## TUT-2
+3e (21 Nov): no new step; the `stove` text now says to put the dish in the serving hatch (the food stash), `load` says a tap runs dry and is refilled.
+
 Steps now: walk, menu, pour, serve, coins, barrel, collect, load, stove, farm, plant, harvest, build, wall, dungeon, mine, lakeside, fish. Events plant/harvest/wall/fish come from late.guideEvent (blockInput, placing, lakesideScreen onCaught); farm, mine, lakeside, dungeon are proven by the world poll. A new game always starts (firstTenOpen); nothing stored = starts.
 
 TUT-2 part 3: the Quest button and card never show while the tutorial runs (holdQuest in tavernLife.ts hides both); afterwards the button opens the Quest panel (daily, events, achievements). Pointers: outside the tavern a tavern step points at the Worlds button; harvest points at a ripe plant on the farm, fish at the lake water. No guide.json change.

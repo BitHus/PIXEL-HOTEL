@@ -1,19 +1,31 @@
-// The music player (AU-2): thin Web Audio wrapper around the pure sequencer. A look-ahead scheduler (a timer every 100 ms
+// The music player (AU-2, OB-9): thin Web Audio wrapper around the pure sequencer. A look-ahead scheduler (a timer every 100 ms
 // schedules the next 0.5 s of notes), one gain bus per track so a room change is an equal-power crossfade, no per-frame work.
+// OB-9 graph (built once in attach): track buses -> mix -> compressor -> lowpass 7 kHz -> out; sends: reverb (generated impulse,
+// 20 ms pre-delay) and a dotted-eighth echo with a darkening feedback. Voices live in musicVoices.ts, pure form maths in musicForm.ts.
 
-import { TRACKS, type TrackId } from './musicData.ts';
-import { crossfadeGains, eventsBetween, fadePlan, loopSteps, noteHz, parseTrack, stepSeconds, volumeGain, type ParsedVoice } from './sequencer.ts';
+import { TRACKS, type Track, type TrackId, type VoiceRole } from './musicData.ts';
+import { makeImpulse, pulseCoeffs } from './musicFx.ts';
+import { accentFor, arcLevel, chordNotes, dottedEighth, dropout, humanize, leadTranspose, mulberry32, sectionOf, swingDelay } from './musicForm.ts';
+import { NOTE_PEAK, playBass, playBell, playDrone, playDrum, playLead, playPad, playPluck, type VoiceEnv } from './musicVoices.ts';
+import { crossfadeGains, eventsBetween, fadePlan, loopSteps, noteHz, parseTrack, stepSeconds, volumeGain, type NoteEvent, type ParsedVoice } from './sequencer.ts';
 
 const TICK_MS = 100;
 const LOOKAHEAD_S = 0.5;
 /** Crossfade length, seconds. */
 export const FADE_S = 1.6;
-/** Per-note peak gain at voice gain 1 (the bus is further scaled by the music volume). */
-const NOTE_PEAK = 0.12;
+/** Headroom: pad and arp are new layers, so every voice sits 25% lower (the compressor does the rest). */
+const MIX = 0.75;
+/** Send levels per role: [reverb, echo]. Bass stays dry. */
+const SENDS: Record<VoiceRole, [number, number]> = { lead: [0.25, 0.18], pad: [0.35, 0], bass: [0, 0], drums: [0.1, 0], arp: [0.15, 0.25], bell: [0.35, 0.2], drone: [0.2, 0] };
 
 interface Live {
   id: TrackId;
+  track: Track;
   bus: GainNode;
+  /** Reverb and echo send buses: faded together with `bus`. */
+  revBus: GainNode;
+  delBus: GainNode;
+  roles: Map<VoiceRole, GainNode>;
   voices: ParsedVoice[];
   /** AudioContext time of step 0 of the loop. */
   t0: number;
@@ -32,6 +44,13 @@ export class Music {
   private wanted: TrackId | null = null;
   private enabled = true;
   private volume = 0.4;
+  private env: VoiceEnv | null = null;
+  private mix: GainNode | null = null;
+  private convolver: ConvolverNode | null = null;
+  private revIn: GainNode | null = null;
+  private delay: DelayNode | null = null;
+  private readonly impulses = new Map<string, AudioBuffer>();
+  private readonly rng = mulberry32(0x0b9);
 
   /** Called once the audio context exists (after the first tap). */
   attach(ctx: AudioContext, noise: AudioBuffer): void {
@@ -40,8 +59,61 @@ export class Music {
     this.noise = noise;
     this.out = ctx.createGain();
     this.out.connect(ctx.destination);
+    const pc = pulseCoeffs(0.25);
+    this.env = { ctx, noise, pulse: ctx.createPeriodicWave(pc.real, pc.imag) };
+    this.buildGraph(ctx, this.out);
     this.applyVolume();
     this.sync();
+  }
+
+  /** Master chain, reverb and echo: created once, shared by every track. */
+  private buildGraph(ctx: AudioContext, out: AudioNode): void {
+    const mix = ctx.createGain();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 12;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.01;
+    comp.release.value = 0.2;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 7000;
+    mix.connect(comp).connect(lp).connect(out);
+    this.mix = mix;
+    // reverb: pre-delay -> generated impulse -> return
+    this.revIn = ctx.createGain();
+    const pre = ctx.createDelay(0.1);
+    pre.delayTime.value = 0.02;
+    this.convolver = ctx.createConvolver();
+    const back = ctx.createGain();
+    back.gain.value = 0.5;
+    this.revIn.connect(pre).connect(this.convolver).connect(back).connect(mix);
+    // echo: dotted eighth, feedback 0.3 through a lowpass at 2.4 kHz (each repeat darker)
+    this.delay = ctx.createDelay(2);
+    this.delay.delayTime.value = dottedEighth(100);
+    const fb = ctx.createGain();
+    fb.gain.value = 0.3;
+    const fbLp = ctx.createBiquadFilter();
+    fbLp.type = 'lowpass';
+    fbLp.frequency.value = 2400;
+    this.delay.connect(fbLp).connect(fb).connect(this.delay);
+    this.delay.connect(mix);
+  }
+
+  /** The generated reverb impulse of a track (cached by tail length and damping). */
+  private impulseFor(track: Track): AudioBuffer {
+    const ctx = this.ctx!;
+    const { seconds, damp } = track.reverb;
+    const key = `${seconds}-${damp}`;
+    let buf = this.impulses.get(key);
+    if (!buf) {
+      const [l, r] = makeImpulse(ctx.sampleRate, seconds, damp);
+      buf = ctx.createBuffer(2, l.length, ctx.sampleRate);
+      buf.getChannelData(0).set(l);
+      buf.getChannelData(1).set(r);
+      this.impulses.set(key, buf);
+    }
+    return buf;
   }
 
   setEnabled(on: boolean): void {
@@ -94,24 +166,38 @@ export class Music {
   private start(id: TrackId, fadeS: number): void {
     const ctx = this.ctx!;
     const { track, voices } = parseTrack(id);
-    const bus = ctx.createGain();
     const now = ctx.currentTime;
-    bus.gain.setValueAtTime(0, now);
-    bus.gain.linearRampToValueAtTime(crossfadeGains(1).in, now + fadeS);
-    bus.connect(this.out!);
-    this.live.push({ id, bus, voices, t0: now + 0.05, next: 0, stepS: stepSeconds(track), loopLen: loopSteps(track) });
+    const mk = (to: AudioNode): GainNode => {
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(crossfadeGains(1).in, now + fadeS);
+      g.connect(to);
+      return g;
+    };
+    const bus = mk(this.mix!);
+    const revBus = mk(this.revIn!);
+    const delBus = mk(this.delay!);
+    // the room and the echo follow the newest track (the old one fades out through them)
+    if (this.convolver) this.convolver.buffer = this.impulseFor(track);
+    if (this.delay) this.delay.delayTime.setValueAtTime(dottedEighth(track.bpm), now);
+    this.live.push({ id, track, bus, revBus, delBus, roles: new Map(), voices, t0: now + 0.05, next: 0, stepS: stepSeconds(track), loopLen: loopSteps(track) });
   }
 
   private fadeOut(l: Live, at: number, seconds: number): void {
     this.fading.add(l);
-    l.bus.gain.cancelScheduledValues(at);
-    l.bus.gain.setValueAtTime(l.bus.gain.value, at);
-    l.bus.gain.linearRampToValueAtTime(0, at + seconds);
+    for (const b of [l.bus, l.revBus, l.delBus]) {
+      b.gain.cancelScheduledValues(at);
+      b.gain.setValueAtTime(b.gain.value, at);
+      b.gain.linearRampToValueAtTime(0, at + seconds);
+    }
     window.setTimeout(() => {
       this.live = this.live.filter((x) => x !== l);
       this.fading.delete(l);
       try {
         l.bus.disconnect();
+        l.revBus.disconnect();
+        l.delBus.disconnect();
+        for (const r of l.roles.values()) r.disconnect();
       } catch {
         // already gone
       }
@@ -130,45 +216,64 @@ export class Music {
       const to = Math.floor((ctx.currentTime + LOOKAHEAD_S - l.t0) / l.stepS) + 1;
       if (to <= l.next) continue;
       for (const v of l.voices) {
-        for (const { event, at } of eventsBetween(v.events, l.loopLen, l.next, to)) this.note(l, v, event.note, l.t0 + at * l.stepS, event.len * l.stepS);
+        for (const { event, at } of eventsBetween(v.events, l.loopLen, l.next, to)) this.note(l, v, event, at);
       }
       l.next = to;
     }
   }
 
-  private note(l: Live, v: ParsedVoice, name: string, t: number, dur: number): void {
-    const ctx = this.ctx!;
-    const peak = NOTE_PEAK * v.gain;
-    const g = ctx.createGain();
-    g.connect(l.bus);
-    if (v.wave === 'noise') {
-      if (!this.noise) return;
-      const src = ctx.createBufferSource();
-      src.buffer = this.noise;
-      const f = ctx.createBiquadFilter();
-      const kick = name === 'k';
-      f.type = name === 'h' ? 'highpass' : kick ? 'lowpass' : 'bandpass';
-      f.frequency.value = name === 'h' ? 6000 : kick ? 160 : 1800;
-      const len = name === 'h' ? 0.04 : kick ? 0.12 : 0.1;
-      g.gain.setValueAtTime(peak * (kick ? 2.2 : 1), t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-      src.connect(f).connect(g);
-      src.start(t, 0, len + 0.02);
+  /** The bus of a role in a live track: dry into the track bus, plus its reverb and echo sends. Made once per role. */
+  private roleBus(l: Live, role: VoiceRole): GainNode {
+    let g = l.roles.get(role);
+    if (!g) {
+      const ctx = this.ctx!;
+      g = ctx.createGain();
+      g.connect(l.bus);
+      const [rev, del] = SENDS[role];
+      if (rev > 0) {
+        const s = ctx.createGain();
+        s.gain.value = rev * l.track.reverb.mix;
+        g.connect(s).connect(l.revBus);
+      }
+      if (del > 0) {
+        const s = ctx.createGain();
+        s.gain.value = del;
+        g.connect(s).connect(l.delBus);
+      }
+      l.roles.set(role, g);
+    }
+    return g;
+  }
+
+  /** One event: the arc (what plays in this part of the 16-bar form), dropouts, swing, then the humanised voice. */
+  private note(l: Live, v: ParsedVoice, ev: NoteEvent, abs: number): void {
+    const e = this.env;
+    if (!e) return;
+    const tr = l.track;
+    const level = arcLevel(v.role, sectionOf(abs, tr.stepsPerBar));
+    if (level <= 0 || dropout(v.role, ev.note, abs, tr.stepsPerBar)) return;
+    const h = humanize(this.rng, v.role, ev.note, accentFor(abs % tr.stepsPerBar, tr.stepsPerBeat));
+    const t = Math.max(this.ctx!.currentTime, l.t0 + abs * l.stepS + swingDelay(abs, tr.stepsPerBeat, tr.swing, l.stepS) + h.dt);
+    const dur = ev.len * l.stepS;
+    const peak = NOTE_PEAK * MIX * v.gain * level * h.vel;
+    const out = this.roleBus(l, v.role);
+    if (v.role === 'drums') {
+      playDrum(e, out, tr.kit ?? 'jig', ev.note, t, peak, this.rng() * 0.3);
       return;
     }
-    const hz = noteHz(name);
+    if (v.role === 'pad') {
+      playPad(e, out, chordNotes(ev.note, 3).map((n) => noteHz(n) ?? 0), t, dur, peak);
+      return;
+    }
+    let hz = noteHz(ev.note);
     if (hz === null) return;
-    const osc = ctx.createOscillator();
-    osc.type = v.wave as OscillatorType;
-    osc.frequency.setValueAtTime(hz, t);
-    const hold = Math.max(0.05, dur * 0.92);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(peak, t + 0.012);
-    g.gain.setValueAtTime(peak * 0.8, t + hold * 0.6);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + hold);
-    osc.connect(g);
-    osc.start(t);
-    osc.stop(t + hold + 0.03);
+    if (v.role === 'lead') {
+      hz *= 2 ** (leadTranspose(Math.floor(abs / l.loopLen)) / 12);
+      playLead(e, out, v.wave, hz, t, dur, peak, h.cents);
+    } else if (v.role === 'bass') playBass(e, out, hz, t, dur, peak);
+    else if (v.role === 'bell') playBell(e, out, hz, t, peak);
+    else if (v.role === 'drone') playDrone(e, out, hz, t, dur, peak);
+    else playPluck(e, out, tr.arp?.style === 'repeat' || tr.kit === 'shaker' ? 'square' : 'triangle', hz, t, peak);
   }
 
   /** Every known track id (for a debug listing). */

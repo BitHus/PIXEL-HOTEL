@@ -3,6 +3,7 @@
 
 import { EMOTE_MS, GEMS_GAIN_ID, bagGains, worldToScreen, type Point, HINTS, DUNGEON_HINT, MINE_HINT } from '@pixel-hotel/shared';
 import { cloudConfig } from '../api/cloudSave.ts';
+import { reduceShakeOn } from '../api/prefs.ts';
 import { createEmoteButton } from '../ui/emoteButton.ts';
 import { createNameTag } from '../ui/nameTag.ts';
 import { createDebugLabel } from '../ui/debugLabel.ts';
@@ -143,8 +144,9 @@ export async function setupUiShell(g: G3) {
       info,
       runBar,
       toast,
-      sound: (name, rank) => sound.play(name, rank),
+      sound: (name, rank, pitch) => sound.play(name, rank, pitch),
       reduceEffects: () => prefs.reduceEffects,
+      reduceShake: () => reduceShakeOn(prefs.reduceShake),
       dpr,
       backTo: () => ROOM_NAMES[st.room.kind].toLowerCase(),
       popups,

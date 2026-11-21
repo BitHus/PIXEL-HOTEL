@@ -50,6 +50,8 @@ const LEGACY_STOVE_SPOT: Record<string, { x: number; y: number }> = {
   square_shop: { x: 160, y: 384 }, long: { x: 96, y: 640 }, l_shape: { x: 160, y: 512 }, plus: { x: 128, y: 384 }, wide_hall: { x: 160, y: 320 },
 };
 import { drawnLook } from './drawnPieces.ts';
+import { footprintCenter } from './placing.ts';
+import { STASH_PIECE, stashSpot } from './stashStart.ts';
 
 export interface NewPlayerConfig {
   playerId: number;
@@ -149,6 +151,11 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
   ];
   startItems.push(...riders);
   const stand = riders[1]!;
+  // 3e FOOD STASH: the serving hatch stands in the kitchen annex next to the stove (dishes are served from it; it starts empty).
+  const shopRoom = createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape);
+  const stove = startItems.find((i) => i.typeId === 'stove');
+  const hatchAt = stashSpot(shopRoom, startItems, stove ? footprintCenter(stove, stove.typeId) : null);
+  if (hatchAt) startItems.push({ uid: startItems.length + 1, typeId: STASH_PIECE, ownerId: config.playerId, roomId: config.shopRoomId, x: hatchAt.x, y: hatchAt.y, facing: 'down', onItemUid: null });
   const empty: GameState = {
     player: {
       id: config.playerId,
@@ -179,7 +186,7 @@ export function createNewPlayer(config: NewPlayerConfig = DEFAULT_NEW_PLAYER, at
     look: { ...config.look },
     rooms: [
       createRoom(config.hotelRoomId, 'hotel', 1, config.playerId, config.hotelShape),
-      createRoom(config.shopRoomId, 'shop', 1, config.playerId, config.shopShape),
+      shopRoom,
       startFarmRoom(createRoom(config.farmRoomId, 'farm', 1, config.playerId)),
       createRoom(config.lakesideRoomId, 'lakeside', 1, config.playerId),
     ],

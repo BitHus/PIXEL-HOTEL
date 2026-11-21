@@ -67,3 +67,24 @@ export function botWinRate(rank: Rank, bot: FishBot, gear: readonly string[] = [
   for (let seed = 1; seed <= n; seed++) if (botPlay(botSession(rank, seed, gear, skill), bot, seed * 7 + 3).outcome === 'caught') caught++;
   return caught / n;
 }
+
+/** J10: the share of n casts a player HOOKS who taps reactionMs after the bobber goes under (+- jitterMs, seeded), or, with
+ *  tapEveryMs, a player who just taps fast from the cast on (always early: fast tapping never hooks). Real step, real waits and nibbles. */
+export function botHookRate(rank: Rank, reactionMs: number, opts: { jitterMs?: number; tapEveryMs?: number; skill?: Bonuses; n?: number } = {}): number {
+  const n = opts.n ?? 200;
+  let hooked = 0;
+  for (let seed = 1; seed <= n; seed++) {
+    const rng = seededRng(seed * 13 + 5);
+    let s: FishSession = { ...newFishSession(rng, [], opts.skill), rank };
+    const jitter = opts.jitterMs ?? 0;
+    const react = Math.max(0, reactionMs + Math.round((rng() * 2 - 1) * jitter));
+    let underFor = -1;
+    for (let t = 0; t < 20_000 && s.phase !== 'reel' && !fishDone(s); t += FISH_TICK_MS) {
+      const tap = opts.tapEveryMs ? t % opts.tapEveryMs === 0 : underFor >= 0 && underFor >= react;
+      s = step(s, tap ? [{ t: 'tap' }] : [], FISH_TICK_MS, rng);
+      if (s.phase === 'bite') underFor = underFor < 0 ? 0 : underFor + FISH_TICK_MS;
+    }
+    if (s.phase === 'reel') hooked++;
+  }
+  return hooked / n;
+}

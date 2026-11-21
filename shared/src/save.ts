@@ -20,6 +20,7 @@ import { convertCounters } from './modularBar.ts';
 import { moveKitchenAbove } from './kitchenAbove.ts';
 import { applyChange, type Change } from './ledger.ts';
 import { migrateSkillsV2 } from './skills.ts';
+import { addFoodStash } from './stashMigration.ts';
 import type { LootRef, Player } from './types.ts';
 import type { GameState } from './gameState.ts';
 
@@ -356,6 +357,12 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
     return { ...state, rooms };
   },
   // 33 -> 34 (ledger trim): GameState.quests.folded is optional (counters of the entries cut from the old ledger); nothing to change but keep the shape.
+  // 43 -> 44 (3e FOOD STASH, owner 19 Nov): TavernState.stash (plates per stash slot) and the optional lastLoaded (refill memory). Open dish orders give their plate back
+  // to the bag, the tavern gets a serving hatch (next to the stove, else the bag) and the dishes switched on on the menu are loaded into it (stashMigration.ts addFoodStash).
+  43: (state) => {
+    if (!isObject(state) || !isObject(state.tavern) || !isObject(state.player) || !Array.isArray(state.items) || !Array.isArray(state.rooms)) return state;
+    return addFoodStash(state as unknown as GameState);
+  },
   // 42 -> 43 (SK-1, docs/PLAN-SKILLTREE.md 4.4): the skill tree v2. Unknown ids dropped, ranks clamped, an invalid v2 build cleared (points are derived, nothing lost);
   // every save with skills gets tree 2 and one free full reset (skills.ts migrateSkillsV2). No skills = nothing to change.
   42: (state) => {

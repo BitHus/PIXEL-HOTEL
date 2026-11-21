@@ -9,6 +9,7 @@ import { BLOCK_STACK_MAX, BLOCK_STACK_RISE_PX, BUILD_CELL, blockList, crackStage
 import type { DepthKey } from './depthOrder.ts';
 import type { RoomView } from './roomView.ts';
 import { spriteTexture } from './spriteStore.ts';
+import { chipVelocities, digFlashAt } from '../dungeon/digFeel.ts';
 
 const SHAKE_MS = 140;
 const PUFF_MS = 420;
@@ -132,6 +133,9 @@ interface BlockView {
   cracks: Graphics;
   stage: number;
   shakeMs: number;
+  /** J4: the hit flash (a Graphics over the block) and the ms since the punch (-1 = none). */
+  flash: Graphics;
+  flashT: number;
 }
 
 interface Bit {
@@ -185,10 +189,11 @@ export class BlockViews {
         const art = blockSprite(block.id) ?? new Graphics();
         if (art instanceof Graphics) drawBlockArt(art, type);
         const cracks = new Graphics();
-        node.addChild(art, cracks);
+        const flash = new Graphics();
+        node.addChild(art, cracks, flash);
         node.position.set(c * BUILD_CELL, r * BUILD_CELL - level * BLOCK_STACK_RISE_PX); // stub: each level is drawn higher
         node.eventMode = 'none';
-        v = { id: block.id, c, r, level, node, cracks, stage: 0, shakeMs: 0 };
+        v = { id: block.id, c, r, level, node, cracks, stage: 0, shakeMs: 0, flash, flashT: -1 };
         this.views.set(key, v);
         this.view.objects.add(node, this.keyOf(c, r, level));
       }
@@ -216,12 +221,24 @@ export class BlockViews {
     v.node.destroy({ children: true });
   }
 
-  /** A punch: the block shakes for a moment. */
-  punch(c: number, r: number): void {
+  /** A punch: the block shakes for a moment, flashes (bright, then pressed in 1 px: the squash) and throws 3 chips away from
+   *  `from` (the avatar; J4). `reduce` = Reduce effects: only the shake. */
+  punch(c: number, r: number, from?: { x: number; y: number }, reduce = false): void {
     for (let level = BLOCK_STACK_MAX - 1; level >= 0; level--) {
       const v = this.views.get(`${c},${r},${level}`);
       if (v) {
         v.shakeMs = SHAKE_MS; // the top block of the stack
+        if (reduce) return;
+        v.flashT = 0;
+        const at = { x: (c + 0.5) * BUILD_CELL, y: (r + 0.5) * BUILD_CELL - level * BLOCK_STACK_RISE_PX };
+        const colors = getBlockType(v.id).icon.colors.map((n) => paletteColor(n));
+        chipVelocities(from ?? { x: at.x, y: at.y + 40 }, at, 3, c * 131 + r * 17 + this.bits.length).forEach((cv, i) => {
+          const g = new Graphics();
+          px(g, 0, 0, 2, 2, colors[i % colors.length] ?? '#ffffff');
+          g.position.set(Math.round(at.x), Math.round(at.y));
+          this.view.markerLayer.addChild(g);
+          this.bits.push({ g, vx: cv.vx, vy: cv.vy, age: PUFF_MS / 2 });
+        });
         return;
       }
     }
@@ -247,6 +264,13 @@ export class BlockViews {
       if (v.shakeMs > 0) {
         v.shakeMs = Math.max(0, v.shakeMs - dtMs);
         v.node.x = v.c * BUILD_CELL + (v.shakeMs > 0 ? (Math.floor(v.shakeMs / 35) % 2 === 0 ? 1 : -1) : 0);
+      }
+      if (v.flashT >= 0) {
+        v.flashT += dtMs;
+        const look = digFlashAt(v.flashT);
+        v.flash.clear();
+        if (!look) v.flashT = -1;
+        else v.flash.rect(look.inset, look.inset * 2, BUILD_CELL - look.inset * 2, BUILD_CELL - look.inset * 3).fill({ color: '#ffffff', alpha: look.alpha });
       }
     }
     for (let i = this.bits.length - 1; i >= 0; i--) {

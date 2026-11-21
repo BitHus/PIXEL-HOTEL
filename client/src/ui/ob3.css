@@ -1,0 +1,50 @@
+/* OB-3 (owner playtest 3, 21 Nov): toasts are a compact, FULLY OPAQUE dark card (the level-up toast was see-through and huge: 0.82 alpha, a long
+   second sentence, 24 px icon). Loaded last (layout.ts), so it wins over skin.css / lantern.css / declutter.css. Phone: less secondary text. */
+:root .toast.toast.ui-hud {
+  background: var(--ui-bg-solid, #262b44);
+  opacity: 1;
+  padding: 6px 10px;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 16px;
+  max-width: min(300px, calc(100vw - 2 * var(--edge) - var(--side-col, 56px)));
+  box-shadow: 0 0 0 2px var(--outline, #181425), 0 0 0 3px var(--ui-lit, #3a4466), 0 3px 0 3px rgba(24, 20, 37, 0.5);
+}
+:root .toast.toast.ui-hud.toast-good { box-shadow: 0 0 0 2px var(--outline, #181425), 0 0 0 3px var(--ui-accent, #fee761), 0 3px 0 3px rgba(24, 20, 37, 0.5); }
+:root .toast.toast.ui-hud.toast-warn { box-shadow: 0 0 0 2px var(--outline, #181425), 0 0 0 3px #f6757a, 0 3px 0 3px rgba(24, 20, 37, 0.5); }
+.toast.ui-hud .toast-icon { width: 20px; height: 20px; }
+.toast.ui-hud .toast-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* Phone: two lines at most in a toast, one line in the tutorial text and hint chip; the tavern name line and the hotbar name plate give way. */
+:root[data-size='phone'] .toast.ui-hud .toast-text { -webkit-line-clamp: 2; }
+:root[data-size='phone'] .first-ten.ui-panel .first-ten-text,
+:root[data-size='phone'] .hint-chip.hint-chip {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+:root[data-size='phone'] .info-panel .info-inn { display: none; }
+
+/* OB-4: the punch / break toggle at the left end of the hotbar: round, as tall as a slot, never under 44 px. */
+.hotbar .hotbar-punch {
+  flex: none;
+  width: max(var(--slot, 44px), 44px);
+  height: max(var(--slot, 44px), 44px);
+  margin: 0 6px 0 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(24, 20, 37, 0.85);
+  box-shadow: inset 0 1px 0 var(--ui-lit, #3a4466), 0 0 0 1px var(--ui-line, #3a4466), 0 2px 0 1px rgba(24, 20, 37, 0.35);
+}
+.hotbar .hotbar-punch .punch-icon { width: 26px; height: 26px; image-rendering: pixelated; opacity: 0.55; }
+.hotbar .hotbar-punch.on { box-shadow: 0 0 0 2px var(--ui-accent, #fee761), 0 2px 0 2px rgba(24, 20, 37, 0.35); }
+.hotbar .hotbar-punch.on .punch-icon { opacity: 1; }

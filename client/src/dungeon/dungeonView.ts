@@ -41,7 +41,9 @@ import {
 import { AvatarSprite } from '../render/avatarSprite.ts';
 import { DepthLayer } from '../render/depthLayer.ts';
 import { iconTexture } from '../render/drawIcon.ts';
+import { DropViews } from '../render/dropView.ts';
 import { DigLayer, drawGlint } from './digArt.ts';
+import { digFlashAt } from './digFeel.ts';
 import { CRYPT_OUTLINE, ENEMY_HEIGHT, ROCK_HEIGHT, drawBlocks, drawChest, drawEnemy, drawExit, drawRock } from './dungeonArt.ts';
 import { FogMemory } from './fog.ts';
 import { decorAnimated, decorIsFlat, drawDecorProp, landmarkOf, landmarkToast } from './decor.ts';
@@ -123,8 +125,11 @@ export class DungeonView {
   readonly world = new Container();
   private readonly base = new Container();
   readonly objects = new DepthLayer();
+  /** OB-8 ground drops (ore, kill drops): lie on the floor, fly into the player when picked. */
+  private readonly drops = new DropViews(this.objects);
   /** Above the objects: the attack cooldown ring. */
   private readonly fx = new Graphics();
+  private readonly digFlashes: { x: number; y: number; t: number }[] = [];
   private readonly fog = new Graphics();
   /** The crypt light layer (outdoors rework C14); the old fog is its fallback. */
   readonly light = new DungeonLight();
@@ -195,6 +200,7 @@ export class DungeonView {
     for (const id of [...this.enemies.keys()]) this.removeEnemy(id);
     for (const d of this.dying.splice(0)) this.destroyEnemyView(d.v);
     this.fadeRequests.clear();
+    this.drops.clear();
     this.particles.clear();
     for (const [id, c] of this.chests) {
       this.objects.remove(c.root);
@@ -331,6 +337,11 @@ export class DungeonView {
       }
     }
     return best;
+  }
+
+  /** J4: a dig hit flashes the block at this cell (top-left world px of the block). */
+  flashBlock(x: number, y: number): void {
+    if (this.digFlashes.length < 6) this.digFlashes.push({ x, y, t: 0 });
   }
 
   /** A hit rock shakes a little. */
@@ -568,8 +579,22 @@ export class DungeonView {
       }
     }
 
+    this.drops.sync(run.drops ?? [], at, dtMs, clockMs, (pt) => this.fogMemory.isSeen(map, pt));
+
     // The cooldown ring above the player's head: the attack, or the pickaxe in the mine.
     this.fx.clear();
+    // J4: the hit flash on a dug block (bright, then pressed in 1 px = the squash); whole pixels.
+    for (let i = this.digFlashes.length - 1; i >= 0; i--) {
+      const f = this.digFlashes[i]!;
+      f.t += dtMs;
+      const look = digFlashAt(f.t);
+      if (!look) {
+        this.digFlashes.splice(i, 1);
+        continue;
+      }
+      const s = DUNGEON_BLOCK - look.inset * 2;
+      this.fx.rect(f.x + look.inset, f.y + look.inset * 2, s, s - look.inset).fill({ color: '#ffffff', alpha: look.alpha });
+    }
     const now = run.timeMs + run.carryMs;
     const attackLeft = p.attackReadyAt - now;
     const pickLeft = p.pickReadyAt - now;

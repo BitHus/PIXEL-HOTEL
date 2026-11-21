@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FURNITURE_TYPES } from '@pixel-hotel/shared';
-import { DING_MS, FLAME_FRAME_COUNT, FLAME_SIZE, PROP_ANIMS, boxAnchor, dripAt, drawerHeightAt, flameFrame, flameRows, glintFrameAt, motionLevel, particleAlpha, pngToRel, spawnFor, twinkleFrame, type FlameKind } from './propAnimSpecs.ts';
+import { DING_MS, FLAME_FRAME_COUNT, FLAME_SIZE, PROP_ANIMS, boxAnchor, dripAt, boardFlashAt, flameFrame, flameRows, glintFrameAt, motionLevel, particleAlpha, pngToRel, spawnFor, twinkleFrame, type FlameKind } from './propAnimSpecs.ts';
 
 describe('flame bitmaps', () => {
   it('every frame has the declared size and only known letters', () => {
@@ -31,10 +31,10 @@ describe('timing', () => {
       expect(flameFrame(5, t, 1, true)).toBe(0);
     }
   });
-  it('drawer opens and shuts; glint runs 5 frames then ends', () => {
-    expect(drawerHeightAt(-1)).toBe(0);
-    expect(drawerHeightAt(200)).toBe(5);
-    expect(drawerHeightAt(DING_MS)).toBe(0);
+  it('price board flashes and fades; glint runs 5 frames then ends', () => {
+    expect(boardFlashAt(-1)).toBe(0);
+    expect(boardFlashAt(200)).toBeGreaterThan(0.3);
+    expect(boardFlashAt(DING_MS)).toBe(0);
     expect([40, 100, 160, 220, 280].map(glintFrameAt)).toEqual([0, 1, 2, 3, 4]);
     expect(glintFrameAt(400)).toBe(-1);
     const seen = new Set<number>();

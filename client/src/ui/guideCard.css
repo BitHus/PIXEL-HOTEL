@@ -161,3 +161,7 @@
   .first-ten.ui-panel .first-ten-pips i { width: 3px; height: 3px; }
   .first-ten.ui-panel .first-ten-pips { gap: 1px; }
 }
+/* RUN 16 #2: on a wide screen the card is narrower (260 px) so it stays left of the start view's kitchen (barrel, hatch, stove); the text wraps to 3 lines. */
+@media (min-width: 681px) {
+  .first-ten.ui-panel { max-width: 260px; }
+}

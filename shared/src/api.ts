@@ -27,6 +27,8 @@ import type { Brew } from './brewing.ts';
 import type { Cook } from './cooking.ts';
 import type { Cask, CaskView } from './casks.ts';
 import type { Tap } from './taps.ts';
+import type { StashSlot } from './stash.ts';
+import type { LowStockMark } from './refill.ts';
 import type { TavernEvent } from './guests.ts';
 import type { TrayMug } from './tray.ts';
 import type { SplicePreview } from './splice.ts';
@@ -90,6 +92,12 @@ export interface TavernView {
   cooks: Cook[];
   /** The drinks on the taps (stand uid, slot, drink, mugs; step T1). */
   taps: Tap[];
+  /** 3e FOOD STASH: the plates in the stash slots (piece uid, slot, dish, plates). */
+  stash: StashSlot[];
+  /** 3e REFILL LOOP: what each tap / stash slot held last ('tap:uid:slot' / 'stash:uid:slot'). */
+  lastLoaded: Record<string, MaterialId>;
+  /** 3e: the pieces that need a refill (a slot low or run dry), for the marker in the world (refill.ts lowStockMarks). */
+  lowStock: LowStockMark[];
   /** The casks ripening on the keg racks (rack uid, slot, drink, mugs, start; step K2). */
   casks: Cask[];
   /** CEL-5: the highest tier of each keg rack (rack uid -> vintage or reserve; reserve only in a cellar of level 2 or more). */
@@ -142,7 +150,11 @@ export type TavernClientEvent =
   /** The avatar stands at the taps and pours one mug (step T1): `ms` long (POUR_MS), at the stand `standUid`; the clink and the pour animation. */
   | { t: 'pour'; guestId: number; item: MaterialId; standUid: number; ms: number }
   /** The tap holding the drink was empty when the avatar came to pour: the order stays open (step T1). */
-  | { t: 'tap_empty'; guestId: number; item: MaterialId };
+  | { t: 'tap_empty'; guestId: number; item: MaterialId }
+  /** 3e: the stash held no plate of the ordered dish (when tapped, or when the avatar came to fetch it): the order stays open. */
+  | { t: 'stash_empty'; guestId: number; item: MaterialId }
+  /** 3e REFILL LOOP: a serve took the LAST mug of a tap (kind 'tap', n = the tap's number in the Taps panel) or the last plate of a stash slot (kind 'stash', n = the slot number). */
+  | { t: 'ran_dry'; kind: 'tap' | 'stash'; uid: number; slot: number; n: number; item: MaterialId };
 
 /** The walk to the spot behind the counter (step 7). */
 export interface ServeResult {
@@ -432,6 +444,14 @@ export interface GameAPI {
   loadTap(standUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean>;
   /** Step T1: gives mugs back to the bag (qty, or 'all'). False = refused (an empty tap, too many). */
   unloadTap(standUid: number, slot: number, qty: number | 'all'): Promise<boolean>;
+  /** 3e FOOD STASH: moves qty plates of one cooked dish from the bag into a stash slot (at most STASH_CAP of ONE dish). False = refused. */
+  loadStash(pieceUid: number, slot: number, dish: FoodId, qty: number): Promise<boolean>;
+  /** 3e ONE CLICK: the dish goes from the bag into the stash (its slot or the first empty one, as many as fit). The plates moved (0 = refused: no stash, no room, none in the bag). */
+  addToStash(dish: FoodId): Promise<number>;
+  /** 3e: gives plates back to the bag (qty, or 'all'; one click on a slot = 'all'). False = refused. */
+  unloadStash(pieceUid: number, slot: number, qty: number | 'all'): Promise<boolean>;
+  /** 3e REFILL ALL: tops up every tap (kind 'taps') or stash slot ('stash') that holds or held something, from the bag. How many mugs or plates moved (0 = nothing to do). */
+  refillAll(kind: 'taps' | 'stash'): Promise<number>;
   /** The intro toast of the tavern was shown: it never shows again (also after a reload). */
   markTavernIntroSeen(): Promise<void>;
   // ---------- Step 9b: the farm and cooking ----------

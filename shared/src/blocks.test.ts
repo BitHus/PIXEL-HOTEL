@@ -182,11 +182,11 @@ describe('blocks block walking', () => {
     expect(doorReachesMiddle(shop(s), roomBlockers(shop(s), s.items))).toBe(true);
   });
   it('the tavern: the last block that would cut a reachable seat off from the door is refused (seat_blocked)', () => {
-    // The left chair of the start tavern stands on cell (4, 10); the table is on columns 5-6, row 10 and the back chair on (5, 9) (START LAYOUT REDO 19 Nov).
+    // The left chair of the start tavern stands on cell (4, 9); the table is on columns 5-6, row 9 and the back chair on (5, 8) (OB-2 21 Nov: one row up).
     // Its free neighbours are the six cells around it that the table and the back chair do not hold (diagonals too); with all six shut, no guest could get within reach of the seat.
     let st = rich();
     const id = st.player.shopRoomId;
-    const ring = [[3, 9], [4, 9], [3, 10], [3, 11], [4, 11], [5, 11]] as const;
+    const ring = [[3, 8], [4, 8], [3, 9], [3, 10], [4, 10], [5, 10]] as const;
     for (const [c, r] of ring.slice(0, 5)) st = put(st, id, c, r, 'dirt');
     const [c, r] = ring[5];
     const res = placeBlock(st, id, c, r, 'dirt', 1, free);

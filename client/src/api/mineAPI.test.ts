@@ -54,6 +54,8 @@ describe('the mine through the GameAPI', () => {
       if (u?.run.dig?.kinds[cell] === '') break;
       gains.push(...((await api2.dungeonAdvance(PICKAXE_COOLDOWN_MS))?.gains ?? []));
     }
+    // OB-8: the coal lands on the ground; the gain comes when the magnet puts it in the bag.
+    gains.push(...((await api2.dungeonAdvance(1500))?.gains ?? []));
     expect(mergeGains(gains).find((g) => g.itemId === 'coal')?.count).toBeGreaterThanOrEqual(1);
     expect((await api2.getRun())!.run.dig!.kinds[cell]).toBe('');
     // A long time passes: no lantern, the run is still going. Leave banks everything.

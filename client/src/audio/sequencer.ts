@@ -1,6 +1,7 @@
 // Pure music logic (AU-2): parsing the data tables, loop maths, a lookahead window and the crossfade plan. No Web Audio here.
 
-import { TRACKS, type Track, type TrackId } from './musicData.ts';
+import { TRACKS, type Track, type TrackId, type VoiceRole } from './musicData.ts';
+import { arpEvents, padEvents } from './musicForm.ts';
 
 export interface NoteEvent {
   /** Step of the loop where it starts. */
@@ -106,12 +107,17 @@ export function volumeGain(enabled: boolean, volume: number): number {
 }
 
 export interface ParsedVoice {
+  role: VoiceRole;
   wave: string;
   gain: number;
   events: NoteEvent[];
 }
 
+/** The track's voices plus the generated pad (note = chord symbol) and arp (pitch events), from the chords. */
 export function parseTrack(id: TrackId): { track: Track; voices: ParsedVoice[] } {
   const track = TRACKS[id];
-  return { track, voices: track.voices.map((v) => ({ wave: v.wave, gain: v.gain, events: parsePattern(v.pattern).events })) };
+  const voices: ParsedVoice[] = track.voices.map((v) => ({ role: v.role, wave: v.wave, gain: v.gain, events: parsePattern(v.pattern).events }));
+  voices.push({ role: 'pad', wave: 'triangle', gain: track.pad, events: padEvents(track) });
+  if (track.arp) voices.push({ role: 'arp', wave: 'triangle', gain: track.arp.gain, events: arpEvents(track) });
+  return { track, voices };
 }

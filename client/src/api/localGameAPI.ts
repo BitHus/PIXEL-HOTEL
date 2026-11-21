@@ -289,6 +289,10 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
   async markTavernIntroSeen(): Promise<void> { return tavernApi.markTavernIntroSeen(this); }
   async loadTap(standUid: number, slot: number, drink: DrinkId, qty: number): Promise<boolean> { return tavernApi.loadTap(this, standUid, slot, drink, qty); }
   async unloadTap(standUid: number, slot: number, qty: number | 'all'): Promise<boolean> { return tavernApi.unloadTap(this, standUid, slot, qty); }
+  async loadStash(pieceUid: number, slot: number, dish: FoodId, qty: number): Promise<boolean> { return tavernApi.loadStash(this, pieceUid, slot, dish, qty); }
+  async addToStash(dish: FoodId): Promise<number> { return tavernApi.addToStash(this, dish); }
+  async unloadStash(pieceUid: number, slot: number, qty: number | 'all'): Promise<boolean> { return tavernApi.unloadStash(this, pieceUid, slot, qty); }
+  async refillAll(kind: 'taps' | 'stash'): Promise<number> { return tavernApi.refillAll(this, kind); }
   async startCook(stoveUid: number, food: FoodId, qty: number): Promise<boolean> { return tavernApi.startCook(this, stoveUid, food, qty); }
   async collectCook(stoveUid: number): Promise<{ food: FoodId; qty: number; gains: GainList } | null> { return tavernApi.collectCook(this, stoveUid); }
   inTavern(): boolean { return tavernApi.inTavern(this); }
@@ -326,6 +330,8 @@ export class LocalGameAPI implements GameAPI, LocalSaves {
 
   /** A fishing line that is cast (not saved: a reload loses it, and nothing is lost with it). */
   fish: FishSession | null = null;
+  /** J10: when the last line came up early (a tap before the dip; real time), or null: a new cast waits FISH_EARLY_LOCK_MS. */
+  fishEarlyAt: number | null = null;
 
   lakesideView(): LakesideView { return lakesideApi.lakesideView(this); }
 

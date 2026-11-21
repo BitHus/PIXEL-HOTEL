@@ -15,6 +15,7 @@ export * from './config/blocks.ts';
 export * from './config/packs.ts';
 export * from './config/ripen.ts';
 export * from './config/home.ts';
+export * from './config/drops.ts';
 
 
 // ---------- The tavern (step 9t) ----------
@@ -25,15 +26,16 @@ export * from './config/home.ts';
  * front (the row where bar guests stand and one more), so the bar and the dining area never crowd each other.
  */
 export const TAVERN_START_ITEMS = [
-  { key: 'table', typeId: 'table', x: 192, y: 352, facing: 'down' },
-  { key: 'chair_left', typeId: 'chair', x: 144, y: 352, facing: 'right' },
-  { key: 'chair_right', typeId: 'chair', x: 240, y: 352, facing: 'left' },
-  { key: 'chair_back', typeId: 'chair', x: 176, y: 320, facing: 'down' },
-  { key: 'chair_front', typeId: 'chair', x: 208, y: 384, facing: 'up' },
-  { key: 'bar_stool_1', typeId: 'bar_stool', x: 272, y: 256, facing: 'up' },
-  { key: 'bar_stool_2', typeId: 'bar_stool', x: 304, y: 256, facing: 'up' },
-  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 272, y: 160, facing: 'down' },
-  { key: 'stove', typeId: 'stove', x: 224, y: 160, facing: 'down' },
+  // OB-2 (21 Nov): the bar is one row higher (the annex's bottom row, in line with the back wall), the dining group follows, the stove sits far from the taps.
+  { key: 'table', typeId: 'table', x: 192, y: 320, facing: 'down' },
+  { key: 'chair_left', typeId: 'chair', x: 144, y: 320, facing: 'right' },
+  { key: 'chair_right', typeId: 'chair', x: 240, y: 320, facing: 'left' },
+  { key: 'chair_back', typeId: 'chair', x: 176, y: 288, facing: 'down' },
+  { key: 'chair_front', typeId: 'chair', x: 208, y: 352, facing: 'up' },
+  { key: 'bar_stool_1', typeId: 'bar_stool', x: 272, y: 224, facing: 'up' },
+  { key: 'bar_stool_2', typeId: 'bar_stool', x: 304, y: 224, facing: 'up' },
+  { key: 'brewing_barrel', typeId: 'brewing_barrel', x: 144, y: 96, facing: 'down' },
+  { key: 'stove', typeId: 'stove', x: 320, y: 96, facing: 'down' },
 ] as const;
 /** MODULAR BAR (19 Nov): a new tavern's bar is this many one-cell 'bar' pieces in a row (facing down) when its shape has no bar..bar_end spots: the register on the first, the tap stand on the third. */
 export const TAVERN_START_BAR_PIECES = 6;
@@ -149,6 +151,12 @@ export const MENU_FACE_TOLERANCE = 1.1;
 export const TAP_SLOTS = 2;
 /** Most mugs one tap holds. */
 export const TAP_CAP = 12;
+/** 3e FOOD STASH: slots in one stash piece (the serving hatch); each holds plates of ONE cooked dish. */
+export const STASH_SLOTS = 4;
+/** 3e: most plates one stash slot holds. */
+export const STASH_CAP = 6;
+/** 3e REFILL LOOP: a tap or stash slot with this many or fewer left shows the low-stock marker on its piece (owner: "e.g. at 2 left"). */
+export const REFILL_LOW_AT = 2;
 /** Pouring a mug at the taps takes this long, ms (then the avatar carries it). */
 export const POUR_MS = 800;
 /** A prep table inside the kitchen zone, cell-adjacent to a stove, adds this many dishes to its batch; at most `max` in all. */
@@ -156,7 +164,11 @@ export const PREP_BONUS = { perTable: 1, max: 2 } as const;
 
 // ---------- Hands-on pouring (step G2) ----------
 /** Holding the tap fills the mug in this many ms (long enough to see the level and the green window; POUR_MS stays the old automatic pour). */
-export const POUR_FULL_MS = 1400;
+export const POUR_FULL_MS = 1000; // OB-1 (21 Nov): was 1400, faster pour (owner to confirm)
+/** OB-1 (21 Nov): the phone CONTEXT BUTTON above the hotbar (Pour / Serve / Collect...) is off; the guest, its chip and E still serve. */
+export const CONTEXT_BUTTON_ENABLED = false;
+/** OB-1: while a pour waits the WHOLE screen is the pour press; a press away from the stand shorter than this is a stray tap, not a pour. */
+export const POUR_AWAY_TAP_MS = 180;
 /** Safety cap: a hold longer than this ends by itself (a stuck press never pours for ever). */
 export const POUR_HOLD_CAP_MS = 4000;
 /** Releasing with the fill between these fractions of full is a perfect pour (forgiving window). */

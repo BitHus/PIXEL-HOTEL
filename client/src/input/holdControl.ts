@@ -7,7 +7,7 @@ import {
   BLOCK_HIT_COOLDOWN_MS,
   HOLD_IDLE,
   HOLD_PLACE_MS,
-  PICKAXE_COOLDOWN_MS,
+  DUNGEON_TICK_MS,
   holdStart,
   holdStop,
   holdTick,
@@ -45,7 +45,9 @@ export function setBlockHitCooldown(ms: number): void {
 export function holdCooldown(target: HoldTarget): number {
   switch (target.kind) {
     case 'rock':
-      return PICKAXE_COOLDOWN_MS;
+      // J4: the mine's beat is kept by the run's own clock (DungeonScreen.holdDig / holdRock answer 'retry' until it is due), so the
+      // client only paces its requests per tick; a client-side 400 ms here drifted against the run's ticks (uneven beat).
+      return DUNGEON_TICK_MS;
     case 'tree':
       return AXE_COOLDOWN_MS;
     case 'line':

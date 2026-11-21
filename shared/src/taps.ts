@@ -14,6 +14,7 @@ import { getFurnitureType, behindPoint } from './furniture.ts';
 import { footprintCenter } from './placing.ts';
 import type { GameState } from './gameState.ts';
 import { applyChange } from './ledger.ts';
+import { forget, remember } from './slotMemo.ts';
 import { DRINK_TYPES, isDrinkId } from './materials.ts';
 import type { Guest, TavernState } from './tavern.ts';
 import type { FurnitureItem, MaterialId, Point } from './types.ts';
@@ -80,7 +81,10 @@ export function loadTap(state: GameState, standUid: number, slot: number, drink:
   if (!Number.isInteger(qty) || qty < 1 || loadRoom(state, standUid, slot, drink) < qty) return null;
   const tap = tapOf(state.tavern.taps, standUid, slot);
   const paid = applyChange(state, { reason: 'tap', materials: { [drink as MaterialId]: -qty }, note: `loaded ${qty} x ${drink} on a tap` }, at);
-  return paid && withTaps(paid, setTap(paid.tavern.taps, { standUid, slot, drink: drink as MaterialId, mugs: (tap?.mugs ?? 0) + qty }));
+  if (!paid) return null;
+  // 3e REFILL LOOP: the tap remembers its drink, so 'Refill all' and the empty marker still know it after the last mug.
+  const loaded = withTaps(paid, setTap(paid.tavern.taps, { standUid, slot, drink: drink as MaterialId, mugs: (tap?.mugs ?? 0) + qty }));
+  return { ...loaded, tavern: { ...loaded.tavern, lastLoaded: remember(loaded.tavern.lastLoaded, 'tap', standUid, slot, drink as MaterialId) } };
 }
 
 /** Gives mugs back to the bag: qty (a whole number from 1 to what the tap holds) or all of them. Null for an empty tap or a bad qty. */
@@ -90,7 +94,10 @@ export function unloadTap(state: GameState, standUid: number, slot: number, qty:
   const n = qty === 'all' ? tap.mugs : qty;
   if (!Number.isInteger(n) || n < 1 || n > tap.mugs) return null;
   const got = applyChange(state, { reason: 'tap', materials: { [tap.drink]: n }, notFound: { [tap.drink]: n }, note: `unloaded ${n} x ${tap.drink} from a tap` }, at);
-  return got && withTaps(got, setTap(got.tavern.taps, { ...tap, mugs: tap.mugs - n }));
+  if (!got) return null;
+  const next = withTaps(got, setTap(got.tavern.taps, { ...tap, mugs: tap.mugs - n }));
+  // 3e: emptied by hand = the player chose it, so no empty marker and no refill for this tap.
+  return tap.mugs - n > 0 ? next : { ...next, tavern: { ...next.tavern, lastLoaded: forget(next.tavern.lastLoaded, 'tap', standUid, slot) } };
 }
 
 /** A tap whose stand is not on the bar of the tavern any more gives its mugs back (run it when the items change). */
@@ -101,6 +108,11 @@ export function returnOrphanTaps(state: GameState, at: number): GameState {
     if (standing.has(tap.standUid)) continue;
     const r = applyChange(next, { reason: 'tap', materials: { [tap.drink]: tap.mugs }, notFound: { [tap.drink]: tap.mugs }, note: `tap stand gone: ${tap.drink}` }, at);
     if (r) next = withTaps(r, r.tavern.taps.filter((t) => !(t.standUid === tap.standUid && t.slot === tap.slot)));
+  }
+  // 3e: a stand that left the bar forgets what its taps held.
+  for (const key of Object.keys(next.tavern.lastLoaded ?? {})) {
+    const [kind, uid] = key.split(':');
+    if (kind === 'tap' && !standing.has(Number(uid))) next = { ...next, tavern: { ...next.tavern, lastLoaded: forget(next.tavern.lastLoaded, 'tap', Number(uid)) } };
   }
   return next;
 }

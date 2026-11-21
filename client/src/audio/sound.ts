@@ -207,7 +207,8 @@ export class Sound {
         break;
       case 'hit':
         this.hiss(0.06, 0.2, 'bandpass', 1800);
-        this.tone('square', 170, 90, 0.07, 0.08);
+        // J4: `pitch` 0..1 = how far the block is dug: the tick rises per hit (0 = the old sound).
+        this.tone('square', 170 * (1 + 0.6 * pitch), 90 * (1 + 0.6 * pitch), 0.07, 0.08);
         break;
       case 'clink':
         // A mug set down: two quick glassy notes.

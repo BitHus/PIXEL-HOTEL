@@ -8,6 +8,7 @@ import {
 import { setBlockHitCooldown } from '../input/holdControl.ts';
 import { createHotbar } from '../ui/hotbar.ts';
 import { createBagPanel } from '../ui/bagPanel.ts';
+import { createPunchToggle } from '../ui/punchToggle.ts';
 import { watchLayout } from '../ui/layoutVars.ts';
 import { ROOM_NAMES } from '../ui/infoPanel.ts';
 import type { G10 } from './ctx.ts';
@@ -158,6 +159,13 @@ late.hotbar = hotbar;
   panels.add('bag', bag.el, undefined, () => bag.endCarry(), bag.frame);
   // The Bag button sits at the right end of the hotbar (owner, after 9d).
   hotbar.el.appendChild(side.bag);
+  // OB-4: the punch toggle at the left end (room-only: hidden in the dungeon and the mine, where hits always work). Session state st.punchMode.
+  st.punchMode = true;
+  const punch = createPunchToggle(hotbar.el, (next) => {
+    st.punchMode = next;
+    punch.setOn(next);
+    toast(next ? 'Break mode: taps break blocks.' : 'Chill mode: taps never break.');
+  });
   // Panels start under the info panel (phone) and end above the hotbar or the run bag.
   watchLayout(ui, info.panel, [hotbar.el, runBar.el]);
 
@@ -176,7 +184,7 @@ late.hotbar = hotbar;
     // Level-up toast (SK-2: xp comes from every loop, so the one place that sees every change is here). Not in a run: the run screens show their own.
     if (levelSeen > 0 && p.level > levelSeen && !dungeon.isActive && !newIntro.running) {
       const free = pointsFree(p);
-      toast(free > 0 ? `Level ${p.level}! You have ${free} skill point${free === 1 ? '' : 's'} to spend.` : `Level ${p.level}!`);
+      toast(free > 0 ? `Level ${p.level}! ${free} skill point${free === 1 ? '' : 's'}` : `Level ${p.level}!`); // OB-3: short on the phone
     }
     levelSeen = p.level;
     st.tavern = { ...st.tavern, appeal: (await api.getTavern()).appeal };

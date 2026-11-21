@@ -8,6 +8,7 @@ import {
   HOTEL_WALK_SPEED,
   PICKAXE_COOLDOWN_MS,
   PLAYER_DUNGEON_SPEED,
+  POUR_FULL_MS,
   POUR_PERFECT_RANGE,
   RUN_BAG_SLOTS,
   STOVE_BATCH_MAX,
@@ -110,7 +111,7 @@ describe('tavern stats', () => {
     expect(startCook(withRanks(s, { big_batch: 1 }), stove.uid, 'roasted_turnip', STOVE_BATCH_MAX + 1, 1)).not.toBeNull();
   });
   it('a pour a little over the plain window is perfect with Keen eye', () => {
-    const ms = 1.17 * 1400; // fill 1.17, over 1.15
+    const ms = 1.17 * POUR_FULL_MS; // fill 1.17, over 1.15
     expect(pourGrade(ms)).toBe('over');
     expect(pourGrade(ms, ranks({ keen_eye: 2 }))).toBe('perfect');
   });

@@ -4488,6 +4488,7 @@
     "rank": "common",
     "inCatalog": true,
     "kitchen": true,
+    "stash": true,
     "art": {
       "boxes": [
         {

@@ -1,5 +1,5 @@
-// Prop animation (docs/PLAN-ANIMATION.md): flames, smoke, steam, embers, bubbles, motes, tap drips, jewel glints and the register's drawer.
-// Everything is BUILT ONCE: flame/glint/drawer textures are drawn to a canvas on first use and shared; per frame we only swap a sprite's texture
+// Prop animation (docs/PLAN-ANIMATION.md): flames, smoke, steam, embers, bubbles, motes, tap drips, jewel glints and the register's price board flash.
+// Everything is BUILT ONCE: flame/glint textures are drawn to a canvas on first use and shared; per frame we only swap a sprite's texture
 // or move a pooled white square. No Graphics redraw. Flames are children of the item's own container (so depth order and hiding follow the item);
 // particles live in one pooled sprite layer in the marker layer. Whole world px only. The numbers and timing are in propAnimSpecs.ts (pure).
 // Reduce effects: no particles, drips or motes, flames still loop. OS prefers-reduced-motion: flames hold still too.
@@ -13,7 +13,7 @@ import type { FurnitureSprite } from './furnitureSprite.ts';
 import type { RoomView } from './roomView.ts';
 import {
   DING_MS, DING_REACH_PX, FLAME_FRAME_COUNT, FLAME_LETTER, FLAME_SIZE, GHOST_LETTER, MEAL_STEAM_MAX, MEAL_STEAM_MS, PROP_ANIMS,
-  boxAnchor, dripAt, drawerHeightAt, flameFrame, flameRows, glintFrameAt, motionLevel, particleAlpha, pngToRel, spawnFor, swayPx, twinkleFrame,
+  REGISTER_BOARD, boardFlashAt, boxAnchor, dripAt, flameFrame, flameRows, glintFrameAt, motionLevel, particleAlpha, pngToRel, spawnFor, swayPx, twinkleFrame,
   type At, type EmitKind, type EmitSpec, type FlameKind, type MotionLevel,
 } from './propAnimSpecs.ts';
 
@@ -63,22 +63,6 @@ const GLINT_ROWS = [
 let glintTex: Texture[] | null = null;
 const glintTextures = (): Texture[] => (glintTex ??= GLINT_ROWS.map((r) => bitmapTexture(r, { W: 19, y: 11 })));
 
-/** The register drawer at 1 to 5 px high: coins on top once it is 4 px or more, a wood front, a dark lip. Index = height. */
-let drawerTex: Texture[] | null = null;
-function drawerTextures(): Texture[] {
-  if (drawerTex) return drawerTex;
-  const out: Texture[] = [Texture.EMPTY];
-  for (let h = 1; h <= 5; h++) {
-    const rows: string[] = [];
-    if (h >= 4) rows.push('o' + Array.from({ length: 18 }, (_, x) => (x % 3 === 2 ? 'b' : 'a')).join('') + 'o');
-    const wood = h - 1 - rows.length;
-    for (let i = 0; i < wood; i++) rows.push('o' + (i === 0 ? 'l'.repeat(18) : 'k'.repeat(18)) + 'o');
-    if (wood > 0 && h >= 3) rows[rows.length - 1] = 'o' + 'k'.repeat(8) + 'hhhh' + 'k'.repeat(6) + 'o';
-    rows.push('o'.repeat(20));
-    out.push(bitmapTexture(rows, { o: 6, k: 4, l: 3, a: 10, b: 11, h: 2 }));
-  }
-  return (drawerTex = out);
-}
 
 const TO_POOL: Record<EmitKind, ParticleKind> = { smoke: 'dust', steam: 'leaf', ember: 'spark', spark: 'debris', bubble: 'goo', mote: 'feather' };
 const FROM_POOL: Partial<Record<ParticleKind, EmitKind>> = { dust: 'smoke', leaf: 'steam', spark: 'ember', debris: 'spark', goo: 'bubble', feather: 'mote' };
@@ -87,7 +71,7 @@ interface FlameRun { sprite: Sprite; frames: Texture[]; kind: FlameKind; flicker
 interface EmitRun { spec: EmitSpec; pos: Point; accum: number; next: number }
 interface DripRun { sprite: Sprite; pos: Point; seed: number }
 interface GlintRun { sprite: Sprite; pos: Point; seed: number; period: number }
-interface RegRun { drawer: Sprite; glint: Sprite; t: number }
+interface RegRun { board: Sprite; glint: Sprite; t: number }
 
 interface Entry {
   uid: number;
@@ -191,13 +175,18 @@ export class PropAnim {
       e.glints.push({ sprite, pos: resolve(g.at), seed: item.uid * 3 + i, period: g.periodMs });
     });
     if (spec.register) {
-      const drawer = new Sprite(Texture.EMPTY);
-      drawer.position.set(-10, -3);
+      // Customer-side art (21 Nov): no drawer; a ding flashes the price board instead.
+      const board = new Sprite(Texture.WHITE);
+      board.tint = hexInt(2);
+      board.position.set(REGISTER_BOARD.x, REGISTER_BOARD.y);
+      board.width = REGISTER_BOARD.w;
+      board.height = REGISTER_BOARD.h;
+      board.visible = false;
       const glint = new Sprite(glintTextures()[0]!);
       glint.position.set(3, -32);
       glint.visible = false;
-      deco.addChild(drawer, glint);
-      e.reg = { drawer, glint, t: -1 };
+      deco.addChild(board, glint);
+      e.reg = { board, glint, t: -1 };
     }
     this.entries.set(item.uid, e);
     return e;
@@ -258,8 +247,9 @@ export class PropAnim {
       }
       if (e.reg && e.reg.t >= 0) {
         e.reg.t += dtMs;
-        const h = level === 2 ? (e.reg.t < 400 ? 5 : 0) : drawerHeightAt(e.reg.t);
-        e.reg.drawer.texture = drawerTextures()[h]!;
+        const a = level === 2 ? (e.reg.t < 400 ? 0.3 : 0) : boardFlashAt(e.reg.t);
+        e.reg.board.visible = a > 0;
+        e.reg.board.alpha = a;
         const gf = level === 2 ? -1 : glintFrameAt(e.reg.t);
         e.reg.glint.visible = gf >= 0;
         if (gf >= 0) e.reg.glint.texture = glintTextures()[gf]!;

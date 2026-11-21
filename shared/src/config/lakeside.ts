@@ -75,8 +75,12 @@ export const FISH_TICK_MS = 50;
 /** The bobber floats this long before a bite (random between), ms. */
 export const FISH_WAIT_MIN_MS = 2000;
 export const FISH_WAIT_MAX_MS = 8000;
-/** The "!" stays this long (tap in time to hook), by the rank of the fish: the rarer, the shorter. */
+/** J10 BOBBER DIP: the bobber stays UNDER the water this long (tap while it is under to hook; it comes back up after), by the rank
+ *  of the fish: the rarer, the shorter. [OWNER OPEN] plan proposal: common 900, rare 700, ultra rare 550, legendary 450 (unchanged for now). */
 export const FISH_BITE_MS = { common: 700, rare: 650, ultra_rare: 550, legendary: 450 } as const;
+/** J10: a tap or press while the bobber still floats (before the dip) = 'early': the line comes up (nothing lost, the cast is
+ *  wasted) and a new cast waits this long, so fast tapping is never a way to hook. [OWNER OPEN] */
+export const FISH_EARLY_LOCK_MS = 800;
 /**
  * THE REEL (owner's change after the first playtest, like Stardew Valley's bar): a bar from 0 to
  * FISH_BAR (positions are in bar units). A fish swims back and forth in it; the player moves a

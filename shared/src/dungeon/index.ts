@@ -7,6 +7,6 @@ export * from './step.ts';
 export * from './bank.ts';
 export * from './mineBlocks.ts';
 export * from './mineGen.ts';
-export { digCellCenter, glintingCells, glintingChests, type DigHooks } from './mineStep.ts';
+export { digCellCenter, digHitProgress, digHoldReady, glintingCells, glintingChests, type DigHooks } from './mineStep.ts';
 export * from './placement.ts';
 export { isSolidProp, SOLID_PROPS } from './themes.ts';

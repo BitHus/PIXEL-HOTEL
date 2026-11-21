@@ -7,6 +7,7 @@ import {
   DIG_CAVEIN_TELL_MS,
   DIG_COLS,
   DIG_FILLER_DROP_CHANCE,
+  DIG_QUEUE_MS,
   DIG_REACH_PX,
   DUNGEON_BLOCK,
   DUNGEON_TICK_MS,
@@ -23,9 +24,10 @@ import type { DungeonBlock, DungeonRun } from './run.ts';
 
 /** What step.ts gives the dig code: the run's loot bag (with its popups and left-behind events) and the gem piles. */
 export interface DigHooks {
-  addLoot(loot: readonly (Loot & { rank?: Rank })[]): void;
+  /** OB-8: `at` = where the block broke; the loot lands there as ground drops (the magnet picks them up). */
+  addLoot(loot: readonly (Loot & { rank?: Rank })[], at?: { x: number; y: number }): void;
   /** Loot for a filler block: goes in only if it fits, never "left behind". */
-  addFiller(loot: Loot): void;
+  addFiller(loot: Loot, at?: { x: number; y: number }): void;
   dropGems(rank: Rank, at: { x: number; y: number }): void;
   /** SK-2: run xp (ore dug, a rare block broken). */
   gainXp(xp: number): void;
@@ -34,6 +36,17 @@ export interface DigHooks {
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number => Math.hypot(a.x - b.x, a.y - b.y);
 
 export const digCellCenter = (cell: number): { x: number; y: number } => blockCenter(cell % DIG_COLS, Math.floor(cell / DIG_COLS));
+
+/** J4: true when a dig request at `now` would swing now or be queued (within DIG_QUEUE_MS of the pickaxe being ready). The hold
+ *  control asks this before it sends, so a held dig never wastes a request in the cooldown and never misses a beat. */
+export const digHoldReady = (now: number, pickReadyAt: number): boolean => now >= pickReadyAt - DIG_QUEUE_MS;
+
+/** J4: how far a block is dug: `frac` 0..1 and the crack stage 0..3 (0 = whole; the art has dig_crack_1..3). */
+export function digHitProgress(hits: number, total: number): { frac: number; stage: 0 | 1 | 2 | 3 } {
+  if (total <= 0 || hits <= 0) return { frac: 0, stage: 0 };
+  const frac = Math.min(1, hits / total);
+  return { frac, stage: Math.min(3, Math.ceil(frac * 3)) as 1 | 2 | 3 };
+}
 
 /** A tap on a block of the dig mine: aim at it, and dig now if close enough and the pickaxe is ready (else the swing waits for the walk). */
 export function digInput(r: DungeonRun, c: number, row: number, now: number, rng: Rng, hooks: DigHooks): void {
@@ -50,7 +63,9 @@ export function digInput(r: DungeonRun, c: number, row: number, now: number, rng
   p.pendingSwing = false;
   p.path = [];
   if (now < p.pickReadyAt) {
-    p.pendingDig = false; // a tap during the cooldown is ignored (it only keeps walking there)
+    // J4: a tap just before the pickaxe is ready is queued (digAfterWalk lands it on the first ready tick: an even hold beat, also
+    // when the hold slides to the next block); an earlier tap is ignored (it only keeps walking there).
+    p.pendingDig = digHoldReady(now, p.pickReadyAt);
     return;
   }
   if (dist(p, digCellCenter(cell)) <= DIG_REACH_PX) swing(r, cell, now, rng, hooks);
@@ -161,13 +176,13 @@ function swing(r: DungeonRun, cell: number, now: number, rng: Rng, hooks: DigHoo
   if (!b.drop) return;
   const at = digCellCenter(cell);
   if (b.filler) {
-    if (rng() < DIG_FILLER_DROP_CHANCE) hooks.addFiller({ item: b.drop.item, qty: 1 });
+    if (rng() < DIG_FILLER_DROP_CHANCE) hooks.addFiller({ item: b.drop.item, qty: 1 }, at);
     return;
   }
   const qty = oreQtyOf(rngInt(rng, b.drop.min, b.drop.max), p.skill, rng);
   const loot: (Loot & { rank?: Rank })[] = [{ item: b.drop.item, qty, ...(b.rank !== 'common' ? { rank: b.rank } : {}) }];
   if (rng() < rockGemChanceOf(p.skill)) loot.push({ item: 'gem', qty: 1 });
-  hooks.addLoot(loot);
+  hooks.addLoot(loot, at);
   hooks.gainXp(b.rank === 'common' ? xpFor({ t: 'ore', qty }) : xpFor({ t: 'rare_block' }));
   if (b.gemRank) hooks.dropGems(b.gemRank, at);
 }

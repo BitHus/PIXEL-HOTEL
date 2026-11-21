@@ -677,7 +677,7 @@ describe('migration 23 -> 24 (step T1: taps, the register, the kitchen)', () => 
   const bar = (s: ReturnType<typeof createNewPlayer>) => s.items.find((i) => i.typeId === 'counter')!;
 
   it('SAVE_VERSION is 43 (42 -> 43 the skill tree v2, 41 -> 42 the modular bar and the kitchen above, 38 -> 39 the kitchen is an attached annex, 37 -> 38 optional Player.skills, 36 -> 37 the kitchen is a walled tavern area again, 35 -> 36 the cellar room, 34 -> 35 kitchen and cellar room kinds, 33 -> 34 ledger folding, 32 -> 33 daily quests, 31 -> 32 stacked blocks, 30 -> 31 the waiter tray, 29 -> 30 plants on blocks, 28 -> 29 the hands-on pour, 23 -> 24 the bar fittings, 24 -> 25 the Inn name, 25 -> 26 the casks, 26 -> 27 the Inn doors, 27 -> 28 usable pieces and the cat) and the migrations exist', () => {
-    expect(SAVE_VERSION).toBe(43);
+    expect(SAVE_VERSION).toBe(44);
     expect(typeof MIGRATIONS[41]).toBe('function');
     expect(typeof MIGRATIONS[23]).toBe('function');
     expect(typeof MIGRATIONS[24]).toBe('function');

@@ -63,6 +63,18 @@ import {
   type TavernView,
   type Point,
   tavernWorkRoomIds,
+  lowStockMarks,
+  loadStash,
+  unloadStash,
+  addToStash,
+  refillTaps,
+  refillStash,
+  stashFor,
+  stashPieces,
+  stashSlotOf,
+  tapOf,
+  tapNumber,
+  STASH_SLOTS,
 } from '@pixel-hotel/shared';
 import type { TavernTask } from './apiShared.ts';
 import type { LocalGameAPI } from './localGameAPI.ts';
@@ -98,7 +110,7 @@ export const tavernApi = {
   async getTavern(h: LocalGameAPI): Promise<TavernView> {
     const t = h.state.tavern;
     const room = h.roomById(t.roomId);
-    return structuredClone({ roomId: t.roomId, workRooms: tavernWorkRoomIds(h.state), ...(h.state.player.cellarRoomId !== undefined ? { cellarRoomId: h.state.player.cellarRoomId } : {}), guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, casks: t.casks, caskCaps: Object.fromEntries(h.state.items.filter((i) => getFurnitureType(i.typeId).casks === true).map((i) => [i.uid, rackTierCap(h.state, i.uid)])), appeal: room ? tavernAppeal(room, h.state.items, attachedRooms(h.state)) : 0, at: h.now(), introSeen: t.introSeen, open: tavernOpen(t) });
+    return structuredClone({ roomId: t.roomId, workRooms: tavernWorkRoomIds(h.state), ...(h.state.player.cellarRoomId !== undefined ? { cellarRoomId: h.state.player.cellarRoomId } : {}), guests: t.guests, mess: t.mess, serveQueue: t.serveQueue, tray: t.tray, brews: t.brews, cooks: t.cooks, taps: t.taps, stash: t.stash, lastLoaded: t.lastLoaded ?? {}, lowStock: lowStockMarks(h.state), casks: t.casks, caskCaps: Object.fromEntries(h.state.items.filter((i) => getFurnitureType(i.typeId).casks === true).map((i) => [i.uid, rackTierCap(h.state, i.uid)])), appeal: room ? tavernAppeal(room, h.state.items, attachedRooms(h.state)) : 0, at: h.now(), introSeen: t.introSeen, open: tavernOpen(t) });
   },
 
   /** What a guest step needs: the room, its items, the nav grid (rebuilt when the furniture changes) and the seats the player holds. */
@@ -124,6 +136,11 @@ export const tavernApi = {
     const order = openOrders(h.state.tavern).find((g) => g.id === guestId)?.order;
     if (order && isDrinkId(order.item) && !tapFor(h.state.tavern.taps, order.item)) {
       h.emitTavern({ t: 'tap_empty', guestId, item: order.item });
+      return false;
+    }
+    // 3e: a dish needs a plate in the food stash.
+    if (order && !isDrinkId(order.item) && !stashFor(h.state.tavern.stash, order.item)) {
+      h.emitTavern({ t: 'stash_empty', guestId, item: order.item });
       return false;
     }
     const next = requestServe(h.state, guestId);
@@ -226,6 +243,51 @@ export const tavernApi = {
     return true;
   },
 
+  /** 3e FOOD STASH: qty plates from the bag into a stash slot (only in the tavern, like the taps). */
+  async loadStash(h: LocalGameAPI, pieceUid: number, slot: number, dish: FoodId, qty: number): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const next = loadStash(h.state, pieceUid, slot, dish, qty, h.now());
+    if (!next) return false;
+    h.commit(next);
+    return true;
+  },
+
+  /** 3e ONE CLICK: a dish from the bag into the stash, as many as fit. The plates moved (0 = refused). */
+  async addToStash(h: LocalGameAPI, dish: FoodId): Promise<number> {
+    if (!h.inTavern()) return 0;
+    const r = addToStash(h.state, dish, h.now());
+    if (!r) return 0;
+    h.commit(r.state);
+    return r.moved;
+  },
+
+  async unloadStash(h: LocalGameAPI, pieceUid: number, slot: number, qty: number | 'all'): Promise<boolean> {
+    if (!h.inTavern()) return false;
+    const next = unloadStash(h.state, pieceUid, slot, qty, h.now());
+    if (!next) return false;
+    h.commit(next);
+    return true;
+  },
+
+  /** 3e REFILL ALL: every tap or stash slot that holds (or held) something is topped up from the bag. */
+  async refillAll(h: LocalGameAPI, kind: 'taps' | 'stash'): Promise<number> {
+    if (!h.inTavern()) return 0;
+    const r = kind === 'taps' ? refillTaps(h.state, h.now()) : refillStash(h.state, h.now());
+    if (r.moved > 0) h.commit(r.state);
+    return r.moved;
+  },
+
+  /** 3e REFILL LOOP: after a serve, says when that tap or stash slot just gave its last mug or plate ('Tap N is empty' / 'Stash empty'). */
+  emitRanDry(h: LocalGameAPI, item: MaterialId, tap: { standUid: number | null; slot: number | null }, stash?: { pieceUid: number; slot: number }): void {
+    const t = h.state.tavern;
+    if (tap.standUid !== null && tap.slot !== null && !tapOf(t.taps, tap.standUid, tap.slot)) {
+      h.emitTavern({ t: 'ran_dry', kind: 'tap', uid: tap.standUid, slot: tap.slot, n: tapNumber(h.state, tap.standUid, tap.slot), item });
+    } else if (stash && !stashSlotOf(t.stash, stash.pieceUid, stash.slot)) {
+      const i = stashPieces(h.state.items, t.roomId).findIndex((p) => p.uid === stash.pieceUid);
+      h.emitTavern({ t: 'ran_dry', kind: 'stash', uid: stash.pieceUid, slot: stash.slot, n: Math.max(0, i) * STASH_SLOTS + stash.slot + 1, item });
+    }
+  },
+
   async startCook(h: LocalGameAPI, stoveUid: number, food: FoodId, qty: number): Promise<boolean> {
     if (!h.inWork()) return false;
     const next = startCook(h.state, stoveUid, food, qty, h.now(), h.rng);
@@ -284,6 +346,7 @@ export const tavernApi = {
     const tray = r.state.tavern.tray.map((m, i, all) => (i === all.length - 1 ? { ...m, perfect: grade === 'perfect' } : m));
     h.commit({ ...r.state, tavern: { ...r.state.tavern, tray } });
     h.emitTavern({ t: 'poured', grade });
+    tavernApi.emitRanDry(h, r.item, r);
     h.emitTavern({ t: 'tray', mugs: tray.map((m) => ({ ...m })) });
     h.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
     tavernApi.armNextPour(h); // more queued and room on the tray: the avatar stays at the taps for the next mug
@@ -391,6 +454,13 @@ export const tavernApi = {
       h.emitTavern({ t: 'queue', queue: [...h.state.tavern.serveQueue] });
       return tavernApi.nextServe(h);
     }
+    // 3e: a dish whose stash ran empty meanwhile: the same (the order stays open).
+    if (order && !isDrinkId(order.item) && !stashFor(t.stash, order.item)) {
+      h.commit({ ...h.state, tavern: { ...t, serveQueue: t.serveQueue.filter((q) => q !== id) } });
+      h.emitTavern({ t: 'stash_empty', guestId: id, item: order.item });
+      h.emitTavern({ t: 'queue', queue: [...h.state.tavern.serveQueue] });
+      return tavernApi.nextServe(h);
+    }
     const stops = serveStops(h.state, id);
     return stops !== null && h.startErrand(stops.bar, { stage: 'bar' });
   },
@@ -437,12 +507,13 @@ export const tavernApi = {
       }
       if (r.empty) {
         h.commit(r.state);
-        h.emitTavern({ t: 'tap_empty', guestId: r.guestId, item: r.item });
+        h.emitTavern(isDrinkId(r.item) ? { t: 'tap_empty', guestId: r.guestId, item: r.item } : { t: 'stash_empty', guestId: r.guestId, item: r.item });
         h.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
         if (!h.nextServe()) h.dropServe();
         return;
       }
       h.commit(r.state);
+      tavernApi.emitRanDry(h, r.item, r, r.stash);
       h.emitTavern({ t: 'tray', mugs: r.state.tavern.tray.map((m) => ({ ...m })) });
       h.emitTavern({ t: 'queue', queue: [...r.state.tavern.serveQueue] });
       // A drink waits on the tray until the player taps a guest who wants it (carryHeld); a dish goes on by itself.

@@ -5,7 +5,7 @@ import { createAvatarPanel } from '../ui/avatarPanel.ts';
 import { createChatPanel } from '../ui/chatPanel.ts';
 import { createSettingsPanel } from '../ui/settingsPanel.ts';
 import { typing } from '../ui/dom.ts';
-import { savePrefs } from '../api/prefs.ts';
+import { reduceShakeOn, savePrefs } from '../api/prefs.ts';
 import { cloudConfig, createCloudSave } from '../api/cloudSave.ts';
 import { createCloudAutoSync } from '../api/cloudAutoSync.ts';
 import { createAccountPanel } from '../ui/accountPanel.ts';
@@ -97,6 +97,11 @@ late.avatarPanel = avatarPanel;
     bigTaps: bigTapsOn(prefs.bigTaps, isTouchInput()),
     onBigTaps: (on) => {
       prefs.bigTaps = on;
+      savePrefs(storage, prefs);
+    },
+    reduceShake: reduceShakeOn(prefs.reduceShake),
+    onReduceShake: (on) => {
+      prefs.reduceShake = on;
       savePrefs(storage, prefs);
     },
     onReduceEffects: (on) => {

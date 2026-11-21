@@ -3,7 +3,7 @@
 
 import {
   getBlockType, blockInCell, blockStack, blockProblem, plantProblem, plantInCell, BUILD_CELL, cellOf, type BlockResult,
-  blockTapAction, getClothing, isSeedId, screenToWorld, spliceNeedsAsk, type Avatar, type Point, type Room,
+  blockTapAction, blockCellTap, mayBreak, getClothing, isSeedId, screenToWorld, spliceNeedsAsk, type Avatar, type Point, type Room,
 } from '@pixel-hotel/shared';
 import { HoldControl, type HoldResult, type HoldTarget } from '../input/holdControl.ts';
 import type { G14 } from './ctx.ts';
@@ -13,7 +13,7 @@ import { askSplice } from './spliceDialog.ts';
 export async function setupBlockInput(g: G14) {
   const {
     api, plantViews, toast, follow, sound, refreshHint, avatarPanel, blockViews, popups, flyGems, roomChanged,
-    refreshInventory, build, placer, paint, lakeside, blockers, panels, dungeon, walkTo, selectBlock, st, uiRoot, late,
+    refreshInventory, build, placer, paint, lakeside, blockers, panels, dungeon, walkTo, selectBlock, st, uiRoot, late, prefs,
   } = g;
 
   // ---------- Blocks: place and punch (step BG5) ----------
@@ -142,7 +142,7 @@ export async function setupBlockInput(g: G14) {
       if (res.recipe) toast('New splice recipe found! See the Book, Splice tab.');
     } else if (res.kind === 'placed') sound.play('pop');
     else if (res.kind === 'cracked') {
-      blockViews.punch(c, r);
+      blockViews.punch(c, r, { x: st.avatar.x, y: st.avatar.y - 16 }, prefs.reduceEffects); // J4: flash, squash, chips away from the avatar
       sound.play('hit');
     } else {
       if (was) blockViews.breakFx(c, r, was);
@@ -168,8 +168,11 @@ export async function setupBlockInput(g: G14) {
     }
     const standing = st.path.length === 0 && st.avatar.state !== 'walk' ? [{ x: st.avatar.x, y: st.avatar.y }] : [];
     if (blockInCell(st.room, c, r) || plantInCell(st.room, c, r)) {
-      // ST2: a block selected and room on top = the tap stacks; else (and always for a plant) it punches.
-      void doBlock(stackTapAt(c, r, standing) ? 'place' : 'hit', c, r, stackTapAt(c, r, standing) ? st.selectedBlock : null);
+      // ST2: a block selected and room on top = the tap stacks; else (and always for a plant) it punches. OB-4: chill mode never punches (the tap walks or uses).
+      const stack = stackTapAt(c, r, standing);
+      const act = blockCellTap({ punchMode: st.punchMode !== false, stackOrPlant: stack });
+      if (act === null) return false;
+      void doBlock(act, c, r, stack ? st.selectedBlock : null);
       return true;
     }
     if (st.selectedBlock === null) return false;
@@ -251,6 +254,9 @@ export async function setupBlockInput(g: G14) {
     if (holdBusyElsewhere()) return null;
     const world = screenToWorld(screen, st.shown);
     const { c, r } = cellOf(world);
+    // OB-4: in chill mode a press on a block or plant never hits (trees on the lakeside still chop).
+    const breaks = mayBreak(st.punchMode !== false, false);
+    if (!breaks && st.room.kind !== 'lakeside' && (blockInCell(st.room, c, r) || plantInCell(st.room, c, r))) return null;
     if (st.room.kind !== 'lakeside' && blockInCell(st.room, c, r) && !seedOnBlock(c, r) && !stackTapAt(c, r)) return { kind: 'block', c, r };
     if (st.room.kind === 'farm' && plantInCell(st.room, c, r)) return { kind: 'plant', c, r };
     const tree = lakeside.treeUnder(world);

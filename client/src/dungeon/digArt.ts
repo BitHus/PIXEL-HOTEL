@@ -4,7 +4,7 @@
 // DigState (kinds, hits, cave-in tiles) and draws it; no rules here.
 
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { DIG_COLS, DUNGEON_BLOCK, getMineBlock, paletteColor, type DigState, type MineBlockId, type PaletteName } from '@pixel-hotel/shared';
+import { DIG_COLS, DUNGEON_BLOCK, digHitProgress, getMineBlock, paletteColor, type DigState, type MineBlockId, type PaletteName } from '@pixel-hotel/shared';
 import { shade } from '../render/colors.ts';
 import { spriteFrames, spriteTexture } from '../render/spriteStore.ts';
 
@@ -24,7 +24,7 @@ function px(g: Graphics, x: number, y: number, w: number, h: number, color: stri
 
 /** The crack lines of a block that took `done` of `total` hits (0, 1, 2 or 3 stages). */
 function cracks(g: Graphics, x: number, y: number, done: number, total: number): void {
-  const stage = Math.min(3, Math.ceil((done / total) * 3));
+  const { stage } = digHitProgress(done, total);
   if (stage >= 1) {
     px(g, x + 9, y + 6, 6, 1, OUTLINE);
     px(g, x + 14, y + 7, 1, 6, OUTLINE);
@@ -56,7 +56,7 @@ function drawSolid(g: Graphics, c: number, r: number, kind: MineBlockId, openBel
       over.rect(x, y + B - FRONT_H, B, 1).fill({ color: OUTLINE, alpha: 0.7 });
     }
     if (hits > 0 && total > 0) {
-      const stage = Math.min(3, Math.ceil((hits / total) * 3));
+      const { stage } = digHitProgress(hits, total);
       const ct = spriteTexture('dungeon', `dig_crack_${stage}`);
       if (ct) {
         const cs = new Sprite(ct);

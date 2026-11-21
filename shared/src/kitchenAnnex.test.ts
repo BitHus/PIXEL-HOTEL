@@ -121,11 +121,24 @@ describe('the start layout (START LAYOUT REDO, owner 19 Nov)', () => {
       expect(inA(fp('brewing_barrel')), `${sh.id} barrel`).toBe(true);
       const bars = floor.filter((i) => i.typeId === 'bar');
       for (const b of bars) {
-        expect(b.y, `${sh.id} bar row`).toBe(a.y + a.h + 32); // the first main row, the kitchen behind it
+        expect(b.y, `${sh.id} bar row`).toBe(a.y + a.h); // OB-2: the annex's bottom row, in line with the back wall; the kitchen behind it
         expect(behindReachable(room, itemBlockers(s.items, room.id), behindPoint(b, getFurnitureType('bar'))), `${sh.id} behind the bar`).toBe(true);
       }
       const barFront = Math.max(...bars.map((b) => b.y));
       for (const t of ['table', 'chair']) for (const i of floor.filter((x) => x.typeId === t)) expect(footprintRect(i, getFurnitureType(t)).y - barFront, `${sh.id} ${t} away from the bar`).toBeGreaterThanOrEqual(2 * 32);
+    }
+  });
+
+  it('OB-2: the start stove stands far from the tap stand (a tap on the taps never hits the stove): 2 free cells or more between them on every shape', () => {
+    for (const sh of shopShapes) {
+      const s = createNewPlayer({ ...DEFAULT_NEW_PLAYER, shopShape: sh.id }, 0);
+      const tap = s.items.find((i) => i.typeId === 'tap_stand')!;
+      const bar = s.items.find((i) => i.uid === tap.onItemUid)!;
+      const t = footprintRect(bar, getFurnitureType('bar'));
+      const o = footprintRect(s.items.find((i) => i.typeId === 'stove')!, getFurnitureType('stove'));
+      const gapX = Math.max(0, o.x - (t.x + t.w), t.x - (o.x + o.w));
+      const gapY = Math.max(0, o.y - (t.y + t.h), t.y - (o.y + o.h));
+      expect(Math.max(gapX, gapY), sh.id).toBeGreaterThanOrEqual(2 * 32);
     }
   });
 

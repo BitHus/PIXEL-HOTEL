@@ -155,10 +155,14 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
     const n = HATS.length + 1;
     const hat = hatAt === 0 ? null : HATS[hatAt - 1]!;
     const owned = hat === null || hatWearable(hat.id, unlocked);
-    const step = (d: number): void => {
-      hatAt = (hatAt + d + n) % n;
-      draw();
+    // OB-5: choosing a hat wears it at once (a tile tap or the arrows); a locked hat is only browsed (its hint shows how to get it).
+    const choose = (i: number): void => {
+      hatAt = i;
+      const h = i === 0 ? null : HATS[i - 1]!;
+      if (h === null || hatWearable(h.id, unlocked)) set({ ...l, hat: h?.id ?? '' });
+      else draw();
     };
+    const step = (d: number): void => choose((hatAt + d + n) % n);
     const prev = textButton('◀', () => step(-1), 'look-step small');
     prev.setAttribute('aria-label', 'Previous hat');
     const next = textButton('▶', () => step(1), 'look-step small');
@@ -179,20 +183,11 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
       t.title = h ? (tileOwned ? h.name : `Locked: ${h.unlock ?? ''}`) : 'No hat';
       if (h) t.appendChild(hatCanvas(h.id, !hatWearable(h.id, unlocked)));
       else t.appendChild(el('span', 'look-tile-none', '✕'));
-      t.addEventListener('click', () => {
-        hatAt = i;
-        draw();
-      });
+      t.addEventListener('click', () => choose(i));
       grid.appendChild(t);
     }
     out.append(grid, stepper);
     if (hat && !owned) out.appendChild(el('div', 'hat-hint hat-lock-hint', hat.unlock ? `How to get it: ${hat.unlock}` : 'Find it while you play.'));
-    const wearing = (l.hat ?? '') === (hat?.id ?? '');
-    if (owned) {
-      const b = textButton(wearing ? 'Worn' : hat ? 'Wear' : 'Take off', () => set({ ...l, hat: hat?.id ?? '' }), 'look-wear');
-      b.disabled = wearing;
-      out.appendChild(b);
-    }
     return out;
   };
 
@@ -217,6 +212,8 @@ export function createLookPickers(onChange: (look: AvatarLook) => void, tabsHost
     setLook(next, u = unlocked) {
       look = { ...next };
       unlocked = u;
+      // The tile marked is the hat the avatar wears (OB-5: no separate Wear step).
+      hatAt = next.hat ? HATS.findIndex((h) => h.id === next.hat) + 1 : 0;
       draw();
     },
   };

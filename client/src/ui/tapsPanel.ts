@@ -28,6 +28,8 @@ export interface TapsHooks {
   load(standUid: number, slot: number, drink: MaterialId, qty: number): void;
   /** Give qty mugs (or all) back to the bag. */
   unload(standUid: number, slot: number, qty: number | 'all'): void;
+  /** 3e REFILL LOOP: tops up every tap that holds (or held) a drink from the bag. Missing = no button. */
+  refillAll?(): void;
 }
 
 export interface TapsPanel {
@@ -101,8 +103,12 @@ export function createTapsPanel(parent: HTMLElement, hooks: TapsHooks): TapsPane
       return;
     }
     const perStand = new Map<number, number>();
+    // 3e: Refill all shows while a loaded tap has room and its drink is in the bag.
+    const refill = hooks.refillAll ? textButton('Refill all', () => hooks.refillAll?.(), 'primary tap-refill') : null;
+    if (refill) refill.hidden = !cards.some((c) => c.drink !== null && c.mugs < tapCap && c.options.some((o) => o.drink === c.drink && o.fits > 0));
     list.replaceChildren(
       helpFold(TAPS_HINT),
+      ...(refill ? [refill] : []),
       ...cards.map((c) => {
         perStand.set(c.standUid, (perStand.get(c.standUid) ?? 0) + 1);
         const n = stands.indexOf(c.standUid) * (cards.length / stands.length) + perStand.get(c.standUid)!;

@@ -4,11 +4,11 @@
 // - SEATS: a seat (pose 'sit') in the tavern room is a tavern seat when a table (a surface item, or
 //   the bar) is next to it. Each seat has its own spot on that table: the order, the coins and the
 //   empty mug lie there.
-// - THE MENU: drinks and cooked food (the bag's stock) with a price each. Off the menu: switched
-//   off, or none in the bag. A guest picks one thing; the price rule is the shop's (decide): too
+// - THE MENU: drinks (on the taps, taps.ts) and cooked dishes (in the FOOD STASH, stash.ts, 3e) with a price each. Off the menu:
+//   switched off, or none on a tap / in the stash. A guest picks one thing; the price rule is the shop's (decide): too
 //   expensive = they order something cheaper that they do accept, or leave with a shrug or a frown.
-// - AN ORDER takes one unit out of the bag at once (ledger 'tavern_order'), so two guests never
-//   order the same last mug. A guest who leaves unserved puts it back.
+// - AN ORDER only counts a mug (tap) or plate (stash) as spoken for (stockFor / stashStockFor), so two guests never order the
+//   same last one; it is taken when the avatar pours or fetches it (pourOrder). Old saves: an order took a dish out of the bag (migration 43 -> 44 gives it back).
 // - SERVING: the player taps guests (at most SERVE_QUEUE_MAX wait), picks the next order up at the
 //   bar and puts it on the guest's table spot. The guest eats, leaves coins and an empty mug or
 //   plate on the spot (a Mess) and goes. Coins are only ever collected by the player (ledger
@@ -23,6 +23,7 @@ import type { Cask } from './casks.ts';
 import type { Cook } from './cooking.ts';
 import type { GuestBarSpot } from './barSpots.ts';
 import type { TrayMug } from './tray.ts';
+import { platesInStash, stashStockFor, stashStop, takePlate, type StashSlot } from './stash.ts';
 import { kitchenZone } from './kitchen.ts';
 import { inStaffZone, staffZones } from './npcNav.ts';
 import { behindPoint, footprintRect, getFurnitureType } from './furniture.ts';
@@ -125,6 +126,10 @@ export interface TavernState {
   casks: Cask[];
   /** Drinks on the taps (step T1, taps.ts): only taps that hold at least one mug. */
   taps: Tap[];
+  /** 3e FOOD STASH: plates of cooked dishes in the stash slots (stash.ts): only slots that hold at least one plate. */
+  stash: StashSlot[];
+  /** 3e REFILL LOOP: what each tap / stash slot held last ('tap:uid:slot' / 'stash:uid:slot', slotMemo.ts). Missing = nothing remembered. */
+  lastLoaded?: Record<string, MaterialId>;
   /** Guests the player tapped: their orders wait to be carried, in this order. */
   serveQueue: number[];
   /** COD-1: the waiter's tray, up to TRAY_MAX poured mugs or dishes (one pour = one mug). A mug goes to ANY guest who waits for that item. */
@@ -170,6 +175,7 @@ export function emptyTavern(roomId: number, at: number): TavernState {
     cooks: [],
     casks: [],
     taps: [],
+    stash: [],
     serveQueue: [],
     tray: [],
     history: {},
@@ -220,17 +226,19 @@ export interface MenuOffer {
   stock: number;
 }
 
-/** What a drink or dish has in stock: a drink counts the mugs on the taps (step T1), a dish the bag. */
+/** What a drink or dish has in stock: a drink counts the mugs on the taps (step T1), a dish the plates in the food stash (3e). */
 export function menuStock(state: GameState, id: string): number {
-  return isDrinkId(id) ? mugsOnTaps(state.tavern.taps, id) : state.player.materials[id as MaterialId] ?? 0;
+  return isDrinkId(id) ? mugsOnTaps(state.tavern.taps, id) : platesInStash(state.tavern.stash, id);
 }
 
 /**
  * Everything servable the player has or has put on the menu, in data order (the Menu panel's rows). A drink is a row only while it is on a
- * tap with at least one mug (step T1); its stock is the mugs on the taps. A dish is a row while it is in the bag or has a menu entry.
+ * tap with at least one mug (step T1); its stock is the mugs on the taps. A dish is a row while it is in the bag, in the FOOD STASH or has a
+ * menu entry (so it can be switched on before the stash is filled); its stock is the plates in the stash (3e): guests only order it while a
+ * stash slot holds a plate (menuOffers), an empty stash takes it off what guests can order (price and on/off stay saved for the next refill).
  */
 export function menuRows(state: GameState): (MenuOffer & { on: boolean })[] {
-  return MATERIAL_TYPES.filter((m) => isServable(m.id) && (isDrinkId(m.id) ? mugsOnTaps(state.tavern.taps, m.id) > 0 : (state.player.materials[m.id] ?? 0) > 0 || state.tavern.menu[m.id] !== undefined)).map((m) => {
+  return MATERIAL_TYPES.filter((m) => isServable(m.id) && (isDrinkId(m.id) ? mugsOnTaps(state.tavern.taps, m.id) > 0 : menuStock(state, m.id) > 0 || (state.player.materials[m.id] ?? 0) > 0 || state.tavern.menu[m.id] !== undefined)).map((m) => {
     const e = menuEntry(state.tavern, m.id);
     return { id: m.id, price: e.price, baseValue: m.baseValue, stock: menuStock(state, m.id), on: e.on };
   });
@@ -242,7 +250,7 @@ export function menuRows(state: GameState): (MenuOffer & { on: boolean })[] {
  */
 export function menuOffers(state: GameState, guests: readonly Guest[] = state.tavern.guests): MenuOffer[] {
   return menuRows(state)
-    .map((r) => ({ ...r, stock: isDrinkId(r.id) ? stockFor(state.tavern, r.id, guests) : r.stock }))
+    .map((r) => ({ ...r, stock: isDrinkId(r.id) ? stockFor(state.tavern, r.id, guests) : stashStockFor(state.tavern, r.id, guests) }))
     .filter((r) => r.on && r.stock > 0)
     .map(({ id, price, baseValue, stock }) => ({ id, price, baseValue, stock }));
 }
@@ -442,7 +450,7 @@ export function nextOrder(state: GameState): { guestId: number; item: MaterialId
 }
 
 export type PourResult =
-  | { empty: false; state: GameState; guestId: number; item: MaterialId; standUid: number | null; slot: number | null }
+  | { empty: false; state: GameState; guestId: number; item: MaterialId; standUid: number | null; slot: number | null; /** 3e: a dish came from this stash slot. */ stash?: { pieceUid: number; slot: number } }
   | { empty: true; state: GameState; guestId: number; item: MaterialId };
 
 /**
@@ -454,8 +462,11 @@ export function pourOrder(state: GameState, pick?: { standUid: number; slot: num
   const n = nextOrder(state);
   if (!n) return null;
   if (!isDrinkId(n.item)) {
-    const r = pickUpOrder(state)!;
-    return { empty: false, state: r.state, guestId: r.guestId, item: r.item, standUid: null, slot: null };
+    // 3e: a dish is fetched from the food stash; an empty stash leaves the order open (like an empty tap).
+    const plate = takePlate(state.tavern.stash, n.item);
+    if (!plate) return { empty: true, state: withTavern(state, { serveQueue: n.queue.slice(1) }), guestId: n.guestId, item: n.item };
+    const r = pickUpOrder(withTavern(state, { stash: plate.stash }))!;
+    return { empty: false, state: r.state, guestId: r.guestId, item: r.item, standUid: null, slot: null, stash: { pieceUid: plate.from.pieceUid, slot: plate.from.slot } };
   }
   const picked = pick ? tapOf(state.tavern.taps, pick.standUid, pick.slot) : undefined;
   const tap = picked && picked.drink === n.item && picked.mugs > 0 ? picked : tapFor(state.tavern.taps, n.item);
@@ -478,7 +489,8 @@ export function serveStops(state: GameState, guestId: number): { bar: Point; tab
   // TF: a bar guest has no table: the 'table' point is where they stand (a drink is handed over, never carried).
   if (!bar || (!seat && !(guest?.kind2 === 'bar'))) return null;
   // A drink is poured at its tap (step T1): the avatar stands level with the stand that holds it; else behind the middle of the bar.
-  const pour = guest?.order && isDrinkId(guest.order.item) ? pourStop(state, guest.order.item) : null;
+  // 3e: a dish is fetched at the food stash (the serving hatch's stand point).
+  const pour = guest?.order ? (isDrinkId(guest.order.item) ? pourStop(state, guest.order.item) : stashStop(state, guest.order.item)) : null;
   return { bar: pour?.at ?? behindPoint(bar, getFurnitureType(bar.typeId)), table: seat?.spot ?? { x: guest!.x, y: guest!.y } };
 }
 

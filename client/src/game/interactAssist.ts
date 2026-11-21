@@ -4,7 +4,7 @@
 // thing to the avatar, or the one Tab / Shift+Tab highlighted. (4) Phone: the CONTEXT BUTTON above the hotbar names the action of the nearest usable
 // thing (Pour is a hold). (5) Touch: the press highlights its target, sliding off cancels, a short slide released on it still uses it. (6) The confirm ring.
 
-import { INTERACT_REACH_PX, cycleIndex, interactOrder, nearestInteract, pressStaysOn, type FurnitureItem, type Point } from '@pixel-hotel/shared';
+import { CONTEXT_BUTTON_ENABLED, INTERACT_REACH_PX, cycleIndex, interactOrder, nearestInteract, pressStaysOn, type FurnitureItem, type Point } from '@pixel-hotel/shared';
 import type { InteractUi } from '../ui/interactUi.ts';
 import type { InteractPick, NearTap } from './tapForgive.ts';
 
@@ -193,7 +193,8 @@ export function createInteractAssist(d: InteractAssistDeps) {
         if (hovered) hovered = fresh(hovered);
         show();
       }
-      if (!d.touch() || d.blocked()) {
+      // OB-1 (owner 21 Nov): the big context button is off (CONTEXT_BUTTON_ENABLED); serving = tap the guest or its chip, pouring = hold anywhere.
+      if (!CONTEXT_BUTTON_ENABLED || !d.touch() || d.blocked()) {
         buttonPick = null;
         if (!d.pour.pressing) d.ui.button(null);
         return;

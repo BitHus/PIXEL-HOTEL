@@ -117,6 +117,8 @@ export interface FurnitureType {
   cooks?: boolean;
   /** True for the tap stand (step T1): TAP_SLOTS taps, each holds one brewed drink (taps.ts). It stands ON the bar. */
   taps?: boolean;
+  /** 3e FOOD STASH: true for the serving hatch: STASH_SLOTS slots, each holds plates of ONE cooked dish (stash.ts). A dish is on the menu only while a slot holds it. */
+  stash?: boolean;
   /** True for the register (step T1): the till on the bar; a tap opens Serve / Menu / Sell and collected coins fly into it. */
   till?: boolean;
   /** True for the prep table (step T1): inside the kitchen zone and next to a stove it adds dishes to a batch (kitchen.ts). */
@@ -309,6 +311,8 @@ export type LedgerReason =
   | 'build'
   // Taps (step T1): mugs moved from the bag onto a tap and back (nothing is found or lost).
   | 'tap'
+  // 3e FOOD STASH: plates moved from the bag into a stash slot (the serving hatch) and back (nothing is found or lost).
+  | 'stash'
   // Packs (step BG8): a pack opened for gems; a spare piece of clothing sold for gold.
   | 'pack'
   | 'spare_sale'

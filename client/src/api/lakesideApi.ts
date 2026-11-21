@@ -7,6 +7,7 @@ import {
   bankCatch,
   chop,
   fishDone,
+  fishRecastReady,
   fishStep,
   growTrees,
   isStump,
@@ -70,6 +71,7 @@ export const lakesideApi = {
   async fishStart(h: LocalGameAPI): Promise<FishSession | null> {
     if (h.room().kind !== 'lakeside') return null;
     if (h.fish && !fishDone(h.fish)) return structuredClone(h.fish);
+    if (!fishRecastReady(h.fishEarlyAt, h.now())) return null; // J10: an early pull-up locks the next cast for a moment
     h.fish = newFishSession(h.rng, h.state.player.gear, bonusesOf(h.state.player));
     return structuredClone(h.fish);
   },
@@ -82,6 +84,7 @@ export const lakesideApi = {
     let gains: GainList = [];
     if (next.phase === 'done') {
       h.fish = null;
+      if (next.outcome === 'early') h.fishEarlyAt = h.now();
       if (next.outcome === 'caught') {
         const before = h.state.player.biggest[next.catchId] ?? 0;
         const banked = bankCatch(h.state, next, h.now(), h.rng);

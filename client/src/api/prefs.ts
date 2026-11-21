@@ -30,9 +30,16 @@ export interface Prefs {
   hintsSeen: string[];
   /** MISCLICK-PROOF: the Settings toggle 'Big tap targets'; null = not chosen yet (on for touch, off for a mouse: shared bigTapsOn). */
   bigTaps: boolean | null;
+  /** J4: Settings 'Reduce shake'; null = not chosen (follows prefers-reduced-motion). */
+  reduceShake: boolean | null;
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, musicVolume: MUSIC_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, hintsSeen: [], bigTaps: null };
+export const DEFAULT_PREFS: Prefs = { sound: true, volume: SOUND_DEFAULT_VOLUME, musicVolume: MUSIC_DEFAULT_VOLUME, lighting: true, cellGrid: true, popups: true, nameTags: true, doorHintSeen: false, reduceEffects: false, hintsSeen: [], bigTaps: null, reduceShake: null };
+
+/** J4: the effective Reduce shake: the player's choice, else on when the device asks for reduced motion. */
+export function reduceShakeOn(pref: boolean | null, reducedMotion: boolean = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches): boolean {
+  return pref ?? reducedMotion;
+}
 
 /** Reads stored settings; anything missing or wrong becomes the default. */
 export function parsePrefs(text: string | null): Prefs {
@@ -56,6 +63,7 @@ export function parsePrefs(text: string | null): Prefs {
     reduceEffects: typeof o.reduceEffects === 'boolean' ? o.reduceEffects : DEFAULT_PREFS.reduceEffects,
     hintsSeen: Array.isArray(o.hintsSeen) ? o.hintsSeen.filter((k): k is string => typeof k === 'string').slice(0, 64) : [],
     bigTaps: typeof o.bigTaps === 'boolean' ? o.bigTaps : null,
+    reduceShake: typeof o.reduceShake === 'boolean' ? o.reduceShake : null,
   };
 }
 

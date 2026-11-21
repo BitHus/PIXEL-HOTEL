@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIG_CAVEIN_DAMAGE, DIG_CAVEIN_TELL_MS, DIG_COLS, DIG_DEPTH_MAX, DIG_FILLER_DROP_CHANCE, DIG_GLINT_BLOCKS, DIG_LIGHT_BLOCKS, DUNGEON_BLOCK, PICKAXE_COOLDOWN_MS } from '../config.ts';
+import { DIG_CAVEIN_DAMAGE, DIG_CAVEIN_TELL_MS, DIG_COLS, DIG_DEPTH_MAX, DIG_FILLER_DROP_CHANCE, DIG_GLINT_BLOCKS, DIG_LIGHT_BLOCKS, DIG_QUEUE_MS, DUNGEON_BLOCK, PICKAXE_COOLDOWN_MS } from '../config.ts';
 import { seededRng } from '../rng.ts';
 import { caveTellMsOf, chestGlintBlocksOf, digLightPxOf, glintBlocksOf, hazardDamageOf, HOOKED_STATS } from '../skillRules.ts';
 import type { Bonuses } from '../stats.ts';
@@ -8,7 +8,8 @@ import type { MineBlockId } from './mineBlocks.ts';
 import { createNewPlayer } from '../newPlayer.ts';
 import { applyChange } from '../ledger.ts';
 import { finishRun, startMine } from './bank.ts';
-import { glintingCells, glintingChests } from './mineStep.ts';
+import { digHitProgress, digHoldReady, glintingCells, glintingChests } from './mineStep.ts';
+import { getMineBlock } from './mineBlocks.ts';
 import { newDigRun, type DungeonRun } from './run.ts';
 import { step } from './step.ts';
 
@@ -36,6 +37,8 @@ function withKind(r: DungeonRun, c: number, row: number, kind: MineBlockId | '')
 
 const mat = (bag: DungeonRun['bag'], id: string): number => bag.slots.reduce((a, s) => a + (s.kind === 'material' && s.id === id ? s.qty : 0), 0);
 const rng = (): number => 0; // the lowest roll: filler drops, gem rolls and strikes all hit
+/** OB-8: the ore lands on the ground next to the player; a second and a half later the magnet has it in the bag. */
+const settle = (r: DungeonRun): DungeonRun => step(r, [], 1500, seededRng(99));
 
 describe('digging a block', () => {
   it('takes the block hits, one swing per tap and cooldown, and a tap during the cooldown is ignored', () => {
@@ -79,10 +82,14 @@ describe('digging a block', () => {
     expect(r.player.x).toBeGreaterThan(blockCenter(11, 10).x);
   });
 
-  it('drops the ore into the run bag; coal, copper, iron and the rare kinds drop their item', () => {
+  it('drops the ore on the ground (OB-8), the magnet puts it in the run bag; coal, copper, iron and the rare kinds drop their item', () => {
     for (const [kind, item] of [['coal', 'coal'], ['copper', 'copper_ore'], ['iron', 'iron_ore'], ['crystal', 'crystal'], ['gold_vein', 'gold_nugget'], ['diamond', 'diamond']] as const) {
       let r = withKind(run(), 11, 10, kind);
       for (let k = 0; k < 40 && r.dig!.kinds[idx(11, 10)] !== ''; k++) r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], PICKAXE_COOLDOWN_MS, seededRng(k + 1));
+      expect(r.drops?.some((d) => d.item === item), kind).toBe(true);
+      expect(r.events.some((e) => e.t === 'drop' && e.item === item), kind).toBe(true);
+      r = settle(r);
+      expect(r.drops ?? [], kind).toEqual([]);
       expect(mat(r.bag, item), kind).toBeGreaterThanOrEqual(1);
       expect(r.xpGained, kind).toBe(kind === 'coal' || kind === 'copper' || kind === 'iron' ? mat(r.bag, item) : 10); // SK-2: 1 per ore, 10 per rare block
     }
@@ -95,7 +102,7 @@ describe('digging a block', () => {
     expect(r.dig!.kinds[idx(11, 10)]).toBe('mithril');
     let s = withKind(run(undefined, { hitsPerSwing: 2, minesMithril: true }), 11, 10, 'mithril');
     for (let k = 0; k < 10 && s.dig!.kinds[idx(11, 10)] !== ''; k++) s = step(s, [{ t: 'click_dig', c: 11, r: 10 }], PICKAXE_COOLDOWN_MS, seededRng(k + 1));
-    expect(mat(s.bag, 'mithril_ore')).toBeGreaterThanOrEqual(1);
+    expect(mat(settle(s).bag, 'mithril_ore')).toBeGreaterThanOrEqual(1);
   });
 
   it('never digs bedrock or an open cell', () => {
@@ -114,12 +121,21 @@ describe('digging a block', () => {
     let r = { ...withKind(run(), 11, 10, 'stone'), bag: full };
     for (let k = 0; k < 6; k++) r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], PICKAXE_COOLDOWN_MS, rng);
     expect(r.dig!.kinds[idx(11, 10)]).toBe('');
-    expect(r.events.some((e) => e.t === 'left_behind')).toBe(false); // filler is just not picked up
+    r = settle(r);
+    expect(r.events.some((e) => e.t === 'left_behind' || e.t === 'drop_full')).toBe(false); // filler is just not picked up (no "Bag full")
     expect(r.bag.slots.length).toBe(12);
-    // Ore: left behind.
+    // Leaving: filler that does not fit is just left, never counted as lost.
+    const outR = step(r, [{ t: 'leave' }], 0, rng);
+    expect(outR.lost.slots).toEqual([]);
+    // Ore: it stays on the ground ("Bag full" once) and is left behind when the visit ends.
     let o = { ...withKind(run(), 11, 10, 'dirt'), bag: full };
     o = withKind(o, 11, 10, 'coal');
     for (let k = 0; k < 6; k++) o = step(o, [{ t: 'click_dig', c: 11, r: 10 }], PICKAXE_COOLDOWN_MS, seededRng(k + 1));
+    o = step(o, [], 1500, seededRng(99));
+    expect(o.drops?.some((d) => d.item === 'coal' && d.full)).toBe(true);
+    expect(o.lost.slots).toEqual([]);
+    o = step(o, [{ t: 'leave' }], 0, rng);
+    expect(o.drops).toEqual([]);
     expect(o.lost.slots.length).toBeGreaterThan(0);
     // The chance is a config number.
     expect(DIG_FILLER_DROP_CHANCE).toBeGreaterThan(0);
@@ -133,6 +149,55 @@ describe('digging a block', () => {
     };
     expect(swing()).toBe(PICKAXE_COOLDOWN_MS);
     expect(swing({ digSpeedPct: 18 })).toBeLessThan(PICKAXE_COOLDOWN_MS);
+  });
+});
+
+describe('J4 hold rhythm and hit progress', () => {
+  it('digHitProgress: 0 = whole, then crack stages 1..3 by the part of the hits done', () => {
+    expect(digHitProgress(0, 4)).toEqual({ frac: 0, stage: 0 });
+    expect(digHitProgress(1, 4).stage).toBe(1);
+    expect(digHitProgress(2, 4).stage).toBe(2);
+    expect(digHitProgress(3, 4).stage).toBe(3);
+    expect(digHitProgress(9, 4)).toEqual({ frac: 1, stage: 3 });
+    expect(digHitProgress(1, 0).stage).toBe(0);
+  });
+
+  it('a tap just before the pickaxe is ready is queued and lands on the ready tick; an earlier one is still ignored', () => {
+    let r = withKind(run(), 11, 10, 'iron');
+    r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], 0, seededRng(1)); // swing 1 at 0, ready at 400
+    r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], 100, seededRng(1)); // at 0 + 0: far too early
+    expect(r.player.pendingDig).toBe(false);
+    r = step(r, [], PICKAXE_COOLDOWN_MS - DIG_QUEUE_MS - 100, seededRng(1)); // now 250 = ready - 150
+    r = step(r, [{ t: 'click_dig', c: 11, r: 10 }], 0, seededRng(1));
+    expect(r.player.pendingDig).toBe(true);
+    expect(digHoldReady(r.timeMs + r.carryMs, r.player.pickReadyAt)).toBe(true);
+    r = step(r, [], 200, seededRng(1)); // the tick at 400 lands it
+    expect(r.player.pickReadyAt).toBe(2 * PICKAXE_COOLDOWN_MS);
+  });
+
+  it('holding gives an even beat of exactly one cooldown, also when the hold slides on to the next block (no missed beat)', () => {
+    let r = withKind(withKind(run(), 11, 10, 'iron'), 10, 11, 'copper'); // east of the player, then the block below
+    const targets: [number, number][] = [[11, 10], [10, 11]];
+    const swings: number[] = [];
+    let ready = r.player.pickReadyAt;
+    for (let frame = 0; frame < 400 && targets.length > 0; frame++) {
+      const [c, row] = targets[0]!;
+      if (!r.dig!.kinds[idx(c, row)]) {
+        targets.shift(); // broke: the finger slides to the next block without lifting
+        continue;
+      }
+      const now = r.timeMs + r.carryMs;
+      const inputs = digHoldReady(now, r.player.pickReadyAt) ? [{ t: 'click_dig' as const, c, r: row }] : [];
+      r = step(r, inputs, 16, seededRng(frame + 1));
+      if (r.player.pickReadyAt !== ready) {
+        ready = r.player.pickReadyAt;
+        swings.push(ready - PICKAXE_COOLDOWN_MS);
+      }
+    }
+    expect(targets).toEqual([]);
+    expect(swings.length).toBe(getMineBlock('iron').hits + getMineBlock('copper').hits);
+    const gaps = swings.slice(1).map((t, i) => t - swings[i]!);
+    expect(new Set(gaps)).toEqual(new Set([PICKAXE_COOLDOWN_MS]));
   });
 });
 

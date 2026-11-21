@@ -43,7 +43,9 @@ import {
   ROCK_ORE_MIN,
   RARE_DROP_CHANCE,
   STAIRS_HEAL,
+  DROP_CAP_PER_ROOM,
 } from '../config.ts';
+import { dropsLoot, nextDropId, spawnDrops, stepDrops, type Drop } from '../drops.ts';
 import { POTION } from '../gear.ts';
 import { gemDrop, type GemSource } from '../gems.ts';
 import { getFoodType } from '../materials.ts';
@@ -84,6 +86,7 @@ function cloneRun(run: DungeonRun): DungeonRun {
     rocks: run.rocks.map((x) => ({ ...x })),
     ...(run.dig ? { dig: { ...run.dig, hits: { ...run.dig.hits }, hazards: run.dig.hazards.map((h) => ({ ...h })), rare: [...run.dig.rare] } } : {}),
     pickups: run.pickups.map((x) => ({ ...x })),
+    ...(run.drops ? { drops: run.drops.map((x) => ({ ...x })) } : {}),
     bag: { ...run.bag },
     banked: { ...run.banked },
     lost: { ...run.lost },
@@ -240,8 +243,12 @@ function eat(r: DungeonRun, now: number): void {
 /** What the dig mine's code needs from this file (the loot bag and the gem piles). */
 function digHooks(r: DungeonRun, rng: Rng): DigHooks {
   return {
-    addLoot: (loot) => addLoot(r, loot),
-    addFiller: (loot) => {
+    addLoot: (loot, at) => (at ? dropLoot(r, loot, at) : addLoot(r, loot)),
+    addFiller: (loot, at) => {
+      if (at) {
+        dropLoot(r, [loot], at, true); // OB-8: on the ground too; it only goes in if it fits (soft)
+        return;
+      }
       const added = addToBag(r.bag, [loot], r.player.bagSlots);
       if (added.leftBehind.length > 0) return; // a full bag never loses ore to filler
       r.bag = added.bag;
@@ -326,6 +333,56 @@ function addLoot(r: DungeonRun, loot: readonly (Loot & { rank?: Rank })[]): void
   }
 }
 
+/**
+ * OB-8: loot that lands on the ground at a point as drops (gold goes in at once: it takes no slot). Past
+ * DROP_CAP_PER_ROOM the rest goes in at once too. No rng is used, so a seeded run rolls exactly as before.
+ */
+function dropLoot(r: DungeonRun, loot: readonly (Loot & { rank?: Rank })[], at: Point, soft = false): void {
+  const gold = loot.filter((l) => l.item === 'gold');
+  if (gold.length > 0) addLoot(r, gold);
+  const have = r.drops ?? [];
+  const { drops, overflow } = spawnDrops(at, loot.filter((l) => l.item !== 'gold'), nextDropId(have), DROP_CAP_PER_ROOM - have.length);
+  r.drops = [...have, ...(soft ? drops.map((d) => ({ ...d, soft: true })) : drops)];
+  for (const d of drops) r.events.push({ t: 'drop', id: d.id, item: d.item, qty: d.qty, rank: d.rank, x: at.x, y: at.y });
+  if (overflow.length > 0) {
+    if (soft) for (const o of overflow) takeDrop(r, { item: o.item, qty: o.qty, rank: o.rank ?? 'common' });
+    else addLoot(r, overflow);
+  }
+}
+
+/** A drop the bag takes whole (true), else it stays on the ground. The 'loot' event (popup, sound) fires now. */
+function takeDrop(r: DungeonRun, d: Pick<Drop, 'item' | 'qty' | 'rank'>): boolean {
+  const added = addToBag(r.bag, [{ item: d.item, qty: d.qty }], r.player.bagSlots);
+  if (added.leftBehind.length > 0) return false;
+  r.bag = added.bag;
+  r.events.push({ t: 'loot', item: d.item, qty: d.qty, ...(d.rank !== 'common' ? { rank: d.rank } : {}) });
+  return true;
+}
+
+/** One tick of the ground drops: they land, fly to the player and go in the bag. */
+function tickDrops(r: DungeonRun): void {
+  if (!r.drops || r.drops.length === 0) return;
+  const s = stepDrops(r.drops, r.player, TICK, (d) => takeDrop(r, d));
+  r.drops = s.drops;
+  for (const d of s.full) if (!d.soft) r.events.push({ t: 'drop_full', id: d.id });
+}
+
+/** Leaving the floor (exit, deeper, leave): every drop still lying there goes in the bag; what does not fit is left behind (filler is just left). */
+function sweepDrops(r: DungeonRun): void {
+  const all = r.drops ?? [];
+  if (all.length === 0) return;
+  r.drops = [];
+  for (const d of all) if (d.soft) takeDrop(r, d);
+  addLoot(r, dropsLoot(all.filter((d) => !d.soft)));
+}
+
+/** Death in the crypt: the drops on the floor are lost with the bag (filler is not counted). */
+function loseDrops(r: DungeonRun): void {
+  const all = (r.drops ?? []).filter((d) => !d.soft);
+  r.drops = [];
+  if (all.length > 0) r.lost = addToBag(r.lost, dropsLoot(all), Infinity).bag;
+}
+
 /** Moves the bag into the banked bag (leaving, or killing the boss). */
 function bankBag(r: DungeonRun): void {
   r.banked = { ...addToBag(r.banked, bagLoot(r.bag), Infinity).bag, gold: r.banked.gold + r.bag.gold, gems: r.banked.gems + r.bag.gems };
@@ -350,7 +407,12 @@ function kill(r: DungeonRun, e: Enemy, rng: Rng): void {
   if (e.kind === 'bone_king') addLoot(r, rollLoot(getLootTable('boss'), rng));
   // The enemy's own drop table (step 9e): RARE_DROP_CHANCE per kill, and the table decides the
   // rank. The Bone King always drops. No such drops in the mine (step 9c): only ore and gems.
-  if (r.place === 'crypt' && (e.kind === 'bone_king' || rng() < RARE_DROP_CHANCE)) addLoot(r, rollLoot(getLootTable(type), rng));
+  // OB-8: it lands on the ground at the enemy (the boss's goes in at once: its bag is banked in this step).
+  if (r.place === 'crypt' && (e.kind === 'bone_king' || rng() < RARE_DROP_CHANCE)) {
+    const drop = rollLoot(getLootTable(type), rng);
+    if (e.kind === 'bone_king') addLoot(r, drop);
+    else dropLoot(r, drop, e);
+  }
   // Gems (step BG4): a mimic and the boss have their own sources, every other kill rolls by the enemy's rank.
   if (e.kind === 'bone_king') dropGems(r, 'boss', 'ultra_rare', e, rng, true);
   else if (e.mimic) dropGems(r, 'mimic', 'rare', e, rng);
@@ -383,6 +445,7 @@ function gainRunXp(r: DungeonRun, xp: number): void {
 }
 
 function leave(r: DungeonRun): void {
+  sweepDrops(r);
   bankBag(r);
   r.status = 'left';
   r.events.push({ t: 'left' });
@@ -393,6 +456,7 @@ function die(r: DungeonRun): void {
     carriedOut(r);
     return;
   }
+  loseDrops(r);
   const kept = Math.floor(r.bag.gold * (1 - DEATH_GOLD_LOSS));
   const keptGems = Math.floor(r.bag.gems * (1 - DEATH_GOLD_LOSS));
   const lostBag: RunBag = { slots: r.bag.slots, gold: r.bag.gold - kept, gems: r.bag.gems - keptGems };
@@ -413,6 +477,7 @@ function die(r: DungeonRun): void {
  * this visit (rounded down). Gems, potions and xp stay.
  */
 function carriedOut(r: DungeonRun): void {
+  sweepDrops(r); // OB-8: the ore on the ground counts like the bag (half of each ore is lost below)
   const totals = new Map<string, number>();
   for (const l of bagLoot(r.bag)) totals.set(l.item, (totals.get(l.item) ?? 0) + l.qty);
   const kept: Loot[] = [];
@@ -431,6 +496,7 @@ function carriedOut(r: DungeonRun): void {
 }
 
 function deeper(r: DungeonRun): void {
+  sweepDrops(r);
   const digPlan = r.dig ? generateDigMine(r.seed, r.floor + 1) : null;
   const plan = digPlan ?? generateFloor(r.seed, r.floor + 1, r.round);
   if (digPlan) r.dig = digPlan.dig;
@@ -527,6 +593,7 @@ function tick(r: DungeonRun, rng: Rng): void {
 
   // Gem piles are picked up by walking close (step BG4).
   collectGems(r);
+  tickDrops(r);
 
   // Chests open (or wake as a mimic) when walked onto.
   for (const c of r.chests) {

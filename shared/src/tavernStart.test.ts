@@ -12,6 +12,7 @@ import { getDrinkType } from './materials.ts';
 import { menuOffers, menuRows, tavernSeats } from './tavern.ts';
 import { startCook } from './cooking.ts';
 import { firstHourGold } from './balance.ts';
+import { addToStash } from './stash.ts';
 
 describe('a new tavern (step S3)', () => {
   it('START LAYOUT REDO (19 Nov): at least four seats on every shop shape (a chair on every side of the table, bar stools at a long bar), all reachable from the door', () => {
@@ -63,7 +64,9 @@ describe('a new tavern (step S3)', () => {
     expect(cooked).not.toBeNull();
     s = cooked!;
     expect(s.tavern.cooks).toHaveLength(1);
-    expect(menuOffers({ ...s, player: { ...s.player, materials: { ...s.player.materials, roasted_turnip: 2 } } }).some((o) => o.id === 'roasted_turnip')).toBe(true);
+    const done = { ...s, player: { ...s.player, materials: { ...s.player.materials, roasted_turnip: 2 } } };
+    expect(menuOffers(done).some((o) => o.id === 'roasted_turnip')).toBe(false); // 3e: cooked into the bag, not yet in the food stash
+    expect(menuOffers(addToStash(done, 'roasted_turnip', 0)!.state).some((o) => o.id === 'roasted_turnip')).toBe(true); // one click: the start hatch takes it
   });
 
   it('the model: 30 minutes about 220 gold, the first hour about 460 (7 mugs a visit at 9 gold, 2 dishes at 14 every 20 minutes)', () => {

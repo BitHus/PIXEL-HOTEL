@@ -37,13 +37,7 @@ test('hover tag on the stove (desktop) / context button near it (phone)', async 
     k.note('coarse=' + await page.evaluate(() => matchMedia('(pointer: coarse)').matches) + ' panel=' + await k.ph('return h.st.lookAround') + ' av=' + JSON.stringify(await k.ph('return {x:h.st.avatar.x,y:h.st.avatar.y}')) + ' stove=' + JSON.stringify(stove));
     const shown = await btn.isVisible();
     k.note(`ctx visible=${shown} text=${shown ? await btn.textContent() : ''}`);
-    expect(shown).toBe(true);
-    expect(['Cook', 'Collect', 'Brew', 'Taps', 'Menu', 'Sit']).toContain(await btn.textContent());
-    await page.screenshot({ path: 'misclick-shots/phone-button-shown.png' });
-    k.note('at button: ' + await page.evaluate(() => { const b = document.querySelector('.ctx-btn')!.getBoundingClientRect(); const e = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2) as HTMLElement; return e.tagName + '.' + e.className + ' parent ' + (e.parentElement?.className ?? ''); }));
-    await btn.click({ timeout: 5000 }).catch((e) => k.note('click failed: ' + String(e).slice(0, 400)));
-    await page.waitForTimeout(800);
-    await page.screenshot({ path: 'misclick-shots/phone-after-button.png' });
-    k.note('panel after button: ' + await page.locator('.panel:not([hidden]) h2, .panel:not([hidden]) .panel-title').first().textContent({ timeout: 2000 }).catch(() => 'none'));
+    // OB-1 (owner 21 Nov): the context button is off (CONTEXT_BUTTON_ENABLED = false).
+    expect(shown).toBe(false);
   }
 });

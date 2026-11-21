@@ -26,7 +26,7 @@ const fresh = (): GameState => createNewPlayer(undefined, 1000);
 describe('the seen list (Player.seen, step 9e)', () => {
   it('a new player has seen what they start with', () => {
     const s = fresh();
-    expect(Object.keys(s.player.seen).sort()).toEqual(['bar', 'bar_stool', 'brewing_barrel', 'chair', 'cloth', 'register', 'stove', 'table', 'tap_stand', 'wood']);
+    expect(Object.keys(s.player.seen).sort()).toEqual(['bar', 'bar_stool', 'brewing_barrel', 'chair', 'cloth', 'register', 'serving_hatch', 'stove', 'table', 'tap_stand', 'wood']);
     expect(s.player.seen.wood).toEqual({ count: 4, firstSeenAt: 1000 });
     expect(s.player.seen.bar).toEqual({ count: 6, firstSeenAt: 1000 }); // MODULAR BAR: six bar pieces
     expect(s.player.bookRewards).toEqual([]);
@@ -96,7 +96,7 @@ describe('the seen list (Player.seen, step 9e)', () => {
 
   it('ownedFinds counts materials and furniture', () => {
     const s = fresh();
-    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, bar: 6, table: 1, chair: 4, bar_stool: 2, brewing_barrel: 1, stove: 1, register: 1, tap_stand: 1 });
+    expect(ownedFinds(s)).toEqual({ wood: 4, cloth: 2, bar: 6, table: 1, chair: 4, bar_stool: 2, brewing_barrel: 1, stove: 1, register: 1, tap_stand: 1, serving_hatch: 1 });
   });
 
   it('addSeen keeps the first time', () => {
@@ -139,10 +139,10 @@ describe('the Book (step 9e)', () => {
   it('counts found per tab and in total', () => {
     const s = fresh();
     expect(bookProgress(s.player.seen, 'materials')).toEqual({ found: 2, total: bookEntries('materials').length });
-    expect(bookProgress(s.player.seen, 'furniture').found).toBe(8);
+    expect(bookProgress(s.player.seen, 'furniture').found).toBe(9); // 3e: + the serving hatch
     expect(bookProgress(s.player.seen, 'enemies').found).toBe(0);
     const total = bookTotal(s.player.seen);
-    expect(total.found).toBe(10);
+    expect(total.found).toBe(11);
     expect(total.percent).toBe(Math.floor(1000 / total.total));
     let seen = s.player.seen;
     for (const tab of BOOK_TABS) for (const e of bookEntries(tab)) seen = addSeen(seen, e.kind === 'spliceSeed' ? e.id : e.key, 1, 5);

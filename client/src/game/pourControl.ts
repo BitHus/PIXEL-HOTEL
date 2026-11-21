@@ -4,7 +4,7 @@
 // Robust: release always ends it (pointer up/cancel from cameraControl, window pointerup, blur, visibility change, a panel opening, a hold past POUR_HOLD_CAP_MS,
 // the guest leaving or the tap emptying: cancel()). The mug is never lost: the API call happens once, on the release.
 
-import { POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_PERFECT_RANGE, pickPourTap, pourFill, pourHeldClamp, type Bonuses, type PourPick, type Point } from '@pixel-hotel/shared';
+import { POUR_AWAY_TAP_MS, POUR_HOLD_CAP_MS, POUR_MAX_FILL, POUR_PERFECT_RANGE, pickPourTap, pourFill, pourHeldClamp, type Bonuses, type PourPick, type Point } from '@pixel-hotel/shared';
 
 const GLUG_EVERY_MS = 110;
 /** A press this close to a stand's centre (CSS px, at least) belongs to it; scaled up with the zoom. */
@@ -32,6 +32,8 @@ export interface PourControlHooks {
   onEnd: (heldMs: number, pick: { standUid: number; slot: number }) => void;
   glug: (pitch: number) => void;
   toast: (text: string) => void;
+  /** OB-1: a quick tap away from the stand while a pour waits (nothing poured). */
+  onTapAway?: () => void;
   now?: () => number;
   /** Smooth pour: the skill bonuses (shorter time to a full mug). */
   skills?: () => Bonuses | undefined;
@@ -40,7 +42,7 @@ export interface PourControlHooks {
 export function createPourControl(h: PourControlHooks) {
   const now = h.now ?? (() => performance.now());
   let waiting: { standUid: number; item: string } | null = null;
-  let press: { startedAt: number; pick: { standUid: number; slot: number }; source: 'pointer' | 'key'; lastGlug: number } | null = null;
+  let press: { startedAt: number; pick: { standUid: number; slot: number }; source: 'pointer' | 'key'; lastGlug: number; near: boolean } | null = null;
   let raf = 0;
 
   const nearest = (screen: Point): { spot: StandSpot; side: 0 | 1 } | null => {
@@ -69,17 +71,23 @@ export function createPourControl(h: PourControlHooks) {
     if (!p) return;
     press = null;
     cancelAnimationFrame(raf);
-    h.onEnd(pourHeldClamp(now() - p.startedAt), p.pick);
+    const ms = now() - p.startedAt;
+    // OB-1: a quick tap away from the stand is not a pour (no mug used); the wait goes on.
+    if (!p.near && ms < POUR_AWAY_TAP_MS) {
+      h.onTapAway?.();
+      return;
+    }
+    h.onEnd(pourHeldClamp(ms), p.pick);
   };
 
-  const begin = (standUid: number, side: number, source: 'pointer' | 'key'): void => {
+  const begin = (standUid: number, side: number, source: 'pointer' | 'key', near = true): void => {
     if (!waiting || press) return;
     const pick: PourPick = pickPourTap(h.taps(), standUid, waiting.item, side);
     if (!pick.ok) {
       h.toast(pick.why === 'other' ? `That tap pours ${h.drinkName(pick.drink)}, not ${h.drinkName(waiting.item)}.` : 'That tap is empty.');
       return;
     }
-    press = { startedAt: now(), pick: { standUid, slot: pick.slot }, source, lastGlug: 0 };
+    press = { startedAt: now(), pick: { standUid, slot: pick.slot }, source, lastGlug: 0, near };
     h.onStart(standUid, pick.slot);
     raf = requestAnimationFrame(loop);
   };
@@ -116,14 +124,16 @@ export function createPourControl(h: PourControlHooks) {
     get pressing(): boolean {
       return press !== null;
     },
-    /** Does a press at this screen point belong to the pour (it waits, nothing else owns the pointer, a stand is near)? */
-    claims(screen: Point): boolean {
-      return waiting !== null && !h.blocked() && nearest(screen) !== null;
+    /** OB-1: while a pour waits (and nothing else owns the pointer) a press ANYWHERE on the room belongs to it, like fishing. */
+    claims(_screen: Point): boolean {
+      return waiting !== null && !h.blocked();
     },
-    /** The press went down at this point (call after claims() said yes). */
+    /** The press went down at this point (call after claims() said yes): it pours at the waited stand; near it, the side picks the tap. */
     down(screen: Point): void {
+      if (!waiting) return;
       const n = nearest(screen);
-      if (n) begin(n.spot.standUid, n.side, 'pointer');
+      const onWaited = n !== null && n.spot.standUid === waiting.standUid;
+      begin(waiting.standUid, onWaited ? n.side : 0, 'pointer', onWaited);
     },
     /** MISCLICK-PROOF: the context button or the E key starts the pour at the waited stand (like holding Space); holdEnd() releases it. */
     holdStart(): void {

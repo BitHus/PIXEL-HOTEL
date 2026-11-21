@@ -49,7 +49,7 @@ describe('createNewPlayer (brief section 9)', () => {
 
   it('puts the modular bar (6 pieces, register on the first, tap stand on the third), 2 bar stools, a table with a chair on every side, and the barrel and stove in the kitchen above, at their fixed spots; no stall table (S3)', () => {
     const shop = s.items.filter((i) => i.roomId === s.player.shopRoomId);
-    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar', 'bar', 'bar', 'bar', 'bar', 'bar', 'bar_stool', 'bar_stool', 'brewing_barrel', 'chair', 'chair', 'chair', 'chair', 'register', 'stove', 'table', 'tap_stand']);
+    expect(shop.map((i) => i.typeId).sort()).toEqual(['bar', 'bar', 'bar', 'bar', 'bar', 'bar', 'bar_stool', 'bar_stool', 'brewing_barrel', 'chair', 'chair', 'chair', 'chair', 'register', 'serving_hatch', 'stove', 'table', 'tap_stand']);
     const at = getRoomShape('square_shop').shopStart!.bar!; // the first bar piece: the shape's own start spot
     expect(shop.find((i) => i.typeId === 'bar')).toMatchObject({ x: at.x, y: at.y, facing: 'down' });
     expect(shop.find((i) => i.typeId === 'register')!.onItemUid).toBe(shop.find((i) => i.typeId === 'bar')!.uid);

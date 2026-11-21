@@ -260,7 +260,7 @@ describe('migration 42 -> 43 (the tree v2)', () => {
     return r.state;
   };
   it('SAVE_VERSION is 43 and an old build that is valid on v2 keeps its ranks (clamped, unknown ids dropped) plus one free reset', () => {
-    expect(SAVE_VERSION).toBe(43);
+    expect(SAVE_VERSION).toBe(44);
     const s = load(save({ ranks: { quick_feet: 5, steady_hands: 1, keen_eye: 1, gone_node: 2 }, respecs: 2 }));
     expect(s.player.skills).toEqual({ ranks: { quick_feet: 3, steady_hands: 1, keen_eye: 1 }, respecs: 2, tree: 2, freeReset: true });
     expect(respecCost(s.player)).toBe(0);

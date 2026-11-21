@@ -6,6 +6,7 @@ import { inStaffZone } from './npcNav.ts';
 import { applyChange } from './ledger.ts';
 import { seededRng } from './rng.ts';
 import { loadTap, unloadTap } from './taps.ts';
+import { addToStash } from './stash.ts';
 import {
   chooseOrder,
   clearDish,
@@ -26,7 +27,7 @@ import {
   type Guest,
   type MenuOffer,
 } from './tavern.ts';
-import { legacyStart, withAle, withItem, withLongTable } from './tavernTest.ts';
+import { legacyStart, withAle, withHatch, withItem, withLongTable } from './tavernTest.ts';
 import { ledgerGold } from './testState.ts';
 import type { GameState } from './gameState.ts';
 
@@ -56,6 +57,7 @@ describe('the menu (step 9t)', () => {
   it('the player puts things on and off the menu and sets a price each', () => {
     let s = applyChange(withAle(), { reason: 'debug', materials: { potato_stew: 2 } }, 0)!;
     s = setMenu(s, 'potato_stew', { on: true, price: 25 })!;
+    s = addToStash(withHatch(s), 'potato_stew', 0)!.state; // 3e: dishes are served from the food stash
     s = setMenu(s, 'root_ale', { price: 12 })!;
     expect(menuOffers(s).map((o) => [o.id, o.price]).sort()).toEqual([['potato_stew', 25], ['root_ale', 12]]);
     s = setMenu(s, 'root_ale', { on: false })!;

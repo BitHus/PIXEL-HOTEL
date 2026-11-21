@@ -14,12 +14,15 @@
 import type { Application } from 'pixi.js';
 import {
   rankOf,
+  withRarity,
   CHEST_OPEN_MS,
   FX_SHAKE_STEP_MS,
   DUNGEON_CSS_PX_PER_ART_PX,
   DUNGEON_DEVICE_PX_PER_ART_PX,
   DUNGEON_NAV_CELL,
   DUNGEON_BLOCK,
+  digHoldReady,
+  getMineBlock,
   steerCellChange,
   LEVEL_FLASH_MS,
   LEVEL_TOTAL_XP,
@@ -57,6 +60,7 @@ import { easeOutQuad } from '../fx/ease.ts';
 import { fxSpec, isLowHp, type FxContext, type FxSpec } from '../fx/fxSpec.ts';
 import { HitStop, frameTimes } from '../fx/hitStop.ts';
 import { Shake } from '../fx/shake.ts';
+import { caveInShake, chipVelocities, digHitFx } from './digFeel.ts';
 
 export interface DungeonContext {
   app: Application;
@@ -66,9 +70,11 @@ export interface DungeonContext {
   runBar: RunBar;
   toast: Toast;
   /** Plays a sound (atmosphere step). */
-  sound(name: SoundName, rank?: Rank): void;
+  sound(name: SoundName, rank?: Rank, pitch?: number): void;
   /** The Reduce effects pref (outdoors rework C11): no hit-stop, shake, particles, squash, fades or overlays; damage numbers and sounds stay. */
   reduceEffects(): boolean;
+  /** J4: the Reduce shake pref (on by default with prefers-reduced-motion): the dig mine's break and cave-in shakes stay off. */
+  reduceShake(): boolean;
   dpr(): number;
   /** The run ended and its screen was closed: back to the room the player came from. */
   onDone(result: RunResult): Promise<void>;
@@ -88,6 +94,8 @@ export class DungeonScreen {
   private readonly view: DungeonView;
   private readonly floats: FloatTexts;
   private run: DungeonRun | null = null;
+  /** OB-8: when the last "bag full" toast for a ground drop showed (performance.now ms), so it shows at most every few seconds. */
+  private bagFullToastAt = -Infinity;
   /** The run one tick earlier (for smooth drawing), null right after a floor change. */
   private prev: DungeonRun | null = null;
   private active = false;
@@ -233,8 +241,8 @@ export class DungeonScreen {
     const run = this.run;
     if (run?.dig) return this.holdDig(run, id);
     if (!this.active || this.halted || !run || run.status !== 'active' || !run.rocks.some((x) => x.id === id)) return 'stop';
-    // Too early by the run's own clock: the click would be ignored, so wait (the hold keeps its place).
-    if (run.timeMs + run.carryMs < run.player.pickReadyAt && run.player.targetRockId === id) return 'retry';
+    // Too early by the run's own clock (any rock: a slide to the next one keeps the beat): wait, the hold keeps its place.
+    if (run.timeMs + run.carryMs < run.player.pickReadyAt) return 'retry';
     this.input({ t: 'click_rock', id });
     return 'go';
   }
@@ -242,7 +250,9 @@ export class DungeonScreen {
   /** One held dig (MG-3): asks again for the same block (the step function keeps the pickaxe cooldown). 'stop' = it is gone. */
   private holdDig(run: DungeonRun, cell: number): 'go' | 'stop' | 'retry' {
     if (!this.active || this.halted || run.status !== 'active' || !run.dig?.kinds[cell]) return 'stop';
-    if (run.timeMs + run.carryMs < run.player.pickReadyAt && run.player.targetDig === cell) return 'retry';
+    // J4: the RULE's clock decides (any block, so sliding to the next one keeps the beat): too early = ask again next frame; within
+    // DIG_QUEUE_MS of ready the dig is sent and queued, so it lands on the ready tick (an even beat, never a wasted request).
+    if (!digHoldReady(run.timeMs + run.carryMs, run.player.pickReadyAt)) return 'retry';
     this.input({ t: 'click_dig', c: cell % run.map.cols, r: Math.floor(cell / run.map.cols) });
     return 'go';
   }
@@ -477,7 +487,17 @@ export class DungeonScreen {
           const name = e.item === 'gold' ? `+${e.qty} gold` : isMaterialId(e.item) ? `+${e.qty} ${getMaterialType(e.item).name}` : `${getFurnitureType(e.item).name}!`;
           // Its rank colour (a rare pile of gold too); common drops keep the plain loot colour.
           const rank = e.rank ?? (e.item === 'gold' ? 'common' : rankOf(e.item));
-          this.floats.add(lootAt, name, 'loot', FLOAT_STAGGER_MS * stagger++, rank === 'common' ? null : rank);
+          // OB-8 rarity: above common the rank word goes with it ('+2 Iron ore (Rare)'), gold keeps only its colour.
+          this.floats.add(lootAt, e.item === 'gold' ? name : withRarity(name, rank), 'loot', FLOAT_STAGGER_MS * stagger++, rank === 'common' ? null : rank);
+          break;
+        }
+        case 'drop_full': {
+          // OB-8: a ground drop the bag could not take waits on the floor (it is swept up at the exit if there is room).
+          const now = performance.now();
+          if (now - this.bagFullToastAt > 4000) {
+            this.bagFullToastAt = now;
+            this.ctx.toast('Bag full: it waits on the ground.');
+          }
           break;
         }
         case 'gem_pickup':
@@ -526,8 +546,16 @@ export class DungeonScreen {
             lootAt = { x: at.x, y: at.y - 8 };
             stagger = 0;
           }
-          if (!this.ctx.reduceEffects()) v.particles.burst(at, 'debris', e.t === 'dig_broken' ? 8 : 3);
-          this.ctx.sound(e.t === 'dig_broken' ? 'clink' : 'hit');
+          // J4 smooth punching: flash + 1 px squash, chips away from the avatar, a tick rising in pitch; a break shakes by trauma.
+          const kind = e.t === 'dig_broken' ? e.kind : before.dig?.kinds[e.cell] || run.dig?.kinds[e.cell];
+          const fx = kind ? digHitFx(getMineBlock(kind), e.t === 'dig' ? e.hits : 0, e.t === 'dig_broken', e.cell + run.timeMs) : null;
+          if (!this.ctx.reduceEffects() && fx) {
+            v.flashBlock(at.x - DUNGEON_BLOCK / 2, at.y - DUNGEON_BLOCK / 2);
+            v.particles.chips(at, chipVelocities(v.playerAt, at, fx.chips, e.cell * 31 + run.timeMs));
+            if (fx.shakePx > 0 && !this.ctx.reduceShake()) this.shake.kick(fx.shakePx, fx.shakeMs);
+            if (fx.hitStopMs > 0) this.hitStop.trigger(fx.hitStopMs);
+          }
+          this.ctx.sound(e.t === 'dig_broken' ? 'clink' : 'hit', undefined, fx?.pitch);
           break;
         }
         case 'dig_too_hard':
@@ -545,6 +573,8 @@ export class DungeonScreen {
           if (!this.ctx.reduceEffects()) {
             this.edgeMs = 260;
             this.edgeTotal = 260;
+            const cs = caveInShake();
+            if (!this.ctx.reduceShake()) this.shake.kick(cs.px, cs.ms);
           }
           break;
         case 'lantern_out':

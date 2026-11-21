@@ -126,7 +126,7 @@ export async function setupPointerInput(g: G15) {
       st.pendingBlock = null;
       // ST2: a tap on a block stacks the selected one; holding still on it punches it (the hold hits from now on).
       if (blockInCell(st.room, c, r) && !plantInCell(st.room, c, r)) {
-        if (!stackTapAt(c, r)) return false;
+        if (!stackTapAt(c, r) || st.punchMode === false) return false; // OB-4: chill mode never punches
         hold.start({ kind: 'block', c, r });
         return true;
       }

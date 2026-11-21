@@ -57,6 +57,12 @@ export class DungeonFx {
     }
   }
 
+  /** J4: rock chips with given velocities (digFeel chipVelocities: away from the avatar). */
+  chips(at: Point, vels: readonly { vx: number; vy: number }[]): void {
+    const colors = BITS.debris;
+    vels.forEach((v, i) => this.pool.spawn('debris', at.x, at.y, v.vx, v.vy, this.between(260, 420), i % 2 === 0 ? 2 : 3, colors[i % colors.length]!, 420));
+  }
+
   /** A burst of bits: goo, bones, feathers, rock debris or dust. */
   burst(at: Point, bits: BitKind, count: number): void {
     const colors = BITS[bits];

@@ -162,18 +162,20 @@ export function swayPx(kind: EmitKind, ageMs: number, phase: number): number {
   return 0;
 }
 
-// ---------- The register: drawer and glint ----------
+// ---------- The register: price board flash and glint ----------
 
-/** The drawer's height in px over time since the ding: out in 2 steps (eased), held open, in again. 0 = shut. */
-export function drawerHeightAt(tMs: number): number {
+/** The register is drawn from the CUSTOMER side (price board, two flags, no drawer; 21 Nov). On a ding the price board
+ *  flashes: the alpha of a cream overlay on the board over time since the ding (up fast, hold, fade in steps). 0 = none. */
+export function boardFlashAt(tMs: number): number {
   if (tMs < 0) return 0;
-  if (tMs < 50) return 2;
-  if (tMs < 110) return 4;
-  if (tMs < 520) return 5;
-  if (tMs < 590) return 3;
-  if (tMs < 650) return 1;
+  if (tMs < 50) return 0.25;
+  if (tMs < 260) return 0.45;
+  if (tMs < 420) return 0.3;
+  if (tMs < 560) return 0.15;
   return 0;
 }
+/** The price board's rectangle in register.png (32 x 32), relative to the anchor (bottom centre). */
+export const REGISTER_BOARD = { x: -4, y: -25, w: 8, h: 6 } as const;
 export const DING_MS = 650;
 
 /** The register's glint frame 0..4 (1 px, small cross, big cross, small cross, 1 px) over time since the ding, or -1. 60 ms per frame from 40 ms. */

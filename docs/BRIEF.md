@@ -194,7 +194,7 @@ Original names, art and assets only. Never copy Habbo, Travellers Rest or any ot
   machines 2; seats 1; other 0; a real hit still beats a near miss, an urgent hit beats the exact
   sprite under it). PC: hover shows the pick (corner brackets, pointer cursor, action tag); E (or
   Space when no pour waits) uses the nearest usable thing within INTERACT_REACH_PX (80) of the
-  avatar or the Tab / Shift+Tab highlighted one; E held pours. Phone: a round CONTEXT BUTTON above
+  avatar or the Tab / Shift+Tab highlighted one; E held pours. Phone (OFF since OB-1 21 Nov, config CONTEXT_BUTTON_ENABLED = false): a round CONTEXT BUTTON above
   the hotbar shows the nearest thing's action (Pour (hold), Serve, Collect, Cook, Brew, Taps, Menu,
   Sit, Use, Kegs) and one press does it. Touch: a press highlights its target; sliding off cancels;
   a short slide (under INTERACT_SLIDE_TAP_MS 600) released on it still uses it. A 150 ms confirm
@@ -352,7 +352,7 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   Tavern texts say Tavern; old saves get one intro toast (introSeen), new games a short line. Details: STEP 9t and 9t C in the notes.
   STEP T1 (the bar with taps, the register and the kitchen; NOTES T1): tap the REGISTER on the bar = the bar's panel (Serve / Menu / Sell) and collected coins fly into it; tap a TAP STAND = the
   Taps panel (2 taps per stand, each holds one brewed drink, at most 12 mugs; Load from the bag by a number or Fill, Unload gives them back; ledger reason 'tap'). A drink is on the menu only while
-  a tap holds it (the Menu tab shows the tap levels and a hint to load a tap; dishes still come from the bag). Serving a drink: the avatar walks behind the bar to the taps and waits; the player holds the pour button (mouse or touch) and the mug fills (POUR_FULL_MS, a rising glug sound, foam past full);
+  a tap holds it (the Menu tab shows the tap levels and a hint to load a tap). 3e FOOD STASH (owner 19 Nov, SAVE 44): a DISH is on the menu only while the FOOD STASH holds a plate: the serving hatch (furniture serving_hatch, stash true; a new game has one in the kitchen annex, old saves get one) has STASH_SLOTS 4 slots of up to STASH_CAP 6 plates of ONE dish; tap it = the Food stash panel (slots on top, cooked dishes in the bag below; ONE CLICK moves a dish each way, no stepper; ledger 'stash'); the stove still cooks into the bag; an open order only reserves a plate, serving fetches it at the hatch; a dish loaded with no menu choice goes on. REFILL LOOP: taps and stash run down per serve; a slot with REFILL_LOW_AT 2 or fewer is low, one that ran dry remembers its item (TavernState.lastLoaded); 'Tap N is empty' / 'Food stash slot N is empty' toasts; Refill all (taps and stash) tops up from the bag. Migration 43 -> 44: an open dish order gives its plate back, the dishes ON the menu move from the bag into the new hatch, other dishes stay in the bag (lunch box). Serving a drink: the avatar walks behind the bar to the taps and waits; the player holds anywhere on the room (OB-1 21 Nov: the whole screen is the pour press, like fishing; a stray tap away from the stand under POUR_AWAY_TAP_MS 180 pours nothing; mouse, touch, Space/Enter/E) and the mug fills (POUR_FULL_MS 1000, was 1400, owner to confirm; ONE gauge, the world one; a rising glug sound, foam past full);
   releasing between POUR_PERFECT_RANGE 0.85 and 1.15 is a perfect pour (a tip of POUR_TIP_RATE 10% of the price in the guest's coins); under or over only misses the tip. The tap drops by one at the release; then the player taps the guest (or its order bubble) and the avatar carries the mug to the table (a clink; not automatic any more, G2; save version 29 adds holding.perfect). An empty tap says "Tap is empty" and the order stays open. Old saves (v23 to v24) get a
   register and a tap stand on the bar (or in the bag, with a toast); the drinks in their bag stay there until loaded.
 
@@ -388,7 +388,12 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   attack cooldown. Moving away at the right moment is how a player dodges.
 - Loot goes into a run bag with 12 slots. Each different furniture item takes 1 slot,
   materials stack up to 10 per slot, gold and potions take no slot. A full bag means leaving
-  something behind.
+  something behind. GROUND DROPS (OB-8, 21 Nov): dig-mine ore and crypt enemy drops land on the
+  ground (shared/src/drops.ts) and fly to the avatar inside DROP_MAGNET_PX (64; gold and gems 80)
+  after DROP_PICKUP_DELAY_MS (350), both OWNER OPEN; a drop the full bag refuses stays on the
+  ground; Leave and Go deeper sweep every drop into the bag (what does not fit is left behind),
+  death in the crypt loses them, 0 hp in the mine counts them like the bag. Chests, gold and gem
+  piles are unchanged.
 - Every floor has an exit. At the exit the player chooses: Go deeper (the bag stays at risk)
   or Leave (the bag is banked and the run ends). In round 1 there is no deeper floor, so the
   exit only offers Leave. Killing the boss on floor 3 banks the bag. Dying loses all items
@@ -566,7 +571,9 @@ FurnitureItem: { uid, typeId, ownerId, roomId (null = in inventory), x, y, facin
   double).
 - FISHING: tap the water (from the shore or the pier): the avatar walks to the NEAREST cast spot BY PATH
   LENGTH (shore or pier; A3: path + CAST_AIM_WEIGHT x the distance to the tap, never round the pond) and casts toward the tap. The bobber floats 2 to 8 s (rng), then dips with a "!" for 700 ms (shorter for rarer
-  fish): tap in time to hook. THE REEL (owner's change after the first playtest, like Stardew
+  fish): tap in time to hook. BOBBER DIP (J10, 21 Nov): at the bite the bobber goes UNDER the water for that window (ring, sound,
+  phone buzz); tap while it is under = hooked; a tap or press while it still floats (nibbles too) = 'early': the line comes up,
+  nothing lost, the next cast waits FISH_EARLY_LOCK_MS (800 ms), so fast tapping never hooks; after it comes up = 'missed'. THE REEL (owner's change after the first playtest, like Stardew
   Valley and Pixel Worlds): a bar with a fish swimming back and forth and a green catch box.
   HOLD (the button, the bar or Space) pushes the box to the right, a tap kicks it, and it falls
   back to the left by itself. While the fish is inside the box the catch bar fills; outside it

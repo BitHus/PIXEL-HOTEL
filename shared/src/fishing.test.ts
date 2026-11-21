@@ -5,6 +5,7 @@ import {
   FISH_BITE_MS,
   FISH_BOX_BASE,
   FISH_BOX_MAX_SPEED,
+  FISH_EARLY_LOCK_MS,
   FISH_GRAVITY,
   FISH_REEL,
   FISH_REEL_FULL,
@@ -20,8 +21,8 @@ import {
   RANK_WEIGHTS,
 } from './config.ts';
 import { CATCH_TYPES, FISH_TYPES, THING_TYPES, getCatchType } from './fish.ts';
-import { bankCatch, fishInBox, fishPowerOf, fishTopSpeed, newFishSession, rollCatch, step, swimStep, type FishSession, type FishSwim } from './fishing.ts';
-import { FISH_BOTS, FISH_SKILLS_MAX, botPlay, botSession, botWinRate } from './fishingSim.ts';
+import { bankCatch, bobberState, fishInBox, fishRecastReady, fishPowerOf, fishTopSpeed, newFishSession, rollCatch, step, swimStep, type FishSession, type FishSwim } from './fishing.ts';
+import { FISH_BOTS, FISH_SKILLS_MAX, botHookRate, botPlay, botSession, botWinRate } from './fishingSim.ts';
 import { createNewPlayer } from './newPlayer.ts';
 import { RANKS } from './ranks.ts';
 import { seededRng } from './rng.ts';
@@ -153,10 +154,16 @@ describe('the fishing session step(session, inputs, dtMs, rng)', () => {
     }
   });
 
-  it('a tap or a hold while the bobber floats does not hook; a tap in the window hooks it and starts the reel', () => {
-    let s: FishSession = { ...session('rare'), waitMs: 2000 };
+  it('J10: a tap or a press while the bobber floats is EARLY (the line comes up, nothing caught); a tap while it is under hooks', () => {
     const rng = seededRng(2);
-    s = step(s, [{ t: 'tap' }], 0, rng);
+    for (const input of [{ t: 'tap' }, { t: 'press' }] as const) {
+      const e = step({ ...session('rare'), waitMs: 2000 }, [input], 0, rng);
+      expect(e.phase).toBe('done');
+      expect(e.outcome).toBe('early');
+      expect(e.events).toEqual([{ t: 'early' }]);
+    }
+    // A release (a finger lifted) while it floats changes nothing.
+    let s = step({ ...session('rare'), waitMs: 2000 }, [{ t: 'release' }], 0, rng);
     expect(s.phase).toBe('wait');
     expect(s.events).toEqual([]);
     s = step(s, [], 2000, rng);
@@ -541,5 +548,37 @@ describe('FISH-1 fish movement path', () => {
     expect(s.phase).toBe('bite');
     expect(nibbles).toBeGreaterThanOrEqual(1);
     expect(nibbles).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('J10 bobber dip', () => {
+  it('the bobber floats, nibbles, then is UNDER for the rank window (underFrac falls from 1 to 0), and is up again after', () => {
+    let s: FishSession = { ...session('ultra_rare'), waitMs: 100 };
+    expect(bobberState(s).look).toBe('float');
+    expect(bobberState({ ...s, nibbleMs: 100 }).look).toBe('nibble');
+    s = step(s, [], 100, seededRng(1));
+    expect(bobberState(s)).toEqual({ look: 'under', underFrac: 1 });
+    s = step(s, [], FISH_BITE_MS.ultra_rare / 2, seededRng(1));
+    expect(bobberState(s).underFrac).toBeCloseTo(0.5, 1);
+    s = step(s, [], FISH_BITE_MS.ultra_rare, seededRng(1));
+    expect(s.outcome).toBe('missed');
+    expect(bobberState(s).look).toBe('none');
+  });
+
+  it('an early tap catches nothing and banks nothing; a new cast waits FISH_EARLY_LOCK_MS', () => {
+    const early = step({ ...session('common'), waitMs: 3000 }, [{ t: 'tap' }], 0, seededRng(1));
+    expect(early.outcome).toBe('early');
+    const state = createNewPlayer(undefined, 0);
+    expect(bankCatch(state, early, 0, seededRng(1))).toBeNull();
+    expect(fishRecastReady(null, 0)).toBe(true);
+    expect(fishRecastReady(1000, 1000 + FISH_EARLY_LOCK_MS - 1)).toBe(false);
+    expect(fishRecastReady(1000, 1000 + FISH_EARLY_LOCK_MS)).toBe(true);
+  });
+
+  it('fast tapping never hooks; a fair reaction hooks every rank; too slow misses the rare ones', () => {
+    for (const r of RANKS) expect(botHookRate(r, 0, { tapEveryMs: 150, n: 40 }), r).toBe(0);
+    for (const r of RANKS) expect(botHookRate(r, 250, { jitterMs: 100, n: 40 }), r).toBe(1);
+    expect(botHookRate('legendary', FISH_BITE_MS.legendary + 100, { n: 40 })).toBe(0);
+    expect(botHookRate('common', FISH_BITE_MS.legendary + 100, { n: 40 })).toBe(1);
   });
 });

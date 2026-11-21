@@ -8,6 +8,7 @@ import { GEMS_GAIN_ID, GOLD_GAIN_ID, POPUP_MAX, POPUP_MS, sparkles, type Gain, t
 import { el } from './dom.ts';
 import { gainIconUrl } from './itemIcon.ts';
 import { rankClassOf } from './rank.ts';
+import { markRarity } from './rarity.ts';
 import { gemIconName, goldIconName } from './pixelIconsCurrency.ts';
 import { pixelIconUrl } from './pixelIcons.ts';
 
@@ -40,6 +41,8 @@ export function gainChip(g: Gain): HTMLElement {
   img.draggable = false;
   if (money) chip.classList.add('gain-money', g.itemId === GOLD_GAIN_ID ? 'gain-gold' : 'gain-gems');
   chip.append(img, el('span', '', money ? `+${g.count}` : g.count > 1 ? `x${g.count}` : ''));
+  // OB-8 rarity: the rank word for hover and screen readers ('x3 (Rare)'); money has no rank.
+  if (!money) markRarity(chip, `x${g.count}`, g.rank);
   if (sparkles(g.rank)) {
     chip.classList.add('sparkle');
     for (let i = 0; i < 4; i++) chip.appendChild(el('span', `sparkle-star s${i}`));

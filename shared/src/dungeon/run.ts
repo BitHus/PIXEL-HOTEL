@@ -15,6 +15,7 @@ import {
   type EnemyKind,
   type RockKind,
 } from '../config.ts';
+import type { Drop } from '../drops.ts';
 import { ownedArmor, ownedPickaxe, ownedWeapon } from '../gear.ts';
 import { attackBonusAt, levelForXp, maxHpAt } from '../levels.ts';
 import { attackCooldownOf, maxHpScaled, runBagSlotsOf } from '../skillRules.ts';
@@ -246,6 +247,9 @@ export type RunEvent =
   /** Gems dropped on the floor at a point (step BG4), and collected into the bag. */
   | { t: 'gem_drop'; id: number; x: number; y: number; qty: number }
   | { t: 'gem_pickup'; id: number; qty: number }
+  /** OB-8: a ground drop popped out at a point (it reaches the bag later: then a 'loot' event); full = the bag refused it once. */
+  | { t: 'drop'; id: number; item: string; qty: number; rank: Rank; x: number; y: number }
+  | { t: 'drop_full'; id: number }
   | { t: 'chest'; chestId: number }
   | { t: 'mimic'; enemyId: number; chestId: number }
   | { t: 'potion'; healed: number }
@@ -283,6 +287,12 @@ export interface DungeonRun {
   dig?: DigState;
   /** Gems on the floor of this floor (step BG4); gone when the floor is left. */
   pickups: GemPickup[];
+  /**
+   * OB-8 ground drops of this floor (shared/src/drops.ts): dig-mine ore and crypt kill drops land here and the magnet
+   * picks them up into the bag. Leaving or going deeper sweeps them into the bag, death loses them. Missing = none
+   * (older saved runs).
+   */
+  drops?: Drop[];
   /** The mine: the run time when the lantern goes out (the visit ends). null in the crypt. */
   lanternEndsAt: number | null;
   /** At risk until banked. */

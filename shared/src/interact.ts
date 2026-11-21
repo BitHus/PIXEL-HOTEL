@@ -8,7 +8,7 @@ import { distanceToRect } from './tapPick.ts';
 import type { Point, Rect } from './types.ts';
 
 /** What a usable thing is, for its priority and its action label. */
-export type InteractKind = 'guest' | 'pour' | 'taps' | 'stove' | 'barrel' | 'cask' | 'bar' | 'seat' | 'use';
+export type InteractKind = 'guest' | 'pour' | 'taps' | 'stash' | 'stove' | 'barrel' | 'cask' | 'bar' | 'seat' | 'use';
 
 export interface InteractState {
   kind: InteractKind;
@@ -24,6 +24,7 @@ export function interactPriority(s: InteractState): number {
     case 'barrel':
     case 'cask':
     case 'taps':
+    case 'stash':
     case 'bar':
       return INTERACT_PRIORITY.machine;
     case 'seat':
@@ -42,6 +43,8 @@ export function interactLabel(s: InteractState): string {
       return 'Pour';
     case 'taps':
       return 'Taps';
+    case 'stash':
+      return 'Stash';
     case 'stove':
       return s.ready ? 'Collect' : 'Cook';
     case 'barrel':

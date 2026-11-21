@@ -33,6 +33,9 @@ export interface SettingsHooks {
   /** MISCLICK-PROOF: the effective 'Big tap targets' state now, and its change. */
   bigTaps?: boolean;
   onBigTaps?(on: boolean): void;
+  /** J4: the effective Reduce shake state now, and its change. */
+  reduceShake?: boolean;
+  onReduceShake?(on: boolean): void;
 }
 
 export interface SettingsPanel {
@@ -163,6 +166,16 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   });
   fxBtn.classList.toggle('on', reduceFx);
   const fxNote = el('p', 'panel-note', 'Calmer fights: no screen shake, freeze frames, sparks or bursts. Damage numbers and sounds stay.');
+  // J4: 'Reduce shake' (on by default with reduced motion): the mine's break and cave-in shakes stay off.
+  let reduceShake = hooks.reduceShake ?? false;
+  const shakeBtn = textButton(`Reduce shake: ${reduceShake ? 'on' : 'off'}`, () => {
+    reduceShake = !reduceShake;
+    shakeBtn.textContent = `Reduce shake: ${reduceShake ? 'on' : 'off'}`;
+    shakeBtn.classList.toggle('on', reduceShake);
+    hooks.onReduceShake?.(reduceShake);
+  });
+  shakeBtn.classList.toggle('on', reduceShake);
+  const shakeNote = el('p', 'panel-note', 'No screen shake when a block breaks in the mine.');
 
   // MISCLICK-PROOF: 'Big tap targets' (on by default on touch): a wider finger radius and bigger boxes around guests, taps and machines.
   let bigTaps = hooks.bigTaps ?? false;
@@ -180,7 +193,7 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   // Owner 19 Nov: no camera setting; the camera is always locked on you in play mode. Look around is a button in More.
 
   // The on/off buttons become peg-and-groove switches (skin.css .btn.switch).
-  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, bigBtn, debugBtn]) b.classList.add('switch');
+  for (const b of [soundBtn, lightBtn, gridBtn, popBtn, tagBtn, fxBtn, shakeBtn, bigBtn, debugBtn]) b.classList.add('switch');
   const section = (title: string, ...buttons: HTMLElement[]): HTMLElement => {
     const s = el('div', 'panel-section settings-group');
     s.append(el('h3', 'ribbon', title), ...buttons);
@@ -192,6 +205,6 @@ export function createSettingsPanel(parent: HTMLElement, hooks: SettingsHooks): 
   logo.alt = 'PocketBarrel';
   logo.width = 128;
   logo.height = 128;
-  shell.body.append(logo, section('Sound', soundBtn, musicRow, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, bigBtn, bigNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
+  shell.body.append(logo, section('Sound', soundBtn, musicRow, volumeRow), el('div', 'divider'), section('Look', lightBtn, lightNote, gridBtn, gridNote, popBtn, popNote, tagBtn, tagNote, fxBtn, fxNote, shakeBtn, shakeNote, bigBtn, bigNote, guideBtn, guideNote), el('div', 'divider'), section('Save', exportBtn, importBtn, backupBtn, newBtn), el('div', 'divider'), section('Testing', debugBtn), file);
   return { el: panel };
 }

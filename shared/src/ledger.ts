@@ -37,7 +37,7 @@ export interface Change {
 }
 
 /** Changes with these reasons only move things the player already has (off a shop slot, step S1): no finds. */
-const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf', 'shop_closed', 'tavern_order', 'tap', 'cask_fill'];
+const NO_FIND_REASONS: readonly LedgerReason[] = ['shelf', 'shop_closed', 'tavern_order', 'tap', 'stash', 'cask_fill'];
 /** SK-2: finds of these reasons give no Book-entry xp (the start kit, debug grants). */
 const NO_XP_REASONS: readonly LedgerReason[] = ['start', 'debug'];
 

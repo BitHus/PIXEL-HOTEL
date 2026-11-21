@@ -14,6 +14,8 @@
 import { Container, Graphics } from 'pixi.js';
 import {
   CHOP_REACH_PX,
+  bobberState,
+  fishRecastReady,
   FX_BITE_MS,
   FX_CAST_ARC_PX,
   FX_CAST_MS,
@@ -146,6 +148,8 @@ export class LakesideScreen {
   private castFrom: Point = { x: 0, y: 0 };
   /** Since the bite began (the dunk and the "!" pop), ms; null = no bite look. */
   private biteMs: number | null = null;
+  /** J10: performance.now() of the last early pull-up (a new cast waits FISH_EARLY_LOCK_MS), or null. */
+  private earlyAt: number | null = null;
   /** The slack line after a lost fish, ms left, and the bobber's last spot. */
   private slackMs = 0;
   private lastTarget: Point | null = null;
@@ -332,6 +336,7 @@ export class LakesideScreen {
   }
 
   private async tapWater(p: Point): Promise<void> {
+    if (!fishRecastReady(this.earlyAt, performance.now())) return; // J10: just pulled up early: the next cast waits FISH_EARLY_LOCK_MS
     const plan = await this.hooks.api.castAt(p);
     if (!plan) {
       this.hooks.toast('There is no way to the water there.');
@@ -486,6 +491,12 @@ export class LakesideScreen {
     for (const e of s.events) {
       if (e.t === 'bite') {
         this.hooks.sound('bite');
+        // J10: the bobber went UNDER: a short buzz on a phone too (ring + sound + haptic, so it never needs colour).
+        try {
+          if (!this.reduce && typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(40);
+        } catch {
+          // no haptics here
+        }
         // The bite look: a dunk, rings that grow, the "!" pops in.
         this.biteMs = 0;
         if (spot && !this.reduce) {
@@ -500,8 +511,12 @@ export class LakesideScreen {
         this.hooks.toast('It got away!');
         lost = true;
       } else if (e.t === 'missed') {
-        this.hooks.toast('Too slow, it got away.');
+        this.hooks.toast('Too slow: the bobber came back up.');
         lost = true;
+      } else if (e.t === 'early') {
+        // J10: tapped before the dip: the line comes up, nothing lost; a new cast waits a moment (the API keeps the same lock).
+        this.hooks.toast('Too early! Wait until the bobber goes under.');
+        this.earlyAt = performance.now();
       }
     }
     if (s.phase !== 'done') return;
@@ -663,6 +678,10 @@ export class LakesideScreen {
     }
     this.bobberArt.get(true).visible = dip;
     this.bobberArt.get(false).visible = !dip;
+    // J10 BOBBER DIP: during the bite the bobber is UNDER the water (a faint shape under the water tint), rising again near the end
+    // of the window; tap while it is under. Reel and float: fully drawn.
+    const under = bite ? bobberState(s) : null;
+    this.bobberArt.get(true).alpha = under ? (this.reduce ? 0.5 : under.underFrac > 0.25 ? 0.3 : 0.3 + 0.5 * (1 - under.underFrac / 0.25)) : 1;
     this.bobber.position.set(Math.round(target.x + dx), Math.round(target.y + dy));
     // The cast: the bobber flies in an arc from the rod to the water; landing = splash and rings.
     if (flight !== null) {

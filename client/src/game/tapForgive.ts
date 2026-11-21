@@ -30,7 +30,7 @@ export interface InteractPick {
 /** A piece the player can use by tapping: bar, register, taps, machines, casks, seats, usable decor. */
 export function isTapUseful(typeId: string): boolean {
   const t = getFurnitureType(typeId);
-  return !!(t.servedFromBehind || t.till || t.taps || t.cooks || t.brews || t.casks || isUsable(t) || hasSeats(t));
+  return !!(t.servedFromBehind || t.till || t.taps || t.stash || t.cooks || t.brews || t.casks || isUsable(t) || hasSeats(t));
 }
 
 export interface TapForgiveExtras {
@@ -54,6 +54,7 @@ export function createTapForgive(g: Pick<G15, 'st' | 'itemViews' | 'late'>, extr
     if (t.cooks) return { kind: 'stove', ready: isReady };
     if (t.brews) return { kind: 'barrel', ready: isReady };
     if (t.casks) return { kind: 'cask' };
+    if (t.stash) return { kind: 'stash' };
     if (t.taps) return extras.pourWaiting?.() ? { kind: 'pour' } : { kind: 'taps' };
     if (t.servedFromBehind || t.till) return { kind: 'bar', ready: !!st.tavern?.guests?.some((x) => x.phase === 'order' && x.order) };
     if (hasSeats(t)) return { kind: 'seat' };

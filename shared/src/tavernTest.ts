@@ -11,6 +11,7 @@ import { DEFAULT_NEW_PLAYER, createNewPlayer } from './newPlayer.ts';
 import { applyChange } from './ledger.ts';
 import { loadRoom, loadTap } from './taps.ts';
 import { clearDish, collectCoins, openOrders, pourOrder, requestServe } from './tavern.ts';
+import { STASH_PIECE, stashSpot } from './stashStart.ts';
 import type { Facing, Rng } from './types.ts';
 
 let gridFor: { items: GameState['items']; grid: TavernWorld['grid'] } | null = null;
@@ -177,4 +178,12 @@ export function tidy(s: GameState, at: number): GameState {
     s = clearDish(s, m.id) ?? s;
   }
   return s;
+}
+
+/** 3e: the state with a serving hatch (the food stash) standing in the tavern (the legacy starts have none), at the stashSpot near the stove. */
+export function withHatch(s: GameState): GameState {
+  const room = s.rooms.find((r) => r.id === s.tavern.roomId)!;
+  const stove = s.items.find((i) => i.roomId === room.id && i.typeId === 'stove');
+  const at = stashSpot(room, s.items, stove ? { x: stove.x, y: stove.y - 16 } : null)!;
+  return { ...s, items: [...s.items, { uid: s.nextUid, typeId: STASH_PIECE, ownerId: s.player.id, roomId: room.id, x: at.x, y: at.y, facing: at.facing, onItemUid: null }], nextUid: s.nextUid + 1 };
 }

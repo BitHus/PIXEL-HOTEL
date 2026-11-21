@@ -11,7 +11,7 @@ describe('migration 41 -> 42', () => {
     it(`${shape}: the annex goes on top, the main floor moves down, the old kitchen pieces move into the new annex, every piece stands well, nothing is lost`, () => {
       const old = save41Start(shape, 0);
       const r = readSave(JSON.stringify({ version: 41, savedAt: 1, state: old }));
-      expect(SAVE_VERSION).toBe(43);
+      expect(SAVE_VERSION).toBe(44);
       expect(r.ok).toBe(true);
       if (!r.ok) return;
       const s = r.state;
@@ -35,7 +35,7 @@ describe('migration 41 -> 42', () => {
         const rest = s.items.filter((o) => o.uid !== i.uid && o.onItemUid !== i.uid);
         expect(canPlace(room, rest, getFurnitureType(i.typeId), i.x, i.y, i.facing), `${shape} ${i.typeId}`).toBe(true);
       }
-      expect(s.items.length).toBe(old.items.length + 2); // two more bar pieces, nothing gone
+      expect(s.items.length).toBe(old.items.length + 3); // two more bar pieces + the serving hatch (43 -> 44), nothing gone
       expect(s.tavern.taps.reduce((n, t) => n + t.mugs, 0) + (s.player.materials.root_ale ?? 0)).toBe(7);
     });
   }
